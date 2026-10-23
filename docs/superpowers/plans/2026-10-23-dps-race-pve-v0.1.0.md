@@ -43,7 +43,7 @@ The **UI** (HUD, Results window, settings pages) listens on the message bus and 
 | T5 Race state machine + Watchers | M2 | [x] |
 | T6 Bests + pruning | M2 | [x] |
 | T7 Race HUD | M3 | [x] |
-| T8 Results window | M3 | [ ] |
+| T8 Results window | M3 | [x] |
 | T9 Settings pages, slash verbs, Share, Preview, key bindings | M3 | [ ] |
 | T10 Docs, README, smoke tests, automated-test bundle | M4 | [ ] |
 | T11 Whole-branch review + fixes | M4 | [ ] |

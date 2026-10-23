@@ -28,6 +28,7 @@ drift from what the client loads (testing-§9).
 | `core/Secrets.lua` | `NS.Secrets`: the LibKa0s-Compat guards with their stub arm, `PlainNumber`, `PlainString`, `PlainTruth`, `PlainEquals`, `CanAccessTable`, the bounded `SafeIterate`; the only file that inspects a possibly-secret value | **load-bearing**: `modules/Meter.lua` captures `NS.Secrets` at file scope |
 | `core/Bus.lua` | `NS.MSG` names, the bus record, `NS.NewBusTarget`, `NS.SendBus` | conventional |
 | `core/PoolSetup.lua` | `NS.Pool` (`LibKa0s-Pool-1.0`), for the HUD and Results rows | conventional |
+| `core/WidgetsSetup.lua` | `NS.MakeDropdown`, `NS.CloseMenu`, `NS.MakeTestStrip`, `NS.HasWidgets` (`LibKa0s-Widgets-1.0`): the Results filter bars' dropdowns, with the catalog's `chevron-down` and `confirm` marks; nil (no control) when the library is absent | conventional (reached at call time) |
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
 | `core/PerfSetup.lua` | `NS.Perf` (`LibKa0s-Perf-1.0`) and its declared buckets | **load-bearing**: before any module holding `NS.Perf` as an upvalue |
 | `core/DebugLogSetup.lua` | `NS.DebugLog`, the gated sink `NS.Debug` and its gates (`LibKa0s-DebugLog-1.0`) | **load-bearing**: needs `FONT_MONO`, the flag and the printer; before any `NS.Debug` call |
@@ -47,7 +48,12 @@ drift from what the client loads (testing-§9).
 | `modules/Hud_Breakdown.lua` | `NS.HudBreakdown`: the HUD's pooled spell rows, placed from their index; `ShowLive` (opaque values, Blizzard's order, no %) and `ShowResult` (plain, with %); `SpellName` / `SpellIcon` through `C_Spell` | conventional (reached at call time) |
 | `modules/Hud_States.lua` | `NS.HudStates`: the six bodies (idle, armed, running, stop, waiting, result), their widgets, the result chips (`ResultChips`) | conventional (reached at call time) |
 | `modules/Hud.lua` | `NS.Hud`: the Race HUD window (skin, close, Escape, resize, lock, scale, stored position), which body shows, the 20 Hz countdown `OnUpdate`, the coalesced 4 Hz live read, the countdown cue and the buzzer's raid warning; `Show`/`Hide`/`Toggle`/`IsShown`/`SetLocked`/`ResetPosition`/`Refresh`/`Render`/`Suspend`/`Resume` and the buttons' acts (`Hud.Act`) | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) and reads `NS.defaults` for its size |
-| `modules/Placeholders.lua` | stand-in `NS.Results`, `NS.Preview`; T8 and T9 replace them | conventional |
+| `modules/Results_Table.lua` | `NS.ResultsTable`: the Results window's sortable list (header of sort controls over pooled, scrolling row buttons, laid out from configured column widths; `Sort` is pure) and the helpers both tabs draw a run with (class and spec icons with name tooltips, class color, category badge, flag texts and chip words, dates) | after `modules/Hud_States.lua` (reached at call time); **load-bearing** for the three files below, which capture `NS.ResultsTable` at file scope |
+| `modules/Results_Runs.lua` | `NS.ResultsRuns`: the Runs tab. Pure `Filter` (character, spec, category, length, date range, Hide flagged, Include incomplete; resolved runs only), `Options`, `Since`, `Columns`; the filter bar and the list | after `modules/Results_Table.lua` |
+| `modules/Results_Detail.lua` | `NS.ResultsDetail`: the run detail pane (header, score with the best delta, the breakdown sorted with %, the timing strip, the flags with what each means, the note, Share, Delete, the narrow window's back control). Pure `Timing`, `Place`, `FlagLines`, `SortedSpells`, `Meta`, `ClampNote` (200 characters) | after `modules/Results_Table.lua`; captures `NS.HudBreakdown`'s row pitch at file scope |
+| `modules/Results_Bests.lua` | `NS.ResultsBests`: the Bests tab over `NS.Bests.Board` (spec and category filters, *Clean runs only*); pure `Rows`, `Options`, `Columns` | after `modules/Results_Table.lua` |
+| `modules/Results.lua` | `NS.Results`: the Results window (skin, close, Escape, resize, Master scale, stored position), the lazily built tabs, wide or narrow placement of the detail, the footer, the delete confirmation; `Show`/`Hide`/`Toggle`/`IsShown`/`ShowRun`/`ShowTab`/`Back`/`Selected`/`Tab`/`Mode`/`ConfirmDelete`/`DeleteRun`/`SetNote`/`ResetPosition`/`Refresh`/`Suspend`/`Resume`/`Diagnose` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) and reads `NS.defaults` for its size |
+| `modules/Placeholders.lua` | stand-in `NS.Preview`; T9 replaces it and deletes the file | conventional |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
 | `settings/Slash.lua` | `NS.COMMANDS` and the `LibKa0s-Slash-1.0` descriptor | conventional |
@@ -63,7 +69,6 @@ From the plan's file map; each lands with its task and gets a row above in the s
 
 | File | Task | Job |
 |---|---|---|
-| `modules/Results*.lua` | T8 | the Results window |
 | `settings/Race.lua`, `Live.lua`, `History.lua`, `modules/Share.lua`, `modules/Preview.lua` | T9 | settings pages, chat share, test mode |
 
 ## Not shipped
@@ -74,7 +79,7 @@ From the plan's file map; each lands with its task and gets a row above in the s
 | `tests/wow_mock.lua` | this addon's extender over `tests/_kit/mock_base.lua`, including the scriptable target (`M.__setTarget`) and the snapshot APIs |
 | `tests/mock_meter.lua` | the scripted `C_DamageMeter`: secret while the combat restriction is on, plain after, sessions by ID |
 | `tests/race_clock.lua` | the Race suites' fixture: an instance on the scripted meter, a fake clock that fires `C_Timer` timers and tickers at their due `GetTime()`, and drivers for Race's inputs |
-| `tests/mock_widgets.lua` | the HUD suites' widget recorder: distinct font strings and textures that remember their text, values and textures, which objects were handed a secret, every geometry read, and the client seams the HUD draws through (the number formatter, `C_Spell`, sounds, the raid warning, known spells) |
+| `tests/mock_widgets.lua` | the HUD and Results suites' widget recorder: distinct font strings and textures that remember their text, values and textures, which objects were handed a secret, every geometry read, and the client seams the HUD draws through (the number formatter, `C_Spell`, sounds, the raid warning, known spells) |
 | `tests/prose_waivers.lua` | the US-spelling gate's per-file, per-word waivers (the kit's own spelling of its timer-cancel field) |
 | `tests/test_*.lua` | the suites (see [testing.md](testing.md)) |
 | `probe/DpsRaceProbe/` | the pre-build measurement addon; excluded by `.luacheckrc` and `.pkgmeta` |

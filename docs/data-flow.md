@@ -150,3 +150,31 @@ race.
   one is remembered as `race.lastLength`) and the target count from the stepper go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
   while a run is pending, in combat or with the meter unavailable.
+
+## The Results window (spec §6.2)
+
+The window reads stored run records only: every number on one went through `NS.Secrets` on its way
+into the store, so sorting, percentages and the timing strip are plain Lua. It holds no game event,
+timer or `OnUpdate`.
+
+- **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
+  (the HUD's *Details* and *Last result*, a Bests row) or `Results.ShowTab(name)`. `IsShown()` =
+  wanted and not stood down; General visibility does not apply to it. Each tab is built the first
+  time it shows.
+- **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
+  present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
+  bar → `ResultsTable` sorts them (DPS descending by default; an unranked run last; a tie to the newer
+  run) and binds the visible slice to pooled rows. A click selects a run; a double-click shares it.
+- **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
+  breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
+  (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
+  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. From
+  900 px wide it sits beside the list; below, it replaces the list with a back control.
+- **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
+  `Recorder.Save` (`RUN_SAVED`). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
+  `Results.DeleteRun` → `Recorder.Delete` (`RUNS_CHANGED`).
+- **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
+  same list widget. *Clean runs only* switches to the clean board.
+- **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
+  selection whose run is gone is dropped); a hidden window redraws in full on its next show.
+  `SETTINGS_CHANGED` for `global.history.keep` redraws the footer.

@@ -38,9 +38,10 @@ row's `default` reads from it.
 | `live.hz` | `4` | none yet (T9) | Live reads per second, 2-10 (spec §10) |
 | `hud.showMode` | `"onArm"` | none yet (T9) | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
 | `windows.hud.width` / `.height` | `300` / `360` | none (geometry) | The HUD's size; the minimum 260x240 is the spec's, in `modules/Hud.lua` |
+| `windows.results.width` / `.height` | `1040` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 760x420 is in `modules/Results.lua`. Its scale is the Master controls' `scale` |
 
 T9 adds the rows for `race.*`, `live.*` and `hud.showMode`; until then `NS.GetSetting` answers their
-defaults. T8 adds `windows.results`.
+defaults.
 
 ### Global (`db.global`)
 
@@ -95,8 +96,9 @@ and a closed list of writers.
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |
-
 | `profile.windows.hud` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Hud.lua` | the HUD's drag stop (position) and resize grip (size); `Hud.ResetPosition` clears them (the Master controls' *Reset position*) |
 | `profile.race.lastLength` | `modules/Hud.lua` | `Hud.Act.pickLength` / `customLength`: the last race length picked on the HUD, offered next (spec §4.1). No default: absent means `race.defaultLength` |
+| `profile.windows.results` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Results.lua` | the window's title-bar drag stop (position) and resize grip (size); `Results.ResetPosition` clears them (the Master controls' *Reset position*) |
 
-T8 adds `profile.windows.results`, owned by the Results window.
+The Results window's filters, sort, selected run and tab are session-only view state and are not
+stored.

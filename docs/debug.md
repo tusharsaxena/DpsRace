@@ -69,8 +69,11 @@ pending=<n> meter=<available>` (the race's state, the current run and its sessio
 still running or stopping, and whether Blizzard's meter is available), and the HUD line: `hud
 body=<idle|armed|running|stop|waiting|result|none> events=<none|idle|live> ticking=<bool>
 locked=<bool>` (the body on screen, the event set the HUD's frame holds, whether the 20 Hz countdown
-`OnUpdate` is attached). Later tasks add their own. The HUD's trace lines carry the `Hud` tag (the
-window built, each race transition it heard); `Format` says when the client's formatter is refused.
+`OnUpdate` is attached), and the Results line: `results tab=<runs|bests> mode=<wide|narrow>
+rows=<n> selected=<id|none>` (the tab, whether the detail sits beside the list, the rows the tab
+shows, the run the detail shows). The HUD's trace lines carry the `Hud` tag (the window built, each
+race transition it heard); the Results window's the `Results` tag (the window and each tab built);
+`Format` says when the client's formatter is refused.
 
 ### Caps
 

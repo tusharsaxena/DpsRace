@@ -21,11 +21,11 @@ console, options toolkit, slash dispatcher, launcher, performance harness, stand
 pool, message bus, settings schema) come from the vendored `LibKa0s` v1.76.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
-**Where the build stands.** The scaffold (T1), the engine (T2 to T6) and the Race HUD (T7,
-`modules/Hud*.lua` with `modules/Format.lua`) are in the tree. The Results window (T8) and the
-settings pages, feature verbs, Share and Preview (T9) are not yet; `modules/Placeholders.lua` holds
-the `NS.Results` and `NS.Preview` surfaces the scaffold already calls, and each later task replaces
-one of them. Sections below say which parts are planned rather than present.
+**Where the build stands.** The scaffold (T1), the engine (T2 to T6), the Race HUD (T7,
+`modules/Hud*.lua` with `modules/Format.lua`) and the Results window (T8, `modules/Results*.lua`)
+are in the tree. The settings pages, feature verbs, Share and Preview (T9) are not yet;
+`modules/Placeholders.lua` holds the `NS.Preview` surface the scaffold already calls, which T9
+replaces. Sections below say which parts are planned rather than present.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -46,9 +46,9 @@ annotated (toc-file-§5).
 | Folder | Holds |
 |---|---|
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
-| `core/` | the namespace, constants, session state, the eight `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
+| `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), `Diagnostics.lua` (the report's sections) and `Placeholders.lua` (the stand-ins T8 and T9 replace) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Diagnostics.lua` (the report's sections) and `Placeholders.lua` (the stand-in T9 replaces) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, the General and Profiles pages |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 | `probe/` | `DpsRaceProbe`, the measurement addon the spec's numbers came from; never loaded, never shipped |
@@ -76,12 +76,12 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide; Results (T8) |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
-| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; Results (T8) |
-| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; Results list (T8) |
-| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | `modules/Bests.lua`: drops the bests cache; Results list (T8) |
-| `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | none in the scaffold |
+| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card |
+| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show) |
+| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone |
+| `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
@@ -150,6 +150,10 @@ STOPPING, and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | the window shown | `Hud.Refresh` | the Arm button's *Leave combat to arm* and the footer |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | the window shown and the race RUNNING | one coalesced `Meter.ReadLive` per `1/live.hz` s | the live breakdown at 4 Hz by default, never from `OnUpdate` (spec §10) |
 
+`modules/Results.lua` registers no game event, no timer and no `OnUpdate`: it redraws from its bus
+receiver (`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while
+the window is on screen.
+
 The pipeline from event to screen: [data-flow.md](data-flow.md).
 
 ## Taint Notes
@@ -167,15 +171,21 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   asks of one is `== nil`. The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
+- The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
+  it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store,
+  so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
+  config; its only geometry read is its own anchor on drag stop.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
 
-- **No Results window, settings pages or test mode yet (T8, T9).** The Results toggle and *Test mode*
-  act on the placeholders in `modules/Placeholders.lua` and draw nothing. The HUD's *Details* opens
-  the Results placeholder and its *Share* stays grayed until `NS.Share` exists. The race and live
+- **No settings pages, Share or test mode yet (T9).** *Test mode* acts on the placeholder in
+  `modules/Placeholders.lua` and draws nothing. The HUD's and the Results window's *Share* stay
+  grayed (and a Results row's double-click does nothing) until `NS.Share` exists. The race and live
   keys the HUD reads (`race.defaultLength`, `race.countdownCue`, `race.buzzer`, `race.hintDelay`,
   `live.*`, `hud.showMode`) have their defaults but no schema rows until T9.
+- **The Results window's filters are the session's.** They start at *all* (with *Include incomplete*
+  on) at every login; they are view state, not settings.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
   secret values. This is a client limit, not a gap to close.
 - **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and closes
