@@ -148,7 +148,7 @@ race.
   `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled
   rows (`hudLive`): bars by `SetMinMaxValues(0, maxAmount)` / `SetValue(total)` (the first row's
   total when there is no `maxAmount`), amounts by `Format.Number`, names and icons by `C_Spell`, in
-  Blizzard's order, `live.rows` of them, no %. A missing live DPS figure shows a dash.
+  Blizzard's order, `live.rows` of them, no %. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race again*

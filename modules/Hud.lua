@@ -814,6 +814,7 @@ local function onState(_, from, to)
     local St = S()
     if to == St.ARMED then
         liveData, lastRead, dropNames = nil, nil, nil
+        NS.Meter.NewLiveRace()
         pick.editing = false
         autoShow()
     end

@@ -8,7 +8,7 @@ local _, NS = ...
 --     NS.Secrets.PlainNumber and refuses the whole read ("sealed") if a single one is still secret:
 --     a half-plain result would rank a run on a partial number. Only then are the spells sorted.
 --   * ReadLive() is the DISPLAY path. It runs in combat, when every number is secret, and therefore
---     does nothing to a value but copy it into a table. No arithmetic, no comparison, no `#` on a
+--     does nothing to a value but copy it into a table (and ask `== nil` of it, for the live-DPS rungs). No arithmetic, no comparison, no `#` on a
 --     client table, no sort: Blizzard's order is kept. The HUD hands the values to widget setters
 --     and the numeric formatter, and nothing else.
 --
@@ -26,6 +26,8 @@ local Secrets = NS.Secrets
 local ENUM = Enum
 Meter.STAT_DAMAGE_DONE = (ENUM and ENUM.DamageMeterType and ENUM.DamageMeterType.DamageDone) or 0
 Meter.SESSION_CURRENT = (ENUM and ENUM.DamageMeterSessionType and ENUM.DamageMeterSessionType.Current) or 1
+-- The Dps meter type: the live DPS figure's last rung (ReadLive).
+Meter.STAT_DPS = (ENUM and ENUM.DamageMeterType and ENUM.DamageMeterType.Dps) or 1
 
 -- The reason IsAvailable gives when the client has no meter API at all (Blizzard gives none then).
 local NO_API_REASON = NS.L["Blizzard's damage meter is not available on this client."]
@@ -171,10 +173,58 @@ end
 -- The display path: the Current session, live, opaque
 -- ---------------------------------------------------------------------------
 
+-- THE LIVE DPS FIGURE, a rung chain. The live client's source table carries no amountPerSecond (the
+-- owner's smoke test, 2026-10-23), so the figure falls through, each rung an opaque copy:
+--   a) "source"    the source table's own amountPerSecond;
+--   b) "localRow"  the Current DamageDone session's combatSources row whose isLocalPlayer is plainly
+--                  true (the probe measured the flag readable mid-combat), its amountPerSecond;
+--   c) "dpsType"   the Dps meter type's source for the player: its totalAmount (else amountPerSecond).
+-- Each is the METER's rate (its total over its whole-second session duration): a live figure only.
+-- The score stays ours (spec §5.1). damage / elapsed is never computed: arithmetic on a secret.
+-- The rung that served is logged once per race (NewLiveRace resets it) under the Meter tag.
+local loggedRung
+
+local function localRowDps()
+    local ok, session = call("GetCombatSessionFromType", Meter.SESSION_CURRENT, Meter.STAT_DAMAGE_DONE)
+    if not ok or not Secrets.CanAccessTable(session) then return nil end
+    local dps
+    Secrets.SafeIterate(session.combatSources, function(_, src)
+        if not Secrets.CanAccessTable(src) then return end
+        if Secrets.PlainTruth(src.isLocalPlayer) then
+            dps = src.amountPerSecond
+            return false
+        end
+    end)
+    return dps
+end
+
+local function dpsTypeRate()
+    local ok, src = call("GetCombatSessionSourceFromType", Meter.SESSION_CURRENT, Meter.STAT_DPS,
+        UnitGUID("player"), nil)
+    if not ok or not Secrets.CanAccessTable(src) then return nil end
+    if src.totalAmount ~= nil then return src.totalAmount end
+    return src.amountPerSecond
+end
+
+--- The live DPS figure (opaque) and the rung that served it, or nil, nil.
+local function liveDps(source)
+    if source.amountPerSecond ~= nil then return source.amountPerSecond, "source" end
+    local dps = localRowDps()
+    if dps ~= nil then return dps, "localRow" end
+    dps = dpsTypeRate()
+    if dps ~= nil then return dps, "dpsType" end
+    return nil, nil
+end
+
+--- A new race: the next live read logs the rung that serves it (modules/Hud.lua, on arm).
+function Meter.NewLiveRace()
+    loggedRung = nil
+end
+
 --- Read the player's live breakdown from the Current session. Every value is OPAQUE (secret in
---- combat) and is only copied; spells keep Blizzard's order. `dps` is the source's own
---- amountPerSecond and may be nil on a client whose source table does not carry it.
---- @return table|nil live  { total, dps, maxAmount, spells = { {spellID, total, dps}, ... } }
+--- combat) and is only copied; spells keep Blizzard's order. `dps` is the first live-DPS rung that
+--- answers (see THE LIVE DPS FIGURE above), and nil when none does; `rung` names it.
+--- @return table|nil live  { total, dps, rung, maxAmount, spells = { {spellID, total, dps}, ... } }
 function Meter.ReadLive()
     local ok, source = call("GetCombatSessionSourceFromType", Meter.SESSION_CURRENT,
         Meter.STAT_DAMAGE_DONE, UnitGUID("player"), nil)
@@ -184,6 +234,12 @@ function Meter.ReadLive()
         if not Secrets.CanAccessTable(e) then return end
         spells[#spells + 1] = { spellID = e.spellID, total = e.totalAmount, dps = e.amountPerSecond }
     end)
-    return { total = source.totalAmount, dps = source.amountPerSecond, maxAmount = source.maxAmount,
+    local dps, rung = liveDps(source)
+    local name = rung or "none"
+    if name ~= loggedRung then
+        loggedRung = name
+        debug("live DPS from rung %s", name)
+    end
+    return { total = source.totalAmount, dps = dps, rung = rung, maxAmount = source.maxAmount,
              spells = spells }
 end

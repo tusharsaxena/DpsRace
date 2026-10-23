@@ -223,8 +223,10 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   secret values. This is a client limit, not a gap to close.
 - **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and the
   client assumptions C1 to C26, and closes in the owner's smoke-test pass
-  ([smoke-tests.md](smoke-tests.md), section 9). Live DPS, for one, is the source table's own
-  `amountPerSecond`; a client without that field shows a dash for the whole race (C3).
+  ([smoke-tests.md](smoke-tests.md), section 9). Live DPS, for one, is a rung chain in
+  `Meter.ReadLive` (the source's `amountPerSecond`, else the player's own `combatSources` row, else
+  the Dps meter type); the live client measured on 2026-10-23 lacks the first, and a client with no
+  rung answering shows a dash for the whole race (C3).
 - **With both the castGUID and the spell ID sealed, an instant pressed while another cast is in
   flight** (and no interrupt was heard) is taken as that cast finishing, and is not judged. Casting
   normally interrupts the cast in flight, so this is rare (`Race.OnCast`).

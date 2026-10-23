@@ -300,6 +300,25 @@ test("hud: a live read with no DPS figure shows a dash", function()
     assertTrue(T.isSecret(b.w.list.rows[1].bar.__max), "no maxAmount: the first row's total is the range")
 end)
 
+test("hud: the live DPS KPI shows a figure when the source carries no amountPerSecond (live client)", function()
+    local f = hud()
+    assertTrue(f:arm(30))
+    f.M.__inCombat = true
+    local data = {}
+    for k, v in pairs(RaceClock.SESSION) do data[k] = v end
+    data.sourceDps, data.localFlagPlain = false, true
+    data.others = { { guid = "Player-1-00000002", damage = 9000000, dps = 90000 } }
+    f.meter.SetSession(25, data)
+    f.meter.SetSecret(true)
+    f.Race.OnCombatStart(f:now())
+    f.Race.OnSessionCreated(f:now())
+    local ok, err = pcall(pump, f, 1)
+    assertTrue(ok, "a forbidden operation on a secret: " .. tostring(err))
+    local b = body(f)
+    assertEqual(T.reveal(b.w.dps.value.__text), "39.4K", "the local row's figure, not a dash")
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
 test("hud: layout never calls GetWidth/GetPoint on breakdown rows", function()
     local f = hud()
     running(f, 30)

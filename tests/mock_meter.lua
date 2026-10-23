@@ -17,6 +17,14 @@
 --       is highest first; a test may hand an unsorted list to prove the adapter sorts). `others` are
 --       other sources in the session, each { guid, damage, dps }. `player = false` leaves the
 --       player out of the session entirely (combat with no damage of theirs).
+--       The live client's shapes (the owner's smoke test, 2026-10-23), each opt-in per session:
+--         sourceDps = false   the player's source table (GetCombatSessionSourceFrom*) carries no
+--                             amountPerSecond, as on the live client
+--         rowDps = false      the player's row in combatSources carries no amountPerSecond either
+--         localFlagPlain = true  the row's isLocalPlayer stays PLAIN while every other value is
+--                             secret (the probe measured it readable mid-combat)
+--         dpsType = true      the Dps meter type (Enum.DamageMeterType.Dps) answers a source for the
+--                             player whose totalAmount is the session's dps (secret in combat)
 --   RemoveSession(id) · SetCurrent(id|nil)
 --   SetSecret(on)      the combat restriction: every value read while on is a secret wrapper.
 --   SetSealed(id, on)  that one session answers secrets even with the restriction off (a value
@@ -28,7 +36,7 @@
 return function(Kit)
     local MockMeter = {}
 
-    local DAMAGE_DONE, OVERALL, CURRENT = 0, 0, 1
+    local DAMAGE_DONE, DPS, OVERALL, CURRENT = 0, 1, 0, 1
 
     local function newController()
         return {
@@ -67,7 +75,8 @@ return function(Kit)
         if s.player ~= false then
             sources[1] = {
                 sourceGUID = w(ctl.guid), name = w("Racer"), classFilename = "MAGE",
-                isLocalPlayer = w(true), totalAmount = w(s.damage), amountPerSecond = w(s.dps),
+                isLocalPlayer = s.localFlagPlain and true or w(true), totalAmount = w(s.damage),
+                amountPerSecond = s.rowDps ~= false and w(s.dps) or nil,
             }
             total, max = s.damage, s.damage
         end
@@ -92,7 +101,15 @@ return function(Kit)
             spells[i] = { spellID = w(sp.id), totalAmount = w(sp.dmg), amountPerSecond = w(sp.dps) }
         end
         return { combatSpells = spells, maxAmount = w(maxSpell(s.spells)), totalAmount = w(s.damage),
-                 amountPerSecond = w(s.dps) }
+                 amountPerSecond = s.sourceDps ~= false and w(s.dps) or nil }
+    end
+
+    -- The Dps meter type's source for the player: its totalAmount is the session's rate.
+    local function dpsSourceTable(ctl, id, guid)
+        local s = id and ctl.sessions[id]
+        if not s or not s.dpsType or s.player == false or guid ~= ctl.guid then return nil end
+        local w = wrapper(ctl, id)
+        return { combatSpells = {}, totalAmount = w(s.dps) }
     end
 
     local function record(ctl, fn, ...)
@@ -140,6 +157,7 @@ return function(Kit)
         end
         function api.GetCombatSessionSourceFromType(sessionType, statType, guid, creatureID)
             record(ctl, "GetCombatSessionSourceFromType", sessionType, statType, guid, creatureID)
+            if statType == DPS then return dpsSourceTable(ctl, currentFor(ctl, sessionType), guid) end
             if statType ~= DAMAGE_DONE then return nil end
             return sourceTable(ctl, currentFor(ctl, sessionType), guid)
         end
@@ -179,7 +197,7 @@ return function(Kit)
         addMethods(ctl, mocks)
         mocks.C_DamageMeter = buildApi(ctl)
         mocks.Enum = mocks.Enum or {}
-        mocks.Enum.DamageMeterType = { DamageDone = DAMAGE_DONE, Dps = 1, DamageTaken = 7,
+        mocks.Enum.DamageMeterType = { DamageDone = DAMAGE_DONE, Dps = DPS, DamageTaken = 7,
                                        EnemyDamageTaken = 10 }
         mocks.Enum.DamageMeterSessionType = { Overall = OVERALL, Current = CURRENT, Expired = 2 }
         -- The player's GUID is the controller's (SetPlayerGUID); any other unit is the base mock's

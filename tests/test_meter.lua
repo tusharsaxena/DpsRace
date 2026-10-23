@@ -198,6 +198,102 @@ test("meter: the live read answers nil with no session, no API or a raising clie
     assertNil(NS.Meter.ReadLive())
 end)
 
+-- The live client (the owner's smoke test, 2026-10-23): the source table carries no amountPerSecond.
+-- The figure then comes from the player's own row in combatSources (isLocalPlayer is readable in
+-- combat, every number secret), else from the Dps meter type. Every value stays opaque.
+local LIVE = {
+    damage = 1539711, dps = 39479, duration = 39, sourceDps = false, localFlagPlain = true,
+    spells = { { id = 133, dmg = 300000, dps = 7692 } },
+    others = { { guid = "Player-1-00000002", damage = 2000000, dps = 50000 } },
+}
+
+local function liveWith(fields)
+    local data = {}
+    for k, v in pairs(LIVE) do data[k] = v end
+    for k, v in pairs(fields or {}) do data[k] = v end
+    return data
+end
+
+test("meter: live DPS is the source's own amountPerSecond when it carries one (rung a)", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, RUN)
+    meter.SetSecret(true)
+    local live = NS.Meter.ReadLive()
+    assertEqual(live.rung, "source")
+    assertTrue(T.isSecret(live.dps))
+    assertEqual(T.reveal(live.dps), 39479)
+    assertEqual(#meter.CallsTo("GetCombatSessionFromType"), 0, "a further read with rung a answering")
+end)
+
+test("meter: with no source amountPerSecond, live DPS is the local row's, opaque (rung b)", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, liveWith())
+    meter.SetSecret(true)
+    local ok, live = pcall(NS.Meter.ReadLive)
+    assertTrue(ok, "ReadLive raised on a secret: " .. tostring(live))
+    assertEqual(live.rung, "localRow")
+    assertTrue(T.isSecret(live.dps), "the row's figure is passed through, still secret")
+    assertEqual(T.reveal(live.dps), 39479, "the local row's, never the other source's 50000")
+    assertTrue(T.isSecret(live.total))
+    local calls = meter.CallsTo("GetCombatSessionFromType")
+    assertEqual(calls[1].args[1], NS.Meter.SESSION_CURRENT)
+    assertEqual(calls[1].args[2], NS.Meter.STAT_DAMAGE_DONE)
+end)
+
+test("meter: a local row whose flag is secret is no claim; the Dps meter type answers (rung c)", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, liveWith({ localFlagPlain = false, dpsType = true }))
+    meter.SetSecret(true)
+    local ok, live = pcall(NS.Meter.ReadLive)
+    assertTrue(ok, "ReadLive raised on a secret: " .. tostring(live))
+    assertEqual(live.rung, "dpsType")
+    assertTrue(T.isSecret(live.dps))
+    assertEqual(T.reveal(live.dps), 39479)
+    local calls = meter.CallsTo("GetCombatSessionSourceFromType")
+    local args = calls[#calls].args
+    assertEqual(args[2], NS.Meter.STAT_DPS)
+    assertEqual(args[3], "Player-1-00000001")
+end)
+
+test("meter: a local row with no figure of its own falls through to the Dps meter type", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, liveWith({ rowDps = false, dpsType = true }))
+    meter.SetSecret(true)
+    local live = NS.Meter.ReadLive()
+    assertEqual(live.rung, "dpsType")
+    assertEqual(T.reveal(live.dps), 39479)
+end)
+
+test("meter: with no rung answering, live DPS is nil and the rest of the read stands", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, liveWith({ localFlagPlain = false }))
+    meter.SetSecret(true)
+    local live = NS.Meter.ReadLive()
+    assertNil(live.dps)
+    assertNil(live.rung)
+    assertTrue(T.isSecret(live.total), "damage still shows")
+    assertEqual(#live.spells, 1)
+end)
+
+test("meter: the rung that served is logged once per race, under the Meter tag", function()
+    local NS, meter = fresh()
+    meter.SetSession(17, liveWith())
+    meter.SetSecret(true)
+    local lines = {}
+    NS.Debug = function(tag, fmt, ...) if tag == "Meter" then lines[#lines + 1] = fmt:format(...) end end
+    NS.Meter.NewLiveRace()
+    for _ = 1, 5 do NS.Meter.ReadLive() end
+    local served = {}
+    for _, l in ipairs(lines) do if l:find("live DPS", 1, true) then served[#served + 1] = l end end
+    assertEqual(#served, 1, table.concat(served, " | "))
+    assertTrue(served[1]:find("localRow", 1, true) ~= nil, served[1])
+    NS.Meter.NewLiveRace()
+    NS.Meter.ReadLive()
+    local again = 0
+    for _, l in ipairs(lines) do if l:find("live DPS", 1, true) then again = again + 1 end end
+    assertEqual(again, 2, "a new race logs its rung again")
+end)
+
 test("meter: SessionIDs and HasSession track the client's list by plain ID", function()
     local NS, meter = fresh()
     meter.SetSession(17, RUN)

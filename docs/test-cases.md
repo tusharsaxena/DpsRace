@@ -33,7 +33,7 @@ Total.
 - secrets: SafeIterate refuses a table this context may not read
 - secrets: PlainString passes a plain string and refuses nil, a number and a secret
 
-### test_meter.lua (18)
+### test_meter.lua (24)
 
 - meter: the stat and session constants come from the client enum
 - meter: the constants fall back to 0 and 1 without the enum
@@ -49,6 +49,12 @@ Total.
 - meter: live read never performs arithmetic on secrets
 - meter: the live read keeps Blizzard's order and reads the Current session
 - meter: the live read answers nil with no session, no API or a raising client
+- meter: live DPS is the source's own amountPerSecond when it carries one (rung a)
+- meter: with no source amountPerSecond, live DPS is the local row's, opaque (rung b)
+- meter: a local row whose flag is secret is no claim; the Dps meter type answers (rung c)
+- meter: a local row with no figure of its own falls through to the Dps meter type
+- meter: with no rung answering, live DPS is nil and the rest of the read stands
+- meter: the rung that served is logged once per race, under the Meter tag
 - meter: SessionIDs and HasSession track the client's list by plain ID
 - meter: modules/Meter.lua is the only file that names C_DamageMeter
 - meter: core/Compat.lua is the only file that names the client's secret detectors
@@ -212,7 +218,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (51)
+### test_hud.lua (52)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -228,6 +234,7 @@ Total.
 - hud: running body shows no percentage text
 - hud: live rows keep Blizzard's order and the configured count
 - hud: a live read with no DPS figure shows a dash
+- hud: the live DPS KPI shows a figure when the source carries no amountPerSecond (live client)
 - hud: layout never calls GetWidth/GetPoint on breakdown rows
 - hud: live reads stop when hud hidden or state leaves running
 - hud: the stop body shows the live tail, time in combat, late casts and the grace
@@ -530,7 +537,7 @@ Total.
 |-------|------:|
 | test_skeleton.lua | 8 |
 | test_secrets.lua | 11 |
-| test_meter.lua | 18 |
+| test_meter.lua | 24 |
 | test_dummies.lua | 5 |
 | test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
@@ -539,7 +546,7 @@ Total.
 | test_race.lua | 47 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 7 |
-| test_hud.lua | 51 |
+| test_hud.lua | 52 |
 | test_results.lua | 24 |
 | test_schema.lua | 15 |
 | test_settings.lua | 17 |
@@ -558,4 +565,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **428** |
+| **Total** | **435** |
