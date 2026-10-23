@@ -1,87 +1,209 @@
 # Smoke tests
 
 The in-game checks no headless run can reach: real rendering, the real damage meter, taint, and
-client behavior the spec could not measure ahead of time. The owner runs them before a release,
-on a character in a city with training dummies (Silvermoon has every dummy in the catalog).
+client behavior the spec could not measure ahead of time. The owner runs them once, end to end,
+before a release. One pass takes about an hour on a character in Silvermoon, which has every dummy in
+the catalog (spec §4.6).
 
-**This is the scaffold's checklist.** It covers what exists after Task 1. T10 completes the page:
-every HUD state on a real dummy, the Results window, the open items O1 to O7, the reload-in-combat
-case and the restart case (spec §12, plan T10 step 2). Until then those sections are headings only.
+## How to run it
 
-Record each run as pass or fail with the date, the build and anything odd. A failure becomes a
-GitHub issue.
+- Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
+  (`/dr debug`) is where most failures leave their evidence.
+- Work down the page in order. Sections 1 to 4 set up what the later ones use, and section 9 (client
+  assumptions) is mostly answered by watching the earlier sections closely.
+- Tick each row or mark it failed, with the date and the build (`/dr version`, and the client build
+  from the login screen). A failure becomes a GitHub issue, named with the row ID (for example
+  *R7: Stop! never shows*).
+- **Every failure report carries** the row ID, what happened instead, and the output of
+  `/dr diagnostics` copied from the debug console right after the failure (the report follows the
+  trace in the same window, so one **Copy** carries both). The *If it fails, report* column lists
+  what to add beyond that.
+- A class is named where the check needs one: a Hunter (Auto Shot, Feign Death), an Evoker
+  (empowered casts), any caster with a channel and a cast-time spell, and any class that can die
+  to the Dungeoneer's dummy.
 
-## Load and identity
+## 1. Load and identity
 
-- The addon loads with no Lua error (`/console scriptErrors 1` first).
-- The AddOns list shows *Ka0s DPS Race* with the logo icon.
-- `/dr version` and `/dpsrace version` print the same version as the TOC.
-- `/dr help` lists every command; the settings landing page lists the same rows.
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| L1 | Log in with the addon enabled | No Lua error; the AddOns list shows *Ka0s DPS Race* with the logo icon | The error text with its stack |
+| L2 | `/dr version`, then `/dpsrace version` | Both print the TOC's version (0.1.0) | Both lines |
+| L3 | `/dr help` | Every command prints, the feature verbs after `version`; the settings landing page lists the same rows | The missing or extra rows |
 
-## Settings panel
+## 2. Settings panel
 
-- *Settings → AddOns → Ka0s DPS Race* exists right after login, before the panel was ever opened.
-- The landing page shows the logo, the notes line and the command list. Switching pages and back
-  does not leave the logo drawn under the command list.
-- General has two tabs, *Master controls* (the rows in canonical order) and *Race HUD*.
-- Race, Live breakdown and History are listed between General and Profiles, each drawn as a tab
-  strip with subsection headings; each page's Defaults button restores only its own rows.
-- The Race page's grace slider steps by 0.1 from 0 to 5 and its tooltip says it applies to new runs;
-  the length dropdown offers 0:30 to 5:00.
-- History shows the stored count; *Delete all runs…* asks first and the Results window empties on
-  accept; with a race armed it refuses with one line. A large *Runs to keep* value is typed into the
-  slider's box without a stall.
-- Opening the panel in combat is refused with a notice; it opens once combat ends.
-- *Reset all settings* asks first; after it, the minimap button keeps its state.
-- Profiles: create, switch, copy and delete a profile. Run history is unaffected (it is global).
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| S1 | Open *Settings → AddOns* right after login | *Ka0s DPS Race* is there before the panel was ever opened | Whether `/dr` opens it |
+| S2 | Open the landing page, switch pages and come back | The logo, notes line and command list show; the logo is never drawn under the list | A screenshot |
+| S3 | Open General | Two tabs: *Master controls* (rows in the standard's order) and *Race HUD* (show mode) | A screenshot |
+| S4 | Look at the page order | Race, Live breakdown and History sit between General and Profiles, each a tab strip with subsection headings | A screenshot |
+| S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
+| S6 | On Live breakdown, set *Rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under CANCEL) | A screenshot |
+| S7 | On History, type 10000 into *Runs to keep*'s box | Accepted at once, without a stall; nothing is deleted on the spot | How long it froze, if it did |
+| S8 | Press each page's *Defaults* button after changing one row on every page | Only that page's rows go back | Which page's rows moved |
+| S9 | History: *Delete all runs…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
+| S10 | Open the panel in combat | Refused with a notice; it opens once combat ends | Whether any taint error followed |
+| S11 | *Reset all settings* | It asks first; afterwards the minimap button keeps its state and *Test mode* is unticked | The settings that did not reset |
+| S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
 
-## Launcher and key bindings
+## 3. Launcher, key bindings and slash
 
-- The minimap button shows the logo. Left-click opens settings; right-click shows Enabled, Locked,
-  Test mode and Show window.
-- Hovering shows the version and status, also while disabled.
-- *Minimap button* off hides the button; on brings it back in the same place.
-- *Key Bindings → AddOns → Ka0s DPS Race* lists *Toggle race HUD*, *Toggle results window* and
-  *Arm / cancel race*, with no key set. The Arm / cancel key arms the HUD's length, cancels an armed
-  or running race, and only prints a line while a result is pending.
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| K1 | Look at the minimap button; hover it | The logo shows; the tooltip has the version and status, also while disabled | A screenshot |
+| K2 | Left-click, then right-click the button | Left opens settings; right shows exactly *Enabled*, *Locked*, *Test mode* and *Show window* (spec §6.4: no Results or Arm entry) | The menu as drawn |
+| K3 | Turn *Minimap button* off, then on | It hides, then comes back in the same place | Where it came back |
+| K4 | *Key Bindings → AddOns → Ka0s DPS Race* | *Toggle race HUD*, *Toggle results window* and *Arm / cancel race* are listed, none bound | The list as shown |
+| K5 | Bind all three; press each | The HUD toggles; the Results window toggles; the arm key arms the HUD's length, a second press cancels | Which key did what |
+| K6 | Press the arm key while a result is pending (section 4, R8) | It discards nothing and prints one line pointing at `/dr cancel` | The line |
+| K7 | `/dr arm 1:30`, `/dr cancel`, `/dr arm 0`, `/dr arm 3m`, `/dr cancel` | 1:30 arms with the *Armed* line; cancel cancels; `0` prints the length line; `3m` arms 3:00 | Each line |
+| K8 | `/dr hud show`, `hide`, `toggle`, bare `/dr hud`; `/dr results`, `/dr results bests`; `/dr lock`, `/dr unlock` | Each acts and echoes once; `/dpsrace` answers the same as `/dr` | The verb that misbehaved |
+| K9 | Target each catalog dummy and `/dr target` | Its name, creature ID and category print (243167/243168 Dungeoneer, 243208 Cleave, 243205 Boss-level, 243211 PvP); an uncataloged target prints *Other* | The line for each |
+| K10 | Arm with `/dr arm 30` with the HUD's *Test mode* box ticked in settings | Test mode ends with one line and the settings checkbox unticks | Whether the box stayed ticked |
 
-## Feature verbs, Share and test mode (T9)
+## 4. The race on a real dummy
 
-- `/dr arm 1:30` arms 1:30 and prints the *Armed* line; `/dr arm 0` prints the length line;
-  `/dr cancel` cancels; `/dr target` on a catalog dummy prints its creature ID and category.
-- `/dr hud show|hide|toggle`, `/dr results`, `/dr results bests`, `/dr lock`, `/dr unlock` act and
-  echo; `/dpsrace` answers the same as `/dr`.
-- A result prints the score line once. *Share* on the result card and in the Results detail opens a
-  menu (Say, Party, Raid, Guild, Whisper…) with the channels you are not in grayed; Say posts the
-  mockup's line, Whisper asks for a name. In combat Share refuses with one line.
-- `/dr test` plays Armed, Running, Stop!, Waiting and Result on the HUD with the amber strip under
-  the title; the HUD can be dragged and resized while it plays. Entering combat ends it with one
-  line; arming a real race ends it and the HUD shows the real race; *Reset all settings* unticks
-  *Test mode*. The strip glyph (the info icon) and its text render at the HUD's minimum width.
+Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. The HUD opens at
+300×460 the first time (spec §6.1).
 
-## Disabled state
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| R1 | `/dr hud show` with no target, then target the Golem | Idle body: the five presets and *Custom*, the target card (*No target*, then the name with the *Boss-level* badge and the count stepper), *ARM RACE*, and the *LAST RESULT* and *RESULTS* links. Nothing overlaps | A screenshot |
+| R2 | Target a non-dummy creature | The card warns *Unknown target: recorded as Other: name* | A screenshot |
+| R3 | *Custom*: type `90`, then `1:30`, then `3m`, then `5` | The first three are accepted (1:30, 1:30, 3:00); `5` is refused with the 0:10 to 15:00 line | Each result |
+| R4 | Enter combat on anything, then look at *ARM RACE* | Grayed with *Leave combat to arm*; a click prints the same line | A screenshot |
+| R5 | Arm 0:30 out of combat | Armed body: 0:30 large and still, *First hit starts the clock*, the target card, *CANCEL*; the chat prints the *Armed* line | A screenshot |
+| R6 | Open with a cast-time spell, then on a second run with an instant | Both times the countdown starts on the frame the first hit lands (not on the cast's start), to a tenth of a second | Debug lines tagged `Race`, and which opener failed |
+| R7 | Keep attacking through the race | Running body: the countdown in `m:ss.t`, amber in the last 10 s; DAMAGE and *DPS · LIVE* figures; the live rows with icon, name, bar and amount, and no percentages; the header reads *Live order · % after the race* | A screenshot at about 0:15 left |
+| R8 | Hear the last 10 s | The countdown cue sounds at 10, 5, 3, 2 and 1 left (with *Countdown cue* on; off silences it mid-race) | Which marks were silent |
+| R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *DAMAGE STOPPED +x.xs* climbing while DoTs tick, the late-cast count, *IN COMBAT +y.ys* | A screenshot |
+| R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *DISCARD RUN*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
+| R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
+| R12 | Read the result card | DAMAGE, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *RACE AGAIN*, *DETAILS*, *SHARE*; the chat prints the score line once | A screenshot and the score line |
+| R13 | *RACE AGAIN* | Re-arms 0:30 against the same target | The armed length |
+| R14 | Stop attacking at about 0:12 left and drop combat | The run becomes incomplete: the card says *Incomplete (combat ended at m:ss)* and its DPS is damage ÷ the time fought; it never appears on the Bests board | A screenshot |
+| R15 | Let the Dungeoneer's dummy kill you mid-race | *Incomplete: died* on the card | A screenshot |
+| R16 | Cancel while armed, and while running | Nothing is stored (the Results count does not move); the HUD returns to idle | The count before and after |
+| R17 | *DISCARD RUN* while waiting | The HUD returns to idle; the run does not appear in Results | Whether it was stored |
+| R18 | Close the HUD on a result card (the close button, then Escape on a fresh card) | The card is dismissed; the run stays in Results | Whether the run went |
+| R19 | Reset Blizzard's damage meter from its own window while armed, then while running | Armed: the race stays armed. Running: the run becomes *Lost* and the HUD says so | The state after each |
+| R20 | Turn Blizzard's damage meter off (if the client allows it) and look at the idle HUD | *ARM RACE* is grayed with the reason Blizzard gives | The reason text |
+| R21 | Set *Show HUD* to *On arm only*, close the HUD, `/dr arm 30`, race, dismiss the result | The HUD opens on arm and closes again when the race returns to idle | Whether it stayed open |
+| R22 | Same with *Always*, then `/reload` | The HUD is open after the reload | |
 
-- `/dr disable`: every right-click menu entry but Enabled is grayed; `/dr help`, `/dr config`,
-  `/dr list` and `/dr diagnostics` still answer.
-- A key binding while disabled prints the one *disabled* line and does nothing else.
-- `/dr enable` restores everything without a `/reload`.
+## 5. Reload, restart and logout
 
-## Debug and performance
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| X1 | `/reload` at 0:15 left, still attacking | The HUD comes back on the same countdown (the race's clock survived the reload); at the buzzer the run reaches Stop! and resolves normally | The countdown before and after the reload |
+| X2 | **O4.** On the Dungeoneer's dummy, `/reload` 2 s after the buzzer while still in combat | After the reload the HUD is in *Waiting*; once combat drops the result reads, with the *Reloaded* chip, and the tail still counts updates heard before the reload | The card, and the run's detail timing strip |
+| X3 | `/reload` mid-race, then drop combat before the buzzer would have gone | The run resolves as incomplete, read at once, without the *Reloaded* chip | The card |
+| X4 | `/reload` while waiting out of combat, before the read | The result reads straight after the reload | |
+| X5 | **O3, the restart case.** Stop at the buzzer, stay in combat on the Dungeoneer's dummy for 10 s without attacking, then attack again | The result carries *Restarted +x.xs* (about +10 s), and the run still counts on the board | The card. If no chip: the debug trace, and whether damage was landing during the 10 s (a DoT) |
+| X6 | **O5.** Arm and race on the Dungeoneer's dummy, log out to the character screen while waiting, log back in | Either the result reads, or the run shows *Lost* (*Couldn't read the result*) and keeps its metadata. Record which: it settles O5 | Which of the two, and the run's detail |
 
-- `/dr debug on`, then `/dr debug`: the console opens with `[Debug]` and `[Init]` lines.
-- `/dr diagnostics` appends the report after the trace, with begin and end markers naming
-  *Ka0s DPS Race*. **Copy** copies it whole. It also runs while disabled.
-- `/dr perf start`, `/dr perf measure a`, fight a dummy, leave combat, `/dr perf finish`,
-  `/reload`, `/dr perf report`: a report and a JSON line print. Save the pair for
-  `/dev-copilot:wow-perf-analysis` if the capture is worth keeping.
+## 6. Results window
 
-## The race (T10)
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| W1 | Open Results after sections 4 and 5 | *RUNS* tab: every resolved run, newest first; incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
+| W2 | Hover the class and spec icons | The class icon is cropped cleanly (from `CLASS_ICON_TCOORDS`), the spec icon is the spec's own (from `GetSpecializationInfoByID`); each tooltip names it | A screenshot of a bad crop |
+| W3 | Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
+| W4 | Sort by DPS, ilvl and date | Each sorts both ways; incomplete and lost sort last on DPS | |
+| W5 | Click a run | The detail: header (character, spec, ilvl, zone and subzone, target, date, build, version), score block with meter DPS muted and the best delta, the full breakdown with %, the timing strip (buzzer, grace, tail band, late-cast ticks, combat end, restart tick), flags with explanations, note, *Share*, *Delete* | A screenshot |
+| W6 | Scroll a long breakdown with the mouse wheel; drag the list's scrollbar with 20+ runs | The detail scrolls; the slider drags and the list follows | |
+| W7 | Make the window narrower than 900 px and click a run | The detail replaces the list with a back control; back returns to the list with the row still selected | A screenshot |
+| W8 | Type a note with a `|` in it and press Enter; reopen the run | The note is saved with `/` in place of `|`; Escape instead cancels the edit; at most 200 characters fit | The stored note |
+| W9 | *Delete* a run holding a best | It asks first; on accept the run goes and the Bests board promotes the next run | The board before and after |
+| W10 | *BESTS* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 LATE*, *RESTARTED*, *RELOADED*, *BY LIST*, *DIED*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
+| W11 | Move and resize the window, `/reload` | Position and size persist; *Master scale* scales it too | |
+| W12 | Escape with the window focused; Alt-Z | Escape closes it; Alt-Z hides and shows it without counting as a close | |
+| W13 | Open and use the window in combat | It opens, redraws and sorts with no taint error or blocked-action message | The error text |
+| W14 | Look for the `×` (target count) and `—` (empty damage) glyphs | Both render in the client font, not as boxes | A screenshot |
 
-Every HUD state on a real dummy; reload during a run and during the waiting phase; the restart case
-(stop, wait 10 s in combat, attack again); the Results window; share; test mode end to end.
+## 7. Share and test mode
 
-## Open items (T10)
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| T1 | *SHARE* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
+| T2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · character · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
+| T3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
+| T4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |
+| T5 | `/dr test` | Armed, Running, Stop!, Waiting and Result play on the HUD with the amber strip under the title (*Test mode: sample numbers. Combat or Arm ends it*); it holds on the result card. The sample spells show real icons and names (re-check the Preview spell IDs on this patch) | Any spell shown as *Unknown spell* or a question-mark icon |
+| T6 | While test mode plays, drag and resize the HUD to its minimum (260×316) | The strip glyph and its text still fit; nothing overlaps | A screenshot |
+| T7 | Enter combat during test mode | It ends with one line | |
+| T8 | Start test mode, then arm a real race | Test mode ends with one line and the HUD shows the real race | |
+| T9 | Leave a real result card up, start `/dr test` over it, and close the HUD | Closing ends test mode only; the real run is unaffected | The real run's state after |
+| T10 | Try `/dr test` while a real race is armed | Refused with one line | |
+| T11 | `/dr test` writes nothing | The Results count is the same after a full script | |
 
-O1 to O7 from spec §12, each with pass and fail criteria and the fallback to note:
-in-combat spell order, icons from a secret spell ID, the restart flag, `/reload` in combat after the
-buzzer, sessions across a logout, cast starts for empowered spells, and the cleave group's count.
+## 8. HUD sizing, disabled state, debug and performance
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| H1 | A fresh profile's HUD during a race | 300×460, all 8 live rows visible | A screenshot |
+| H2 | Drag the grip to the minimum (260×316) and look at every body (use test mode) | Arm and the links stay clear; live and result rows are capped above the buttons; nothing runs off the window | A screenshot of each body that clips |
+| H3 | Move and resize the HUD, `/reload` | Position and size persist; lock stops the drag and the grip | |
+| H4 | Alt-Z with the HUD shown on a result card | The card is still there when the UI comes back (a hidden parent is not a close) | |
+| D1 | `/dr disable` | Every right-click menu entry but *Enabled* is grayed; `/dr help`, `config`, `list` and `diagnostics` still answer; the feature verbs print the one disabled line | |
+| D2 | Press each key binding while disabled | The one disabled line, nothing else | |
+| D3 | `/dr enable` | Everything comes back without a `/reload`; a race armed before the disable is gone, a stored running run resumes like a reload | |
+| D4 | `/dr debug on`, `/dr debug` | The console opens with `[Debug]` and `[Init]` lines | |
+| D5 | `/dr diagnostics` | The report follows the trace, with begin and end markers naming *Ka0s DPS Race* and a race line; **Copy** copies it whole; it runs while disabled too | |
+| D6 | `/dr perf start`, `/dr perf measure a`, race a dummy, leave combat, `/dr perf finish`, `/reload`, `/dr perf report` | A report and a JSON line print. Keep the pair for `/dev-copilot:wow-perf-analysis` if the capture is worth keeping | |
+
+## 9. Client assumptions and open items
+
+The build rests on client behavior nobody has measured yet. Each row names the behavior, how to see
+it, and what the code does if the assumption is wrong. O1 to O7 are the spec's open items (§12). Rows
+marked *(probe)* need a one-line script typed in chat; run it in combat where the row says so.
+
+### Meter and race timing
+
+| ID | Assumption | How to check | Pass when | If it fails, report |
+|---|---|---|---|---|
+| C1 | **O1.** The in-combat order of `combatSpells` | Compare the live rows' order during R7 with the result card | Note whether the live order is sorted by damage or by first use. Either passes: the header already reads *Live order* | Which order it is |
+| C2 | **O2.** `C_Spell.GetSpellTexture` and `GetSpellName` accept a secret spell ID | R7's live rows | Every live row has an icon and a name. If icons are missing, the fallback is rows without icons (*Show spell icons* off) | A screenshot, and the debug trace |
+| C3 | The live source table carries `amountPerSecond` | R7's *DPS · LIVE* figure | A number shows. An em dash all race long means the field is absent; live DPS then stays a dash | Whether it was ever a number |
+| C4 | On the opening frame, the player is already in combat, or `PLAYER_REGEN_DISABLED` shares the `GetTime()` of the new-session event | R6 | The clock starts on the first hit every time, with either opener | The opener that did not start the clock, and the `Race` debug lines |
+| C5 | Damage-meter session IDs only increase within a client session | `/dr diagnostics` on each of three consecutive result cards | The race line's `session=` grows each time | The three numbers |
+| C6 | `GetTime()` survives a `/reload` | X1 | The countdown continues from where it was | The countdown before and after |
+| C7 | **O4.** A session read after a `/reload` in combat | X2 | The run reads after the reload. The fallback is *Lost*, and the HUD says so | X2's outcome |
+| C8 | **O5.** Sessions survive a logout | X6 | Record which way it went; the spec assumes not | X6's outcome |
+| C9 | **O3.** The restart flag | X5 | *Restarted* is raised. If never, the flag stays quietly unused: nothing else depends on it | X5's outcome |
+
+### Casts and late-cast judging
+
+Use a 0:30 race and grace 1.0 s. A late cast shows as a chip on the card and as a red tick on the
+detail's timing strip.
+
+| ID | Assumption | How to check | Pass when | If it fails, report |
+|---|---|---|---|---|
+| C10 | The player's own `UNIT_SPELLCAST_*` spell IDs (and castGUIDs) are plain in combat | Cast one spell 2 s after the buzzer | The chip's tooltip and the detail's flags box name the spell (*+2.0s Incinerate*). Without names, judging still works by time | Whether the name showed |
+| C11 | A cast started before the buzzer and finished after it is not late | Start a 2.5 s cast at 0:01 left | No late-cast flag | The flags on the card |
+| C12 | **O6.** `UNIT_SPELLCAST_START` gives a usable start for every cast type, empowered included | On an Evoker, start an empowered spell before the buzzer and release it after; then start one 2 s after | First: no flag. Second: one flag. The fallback is judging empowered spells at `SUCCEEDED` | Both outcomes |
+| C13 | A channel fires `UNIT_SPELLCAST_SUCCEEDED` at its start | Start a channel 2 s after the buzzer | Exactly one late cast, not two | The count |
+| C14 | `UNIT_SPELLCAST_INTERRUPTED` fires only for the cast in flight | Start a cast before the buzzer, interrupt it by moving, then press an instant 2 s after the buzzer | The instant is flagged late | The flags |
+| C15 | `C_Spell.IsAutoRepeatSpell(75)` reports Auto Shot repeating | On a Hunter, leave Auto Shot running past the buzzer | No late-cast flag from Auto Shot | The flags |
+
+### Target, formatting and sound
+
+| ID | Assumption | How to check | Pass when | If it fails, report |
+|---|---|---|---|---|
+| C16 | Whether the target's name, level, classification and GUID are secret at combat start *(probe)* | In combat on a dummy: `/run local t="target" print(issecretvalue(UnitName(t)), issecretvalue(UnitLevel(t)), issecretvalue(UnitClassification(t)), issecretvalue(UnitGUID(t)))` | Either answer passes (sealed fields keep the arm-time value). The detail header shows the dummy's name | The four booleans |
+| C17 | **O7.** The Silvermoon cleave group's size | Count the Cleave Training Dummies in one group | Record the number; `defaults/Dummies.lua` ships 1 until then | The count |
+| C18 | The client's abbreviated formatter accepts the K/M/B ladder and renders 2763000 as *2.76M* | Damage figures on the HUD and card | Numbers read like *2.76M*, *413.2K*. If not, the debug console has a `Format` line and the Lua fallback is in use | The `Format` debug line |
+| C19 | Which compat rungs this client has *(probe)* | `/run print(type(SendChatMessage), type(C_StringUtil and C_StringUtil.CreateAbbreviatedNumberFormatter), type(C_StringUtil and C_StringUtil.CreateNumericRuleFormatter))` | Record the three answers. A rung reported `nil` here on the release client is a dead-rung candidate (docs/compat-layer.md) | The three answers |
+| C20 | `SOUNDKIT.UI_BATTLEGROUND_COUNTDOWN_TIMER` exists | R8 | The cue is the battleground countdown tick | Whether any sound played |
+| C21 | `RaidNotice_AddMessage` shows *STOP* | R9 | *STOP* appears in the raid-warning area with the warning sound | A screenshot |
+| C22 | A frame's `OnHide` on Alt-Z or a cinematic is not the player closing it | H4 and W12; also watch a short cinematic with a result card up | The card survives | Which case dismissed it |
+
+### Share
+
+| ID | Assumption | How to check | Pass when | If it fails, report |
+|---|---|---|---|---|
+| C23 | The `MenuUtil` channel menu builds and grays channels | T1 | The menu opens with the right entries grayed | A screenshot |
+| C24 | `C_ChatInfo.SendChatMessage` to *Say* from a menu click works outside an instance | T2 | The line posts | Any error, and the debug `Share` line |
+| C25 | The whisper popup's edit box is reachable (`GetEditBox`, else `editBox`) | T3 | The box is prefilled and the whisper sends | Whether the box was empty |
+| C26 | `InChatMessagingLockdown` is honored | T4 | Share is refused in lockdown | What happened instead |
