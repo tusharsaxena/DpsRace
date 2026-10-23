@@ -93,4 +93,6 @@ change (testing-§5). A declared skip is listed with its reason and counted in n
 ## In game
 
 Behavior a headless run cannot reach (rendering, the real meter, taint) is covered by
-[`smoke-tests.md`](smoke-tests.md), run by the owner before release.
+[`smoke-tests.md`](smoke-tests.md), run by the owner before release as one end-of-run checklist.
+Its section 9 lists every client assumption the build rests on, each with a pass criterion and what
+to report when it fails; a failure becomes a GitHub issue named with the row's ID.

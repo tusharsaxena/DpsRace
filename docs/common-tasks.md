@@ -1,8 +1,51 @@
 # Common tasks
 
 Recipes for the changes made most often in Ka0s DPS Race. Every change ends on the green gate:
-`lua tests/run.lua` and `luacheck .` from the repo root ([testing.md](testing.md)). T10 adds the
-feature recipes (a dummy, a flag, a HUD state) once their files exist.
+`lua tests/run.lua` and `luacheck .` from the repo root ([testing.md](testing.md)).
+
+## Add a training dummy to the catalog
+
+- Measure it first: target it in game and run `/dr target`, which prints its name, creature ID and
+  current category. The catalog takes measured entries only (spec §4.6).
+- Add `[npcID] = { name = "…", category = "…", count = N },` to `defaults/Dummies.lua` with a
+  comment giving the date and place it was measured. `category` is one of `Dummies.CATEGORIES`
+  (`single`, `cleave`, `dungeoneer`, `boss`, `pvp`, `other`); bests group by category, never by ID.
+- Update the catalog table in the spec (§4.6). `test_dummies` checks every entry's shape.
+
+## Add a flag
+
+- Set it on the run in `modules/Race.lua`, where the event that raises it is handled
+  (`run.flags.<key>`). Keep the value plain (a number, a boolean or a list of plain tables): it is
+  stored as is.
+- Emit it from `Scoring.Flags` (`modules/Scoring.lua`) at its place in the display order, with a
+  locale key for its full text. A flag emitted there drops the run off the *Clean runs only* board
+  automatically (`Bests.Compute`).
+- Give it a short label in each of the three places that draw flags: the HUD's result chips
+  (`FLAG_CHIP` in `modules/Hud_States.lua`), the Bests board's chip words (`SHORT` in
+  `modules/Results_Table.lua`), and the detail's explanation line (`EXPLAIN` in
+  `modules/Results_Detail.lua`). Add the `enUS` keys.
+- Add the field to spec §7 and §5.4 and to [schema.md](schema.md#the-run-record); extend the
+  order case in `test_scoring` and a case in the suite of the module that raises it.
+
+## Add a HUD body
+
+- Write `Builders.<key>(parent)` in `modules/Hud_States.lua` (a `newBody`, its widgets laid out
+  from config, never from a geometry read) and its `:Update(v)` for the view `modules/Hud.lua`
+  hands it. If its fixed stack is taller than idle's, `MinContentHeight` must include it, and the HUD's
+  minimum height follows.
+- Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
+  stop and waiting split), and give `modules/Preview.lua`'s script a step for it.
+- A live value may only reach a widget setter, `NS.Format.Number` or `C_Spell`, and may only be
+  tested against `nil` (the taint notes in [ARCHITECTURE.md](ARCHITECTURE.md#taint-notes)).
+  `test_hud`'s secret-render cases and its geometry-read recorder check it.
+
+## Add a compat shim
+
+- Add `function Compat.X(…)` to `core/Compat.lua`, probing the client API by presence and reading
+  it at call time; give `core/Compat.lua`'s `.luacheckrc` block the new global and no other file.
+- A `LibKa0s-Compat-1.0` member is routed instead, as `Compat.X = CompatLib and CompatLib.X or
+  stub`, from the same file.
+- Update the shim table in [compat-layer.md](compat-layer.md) (its count is the trigger's).
 
 ## Add a setting
 

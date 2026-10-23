@@ -24,7 +24,7 @@ row's `default` reads from it.
 |---|---|---|---|
 | `enabled` | `true` | *Enable Ka0s DPS Race* | Takes or releases the latch's `disabled` hold |
 | `visibility` | `"always"` | *General visibility* | `always`, `inCombat`, `outOfCombat` or `never` |
-| `scale` | `1.0` | *Master scale* | The HUD window's scale (`modules/Hud.lua`): the HUD is the addon's positionable display |
+| `scale` | `1.0` | *Master scale* | The scale of both windows: the HUD (`modules/Hud.lua`) and the Results window (`modules/Results.lua`) |
 | `locked` | `false` | *Lock frame* | The HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | `race.grace` | `1.0` | *Late-cast grace (s)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
 | `race.restartGap` | `6` | *Damage-restart gap (s)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
@@ -75,11 +75,24 @@ Adding a step: [common-tasks.md](common-tasks.md#add-a-saved-variables-migration
 
 ## The run record
 
-Format 1, exactly as spec §7 lays it out (`id`, `schema`, `status`, `addon`, `build`, `date`,
-`race`, `char`, `target`, `where`, `result`, `flags`, `spells`, `note`). `status` is one of
-`armed` (never stored), `running`, `stopping`, `complete`, `incomplete` or `lost`. The grace and
-restart gap in force are copied onto each run, so a settings change never re-grades an old one.
-Spell names and icons are resolved for display and never stored. About 1 to 1.5 KB per run.
+Format 1, exactly as spec §7 lays it out: `id`, `schema`, `status`, `addon`, `build`, `date`,
+`race`, `char`, `target`, `where`, `result`, `flags`, `spells`, `note`. `status` is one of
+`armed` (never stored), `running`, `stopping`, `complete`, `incomplete` or `lost`. Every value is
+plain: each client value went through `NS.Secrets`, and a sealed one is absent.
+
+| Part | Fields | Written by |
+|---|---|---|
+| top | `id` (`time()-NNNN`), `schema`, `status`, `addon`, `build`, `date` (arm, restamped at the start) | `Recorder.NewRun`; `Race` |
+| `race` | `length`, `grace`, `restartGap` (frozen at arm), `startSource`, `startedAt` (`GetTime()` at the start), `sessionID`, `armMaxSession` (the highest session ID at arm), `lastDamage` (s after the start of the last damage update) | `Recorder.NewRun`; `Race` at arm, start, capture and each update |
+| `char`, `where` | the player and place snapshots | `Recorder.NewRun` (at arm) |
+| `target` | `npcID`, `name`, `category`, `count`, `level`, `classification` | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
+| `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
+| `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList` | `Race` |
+| `spells` | `{ id, dmg, dps }`, highest first | `Race`, from `Meter.ReadSession` |
+| `note` | trimmed, control characters as spaces, `\|` as `/`, at most 200 UTF-8 characters (`ResultsDetail.ClampNote`) | `Recorder.SetNote` |
+
+The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
+old one. Spell names and icons are resolved for display and never stored. About 1 to 1.5 KB per run.
 
 A change to the record's shape raises `global.schema` and adds a migration step that rewrites stored
 runs; a reader that meets a run with a higher `schema` than it knows leaves it alone.
@@ -91,7 +104,7 @@ and a closed list of writers.
 
 | Storage key | Owner | Writers |
 |---|---|---|
-| `global.runs` | `modules/Recorder.lua` | `Recorder.Save`, `Recorder.Delete`, `Recorder.DeleteAll` (the History page's *Delete all runs…*, T9), `Recorder.Prune` (T6); a run's `note` through `Recorder.Save` from the Results detail pane (T8) |
+| `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Delete all runs…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |

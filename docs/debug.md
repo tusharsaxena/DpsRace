@@ -29,10 +29,17 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Cfg` | the options panel's combat lock |
 | `Perf` | the performance harness |
 | `Diag` | the diagnostics report |
+| `Race` | `modules/Race.lua`: each combat-start edge with the state it met, and why a run was lost |
+| `Meter` | `modules/Meter.lua`: a `C_DamageMeter` call that raised, with the error |
+| `Recorder` | `modules/Recorder.lua`: a snapshot call that raised, and each prune's count |
+| `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |
+| `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
+| `Results` | `modules/Results.lua`: the window and each tab built |
+| `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
+| `Test` | `modules/Preview.lua`: test mode on, and off with the reason |
 
 The library writes the latch's stand-down and stand-up edges with their holds, and the launcher's
-registration lines, through the same sink. The engine and windows add their own tags with their
-tasks (`Race`, `Meter`, `Hud` and so on).
+registration lines, through the same sink.
 
 ## The diagnostics report
 

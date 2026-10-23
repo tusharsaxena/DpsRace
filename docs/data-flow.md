@@ -36,7 +36,7 @@ dropped, and each feature module's `Suspend` runs. Releasing the last hold runs 
 rebuilds from current state rather than from a snapshot. While down, every verb still answers; a
 feature handler prints the one refusal line `NS.StoodDownRefusal()` picks (slash-commands-§7).
 
-## Combat edges (scaffold)
+## Combat edges (the addon object)
 
 `PLAYER_REGEN_DISABLED` → `NS:OnCombatChanged` → test mode ends (and says so once) → the HUD
 re-decides whether it can show. `PLAYER_REGEN_ENABLED` is registered only when *General visibility*

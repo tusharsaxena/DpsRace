@@ -21,10 +21,20 @@ console, options toolkit, slash dispatcher, launcher, performance harness, stand
 pool, message bus, settings schema) come from the vendored `LibKa0s` v1.76.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
-**Where the build stands.** The scaffold (T1), the engine (T2 to T6), the Race HUD (T7,
-`modules/Hud*.lua` with `modules/Format.lua`), the Results window (T8, `modules/Results*.lua`) and
-the settings pages, feature verbs, Share, test mode and the Arm / cancel key (T9) are in the tree.
-What is left is the release record (T10) and the whole-branch review (T11).
+**What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
+
+- **The engine** decides. `modules/Meter.lua` reads `C_DamageMeter`; `modules/Timeline.lua` and
+  `modules/Scoring.lua` are pure timing and scoring; `modules/Race.lua` is the state machine
+  (idle, armed, running, stopping, result) driven by `modules/Watchers.lua`'s events and
+  `GetTime()`; `modules/Recorder.lua` snapshots and stores runs; `modules/Bests.lua` works out
+  personal bests and protects them from pruning.
+- **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`), the
+  Results window (`modules/Results*.lua`), the chat share (`modules/Share.lua`) and test mode
+  (`modules/Preview.lua`). None of them decides anything from a meter value.
+- **The shell** configures and reaches. The settings pages, the slash verbs, the launcher and three
+  key bindings, the stand-down latch, the perf harness and the diagnostics report.
+
+The design and every rule's reason are in the spec; [scope.md](scope.md) says what is in and out.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -78,8 +88,8 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide; `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
-| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
-| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `settings/History.lua`: repaints the stored count |
+| `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
+| `RUNS_CHANGED` | `modules/Recorder.lua` | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `settings/History.lua`: repaints the stored count |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
@@ -119,6 +129,12 @@ in `settings/Slash.lua`, in its declared order:
 The eight feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
 disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
 The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
+
+The launcher (`core/LauncherSetup.lua`) and the three key bindings (`Bindings.xml`: *Toggle race
+HUD*, *Toggle results window*, *Arm / cancel race*) call the same handlers as the verbs, in
+`core/DpsRace.lua`. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
+(launcher-§2: Enabled, Locked, Test mode, Show window), so the Results window is reached from the
+HUD's title bar, `/dr results` or its key (spec §6.4).
 
 ## Event Subscriptions
 
@@ -203,8 +219,19 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   on) at every login; they are view state, not settings.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
   secret values. This is a client limit, not a gap to close.
-- **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and closes
-  in the owner's smoke-test pass ([smoke-tests.md](smoke-tests.md)).
+- **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and the
+  client assumptions C1 to C26, and closes in the owner's smoke-test pass
+  ([smoke-tests.md](smoke-tests.md), section 9). Live DPS, for one, is the source table's own
+  `amountPerSecond`; a client without that field shows a dash for the whole race (C3).
+- **With both the castGUID and the spell ID sealed, an instant pressed while another cast is in
+  flight** (and no interrupt was heard) is taken as that cast finishing, and is not judged. Casting
+  normally interrupts the cast in flight, so this is rare (`Race.OnCast`).
+- **A `/reload` loses the run's in-memory timeline.** The tail and the restart check resume from
+  `race.lastDamage`, the last update heard before the reload; a restart already heard is already on
+  the run. A running run resumed out of combat before its buzzer takes the resume time as its end,
+  an upper bound, because the real combat edge was missed.
+- **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper
+  sets it per run in the meantime.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 
@@ -236,7 +263,7 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |
-| `compat-layer.md` | Present | `core/Compat.lua` publishes three hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`); the trigger is three or more |
+| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes three hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |
@@ -246,11 +273,11 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | Doc | Covers |
 |---|---|
 | `testing.md` | How to run the harness and lint; the green commit gate; the suite checkpoints |
-| `smoke-tests.md` | The in-game smoke-test suite (scaffold checks now; completed in T10) |
+| `smoke-tests.md` | The owner's end-of-run in-game checklist: every HUD state, reload, restart, Results, settings, slash, launcher, bindings, test mode, and every client assumption with its pass criterion |
 | `test-cases.md` | The generated case inventory (authoritative pass count) |
 | `performance.md` | The addon performance page |
 | `automated-tests/README.md` | What the automated-test record is and how to produce it |
-| `automated-tests/RESULTS.md` | One row per run; generated by the runner, never hand-edited apart from the watch list's `Disposition` column (automated-tests-§4). Written by the first runner bundle (T10, before the v0.1.0 tag) |
+| `automated-tests/RESULTS.md` | One row per run; generated by the runner, never hand-edited apart from the watch list's `Disposition` column (automated-tests-§4). Written by the first runner bundle, before the v0.1.0 tag |
 
 ### Addon-specific (documentation-§3, Tier 3)
 
@@ -266,4 +293,5 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today.
+Nothing is over the cap today. The largest authored file is `modules/Hud.lua` at 944 lines; no
+file is in the 1000–1500 on-notice band either (layout-§1).

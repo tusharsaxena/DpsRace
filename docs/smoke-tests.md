@@ -126,17 +126,17 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| T1 | *SHARE* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
-| T2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · character · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
-| T3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
-| T4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |
-| T5 | `/dr test` | Armed, Running, Stop!, Waiting and Result play on the HUD with the amber strip under the title (*Test mode: sample numbers. Combat or Arm ends it*); it holds on the result card. The sample spells show real icons and names (re-check the Preview spell IDs on this patch) | Any spell shown as *Unknown spell* or a question-mark icon |
-| T6 | While test mode plays, drag and resize the HUD to its minimum (260×316) | The strip glyph and its text still fit; nothing overlaps | A screenshot |
-| T7 | Enter combat during test mode | It ends with one line | |
-| T8 | Start test mode, then arm a real race | Test mode ends with one line and the HUD shows the real race | |
-| T9 | Leave a real result card up, start `/dr test` over it, and close the HUD | Closing ends test mode only; the real run is unaffected | The real run's state after |
-| T10 | Try `/dr test` while a real race is armed | Refused with one line | |
-| T11 | `/dr test` writes nothing | The Results count is the same after a full script | |
+| P1 | *SHARE* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
+| P2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · character · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
+| P3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
+| P4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |
+| P5 | `/dr test` | Armed, Running, Stop!, Waiting and Result play on the HUD with the amber strip under the title (*Test mode: sample numbers. Combat or Arm ends it*); it holds on the result card. The sample spells show real icons and names (re-check the Preview spell IDs on this patch) | Any spell shown as *Unknown spell* or a question-mark icon |
+| P6 | While test mode plays, drag and resize the HUD to its minimum (260×316) | The strip glyph and its text still fit; nothing overlaps | A screenshot |
+| P7 | Enter combat during test mode | It ends with one line | |
+| P8 | Start test mode, then arm a real race | Test mode ends with one line and the HUD shows the real race | |
+| P9 | Leave a real result card up, start `/dr test` over it, and close the HUD | Closing ends test mode only; the real run is unaffected | The real run's state after |
+| P10 | Try `/dr test` while a real race is armed | Refused with one line | |
+| P11 | `/dr test` writes nothing | The Results count is the same after a full script | |
 
 ## 8. HUD sizing, disabled state, debug and performance
 
@@ -203,7 +203,7 @@ detail's timing strip.
 
 | ID | Assumption | How to check | Pass when | If it fails, report |
 |---|---|---|---|---|
-| C23 | The `MenuUtil` channel menu builds and grays channels | T1 | The menu opens with the right entries grayed | A screenshot |
-| C24 | `C_ChatInfo.SendChatMessage` to *Say* from a menu click works outside an instance | T2 | The line posts | Any error, and the debug `Share` line |
-| C25 | The whisper popup's edit box is reachable (`GetEditBox`, else `editBox`) | T3 | The box is prefilled and the whisper sends | Whether the box was empty |
-| C26 | `InChatMessagingLockdown` is honored | T4 | Share is refused in lockdown | What happened instead |
+| C23 | The `MenuUtil` channel menu builds and grays channels | P1 | The menu opens with the right entries grayed | A screenshot |
+| C24 | `C_ChatInfo.SendChatMessage` to *Say* from a menu click works outside an instance | P2 | The line posts | Any error, and the debug `Share` line |
+| C25 | The whisper popup's edit box is reachable (`GetEditBox`, else `editBox`) | P3 | The box is prefilled and the whisper sends | Whether the box was empty |
+| C26 | `InChatMessagingLockdown` is honored | P4 | Share is refused in lockdown | What happened instead |
