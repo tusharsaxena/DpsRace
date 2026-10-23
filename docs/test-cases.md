@@ -125,7 +125,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (35)
+### test_race.lua (38)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -136,6 +136,9 @@ Total.
 - race: the target is re-read at combat start and the arm-time count is kept
 - race: sessionID captured from first DamageDone update with non-zero id
 - race: a DamageDone update heard just before the session event is adopted at the start
+- race: a session event heard out of combat does not start the clock
+- race: a session event with the regen edge on an earlier frame does not start the clock
+- race: a buzzer heard out of combat with the regen edge missed is still read
 - race: buzzer at start+length moves to stopping and emits RACE_BUZZER
 - race: cast started 0.5s after buzzer is not late at grace 1.0
 - race: cast started 1.4s after buzzer is recorded as late with spellID
@@ -163,7 +166,7 @@ Total.
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
 
-### test_race_resume.lua (8)
+### test_race_resume.lua (10)
 
 - resume: running past buzzer becomes stopping+reloaded
 - resume: running before buzzer keeps running with remaining time
@@ -173,6 +176,8 @@ Total.
 - resume: session gone becomes lost
 - resume: an older unresolved run is settled as lost; the newest is carried on
 - resume: nothing stored leaves the race idle and touches nothing
+- resume: running before the buzzer with combat already over is incomplete and read at once
+- resume: a stand-down mid-run whose combat ends unseen never hangs in stopping
 
 ### test_schema.lua (14)
 
@@ -347,8 +352,8 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 18 |
-| test_race.lua | 35 |
-| test_race_resume.lua | 8 |
+| test_race.lua | 38 |
+| test_race_resume.lua | 10 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -363,4 +368,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **257** |
+| **Total** | **262** |

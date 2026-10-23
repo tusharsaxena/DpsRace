@@ -36,7 +36,8 @@ Race.MIN_LENGTH, Race.MAX_LENGTH = 10, 900
 
 local state = STATE.IDLE
 -- The race in progress. Fields: run, armSet (session IDs present at arm), stash (a session ID heard
--- while armed), startedAt, buzzerAt, combatEndedAt (the regen edge), quietFrom (when the quiet before
+-- while armed), combatAt / sessionAt (the regen edge and the session event while armed, paired on one
+-- frame to start the clock), startedAt, buzzerAt, combatEndedAt (the regen edge), quietFrom (when the quiet before
 -- the read starts counting), timeline, open (spell -> start time of a cast in flight), buzzer, ticker,
 -- sealedTries, reread.
 local cur = {}
@@ -188,12 +189,21 @@ local function checkReady(t)
     read()
 end
 
+--- One readiness poll. A combat end whose regen edge was never heard (it dropped while the addon was
+--- stood down, or during a /reload's loading screen) is noticed here, so no run waits forever for an
+--- edge that already went: out of combat with no quiet counting yet, the quiet counts from now.
+local function poll()
+    if isDown() then return end
+    local t = GetTime()
+    if state == STATE.STOPPING and not cur.quietFrom and not UnitAffectingCombat("player") then
+        cur.quietFrom = t
+    end
+    checkReady(t)
+end
+
 local function startPolling()
     if cur.ticker then return end
-    cur.ticker = C_Timer.NewTicker(Race.POLL_INTERVAL, function()
-        if isDown() then return end
-        checkReady(GetTime())
-    end)
+    cur.ticker = C_Timer.NewTicker(Race.POLL_INTERVAL, poll)
 end
 
 -- ── the buzzer ──────────────────────────────────────────────────────────────────────────────────
@@ -269,9 +279,8 @@ local function adopt(id)
     NS.Recorder.Save(cur.run)
 end
 
---- The clock starts: the first new meter session after arming (spec §4.2).
-function Race.OnSessionCreated(t)
-    if isDown() or state ~= STATE.ARMED then return end
+-- The clock starts at `t`.
+local function begin(t)
     local run = cur.run
     run.status = "running"
     run.date = time()
@@ -284,6 +293,15 @@ function Race.OnSessionCreated(t)
     NS.Recorder.Save(run)
     armBuzzer(run.race.length)
     setState(STATE.RUNNING)
+end
+
+--- The clock starts: the first new meter session after arming, together with the regen edge on the
+--- same frame (spec §4.2). A session event heard out of combat (a trailing update from the last fight,
+--- a groupmate's pull) is not a start; it is held for the frame, in case the edge follows it.
+function Race.OnSessionCreated(t)
+    if isDown() or state ~= STATE.ARMED then return end
+    if UnitAffectingCombat("player") or cur.combatAt == t then return begin(t) end
+    cur.sessionAt = t
 end
 
 -- The armed count survives the combat-start re-read when it is the same creature; another target
@@ -302,7 +320,12 @@ end
 function Race.OnCombatStart(t)
     if isDown() then return end
     if (state == STATE.ARMED or state == STATE.RUNNING) and not cur.reread then rereadTarget() end
-    if state == STATE.STOPPING then cur.combatEndedAt, cur.quietFrom = nil, nil end
+    if state == STATE.ARMED then
+        cur.combatAt = t
+        if cur.sessionAt == t then begin(t) end
+    elseif state == STATE.STOPPING then
+        cur.combatEndedAt, cur.quietFrom = nil, nil
+    end
     debug("combat start at %.2f in %s", t or 0, state)
 end
 
@@ -412,15 +435,23 @@ local function startOf(run, now)
     return now - math.max(0, time() - (run.date or time()))
 end
 
+-- A run stored as running: still racing (true), or now waiting for its read (false). Before the
+-- buzzer and out of combat, combat ended while nothing listened: the run is incomplete, ended no later
+-- than now (the edge's real time is unknowable). Past the buzzer, casts after it went unseen.
 local function resumeRunning(run, now)
-    local left = run.race.length - (now - cur.startedAt)
-    if left > 0 then
+    local elapsed = now - cur.startedAt
+    local left = run.race.length - elapsed
+    if left > 0 and UnitAffectingCombat("player") then
         setState(STATE.RUNNING)
         armBuzzer(left)
         return true
     end
+    if left > 0 then
+        run.result = { endedAt = round2(elapsed) }
+    else
+        run.flags.reloaded = true
+    end
     run.status = "stopping"
-    run.flags.reloaded = true
     NS.Recorder.Save(run)
     return false
 end

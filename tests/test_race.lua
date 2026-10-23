@@ -124,6 +124,7 @@ test("race: session created starts the clock and persists the run as running", f
 
     f:advance(42)                 -- a long wait at the dummy: arming is cheap
     assertEqual(f.Race.State(), "armed")
+    f.M.__inCombat = true
     f.Race.OnSessionCreated(f:now())
     assertEqual(f.Race.State(), "running")
     assertTrue(f:stored(run.id) == run, "the run is stored the moment the clock starts")
@@ -193,6 +194,38 @@ test("race: a DamageDone update heard just before the session event is adopted a
     f.Race.OnMeterUpdate(0, 25, 100)
     f.Race.OnSessionCreated(100)
     assertEqual(f.Race.Current().race.sessionID, 25)
+end)
+
+test("race: a session event heard out of combat does not start the clock", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.Race.OnSessionCreated(100)               -- a trailing update from the last fight, or a groupmate
+    assertEqual(f.Race.State(), "armed", "stays armed: no regen edge and not in combat")
+    f:advance(5)
+    -- The real pull: the regen edge and the session event on one frame, in either order.
+    f.M.__inCombat = false
+    f.Race.OnSessionCreated(105)
+    f.Race.OnCombatStart(105)
+    assertEqual(f.Race.State(), "running", "the edge on the same frame starts it")
+    near(f.Race.Elapsed(), 0)
+end)
+
+test("race: a session event with the regen edge on an earlier frame does not start the clock", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.Race.OnCombatStart(100)
+    f.Race.OnSessionCreated(101)
+    assertEqual(f.Race.State(), "armed")
+end)
+
+test("race: a buzzer heard out of combat with the regen edge missed is still read", function()
+    local f, run = running(30)
+    f.M.__inCombat = false                     -- combat dropped, its edge never heard
+    f.meter.SetSecret(false)
+    f:to(140)
+    assertEqual(f.Race.State(), "result", "the poll notices combat is over")
+    assertTrue(run.status == "complete" or run.status == "incomplete", run.status)
+    assertEqual(f.clock.live(), 0)
 end)
 
 -- ── the buzzer ──────────────────────────────────────────────────────────────────────────────────
