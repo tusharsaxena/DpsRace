@@ -125,7 +125,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (38)
+### test_race.lua (44)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -144,6 +144,12 @@ Total.
 - race: cast started 1.4s after buzzer is recorded as late with spellID
 - race: cast that started before buzzer and succeeded after is not late
 - race: the grace in force is the run's own, not the profile's
+- race: an interrupted cast leaves nothing open; a later instant of the same spell is late
+- race: a cast matches its own success by castGUID, not by spell
+- race: secret spell IDs and castGUIDs are judged without ever being stored
+- race: auto-repeat successes after the buzzer are never late casts
+- race: a sealed meter type or session ID moves nothing and stores nothing
+- race: Watchers hands Race the castGUID and the interrupt
 - race: combat end before buzzer -> incomplete with endedAt
 - race: death -> incomplete, died flag
 - race: death after the buzzer flags died and the run stays complete
@@ -352,7 +358,7 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 18 |
-| test_race.lua | 38 |
+| test_race.lua | 44 |
 | test_race_resume.lua | 10 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
@@ -368,4 +374,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **262** |
+| **Total** | **268** |

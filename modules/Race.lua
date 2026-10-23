@@ -38,7 +38,8 @@ local state = STATE.IDLE
 -- The race in progress. Fields: run, armSet (session IDs present at arm), stash (a session ID heard
 -- while armed), combatAt / sessionAt (the regen edge and the session event while armed, paired on one
 -- frame to start the clock), startedAt, buzzerAt, combatEndedAt (the regen edge), quietFrom (when the quiet before
--- the read starts counting), timeline, open (spell -> start time of a cast in flight), buzzer, ticker,
+-- the read starts counting), timeline, inFlight (the cast begun and not yet finished: its plain spell
+-- ID and castGUID, either nil when sealed), buzzer, ticker,
 -- sealedTries, reread.
 local cur = {}
 
@@ -70,7 +71,7 @@ end
 
 local function newRace(run)
     cancelTimers()
-    cur = { run = run, armSet = {}, open = {}, timeline = NS.Timeline.New(), sealedTries = 0 }
+    cur = { run = run, armSet = {}, timeline = NS.Timeline.New(), sealedTries = 0 }
 end
 
 -- ── queries ─────────────────────────────────────────────────────────────────────────────────────
@@ -372,23 +373,57 @@ local function judge(spellID, t)
     list[#list + 1] = { t = round2(offset), spellID = spellID }
 end
 
---- A player cast: kind "start" | "channel" | "succeeded". A cast counts at its start; a success
---- with no start seen (an instant) counts at its own time, and one whose start was seen is that
---- same cast finishing, judged already. Starts are tracked from RUNNING, so a cast begun before the
---- buzzer and finished after it is never late.
-function Race.OnCast(kind, spellID, t)
+-- Spells whose success repeats on its own once started (Auto Shot, a wand's Shoot): never a press.
+Race.AUTO_REPEAT = { [75] = true, [5019] = true }
+
+-- Whether an auto-repeat spell is repeating now: what a success with a sealed spell ID is taken as.
+local function autoRepeating()
+    local api = C_Spell and C_Spell.IsAutoRepeatSpell
+    if type(api) ~= "function" then return false end
+    for id in pairs(Race.AUTO_REPEAT) do
+        local ok, on = pcall(api, id)
+        if ok and Secrets.PlainTruth(on) then return true end
+    end
+    return false
+end
+
+-- Whether a cast event is the cast in flight's own: by castGUID when both are readable, else by
+-- spell ID when both are, else assumed so (the player casts one spell at a time).
+local function isInFlight(guid, id)
+    local f = cur.inFlight
+    if not f then return false end
+    if f.guid and guid then return f.guid == guid end
+    if f.id and id then return f.id == id end
+    return true
+end
+
+local function onSucceeded(id, guid, t)
+    if isInFlight(guid, id) then
+        cur.inFlight = nil
+        return
+    end
+    if id and Race.AUTO_REPEAT[id] then return end
+    if not id and autoRepeating() then return end
+    judge(id, t)
+end
+
+--- A player cast: kind "start" | "channel" | "succeeded" | "interrupted" | "channelStop", with the
+--- event's spell ID and castGUID (either may be secret: each passes through NS.Secrets and only a
+--- plain copy is compared or stored). A cast counts at its start; a success with no start in flight
+--- (an instant) counts at its own time, and the in-flight cast's own success is that cast finishing,
+--- judged already. An interrupt clears the cast in flight, so a later instant of the same spell is
+--- judged; a channel's stop clears a channel. Starts are tracked from RUNNING, so a cast begun before
+--- the buzzer and finished after it is never late; an auto-repeat's success is never a press.
+function Race.OnCast(kind, spellID, t, castGUID)
     if isDown() or (state ~= STATE.RUNNING and state ~= STATE.STOPPING) then return end
-    local id = Secrets.PlainNumber(spellID)
-    local key = id or false
+    local id, guid = Secrets.PlainNumber(spellID), Secrets.PlainString(castGUID)
     if kind == "start" or kind == "channel" then
-        cur.open[key] = t
+        cur.inFlight = { id = id, guid = guid, channel = kind == "channel" }
         judge(id, t)
     elseif kind == "succeeded" then
-        if cur.open[key] then
-            cur.open[key] = nil
-        else
-            judge(id, t)
-        end
+        onSucceeded(id, guid, t)
+    elseif kind == "interrupted" or (kind == "channelStop" and cur.inFlight and cur.inFlight.channel) then
+        if isInFlight(guid, id) then cur.inFlight = nil end
     end
 end
 

@@ -6,7 +6,8 @@ local _, NS = ...
 -- WHAT IS REGISTERED, BY RACE STATE (spec §10: nothing runs while idle):
 --   idle, result      nothing
 --   armed             the meter's three events, the regen edges and PLAYER_DEAD
---   running, stopping the same, plus UNIT_SPELLCAST_START / _CHANNEL_START / _SUCCEEDED for `player`
+--   running, stopping the same, plus UNIT_SPELLCAST_START / _CHANNEL_START / _SUCCEEDED /
+--                     _INTERRUPTED / _CHANNEL_STOP for `player`
 -- Race calls Watchers.Sync() on every transition, so the set always follows the state. Every
 -- registration goes through the SafeRegister family (events-frames-taint-§1), so an event name a
 -- client does not know costs only itself and lands in NS.rejectedEvents.
@@ -16,7 +17,7 @@ local _, NS = ...
 -- set from the race's CURRENT state, never from a snapshot.
 --
 -- Event arguments are handed to Race untouched: a value that may be secret (the meter type, the
--- session ID, a spell ID) is only ever converted by Race through NS.Secrets.
+-- session ID, a spell ID, a castGUID) is only ever converted by Race through NS.Secrets.
 
 local Watchers = {}
 NS.Watchers = Watchers
@@ -34,11 +35,15 @@ local RACE_EVENTS = {
 }
 
 -- The player's casts, from RUNNING on (a start before the buzzer is what keeps its finish on time).
-local CAST_EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_SUCCEEDED" }
+-- An interrupt or a channel's stop closes the cast in flight, so a later cast is judged on its own.
+local CAST_EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_SUCCEEDED",
+                      "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
 local CAST_KIND = {
     UNIT_SPELLCAST_START         = "start",
     UNIT_SPELLCAST_CHANNEL_START = "channel",
     UNIT_SPELLCAST_SUCCEEDED     = "succeeded",
+    UNIT_SPELLCAST_INTERRUPTED   = "interrupted",
+    UNIT_SPELLCAST_CHANNEL_STOP  = "channelStop",
 }
 
 local frame
@@ -60,9 +65,9 @@ local HANDLERS = {
 
 -- UNIT_SPELLCAST_*(unit, castGUID, spellID). The registration already filters to `player`; the
 -- check here keeps a widened registration from scoring a party member's cast.
-local function onCast(event, t, unit, _, spellID)
+local function onCast(event, t, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    NS.Race.OnCast(CAST_KIND[event], spellID, t)
+    NS.Race.OnCast(CAST_KIND[event], spellID, t, castGUID)
 end
 
 local function onEvent(_, event, ...)

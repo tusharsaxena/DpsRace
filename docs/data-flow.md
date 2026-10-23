@@ -53,21 +53,28 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   the player, target and place, the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
   combat and death events.
-- **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming. The start time is
+- **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
+  combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
+  combat, such as a trailing update from the last fight, leaves the race armed). The start time is
   `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
   the run is written to SavedVariables as `running`. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
   the target (`Recorder.SnapshotTarget("target", armTimeTarget)`); that read is the one stored.
-  Watchers adds the player's three cast events.
+  Watchers adds the player's cast events (start, channel start, success, interrupt, channel stop).
 - **Running**: the HUD counts down (`Race.TimeLeft()`) and shows the live breakdown, read through
   `modules/Meter.lua` at the configured rate, with every value opaque. Every DamageDone update for
   the run's session is a stamp on its `Timeline`. Combat dropping or a death before the buzzer cancels
   the buzzer and records `result.endedAt` (seconds from the start): the run will be `incomplete`.
 - **Buzzer** at start + length: the run moves to `stopping` and `RACE_BUZZER(run)` is sent. A cast
   that starts (or an instant that succeeds) later than buzzer + grace is a late cast,
-  `{ t = offset, spellID }` on `flags.lateCasts`; a cast started before the buzzer is never late. A
-  0.5 s `C_Timer.NewTicker` polls for readiness, only in this state.
+  `{ t = offset, spellID }` on `flags.lateCasts` (`spellID` nil when the event's ID was secret); a
+  cast started before the buzzer is never late. One cast is tracked in flight, matched to its own
+  success by castGUID (else spell ID, else assumed) and cleared by its interrupt, so a stale start
+  never swallows a later instant. An auto-repeat success (Auto Shot, Shoot; with a sealed ID, any
+  success while one is repeating) is never a press. A 0.5 s `C_Timer.NewTicker` polls for
+  readiness, only in this state; a poll that finds the player out of combat with no regen edge heard
+  starts the quiet itself, so a missed edge never leaves a run waiting.
 - **Ready to read**: combat has ended **and** 2.5 s have passed since the later of the combat end and
   the last DamageDone update for the session (updates land up to 1.3 s after combat drops). The
   session is read by its ID through `Meter.ReadSession`, never as "current", into plain numbers. A
@@ -81,8 +88,9 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Cancel** before the result discards the run: an armed one was never stored, a running or
   stopping one is deleted from the store.
 - **Resume** (`OnEnable` and the stand-up): the newest stored `running` or `stopping` run is carried
-  on. Its session gone: `lost`. Running and before its buzzer: running, with the buzzer re-armed for
-  the time left. Running past it: `stopping` with `flags.reloaded`. Stopping and out of combat: read
+  on. Its session gone: `lost`. Running, before its buzzer and in combat: running, with the buzzer
+  re-armed for the time left. Running, before its buzzer and out of combat (combat dropped while
+  nothing listened): `incomplete`, `endedAt` = the time at the resume, read at once. Running past it: `stopping` with `flags.reloaded`. Stopping and out of combat: read
   at once; in combat: wait for the regen edge. An older unresolved run is settled as `lost`. The
   stand-down (disabled or a perf capture) drops the in-memory race and its timers and keeps the stored
   run, so the stand-up resumes it exactly like a `/reload`.

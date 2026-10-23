@@ -294,6 +294,109 @@ test("race: the grace in force is the run's own, not the profile's", function()
     assertEqual(#run.flags.lateCasts, 1, "the profile changed mid-run; the run keeps 1.0")
 end)
 
+test("race: an interrupted cast leaves nothing open; a later instant of the same spell is late", function()
+    local f, run = running(30)
+    f.Race.OnCast("start", 11366, 129.0, "Cast-A")        -- a Pyroblast hard-cast before the buzzer
+    f.Race.OnCast("interrupted", 11366, 129.6, "Cast-A")  -- moved: no success
+    f:to(130)
+    f.Race.OnCast("succeeded", 11366, 133.0, "Cast-B")    -- a Hot Streak instant, after the grace
+    assertEqual(#run.flags.lateCasts, 1)
+    near(run.flags.lateCasts[1].t, 3.0)
+    assertEqual(run.flags.lateCasts[1].spellID, 11366)
+end)
+
+test("race: a cast matches its own success by castGUID, not by spell", function()
+    local f, run = running(30)
+    f.Race.OnCast("start", 11366, 129.0, "Cast-A")        -- its interrupt event never heard
+    f:to(130)
+    f.Race.OnCast("succeeded", 11366, 133.0, "Cast-B")    -- another cast of the same spell
+    assertEqual(#run.flags.lateCasts, 1, "a different cast is judged on its own")
+    local g, run2 = running(30)
+    g.Race.OnCast("start", 116858, 128.5, "Cast-C")
+    g:to(130)
+    g.Race.OnCast("succeeded", 116858, 131.5, "Cast-C")
+    assertEqual(#run2.flags.lateCasts, 0, "the same cast finishing is never late")
+end)
+
+test("race: secret spell IDs and castGUIDs are judged without ever being stored", function()
+    local f, run = running(30)
+    -- An interrupted start with a sealed identity, then an instant: the instant is judged.
+    f.Race.OnCast("start", T.secret(116858), 129.5, T.secret("Cast-A"))
+    f.Race.OnCast("interrupted", T.secret(116858), 129.7, T.secret("Cast-A"))
+    f:to(130)
+    f.Race.OnCast("succeeded", T.secret(17962), 132.0, T.secret("Cast-B"))
+    assertEqual(#run.flags.lateCasts, 1, "the instant after the grace is late")
+    near(run.flags.lateCasts[1].t, 2.0)
+    assertNil(run.flags.lateCasts[1].spellID, "a sealed spell ID is never stored")
+    -- A sealed cast begun before the buzzer and finishing after it is never late.
+    local g, run2 = running(30)
+    g.Race.OnCast("start", T.secret(116858), 128.5, T.secret("Cast-C"))
+    g:to(130)
+    g.Race.OnCast("succeeded", T.secret(116858), 131.5, T.secret("Cast-C"))
+    assertEqual(#run2.flags.lateCasts, 0)
+    -- A late channel with a sealed ID counts at its start; its own success is the same cast.
+    g.Race.OnCast("channel", T.secret(5740), 132.0, T.secret("Cast-D"))
+    g.Race.OnCast("succeeded", T.secret(5740), 132.0, T.secret("Cast-D"))
+    assertEqual(#run2.flags.lateCasts, 1)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(run.status, "complete")
+    assertNil(F.findSecret(run), "a secret reached the stored run at " .. tostring(F.findSecret(run)))
+end)
+
+test("race: auto-repeat successes after the buzzer are never late casts", function()
+    local f, run = stopping()
+    f.Race.OnCast("succeeded", 75, 131.6)                 -- Auto Shot keeps firing on its own
+    f.Race.OnCast("succeeded", 75, 134.1)
+    assertEqual(#run.flags.lateCasts, 0)
+    -- Sealed IDs: an auto-repeat spell active means the success is the auto-repeat's.
+    f.M.C_Spell = f.M.C_Spell or {}
+    local active = true
+    f.M.C_Spell.IsAutoRepeatSpell = function(id) return active and id == 75 end
+    f.Race.OnCast("succeeded", T.secret(75), 136.6)
+    assertEqual(#run.flags.lateCasts, 0, "auto-repeat on: a sealed success is not a press")
+    active = false
+    f.Race.OnCast("succeeded", T.secret(34026), 137.0)
+    assertEqual(#run.flags.lateCasts, 1, "auto-repeat off: a sealed instant is judged")
+end)
+
+test("race: a sealed meter type or session ID moves nothing and stores nothing", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.meter.SetSession(25, F.SESSION)
+    f.Race.OnCombatStart(100)
+    f.Race.OnSessionCreated(100)
+    f.Race.OnMeterUpdate(T.secret(0), 25, 100)
+    assertNil(run.race.sessionID, "a sealed meter type is not DamageDone")
+    f.Race.OnMeterUpdate(T.secret(0), T.secret(25), 100)
+    assertNil(run.race.sessionID)
+    f.Race.OnMeterUpdate(0, 25, 100.5)
+    assertEqual(run.race.sessionID, 25)
+    f:to(130)
+    f:to(131)
+    f.Race.OnMeterUpdate(T.secret(0), 25, 131)            -- never a stamp: the tail stays at none
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(run.status, "complete")
+    assertEqual(run.result.tail, 0)
+    assertNil(F.findSecret(run), "a secret reached the stored run at " .. tostring(F.findSecret(run)))
+end)
+
+test("race: Watchers hands Race the castGUID and the interrupt", function()
+    local f, run = running(30)
+    f:to(129)
+    assertTrue(f.M.__fire("UNIT_SPELLCAST_START", "player", "Cast-A", 11366) >= 1, "START is registered")
+    f:to(129.6)
+    assertTrue(f.M.__fire("UNIT_SPELLCAST_INTERRUPTED", "player", "Cast-A", 11366) >= 1,
+        "INTERRUPTED is registered")
+    f:to(133)
+    f.M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-B", 11366)
+    assertEqual(#run.flags.lateCasts, 1)
+    near(run.flags.lateCasts[1].t, 3.0)
+end)
+
 -- ── incomplete runs ─────────────────────────────────────────────────────────────────────────────
 
 test("race: combat end before buzzer -> incomplete with endedAt", function()

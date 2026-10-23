@@ -381,7 +381,8 @@ test("Disabled (race): Watchers holds no registrations and Race does nothing whi
     -- Every event fired anyway, straight at the Watchers frame, and every input called directly.
     local events = { "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_COMBAT_SESSION_UPDATED",
                      "DAMAGE_METER_RESET", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_DEAD",
-                     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED" }
+                     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED",
+                     "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
     for _, event in ipairs(events) do
         assertEqual(M.__fireUnconditional(NS.Watchers.Frame(), event, "player", 25, 25), 1, event)
     end

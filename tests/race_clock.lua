@@ -187,6 +187,21 @@ return function(T)
         self.M.LibStub("AceAddon-3.0"):EnableAddon(self.NS)
     end
 
+    --- The path of the first secret anywhere in `v` (a key or a value, at any depth), or nil. What a
+    --- run must never carry into SavedVariables.
+    function F.findSecret(v, path, seen)
+        path, seen = path or "run", seen or {}
+        if T.isSecret(v) then return path end
+        if type(v) ~= "table" or seen[v] then return nil end
+        seen[v] = true
+        for k, sub in pairs(v) do
+            if T.isSecret(k) then return path .. "[<secret key>]" end
+            local hit = F.findSecret(sub, path .. "." .. tostring(k), seen)
+            if hit then return hit end
+        end
+        return nil
+    end
+
     --- A stored-shape run as a /reload leaves it (spec §7), for the resume cases.
     function F.storedRun(fields)
         local run = {

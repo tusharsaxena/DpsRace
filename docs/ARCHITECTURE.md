@@ -132,12 +132,12 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 
 | Event | Registered | Handler | Why |
 |---|---|---|---|
-| `DAMAGE_METER_CURRENT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnSessionCreated` | the clock starts on the new session (spec §4.2) |
+| `DAMAGE_METER_CURRENT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnSessionCreated` | the clock starts on the new session, in combat or with the regen edge on the same frame (spec §4.2) |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnMeterUpdate` | names the run's session; each update is a timeline stamp (tail, restart, quiet) |
 | `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
 | `PLAYER_DEAD` | ARMED, RUNNING, STOPPING | `Race.OnDeath` | the `died` flag; incomplete before the buzzer |
-| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_SUCCEEDED` (`player`) | RUNNING, STOPPING | `Race.OnCast` | late casts after the grace (spec §5.2) |
+| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_SUCCEEDED` / `_INTERRUPTED` / `_CHANNEL_STOP` (`player`) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an interrupt or a channel's stop closes the cast in flight |
 
 The pipeline from event to screen: [data-flow.md](data-flow.md).
 
