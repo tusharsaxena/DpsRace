@@ -81,6 +81,29 @@ Total.
 - recorder: DeleteAll empties the store and fires RUNS_CHANGED
 - recorder: the store is account-wide and survives a profile switch
 
+### test_timeline.lua (10)
+
+- timeline: tail from probe run 4 = 3.03
+- timeline: tail from probe run 6 = 8.49
+- timeline: restart detected after 10s quiet at gap 6
+- timeline: DoT ticks every 2s are not a restart
+- timeline: the quiet stretch starts at the buzzer when the last damage was before it
+- timeline: a gap of exactly the setting counts as a restart
+- timeline: no damage after the buzzer gives tail 0 and no restart
+- timeline: QuietFor with no damage is huge
+- timeline: an out-of-order or non-number update is handled
+- timeline: two timelines are independent
+
+### test_scoring.lua (7)
+
+- scoring: late cast boundaries
+- scoring: QUIET_BEFORE_READ is 2.5s
+- scoring: Dps complete = damage / length
+- scoring: Dps incomplete = damage / endedAt
+- scoring: Flags order and text
+- scoring: Flags names late-cast spells through an optional resolver
+- scoring: a clean complete run has no flags; lost stands alone at the end
+
 ### test_schema.lua (14)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -248,6 +271,8 @@ Total.
 | test_meter.lua | 17 |
 | test_dummies.lua | 5 |
 | test_recorder.lua | 19 |
+| test_timeline.lua | 10 |
+| test_scoring.lua | 7 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -262,4 +287,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **176** |
+| **Total** | **193** |

@@ -62,6 +62,8 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | `test_meter` | `modules/Meter.lua` on `tests/mock_meter.lua`: availability, the plain sorted after-combat read, `sealed`, `missing`, a raising client, the opaque live read under secrets, the session list, and the one-file rules for `C_DamageMeter` and the secret detectors |
 | `test_dummies` | `defaults/Dummies.lua`: the measured catalog rows, `Lookup` (known, unknown, a copy), the six categories and their labels |
 | `test_recorder` | `modules/Recorder.lua`: the player, target and place snapshots (a Creature GUID's npcID, a secret GUID, a sealed re-read filled from the arm-time snapshot), `NewRun` freezing grace and restart gap, unique ids, and the store's order, `Pending` filter and bus messages |
+| `test_timeline` | `modules/Timeline.lua` on the probe's measured timelines: the tail (runs 4 and 6), damage restarting after a quiet gap and not on 2s DoT ticks, the gap's start at the buzzer, `QuietFor`, out-of-order updates |
+| `test_scoring` | `modules/Scoring.lua`: late-cast boundaries (exactly the grace, before the buzzer, an instant), `Dps` for complete and incomplete runs, `QUIET_BEFORE_READ`, the flag order and text, the optional spell-name resolver |
 | `test_schema` | The schema's shape, the write seam, the Master controls rows, the minimap row, resets, test mode, migrations, the panel |
 | `test_slash` | The dispatcher: help, aliases, enable/disable, debug, perf, the schema CLI, the library-absent load |
 | `test_launcher` | The launcher object, its clicks and menu, the minimap button, the two key bindings |

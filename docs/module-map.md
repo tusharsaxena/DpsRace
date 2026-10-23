@@ -38,6 +38,8 @@ drift from what the client loads (testing-§9).
 | `defaults/Dummies.lua` | `NS.Dummies`: the measured training-dummy catalog (spec §4.6), `Lookup(npcID)`, the six `CATEGORIES` and their labels | **load-bearing**: reads `NS.L` at file scope |
 | `modules/Meter.lua` | `NS.Meter`: availability, the session list, the after-combat `ReadSession(id)` (plain, sorted, or `sealed`) and the opaque `ReadLive()`; the only caller of `C_DamageMeter` | **load-bearing**: first module; resolves the meter enums at file scope |
 | `modules/Recorder.lua` | `NS.Recorder`: the player, target and place snapshots (every value through `NS.Secrets`, so no secret reaches SavedVariables), `NewRun` with the scoring settings frozen in, and the run store (`Save`, `Get`, `All`, `Pending`, `Delete`, `DeleteAll`) that fires `RUN_SAVED` / `RUNS_CHANGED` | conventional (reached at call time) |
+| `modules/Timeline.lua` | `NS.Timeline`: pure. `New()` gives a run's damage-update timeline (`AddDamage`, `LastDamage`, `Tail`, `RestartAt`, `QuietFor`), stamps from `GetTime()` only | conventional (reached at call time) |
+| `modules/Scoring.lua` | `NS.Scoring`: pure. `IsLateCast`, `Dps` (damage over the race length, or over `endedAt` for an incomplete run), `QUIET_BEFORE_READ` and `Flags(run, nameOf?)` in display order | conventional (reached at call time) |
 | `modules/Placeholders.lua` | stand-in `NS.Hud`, `NS.Results`, `NS.Preview`; T7, T8 and T9 replace them | conventional |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
@@ -54,7 +56,6 @@ From the plan's file map; each lands with its task and gets a row above in the s
 
 | File | Task | Job |
 |---|---|---|
-| `modules/Timeline.lua`, `modules/Scoring.lua` | T4 | pure timing and scoring rules |
 | `modules/Race.lua`, `modules/Watchers.lua` | T5 | state machine, clock, buzzer; event wiring |
 | `modules/Bests.lua` | T6 | personal bests and prune protection |
 | `modules/Format.lua`, `modules/Hud*.lua` | T7 | number formatting; the Race HUD |

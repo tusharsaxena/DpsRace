@@ -78,6 +78,8 @@ local SUITES = {
     "test_meter",
     "test_dummies",
     "test_recorder",
+    "test_timeline",
+    "test_scoring",
     "test_schema",
     "test_slash",
     "test_launcher",
