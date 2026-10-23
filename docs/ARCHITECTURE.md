@@ -60,7 +60,6 @@ annotated (toc-file-§5).
 | `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, Live breakdown, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
-| `probe/` | `DpsRaceProbe`, the measurement addon the spec's numbers came from; never loaded, never shipped |
 
 Every file, its one-line job and why the TOC orders it as it does: [module-map.md](module-map.md).
 
@@ -301,11 +300,9 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
-| `layout-§1` | A non-standard root folder, `probe/`, holds `DpsRaceProbe` (1140 lines of authored Lua, a second addon). It is linted under its own scoped `.luacheckrc` stanza, measured by the complexity suite like any authored Lua, ignored by `.pkgmeta` and never loaded by this addon | It is the measurement record the spec's numbers and the plan's test fixtures (T4 probe runs 4 and 6) came from, kept so a disputed figure can be re-measured. Its four functions above CCN 15 were split for the v0.1.0 release gate (automated-tests-§3) without changing what it measures; the exact code the measurements ran on is commit `5ad52a5` | 2026-10-23 | Open questions O1 to O7 closed in smoke tests, after which `probe/` moves out of this repo |
 | `standalone-windows` | The close control is built through the one wrapper (`NS.MakeCloseButton`, the catalog's `close` mark, gray at rest) but its hover tint is the header gold, not the library's red: `modules/Style.lua` hooks the control's enter and leave (after the library's own) and repaints it with the HUD's other title-bar controls. The wrapper, the mark, the grep gate and the rest color are unchanged | The owner asked on 2026-10-24 for every title-bar control, close included, to turn gold under the pointer as MultiMeters' strip does; a red close beside three gold controls reads as two hover rules in one strip. The four-condition decline does not apply: the library still draws the control | 2026-10-24 | `LibKa0s-Core-1.0` `MakeCloseButton` takes a hover color, or the standard names the hover tint of a host's title-bar strip; or the owner prefers the red back |
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. One authored file is in the 1000–1500 on-notice band:
-`probe/DpsRaceProbe/DpsRaceProbe.lua` at 1140 lines, under the `probe/` deviation row above (it leaves
-the repo with `probe/`). The largest shipped file is `modules/Hud.lua` at 922 lines (layout-§1).
+Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest file is
+`modules/Hud.lua` at 915 lines (layout-§1).

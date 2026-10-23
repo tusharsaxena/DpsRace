@@ -9,7 +9,6 @@ ignore:
   - .gitattributes   # dev-only: the repo's line-ending policy (line-endings)
   - docs             # holds the spec, the plan and the mockups too -- all dev-only
   - tests
-  - probe            # the pre-build measurement addon the spec's numbers came from; never shipped
   - CLAUDE.md        # contributor brief
   - DEPENDENCIES.md  # contributor toolchain
   - media/logos/*.png   # the editable logo source (layout-§4): committed, never loadable, never shipped
