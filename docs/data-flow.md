@@ -52,7 +52,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
   the player, target and place, the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
-  combat and death events.
+  combat and death events. The newest of those IDs is kept on the run as `race.armMaxSession`, so
+  a run resumed after a `/reload` (which loses the set) still never adopts an earlier fight's session.
 - **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
   combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
   combat, such as a trailing update from the last fight, leaves the race armed). The start time is
@@ -64,7 +65,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   Watchers adds the player's cast events (start, channel start, success, interrupt, channel stop).
 - **Running**: the HUD counts down (`Race.TimeLeft()`) and shows the live breakdown, read through
   `modules/Meter.lua` at the configured rate, with every value opaque. Every DamageDone update for
-  the run's session is a stamp on its `Timeline`. Combat dropping or a death before the buzzer cancels
+  the run's session is a stamp on its `Timeline`, and its offset from the start is kept on the run as
+  `race.lastDamage` (a resumed run's fresh timeline starts from it). Combat dropping or a death before the buzzer cancels
   the buzzer and records `result.endedAt` (seconds from the start): the run will be `incomplete`.
 - **Buzzer** at start + length: the run moves to `stopping` and `RACE_BUZZER(run)` is sent. A cast
   that starts (or an instant that succeeds) later than buzzer + grace is a late cast,
@@ -82,7 +84,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `sessionFromList` (spec §9). A `sealed` read is retried for 10 s; a missing session, a raise or a
   meter reset makes the run `lost` (kept, with no result).
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
-  `result.combatEnd` and `flags.restartedAt` are measured from the buzzer; the run is saved
+  `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
+  the run the moment its update arrives, so a `/reload` after it keeps it); the run is saved
   (`RUN_SAVED`) and `RACE_RESULT(run)` is sent. Watchers drops every registration. `Race.Cancel()`
   dismisses the card; `Race.Arm` races again.
 - **Cancel** before the result discards the run: an armed one was never stored, a running or

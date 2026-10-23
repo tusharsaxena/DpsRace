@@ -154,3 +154,78 @@ test("resume: a stand-down mid-run whose combat ends unseen never hangs in stopp
     assertEqual(run.status, "incomplete")
     assertEqual(f.clock.live(), 0, "nothing left polling")
 end)
+
+--- A run raced on `f` until `at`, then carried into a fresh instance as a /reload would: the same
+--- stored table, the clock where it was, session 25 still in the meter.
+local function reloadAt(f, run, at, inCombat)
+    f:to(at)
+    return reload(run, { now = at, inCombat = inCombat })
+end
+
+test("resume: the tail and a restart heard before a /reload survive it", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f:start(25)
+    f:to(131)
+    f:update(25)
+    f:to(141)
+    f:update(25)                           -- 10s quiet, then damage again: a restart at +11
+    local g = reloadAt(f, run, 145, false)
+    assertEqual(g.Race.State(), "result")
+    assertEqual(run.status, "complete")
+    near(run.result.tail, 11, "not +0.0s: the stamps before the reload count")
+    near(run.flags.restartedAt, 11)
+end)
+
+test("resume: the stamps before a /reload keep a DoT tail across it from looking like a restart", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f:start(25)
+    f:to(131)
+    f:update(25)
+    f:to(135)
+    f:update(25)
+    local g = reloadAt(f, run, 136, true)
+    assertEqual(g.Race.State(), "stopping")
+    g:to(138)
+    g:update(25)                           -- 3s after the last stamp before the reload: a tail tick
+    g:combatEnd()
+    g:advance(3)
+    assertEqual(run.status, "complete")
+    assertNil(run.flags.restartedAt, "8s after the buzzer, but only 3s after the last update")
+    near(run.result.tail, 8)
+end)
+
+test("resume: a run with no session ID never adopts a session from before its arm", function()
+    local f = F.new()
+    f.meter.SetSession(24, { damage = 5, dps = 5, duration = 5, spells = {} })   -- an earlier fight
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(100)
+    f.Race.OnSessionCreated(100)           -- stored running; no DamageDone update named its session
+    assertNil(run.race.sessionID)
+
+    local g = F.new{ enable = false }
+    g.M.__now, g.M.__inCombat = 145, false
+    g.meter.SetSession(24, { damage = 5, dps = 5, duration = 5, spells = {} })
+    g.NS.db.global.runs[run.id] = run
+    g:enable()
+    assertEqual(run.status, "lost", "session 24 was there before the arm: never this run's")
+    assertNil(run.race.sessionID)
+
+    -- A session created after the arm is still found by the list.
+    local run2 = F.storedRun({ id = "2-2000", status = "stopping" })
+    run2.race.sessionID, run2.race.armMaxSession = nil, 24
+    local h = F.new{ enable = false }
+    h.M.__now = 145
+    h.meter.SetSession(24, { damage = 5, dps = 5, duration = 5, spells = {} })
+    h.meter.SetSession(25, F.SESSION)
+    h.NS.db.global.runs[run2.id] = run2
+    h:enable()
+    assertEqual(run2.status, "complete")
+    assertEqual(run2.race.sessionID, 25)
+    assertTrue(run2.flags.sessionFromList)
+end)

@@ -5,8 +5,8 @@ local _, NS = ...
 --
 -- PURE. No WoW API, no meter value: a timeline holds only GetTime() stamps that Race records when a
 -- DAMAGE_METER_COMBAT_SESSION_UPDATED arrives for the run's session (spec §8 rule 2: decisions come
--- from events and the clock, never from a meter number). One timeline per run; it is not persisted,
--- so a /reload starts a fresh one.
+-- from events and the clock, never from a meter number). One timeline per run; it is not persisted:
+-- after a /reload Race starts a fresh one from the run's last stamp (run.race.lastDamage).
 
 local Timeline = {}
 NS.Timeline = Timeline

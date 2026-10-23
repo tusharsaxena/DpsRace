@@ -128,6 +128,15 @@ local function lose(why)
     finish()
 end
 
+--- Whether a session belongs to a fight before the arm: one the client held at arm time, or (after a
+--- /reload, when that set is gone) one no newer than the newest of them, run.race.armMaxSession.
+--- Session IDs only grow (the probe's ran 24, 25, ...), so the high-water mark stands in for the set.
+local function beforeArm(id)
+    if cur.armSet[id] then return true end
+    local mark = cur.run.race.armMaxSession
+    return type(mark) == "number" and id <= mark
+end
+
 --- The session to read: the captured ID, else the newest session the client created after the arm
 --- (spec §9), flagged sessionFromList.
 local function sessionToRead()
@@ -135,7 +144,7 @@ local function sessionToRead()
     if run.race.sessionID then return run.race.sessionID end
     local best
     for id in pairs(NS.Meter.SessionIDs()) do
-        if not cur.armSet[id] and (best == nil or id > best) then best = id end
+        if not beforeArm(id) and (best == nil or id > best) then best = id end
     end
     if best then
         run.race.sessionID = best
@@ -144,14 +153,25 @@ local function sessionToRead()
     return best
 end
 
---- The tail, combat end and restart, all measured from the buzzer (a run that ended before the
---- buzzer has none of them).
+--- The tail and combat end, measured from the buzzer (a run that ended before the buzzer has
+--- neither). The restart was flagged as its update arrived (stamp), so a /reload since keeps it.
 local function timing(result)
-    local run, buzzerAt = cur.run, cur.buzzerAt
+    local buzzerAt = cur.buzzerAt
     if not buzzerAt then return end
     result.tail = round2(cur.timeline:Tail(buzzerAt))
     if cur.combatEndedAt then result.combatEnd = round2(cur.combatEndedAt - buzzerAt) end
-    run.flags.restartedAt = round2(cur.timeline:RestartAt(buzzerAt, run.race.restartGap))
+end
+
+--- One DamageDone update for the run's session at `t`: a stamp on the timeline, its offset from the
+--- start kept on the run (run.race.lastDamage) so a /reload's fresh timeline starts from it, and,
+--- past the buzzer, the restart flagged the moment it is heard (spec §5.3).
+local function stamp(t)
+    local run, buzzerAt = cur.run, cur.buzzerAt
+    cur.timeline:AddDamage(t)
+    run.race.lastDamage = round2(t - cur.startedAt)
+    if buzzerAt and not run.flags.restartedAt then
+        run.flags.restartedAt = round2(cur.timeline:RestartAt(buzzerAt, run.race.restartGap))
+    end
 end
 
 local function complete(data)
@@ -267,15 +287,21 @@ function Race.Arm(length, targetCount)
     local ok, why = NS.Meter.IsAvailable()
     if not ok then return false, "meter_unavailable", why end
     newRace(NS.Recorder.NewRun(length, targetCount))
-    -- Every session the client holds now belongs to an earlier fight: never this run's.
+    -- Every session the client holds now belongs to an earlier fight: never this run's. The newest of
+    -- them is kept on the run, so a /reload (which loses the set) still knows.
     cur.armSet = NS.Meter.SessionIDs()
+    local mark
+    for id in pairs(cur.armSet) do
+        if mark == nil or id > mark then mark = id end
+    end
+    cur.run.race.armMaxSession = mark
     setState(STATE.ARMED)
     return true
 end
 
 -- Capture the run's session, unless it existed before the arm (another fight's).
 local function adopt(id)
-    if cur.armSet[id] then return end
+    if beforeArm(id) then return end
     cur.run.race.sessionID = id
     NS.Recorder.Save(cur.run)
 end
@@ -289,7 +315,7 @@ local function begin(t)
     cur.startedAt = t
     if cur.stash then
         adopt(cur.stash)
-        if run.race.sessionID then cur.timeline:AddDamage(t) end
+        if run.race.sessionID then stamp(t) end
     end
     NS.Recorder.Save(run)
     armBuzzer(run.race.length)
@@ -354,12 +380,12 @@ function Race.OnMeterUpdate(statType, sessionID, t)
     local stat, id = Secrets.PlainNumber(statType), Secrets.PlainNumber(sessionID)
     if stat ~= NS.Meter.STAT_DAMAGE_DONE or not id or id == 0 then return end
     if state == STATE.ARMED then
-        if not cur.armSet[id] and not cur.stash then cur.stash = id end
+        if not beforeArm(id) and not cur.stash then cur.stash = id end
         return
     end
     if state ~= STATE.RUNNING and state ~= STATE.STOPPING then return end
     if not cur.run.race.sessionID then adopt(id) end
-    if id == cur.run.race.sessionID then cur.timeline:AddDamage(t) end
+    if id == cur.run.race.sessionID then stamp(t) end
 end
 
 -- ── casts after the buzzer (spec §5.2) ──────────────────────────────────────────────────────────
@@ -432,6 +458,7 @@ function Race.OnMeterReset()
     if isDown() then return end
     if state == STATE.ARMED then
         cur.armSet, cur.stash = {}, nil
+        cur.run.race.armMaxSession = nil
     elseif state == STATE.RUNNING or state == STATE.STOPPING then
         lose("meter reset")
     end
@@ -495,6 +522,9 @@ local function resumeRun(run, now)
     newRace(run)
     cur.startedAt = startOf(run, now)
     cur.reread = true
+    -- The last update before the reload, so the tail and a restart gap still measure from it.
+    local last = Secrets.PlainNumber(run.race.lastDamage)
+    if last then cur.timeline:AddDamage(cur.startedAt + last) end
     local id = run.race.sessionID
     if id ~= nil and not NS.Meter.HasSession(id) then return lose("session gone") end
     if run.status == "running" and resumeRunning(run, now) then return end

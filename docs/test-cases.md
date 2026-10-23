@@ -172,7 +172,7 @@ Total.
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
 
-### test_race_resume.lua (10)
+### test_race_resume.lua (13)
 
 - resume: running past buzzer becomes stopping+reloaded
 - resume: running before buzzer keeps running with remaining time
@@ -184,6 +184,9 @@ Total.
 - resume: nothing stored leaves the race idle and touches nothing
 - resume: running before the buzzer with combat already over is incomplete and read at once
 - resume: a stand-down mid-run whose combat ends unseen never hangs in stopping
+- resume: the tail and a restart heard before a /reload survive it
+- resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
+- resume: a run with no session ID never adopts a session from before its arm
 
 ### test_schema.lua (14)
 
@@ -359,7 +362,7 @@ Total.
 | test_scoring.lua | 7 |
 | test_bests.lua | 18 |
 | test_race.lua | 44 |
-| test_race_resume.lua | 10 |
+| test_race_resume.lua | 13 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -374,4 +377,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **268** |
+| **Total** | **271** |
