@@ -49,7 +49,7 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 | Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
-| Test mode | `state.testMode` | checkbox, session-only | Starts or stops the preview; refused in combat, ended by combat |
+| Test mode | `state.testMode` | checkbox, session-only | Starts or stops the preview; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
 | Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`) |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 

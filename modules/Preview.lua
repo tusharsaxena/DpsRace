@@ -129,6 +129,13 @@ end
 
 function Preview.IsActive() return Preview.active end
 
+-- The Master controls' Test mode checkbox reads Preview.IsActive() only when a refresher runs: every
+-- start and stop repaints an open panel in place (options-ui-§11, §15), whoever turned it.
+local function repaintPanel()
+    local H = NS.Helpers
+    if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
+end
+
 --- Turn test mode on. Refused (one line) in combat and during a real race; silent while stood down,
 --- where the caller's own hold-aware refusal has already spoken.
 --- @return boolean started
@@ -153,6 +160,7 @@ function Preview.Start()
     if opened then NS.Hud.AutoShow() end
     draw(phaseAt)
     ticker = C_Timer.NewTicker(Preview.TICK, beat)
+    repaintPanel()
     debug("test mode on")
     return true
 end
@@ -174,15 +182,18 @@ function Preview.Stop(reason)
         opened = false
         NS.Hud.Refresh()
     end
+    repaintPanel()
     debug("test mode off (%s)", reason or "switch")
     return true
 end
 
 --- The stand-down ends test mode silently: the player turned the addon off, not the preview.
 function Preview.Suspend()
+    local was = Preview.active
     Preview.active = false
     cancelTicker()
     run, opened = nil, false
+    if was then repaintPanel() end
 end
 
 --- What test mode is doing, for the diagnostics report and the suites.

@@ -211,3 +211,16 @@ test("preview: a stand-down drops the HUD test mode opened", function()
     assertTrue(f.NS.SetByPath("enabled", true))
     assertFalse(f.Hud.IsShown(), "the stand-up showed a HUD only test mode had opened")
 end)
+
+test("preview: every start and stop repaints an open panel's Test mode checkbox", function()
+    local f = fixture()
+    local H = assert(f.NS.Helpers, "no options helpers")
+    local repaints = 0
+    H.RefreshScalars = function() repaints = repaints + 1 end
+    assertTrue(f.Preview.Start())
+    assertEqual(repaints, 1, "the start left the checkbox as it was")
+    assertTrue(f.Race.Arm(60))              -- from chat or the key, with the panel open
+    assertFalse(f.Preview.IsActive())
+    assertEqual(repaints, 2, "the race-armed stop left the checkbox ticked")
+    assertEqual(f.NS.GetSetting("state.testMode"), false)
+end)
