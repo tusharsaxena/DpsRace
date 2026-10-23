@@ -41,13 +41,22 @@ function NS.RunVerb(verb, rest)
     end
 end
 
+--- slash-commands-§2's thirteen reserved verbs: they answer while disabled. Named once, here, for the
+--- library-absent stub's gate; the live dispatcher reads its own lib.LIVE_VERBS (pinned equal by
+--- tests/test_slash.lua).
+NS.SLASH_LIVE_VERBS = {
+    help = true, config = true, version = true, enable = true, disable = true, debug = true,
+    diagnostics = true, perf = true, get = true, set = true, list = true, reset = true, resetall = true,
+}
+
 local SlashLib = LibStub and LibStub("LibKa0s-Slash-1.0", true)
 local degraded = false
 
 if not SlashLib then
     -- Degrade, never error: `/dr` is registered unconditionally, so something must answer it. The
     -- host verbs keep working; the schema CLI names the missing library. The ONE library string this
-    -- stub carries is DISABLED_LINE_FORMAT, pinned by tests/test_slash.lua against the live major.
+    -- stub carries is DISABLED_LINE_FORMAT, pinned by tests/test_slash.lua against the live major;
+    -- every other line below is the stub's own plain wording, never a copy of the library's.
     degraded = true
     local MISSING = L["%s is unavailable: the LibKa0s library did not load."]
     SlashLib = { DISABLED_LINE_FORMAT = "%s is disabled \226\128\148 enable it with |cFFFFFF00%s|r" }
@@ -64,7 +73,7 @@ if not SlashLib then
             return SlashLib.DISABLED_LINE_FORMAT:format(d.brandName, d.slash .. " enable")
         end
         local function version() return tostring(d.version and d.version() or "?") end
-        stub.CliVersion = function() out(L["v%s"]:format(version())) end
+        stub.CliVersion = function() out(L["%s version %s"]:format(d.brandName, version())) end
         stub.LandingRows = function()
             local rows = {}
             for _, e in ipairs(d.commands) do rows[#rows + 1] = d.slash .. " " .. e[1] .. "  " .. e[2] end
@@ -76,7 +85,7 @@ if not SlashLib then
             return rows
         end
         stub.PrintHelp = function()
-            out(L["v%s slash commands"]:format(version()))
+            out(L["%s commands (reduced: the LibKa0s library is missing)"]:format(d.slash))
             for _, r in ipairs(stub.HelpRows()) do out(r) end
         end
         -- Minimal dispatch is the host's own routing (slash-commands-§1): split, look up, call.
@@ -87,9 +96,15 @@ if not SlashLib then
             verb = verb:lower()
             verb = (d.aliases or {})[verb] or verb
             for _, e in ipairs(d.commands) do
-                if e[1] == verb then return e[3](rest or "") end
+                if e[1] == verb then
+                    -- The disabled gate the live dispatcher applies: a feature verb refuses with the
+                    -- one line while the `disabled` hold is taken (slash-commands-§7).
+                    if d.isEnabled and not d.isEnabled() and not NS.SLASH_LIVE_VERBS[verb] then
+                        return out(stub.DisabledLine())
+                    end
+                    return e[3](rest or "")
+                end
             end
-            out(L["unknown command '%s'"]:format(verb))
             stub.PrintHelp()
         end
         return stub

@@ -128,3 +128,30 @@ test("slash: library absent, /dr still answers, and enable/disable still land", 
     NS.Slash:OnSlash("list")
     assertTrue(anyLine(M, "LibKa0s library did not load"), "the schema CLI names the missing library")
 end)
+
+test("slash: the stub's live-verb set is the library's LIVE_VERBS, no more and no less", function()
+    local lib = T.mocks.LibStub("LibKa0s-Slash-1.0")
+    local want, got = {}, {}
+    for _, v in ipairs(lib.LIVE_VERBS) do want[#want + 1] = v end
+    for v in pairs(T.NS.SLASH_LIVE_VERBS) do got[#got + 1] = v end
+    table.sort(want)
+    table.sort(got)
+    assertEqual(table.concat(got, ","), table.concat(want, ","))
+end)
+
+test("slash: the stub carries no library string but the refusal format", function()
+    -- red under: put a copy of the library's HELP_HEADER, VERSION or UNKNOWN_COMMAND back in the stub
+    local strings = T.mocks.LibStub("LibKa0s-Slash-1.0").STRINGS
+    local inst = T.load{ libFiles = {} }
+    local NS, M = inst.NS, inst.mocks
+    M.__resetPrinted()
+    for _, verb in ipairs({ "help", "version", "nosuchverb" }) do NS.Slash:OnSlash(verb) end
+    local printed = table.concat(lines(M), "\n")
+    for _, key in ipairs({ "HELP_HEADER", "UNKNOWN_COMMAND", "VERSION" }) do
+        local pattern = "^" .. strings[key]:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("%%%%s", ".-") .. "$"
+        for line in printed:gmatch("[^\n]+") do
+            local bare = line:gsub("^|cff00ffff%[DR%]|r ", "")
+            assertFalse(bare:find(pattern) ~= nil, key .. " copied into the stub: " .. bare)
+        end
+    end
+end)
