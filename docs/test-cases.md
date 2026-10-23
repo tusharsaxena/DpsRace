@@ -246,7 +246,7 @@ Total.
 - hud: the library-absent load still draws the HUD without a grip or a close control
 - hud: the diagnostics state section names the body, the event set and the countdown driver
 
-### test_results.lua (22)
+### test_results.lua (23)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: incomplete and lost runs say so in the DPS column
@@ -261,6 +261,7 @@ Total.
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a double-click shares
 - results: bests tab groups by spec x category x length with clean-only toggle
+- results: the Bests board shows one category at a time, so a spec and length is one row
 - results: list refreshes on RUN_SAVED
 - results: the HUD's Last result opens the newest run's detail
 - results: the window is skinned, closable with Escape, resizable and clamped
@@ -515,7 +516,7 @@ Total.
 | test_race_resume.lua | 13 |
 | test_format.lua | 7 |
 | test_hud.lua | 43 |
-| test_results.lua | 22 |
+| test_results.lua | 23 |
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
 | test_slash.lua | 27 |
@@ -533,4 +534,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **403** |
+| **Total** | **404** |

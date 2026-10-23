@@ -180,7 +180,9 @@ timer or `OnUpdate`.
   delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
   `Results.DeleteRun` → `Recorder.Delete` (`RUNS_CHANGED`).
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
-  same list widget. *Clean runs only* switches to the clean board.
+  same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
+  *All categories*: the table has no target column, so two boards of one spec and length would read
+  alike); it starts on the first category present, in `NS.Dummies.CATEGORIES` order.
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
   `SETTINGS_CHANGED` for `global.history.keep` redraws the footer.

@@ -427,8 +427,11 @@ test("results: bests tab groups by spec x category x length with clean-only togg
     i.R.ShowTab("bests")
     local pane = assert(ui(i).panes.bests)
     assertFalse(runsPane(i).frame:IsShown(), "the Runs tab still shows")
-    assertEqual(pane:Count(), 3, "one row per spec x category x length")
-    assertEqual(visibleIDs(pane), "flagged,fire,short")
+    assertEqual(pane.filters.category, "single", "the first category present")
+    assertEqual(visibleIDs(pane), "fire")
+    pane.dropdowns.category.onSelect("cleave")
+    assertEqual(pane:Count(), 2, "one row per spec x length within the category")
+    assertEqual(visibleIDs(pane), "flagged,short")
     local top = visible(pane)[1].cells
     assertEqual(top.icons.fs.__text, "Destruction")
     assertEqual(top.char.fs.__text, "Lanfear")
@@ -438,7 +441,8 @@ test("results: bests tab groups by spec x category x length with clean-only togg
 
     pane.clean:__fire("OnClick")
     assertTrue(pane.filters.cleanOnly)
-    assertEqual(visibleIDs(pane), "clean,fire,short", "the clean board's best on that board")
+    assertEqual(visibleIDs(pane), "clean,short", "the clean board's best on that board")
+    pane.dropdowns.category.onSelect("single")
     pane.dropdowns.spec.onSelect(63)
     assertEqual(visibleIDs(pane), "fire")
     pane.dropdowns.spec.onSelect("all")
@@ -448,6 +452,24 @@ test("results: bests tab groups by spec x category x length with clean-only togg
     visible(pane)[1]:__fire("OnClick")
     assertEqual(i.R.Tab(), "runs", "a bests row opens its run on the Runs tab")
     assertEqual(i.R.Selected(), "clean")
+end)
+
+test("results: the Bests board shows one category at a time, so a spec and length is one row", function()
+    local i = inst()
+    seed(i, {
+        mkRun("cleave", { result = { damage = 26500000, dps = 147000 } }),
+        mkRun("single", { target = { npcID = 225984, name = "Training Dummy", category = "single", count = 1 },
+                          result = { damage = 8900000, dps = 49000 } }),
+    })
+    i.R.ShowTab("bests")
+    local pane = assert(ui(i).panes.bests)
+    assertEqual(pane.filters.category, "single", "the first category on the board, in the canonical order")
+    assertEqual(visibleIDs(pane), "single", "two boards of one spec and length side by side, told apart by nothing")
+    local values = {}
+    for n, o in ipairs(i.NS.ResultsBests.Options(i.NS.Bests.Board({})).category) do values[n] = o.value end
+    assertEqual(table.concat(values, ","), "single,cleave", "an All categories choice mixes boards")
+    pane.dropdowns.category.onSelect("cleave")
+    assertEqual(visibleIDs(pane), "cleave")
 end)
 
 -- ── following the store ─────────────────────────────────────────────────────────────────────────

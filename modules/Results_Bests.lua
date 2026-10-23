@@ -3,6 +3,12 @@ local _, NS = ...
 -- run per spec × category × race length across every character on the account, from NS.Bests' cached
 -- board, filtered by spec and category, with Clean runs only (off by default) switching to the board
 -- that leaves out every flagged run. A row opens its run's detail on the Runs tab.
+--
+-- ONE CATEGORY AT A TIME (mockup screen 09: "Category: Cleave"). A board row is one best per spec ×
+-- category × length and the table has no target column, so mixing categories would show two rows of
+-- one spec and length told apart by nothing. The category filter has no "all" choice: it starts on
+-- the first category present on the board, in NS.Dummies.CATEGORIES order, and moves to it again
+-- whenever the chosen one is not on the board shown (the clean-only board may lack it).
 
 local Bests = {}
 NS.ResultsBests = Bests
@@ -11,7 +17,7 @@ local L = NS.L
 local Tbl = NS.ResultsTable
 local C = Tbl.COLORS
 
-Bests.DEFAULTS = { spec = "all", category = "all", cleanOnly = false }
+Bests.DEFAULTS = { spec = "all", category = "first", cleanOnly = false }
 
 local FILTER_H = 32
 local GAP = 6
@@ -32,7 +38,8 @@ function Bests.Rows(board, f)
     return out
 end
 
---- The spec and category dropdowns' options for `board`, each led by its "all" entry.
+--- The spec and category dropdowns' options for `board`: the specs led by their "all" entry, the
+--- categories present only, in canonical order (no "all": see the header).
 function Bests.Options(board)
     local specs, seenSpec, cats = {}, {}, {}
     local present = {}
@@ -46,7 +53,6 @@ function Bests.Options(board)
     end
     table.sort(specs, function(a, b) return a.label < b.label end)
     table.insert(specs, 1, { value = "all", label = L["All specs"] })
-    cats[1] = { value = "all", label = L["All categories"] }
     for _, key in ipairs(NS.Dummies.CATEGORIES) do
         if present[key] then cats[#cats + 1] = { value = key, label = L["Category: %s"]:format(NS.Dummies.Label(key)) } end
     end
@@ -137,9 +143,18 @@ function View:Layout(width, height)
 end
 
 --- Re-read the board and redraw.
+-- The chosen category if it is on the board, else the first one that is (nil on an empty board).
+local function resolveCategory(chosen, options)
+    for _, o in ipairs(options) do
+        if o.value == chosen then return chosen end
+    end
+    return options[1] and options[1].value or nil
+end
+
 function View:Refresh()
     local board = NS.Bests.Board({ cleanOnly = self.filters.cleanOnly == true })
     local options = Bests.Options(board)
+    self.filters.category = resolveCategory(self.filters.category, options.category) or Bests.DEFAULTS.category
     for key, dd in pairs(self.dropdowns) do
         dd:SetOptions(options[key])
         dd:SelectValue(self.filters[key])
