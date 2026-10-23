@@ -36,7 +36,7 @@ NS.defaults = {
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window (T8) follows Master scale like the HUD.
         windows = {
-            hud = { width = 300, height = 360 },
+            hud = { width = 300, height = 460 },   -- tall enough for all 8 live rows (screen 04)
             results = { width = 1040, height = 560 },
         },
     },

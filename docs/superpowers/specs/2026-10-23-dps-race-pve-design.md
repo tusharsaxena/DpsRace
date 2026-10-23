@@ -215,8 +215,10 @@ scale persist (standalone-windows). Layouts are in the mockup.
 
 ### 6.1 Race HUD
 
-A compact, movable window (default 300×360, minimum 260×240, resizable). It has one body per state;
-the header and footer are shared.
+A compact, movable window (default 300×460, minimum 260×316, resizable). It has one body per state;
+the header and footer are shared. The default height shows all 8 default live rows (mockup screen
+04); the minimum height is the chrome plus the idle body's fixed stack (Arm and the links under it).
+A shorter window caps the live and result rows to what fits, never drawing them under the buttons.
 
 | State | Body |
 |---|---|
@@ -443,3 +445,4 @@ and Results listen to it and never poke each other directly.
 | 2026-10-23 | History: *Runs to keep* setting, default 0 = never prune. |
 | 2026-10-23 | The Results tables show class icon, spec icon and item level. |
 | 2026-10-23 | Slash commands: `/dpsrace` and `/dr`. |
+| 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |

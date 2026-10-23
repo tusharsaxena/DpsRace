@@ -4,7 +4,7 @@ local _, NS = ...
 -- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
--- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x360, min 260x316), with its
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x460, min 260x316), with its
 -- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
 -- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
 --

@@ -206,10 +206,6 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   secret values. This is a client limit, not a gap to close.
 - **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and closes
   in the owner's smoke-test pass ([smoke-tests.md](smoke-tests.md)).
-- **The default HUD shows 5 live rows, not *Rows* (8).** At 300x360 the running body has room for
-  five rows between its figures and CANCEL; the rest of `live.rows` appears as the window is made
-  taller (the rows are capped to the height, never drawn under the buttons). The window's minimum
-  height is 316 px, not the spec's 240: that is what the idle body's Arm button and links need.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 

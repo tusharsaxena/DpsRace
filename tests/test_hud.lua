@@ -438,7 +438,7 @@ local function session(n)
 end
 
 test("hud: the live rows stop above the caption and CANCEL at every window height", function()
-    for _, height in ipairs({ 0, 360, 700 }) do
+    for _, height in ipairs({ 0, 360, 460, 700 }) do
         local f = hud()
         local h = math.max(height, f.Hud.MIN_HEIGHT)
         f.NS.db.profile.windows.hud.height = h
@@ -453,6 +453,19 @@ test("hud: the live rows stop above the caption and CANCEL at every window heigh
         assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
         assertEqual(body(f).w.count.__text, ("%d rows"):format(want))
     end
+end)
+
+test("hud: the default window size shows every default live row", function()
+    local f = hud()
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 460, "the default matches mockup screen 04")
+    assertEqual(f.NS.db.profile.live.rows, 8)
+    f.Hud.Show()
+    assertEqual(f.Hud.Diagnose().height, 460)
+    running(f, 30)
+    f.meter.SetSession(25, session(15))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    assertEqual(body(f).w.list:Count(), 8, "all 8 rows fit at 300x460")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
