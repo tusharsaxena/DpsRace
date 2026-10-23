@@ -32,6 +32,8 @@ function NS:OnEnable()
     NS.Bests.PruneToSetting()
     -- Runs a /reload left running or stopping carry on from their stored status (spec §4.5).
     NS.Race.Resume()
+    -- The HUD's login decision ("always" shows it) after the race it may be showing.
+    NS.Hud.Resume()
 end
 
 -- ── Game events ─────────────────────────────────────────────────────────────────────────────────

@@ -83,6 +83,8 @@ local SUITES = {
     "test_bests",
     "test_race",
     "test_race_resume",
+    "test_format",
+    "test_hud",
     "test_schema",
     "test_slash",
     "test_launcher",

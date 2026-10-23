@@ -11,7 +11,7 @@ test("perf: the descriptor declares the buckets, the SavedVariable and the one l
     local d = assert(NS.Perf.descriptor, "NS.Perf carries no descriptor; was the stub loaded?")
     local keys = {}
     for i, b in ipairs(d.buckets) do keys[i] = b.key end
-    assertEqual(table.concat(keys, ","), "combatEvent,raceEvent")
+    assertEqual(table.concat(keys, ","), "combatEvent,raceEvent,hudLive,hudTick")
     assertEqual(d.sv, "DpsRacePerfDB")
     assertTrue(d.lifecycle == NS.lifecycle, "the harness holds a latch other than NS.lifecycle")
     assertEqual(d.suspend, nil, "a second teardown path beside the latch (performance-§6)")
@@ -20,7 +20,13 @@ end)
 
 test("perf: every declared bucket is reached by a real bracket", function()
     -- red under: drop the `Perf.Note("combatEvent", ...)` line from NS:OnCombatChanged
-    local inst = T.load{ mutate = function(m) T.mockMeter.install(m) end }
+    -- The race fixture's clock, so the HUD's live read fires at its own time and not with the buzzer.
+    local meter, clock
+    local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
+    local inst = T.load{ mutate = function(m)
+        meter = T.mockMeter.install(m)
+        clock = RaceClock.installClock(m)
+    end }
     local NS, M = inst.NS, inst.mocks
     local reach = {
         -- combatEvent: the combat-boundary handler, through the event the client fires.
@@ -29,6 +35,22 @@ test("perf: every declared bucket is reached by a real bracket", function()
         raceEvent = function()
             assert(NS.Race.Arm(30), "the fixture could not arm")
             M.__fire("DAMAGE_METER_RESET")
+        end,
+        -- hudLive: the HUD's throttled live read, once a race runs with the window shown.
+        hudLive = function()
+            NS.Race.Cancel()
+            assert(NS.Race.Arm(30), "the fixture could not arm")
+            M.__inCombat = true
+            meter.SetSession(25, { damage = 10, dps = 1, duration = 1, spells = {} })
+            NS.Race.OnSessionCreated(M.__now)
+            assertTrue(NS.Hud.IsShown(), "arming did not show the HUD")
+            M.__fire("DAMAGE_METER_COMBAT_SESSION_UPDATED", 0, 25)
+            clock.advance(0.5)
+        end,
+        -- hudTick: the countdown's OnUpdate, attached while the race runs.
+        hudTick = function()
+            local frame = NS.Hud.__ui().frame
+            frame:__fire("OnUpdate", 1)
         end,
     }
     NS.Perf.on = true          -- inside an experiment window: what the sampler sets when one opens

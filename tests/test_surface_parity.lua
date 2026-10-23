@@ -103,12 +103,12 @@ test("parity: the Perf stub carries every member this addon reads, on both arms"
 end)
 
 test("parity: the Core seam carries every member this addon reads, on both arms", function()
-    -- members from: grep -rhoE "NS\.(Print|SafeToString|IsConcatSafe|SafeRegister[A-Za-z]*|ApplySkin|SKIN|MakeCloseButton)" core/ modules/ settings/
+    -- members from: grep -rhoE "NS\.(Print|SafeToString|IsConcatSafe|SafeRegister[A-Za-z]*|ApplySkin|SKIN|MakeCloseButton|MakeResizable)" core/ modules/ settings/
     bothArms("NS", function(NS) return NS end, {
         Print = "function", SafeToString = "function", IsConcatSafe = "function",
         SafeRegisterEvent = "function", SafeRegisterUnitEvent = "function",
         SafeRegisterEvents = "function", ApplySkin = "function", SKIN = "table",
-        MakeCloseButton = "function",
+        MakeCloseButton = "function", MakeResizable = "function",
     })
     bothArms("NS.Util", function(NS) return NS.Util end, { print = "function" })
     local l, d = pair()

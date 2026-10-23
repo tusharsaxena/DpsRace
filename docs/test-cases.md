@@ -190,6 +190,56 @@ Total.
 - resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
 - resume: a run with no session ID never adopts a session from before its arm
 
+### test_format.lua (7)
+
+- format: Number abbreviates through the client's formatter, secret or plain
+- format: Number never does Lua arithmetic on a secret when no formatter exists
+- format: a formatter that renders the check value wrongly is not used
+- format: Clock is m:ss.t with tenths truncated; Length is m:ss
+- format: Pct and Seconds take plain numbers
+- format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
+- format: ArmRefusal maps every Race.Arm reason to its line
+
+### test_hud.lua (37)
+
+- hud: switches body on RACE_STATE_CHANGED for all six states
+- hud: a run that ended before the buzzer waits for its read on the waiting body
+- hud: idle arm button disabled with reason in combat
+- hud: idle Arm uses the picked length and target count; a refusal prints its line
+- hud: a custom length is parsed, range-checked and selected
+- hud: an unknown target is allowed and said so
+- hud: running render raises nothing with secret values
+- hud: running body shows no percentage text
+- hud: live rows keep Blizzard's order and the configured count
+- hud: a live read with no DPS figure shows a dash
+- hud: layout never calls GetWidth/GetPoint on breakdown rows
+- hud: live reads stop when hud hidden or state leaves running
+- hud: the stop body shows the live tail, time in combat, late casts and the grace
+- hud: waiting hint appears after hintDelay and names only owned drop-combat spells
+- hud: Discard run on the waiting body throws the attempt away
+- hud: result body shows % and the best delta chip
+- hud: a first run is a new best; a slower one shows its deficit and its flags
+- hud: a lost result says it could not be read
+- hud: an incomplete run's chip names when combat ended, or that the player died
+- hud: Race again re-arms the same length; Details and Share reach their modules
+- hud: Share is grayed until a Share module exists
+- hud: closing a result card dismisses it and keeps the run
+- hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
+- hud: the cue stops when the race is canceled
+- hud: the countdown turns amber in the last 10s
+- hud: the window is skinned, closable with Escape, resizable and clamped
+- hud: Lock frame, Master scale and Reset position act on the window
+- hud: dragging is refused while locked and the position is stored when it ends
+- hud: General visibility and the stand-down hide it at the source
+- hud: onArm shows it on arm and hides it when the race it opened for is canceled
+- hud: showMode always shows it at login
+- hud: a result arriving while the window is closed opens it
+- hud: Render draws a given body only while test mode is on
+- hud: the stand-down drops every registration, timer and the OnUpdate
+- hud: hidden with its parent is not closed by the player
+- hud: the library-absent load still draws the HUD without a grip or a close control
+- hud: the diagnostics state section names the body, the event set and the countdown driver
+
 ### test_schema.lua (14)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -365,6 +415,8 @@ Total.
 | test_bests.lua | 20 |
 | test_race.lua | 44 |
 | test_race_resume.lua | 13 |
+| test_format.lua | 7 |
+| test_hud.lua | 37 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -379,4 +431,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **273** |
+| **Total** | **317** |

@@ -40,6 +40,9 @@ function NS.Diagnostics.Sections()
                 (NS.Meter.IsAvailable()))
             out:add("Diag", "hud shown=%s results shown=%s testMode=%s", NS.Hud.IsShown(),
                 NS.Results.IsShown(), NS.Preview.IsActive())
+            local hud = NS.Hud.Diagnose()
+            out:add("Diag", "hud body=%s events=%s ticking=%s locked=%s", hud.body, hud.events, hud.ticking,
+                hud.locked)
         end },
         { "rejected", function(out)
             out:list("Diag", "rejected events", NS.rejectedEvents or {})

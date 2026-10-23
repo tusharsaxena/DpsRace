@@ -1,29 +1,11 @@
 local _, NS = ...
--- modules/Placeholders.lua — stand-in NS.Hud, NS.Results and NS.Preview surfaces, so the launcher, the
--- key bindings and the Master controls have real handlers to call before the windows exist.
+-- modules/Placeholders.lua — stand-in NS.Results and NS.Preview surfaces, so the launcher, the key
+-- bindings and the Master controls have real handlers to call before the windows exist.
 
--- REPLACED, NOT EXTENDED. T7 (modules/Hud.lua) replaces NS.Hud, T8 (modules/Results.lua) NS.Results
--- and T9 (modules/Preview.lua) NS.Preview; each deletes its table from this file, and the last one
--- deletes the file and its TOC line. Every member below is one the scaffold already calls, so the
--- real module owes at least this surface. They draw nothing: no frame exists until those tasks.
-
--- ── NS.Hud ──────────────────────────────────────────────────────────────────────────────────────
--- The positionable display (Lock frame, Master scale, Reset position and the Show window toggle all
--- act on it). `wanted` is the player's show/hide; the master rungs decide whether that can show.
-local Hud = { wanted = false, locked = false }
-NS.Hud = Hud
-
-function Hud.IsShown()
-    return Hud.wanted and (NS.MasterVisibilityAllows()) or false
-end
-function Hud.Show() Hud.wanted = true end
-function Hud.Hide() Hud.wanted = false end
-function Hud.Toggle() Hud.wanted = not Hud.wanted end
-function Hud.SetLocked(on) Hud.locked = on and true or false end
-function Hud.ResetPosition() end
-function Hud.Refresh() end
-function Hud.Suspend() end
-function Hud.Resume() end
+-- REPLACED, NOT EXTENDED. T7 replaced NS.Hud (modules/Hud.lua); T8 (modules/Results.lua) replaces
+-- NS.Results and T9 (modules/Preview.lua) NS.Preview; each deletes its table from this file, and the
+-- last one deletes the file and its TOC line. Every member below is one the scaffold already calls,
+-- so the real module owes at least this surface. They draw nothing: no frame exists until those tasks.
 
 -- ── NS.Results ──────────────────────────────────────────────────────────────────────────────────
 local Results = { wanted = false }

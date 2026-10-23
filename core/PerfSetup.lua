@@ -31,6 +31,8 @@ NS.Perf = lib:New({
     buckets = {
         { key = "combatEvent" },     -- PLAYER_REGEN_* in core/DpsRace.lua
         { key = "raceEvent" },       -- every race event in modules/Watchers.lua
+        { key = "hudLive" },         -- one throttled live read and redraw in modules/Hud.lua
+        { key = "hudTick" },         -- the HUD's 20 Hz countdown redraw in modules/Hud.lua
     },
     -- The latch the capture's suspended arm takes its `perf` hold on. suspend/resume are NOT passed:
     -- the latch's standDown/standUp (core/LifecycleSetup.lua) are the one teardown.

@@ -16,6 +16,26 @@ NS.defaults = {
         race = {
             grace      = 1.0,   -- s after the buzzer before a cast start is late (spec §5.2)
             restartGap = 6,     -- s of quiet after the buzzer before damage counts as restarted (§5.3)
+            -- The Race HUD's own (modules/Hud.lua, T7); T9 adds their schema rows.
+            defaultLength = 180,   -- s; the idle body's length until the player picks one (§4.1)
+            countdownCue  = true,  -- the sound at 10, 5, 3, 2, 1 s left (§4.3)
+            buzzer        = true,  -- the raid-warning STOP and its sound at the buzzer (§4.4)
+            hintDelay     = 15,    -- s in combat after the buzzer before the drop-combat hint (§4.4)
+            -- `lastLength` (no default): the last length picked on the HUD, remembered (§4.1). It is
+            -- state the HUD writes, not a setting row.
+        },
+        -- The live breakdown (spec §6.3 Live breakdown page; T9 adds the rows).
+        live = {
+            rows    = 8,      -- spells shown, 3-15
+            icons   = true,   -- spell icons
+            showDps = true,   -- Blizzard's live DPS figure, labeled live
+            hz      = 4,      -- live reads per second, 2-10 (spec §10)
+        },
+        -- The HUD's show mode (spec §6.3 General): "onArm" | "always". T9 adds the row.
+        hud = { showMode = "onArm" },
+        -- Window geometry (standalone-windows): the HUD's size; its position is written when moved.
+        windows = {
+            hud = { width = 300, height = 360 },
         },
     },
     global = {

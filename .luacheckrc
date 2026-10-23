@@ -60,6 +60,19 @@ files["modules/Recorder.lua"] = {
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 
+-- The Race HUD (T7). The formatter is the client's (C_StringUtil) with AbbreviateNumbers beneath it;
+-- spell names and icons come through C_Spell; the shell plays the cue and the buzzer's raid warning,
+-- names the drop-combat spells the player knows and draws tooltips.
+files["modules/Format.lua"] = { read_globals = { "C_StringUtil", "AbbreviateNumbers" } }
+files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
+files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
+files["modules/Hud.lua"] = {
+    read_globals = {
+        "IsPlayerSpell", "PlaySound", "SOUNDKIT", "RaidNotice_AddMessage", "RaidWarningFrame",
+        "ChatTypeInfo", "GameTooltip",
+    },
+}
+
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
 

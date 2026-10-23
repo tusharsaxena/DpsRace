@@ -87,6 +87,13 @@ modules\Scoring.lua
 modules\Bests.lua
 modules\Race.lua
 modules\Watchers.lua
+# The Race HUD (T7). Format first: the HUD's files reach it at call time, as they reach each other.
+modules\Format.lua
+modules\Hud_Breakdown.lua
+modules\Hud_States.lua
+# LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT) at FILE SCOPE
+# through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
+modules\Hud.lua
 modules\Placeholders.lua
 modules\Diagnostics.lua
 

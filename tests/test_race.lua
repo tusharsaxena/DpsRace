@@ -469,6 +469,9 @@ end)
 
 test("race: read uses ReadSession(sessionID), never Current", function()
     local f, run = stopping()
+    -- The HUD's live breakdown reads the Current session while RUNNING (its display path, spec
+    -- §6.1); what this case pins is the RESULT read, from the buzzer on.
+    for i = #f.meter.calls, 1, -1 do f.meter.calls[i] = nil end
     f.meter.SetSession(99, { damage = 1, dps = 1, duration = 1, spells = {} })   -- now Current
     f:combatEnd()
     f:to(133)

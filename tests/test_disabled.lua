@@ -1,9 +1,9 @@
 -- tests/test_disabled.lua — the disabled state is total (slash-commands-§7): all ten steps of the
 -- conformance test, driven through the kit's recording mocks.
 --
--- The scaffold's owned "frames" are the HUD and Results placeholders (modules/Placeholders.lua): they
--- draw nothing yet, so step 5 asserts their SHOW DECISION, which is the source the standard says a
--- hide must be enforced at. When T7/T8 build the real windows, step 5 grows to their frames.
+-- The owned frames: the Race HUD (modules/Hud.lua, T7) is a real window, so step 5 asserts both its
+-- show decision and its frame; the Results placeholder (modules/Placeholders.lua) draws nothing yet,
+-- so step 5 asserts its SHOW DECISION, which is the source the standard says a hide is enforced at.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -126,16 +126,33 @@ end)
 test("Disabled 5: every display that was shown is hidden, refused at the source", function()
     -- red under: drop the IsStoodDown rung from NS.MasterVisibilityAllows in core/DpsRace.lua
     local _, NS = scene()
+    local hud = assert(NS.Hud.__ui(), "the baseline never built the HUD window")
+    assertTrue(hud.frame:IsShown(), "the HUD window is not on screen to be hidden")
     assertTrue(NS.SetByPath("enabled", false))
     assertFalse(NS.Hud.IsShown(), "the HUD still decides to show")
+    assertFalse(hud.frame:IsShown(), "the HUD window stayed on screen")
     assertFalse(NS.Results.IsShown(), "the Results window still decides to show")
     assertFalse(NS.Preview.IsActive(), "test mode survived the stand-down")
 end)
+
+--- Every game event of the baseline, with each target (the addon object, the HUD's event frame)
+--- that held it, so a stood-down handler can be reached straight.
+local function eventTargets(inst)
+    local out = {}
+    for _, r in ipairs(inst.mocks.__registrations()) do
+        if r.event and r.kind ~= "message" then
+            out[r.event] = out[r.event] or {}
+            out[r.event][#out[r.event] + 1] = r.target
+        end
+    end
+    return out
+end
 
 test("Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing", function()
     -- red under: make OnCombatChanged print or write (e.g. `NS.SetByPath("locked", true)` on combat)
     local inst, NS, M = scene()
     local events = eventNames(inst)
+    local holders = eventTargets(inst)
     assertTrue(#events > 0)
     local combatEntry = false
     for _, e in ipairs(events) do if e == "PLAYER_REGEN_DISABLED" then combatEntry = true end end
@@ -146,7 +163,8 @@ test("Disabled 6: every event fired anyway writes nothing, prints nothing, shows
     local shownBefore = #M.__shownFrames()
     for _, event in ipairs(events) do
         M.__fire(event)
-        local reached = M.__fireUnconditional(NS, event)
+        local reached = 0
+        for _, target in ipairs(holders[event]) do reached = reached + M.__fireUnconditional(target, event) end
         assertTrue(reached >= 1, event .. " reached no handler, so its silence proves nothing")
     end
     assertEqual(#M.__svWrites(), 0, "a game event wrote SavedVariables while disabled")

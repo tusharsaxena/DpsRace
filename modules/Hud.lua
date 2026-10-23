@@ -1,0 +1,827 @@
+local _, NS = ...
+-- modules/Hud.lua — the Race HUD's shell (spec §6.1): the window, its header and footer, which body
+-- shows for the race's state, the countdown driver, the live-read throttle, the countdown cue and the
+-- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
+--
+-- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x360, min 260x240), with its
+-- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
+-- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
+--
+-- SHOWN = the player wants it AND the master rungs allow it (NS.MasterVisibilityAllows: stood down,
+-- test mode, General visibility). `hud.showMode` "onArm" (default) shows it when a race is armed or a
+-- result arrives, and hides it again when the race it opened for goes back to idle; "always" also
+-- shows it at login. The decision is IsShown(); the frame follows it in Refresh().
+--
+-- WHAT RUNS, AND WHEN (spec §10). While the window is shown: PLAYER_TARGET_CHANGED and the regen edges
+-- (the idle target card and the Arm button's combat refusal). While it is shown AND the race is
+-- RUNNING: DAMAGE_METER_COMBAT_SESSION_UPDATED, coalesced into one live read per 1/live.hz seconds
+-- (4 Hz by default), never from OnUpdate. While shown and RUNNING or STOPPING: one OnUpdate at 20 Hz
+-- for the clock text. Nothing else. The countdown cue (10, 5, 3, 2, 1) is a set of timers armed when
+-- the race starts running, and the buzzer's raid warning answers RACE_BUZZER: both work with the
+-- window closed. Stand-down (Suspend) drops every registration, timer and the OnUpdate.
+--
+-- NO DECISION FROM A METER VALUE. The body for STOPPING (Stop! or Waiting) is chosen from GetTime(),
+-- the stored damage-update stamp (run.race.lastDamage) and the combat flag; live values go only to
+-- the bodies' widget setters and NS.Format.Number.
+
+local Hud = { wanted = false, locked = false }
+NS.Hud = Hud
+
+local L = NS.L
+local Perf = NS.Perf
+
+-- The default size is the defaults tree's (savedvariables-§2); the minimum is the spec's.
+Hud.WIDTH = NS.defaults.profile.windows.hud.width
+Hud.HEIGHT = NS.defaults.profile.windows.hud.height
+Hud.MIN_WIDTH, Hud.MIN_HEIGHT = 260, 240
+-- The countdown text's refresh period (spec §10: 20 Hz).
+Hud.TICK = 0.05
+-- The countdown cue's marks, in seconds left (spec §4.3).
+Hud.CUES = { 10, 5, 3, 2, 1 }
+-- Abilities that drop combat, for the sticky-combat hint (spec §4.4): named only when known.
+Hud.DROP_COMBAT = {
+    { id = 5384, name = "Feign Death" }, { id = 1856, name = "Vanish" },
+    { id = 58984, name = "Shadowmeld" }, { id = 66, name = "Invisibility" },
+}
+-- The target-count stepper's ceiling (a cleave group; spec §4.1).
+Hud.MAX_TARGETS = 20
+Hud.FRAME_NAME = "DpsRaceHud"
+
+local HEADER_H, FOOTER_H, PAD = 26, 22, 12
+local SOUND_CUE = 25477      -- SOUNDKIT.UI_BATTLEGROUND_COUNTDOWN_TIMER, if the table is absent
+local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
+local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
+local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
+
+local ui                       -- the built window
+local events                   -- the event frame (nil until first shown)
+local registered = "none"      -- "none" | "idle" | "live"
+local ticking, tickAcc = false, 0
+local liveTimer, lastRead, liveData
+local cueTimers = {}
+local hiding = false           -- true while the addon hides the frame itself
+local autoShown = false        -- the window was opened by onArm, not by the player
+local preview                  -- what Hud.Render pushed while test mode is on
+local pick = {}                -- the idle body's choices: length, count, target, editing
+
+local function S() return NS.Race.STATE end
+
+local function debug(fmt, ...)
+    if NS.Debug then NS.Debug("Hud", fmt, ...) end
+end
+
+-- ── settings and stored state ───────────────────────────────────────────────────────────────────
+
+local function setting(path, fallback)
+    local v = NS.GetSetting(path)
+    if v == nil then return fallback end
+    return v
+end
+
+--- db.profile.windows.hud: position and size (standalone-windows).
+local function store()
+    local p = NS.db and NS.db.profile
+    if not p then return nil end
+    p.windows = p.windows or {}
+    p.windows.hud = p.windows.hud or {}
+    return p.windows.hud
+end
+
+local function storedSize()
+    local w = store() or {}
+    local width = math.max(Hud.MIN_WIDTH, tonumber(w.width) or Hud.WIDTH)
+    local height = math.max(Hud.MIN_HEIGHT, tonumber(w.height) or Hud.HEIGHT)
+    return width, height
+end
+
+--- The race length the idle body offers: the pick, else the last one raced, else the default.
+local function currentLength()
+    if pick.length then return pick.length end
+    local p = NS.db and NS.db.profile
+    local last = p and p.race and p.race.lastLength
+    if type(last) == "number" then return last end
+    return setting("race.defaultLength", 180)
+end
+
+local function rememberLength(n)
+    local p = NS.db and NS.db.profile
+    if p and p.race then p.race.lastLength = n end
+end
+
+local function previewOn()
+    return NS.Preview ~= nil and NS.Preview.IsActive() == true
+end
+
+-- ── sounds ──────────────────────────────────────────────────────────────────────────────────────
+
+local function play(kitName, fallback)
+    if type(PlaySound) ~= "function" then return end
+    local id = (SOUNDKIT and SOUNDKIT[kitName]) or fallback
+    pcall(PlaySound, id, "Master")
+end
+
+local function cancelCues()
+    for i = #cueTimers, 1, -1 do
+        cueTimers[i]:Cancel()
+        cueTimers[i] = nil
+    end
+end
+
+local function cue()
+    if NS.IsStoodDown() or NS.Race.State() ~= S().RUNNING then return end
+    play("UI_BATTLEGROUND_COUNTDOWN_TIMER", SOUND_CUE)
+end
+
+--- The countdown cue (spec §4.3): one timer per mark still ahead, armed when the race runs.
+local function scheduleCues()
+    cancelCues()
+    if setting("race.countdownCue", true) == false then return end
+    local left = NS.Race.TimeLeft()
+    if not left then return end
+    for _, mark in ipairs(Hud.CUES) do
+        if left > mark then cueTimers[#cueTimers + 1] = C_Timer.NewTimer(left - mark, cue) end
+    end
+end
+
+--- The buzzer (spec §4.4): a raid-warning STOP and a sound, when the setting allows.
+local function buzzer()
+    if setting("race.buzzer", true) == false then return end
+    play("RAID_WARNING", SOUND_BUZZER)
+    local notice, frame = RaidNotice_AddMessage, RaidWarningFrame
+    if type(notice) ~= "function" or not frame then return end
+    pcall(notice, frame, L["STOP"], ChatTypeInfo and ChatTypeInfo.RAID_WARNING)
+end
+
+-- ── the view: what the body shows ───────────────────────────────────────────────────────────────
+
+local BODY_OF = { idle = "idle", armed = "armed", running = "running", result = "result" }
+
+local function inCombat()
+    return UnitAffectingCombat("player") and true or false
+end
+
+-- Seconds since the run's last damage update (the stored stamp), or since the buzzer when none came.
+local function quietFor(run)
+    local elapsed = NS.Race.Elapsed()
+    local last = run and run.race and run.race.lastDamage
+    if not elapsed then return 0 end
+    if type(last) ~= "number" then return NS.Race.SinceBuzzer() or 0 end
+    return elapsed - last
+end
+
+--- STOPPING is one state shown in two phases (spec §4): Stop! while damage may still land, Waiting
+--- once the tail has gone quiet (for combat to end, or for the read); a run that ended before the
+--- buzzer waits for its read.
+local function stopPhase(run)
+    if NS.Race.SinceBuzzer() == nil then return "waiting" end
+    if quietFor(run) >= NS.Scoring.QUIET_BEFORE_READ then return "waiting" end
+    return "stop"
+end
+
+local function tailOf(run)
+    local last, length = run.race and run.race.lastDamage, run.race and run.race.length
+    if type(last) ~= "number" or type(length) ~= "number" then return 0 end
+    return math.max(0, last - length)
+end
+
+--- The names of the combat-drop abilities this character has, joined with "or" (spec §4.4).
+function Hud.OwnedDropSpells()
+    local known, names = IsPlayerSpell, {}
+    if type(known) ~= "function" then return names end
+    for _, spell in ipairs(Hud.DROP_COMBAT) do
+        local ok, has = pcall(known, spell.id)
+        if ok and has then
+            local name = NS.HudBreakdown.SpellName(spell.id)
+            if name == L["Unknown spell"] then name = L[spell.name] end
+            names[#names + 1] = name
+        end
+    end
+    return names
+end
+
+local function hintText()
+    local names = Hud.OwnedDropSpells()
+    if #names == 0 then return L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] end
+    return L["Combat is holding. Walk out of range, or use %s. Your score is safe: it waits for combat to end, however long that takes."]
+        :format(table.concat(names, L[" or "]))
+end
+
+local function stopView(v)
+    local run = v.run
+    v.key = stopPhase(run)
+    v.tail = tailOf(run)
+    v.sinceBuzzer = NS.Race.SinceBuzzer()
+    v.endedEarly = v.sinceBuzzer == nil
+    v.endedAt = run.result and run.result.endedAt
+    v.lateCasts = run.flags and run.flags.lateCasts
+    v.grace = run.race and run.race.grace
+    local delay = setting("race.hintDelay", 15)
+    if v.key == "waiting" and v.inCombat and (v.sinceBuzzer or 0) >= delay then v.hint = hintText() end
+end
+
+-- Why Arm would refuse right now, for the idle body (spec §4.1, §9): the pending run first.
+local function armBlocker()
+    if #NS.Recorder.Pending() > 0 then return "pending" end
+    if inCombat() then return "in_combat" end
+    local ok, why = NS.Meter.IsAvailable()
+    if not ok then return "meter_unavailable", why end
+    return nil
+end
+
+local function targetWarning(target)
+    if target.category ~= "other" then return nil end
+    if target.name then return L["Unknown target: recorded as Other: %s"]:format(target.name) end
+    return L["No target: the one you fight is read when combat starts."]
+end
+
+local function idleView(v)
+    if not pick.target then pick.target = NS.Recorder.SnapshotTarget("target") end
+    local target = pick.target
+    v.target = target
+    v.count = pick.count or target.count or 1
+    v.length = currentLength()
+    v.editing = pick.editing
+    v.blocker, v.detail = armBlocker()
+    v.warning = targetWarning(target)
+    -- Whether there is a last result to open; the sorted list is built only when it is clicked.
+    local runs = NS.db and NS.db.global and NS.db.global.runs
+    v.hasRuns = type(runs) == "table" and next(runs) ~= nil
+end
+
+local function resultView(v)
+    local run = v.run
+    if run.status == "complete" then v.delta, v.isNew = NS.Bests.Delta(run) end
+    v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function"
+    v.icons = setting("live.icons", true) ~= false
+end
+
+local function runningView(v)
+    v.timeLeft = NS.Race.TimeLeft()
+    v.live = liveData
+end
+
+local FILL = { idle = idleView, running = runningView, result = resultView }
+
+local function commonView(v)
+    v.rows = setting("live.rows", 8)
+    v.icons = setting("live.icons", true) ~= false
+    v.showDps = setting("live.showDps", true) ~= false
+    v.hz = setting("live.hz", 4)
+end
+
+local function raceView()
+    local state = NS.Race.State()
+    local v = { state = state, run = NS.Race.Current(), inCombat = inCombat() }
+    commonView(v)
+    if state == S().STOPPING then
+        stopView(v)
+        return v
+    end
+    v.key = BODY_OF[state] or "idle"
+    if not v.run then v.key = "idle" end
+    local fill = FILL[v.key]
+    if fill then fill(v) end
+    return v
+end
+
+-- Test mode: the body Hud.Render pushed, its figures as given (the preview owns them).
+local function previewView()
+    local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
+    commonView(v)
+    for k, x in pairs(preview.extra or {}) do v[k] = x end
+    v.key = BODY_OF[preview.key] or preview.key
+    if v.key == "stopping" then v.key = "stop" end
+    if v.key == "idle" then idleView(v) end
+    return v
+end
+
+local function buildView()
+    if previewOn() and preview then return previewView() end
+    preview = nil
+    return raceView()
+end
+Hud.View = buildView
+
+-- ── the window ──────────────────────────────────────────────────────────────────────────────────
+
+local function contentWidth()
+    if ui and ui.width then return ui.width - 2 * PAD end
+    local width = storedSize()
+    return width - 2 * PAD
+end
+
+local function layoutBodies()
+    local width = contentWidth()
+    for _, body in pairs(ui.body) do
+        if body.Layout then body:Layout(width) end
+    end
+end
+
+local function applyPlacement()
+    local f, w = ui.frame, store() or {}
+    local width, height = storedSize()
+    ui.width = width
+    f:ClearAllPoints()
+    f:SetPoint(w.point or "CENTER", UIParent, w.relativePoint or "CENTER", w.x or 0, w.y or 0)
+    f:SetSize(width, height)
+    f:SetScale(setting("scale", 1))
+    layoutBodies()
+end
+
+-- The shell frame never displays a meter value (only its descendants do), so its own anchor is
+-- read back here, the one geometry read in the HUD.
+local function savePosition()
+    local w = store()
+    if not (w and ui) then return end
+    local point, _, relativePoint, x, y = ui.frame:GetPoint(1)
+    if type(point) ~= "string" or type(x) ~= "number" or type(y) ~= "number" then return end
+    w.point, w.relativePoint = point, type(relativePoint) == "string" and relativePoint or point
+    w.x, w.y = math.floor(x + 0.5), math.floor(y + 0.5)
+end
+
+local function onResized(width)
+    if type(width) == "number" then ui.width = math.max(Hud.MIN_WIDTH, width) end
+    layoutBodies()
+end
+
+local function saveSize(width, height)
+    local w = store()
+    if not w then return end
+    if type(width) == "number" then w.width = math.floor(width + 0.5) end
+    if type(height) == "number" then w.height = math.floor(height + 0.5) end
+end
+
+local function setIcon(b, name, glyph)
+    local path = NS.Icon(name)
+    b.icon:SetShown(path ~= nil)
+    b.glyph:SetShown(path == nil)
+    if path then b.icon:SetTexture(path) else b.glyph:SetText(glyph) end
+    b.iconName = name
+end
+
+--- A title-bar control drawn from the shared catalog, a plain character beneath it (standalone-windows).
+local function iconButton(parent, name, glyph, tip, onClick)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(18, 18)
+    b.icon = b:CreateTexture(nil, "OVERLAY")
+    b.icon:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.icon:SetSize(12, 12)
+    b.icon:SetVertexColor(0.7, 0.7, 0.72)
+    b.glyph = b:CreateFontString(nil, "OVERLAY")
+    b.glyph:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 11, "")
+    b.glyph:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.tip = tip
+    setIcon(b, name, glyph)
+    b:SetScript("OnClick", function() onClick() end)
+    b:SetScript("OnEnter", function(self)
+        self.icon:SetVertexColor(1, 1, 1)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(self.tip, 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function(self)
+        self.icon:SetVertexColor(0.7, 0.7, 0.72)
+        if GameTooltip then GameTooltip:Hide() end
+    end)
+    return b
+end
+
+local function buildHeader(f)
+    f.title = f:CreateFontString(nil, "OVERLAY")
+    f.title:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 13, "")
+    f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -7)
+    f.title:SetText(L["DPS Race"])
+    f.divider = f:CreateTexture(nil, "ARTWORK")
+    f.divider:SetHeight(1)
+    f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
+    f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
+    if close then close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4) end
+    ui.close = close
+    ui.lock = iconButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
+    ui.lock:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -4)
+    ui.settings = iconButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
+    ui.settings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -48, -4)
+    ui.results = iconButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
+    ui.results:SetPoint("TOPRIGHT", f, "TOPRIGHT", -70, -4)
+    -- The drag strip: the title bar left of the controls.
+    local drag = CreateFrame("Frame", nil, f)
+    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -92, -HEADER_H)
+    drag:EnableMouse(true)
+    drag:RegisterForDrag("LeftButton")
+    drag:SetScript("OnDragStart", function() if not Hud.locked then f:StartMoving() end end)
+    drag:SetScript("OnDragStop", function()
+        f:StopMovingOrSizing()
+        savePosition()
+    end)
+    ui.drag = drag
+end
+
+local function buildFooter(f)
+    local line = f:CreateTexture(nil, "ARTWORK")
+    line:SetHeight(1)
+    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
+    line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
+    ui.footLeft = f:CreateFontString(nil, "OVERLAY")
+    ui.footLeft:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 10, "")
+    ui.footLeft:SetTextColor(0.62, 0.62, 0.68)
+    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 6)
+    ui.footRight = f:CreateFontString(nil, "OVERLAY")
+    ui.footRight:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 10, "")
+    ui.footRight:SetTextColor(0.62, 0.62, 0.68)
+    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 6)
+end
+
+local onHide
+
+local function ensureWindow()
+    if ui then return ui end
+    local f = CreateFrame("Frame", Hud.FRAME_NAME, UIParent, "BackdropTemplate")
+    ui = { frame = f, body = {} }
+    f:Hide()
+    f:SetFrameStrata("MEDIUM")
+    f:SetClampedToScreen(true)
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    buildHeader(f)
+    buildFooter(f)
+    ui.content = CreateFrame("Frame", nil, f)
+    ui.content:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -(HEADER_H + 10))
+    ui.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, FOOTER_H + 8)
+    ui.content:SetClipsChildren(true)
+    NS.ApplySkin(f)
+    f:SetScript("OnHide", function() onHide() end)
+    -- Escape closes it with the standard close stack (standalone-windows).
+    if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Hud.FRAME_NAME) end
+    NS.MakeResizable(f, {
+        minWidth = Hud.MIN_WIDTH, minHeight = Hud.MIN_HEIGHT,
+        canResize = function() return not Hud.locked end,
+        onResize = onResized,
+        onResizeStop = saveSize,
+    })
+    applyPlacement()
+    debug("window built")
+    return ui
+end
+
+local function applyLock()
+    setIcon(ui.lock, Hud.locked and "lock" or "unlock", Hud.locked and "L" or "U")
+    local grip = ui.frame.resizeGrip
+    if grip then grip:SetShown(not Hud.locked) end
+end
+
+local function showBody(key)
+    local body = ui.body[key]
+    if not body then
+        body = NS.HudStates.Build(key, ui.content)
+        ui.body[key] = body
+        if body.Layout then body:Layout(contentWidth()) end
+    end
+    if ui.current ~= key then
+        local old = ui.current and ui.body[ui.current]
+        if old then old.frame:Hide() end
+        ui.current = key
+    end
+    body.frame:Show()
+    return body
+end
+
+local function footer(v)
+    local char = (v.run and v.run.char) or NS.Recorder.SnapshotPlayer() or {}
+    local parts = {}
+    if char.spec then parts[#parts + 1] = char.spec end
+    if char.name then parts[#parts + 1] = char.name end
+    ui.footLeft:SetText(table.concat(parts, " \194\183 "))
+    local right = type(char.ilvl) == "number" and L["ilvl %d"]:format(math.floor(char.ilvl)) or ""
+    if v.key == "running" then right = L["live \194\183 %d Hz"]:format(v.hz or 4) end
+    if v.key == "waiting" then right = L["result pending"] end
+    ui.footRight:SetText(right)
+end
+
+--- Draw the body for the current view. `full` also redraws the live rows (a tick does not).
+local function render(full)
+    local v = buildView()
+    local body = showBody(v.key)
+    body:Update(v)
+    if full and body.SetLive then body:SetLive(v.live, v.rows, v.icons) end
+    footer(v)
+    return v
+end
+
+-- ── what runs while shown ───────────────────────────────────────────────────────────────────────
+
+local function windowShown()
+    return ui ~= nil and ui.frame:IsShown() == true
+end
+
+local function liveWanted()
+    return windowShown() and not NS.IsStoodDown() and not previewOn() and NS.Race.State() == S().RUNNING
+end
+
+local function cancelLive()
+    if liveTimer then liveTimer:Cancel() end
+    liveTimer = nil
+end
+
+--- One live read and redraw: the running body's figures and rows from NS.Meter.ReadLive (opaque).
+local function readLive()
+    liveTimer = nil
+    if not liveWanted() then return end
+    local t0 = Perf.on and debugprofilestop()
+    lastRead = GetTime()
+    liveData = NS.Meter.ReadLive() or liveData
+    local body = ui.body.running
+    if body and ui.current == "running" then
+        body:SetLive(liveData, setting("live.rows", 8), setting("live.icons", true) ~= false)
+    end
+    if t0 then Perf.Note("hudLive", debugprofilestop() - t0) end
+end
+Hud.ReadLive = readLive
+
+--- A meter update: coalesced into at most one read per 1/live.hz seconds (spec §10).
+local function requestLive()
+    if liveTimer or not liveWanted() then return end
+    local hz = math.max(1, tonumber(setting("live.hz", 4)) or 4)
+    local wait = 0
+    if lastRead then wait = math.max(0, lastRead + 1 / hz - GetTime()) end
+    liveTimer = C_Timer.NewTimer(wait, readLive)
+end
+
+local function onEvent(_, event)
+    if NS.IsStoodDown() then return end
+    if event == METER_EVENT then return requestLive() end
+    if event == "PLAYER_TARGET_CHANGED" then pick.target, pick.count = nil, nil end
+    Hud.Refresh()
+end
+
+local function wantedEvents()
+    if not windowShown() or NS.IsStoodDown() then return "none" end
+    if liveWanted() then return "live" end
+    return "idle"
+end
+
+local function syncEvents()
+    local want = wantedEvents()
+    if want ~= "live" then cancelLive() end
+    if want == registered then return end
+    if events then events:UnregisterAllEvents() end
+    registered = want
+    if want == "none" then return end
+    if not events then
+        events = CreateFrame("Frame")
+        events:SetScript("OnEvent", onEvent)
+    end
+    for _, event in ipairs(BASE_EVENTS) do NS.SafeRegisterEvent(events, event, nil, NS.rejectedEvents) end
+    if want == "live" then
+        NS.SafeRegisterEvent(events, METER_EVENT, nil, NS.rejectedEvents)
+        requestLive()
+    end
+end
+
+local function onUpdate(_, elapsed)
+    tickAcc = tickAcc + (elapsed or 0)
+    if tickAcc < Hud.TICK then return end
+    tickAcc = 0
+    local t0 = Perf.on and debugprofilestop()
+    render(false)
+    if t0 then Perf.Note("hudTick", debugprofilestop() - t0) end
+end
+Hud.Tick = function() tickAcc = Hud.TICK; onUpdate(nil, 0) end
+
+local function syncTicker()
+    local state = NS.Race.State()
+    local want = windowShown() and not previewOn() and (state == S().RUNNING or state == S().STOPPING)
+    if want and not ticking then
+        tickAcc = 0
+        ui.frame:SetScript("OnUpdate", onUpdate)
+    elseif not want and ticking then
+        ui.frame:SetScript("OnUpdate", nil)
+    end
+    ticking = want and true or false
+end
+
+local function hideWindow()
+    if windowShown() then
+        hiding = true
+        ui.frame:Hide()
+        hiding = false
+    end
+    syncTicker()
+    syncEvents()
+end
+
+-- The frame went away by Escape or by the close control: the player closed it. A result card closed
+-- is a result dismissed (the run stays in history). A frame still shown in its own right was hidden
+-- with its parent (the interface hidden, a cinematic), which is not the player closing it.
+function onHide()
+    if hiding or (ui and ui.frame:IsShown()) then return end
+    Hud.wanted, autoShown = false, false
+    syncTicker()
+    syncEvents()
+    if NS.Race.State() == S().RESULT and not NS.IsStoodDown() then NS.Race.Cancel() end
+end
+
+-- ── the public surface ──────────────────────────────────────────────────────────────────────────
+
+--- Whether the HUD decides to show: wanted, and the master rungs allow it.
+function Hud.IsShown()
+    return Hud.wanted and (NS.MasterVisibilityAllows()) or false
+end
+
+--- Re-decide and redraw. The one place the frame follows the decision.
+function Hud.Refresh()
+    Hud.locked = NS.GetSetting("locked") == true
+    if not Hud.IsShown() then return hideWindow() end
+    ensureWindow()
+    applyLock()
+    ui.frame:SetScale(setting("scale", 1))
+    if not windowShown() then ui.frame:Show() end
+    render(true)
+    syncEvents()
+    syncTicker()
+end
+
+function Hud.Show()
+    Hud.wanted, autoShown = true, false
+    Hud.Refresh()
+end
+
+function Hud.Hide()
+    Hud.wanted, autoShown = false, false
+    Hud.Refresh()
+end
+
+function Hud.Toggle()
+    if Hud.IsShown() then Hud.Hide() else Hud.Show() end
+end
+
+--- The Lock frame row's reaction: no drag, no resize while locked.
+function Hud.SetLocked(on)
+    Hud.locked = on and true or false
+    if ui then applyLock() end
+end
+
+--- Back to the default place and size (the Master controls' Reset position).
+function Hud.ResetPosition()
+    local w = store()
+    if w then w.point, w.relativePoint, w.x, w.y, w.width, w.height = nil, nil, nil, nil, nil, nil end
+    if ui then applyPlacement() end
+end
+
+--- Draw `state`'s body with the given run (and figures) instead of the race's: test mode's entry
+--- point (modules/Preview.lua). Ignored unless test mode is on. `extra` carries the figures a body
+--- reads off its view (timeLeft, live, tail, sinceBuzzer, inCombat, hint, delta, isNew ...).
+--- @param state string  a Race.STATE value, or "stop" / "waiting"
+--- @param run table|nil
+--- @param extra table|nil
+function Hud.Render(state, run, extra)
+    preview = { key = state, run = run, extra = extra }
+    Hud.Refresh()
+end
+
+--- The lifecycle's stand-down: the window hides, and every registration, timer and the OnUpdate go.
+function Hud.Suspend()
+    cancelCues()
+    cancelLive()
+    hideWindow()
+    if events then events:UnregisterAllEvents() end
+    registered = "none"
+end
+
+--- The stand-up (and OnEnable): "always" shows the window; then re-decide from current state.
+function Hud.Resume()
+    if setting("hud.showMode", "onArm") == "always" then Hud.wanted = true end
+    if NS.Race.State() == S().RUNNING then scheduleCues() end
+    Hud.Refresh()
+end
+
+-- ── the race, heard on the bus ──────────────────────────────────────────────────────────────────
+
+local function autoShow()
+    if Hud.wanted then return end
+    Hud.wanted, autoShown = true, true
+end
+
+local function onState(_, from, to)
+    local St = S()
+    if to == St.ARMED then
+        liveData, lastRead = nil, nil
+        pick.editing = false
+        autoShow()
+    end
+    if to == St.RUNNING then scheduleCues() else cancelCues() end
+    if to == St.IDLE and autoShown and setting("hud.showMode", "onArm") == "onArm" then
+        Hud.wanted, autoShown = false, false
+    end
+    debug("race %s -> %s", tostring(from), tostring(to))
+    Hud.Refresh()
+end
+
+do
+    local bus = NS.NewBusTarget()
+    if bus then
+        bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, from, to) onState(run, from, to) end)
+        bus:RegisterMessage(NS.MSG.RACE_BUZZER, function() buzzer() end)
+        bus:RegisterMessage(NS.MSG.RACE_RESULT, function()
+            autoShow()
+            Hud.Refresh()
+        end)
+    end
+end
+
+-- ── the acts the bodies' buttons run ────────────────────────────────────────────────────────────
+
+local Act = {}
+Hud.Act = Act
+
+local function openRun(run)
+    local R = NS.Results
+    if not (run and R) then return end
+    if type(R.ShowRun) == "function" then R.ShowRun(run.id) else R.Show() end
+end
+
+local function arm(length, count)
+    local ok, reason, detail = NS.Race.Arm(length, count)
+    if not ok then NS.Print(NS.Format.ArmRefusal(reason, detail)) end
+    Hud.Refresh()
+    return ok, reason
+end
+
+function Act.arm()
+    return arm(currentLength(), pick.count)
+end
+
+function Act.pickLength(n)
+    pick.length, pick.editing = n, false
+    rememberLength(n)
+    Hud.Refresh()
+end
+
+function Act.openCustom()
+    pick.editing = true
+    Hud.Refresh()
+end
+
+function Act.closeCustom()
+    pick.editing = false
+    Hud.Refresh()
+end
+
+--- A typed race length ("90", "1:30", "3m"); refused with the length line when out of range.
+function Act.customLength(text)
+    local n = NS.Format.ParseLength(text)
+    if not n or n < NS.Race.MIN_LENGTH or n > NS.Race.MAX_LENGTH then
+        NS.Print(NS.Format.ArmRefusal("bad_length"))
+        return false
+    end
+    Act.pickLength(n)
+    return true
+end
+
+function Act.stepCount(delta)
+    local target = pick.target or {}
+    local n = (pick.count or target.count or 1) + delta
+    pick.count = math.max(1, math.min(Hud.MAX_TARGETS, n))
+    Hud.Refresh()
+end
+
+function Act.cancel() return NS.Race.Cancel() end
+Act.discard = Act.cancel
+
+function Act.close()
+    -- In the client Hide runs OnHide, which is onHide; called again only if that did not happen.
+    if windowShown() then ui.frame:Hide() end
+    if Hud.wanted then
+        if ui then onHide() else Hud.wanted = false end
+    end
+end
+
+function Act.lock() return NS.ToggleLock() end
+function Act.settings() return NS.OpenOptionsPanel() end
+function Act.results() return NS.ToggleResults() end
+function Act.lastResult() openRun(NS.Recorder.All()[1]) end
+function Act.details() openRun(NS.Race.Current()) end
+
+function Act.raceAgain()
+    local run = NS.Race.Current()
+    local length = run and run.race and run.race.length or currentLength()
+    return arm(length, run and run.target and run.target.count)
+end
+
+function Act.share()
+    local run = NS.Race.Current()
+    if run and NS.Share and type(NS.Share.Prompt) == "function" then NS.Share.Prompt(run) end
+end
+
+--- What the HUD is doing, for the diagnostics report: the body on screen, the event set it holds
+--- ("none" | "idle" | "live"), whether the countdown OnUpdate is attached, and the lock.
+function Hud.Diagnose()
+    return { body = ui and ui.current or "none", events = registered, ticking = ticking, locked = Hud.locked }
+end
+
+--- The built window and its bodies, for the suites (nil until first shown).
+function Hud.__ui() return ui end

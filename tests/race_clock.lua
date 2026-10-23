@@ -165,6 +165,8 @@ return function(T)
 
     --- A fresh instance on the scripted meter and the fake clock, its clock at 100.
     ---   opts.enable  false = initialize but do not enable (seed the store, then call f:enable())
+    ---   opts.mutate  function(mocks), run after the meter and the clock are installed (the HUD
+    ---                suites add their widget recorder here)
     function F.new(opts)
         opts = opts or {}
         local meter, clock
@@ -173,6 +175,7 @@ return function(T)
             mutate = function(m)
                 meter = T.mockMeter.install(m)
                 clock = installClock(m)
+                if opts.mutate then opts.mutate(m) end
             end,
         }
         local NS, M = inst.NS, inst.mocks
