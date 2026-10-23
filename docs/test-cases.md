@@ -349,7 +349,7 @@ Total.
 - share: a result prints the score line with the delta, the flags and the tail
 - share: the race's own result is printed once, when it resolves
 
-### test_preview.lua (11)
+### test_preview.lua (12)
 
 - preview: preview runs armed->running->stop->waiting->result and never writes a run
 - preview: the running body counts the 30s race down with live figures
@@ -362,6 +362,7 @@ Total.
 - preview: turning it off gives the HUD back, closing it if test mode opened it
 - preview: Start again restarts the script; Reset all settings ends it
 - preview: the stand-down ends it silently and cancels its timer
+- preview: over a real result card its controls never touch the real race
 
 ### test_launcher.lua (8)
 
@@ -513,7 +514,7 @@ Total.
 | test_settings.lua | 16 |
 | test_slash.lua | 27 |
 | test_share.lua | 12 |
-| test_preview.lua | 11 |
+| test_preview.lua | 12 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
 | test_surface_parity.lua | 15 |
@@ -526,4 +527,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **396** |
+| **Total** | **397** |

@@ -590,6 +590,9 @@ function Builders.result(parent)
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         if lost then self.w.list:Clear() else self.w.list:ShowResult(run, States.RESULT_ROWS, v.icons ~= false) end
         setEnabled(self.w.share, v.canShare == true)
+        -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
+        setEnabled(self.w.again, v.preview ~= true)
+        setEnabled(self.w.details, v.preview ~= true)
     end
     return body
 end

@@ -665,12 +665,18 @@ end
 
 -- The frame went away by Escape or by the close control: the player closed it. A result card closed
 -- is a result dismissed (the run stays in history). A frame still shown in its own right was hidden
--- with its parent (the interface hidden, a cinematic), which is not the player closing it.
+-- with its parent (the interface hidden, a cinematic), which is not the player closing it. In test
+-- mode the card on screen is the sample, not the race's: closing the window ends test mode and
+-- leaves a real result card the preview covered as it was.
 function onHide()
     if hiding or (ui and ui.frame:IsShown()) then return end
     Hud.wanted, autoShown = false, false
     syncTicker()
     syncEvents()
+    if previewOn() then
+        NS.Preview.Stop()
+        return
+    end
     if NS.Race.State() == S().RESULT and not NS.IsStoodDown() then NS.Race.Cancel() end
 end
 
@@ -844,7 +850,13 @@ function Act.stepCount(delta)
     Hud.Refresh()
 end
 
-function Act.cancel() return NS.Race.Cancel() end
+-- In test mode the bodies are the sample's: CANCEL and DISCARD RUN end test mode, never the real
+-- race the preview may be covering (a result card), and the sample card's RACE AGAIN and DETAILS
+-- (drawn disabled) do nothing.
+function Act.cancel()
+    if previewOn() then return NS.Preview.Stop() end
+    return NS.Race.Cancel()
+end
 Act.discard = Act.cancel
 
 function Act.close()
@@ -859,9 +871,13 @@ function Act.lock() return NS.ToggleLock() end
 function Act.settings() return NS.OpenOptionsPanel() end
 function Act.results() return NS.ToggleResults() end
 function Act.lastResult() openRun(NS.Recorder.All()[1]) end
-function Act.details() openRun(NS.Race.Current()) end
+function Act.details()
+    if previewOn() then return false end
+    openRun(NS.Race.Current())
+end
 
 function Act.raceAgain()
+    if previewOn() then return false end
     local run = NS.Race.Current()
     local length = run and run.race and run.race.length or currentLength()
     return arm(length, run and run.target and run.target.count)

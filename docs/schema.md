@@ -57,7 +57,7 @@ Every `race.*`, `live.*` and `hud.showMode` key has its row; `race.lastLength` i
 | State | Where | Why session-only |
 |---|---|---|
 | Debug logging flag | `NS.State.debug` (`core/State.lua`) | debug-logging-§5 |
-| Test mode | `NS.Preview` (`modules/Preview.lua`), through the `state.testMode` row (`default = false`, so *Reset all settings* ends it) | preview-mode: on until turned off, ended by combat and by arming a real race; its sample run is never stored |
+| Test mode | `NS.Preview` (`modules/Preview.lua`), through the `state.testMode` row (`default = false`, so *Reset all settings* ends it) | preview-mode: on until turned off, ended by combat, by arming a real race and by closing the HUD; its sample run is never stored |
 | Debug console shown | the console itself, through the `state.debugConsole` row | a window toggle, not a setting |
 
 ## Migrations
