@@ -26,8 +26,10 @@ row's `default` reads from it.
 | `visibility` | `"always"` | *General visibility* | `always`, `inCombat`, `outOfCombat` or `never` |
 | `scale` | `1.0` | *Master scale* | The HUD's scale (T7) |
 | `locked` | `false` | *Lock frame* | The HUD's position lock (T7) |
+| `race.grace` | `1.0` | none yet (T9) | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
+| `race.restartGap` | `6` | none yet (T9) | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
 
-T9 adds `race.*` (default length, countdown cue, buzzer, grace, restart gap, hint delay), `live.*`
+T9 adds the rows for `race.grace` and `race.restartGap`, the rest of `race.*` (default length, countdown cue, buzzer, hint delay), `live.*`
 (rows, icons, live DPS, read rate) and `hud.*`; T7 and T8 add `windows.<name>` geometry. Each lands
 here with its task.
 
@@ -79,7 +81,7 @@ and a closed list of writers.
 
 | Storage key | Owner | Writers |
 |---|---|---|
-| `global.runs` | `modules/Recorder.lua` (T3; not in the tree yet) | `Recorder.Save`, `Recorder.Delete`, `Recorder.DeleteAll`, `Recorder.Prune` (T6); a run's `note` through `Recorder.Save` from the Results detail pane (T8) |
+| `global.runs` | `modules/Recorder.lua` | `Recorder.Save`, `Recorder.Delete`, `Recorder.DeleteAll`, `Recorder.Prune` (T6); a run's `note` through `Recorder.Save` from the Results detail pane (T8) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |

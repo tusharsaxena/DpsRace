@@ -10,6 +10,13 @@ NS.defaults = {
         visibility = "always",   -- always | inCombat | outOfCombat | never
         scale      = 1.0,
         locked     = false,
+        -- The scoring settings a new run freezes into its own record (modules/Recorder.lua NewRun):
+        -- changing one never re-grades a saved run (spec §5.2). T9 adds their schema rows and the rest
+        -- of the Race page's keys.
+        race = {
+            grace      = 1.0,   -- s after the buzzer before a cast start is late (spec §5.2)
+            restartGap = 6,     -- s of quiet after the buzzer before damage counts as restarted (§5.3)
+        },
     },
     global = {
         -- 0, never the current version: AceDB strips a value equal to its default at logout and

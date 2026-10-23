@@ -72,11 +72,15 @@ core\Database.lua
 
 # Defaults (the only place a default is hardcoded -- savedvariables-§2)
 defaults\Profile.lua
+# LOAD-BEARING: publishes NS.Dummies and reads NS.L at FILE SCOPE (the category labels); calls
+# NS.Secrets at CALL time only.
+defaults\Dummies.lua
 
 # Modules -- conventional order: each reaches the others at CALL time, except as noted.
 # LOAD-BEARING: publishes NS.Meter and resolves the meter enums at FILE SCOPE; first, so every later
 # module may capture it.
 modules\Meter.lua
+modules\Recorder.lua
 modules\Placeholders.lua
 modules\Diagnostics.lua
 

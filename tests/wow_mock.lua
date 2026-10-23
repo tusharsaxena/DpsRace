@@ -142,6 +142,45 @@ local function build()
     }
     M.MenuResponse = { Close = 1, Refresh = 2, Open = 3 }
 
+    -- The run record's metadata snapshots (modules/Recorder.lua, T3): who, against what, where. The
+    -- player fields extend the kit's __context; the target is one settable table, nil = no target.
+    -- Every value is read at CALL time, so a case sets M.__context / M.__setTarget before snapshotting.
+    M.__context.guid        = "Player-1-00000001"
+    M.__context.specID      = 267
+    M.__context.role        = "DAMAGER"
+    M.__context.ilvl        = 313.44     -- overall (bags included)
+    M.__context.ilvlEquipped = 313.16
+    M.__context.race        = "Blood Elf"
+    M.__context.raceToken   = "BloodElf"
+    M.__context.mapID       = 2393
+    M.__context.build       = 120105
+    M.GetSpecializationInfo = function()
+        return M.__context.specID, M.__context.spec, "", 0, M.__context.role
+    end
+    M.GetAverageItemLevel = function() return M.__context.ilvl, M.__context.ilvlEquipped end
+    M.UnitRace = function() return M.__context.race, M.__context.raceToken end
+    M.C_Map = { GetBestMapForUnit = function() return M.__context.mapID end }
+    M.GetInstanceInfo = function()
+        return M.__context.inInstance and "Instance" or M.__context.zone, M.__context.instanceType
+    end
+    M.GetBuildInfo = function() return "12.0.5", "60000", "Oct 1 2026", M.__context.build end
+
+    -- The target: { guid, name, level, classification } or nil. Any field may be a Kit.secret.
+    M.__target = nil
+    function M.__setTarget(t)
+        M.__target = t
+        M.__unitExists.target = t ~= nil
+    end
+    local function unitField(unit, field, playerValue)
+        if unit == "player" then return playerValue end
+        if unit == "target" and M.__target then return M.__target[field] end
+        return nil
+    end
+    M.UnitGUID = function(unit) return unitField(unit, "guid", M.__context.guid) end
+    M.UnitName = function(unit) return unitField(unit or "player", "name", M.__context.name) end
+    M.UnitLevel = function(unit) return unitField(unit or "player", "level", M.__context.level) end
+    M.UnitClassification = function(unit) return unitField(unit, "classification", "normal") end
+
     return M
 end
 

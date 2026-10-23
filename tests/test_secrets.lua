@@ -118,3 +118,14 @@ test("secrets: SafeIterate refuses a table this context may not read", function(
     assertEqual(calls, 0)
     assertFalse(inst.NS.Secrets.CanAccessTable({}))
 end)
+
+test("secrets: PlainString passes a plain string and refuses nil, a number and a secret", function()
+    withSecretValue(function()
+        local S = T.NS.Secrets
+        assertEqual(S.PlainString("Golem"), "Golem")
+        assertEqual(S.PlainString(""), "")
+        assertNil(S.PlainString(nil))
+        assertNil(S.PlainString(7), "a number is not a string")
+        assertNil(S.PlainString(T.secret("Golem")), "a secret never converts")
+    end)
+end)

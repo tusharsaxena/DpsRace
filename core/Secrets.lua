@@ -93,6 +93,17 @@ function Secrets.PlainNumber(v)
     return v
 end
 
+--- `v` as a plain Lua string, or nil when it is nil, secret, inaccessible or not a string. What a
+--- metadata snapshot stores: a unit's name or GUID read in combat may be secret, and a secret must
+--- never reach SavedVariables (modules/Recorder.lua).
+--- @param v any
+--- @return string|nil
+function Secrets.PlainString(v)
+    if Secrets.IsSealed(v) then return nil end
+    if type(v) ~= "string" then return nil end
+    return v
+end
+
 --- True only when `v` is accessible and truthy. `if src.isLocalPlayer then` raises on a secret
 --- boolean; an inaccessible flag reads as "no claim" (false), the safe answer for every caller.
 --- @param v any

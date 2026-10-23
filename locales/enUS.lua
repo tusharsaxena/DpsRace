@@ -57,3 +57,11 @@ L["Test mode ended: you entered combat."] = "Test mode ended: you entered combat
 
 -- The meter adapter (modules/Meter.lua)
 L["Blizzard's damage meter is not available on this client."] = "Blizzard's damage meter is not available on this client."
+
+-- Dummy categories (defaults/Dummies.lua, spec §4.6)
+L["Single target"] = "Single target"
+L["Cleave"] = "Cleave"
+L["Dungeoneer"] = "Dungeoneer"
+L["Boss-level"] = "Boss-level"
+L["PvP"] = "PvP"
+L["Other"] = "Other"

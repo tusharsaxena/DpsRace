@@ -47,6 +47,16 @@ files["core/Secrets.lua"] = {
 }
 files["modules/Meter.lua"] = { read_globals = { "C_DamageMeter" } }
 
+-- The run record's metadata snapshots (spec §7): who, against what and where. Scoped to the one file
+-- that takes them, so nothing else grows a habit of reading unit metadata the record already holds.
+files["modules/Recorder.lua"] = {
+    read_globals = {
+        "time", "UnitExists", "UnitLevel", "UnitRace", "UnitClassification", "GetRealmName",
+        "GetSpecialization", "GetSpecializationInfo", "GetAverageItemLevel", "C_Map",
+        "GetZoneText", "GetSubZoneText", "GetInstanceInfo", "GetBuildInfo",
+    },
+}
+
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
 

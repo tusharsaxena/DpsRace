@@ -1,4 +1,4 @@
--- tests/mock_meter.lua — a scripted C_DamageMeter modelling the 12.0 behaviour the probe measured
+-- tests/mock_meter.lua — a scripted C_DamageMeter modeling the 12.0 behavior the probe measured
 -- (spec §2): every number, spell ID, GUID and flag is SECRET while the combat restriction is on and
 -- plain after; sessions are addressable by ID; the Current session is the newest one set.
 --
@@ -182,9 +182,12 @@ return function(Kit)
         mocks.Enum.DamageMeterType = { DamageDone = DAMAGE_DONE, Dps = 1, DamageTaken = 7,
                                        EnemyDamageTaken = 10 }
         mocks.Enum.DamageMeterSessionType = { Overall = OVERALL, Current = CURRENT, Expired = 2 }
+        -- The player's GUID is the controller's (SetPlayerGUID); any other unit is the base mock's
+        -- answer, so a case can script a target alongside the meter.
+        local priorGUID = mocks.UnitGUID
         mocks.UnitGUID = function(unit)
             if unit == "player" then return ctl.guid end
-            return nil
+            return priorGUID and priorGUID(unit) or nil
         end
         mocks.issecretvalue = function(v) return Kit.isSecret(v) end
         mocks.C_RestrictedActions = {

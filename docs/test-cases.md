@@ -19,7 +19,7 @@ Total.
 - skeleton: every declared icon resolves to a shipped path
 - skeleton: every authored Lua file opens with the NS bootstrap and a path comment
 
-### test_secrets.lua (8)
+### test_secrets.lua (9)
 
 - secrets: IsSecret/PlainNumber over plain, nil and secret
 - secrets: the guards are LibKa0s-Compat's when the library loaded
@@ -29,6 +29,7 @@ Total.
 - secrets: SafeIterate stops at nil and at 512
 - secrets: SafeIterate never applies # or ipairs and passes secrets through untouched
 - secrets: SafeIterate refuses a table this context may not read
+- secrets: PlainString passes a plain string and refuses nil, a number and a secret
 
 ### test_meter.lua (17)
 
@@ -49,6 +50,36 @@ Total.
 - meter: SessionIDs and HasSession track the client's list by plain ID
 - meter: modules/Meter.lua is the only file that names C_DamageMeter
 - meter: core/Secrets.lua is the only file that names the client's secret detectors
+
+### test_dummies.lua (5)
+
+- dummies: Lookup known and unknown npcID
+- dummies: the catalog holds exactly the measured rows
+- dummies: Lookup answers a copy, so a caller cannot edit the catalog
+- dummies: six categories in order, each with an enUS label
+- dummies: every cataloged category is one of the six
+
+### test_recorder.lua (19)
+
+- recorder: SnapshotPlayer records who the player is (spec §7 char)
+- recorder: SnapshotPlayer tolerates a client without the spec and ilvl APIs
+- recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes known dummies
+- recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes unknown targets as other
+- recorder: SnapshotTarget on a player or with no target is other with no npcID
+- recorder: SnapshotTarget tolerates a secret GUID (records name, category other)
+- recorder: SnapshotTarget fills a sealed field from the prior snapshot
+- recorder: SnapshotWhere records the map, zone, subzone and instance type
+- recorder: NewRun copies grace and restartGap from the profile
+- recorder: NewRun uses the shipped defaults (grace 1.0, restart gap 6)
+- recorder: NewRun never reuses a stored id
+- recorder: Save stores by id, fires RUN_SAVED, and Get reads it back
+- recorder: Save refuses a run without an id
+- recorder: All orders by date desc and excludes armed
+- recorder: All breaks a date tie by id, so the order is stable
+- recorder: Pending returns running and stopping only
+- recorder: Delete fires RUNS_CHANGED
+- recorder: DeleteAll empties the store and fires RUNS_CHANGED
+- recorder: the store is account-wide and survives a profile switch
 
 ### test_schema.lua (14)
 
@@ -213,8 +244,10 @@ Total.
 | Suite | Cases |
 |-------|------:|
 | test_skeleton.lua | 8 |
-| test_secrets.lua | 8 |
+| test_secrets.lua | 9 |
 | test_meter.lua | 17 |
+| test_dummies.lua | 5 |
+| test_recorder.lua | 19 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -229,4 +262,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **151** |
+| **Total** | **176** |

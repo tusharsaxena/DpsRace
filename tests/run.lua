@@ -76,6 +76,8 @@ local SUITES = {
     "test_skeleton",
     "test_secrets",
     "test_meter",
+    "test_dummies",
+    "test_recorder",
     "test_schema",
     "test_slash",
     "test_launcher",
