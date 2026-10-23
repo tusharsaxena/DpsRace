@@ -6,7 +6,7 @@ design spec is [`../../superpowers/specs/2026-10-23-dps-race-pve-design.md`](../
 
 | Screen | What it shows |
 |---|---|
-| [01-flow](screens/01-flow.png) | The race lifecycle, and what happens when a run is incomplete, reloaded, lost or cancelled |
+| [01-flow](screens/01-flow.png) | The race lifecycle, and what happens when a run is incomplete, reloaded, lost or canceled |
 | [02-hud-idle](screens/02-hud-idle.png) | HUD: race length presets, target card, Arm |
 | [03-hud-armed](screens/03-hud-armed.png) | HUD: armed, waiting for the first hit |
 | [04-hud-running](screens/04-hud-running.png) | HUD: countdown, live damage and DPS, live breakdown (no %) |
