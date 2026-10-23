@@ -167,6 +167,38 @@ test("hud: an unknown target is allowed and said so", function()
     assertEqual(body(f).w.card.name.__text, "No target")
 end)
 
+local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" }
+local BOAR = { guid = "Creature-0-1-2-3-99999-0001", name = "Angry Boar" }
+
+test("hud: a target changed while the HUD is closed is never armed with the old count", function()
+    local f = hud()
+    f.M.__setTarget(CLEAVE)
+    f.Hud.Show()
+    for _ = 1, 4 do f.Hud.Act.stepCount(1) end
+    assertEqual(body(f).w.card.count.__text, "5")
+    f.Hud.Hide()
+    f.M.__setTarget(BOAR)
+    f.M.__fire("PLAYER_TARGET_CHANGED")       -- nobody listens while the window is closed
+    assertTrue(f.NS.ToggleArm())
+    assertEqual(f.Race.Current().target.count, 1, "the stepped count of the old target was armed")
+    assertEqual(f.Race.Current().target.name, "Angry Boar")
+end)
+
+test("hud: reopening the HUD offers the target of the moment, not the one cached at close", function()
+    local f = hud()
+    f.M.__setTarget(CLEAVE)
+    f.Hud.Show()
+    for _ = 1, 4 do f.Hud.Act.stepCount(1) end
+    f.Hud.Hide()
+    f.M.__setTarget(BOAR)
+    f.M.__fire("PLAYER_TARGET_CHANGED")
+    f.Hud.Show()
+    assertEqual(body(f).w.card.name.__text, "Angry Boar")
+    assertEqual(body(f).w.card.count.__text, "1")
+    assertTrue(f.Hud.Act.arm())
+    assertEqual(f.Race.Current().target.count, 1)
+end)
+
 -- ── the live breakdown ──────────────────────────────────────────────────────────────────────────
 
 --- Drive 2.5s of running at 16 meter updates a second with a countdown tick on each.

@@ -65,6 +65,8 @@ local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
 local preview                  -- what Hud.Render pushed while test mode is on
 local pick = {}                -- the idle body's choices: length, count, target, editing
+-- pick.target and pick.count are the target of the moment only while the window is shown (the one
+-- time PLAYER_TARGET_CHANGED is heard): forgotten on every show and on an arm from a closed window.
 
 local function S() return NS.Race.STATE end
 
@@ -678,7 +680,10 @@ function Hud.Refresh()
     applyLock()
     applyTestMarker()
     ui.frame:SetScale(setting("scale", 1))
-    if not windowShown() then ui.frame:Show() end
+    if not windowShown() then
+        pick.target, pick.count = nil, nil
+        ui.frame:Show()
+    end
     render(true)
     syncEvents()
     syncTicker()
@@ -791,6 +796,8 @@ local function arm(length, count)
 end
 
 function Act.arm()
+    -- Closed, the HUD heard no target change: the cached target and its stepped count may be stale.
+    if not windowShown() then pick.target, pick.count = nil, nil end
     return arm(currentLength(), pick.count)
 end
 
