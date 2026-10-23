@@ -4,7 +4,7 @@ codes = true
 
 -- libs/ and tests/_kit/ are byte copies of code linted in its own repo (LibKa0s); linting the copy
 -- would report every finding twice and let the copy drift green (lint). The frozen docs/ bundles must
--- never be "fixed" by a lint pass. probe/ IS linted: it is authored Lua (see its stanza below).
+-- never be "fixed" by a lint pass.
 exclude_files = { "libs/", "tests/_kit/", "docs/audits/", "docs/reviews/", "docs/revendor/", "_dev/" }
 
 -- No top-level `ignore`: a blanket reaches every file, including the ones with no business producing
@@ -111,21 +111,3 @@ files["core/DpsRace.lua"] = { ignore = { "212/self" } }
 
 -- The MenuUtil fake mirrors the client's colon-called menu API (`root:CreateCheckbox`, ...).
 files["tests/wow_mock.lua"] = { ignore = { "212/self", "432/self" } }
-
--- probe/DpsRaceProbe is the pre-build measurement addon the spec's numbers came from: never shipped
--- (.pkgmeta), never loaded by this addon, kept as a record; the measured code is commit 5ad52a5 (docs/ARCHITECTURE.md ->
--- Documented deviations). It reaches client API the addon does not, so its globals are scoped to it,
--- and its one unused argument is the event's positional signature, left as measured.
-files["probe/"] = {
-    read_globals = {
-        "C_DamageMeter", "C_RestrictedActions", "C_ChatInfo", "C_Map", "C_Spell",
-        "issecretvalue", "canaccessvalue", "canaccesstable", "GetTimePreciseSec", "strsplit",
-        "date", "time", "UnitExists", "UnitIsPlayer", "UnitLevel", "UnitClassification",
-        "UnitHealth", "UnitHealthMax", "UnitHealthPercent", "UnitGetTotalAbsorbs", "UnitFullName",
-        "GetUnitName", "GetNormalizedRealmName", "GetSpecialization", "GetSpecializationInfo",
-        "GetAverageItemLevel", "GetZoneText", "GetSubZoneText", "GetInstanceInfo", "GetBuildInfo",
-        "PlaySound", "SOUNDKIT", "RaidNotice_AddMessage", "RaidWarningFrame", "ChatTypeInfo",
-    },
-    globals = { "DpsRaceProbeDB", "DpsRaceProbeSecretDB", "SLASH_DPSRACEPROBE1", "SlashCmdList" },
-    ignore = { "212/castGUID" },
-}

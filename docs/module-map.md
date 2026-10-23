@@ -82,5 +82,4 @@ Show-window keys and *Arm / cancel race*).
 | `tests/mock_widgets.lua` | the HUD and Results suites' widget recorder: distinct font strings and textures that remember their text, values and textures, which objects were handed a secret, every geometry read, and the client seams the HUD draws through (the number formatter, `C_Spell`, sounds, the raid warning, known spells) |
 | `tests/prose_waivers.lua` | the US-spelling gate's per-file, per-word waivers (the kit's own spelling of its timer-cancel field) |
 | `tests/test_*.lua` | the suites (see [testing.md](testing.md)) |
-| `probe/DpsRaceProbe/` | the pre-build measurement addon; excluded by `.luacheckrc` and `.pkgmeta` |
 | `media/logos/*.png`, `*.jpg` | the editable logo sources; `.pkgmeta` excludes them |
