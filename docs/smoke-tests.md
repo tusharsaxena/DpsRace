@@ -9,7 +9,7 @@ the catalog (spec §4.6).
 
 | Date | Build | Result |
 |---|---|---|
-| 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, centre countdown, restyle, title-bar hover) |
+| 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, center countdown, restyle, title-bar hover) |
 
 ## How to run it
 
