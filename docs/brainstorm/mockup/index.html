@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ka0s DPS Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* UX mockup for Ka0s DPS Race (PvE, v0.1.0). Single dark theme on purpose: it imitates the WoW
+   client. Window chrome follows the Ka0s window edge (standalone-windows): bg 0.06/0.06/0.08/0.92,
+   black outer line, 0.24/0.24/0.27 inner line, gold title. */
+:root{
+  color-scheme: dark;
+  --bg:#0a0b0f;
+  --panel:rgba(15,15,20,.94);
+  --edge-in:rgba(61,61,69,.85);
+  --gold:#ffd100;
+  --text:#ebe8e1;
+  --muted:#8f8c96;
+  --dim:#5d5b64;
+  --amber:#ffb84a;
+  --red:#ff4a4a;
+  --ok:#4ad06a;
+  --cyan:#3fd0ff;
+  --row:#16171d;
+  --row-alt:#121318;
+  --font-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  /* class colours */
+  --warlock:#8788ee; --mage:#3fc7eb; --druid:#ff7c0a; --hunter:#aad372; --priest:#ffffff; --evoker:#33937f;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--font-body);padding-inline:16px;padding-block:0 72px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;letter-spacing:.01em;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-size:.86em}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+header.top{padding-top:40px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{display:flex;gap:8px;flex-wrap:wrap;font:600 12px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .pill{border:1px solid var(--edge-in);padding:4px 8px;color:var(--gold)}
+header.top h1{font-size:clamp(36px,6vw,58px);line-height:1;color:var(--gold)}
+header.top h1 span{color:var(--text);font-weight:500}
+header.top p{max-width:72ch;margin:0;color:#c9c6cf}
+
+/* sections */
+section.stage{display:flex;flex-direction:column;gap:16px}
+.stage-head h2{font-size:30px;line-height:1.1}
+.stage-head h2 small{display:block;font:600 12px/1.6 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stage-head p{margin:6px 0 0;color:#bdb9c4;max-width:76ch}
+.scene{background:radial-gradient(1200px 500px at 20% 0%,#1b2433 0%,#0e1219 55%,#0a0b0f 100%);border:1px solid #1d1f27;padding:28px 20px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+.hscroll{overflow-x:auto;max-width:100%;padding-bottom:4px}
+
+/* the Ka0s window */
+.win{background:var(--panel);border:1px solid #000;box-shadow:inset 0 0 0 1px var(--edge-in),0 10px 40px rgba(0,0,0,.55);display:flex;flex-direction:column;position:relative}
+.win-title{display:flex;align-items:center;gap:8px;padding:7px 8px 6px 10px;border-bottom:1px solid var(--edge-in)}
+.win-title .t{font:700 15px/1 var(--font-display);color:var(--gold);letter-spacing:.02em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{width:18px;height:18px;display:inline-grid;place-items:center;color:#8d8b94;border:0;background:none;padding:0}
+.tb:hover{color:#fff}
+.tb.close:hover{color:#ff5050}
+.tb svg{width:13px;height:13px}
+.win-foot{border-top:1px solid var(--edge-in);padding:6px 10px;font:500 12px/1.3 var(--font-body);color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+
+/* buttons */
+.btn{background:#1b1c23;border:1px solid #33343d;padding:7px 12px;font:700 13px/1 var(--font-display);letter-spacing:.06em;text-transform:uppercase;color:#e9e6ef}
+.btn:hover{border-color:#5a5965}
+.btn.primary{background:#2a2306;border-color:var(--gold);color:var(--gold)}
+.btn.primary:hover{background:#3a300a}
+.btn.danger{border-color:rgba(255,74,74,.6);color:#ff8a8a}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:5px 8px;font-size:11px}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* state switcher */
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid #2a2b33;background:#121319}
+.seg button{border:0;border-right:1px solid #2a2b33;background:none;padding:8px 12px;font:600 13px/1 var(--font-display);letter-spacing:.04em;color:#bdb9c4}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:#1d1a0c;color:var(--gold)}
+.seg button .n{color:var(--dim);margin-right:6px}
+
+/* HUD */
+.hud{width:300px;min-height:360px}
+.hud-body{padding:12px 12px 10px;display:flex;flex-direction:column;gap:10px;flex:1}
+.lbl{font:600 11px/1 var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.presets button{background:#17181f;border:1px solid #2a2b33;padding:7px 0;font:700 14px/1 var(--font-display);color:#d6d2dd}
+.presets button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:#1d1a0c}
+.tcard{background:#121319;border:1px solid #24252d;padding:8px 9px;display:flex;flex-direction:column;gap:6px}
+.tcard .name{font:700 15px/1.1 var(--font-display)}
+.tcard .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.badge{font:700 10px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;padding:3px 5px;border:1px solid}
+.b-single{color:#9fd3ff;border-color:rgba(159,211,255,.45)}
+.b-cleave{color:#ffb15a;border-color:rgba(255,177,90,.45)}
+.b-dung{color:#ff7a7a;border-color:rgba(255,122,122,.45)}
+.b-boss{color:#d9a6ff;border-color:rgba(217,166,255,.45)}
+.b-other{color:#aaa;border-color:#555}
+.stepper{display:inline-flex;align-items:center;border:1px solid #2a2b33}
+.stepper button{background:#17181f;border:0;width:22px;height:20px;color:#ccc}
+.stepper span{min-width:26px;text-align:center;font:700 13px/1 var(--font-display)}
+.warn{font-size:12px;color:var(--amber);display:flex;gap:6px;align-items:flex-start}
+.big{font:700 54px/1 var(--font-display);text-align:center;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.big.amber{color:var(--amber)}
+.big.stop{color:var(--red);font-size:64px;letter-spacing:.06em}
+.sub{text-align:center;font-size:13px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi{background:#121319;border:1px solid #24252d;padding:6px 8px}
+.kpi .v{font:700 20px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+.kpi.good .v{color:var(--ok)}
+
+/* spell rows (live + result + detail) */
+.spells{display:flex;flex-direction:column;gap:2px}
+.sp{position:relative;display:grid;grid-template-columns:20px 1fr auto auto;gap:6px;align-items:center;height:22px;padding:0 6px 0 2px;background:#111217;overflow:hidden}
+.sp .bar{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,rgba(135,136,238,.38),rgba(135,136,238,.16));z-index:0;transition:width .5s ease}
+.sp > *:not(.bar){position:relative;z-index:1}
+.ic{width:18px;height:18px;border:1px solid #000;display:grid;place-items:center;font:700 10px/1 var(--font-display);color:#fff;text-shadow:0 1px 1px #000}
+.fire{background:linear-gradient(135deg,#ffb347,#c2410c 60%,#5a1405)}
+.fel{background:linear-gradient(135deg,#b8ff6a,#2f9e1a 60%,#103d06)}
+.shadow{background:linear-gradient(135deg,#c79bff,#6b2fbf 60%,#230b47)}
+.phys{background:linear-gradient(135deg,#d9d9d9,#7b7b7b 60%,#2d2d2d)}
+.sp .nm{font:600 13px/1 var(--font-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp .amt{font:600 13px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.sp .pct{font:600 12px/1 var(--font-display);color:var(--muted);width:42px;text-align:right;font-variant-numeric:tabular-nums}
+.sp .pct.hidden{display:none}
+.note-live{font-size:11px;color:var(--dim);display:flex;justify-content:space-between}
+
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font:700 11px/1 var(--font-display);letter-spacing:.06em;padding:4px 6px;border:1px solid;text-transform:uppercase}
+.chip.flag{color:var(--amber);border-color:rgba(255,184,74,.5);background:rgba(255,184,74,.08)}
+.chip.info{color:#a9c7ff;border-color:rgba(169,199,255,.35)}
+.chip.best{color:var(--ok);border-color:rgba(74,208,106,.5);background:rgba(74,208,106,.08)}
+.chip.bad{color:#ff8a8a;border-color:rgba(255,74,74,.45)}
+
+.hint{background:rgba(255,184,74,.07);border:1px solid rgba(255,184,74,.35);padding:8px 9px;font-size:12.5px;color:#f3d9aa}
+.spinner{width:28px;height:28px;border:3px solid #2a2b33;border-top-color:var(--gold);border-radius:50%;margin:6px auto 0;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}.sp .bar{transition:none}}
+
+.ann{flex:1;min-width:260px;max-width:440px;display:flex;flex-direction:column;gap:10px}
+.ann h3{font-size:20px;color:var(--gold)}
+.ann ul{margin:0;padding-left:18px;color:#cfcbd6;font-size:14px;display:flex;flex-direction:column;gap:5px}
+.ann .rule{border-left:2px solid var(--gold);padding:4px 0 4px 10px;color:#bdb9c4;font-size:13.5px}
+
+/* flow */
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+.fs{flex:1;min-width:130px;background:#121319;border:1px solid #24252d;padding:10px 12px;position:relative;cursor:pointer;text-align:left}
+.fs:hover{border-color:#4a4955}
+.fs + .fs{border-left:0}
+.fs h4{margin:0;font:700 16px/1.1 var(--font-display);color:var(--gold)}
+.fs p{margin:4px 0 0;font-size:12.5px;color:var(--muted);line-height:1.35}
+.fs .trig{display:block;margin-top:6px;font:600 11px/1.3 var(--font-mono);color:#9fd3ff}
+.branches{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px}
+.br{border:1px dashed #33343d;padding:8px 10px;font-size:13px;color:#bdb9c4}
+.br b{font-family:var(--font-display);color:#e9e6ef;letter-spacing:.02em}
+
+/* results window */
+.results{width:1040px}
+.cls{width:16px;height:16px;display:inline-grid;place-items:center;vertical-align:-3px;border:1px solid #000;font:700 9px/1 var(--font-display);color:#000;margin-right:3px}
+.icons{white-space:nowrap}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--edge-in);padding:0 8px}
+.tabs button{border:0;background:none;padding:8px 14px;font:700 13px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid #1f2027;align-items:center}
+.dd{background:#17181f;border:1px solid #2a2b33;padding:5px 8px;font:600 12px/1 var(--font-display);color:#d6d2dd;display:inline-flex;gap:6px;align-items:center}
+.dd::after{content:"▾";color:var(--muted)}
+.ck{display:inline-flex;align-items:center;gap:5px;font:600 12px/1 var(--font-display);color:#cfcbd6}
+.ck i{width:12px;height:12px;border:1px solid #55545e;display:inline-block}
+.ck.on i{background:var(--gold);border-color:var(--gold)}
+.split{display:grid;grid-template-columns:1fr 360px;min-height:430px}
+.list{border-right:1px solid #1f2027;overflow:hidden}
+table.runs{width:100%;border-collapse:collapse;font-size:13px}
+table.runs th{font:700 11px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:7px 6px;border-bottom:1px solid #1f2027;white-space:nowrap}
+table.runs th.r,table.runs td.r{text-align:right}
+table.runs th.sorted{color:var(--gold)}
+table.runs td{padding:5px 6px;border-bottom:1px solid #17181d;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.runs tr:nth-child(even) td{background:var(--row-alt)}
+table.runs tr.sel td{background:#221d08;box-shadow:inset 0 1px 0 #4a3d0a,inset 0 -1px 0 #4a3d0a}
+table.runs tr{cursor:pointer}
+table.runs tr:hover td{background:#1a1b22}
+.spec{width:16px;height:16px;display:inline-block;vertical-align:-3px;border:1px solid #000;margin-right:5px}
+.flagdot{color:var(--amber);font-weight:700}
+.detail{padding:10px 12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.dh .who{font:700 18px/1.1 var(--font-display)}
+.dh .meta{font-size:12px;color:var(--muted);line-height:1.45}
+.score{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.timing{display:flex;flex-direction:column;gap:6px}
+.tl{display:grid;grid-template-columns:1.2fr 1fr;gap:3px;height:34px}
+.tl .seg-a,.tl .seg-b{position:relative;background:#121319;border:1px solid #24252d}
+.tl .fillrace{position:absolute;inset:10px 0 10px 0;background:linear-gradient(90deg,rgba(135,136,238,.5),rgba(135,136,238,.25))}
+.tl .tail{position:absolute;top:10px;bottom:10px;left:0;background:repeating-linear-gradient(135deg,rgba(255,184,74,.55) 0 5px,rgba(255,184,74,.25) 5px 10px)}
+.tl .grace{position:absolute;top:4px;bottom:4px;left:0;border-right:1px dashed var(--ok)}
+.tl .tick{position:absolute;top:2px;bottom:2px;width:2px;background:var(--red)}
+.tl .cend{position:absolute;top:0;bottom:0;width:2px;background:var(--cyan)}
+.tl-lbl{display:grid;grid-template-columns:1.2fr 1fr;gap:3px;font:600 11px/1.2 var(--font-display);color:var(--muted)}
+.tl-lbl span:last-child{display:flex;justify-content:space-between}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px}
+.flagbox{border:1px solid rgba(255,184,74,.35);background:rgba(255,184,74,.06);padding:7px 9px;font-size:12.5px;color:#f0d6a6;display:flex;flex-direction:column;gap:3px}
+.bests table.runs td.best{color:var(--ok)}
+
+/* settings */
+.settings{width:760px}
+.set-wrap{display:grid;grid-template-columns:170px 1fr;min-height:380px}
+.set-nav{border-right:1px solid #1f2027;padding:8px 0;display:flex;flex-direction:column}
+.set-nav a{padding:6px 12px;font:600 13px/1.2 var(--font-display);color:#bdb9c4;text-decoration:none}
+.set-nav a.on{color:var(--gold);background:#1d1a0c;border-left:2px solid var(--gold);padding-left:10px}
+.set-nav a.sub{padding-left:22px}
+.set-body{padding:12px 16px;display:flex;flex-direction:column;gap:14px}
+.sec{font:700 13px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid #26272e;padding-bottom:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.ctl{display:flex;flex-direction:column;gap:5px;font-size:13px}
+.ctl .cap{font:600 13px/1.2 var(--font-display);color:#e3e0e8}
+.ctl .help{font-size:11.5px;color:var(--muted);line-height:1.35}
+.slider{display:flex;align-items:center;gap:8px}
+.slider .track{flex:1;height:4px;background:#2a2b33;position:relative}
+.slider .track b{position:absolute;inset:0 auto 0 0;background:var(--gold)}
+.slider .track i{position:absolute;top:-5px;width:6px;height:14px;background:#e9e6ef;border:1px solid #000}
+.slider .val{font:700 13px/1 var(--font-mono);color:var(--gold);min-width:44px;text-align:right}
+.toggle{display:flex;align-items:center;gap:8px;font:600 13px/1.2 var(--font-display);color:#e3e0e8}
+.toggle i{width:14px;height:14px;border:1px solid #55545e;display:inline-grid;place-items:center;font-style:normal;font-size:11px;color:#000}
+.toggle.on i{background:var(--gold);border-color:var(--gold)}
+.toggle.on i::after{content:"✓"}
+
+/* chat */
+.chat{background:rgba(0,0,0,.55);border:1px solid #1d1f27;padding:10px 12px;font:13.5px/1.6 var(--font-body);max-width:760px}
+.chat .tag{color:#ff7c0a;font-weight:700}
+.chat .y{color:var(--gold)}
+.chat .g{color:var(--ok)}
+.chat .a{color:var(--amber)}
+.chat .c{color:#3fd0ff}
+
+.legend-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.lg{background:#111217;border:1px solid #1f2027;padding:10px 12px;font-size:13.5px;color:#cfcbd6}
+.lg b{font-family:var(--font-display);font-size:15px;color:#fff;display:block;margin-bottom:3px}
+
+@media (max-width:720px){
+  .scene{padding:18px 8px}
+  .hud{width:100%;max-width:300px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow"><span class="pill">UX mockup</span><span class="pill">PvE · v0.1.0</span><span>Draft 2026-10-23</span></div>
+  <h1>Ka0s DPS Race <span>— windows &amp; flows</span></h1>
+  <p>How the timed dummy race looks and moves: the Race HUD in each of its states, the Results window
+  (history, run detail and personal bests), the settings that carry the scoring rules, and the chat
+  output. The design spec is <span class="mono">docs/superpowers/specs/2026-10-23-dps-race-pve-design.md</span>; section numbers below (§) point into it.</p>
+</header>
+
+<!-- ============ FLOW ============ -->
+<section class="stage" aria-labelledby="flowH">
+  <div class="stage-head">
+    <h2 id="flowH"><small>01 · The flow</small>One race, start to result</h2>
+    <p>Click a step to jump the HUD below to that state. Every transition comes from an event or the clock, never from a damage number, because damage numbers can't be read during combat (§4, §8 rule 2).</p>
+  </div>
+  <div class="flow" role="list">
+    <button class="fs" data-go="idle" role="listitem"><h4>Idle</h4><p>Choose a race length, target a dummy</p><span class="trig">out of combat</span></button>
+    <button class="fs" data-go="armed" role="listitem"><h4>Armed</h4><p>Waiting for your first hit</p><span class="trig">Arm</span></button>
+    <button class="fs" data-go="running" role="listitem"><h4>Running</h4><p>Countdown and live breakdown</p><span class="trig">new meter session</span></button>
+    <button class="fs" data-go="stop" role="listitem"><h4>Stop!</h4><p>Buzzer. Late casts tracked after 1.0s grace</p><span class="trig">clock = race length</span></button>
+    <button class="fs" data-go="waiting" role="listitem"><h4>Waiting</h4><p>Combat still holding. Walk away</p><span class="trig">still in combat</span></button>
+    <button class="fs" data-go="result" role="listitem"><h4>Result</h4><p>Read by session ID, saved to history</p><span class="trig">combat over + damage quiet 2.5s</span></button>
+  </div>
+  <div class="branches">
+    <div class="br"><b>Incomplete</b> — combat drops before the buzzer (you stopped, died, the dummy reset). The run is stored and marked, and never counts toward bests.</div>
+    <div class="br"><b>Reloaded</b> — the run was saved when it started. After <span class="mono">/reload</span> it carries on waiting and reads the result by session ID. It's flagged if the buzzer passed during the reload.</div>
+    <div class="br"><b>Lost</b> — the session is gone (logout, meter reset). The metadata is kept, there's no score, and the HUD says why.</div>
+    <div class="br"><b>Cancel</b> — at any point before the result. Nothing is stored.</div>
+  </div>
+</section>
+
+<!-- ============ HUD ============ -->
+<section class="stage" aria-labelledby="hudH">
+  <div class="stage-head">
+    <h2 id="hudH"><small>02 · Race HUD</small>One small window, six states</h2>
+    <p>Movable and resizable (default 300×360). The header and footer stay the same and the body changes with the state. The Running state animates here so you can see the countdown and the bars filling.</p>
+  </div>
+  <div class="seg" role="group" aria-label="HUD state">
+    <button data-state="idle" aria-pressed="true"><span class="n">1</span>Idle</button>
+    <button data-state="armed" aria-pressed="false"><span class="n">2</span>Armed</button>
+    <button data-state="running" aria-pressed="false"><span class="n">3</span>Running</button>
+    <button data-state="stop" aria-pressed="false"><span class="n">4</span>Stop!</button>
+    <button data-state="waiting" aria-pressed="false"><span class="n">5</span>Waiting</button>
+    <button data-state="result" aria-pressed="false"><span class="n">6</span>Result</button>
+  </div>
+
+  <div class="scene">
+    <div class="win hud" id="hud">
+      <div class="win-title">
+        <span class="t">DPS Race</span>
+        <button class="tb" title="Results"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 13h12v1H2zM3 8h2v4H3zm4-4h2v8H7zm4 2h2v6h-2z"/></svg></button>
+        <button class="tb" title="Settings"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 5.2A2.8 2.8 0 1 0 8 10.8 2.8 2.8 0 0 0 8 5.2Zm6 3.6V7.2l-1.7-.3a4.7 4.7 0 0 0-.5-1.2l1-1.4-1.1-1.1-1.4 1a4.7 4.7 0 0 0-1.2-.5L8.8 2H7.2l-.3 1.7a4.7 4.7 0 0 0-1.2.5l-1.4-1-1.1 1.1 1 1.4a4.7 4.7 0 0 0-.5 1.2L2 7.2v1.6l1.7.3c.1.4.3.8.5 1.2l-1 1.4 1.1 1.1 1.4-1c.4.2.8.4 1.2.5l.3 1.7h1.6l.3-1.7c.4-.1.8-.3 1.2-.5l1.4 1 1.1-1.1-1-1.4c.2-.4.4-.8.5-1.2Z"/></svg></button>
+        <button class="tb" title="Lock"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2h1v7h-9V7Zm1.5 0h4V5a2 2 0 0 0-4 0Z"/></svg></button>
+        <button class="tb close" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+      </div>
+
+      <!-- IDLE -->
+      <div class="hud-body" data-body="idle">
+        <div class="lbl">Race length</div>
+        <div class="presets">
+          <button aria-pressed="false">0:30</button><button aria-pressed="false">1:00</button><button aria-pressed="false">2:00</button>
+          <button aria-pressed="true">3:00</button><button aria-pressed="false">5:00</button><button aria-pressed="false">Custom</button>
+        </div>
+        <div class="lbl">Target</div>
+        <div class="tcard">
+          <div class="name">Cleave Training Dummy</div>
+          <div class="meta"><span class="badge b-cleave">Cleave</span><span>Targets</span>
+            <span class="stepper"><button aria-label="fewer">−</button><span>5</span><button aria-label="more">+</button></span>
+            <span class="mono">#243208</span></div>
+        </div>
+        <button class="btn primary" style="padding:11px 0;font-size:16px">Arm race</button>
+        <div class="row-btns" style="justify-content:space-between">
+          <button class="btn sm">Last result</button><button class="btn sm">Results</button>
+        </div>
+      </div>
+
+      <!-- ARMED -->
+      <div class="hud-body" data-body="armed" hidden>
+        <div class="big">3:00.0</div>
+        <div class="sub">First hit starts the clock</div>
+        <div class="tcard">
+          <div class="name">Cleave Training Dummy</div>
+          <div class="meta"><span class="badge b-cleave">Cleave</span><span>5 targets</span></div>
+        </div>
+        <div class="muted" style="font-size:12.5px">Pre-cast and pre-pot as you would on a pull. The clock starts when damage lands, not when you press the button.</div>
+        <div style="flex:1"></div>
+        <button class="btn">Cancel</button>
+      </div>
+
+      <!-- RUNNING -->
+      <div class="hud-body" data-body="running" hidden>
+        <div class="big" id="clock">2:41.3</div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Damage</div><div class="v" id="liveDmg">2.71M</div></div>
+          <div class="kpi"><div class="lbl">DPS <span style="color:var(--dim)">· live</span></div><div class="v" id="liveDps">146.2K</div></div>
+        </div>
+        <div class="spells" id="liveSpells"></div>
+        <div class="note-live"><span>Live order · % after the race</span><span>8 rows</span></div>
+        <button class="btn">Cancel</button>
+      </div>
+
+      <!-- STOP -->
+      <div class="hud-body" data-body="stop" hidden>
+        <div class="big stop">STOP</div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Damage stopped</div><div class="v">+3.1<small>s after buzzer</small></div></div>
+          <div class="kpi"><div class="lbl">In combat</div><div class="v">+4.6<small>s</small></div></div>
+        </div>
+        <div class="chips"><span class="chip flag">1 late cast · +1.4s</span><span class="chip info">Grace 1.0s</span></div>
+        <div class="muted" style="font-size:12.5px">Damage still landing (DoTs, travel time) counts. Casts that start more than 1.0s after the buzzer are flagged on the result.</div>
+      </div>
+
+      <!-- WAITING -->
+      <div class="hud-body" data-body="waiting" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="sub" style="font:700 18px/1.2 var(--font-display);color:var(--text)">Waiting for combat to end</div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Damage stopped</div><div class="v">+3.1<small>s</small></div></div>
+          <div class="kpi"><div class="lbl">In combat</div><div class="v">+27<small>s</small></div></div>
+        </div>
+        <div class="hint">Combat is holding. Walk out of range, or use <b>Feign Death</b>. Your score is safe: it waits for combat to end, however long that takes.</div>
+        <div style="flex:1"></div>
+        <div class="row-btns" style="justify-content:space-between"><button class="btn sm danger">Discard run</button><button class="btn sm">Close (keep waiting)</button></div>
+      </div>
+
+      <!-- RESULT -->
+      <div class="hud-body" data-body="result" hidden>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Damage</div><div class="v">26.56M</div></div>
+          <div class="kpi good"><div class="lbl">DPS</div><div class="v">147.6K</div></div>
+        </div>
+        <div class="chips"><span class="chip best">▲ New best +2.4%</span><span class="chip flag">1 late cast</span><span class="chip info">Tail +3.1s</span></div>
+        <div class="spells" id="resultSpells"></div>
+        <div style="flex:1"></div>
+        <div class="row-btns" style="justify-content:space-between">
+          <button class="btn primary sm">Race again</button><button class="btn sm">Details</button><button class="btn sm">Share</button>
+        </div>
+      </div>
+
+      <div class="win-foot"><span id="footL">Destruction · Lânfear</span><span id="footR">ilvl 313</span></div>
+    </div>
+
+    <div class="ann" id="ann" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="stage" aria-labelledby="resH">
+  <div class="stage-head">
+    <h2 id="resH"><small>03 · Results window</small>History, run detail and bests</h2>
+    <p>The main standalone window (default 1040×560). The list is pooled and sortable. Clicking a run opens its detail on the right. The Bests tab works its board out from your runs across every character on the account (§6.2).</p>
+  </div>
+  <div class="tabs-switch seg" role="group" aria-label="Results tab">
+    <button data-rtab="runs" aria-pressed="true">Runs + detail</button>
+    <button data-rtab="bests" aria-pressed="false">Bests</button>
+  </div>
+  <div class="scene"><div class="hscroll">
+    <div class="win results">
+      <div class="win-title"><span class="t">DPS Race — Results</span>
+        <button class="tb close" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-rtab="runs" aria-selected="true">Runs</button>
+        <button role="tab" data-rtab="bests" aria-selected="false">Bests</button>
+      </div>
+
+      <!-- RUNS -->
+      <div data-rbody="runs">
+        <div class="filters">
+          <span class="dd">All characters</span><span class="dd">All specs</span><span class="dd">All targets</span><span class="dd">Any length</span><span class="dd">Last 30 days</span>
+          <span class="ck"><i></i>Hide flagged</span><span class="ck"><i></i>Include incomplete</span>
+          <span style="flex:1"></span><span class="muted" style="font-size:12px">142 runs</span>
+        </div>
+        <div class="split">
+          <div class="list">
+            <table class="runs">
+              <thead><tr><th>Date</th><th title="Class · Spec">Cls · Spec</th><th>Character</th><th class="r">iLvl</th><th>Target</th><th class="r">Len</th><th class="r">Damage</th><th class="r sorted">DPS ▾</th><th></th></tr></thead>
+              <tbody id="runRows"></tbody>
+            </table>
+          </div>
+          <div class="detail">
+            <div class="dh">
+              <div class="who" style="color:var(--warlock)"><span class="cls" style="background:var(--warlock)" title="Warlock">W</span><span class="spec shadow" title="Destruction"></span>Lânfear <span class="muted" style="font-size:13px;font-weight:600">· Destruction</span></div>
+              <div class="meta">Frostmourne · ilvl 313.2 · Silvermoon City, Falconwing Square<br>Cleave Training Dummy <span class="badge b-cleave">Cleave</span> ×5 · 3:00 · 23 Oct 2026 21:14 · build 120105 · v0.1.0</div>
+            </div>
+            <div class="score">
+              <div class="kpi"><div class="lbl">Damage</div><div class="v">26.56M</div></div>
+              <div class="kpi good"><div class="lbl">DPS</div><div class="v">147.6K</div></div>
+              <div class="kpi"><div class="lbl">Meter DPS</div><div class="v" style="color:var(--muted)">134.1K</div></div>
+            </div>
+            <div class="spells" id="detailSpells"></div>
+            <div class="timing">
+              <div class="lbl">Timing</div>
+              <div class="tl">
+                <div class="seg-a"><div class="fillrace"></div></div>
+                <div class="seg-b">
+                  <div class="grace" style="width:8.33%"></div>
+                  <div class="tail" style="width:25.8%"></div>
+                  <div class="tick" style="left:11.7%" title="late cast +1.4s"></div>
+                  <div class="cend" style="left:56%" title="combat ended +6.7s"></div>
+                </div>
+              </div>
+              <div class="tl-lbl"><span>0:00 — race 3:00 — buzzer</span><span><span>+0s</span><span>+6s</span><span>+12s</span></span></div>
+              <div class="legend"><span><i style="background:rgba(135,136,238,.5)"></i>Race</span><span><i style="background:rgba(255,184,74,.55)"></i>Tail (damage still landing)</span><span><i style="border:1px dashed var(--ok)"></i>Grace</span><span><i style="background:var(--red)"></i>Late cast</span><span><i style="background:var(--cyan)"></i>Combat ended</span></div>
+            </div>
+            <div class="flagbox"><b style="font-family:var(--font-display)">Flag · 1 late cast</b><span>Incinerate started +1.4s after the buzzer (grace 1.0s). The run still counts and the flag shows on the board.</span></div>
+            <div class="row-btns"><button class="btn sm">Add note</button><button class="btn sm">Share</button><span style="flex:1"></span><button class="btn sm danger">Delete</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BESTS -->
+      <div data-rbody="bests" hidden class="bests">
+        <div class="filters">
+          <span class="dd">All specs</span><span class="dd">Category: Cleave</span><span class="ck"><i></i>Clean runs only</span>
+          <span style="flex:1"></span><span class="muted" style="font-size:12px">Best per spec × category × race length, all characters</span>
+        </div>
+        <table class="runs">
+          <thead><tr><th>Cls · Spec</th><th>Character</th><th class="r">Len</th><th class="r">iLvl</th><th class="r">Damage</th><th class="r sorted">DPS ▾</th><th>Date</th><th>Flags</th></tr></thead>
+          <tbody id="bestRows"></tbody>
+        </table>
+      </div>
+      <div class="win-foot"><span>Click a row for details · double-click to share</span><span>Runs to keep: 0 (never prune)</span></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section class="stage" aria-labelledby="setH">
+  <div class="stage-head">
+    <h2 id="setH"><small>04 · Settings</small>The Race page</h2>
+    <p>Blizzard Settings, using the standard's landing page, subcategories and two-column layout. The scoring knobs (grace, restart gap) apply to new runs only: each run stores the values it was raced with (§5.2).</p>
+  </div>
+  <div class="scene"><div class="hscroll">
+    <div class="win settings">
+      <div class="win-title"><span class="t" id="setTitle">Options › AddOns › Ka0s DPS Race › Race</span></div>
+      <div class="set-wrap">
+        <nav class="set-nav"><a href="#setH">Ka0s DPS Race</a><a class="sub" href="#setH">General</a><a class="sub on" href="#setH" data-snav="race">Race</a><a class="sub" href="#setH">Live breakdown</a><a class="sub" href="#setH" data-snav="history">History</a><a class="sub" href="#setH">Profiles</a></nav>
+        <div class="set-body" data-spage="history" hidden>
+          <div class="sec">History</div>
+          <div class="two">
+            <div class="ctl"><span class="cap">Runs to keep</span>
+              <div class="slider"><div class="track"><b style="width:0%"></b><i style="left:0%"></i></div><span class="val">0</span></div>
+              <span class="help"><b style="color:var(--text)">0 = never prune</b> (default). Above 0, the oldest runs are removed first, and a run that holds a personal best is always kept. 0–10000.</span></div>
+            <div class="ctl"><span class="cap">Stored now</span><span style="font:700 20px/1.1 var(--font-display)">142 runs</span><span class="help">About 1.5 KB each · roughly 210 KB of SavedVariables.</span></div>
+          </div>
+          <div class="sec">Danger zone</div>
+          <div class="row-btns"><button class="btn sm danger">Delete all runs…</button><span class="help muted" style="font-size:11.5px;align-self:center">Asks for confirmation. Personal bests go with them.</span></div>
+        </div>
+        <div class="set-body" data-spage="race">
+          <div class="sec">Race</div>
+          <div class="two">
+            <div class="ctl"><span class="cap">Default race length</span><span class="dd" style="width:max-content">3:00</span><span class="help">Also what “Race again” and the launcher's “Arm last race” use.</span></div>
+            <div class="ctl"><span class="toggle on"><i></i>Countdown cue (10, 5, 3, 2, 1)</span><span class="toggle on"><i></i>Buzzer raid warning + sound</span></div>
+          </div>
+          <div class="sec">Scoring rules</div>
+          <div class="two">
+            <div class="ctl"><span class="cap">Late-cast grace</span>
+              <div class="slider"><div class="track"><b style="width:20%"></b><i style="left:19%"></i></div><span class="val">1.0s</span></div>
+              <span class="help">A cast that starts later than this after the buzzer flags the run. 0–5s. Applies to new runs.</span></div>
+            <div class="ctl"><span class="cap">Damage-restart gap</span>
+              <div class="slider"><div class="track"><b style="width:25%"></b><i style="left:24%"></i></div><span class="val">6s</span></div>
+              <span class="help">Your damage going quiet for this long after the buzzer, then landing again, flags “damage restarted”. 3–15s.</span></div>
+            <div class="ctl"><span class="cap">Sticky-combat hint after</span>
+              <div class="slider"><div class="track"><b style="width:30%"></b><i style="left:29%"></i></div><span class="val">15s</span></div>
+              <span class="help">When the HUD starts suggesting ways to drop combat.</span></div>
+          </div>
+          <div class="row-btns"><button class="btn sm">Reset this page</button></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ CHAT ============ -->
+<section class="stage" aria-labelledby="chatH">
+  <div class="stage-head">
+    <h2 id="chatH"><small>05 · Chat</small>Help, share and status lines</h2>
+    <p>Chat output uses the standard's tag and help format. <b>Share</b> sends one line to a channel you pick (say, party, guild, whisper), and only out of combat.</p>
+  </div>
+  <div class="chat">
+    <div><span class="tag">[DPS Race]</span> <span class="y">/dr</span> or <span class="y">/dpsrace</span> commands: <span class="y">arm</span> [length] · <span class="y">cancel</span> · <span class="y">hud</span> show|hide|toggle · <span class="y">results</span> · <span class="y">target</span> · <span class="y">test</span> · <span class="y">lock</span>|<span class="y">unlock</span> · <span class="y">debug</span></div>
+    <div><span class="tag">[DPS Race]</span> Armed: 3:00 on Cleave Training Dummy ×5. First hit starts the clock.</div>
+    <div><span class="tag">[DPS Race]</span> <span class="g">26.56M damage · 147.6K DPS</span> in 3:00 on Cleave Training Dummy ×5 — <span class="g">new best (+2.4%)</span> · <span class="a">1 late cast</span> · tail +3.1s</div>
+    <div><span class="tag">[DPS Race]</span> Target: Reinforced Golem · creature <span class="c">243205</span> · category <span class="c">Boss-level</span></div>
+    <div style="margin-top:6px;color:#aad372">[Guild] [Lânfear]: DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s DPS Race)</div>
+  </div>
+</section>
+
+<!-- ============ NOTES ============ -->
+<section class="stage" aria-labelledby="notesH">
+  <div class="stage-head"><h2 id="notesH"><small>06 · Rules the UI follows</small>Why it looks the way it does</h2></div>
+  <div class="legend-wrap">
+    <div class="lg"><b>No live percentages, no live sorting</b>During combat every number is secret: it can be shown but not divided or compared. Live rows show bars and amounts in Blizzard's order. The result shows %.</div>
+    <div class="lg"><b>Your DPS, not the meter's</b>DPS = damage ÷ race length, from the addon's own clock. The meter's figure is diluted by the time it takes combat to drop, so it's shown muted and only for reference.</div>
+    <div class="lg"><b>Flags inform, never void</b>Late casts, damage restarting and reloads add a flag chip. Only an incomplete run (combat ended before the buzzer) stays off the bests.</div>
+    <div class="lg"><b>Arming needs you out of combat</b>The clock starts on a new meter session, and one is only created when combat starts. The Arm button says so when it's disabled.</div>
+    <div class="lg"><b>Waiting is safe</b>The run is saved the moment it starts and read by its session ID later, so a dummy stuck in combat, or a reload, only delays the result.</div>
+    <div class="lg"><b>Target count is metadata</b>The meter merges identical dummies into one row, so the count comes from the catalog or the stepper. It's never scored.</div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  // Destruction Warlock sample, from the breakdown screenshot the brief came with.
+  const SPELLS = [
+    ["Rain of Fire","fire",7.33,27.6],["Echo of Sargeras","fel",4.92,18.5],["Wither","shadow",4.89,18.4],
+    ["Incinerate","fire",4.84,18.2],["Conflagrate","fire",1.37,5.2],["Ophidian Maw","fel",1.29,4.9],
+    ["Lake of Fire","fire",0.4985,1.9],["Shadowburn","shadow",0.4136,1.6],["Auto Attack","phys",0.3191,1.2],
+    ["Malevolence","shadow",0.3107,1.2],["Shadow Bite","shadow",0.2835,1.1],["Cataclysm","fire",0.0844,0.3]
+  ];
+  const fmt = m => m >= 1 ? m.toFixed(2)+"M" : (m*1000).toFixed(1)+"K";
+  const initials = n => n.split(" ").map(w=>w[0]).join("").slice(0,2);
+  function rows(el, list, max, showPct, scale){
+    const top = list[0][2]*scale;
+    el.innerHTML = list.slice(0,max).map(([n,s,m,p]) => {
+      const v = m*scale, w = top>0 ? (v/top*100) : 0;
+      return `<div class="sp"><div class="bar" style="width:${w.toFixed(1)}%"></div>`+
+        `<span class="ic ${s}">${initials(n)}</span><span class="nm">${n}</span>`+
+        `<span class="amt">${fmt(v)}</span><span class="pct ${showPct?"":"hidden"}">${p.toFixed(1)}%</span></div>`;
+    }).join("");
+  }
+  rows(document.getElementById("resultSpells"), SPELLS, 5, true, 1);
+  rows(document.getElementById("detailSpells"), SPELLS, 12, true, 1);
+
+  // ---- HUD states ----
+  const ANN = {
+    idle:{h:"Idle — set up the race",li:["Race-length presets plus custom (10s–15:00). The last choice is remembered.","Target card: read from your target and looked up in the dummy catalog by creature ID (category badge, default target count).","Unknown targets are allowed and recorded as “Other: name”.","Arm is disabled in combat, with the reason: “Leave combat to arm”."],r:"The target is read again when combat starts, and that read is the one stored. Players arm on one dummy and hit another."},
+    armed:{h:"Armed — waiting for the first hit",li:["The race length shows, not counting yet.","Pre-casting and pre-potting are fine: the clock starts when damage lands, on the frame the new meter session appears.","The run is written to SavedVariables the moment it starts."],r:"Measured: combat start, the meter's new-session event and the first hit land on the same frame."},
+    running:{h:"Running — countdown and live breakdown",li:["The countdown shows tenths of a second and turns amber in the last 10s, with an optional cue at 10, 5, 3, 2, 1.","Damage and Blizzard's live DPS (labelled live).","Top N spells (default 8): icon, name, bar, amount. No % and no sorting while in combat.","Live reads at 4 Hz, triggered by meter updates."],r:"Bars use SetMinMaxValues(maxAmount) + SetValue(amount): the widget scales the secret value, so the addon never touches it."},
+    stop:{h:"Stop! — the buzzer",li:["Raid warning, sound, and a big red STOP.","“Damage stopped +x.xs” updates while your DoTs and in-flight spells land. This tail counts.","Casts that start later than the 1.0s grace are counted and flagged.","How long you've been in combat since the buzzer."],r:"Measured: 1–3 casts landed 0.2–2s after the buzzer in every probe run. That's why there's a grace, and why it flags rather than voids."},
+    waiting:{h:"Waiting — combat is holding",li:["Shown while you're still in combat once the tail has gone quiet.","After 15s (configurable): a hint naming only the combat-drop abilities you actually have.","The HUD can be closed. The result pops up when it's ready, or appears under Results.","Discard run throws the attempt away."],r:"The result is read by its meter session ID, so a dummy stuck in combat, or a /reload, only delays it."},
+    result:{h:"Result — saved",li:["Damage and DPS (total ÷ race length, from the addon's own clock).","Personal-best delta for the same spec × category × race length.","Flag chips: late casts, damage restarted, reloaded. The tail is always shown.","Top 5 spells with % · Race again · Details · Share."],r:"Read once combat has ended and your damage has been quiet for 2.5s. The meter kept updating up to 1.3s after combat dropped."}
+  };
+  const segBtns = document.querySelectorAll("[data-state]");
+  const bodies = document.querySelectorAll("[data-body]");
+  const ann = document.getElementById("ann");
+  let timer = null, t0 = 0;
+
+  function setState(s){
+    segBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.state===s)));
+    bodies.forEach(b => b.hidden = b.dataset.body !== s);
+    const a = ANN[s];
+    ann.innerHTML = `<h3>${a.h}</h3><ul>${a.li.map(x=>`<li>${x}</li>`).join("")}</ul><div class="rule">${a.r}</div>`;
+    document.getElementById("footR").textContent = s==="running" ? "live · 4 Hz" : s==="waiting" ? "result pending" : "ilvl 313";
+    if (timer){ clearInterval(timer); timer = null; }
+    if (s === "running") startRun();
+  }
+  function startRun(){
+    const clock = document.getElementById("clock"), dmg = document.getElementById("liveDmg"), dps = document.getElementById("liveDps");
+    const live = document.getElementById("liveSpells");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    t0 = performance.now();
+    const LEN = 180, START_ELAPSED = 18.7;
+    const tick = () => {
+      const el = Math.min(LEN, START_ELAPSED + (reduce ? 0 : (performance.now()-t0)/1000*4)); // 4x speed
+      const rem = LEN - el, m = Math.floor(rem/60), sec = rem - m*60;
+      clock.textContent = `${m}:${sec.toFixed(1).padStart(4,"0")}`;
+      clock.classList.toggle("amber", rem <= 10);
+      const frac = el/LEN;
+      dmg.textContent = fmt(26.56*frac);
+      dps.textContent = (147.6*(0.9+0.1*Math.sin(el))).toFixed(1)+"K";
+      rows(live, SPELLS, 8, false, frac);
+      if (rem <= 0){ clearInterval(timer); timer = null; setTimeout(()=>setState("stop"), 400); }
+    };
+    tick();
+    timer = setInterval(tick, 100);
+  }
+  segBtns.forEach(b => b.addEventListener("click", () => setState(b.dataset.state)));
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+    setState(b.dataset.go);
+    document.getElementById("hudH").scrollIntoView({behavior:"smooth",block:"start"});
+  }));
+  setState("idle");
+
+  // ---- Results: runs + bests ----
+  // [class, spec school (icon tint), spec name]
+  const CLS = {warlock:"Warlock",mage:"Mage",druid:"Druid",evoker:"Evoker"};
+  const icons = (cls, school, spec) =>
+    `<span class="icons"><span class="cls" style="background:var(--${cls})" title="${CLS[cls]}">${CLS[cls][0]}</span>`+
+    `<span class="spec ${school}" title="${spec}"></span></span>`;
+  const RUNS = [
+    ["23 Oct 21:14","warlock","shadow","Destruction","Lânfear","313.2","Cleave ×5","b-cleave","3:00","26.56M","147.6K","1 late",true],
+    ["23 Oct 20:58","warlock","shadow","Destruction","Lânfear","313.2","Cleave ×5","b-cleave","3:00","25.93M","144.1K","",false],
+    ["23 Oct 17:57","warlock","shadow","Destruction","Lânfear","313.2","Boss-level","b-boss","0:30","1.54M","51.3K","1 late",false],
+    ["22 Oct 22:31","mage","fire","Fire","Ka0smage","311.0","Single","b-single","3:00","24.12M","134.0K","",false],
+    ["22 Oct 22:20","mage","fire","Fire","Ka0smage","311.0","Single","b-single","1:00","8.91M","148.5K","restarted",false],
+    ["21 Oct 19:05","druid","fel","Balance","Barkskin","309.4","Dungeoneer","b-dung","3:00","21.47M","119.3K","",false],
+    ["21 Oct 18:47","druid","fel","Balance","Barkskin","309.4","Dungeoneer","b-dung","3:00","—","incomplete","",false],
+    ["20 Oct 23:10","evoker","fire","Devastation","Scalebound","312.1","Cleave ×5","b-cleave","2:00","19.80M","165.0K","",false]
+  ];
+  document.getElementById("runRows").innerHTML = RUNS.map(r =>
+    `<tr class="${r[12]?"sel":""}"><td>${r[0]}</td><td>${icons(r[1],r[2],r[3])}</td>`+
+    `<td style="color:var(--${r[1]})">${r[4]}</td><td class="r">${r[5]}</td>`+
+    `<td><span class="badge ${r[7]}">${r[6]}</span></td><td class="r">${r[8]}</td><td class="r">${r[9]}</td>`+
+    `<td class="r" style="${r[10]==="incomplete"?"color:var(--muted);font-style:italic":""}">${r[10]}</td>`+
+    `<td>${r[11]?`<span class="flagdot" title="${r[11]}">⚑</span>`:""}</td></tr>`).join("");
+  const BESTS = [
+    ["evoker","fire","Devastation","Scalebound","2:00","312.1","19.80M","165.0K","20 Oct",""],
+    ["warlock","shadow","Destruction","Lânfear","3:00","313.2","26.56M","147.6K","23 Oct","1 late"],
+    ["mage","fire","Fire","Ka0smage","3:00","311.0","23.70M","131.7K","19 Oct",""],
+    ["druid","fel","Balance","Barkskin","3:00","309.4","20.02M","111.2K","18 Oct",""]
+  ];
+  document.getElementById("bestRows").innerHTML = BESTS.map(b =>
+    `<tr><td>${icons(b[0],b[1],b[2])} <span style="color:var(--${b[0]})">${b[2]}</span></td>`+
+    `<td style="color:var(--${b[0]})">${b[3]}</td><td class="r">${b[4]}</td><td class="r">${b[5]}</td><td class="r">${b[6]}</td>`+
+    `<td class="r best">${b[7]}</td><td>${b[8]}</td><td>${b[9]?`<span class="chip flag">${b[9]}</span>`:""}</td></tr>`).join("");
+
+  function setTab(t){
+    document.querySelectorAll("[data-rtab]").forEach(b => {
+      const on = b.dataset.rtab===t;
+      if (b.getAttribute("role")==="tab") b.setAttribute("aria-selected", String(on)); else b.setAttribute("aria-pressed", String(on));
+    });
+    document.querySelectorAll("[data-rbody]").forEach(b => b.hidden = b.dataset.rbody!==t);
+  }
+  document.querySelectorAll("[data-rtab]").forEach(b => b.addEventListener("click", () => setTab(b.dataset.rtab)));
+  document.querySelectorAll(".ck").forEach(c => c.addEventListener("click", () => c.classList.toggle("on")));
+
+  // ---- Settings pages ----
+  document.querySelectorAll("[data-snav]").forEach(a => a.addEventListener("click", e => {
+    e.preventDefault();
+    const p = a.dataset.snav;
+    document.querySelectorAll("[data-snav]").forEach(x => x.classList.toggle("on", x === a));
+    document.querySelectorAll("[data-spage]").forEach(b => b.hidden = b.dataset.spage !== p);
+    document.getElementById("setTitle").textContent = "Options › AddOns › Ka0s DPS Race › " + a.textContent;
+  }));
+})();
+</script>
+</body>
+</html>
