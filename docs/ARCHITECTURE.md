@@ -197,10 +197,6 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 
 ## Known Limitations
 
-- **The launcher menu has no *Show results* or *Arm last race* entry** (spec §6.4). The right-click
-  menu is `LibKa0s-Launcher-1.0`'s fixed set in launcher-§2's one order (Enabled, Locked, Test mode,
-  Show window), which takes no host entries. The Results window and arming are one key binding, one
-  verb or one HUD click away.
 - **Lowering *Runs to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's filters are the session's.** They start at *all* (with *Include incomplete*

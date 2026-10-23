@@ -279,7 +279,11 @@ Grace and restart gap carry the note *Applies to new runs. Saved runs keep the v
 
 - **Launcher** (LibDataBroker + LibDBIcon, using the addon's own logo):
   - Left-click opens settings.
-  - The right-click menu has *Show race HUD*, *Show results* and *Arm last race*.
+  - The right-click menu is `LibKa0s-Launcher-1.0`'s fixed set (launcher-§2): *Enabled*, *Locked*,
+    *Test mode* and *Show window* (the race HUD). It takes no host entries, so there is no *Show
+    results* or *Arm last race* item. The Results window is reachable from the HUD's title bar,
+    `/dpsrace results` and its key binding; arming is the HUD's Arm button, `/dpsrace arm` and the
+    *Arm / cancel race* binding.
 - **Key bindings:** *Show race HUD* (the standard's *Show window* binding) and *Arm / cancel race*.
 - **Slash commands**: `/dpsrace` and `/dr`, dispatched through the standard's slash library. `/dr`
   is short and another addon may already have it. The library skips a name that's taken, so
@@ -445,4 +449,5 @@ and Results listen to it and never poke each other directly.
 | 2026-10-23 | History: *Runs to keep* setting, default 0 = never prune. |
 | 2026-10-23 | The Results tables show class icon, spec icon and item level. |
 | 2026-10-23 | Slash commands: `/dpsrace` and `/dr`. |
+| 2026-10-23 | The launcher's right-click menu is the standard's fixed set (launcher-§2). *Show results* and *Arm last race* are dropped from it: the library takes no host entries, and both are one HUD click, one slash verb or one key binding away. |
 | 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |
