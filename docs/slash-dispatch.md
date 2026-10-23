@@ -62,4 +62,8 @@ The dispatcher's own refusals land in the console as `[Cmd]` lines through the d
 
 The stub keeps `/dr` answering: the host verbs work, the schema CLI names the missing library, and
 the refusal format `DISABLED_LINE_FORMAT` is the one library string it carries, pinned byte-equal to
-the live library by `test_slash`.
+the live library by `test_slash`. Every other line is the stub's own wording (`version` prints
+`Ka0s DPS Race version X`, `help` a plain header naming the reduced mode, and an unknown verb falls
+through to the help index). The stub applies the same disabled gate as the live dispatcher: a verb
+outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) answers the one refusal
+line while the `disabled` hold is taken.
