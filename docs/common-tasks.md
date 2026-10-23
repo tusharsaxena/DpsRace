@@ -23,7 +23,8 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
 - Give it a short label in each of the three places that draw flags: the HUD's result chips
   (`FLAG_CHIP` in `modules/Hud_States.lua`), the Bests board's chip words (`SHORT` in
   `modules/Results_Table.lua`), and the detail's explanation line (`EXPLAIN` in
-  `modules/Results_Detail.lua`). Add the `enUS` keys.
+  `modules/Results_Detail.lua`). Add the `enUS` keys. A chip word is Sentence case, never
+  upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word.
 - Add the field to spec §7 and §5.4 and to [schema.md](schema.md#the-run-record); extend the
   order case in `test_scoring` and a case in the suite of the module that raises it.
 
@@ -32,7 +33,9 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
 - Write `Builders.<key>(parent)` in `modules/Hud_States.lua` (a `newBody`, its widgets laid out
   from config, never from a geometry read) and its `:Update(v)` for the view `modules/Hud.lua`
   hands it. If its fixed stack is taller than idle's, `MinContentHeight` must include it, and the HUD's
-  minimum height follows.
+  minimum height follows. Draw every label through `NS.Style.Text` in the font object for its role
+  (`modules/Style.lua`, spec §6 *Style*) and every button through `NS.HudStates.Button`; only a race
+  clock keeps a face and size of its own.
 - Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
   stop and waiting split), and give `modules/Preview.lua`'s script a step for it.
 - A live value may only reach a widget setter, `NS.Format.Number` or `C_Spell`, and may only be

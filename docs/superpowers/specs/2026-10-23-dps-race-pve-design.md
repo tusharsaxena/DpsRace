@@ -253,9 +253,37 @@ All windows use the Ka0s window edge (`LibKa0s-Core-1.0` `ApplySkin`) and `MakeC
 through the addon's one wrapper. They are registered in `UISpecialFrames`, and position, size and
 scale persist (standalone-windows). Layouts are in the mockup.
 
+**Style (`modules/Style.lua`).** Both windows read like the other Ka0s windows, LootHistory's
+browser above all (BankLedger and MultiMeters agree on the same points):
+
+- **Font objects, not font files.** Each label takes one of Blizzard's font objects by its role:
+  the title and the tabs `GameFontNormal`; column headers and section labels (*Race Length*,
+  *Target*, *Timing*) `GameFontNormalSmall` in the header gold; rows, cells, buttons, presets,
+  checkboxes, chips and the target card's text `GameFontHighlightSmall`; a name that heads a card
+  `GameFontHighlight`; footers, KPI captions, clock captions and axis labels
+  `GameFontDisableSmall`; an empty list's message `GameFontDisableLarge`.
+- **What stays large.** The HUD's race clocks (the pair at 26 px, one clock at 40 px) and *STOP*
+  keep their own monospace sizes, and the KPI figures (Damage, DPS, Meter DPS) take
+  `GameFontNormalHuge` over a small gray caption, as LootHistory's Insights cards do.
+- **Words.** Tabs, column headers, buttons, section labels and KPI captions are Title Case
+  (*Arm Race*, *Race Again*, *Add Note*, *Damage Stopped*); prose is Sentence case. No label is
+  upper-cased, the category badge and the flag words included (*Cleave ×5*, *1 late*). *STOP* is
+  the one capitalized shout, and it is as big as the clock.
+- **Sizes.** A 30 px title bar with the title centered in it; a 26 px tab strip of 90 px tabs on a
+  94 px pitch; a 20 px table header over 20 px rows; 18 px spell rows on a 20 px pitch; 20 px
+  buttons (Arm alone 24 px, in `GameFontNormal`); a footer of one small gray line.
+- **Colors.** The header gold (`1, 0.82, 0`) for the title, the headers, the sort arrow, the
+  active tab and its underline; the idle tab gray (`0.7, 0.7, 0.72`).
+- **Title-bar controls.** The HUD's Results, settings, lock and close controls, and the Results
+  window's close, sit vertically centered in the title bar, gray (`0.7, 0.7, 0.72`) at rest and
+  the header gold under the pointer, at full alpha in both states (MultiMeters' header controls).
+  One control is hovered at a time: a leave that arrives after the next control's enter leaves
+  that control gold. Tooltips stay. The close control's gold replaces the library's red (see
+  `docs/ARCHITECTURE.md`, *Documented deviations*).
+
 ### 6.1 Race HUD
 
-A compact, movable window (default 300×460, minimum 260×316, resizable). It has one body per state;
+A compact, movable window (default 300×460, minimum 260×296, resizable). It has one body per state;
 the header and footer are shared. The default height shows all 8 default live rows (mockup screen
 04); the minimum height is the chrome plus the idle body's fixed stack (Arm and the links under it).
 A shorter window caps the live and result rows to what fits, never drawing them under the buttons.
@@ -264,7 +292,7 @@ A shorter window caps the live and result rows to what fits, never drawing them 
 |---|---|
 | **Idle** | Race-length presets and custom · target card (name, category badge, count stepper, *Unknown target* warning) · **Arm** (disabled in combat, with the reason) · links to the last result and to the Results window. |
 | **Armed** | The big race length, unmoving, with *First hit starts the clock* · target card · **Cancel**. |
-| **Running** | The race clock, by the *Race clock* setting: by default the time elapsed in green beside the time left in red, each `m:ss.t` (`0:18.7` · `2:41.3`) with an *ELAPSED* / *LEFT* caption, sized so both fit the minimum width; or one big clock, the time left in red or the time elapsed in green · total damage and live DPS (Blizzard's live figure, labelled *live*: the source's `amountPerSecond`, else the player's own `combatSources` row, else the Dps meter type; the meter's rate, never the score) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
+| **Running** | The race clock, by the *Race clock* setting: by default the time elapsed in green beside the time left in red, each `m:ss.t` (`0:18.7` · `2:41.3`) with an *Elapsed* / *Left* caption, sized so both fit the minimum width; or one big clock, the time left in red or the time elapsed in green · total damage and live DPS (Blizzard's live figure, labelled *live*: the source's `amountPerSecond`, else the player's own `combatSources` row, else the Dps meter type; the meter's rate, never the score) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
 | **Stopping: Stop!** | Large **STOP** · *Damage stopped +x.xs* updating live · late-cast counter · *In combat +y.ys*. Shown while the last damage update is under 2.5s old. |
 | **Stopping: Waiting for result** | *Waiting for combat to end* (in combat) or *Reading the result* (out of it) · elapsed time · the hint (§4.4) · **Discard run** · the HUD can be closed. A run that ended before the buzzer comes straight here and shows when combat ended. |
 | **Result** | Damage · DPS · delta to personal best (*New best +2.4%*, *New best* for a board's first run, or *−3.2% vs best*; words, because the client font may lack arrow glyphs) · flag chips (short labels; each chip's tooltip is the full flag text) · top 5 spells with % · **Race again** (re-arms with the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
@@ -446,6 +474,7 @@ DpsRace/
     Recorder.lua      metadata snapshots, the run record (§7), the run store, pruning
     Bests.lua         working out personal bests, deltas and prune protection
     Format.lua        the one secret-safe number formatter, clock and length text
+    Style.lua         the look both windows share with the other Ka0s windows (§6)
     Hud.lua · Hud_States.lua · Hud_Breakdown.lua   the Race HUD, its state bodies, the spell rows (§6.1)
     Countdown.lua     the final seconds: the countdown cue and the center-screen numbers (§4.3)
     Results.lua · Results_Table.lua · Results_Runs.lua · Results_Detail.lua · Results_Bests.lua
@@ -541,3 +570,4 @@ call.
 | 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |
 | 2026-10-23 | The running clock shows the time elapsed (green) and the time left (red): both side by side by default, or either alone (`hud.clock`, General → Race HUD). The single clock no longer turns amber in the last 10s: time left is red throughout, and the final seconds have the center countdown. The armed and stop bodies keep their own clock and STOP. |
 | 2026-10-23 | A center-screen final countdown (`modules/Countdown.lua`): from `race.finalCountdown` seconds left (3–10, default 10; `race.centerCountdown`, default on) a number pops in each second down to 1 on the addon's own frame, with Blizzard's BigGold digit art by texcoord and a font fallback. No pull timer is broadcast and no TimerTracker handler is called. The countdown cue moves into the same module: one timer per whole second, one sound per second at most (a cue mark inside the numbers' window sounds once), and a cue change now takes effect mid-race. |
+| 2026-10-24 | The HUD and the Results window take the collection's look (§6, *Style*), after the owner's smoke test: Blizzard's font objects by role as LootHistory uses them, Title Case labels, tabs, headers and buttons with no ALL-CAPS word but *STOP*, the title centered in a 30 px title bar, LootHistory's tab strip, a 20 px header over 20 px rows with the gold sort arrow inline, 18 px spell rows and 20 px buttons. The race clocks, *STOP* and the KPI figures stay large. The HUD's minimum height is re-derived from the new stack: 260×296 (was 316). The title-bar controls turn the header gold under the pointer, one at a time (MultiMeters'); the close control's gold replaces the library's red, a deviation recorded in `docs/ARCHITECTURE.md`. |

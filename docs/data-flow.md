@@ -236,6 +236,6 @@ timer or `OnUpdate`.
   (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
   receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). A HUD that test mode
   opened is closed again, except for a race. Closing the HUD (its X or Escape) and the sample bodies'
-  CANCEL / DISCARD RUN end it too, through `Hud.Act`, and never reach `Race.Cancel`: a start is
+  Cancel / Discard Run end it too, through `Hud.Act`, and never reach `Race.Cancel`: a start is
   allowed over a real result card, which the preview covers and leaves as it was; the sample card's
-  RACE AGAIN and DETAILS are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).
+  Race Again and Details are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).

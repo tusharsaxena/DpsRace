@@ -40,7 +40,7 @@ row's `default` reads from it.
 | `live.hz` | `4` | *Live reads per second*, Live breakdown page | Live reads per second, 2-10 (spec §10) |
 | `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
 | `hud.clock` | `"both"` | *Race clock*, General page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
-| `windows.hud.width` / `.height` | `300` / `460` | none (geometry) | The HUD's size, tall enough for the default 8 live rows (mockup screen 04); the minimum is 260x316 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
+| `windows.hud.width` / `.height` | `300` / `460` | none (geometry) | The HUD's size, tall enough for the default 8 live rows (mockup screen 04); the minimum is 260x296 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
 | `windows.results.width` / `.height` | `1040` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 760x420 is in `modules/Results.lua`. Its scale is the Master controls' `scale` |
 
 Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.lastLength` is state, below.

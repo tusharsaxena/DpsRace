@@ -69,13 +69,13 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| R1 | `/dr hud show` with no target, then target the Golem | Idle body: the five presets and *Custom*, the target card (*No target*, then the name with the *Boss-level* badge and the count stepper), *ARM RACE*, and the *LAST RESULT* and *RESULTS* links. Nothing overlaps | A screenshot |
+| R1 | `/dr hud show` with no target, then target the Golem | Idle body: the five presets and *Custom*, the target card (*No target*, then the name with the *Boss-level* badge and the count stepper), *Arm Race*, and the *Last Result* and *Results* links. Nothing overlaps | A screenshot |
 | R2 | Target a non-dummy creature | The card warns *Unknown target: recorded as Other: name* | A screenshot |
 | R3 | *Custom*: type `90`, then `1:30`, then `3m`, then `5` | The first three are accepted (1:30, 1:30, 3:00); `5` is refused with the 0:10 to 15:00 line | Each result |
-| R4 | Enter combat on anything, then look at *ARM RACE* | Grayed with *Leave combat to arm*; a click prints the same line | A screenshot |
+| R4 | Enter combat on anything, then look at *Arm Race* | Grayed with *Leave combat to arm*; a click prints the same line | A screenshot |
 | R5 | Arm 0:30 out of combat | Armed body: 0:30 large and still, *First hit starts the clock*, the target card, *CANCEL*; the chat prints the *Armed* line | A screenshot |
 | R6 | Open with a cast-time spell, then on a second run with an instant | Both times the countdown starts on the frame the first hit lands (not on the cast's start), to a tenth of a second | Debug lines tagged `Race`, and which opener failed |
-| R7 | Keep attacking through the race | Running body: with *Race clock* at its default, *ELAPSED* in green on the left and *LEFT* in red on the right, each in `m:ss.t`, counting up and down together; DAMAGE and *DPS · LIVE* figures; the live rows with icon, name, bar and amount, and no percentages; the header reads *Live order · % after the race* | A screenshot at about 0:15 left |
+| R7 | Keep attacking through the race | Running body: with *Race clock* at its default, *Elapsed* in green on the left and *Left* in red on the right, each in `m:ss.t`, counting up and down together; DAMAGE and *DPS · Live* figures; the live rows with icon, name, bar and amount, and no percentages; the header reads *Live order · % after the race* | A screenshot at about 0:15 left |
 | R7a | General → Race HUD → *Race clock*: *Time left*, then *Time elapsed*, then back to *Elapsed and time left*, during a race and in test mode; then drag the HUD to its minimum width (260) | One big red clock, then one big green clock, then the pair; the switch takes effect at once. At 260 px wide the two clocks and their captions do not touch or clip, also at 9:59.9 | A screenshot at the minimum width |
 | R8 | Hear the last 10 s | With the defaults the cue sounds once a second from 10 down to 1, never twice in a second. With *Center-screen countdown* off it sounds at 10, 5, 3, 2 and 1 only. *Countdown cue* off silences it mid-race | Which seconds were silent or doubled |
 | R8a | Watch the last 10 s of a 0:30 race, HUD open, then again with the HUD closed | Gold numbers 10 down to 1 pop in (grow and fade in, with a glow flash) in the middle of the screen above the character, one a second; *10* is two digits, centered; they vanish at the buzzer, and the raid-warning *STOP* still shows. Nothing is clickable through them (the mouse passes through). Nobody else in the group sees a pull timer | A screenshot of *10* and of *1*, and whether a groupmate saw anything |
@@ -83,18 +83,18 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R8c | Cancel the race with 5 s left; drop combat with 6 s left on another run | The number on screen goes at once, and no further number or cue follows | |
 | R8d | `/reload` with about 6 s left, still attacking | After the loading screen the number of the moment shows at once (silently) and the count carries on to 1 | The numbers seen after the reload |
 | R8e | `/dr test`, watch the sample race's last 10 s; then end test mode during its countdown | The numbers show silently in the sample race and go with its buzzer; ending test mode clears them at once | |
-| R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *DAMAGE STOPPED +x.xs* climbing while DoTs tick, the late-cast count, *IN COMBAT +y.ys* | A screenshot |
-| R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *DISCARD RUN*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
+| R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *Damage Stopped +x.xs* climbing while DoTs tick, the late-cast count, *In Combat +y.ys* | A screenshot |
+| R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *Discard Run*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
 | R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
-| R12 | Read the result card | DAMAGE, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *RACE AGAIN*, *DETAILS*, *SHARE*; the chat prints the score line once | A screenshot and the score line |
-| R13 | *RACE AGAIN* | Re-arms 0:30 against the same target | The armed length |
+| R12 | Read the result card | Damage, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *Race Again*, *DETAILS*, *SHARE*; the chat prints the score line once | A screenshot and the score line |
+| R13 | *Race Again* | Re-arms 0:30 against the same target | The armed length |
 | R14 | Stop attacking at about 0:12 left and drop combat | The run becomes incomplete: the card says *Incomplete (combat ended at m:ss)* and its DPS is damage ÷ the time fought; it never appears on the Bests board | A screenshot |
 | R15 | Let the Dungeoneer's dummy kill you mid-race | *Incomplete: died* on the card | A screenshot |
 | R16 | Cancel while armed, and while running | Nothing is stored (the Results count does not move); the HUD returns to idle | The count before and after |
-| R17 | *DISCARD RUN* while waiting | The HUD returns to idle; the run does not appear in Results | Whether it was stored |
+| R17 | *Discard Run* while waiting | The HUD returns to idle; the run does not appear in Results | Whether it was stored |
 | R18 | Close the HUD on a result card (the close button, then Escape on a fresh card) | The card is dismissed; the run stays in Results | Whether the run went |
 | R19 | Reset Blizzard's damage meter from its own window while armed, then while running | Armed: the race stays armed. Running: the run becomes *Lost* and the HUD says so | The state after each |
-| R20 | Turn Blizzard's damage meter off (if the client allows it) and look at the idle HUD | *ARM RACE* is grayed with the reason Blizzard gives | The reason text |
+| R20 | Turn Blizzard's damage meter off (if the client allows it) and look at the idle HUD | *Arm Race* is grayed with the reason Blizzard gives | The reason text |
 | R21 | Set *Show HUD* to *On arm only*, close the HUD, `/dr arm 30`, race, dismiss the result | The HUD opens on arm and closes again when the race returns to idle | Whether it stayed open |
 | R22 | Same with *Always*, then `/reload` | The HUD is open after the reload | |
 
@@ -114,7 +114,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| W1 | Open Results after sections 4 and 5 | *RUNS* tab: every resolved run, sorted by DPS, highest first (unranked runs last); incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
+| W1 | Open Results after sections 4 and 5 | *Runs* tab: every resolved run, sorted by DPS, highest first (unranked runs last); incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
 | W2 | Hover the class and spec icons | The class icon is cropped cleanly (from `CLASS_ICON_TCOORDS`), the spec icon is the spec's own (from `GetSpecializationInfoByID`); each tooltip names it | A screenshot of a bad crop |
 | W3 | Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
 | W4 | Sort by DPS, ilvl and date | Each sorts both ways; incomplete and lost sort last on DPS | |
@@ -123,11 +123,13 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | W7 | Make the window narrower than 900 px and click a run | The detail replaces the list with a back control; back returns to the list with the row still selected | A screenshot |
 | W8 | Type a note with a `|` in it and press Enter; reopen the run | The note is saved with `/` in place of `|`; Escape instead cancels the edit; at most 200 characters fit | The stored note |
 | W9 | *Delete* a run holding a best | It asks first; on accept the run goes and the Bests board promotes the next run | The board before and after |
-| W10 | *BESTS* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 LATE*, *RESTARTED*, *RELOADED*, *BY LIST*, *DIED*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
+| W10 | *Bests* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 LATE*, *RESTARTED*, *RELOADED*, *BY LIST*, *DIED*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
 | W11 | Move and resize the window, `/reload` | Position and size persist; *Master scale* scales it too | |
 | W12 | Escape with the window focused; Alt-Z | Escape closes it; Alt-Z hides and shows it without counting as a close | |
 | W13 | Open and use the window in combat | It opens, redraws and sorts with no taint error or blocked-action message | The error text |
 | W14 | Look for the `×` (target count) and `—` (empty damage) glyphs | Both render in the client font, not as boxes | A screenshot |
+| W15 | Open Results beside LootHistory's browser | The same look: the title centered in the title bar; *Runs* / *Bests* tabs in the normal gold font, the idle one gray; Title Case column headers small and gold with the gold sort arrow after the sorted one; compact 20 px rows in the small white font; the detail's Damage / DPS / Meter DPS figures large over small gray captions; 20 px buttons in the small white font (*Add Note*, *Share*, *Delete*), gold under the pointer; footers small and gray | A screenshot beside LootHistory |
+| W16 | Hover the close control | It turns gold (not red) and back to gray on leave | |
 
 ## 7. Share and test mode
 
@@ -138,7 +140,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | P3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
 | P4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |
 | P5 | `/dr test` | Armed, Running, Stop!, Waiting and Result play on the HUD with the amber strip under the title (*Test mode: sample numbers. Combat or Arm ends it*); it holds on the result card. The sample spells show real icons and names (re-check the Preview spell IDs on this patch) | Any spell shown as *Unknown spell* or a question-mark icon |
-| P6 | While test mode plays, drag and resize the HUD to its minimum (260×316) | The strip glyph and its text still fit; nothing overlaps | A screenshot |
+| P6 | While test mode plays, drag and resize the HUD to its minimum (260×296) | The strip glyph and its text still fit; nothing overlaps | A screenshot |
 | P7 | Enter combat during test mode | It ends with one line | |
 | P8 | Start test mode, then arm a real race | Test mode ends with one line and the HUD shows the real race | |
 | P9 | Leave a real result card up, start `/dr test` over it, and close the HUD | Closing ends test mode only; the real run is unaffected | The real run's state after |
@@ -150,9 +152,11 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
 | H1 | A fresh profile's HUD during a race | 300×460, all 8 live rows visible | A screenshot |
-| H2 | Drag the grip to the minimum (260×316) and look at every body (use test mode) | Arm and the links stay clear; live and result rows are capped above the buttons; nothing runs off the window | A screenshot of each body that clips |
+| H2 | Drag the grip to the minimum (260×296) and look at every body (use test mode) | Arm and the links stay clear; live and result rows are capped above the buttons; nothing runs off the window | A screenshot of each body that clips |
 | H3 | Move and resize the HUD, `/reload` | Position and size persist; lock stops the drag and the grip | |
 | H4 | Alt-Z with the HUD shown on a result card | The card is still there when the UI comes back (a hidden parent is not a close) | |
+| H5 | Open the HUD and LootHistory's browser side by side and walk every HUD body (test mode) | The same look: the title *DPS Race* centered in a 30 px title bar in the header gold; section labels (*Race Length*, *Target*) small and gold; buttons, presets, spell rows, chips and the target card's text in the small white font; footers and KPI captions small and gray; Title Case labels and buttons, no ALL-CAPS word but *STOP*; the race clocks, *STOP* and the Damage / DPS figures still large | A screenshot beside LootHistory |
+| H6 | Hover each title-bar control in turn (Results, settings, lock, close), sliding straight from one to the next, then off the bar | The control under the pointer turns gold, the rest stay gray, all at full alpha; sliding from one to the next never leaves both gold or neither; off the bar all four are gray again; each still shows its tooltip (the close control has none). The close control is gold, not red | Which control stayed gold or never turned |
 | D1 | `/dr disable` | Every right-click menu entry but *Enabled* is grayed; `/dr help`, `config`, `list` and `diagnostics` still answer; the feature verbs print the one disabled line | |
 | D2 | Press each key binding while disabled | The one disabled line, nothing else | |
 | D3 | `/dr enable` | Everything comes back without a `/reload`; a race armed before the disable is gone, a stored running run resumes like a reload | |
@@ -172,8 +176,8 @@ marked *(probe)* need a one-line script typed in chat; run it in combat where th
 |---|---|---|---|---|
 | C1 | **O1.** The in-combat order of `combatSpells` | Compare the live rows' order during R7 with the result card | Note whether the live order is sorted by damage or by first use. Either passes: the header already reads *Live order* | Which order it is |
 | C2 | **O2.** `C_Spell.GetSpellTexture` and `GetSpellName` accept a secret spell ID | R7's live rows | Every live row has an icon and a name. If icons are missing, the fallback is rows without icons (*Show spell icons* off) | A screenshot, and the debug trace |
-| C3 | One rung of the live-DPS chain answers in combat. The live client's source table has no `amountPerSecond` (seen 2026-10-23, a Beast Mastery hunter), so expect rung `localRow`: the player's own `combatSources` row, found by its readable `isLocalPlayer` | R7 with `/dr debug on`: the console has one `Meter` line per race, *live DPS from rung …* | *DPS · LIVE* shows a number all race. `localRow` is expected; `dpsType` (the Dps meter type's `amountPerSecond`) also passes if the figure is near damage ÷ elapsed, not the damage total; `source` means the field came back; `none` with a dash fails | The rung named in the `Meter` line, and whether the figure was ever a number |
-| C3a | The live figure is the meter's rate, not the score | R7 then R12 | *DPS · LIVE* moves once a second or so (the meter's whole-second duration) and may differ from the result card's DPS; the score is still damage ÷ the race length | Both figures |
+| C3 | One rung of the live-DPS chain answers in combat. The live client's source table has no `amountPerSecond` (seen 2026-10-23, a Beast Mastery hunter), so expect rung `localRow`: the player's own `combatSources` row, found by its readable `isLocalPlayer` | R7 with `/dr debug on`: the console has one `Meter` line per race, *live DPS from rung …* | *DPS · Live* shows a number all race. `localRow` is expected; `dpsType` (the Dps meter type's `amountPerSecond`) also passes if the figure is near damage ÷ elapsed, not the damage total; `source` means the field came back; `none` with a dash fails | The rung named in the `Meter` line, and whether the figure was ever a number |
+| C3a | The live figure is the meter's rate, not the score | R7 then R12 | *DPS · Live* moves once a second or so (the meter's whole-second duration) and may differ from the result card's DPS; the score is still damage ÷ the race length | Both figures |
 | C4 | On the opening frame, the player is already in combat, or `PLAYER_REGEN_DISABLED` shares the `GetTime()` of the new-session event | R6 | The clock starts on the first hit every time, with either opener | The opener that did not start the clock, and the `Race` debug lines |
 | C5 | Damage-meter session IDs only increase within a client session | `/dr diagnostics` on each of three consecutive result cards | The race line's `session=` grows each time | The three numbers |
 | C6 | `GetTime()` survives a `/reload` | X1 | The countdown continues from where it was | The countdown before and after |
