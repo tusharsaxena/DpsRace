@@ -45,7 +45,10 @@ local descriptor = {
     -- settings/General.lua and read at render time.
     buildMain     = function(ctx) NS.Helpers.BuildLandingPage(ctx, NS.LANDING) end,
     getLSM        = function() return LibStub and LibStub("LibSharedMedia-3.0", true) end,
-    scheduleTimer = function(fn, delay) return NS.addon:ScheduleTimer(fn, delay) end,
+    -- C_Timer.After, NOT the addon's AceTimer: stand-down's CancelAllTimers would cancel a pending
+    -- drag-throttle callback, leaving the widget's own `armed` flag stuck true until /reload. The
+    -- panel stays live while disabled; the library keeps its own flag and ignores the return.
+    scheduleTimer = function(fn, delay) C_Timer.After(delay, fn) end,
     validate      = function() NS.ValidateSchema() end,
     onAceGUI      = function(AceGUI) NS.AceGUI = AceGUI end,
     print         = function(line) NS.Print(line) end,
