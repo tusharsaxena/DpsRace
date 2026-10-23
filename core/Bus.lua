@@ -17,23 +17,59 @@ NS.MSG = {
 
 local Bus = LibStub and LibStub("LibKa0s-Bus-1.0", true)
 if not Bus then
-    -- Degrade, never error: a target is a plain AceEvent embed, and the stand-down has nothing of
-    -- its own to drop (the latch's standDown still unregisters each module's messages directly).
+    -- Degrade, never error. The latch's standDown unregisters only on NS.addon, so the record MUST
+    -- track every target it hands out: each target's message registrations are remembered, dropped
+    -- at StandDown and replayed at StandUp; one registered while down is remembered and waits.
+    local function newRecord(d)
+        local targets, down = {}, false        -- array: the replay order is the creation order
+        local rec = { name = d and d.name }
+        function rec.NewTarget()
+            local AceEvent = LibStub and LibStub("AceEvent-3.0", true)
+            if not AceEvent then return nil end
+            local t, held = {}, {}
+            AceEvent:Embed(t)
+            local reg, unreg, all = t.RegisterMessage, t.UnregisterMessage, t.UnregisterAllMessages
+            t.RegisterMessage = function(self, name, handler)
+                held[name] = handler or false
+                if not down then return reg(self, name, handler) end
+            end
+            t.UnregisterMessage = function(self, name)
+                held[name] = nil
+                return unreg(self, name)
+            end
+            t.UnregisterAllMessages = function(self)
+                for name in pairs(held) do held[name] = nil end
+                return all(self)
+            end
+            targets[#targets + 1] = { t = t, held = held, reg = reg, all = all }
+            return t
+        end
+        function rec.StandDown()
+            if down then return 0 end
+            down = true
+            local n = 0
+            for _, e in ipairs(targets) do
+                for _ in pairs(e.held) do n = n + 1 end
+                e.all(e.t)
+            end
+            return n
+        end
+        function rec.StandUp()
+            if not down or (d and d.isDown and d.isDown()) then return 0, {} end
+            down = false
+            local n = 0
+            for _, e in ipairs(targets) do
+                for name, handler in pairs(e.held) do
+                    e.reg(e.t, name, handler or nil)
+                    n = n + 1
+                end
+            end
+            return n, {}
+        end
+        return rec
+    end
     Bus = {
-        New = function(_, d)
-            return {
-                name = d and d.name,
-                NewTarget = function()
-                    local AceEvent = LibStub and LibStub("AceEvent-3.0", true)
-                    if not AceEvent then return nil end
-                    local t = {}
-                    AceEvent:Embed(t)
-                    return t
-                end,
-                StandDown = function() return 0 end,
-                StandUp   = function() return 0, {} end,
-            }
-        end,
+        New = function(_, d) return newRecord(d) end,
         Catalog = function(_, messages) return messages end,
     }
 end
