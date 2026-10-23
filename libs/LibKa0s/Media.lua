@@ -1,0 +1,404 @@
+-- LibKa0s-Media-1.0 — the art and type this collection ships, and the paths that reach them.
+--
+-- Every Ka0s addon draws the same marks and prints its numbers in the same face. Before this module
+-- each one shipped its own copy: Mythic Meters carried 49 TGAs and JetBrains Mono under its own
+-- `media/`, built by a tool that lived in that repo, and the second addon to want a gear icon would
+-- have copied both. Two copies of a texture is two licenses to track, two provenance stories, and a
+-- collection whose addons stop looking like one author's work the moment one copy is regenerated.
+--
+-- So the art ships HERE, inside the vendored payload, and every consumer gets it with the `cp -r`
+-- it already does.
+--
+-- ---------------------------------------------------------------------------------------------
+-- WHY THIS TAKES AN ADDON NAME
+-- ---------------------------------------------------------------------------------------------
+--
+-- A WoW texture path is absolute from `Interface\AddOns\`, and this library is VENDORED — there is
+-- no single path to it, there are eight, one per consumer, and a copy cannot know which one it was
+-- copied into. Lua gives a file no way to ask where it is: `...` carries the addon name only for a
+-- file the TOC loads directly, and `LibKa0s.xml` is loaded from inside `libs/`, so what arrives is
+-- the consumer's name in some builds and nothing in others. Guessing is worse than asking, because
+-- a wrong texture path FAILS SILENTLY: the texture simply does not draw, no error, no log line.
+--
+-- The host passes its own name — which it has, verbatim, as the first vararg of every file the TOC
+-- loads — and gets back a path that is correct by construction:
+--
+--     local M = LibStub("LibKa0s-Media-1.0", true)
+--     M.Icon(addonName, "settings")
+--       -> "Interface\\AddOns\\MythicMeters\\libs\\LibKa0s\\media\\icons\\settings.tga"
+--
+-- A consumer that vendors somewhere other than `libs/LibKa0s` passes `vendorPath`; nothing in the
+-- collection does today, and the option exists so that a repo which must is not forced to rebuild
+-- the string by hand and drift from it.
+--
+-- ---------------------------------------------------------------------------------------------
+-- WHY AN UNKNOWN NAME ANSWERS NIL
+-- ---------------------------------------------------------------------------------------------
+--
+-- Because the failure it replaces is invisible. A misspelt icon name built into a path yields a
+-- texture that does not load, and a texture that does not load draws nothing and raises nothing —
+-- the control is simply absent, and stays absent through every green test suite. `nil` is a value
+-- the caller can see: it falls straight into the kind of fallback ladder a host already has for a
+-- texture that fails to load, and a host without one gets a nil where it expected a string rather
+-- than a button that quietly is not there.
+--
+-- That is also why `ICONS` and `FONTS` are published. They are the catalog — what exists, by the
+-- names callers use — so a settings dropdown or a test can enumerate rather than hardcode.
+--
+-- Depends on LibStub and LibKa0s-Core-1.0, and on no addon framework. LibSharedMedia is OPTIONAL:
+-- `RegisterLSM` is a no-op without it, because an addon that does not carry LSM still wants its
+-- icons.
+
+local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
+local NEEDS_CORE = 1
+if not core or (core.MINOR or 0) < NEEDS_CORE then return end   -- no NewLibrary; module absent
+
+local MAJOR, MINOR = "LibKa0s-Media-1.0", 5
+local lib = LibStub:NewLibrary(MAJOR, MINOR)
+if not lib then return end
+
+lib.MAJOR, lib.MINOR = MAJOR, MINOR
+
+-- Which version of each FILE in this major is actually live, so version skew is discoverable at
+-- runtime rather than by reading source. See docs/releasing.md.
+lib.MODULES = lib.MODULES or {}
+lib.MODULES.Media = MINOR
+
+-- ── where the payload sits ─────────────────────────────────────────────────────────────────
+
+-- Where a consumer vendors this library, from its own folder. The collection's convention, and the
+-- one `docs/releasing.md` documents; `Icon`/`Font` take an override for a repo that differs.
+lib.VENDOR_PATH = "libs\\LibKa0s"
+
+local ICON_DIR    = "media\\icons"
+local FONT_DIR    = "media\\fonts"
+local TEXTURE_DIR = "media\\textures"
+
+-- ── the catalog ──────────────────────────────────────────────────────────────────────────
+
+-- Every icon in `media/icons/`, by the name callers use: Open Iconic's 113 semantic keys (MIT),
+-- rendered to 64x64 white RGBA TGAs by `tools/artwork/icon_cleaner.py`, the provenance record for
+-- ALL the art here. `MediaIcons.lua` appends the other sets at load (see ICON_SETS below); this
+-- block stays first and in this order, because consumers store the path a name resolves to.
+--
+-- WHITE, AND THAT IS A CONTRACT. A texture is tinted by MULTIPLYING, so white art becomes any
+-- color a caller asks for and black art stays black whatever it is asked for. Every mark here is
+-- white with its shape entirely in the alpha channel. Art added later must be too, or a caller's
+-- color setting silently stops working on that one icon.
+--
+-- TWO MARKS DELIBERATELY ABSENT, because Open Iconic has no glyph for them and a hand-drawn
+-- substitute would be the one icon in the set that looks foreign: `save` (no floppy; `confirm`
+-- carries the meaning) and `hidden` (no crossed-out eye; `eye` drawn dimmed is the state).
+lib.ICONS = {
+  -- the window header strip
+  "close", "minimise", "expand", "lock", "unlock", "settings", "segment", "reset", "export",
+  "sort-up", "sort-down",
+  -- core actions
+  "copy", "clear", "add", "edit", "confirm", "cancel", "search", "undo", "redo", "import",
+  -- status and feedback
+  "info", "warning", "help", "ban", "bug",
+  -- state
+  "pin", "eye", "star",
+  -- layout
+  "move", "resize", "fullscreen-enter", "fullscreen-exit", "grid", "list", "layers",
+  -- navigation
+  "chevron-left", "chevron-right", "chevron-up", "chevron-down",
+  -- data
+  "chart", "graph", "spreadsheet", "timer", "clock",
+  -- arrows: the up/down family, every weight the set offers
+  "arrow-up", "arrow-down", "arrow-thick-up", "arrow-thick-down", "arrow-circle-up",
+  "arrow-circle-down", "collapse-up", "collapse-down", "expand-up", "expand-down", "align-top",
+  "align-bottom",
+  -- arrows: the marks that draw TWO of them
+  "sort-asc", "sort-desc", "transfer", "elevator",
+  -- talking
+  "chat", "speech-bubble",
+  -- arrows: left and right, matching the up/down family above
+  "arrow-left", "arrow-right", "arrow-thick-left", "arrow-thick-right", "arrow-circle-left",
+  "arrow-circle-right", "caret-left", "caret-right", "expand-left", "expand-right",
+  -- text alignment
+  "align-left", "align-center", "align-right", "justify-left", "justify-center", "justify-right",
+  -- layout, continued
+  "grid-two-up", "grid-four-up", "resize-height", "resize-width",
+  -- status and state, continued
+  "circle-check", "task", "thumb-up", "thumb-down", "heart", "bookmark",
+  -- place and navigation
+  "home", "location", "map-marker", "external-link", "link-intact",
+  -- tools and devices
+  "wrench", "terminal", "monitor", "video", "aperture", "zoom-in", "zoom-out",
+  -- sound
+  "volume-high", "volume-low", "volume-off",
+  -- documents and labels
+  "document", "tag", "tags",
+  -- session
+  "account-login", "account-logout",
+  -- entities
+  "person", "people", "target", "shield",
+}
+
+-- Every font in `media/fonts/`, keyed by the LSM name it registers under. `file` is the basename;
+-- `license` names the file recording its terms, which ships beside it.
+--
+-- ONE FACE, AND IT IS MONOSPACE. A meter, a debug console and a perf table are all grids of digits
+-- that change while you read them, and in a proportional face every digit is a different width, so
+-- the column shivers as it ticks. JetBrains Mono pins them to a grid. It is the face the debug
+-- console has always asked its host for; carrying it here is what stops each host answering with a
+-- different one.
+lib.FONTS = {
+  ["JetBrains Mono"] = { file = "JetBrainsMono-Regular.ttf", license = "JetBrainsMono-OFL.txt" },
+}
+
+-- Every statusbar texture in `media/textures/`, keyed by the LSM name it registers under -- which is
+-- also the name a player sees in a bar-texture dropdown and the string a profile stores. `file` is
+-- the basename; there is no per-file license row because unlike the icons and the font, nothing here
+-- came from anywhere: `tools/artwork/bar_textures.py` synthesizes every pixel, and that file is both
+-- the provenance record and the license answer.
+--
+-- WHY THE KEYS LOOK LIKE LABELS AND THE FILES LOOK LIKE CODE. A dropdown reads "Ka0s Underline 2";
+-- a path reads `underline-2`. They are the same thing said twice for two different readers, and the
+-- pairing lives here so neither has to be derived from the other by string surgery.
+--
+-- UNDERLINE AND OVERLINE, not bottom and top: the pair names where the line SITS relative to the bar
+-- the way type does. The number is a multiple of the base band (2px of 32), so `4` is four times the
+-- line and NOT four pixels -- a name carrying a pixel count would be wrong the moment the canvas
+-- changed. Every one of them is the same 256x32 canvas, so a frame sized for one is sized for all
+-- seven and a player switching between them gets a different line, never a different-shaped widget.
+lib.TEXTURES = {
+  ["Ka0s Gradient"]    = { file = "gradient.tga" },
+  ["Ka0s Underline 1"] = { file = "underline-1.tga" },
+  ["Ka0s Underline 2"] = { file = "underline-2.tga" },
+  ["Ka0s Underline 4"] = { file = "underline-4.tga" },
+  ["Ka0s Overline 1"]  = { file = "overline-1.tga" },
+  ["Ka0s Overline 2"]  = { file = "overline-2.tga" },
+  ["Ka0s Overline 4"]  = { file = "overline-4.tga" },
+}
+
+-- THREE ICON SETS, ONE CATALOG (minor 5): Open Iconic (MIT, flat in `media/icons/`, unprefixed),
+-- Phosphor Fill (MIT, `ph:<name>` in `media/icons/phosphor/`) and Game-icons.net (CC BY 3.0,
+-- `gi:<name>` in `media/icons/game-icons/`). The prefix exists because the sets reuse each other's
+-- names (star, heart, bug), and `:` occurs in no Open Iconic name, so the split is unambiguous.
+-- `ICONS` stays the ONE enumerable list of every name: minor 4's 113 hand-written names first and
+-- unmoved, then the generated names `MediaIcons.lua` appends.
+--
+-- The icon sets, in the order a browser lists them. `prefix` starts every name of the set (empty
+-- for Open Iconic, whose names predate the other sets), `dir` is its folder under `media\icons`
+-- (empty: the folder itself), `license` the file recording its terms, which ships in that folder.
+-- Game-icons is CC BY 3.0, so its folder also carries `AUTHORS.txt` (every mark's author) and the
+-- statement of changes, and `IconAuthor` answers the author per name.
+lib.ICON_SETS = {
+  { id = "open-iconic", prefix = "",    dir = "",           label = "Open Iconic",
+    license = "LICENSE-open-iconic.txt" },
+  { id = "phosphor",    prefix = "ph:", dir = "phosphor",   label = "Phosphor",
+    license = "LICENSE-phosphor.txt" },
+  { id = "game-icons",  prefix = "gi:", dir = "game-icons", label = "Game-icons",
+    license = "LICENSE-game-icons.txt" },
+}
+
+-- A prefix's folder, answered by lookup. Built once from ICON_SETS so that table stays the one
+-- place a set is described.
+local SET_DIR = {}
+for _, set in ipairs(lib.ICON_SETS) do
+  SET_DIR[set.prefix] = set.dir == "" and ICON_DIR or (ICON_DIR .. "\\" .. set.dir)
+end
+
+-- Answering a lookup with a set rather than a linear scan of ICONS. Built from the array, so the
+-- array stays the single place a name is written down; `__SetGeneratedIcons` rebuilds it.
+local KNOWN_ICON, ICON_AUTHOR = {}, {}
+local BASE_ICONS = #lib.ICONS
+for i = 1, BASE_ICONS do KNOWN_ICON[lib.ICONS[i]] = true end
+
+--- Append the generated names to ICONS, in place, and index them. Called by `MediaIcons.lua`, once
+--- per load of that file against this shell.
+---
+--- IDEMPOTENT, because the paired-file guard lets a newer `MediaIcons.lua` run again against the
+--- same shell: ICONS is cut back to the hand-written block first, then refilled, so a second call
+--- never doubles a name. The TABLE keeps its identity — a host that captured `ICONS` once still
+--- reads the whole catalog.
+---
+--- @param names table    array of catalog names, prefixes included
+--- @param authors table  optional, name -> author, for the CC BY sets
+function lib.__SetGeneratedIcons(names, authors)
+  local icons = lib.ICONS
+  for i = #icons, BASE_ICONS + 1, -1 do
+    KNOWN_ICON[icons[i]] = nil
+    icons[i] = nil
+  end
+  ICON_AUTHOR = {}
+  for i = 1, #names do
+    local name = names[i]
+    if not KNOWN_ICON[name] then
+      icons[#icons + 1] = name
+      KNOWN_ICON[name] = true
+    end
+  end
+  for name, who in pairs(authors or {}) do
+    if KNOWN_ICON[name] then ICON_AUTHOR[name] = who end
+  end
+end
+
+-- ── paths ──────────────────────────────────────────────────────────────────────────────────
+
+local function root(addonName, vendorPath)
+  if type(addonName) ~= "string" or addonName == "" then return nil end
+  return "Interface\\AddOns\\" .. addonName .. "\\" .. (vendorPath or lib.VENDOR_PATH) .. "\\"
+end
+
+--- The texture path for one icon, or nil when the name is not in `ICONS`.
+---
+--- EXTENSIONLESS, and that changed at minor 2. Minor 1 answered `...\\settings.tga` on the
+--- reasoning that one spelling beats two. The consumer that adopted it first records the opposite
+--- from a live client: Mythic Meters' header art has failed silently twice, and its surviving note
+--- says a path carrying `.tga` is one of the two spellings that draws NOTHING. A texture that does
+--- not load draws nothing and raises nothing, so "it probably works either way" is not a thing
+--- anyone discovers is wrong. The client appends the extension itself. The file on disk is still
+--- `<name>.tga`, and `tests/test_media.lua` checks for it under that name.
+---
+--- A PREFIXED NAME resolves into its set's folder (minor 5): `ph:sword` is
+--- `...\media\icons\phosphor\sword`. The name must still be in `ICONS`, so an unknown prefix,
+--- or a set's mark asked for without its prefix, answers nil like any other unknown name.
+---
+--- @param addonName string  the consumer's own addon folder name (its first vararg)
+--- @param name string       an entry of `lib.ICONS`
+--- @param vendorPath string optional, defaults to `lib.VENDOR_PATH`
+--- @return string|nil
+function lib.Icon(addonName, name, vendorPath)
+  if not KNOWN_ICON[name] then return nil end
+  local base = root(addonName, vendorPath)
+  if not base then return nil end
+  local prefix, rest = name:match("^(%l+:)(.+)$")
+  if not prefix then return base .. ICON_DIR .. "\\" .. name end
+  local dir = SET_DIR[prefix]
+  if not dir then return nil end
+  return base .. dir .. "\\" .. rest
+end
+
+--- The author of one icon, for the sets whose license asks for attribution per mark (Game-icons,
+--- CC BY 3.0), or nil for every other name, an unknown one included. A browser shows it in the
+--- mark's tooltip; the full list ships as `media/icons/game-icons/AUTHORS.txt`.
+---
+--- @param name string  an entry of `lib.ICONS`
+--- @return string|nil
+function lib.IconAuthor(name)
+  if type(name) ~= "string" then return nil end
+  return ICON_AUTHOR[name]
+end
+
+--- The path of one shipped statusbar texture, or nil when the name is not in `TEXTURES`.
+---
+--- EXTENSIONLESS, like `Icon` and for the same recorded reason. LSM stores whatever string it is
+--- handed and hands it back untouched, so the convention costs nothing there, and one rule for every
+--- path this module answers is worth more than matching what other addons happen to register.
+---
+--- @param addonName string  the consumer's own addon folder name
+--- @param name string       a key of `lib.TEXTURES`, e.g. "Ka0s Underline 2"
+--- @param vendorPath string optional
+--- @return string|nil
+function lib.Texture(addonName, name, vendorPath)
+  local entry = lib.TEXTURES[name]
+  if not entry then return nil end
+  local base = root(addonName, vendorPath)
+  if not base then return nil end
+  return base .. TEXTURE_DIR .. "\\" .. (entry.file:gsub("%.tga$", ""))
+end
+
+--- The font path for one registered face, or nil when the name is not in `FONTS`.
+---
+--- @param addonName string  the consumer's own addon folder name
+--- @param name string       a key of `lib.FONTS`, e.g. "JetBrains Mono"
+--- @param vendorPath string optional
+--- @return string|nil
+function lib.Font(addonName, name, vendorPath)
+  local entry = lib.FONTS[name]
+  if not entry then return nil end
+  local base = root(addonName, vendorPath)
+  if not base then return nil end
+  return base .. FONT_DIR .. "\\" .. entry.file
+end
+
+-- ── LibSharedMedia ─────────────────────────────────────────────────────────────────────────
+
+--- Register one entry and answer 1 when LSM holds the key afterwards, 0 when it does not.
+--- `langmask` is passed only when non-nil, so an LSM without locale bits sees the plain call. An
+--- LSM with no `IsValid` (a consumer's test fake; the real LSM-3.0 has it) cannot be asked, so the
+--- call counts, as it did at minor 3.
+local function registerOne(LSM, kind, name, path, langmask)
+  if langmask then
+    LSM:Register(kind, name, path, langmask)
+  else
+    LSM:Register(kind, name, path)
+  end
+  if type(LSM.IsValid) ~= "function" then return 1 end
+  return LSM:IsValid(kind, name) and 1 or 0
+end
+
+--- The locale mask for the shipped face: western + ruRU (see RegisterLSM), or nil when LSM
+--- publishes no locale bits.
+local function fontLangmask(LSM)
+  local western, ruRU = LSM.LOCALE_BIT_western, LSM.LOCALE_BIT_ruRU
+  if type(western) ~= "number" or type(ruRU) ~= "number" then return nil end
+  return western + ruRU
+end
+
+--- Put every shipped font AND statusbar texture into LibSharedMedia under its catalog name.
+---
+--- WHY REGISTERING MATTERS AND A PATH DOES NOT. A host can draw with `Font(...)` and never touch
+--- LSM. What registration buys is the settings panel: an LSM-registered face appears in the font
+--- dropdown beside every other font the player has, and a profile can then store the NAME —
+--- portable across installs — instead of a path that names one addon's folder and breaks the moment
+--- the player renames it.
+---
+--- THE FIRST REGISTRATION WINS. LSM keeps the first path offered under a key and answers `false`
+--- to every later `Register` for it, whatever that path is. Each consumer offers a DIFFERENT path —
+--- its own `Interface\AddOns\<Addon>\libs\LibKa0s\...` — so it is not an identical triple that
+--- makes a second consumer harmless: it is that every one of those paths names identical bytes, the
+--- same file vendored whole into each addon. Whichever copy wins, the player sees the same face
+--- under the same name.
+---
+--- THE FACE IS FLAGGED WESTERN + ruRU. On a non-western client LSM refuses a font that carries no
+--- langmask, and one whose mask lacks the client's locale bit. JetBrains Mono has Latin and
+--- Cyrillic glyphs and no Hangul or Han, so it is offered to western and ruRU clients and CJK
+--- clients are excluded on purpose: a face that draws their text as boxes does not belong in their
+--- font dropdown. An LSM too old to publish the `LOCALE_BIT_*` constants gets a plain `Register`.
+---
+--- COUNTED ONLY WHEN LSM HAS IT. A font or texture counts when `LSM:IsValid(type, name)` answers
+--- true after the call, not because `Register` was called: a refused face is not registered, and a
+--- key another copy registered first is (see above). An LSM without `IsValid` — never the real
+--- LSM-3.0, but the fakes in consumers' test harnesses — counts every call, as minor 3 did.
+---
+--- Call it at FILE LOAD rather than at PLAYER_LOGIN. LibSharedMedia is vendored under `libs/` and
+--- has therefore already run by the time a TOC reaches the consumer's own files, and a default that
+--- names a face LSM has not heard of yet is a default that resolves to nothing.
+---
+--- @param addonName string  the consumer's own addon folder name
+--- @param vendorPath string optional
+--- @return number fonts, number statusbars  how many of each LSM holds after the call; 0, 0 when
+---         LSM is absent, which is not an error
+function lib.RegisterLSM(addonName, vendorPath)
+  local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+  if not LSM then return 0, 0 end
+
+  local mt = LSM.MediaType or {}
+  local mask = fontLangmask(LSM)
+
+  local fonts = 0
+  for name in pairs(lib.FONTS) do
+    local path = lib.Font(addonName, name, vendorPath)
+    if path then
+      fonts = fonts + registerOne(LSM, mt.FONT or "font", name, path, mask)
+    end
+  end
+
+  -- STATUSBAR, and it is the same bargain the fonts strike. A registered texture is what a player
+  -- picks out of a bar-texture dropdown by name, and a NAME is what their profile then stores --
+  -- portable between installs, where a path is pinned to one addon's folder and breaks the moment
+  -- the folder is renamed.
+  local bars = 0
+  for name in pairs(lib.TEXTURES) do
+    local path = lib.Texture(addonName, name, vendorPath)
+    if path then
+      bars = bars + registerOne(LSM, mt.STATUSBAR or "statusbar", name, path)
+    end
+  end
+
+  return fonts, bars
+end
