@@ -376,12 +376,15 @@ test("results: note limited to 200 chars", function()
     assertEqual(d.w.note.__text, "Note: " .. string.rep("x", 200))
 end)
 
-test("results: Share is grayed until a Share module exists; a double-click shares", function()
+test("results: Share is grayed without a Share module; a double-click shares", function()
     local i = inst()
     seed(i, { mkRun("a") })
+    local module = i.NS.Share
+    i.NS.Share = nil
     i.R.ShowRun("a")
     local d = ui(i).detail
     assertFalse(d.w.share:IsEnabled(), "Share is live with nothing to share through")
+    assertEqual(type(module.Prompt), "function", "modules/Share.lua publishes NS.Share.Prompt")
     local shared = {}
     i.NS.Share = { Prompt = function(run) shared[#shared + 1] = run.id end }
     i.R.ShowRun("a")

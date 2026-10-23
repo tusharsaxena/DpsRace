@@ -38,6 +38,9 @@ function NS.HasWidgets()
     return W ~= nil
 end
 
+--- The strip's height, for a window laying its content out below it (the library publishes it).
+NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
+
 --- The test-mode strip (the library's W.TestStrip, born hidden and unanchored), or nil when the
 --- library is absent. The caller anchors it and shows it. Its mark is the catalog's info icon.
 --- @param parent table the frame to parent it to

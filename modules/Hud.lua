@@ -49,6 +49,7 @@ Hud.MAX_TARGETS = 20
 Hud.FRAME_NAME = "DpsRaceHud"
 
 local HEADER_H, FOOTER_H, PAD = 26, 22, 12
+local CONTENT_TOP = HEADER_H + 10
 local SOUND_CUE = 25477      -- SOUNDKIT.UI_BATTLEGROUND_COUNTDOWN_TIMER, if the table is absent
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
 local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
@@ -450,7 +451,7 @@ local function ensureWindow()
     buildHeader(f)
     buildFooter(f)
     ui.content = CreateFrame("Frame", nil, f)
-    ui.content:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -(HEADER_H + 10))
+    ui.content:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -CONTENT_TOP)
     ui.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, FOOTER_H + 8)
     ui.content:SetClipsChildren(true)
     NS.ApplySkin(f)
@@ -472,6 +473,43 @@ local function applyLock()
     setIcon(ui.lock, Hud.locked and "lock" or "unlock", Hud.locked and "L" or "U")
     local grip = ui.frame.resizeGrip
     if grip then grip:SetShown(not Hud.locked) end
+end
+
+-- ── the test-mode marker (preview-mode) ─────────────────────────────────────────────────────────
+-- While test mode is on the HUD says so on the display: the library's strip under the title bar, the
+-- content moved down by its height. With no Widgets library there is no strip, and the title carries
+-- the word instead; never both (one marker per mode).
+
+local function titleText()
+    if previewOn() and not (ui and ui.strip) then return L["DPS Race \194\183 TEST"] end
+    return L["DPS Race"]
+end
+
+--- The title the window shows now, for the suites.
+function Hud.TitleText() return titleText() end
+
+local function ensureStrip()
+    if ui.stripTried then return ui.strip end
+    ui.stripTried = true
+    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: these numbers are not yours"])
+    if strip then
+        strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + 1))
+        strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + 1))
+    end
+    ui.strip = strip
+    return strip
+end
+
+local function applyTestMarker()
+    local on = previewOn()
+    local strip = on and ensureStrip() or ui.strip
+    if strip then strip:SetShown(on) end
+    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    if ui.drop ~= drop then
+        ui.drop = drop
+        ui.content:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", PAD, -(CONTENT_TOP + drop))
+    end
+    ui.frame.title:SetText(titleText())
 end
 
 local function showBody(key)
@@ -638,6 +676,7 @@ function Hud.Refresh()
     if not Hud.IsShown() then return hideWindow() end
     ensureWindow()
     applyLock()
+    applyTestMarker()
     ui.frame:SetScale(setting("scale", 1))
     if not windowShown() then ui.frame:Show() end
     render(true)

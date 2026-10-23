@@ -43,6 +43,8 @@ function NS.Diagnostics.Sections()
             local hud = NS.Hud.Diagnose()
             out:add("Diag", "hud body=%s events=%s ticking=%s locked=%s", hud.body, hud.events, hud.ticking,
                 hud.locked)
+            local test = NS.Preview.Diagnose()
+            out:add("Diag", "test active=%s phase=%s ticking=%s", test.active, test.phase, test.ticking)
             local results = NS.Results.Diagnose()
             out:add("Diag", "results tab=%s mode=%s rows=%s selected=%s", results.tab, results.mode,
                 results.rows, results.selected)

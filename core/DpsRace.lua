@@ -106,6 +106,37 @@ function NS.ToggleResults()
     return true
 end
 
+--- `/dr hud show|hide|toggle`: the HUD's own show, hide or toggle.
+--- @param how string "show" | "hide" | "toggle"
+function NS.SetHudShown(how)
+    if refused() then return false end
+    if how == "show" then NS.Hud.Show() elseif how == "hide" then NS.Hud.Hide() else NS.Hud.Toggle() end
+    return true
+end
+
+--- `/dr results [bests]`: open the Results window, on the Bests tab when asked.
+--- @param tab string|nil "bests" for the Bests tab; anything else opens the window as it was
+function NS.ShowResults(tab)
+    if refused() then return false end
+    if tab == "bests" then return NS.Results.ShowTab("bests") end
+    NS.Results.Show()
+    return true
+end
+
+--- The Arm / cancel key (spec §6.4): idle or on a result card, arm the HUD's length (the last one
+--- raced); armed or running, cancel. A run waiting for its result is never discarded by a key press:
+--- that is the HUD's Discard run or `/dr cancel`, both of which the player reads first.
+function NS.ToggleArm()
+    if refused() then return false end
+    local S, state = NS.Race.STATE, NS.Race.State()
+    if state == S.ARMED or state == S.RUNNING then return NS.Race.Cancel() end
+    if state == S.STOPPING then
+        NS.Print(L["A run is waiting for its result: /dr cancel discards it."])
+        return false
+    end
+    return (NS.Hud.Act.arm())
+end
+
 function NS.ToggleLock()
     if refused() then return false end
     return NS.SetByPath("locked", NS.GetSetting("locked") ~= true)

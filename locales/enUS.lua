@@ -50,9 +50,9 @@ L["Print the addon version"] = "Print the addon version"
 L["List profiles, or switch to one: profile name"] = "List profiles, or switch to one: profile name"
 L["%s version %s"] = "%s version %s"
 L["%s commands (reduced: the LibKa0s library is missing)"] = "%s commands (reduced: the LibKa0s library is missing)"
-L["enabled = %s"] = "enabled = %s"
+L["%s = %s"] = "%s = %s"
 
--- Placeholders (modules/Placeholders.lua): what the scaffold says until the real windows land
+-- Test mode (modules/Preview.lua, core/DpsRace.lua)
 L["Test mode ended: you entered combat."] = "Test mode ended: you entered combat."
 
 -- The meter adapter (modules/Meter.lua)
@@ -244,3 +244,128 @@ L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
 L["The run still counts and the flag shows on the board."] =
     "The run still counts and the flag shows on the board."
+
+-- Key bindings: the Arm / cancel key (core/LauncherSetup.lua, core/DpsRace.lua)
+L["Arm / cancel race"] = "Arm / cancel race"
+L["A run is waiting for its result: /dr cancel discards it."] =
+    "A run is waiting for its result: /dr cancel discards it."
+
+-- Feature verbs (settings/Slash.lua, spec §6.4)
+L["Arm a race: /dr arm [length], e.g. 90, 1:30 or 3m"] = "Arm a race: /dr arm [length], e.g. 90, 1:30 or 3m"
+L["Cancel the armed or running race, or discard a pending result"] =
+    "Cancel the armed or running race, or discard a pending result"
+L["The race HUD: /dr hud show, hide or toggle"] = "The race HUD: /dr hud show, hide or toggle"
+L["Open the Results window; /dr results bests opens the bests"] =
+    "Open the Results window; /dr results bests opens the bests"
+L["Print your target's name, creature ID and category"] = "Print your target's name, creature ID and category"
+L["Turn test mode on or off"] = "Turn test mode on or off"
+L["Lock the race HUD in place"] = "Lock the race HUD in place"
+L["Unlock the race HUD to move and resize it"] = "Unlock the race HUD to move and resize it"
+L["Nothing to cancel."] = "Nothing to cancel."
+L["Race canceled."] = "Race canceled."
+L["Race canceled: the run is deleted."] = "Race canceled: the run is deleted."
+L["Pending result discarded: the run is deleted."] = "Pending result discarded: the run is deleted."
+L["Result closed. The run stays in your history."] = "Result closed. The run stays in your history."
+L["Usage: %s hud show, %s hud hide or %s hud toggle"] = "Usage: %s hud show, %s hud hide or %s hud toggle"
+L["No target."] = "No target."
+L["Unknown"] = "Unknown"
+L["creature %d"] = "creature %d"
+L["not a creature"] = "not a creature"
+L["Target: %s \194\183 %s \194\183 category %s"] = "Target: %s \194\183 %s \194\183 category %s"
+
+-- General page: the Race HUD tab (settings/General.lua)
+L["Race HUD"] = "Race HUD"
+L["Show the race HUD"] = "Show the race HUD"
+L["When a race is armed"] = "When a race is armed"
+L["Always"] = "Always"
+L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."] =
+    "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."
+
+-- Race page (settings/Race.lua)
+L["Scoring rules"] = "Scoring rules"
+L["Length"] = "Length"
+L["Sounds"] = "Sounds"
+L["Default race length"] = "Default race length"
+L["The race length the HUD offers until you pick another. The last length you raced is remembered."] =
+    "The race length the HUD offers until you pick another. The last length you raced is remembered."
+L["Countdown cue (10, 5, 3, 2, 1)"] = "Countdown cue (10, 5, 3, 2, 1)"
+L["A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."] =
+    "A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."
+L["Buzzer raid warning and sound"] = "Buzzer raid warning and sound"
+L["A raid warning that says STOP, with a sound, the moment the race ends."] =
+    "A raid warning that says STOP, with a sound, the moment the race ends."
+L["Late-cast grace (s)"] = "Late-cast grace (s)"
+L["A cast that starts later than this after the buzzer flags the run. 0 to 5 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
+    "A cast that starts later than this after the buzzer flags the run. 0 to 5 seconds. Applies to new runs. Saved runs keep the value they were raced with."
+L["Damage-restart gap (s)"] = "Damage-restart gap (s)"
+L["Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
+    "Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."
+L["Sticky-combat hint after (s)"] = "Sticky-combat hint after (s)"
+L["How long combat may hold after the buzzer before the HUD suggests ways to drop it."] =
+    "How long combat may hold after the buzzer before the HUD suggests ways to drop it."
+L["Restore every Race setting on this profile to its addon default."] =
+    "Restore every Race setting on this profile to its addon default."
+
+-- Live breakdown page (settings/Live.lua)
+L["Live breakdown"] = "Live breakdown"
+L["Rows"] = "Rows"
+L["Display"] = "Display"
+L["Rows shown"] = "Rows shown"
+L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."] =
+    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."
+L["Live reads per second"] = "Live reads per second"
+L["How often the running HUD reads the meter while damage is landing. 2 to 10."] =
+    "How often the running HUD reads the meter while damage is landing. 2 to 10."
+L["Show spell icons"] = "Show spell icons"
+L["Draw each spell's icon on the HUD's rows."] = "Draw each spell's icon on the HUD's rows."
+L["Show live DPS"] = "Show live DPS"
+L["Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."] =
+    "Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."
+L["Restore every Live breakdown setting on this profile to its addon default."] =
+    "Restore every Live breakdown setting on this profile to its addon default."
+
+-- History page (settings/History.lua)
+L["History"] = "History"
+L["Storage"] = "Storage"
+L["Runs to keep"] = "Runs to keep"
+L["0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] =
+    "0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."
+L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d runs (about %d KB of saved variables)."
+L["Danger zone"] = "Danger zone"
+L["Delete all runs\226\128\166"] = "Delete all runs\226\128\166"
+L["Asks for confirmation. Personal bests go with them."] = "Asks for confirmation. Personal bests go with them."
+L["Restore Runs to keep to its addon default. Stored runs are not touched."] =
+    "Restore Runs to keep to its addon default. Stored runs are not touched."
+L["Delete every stored run? Your personal bests go with them. This cannot be undone."] =
+    "Delete every stored run? Your personal bests go with them. This cannot be undone."
+L["Finish or cancel the race first."] = "Finish or cancel the race first."
+L["Deleted %d runs."] = "Deleted %d runs."
+
+-- Share and the race's chat lines (modules/Share.lua, mockup screen 12)
+L["DPS Race %s"] = "DPS Race %s"
+L["%s DPS"] = "%s DPS"
+L["(Ka0s DPS Race)"] = "(Ka0s DPS Race)"
+L["Share to"] = "Share to"
+L["Say"] = "Say"
+L["Party"] = "Party"
+L["Raid"] = "Raid"
+L["Guild"] = "Guild"
+L["Whisper\226\128\166"] = "Whisper\226\128\166"
+L["Whisper this run to:"] = "Whisper this run to:"
+L["Send"] = "Send"
+L["You can share a run once you are out of combat."] = "You can share a run once you are out of combat."
+L["This run has no score to share."] = "This run has no score to share."
+L["Armed: %s on %s. First hit starts the clock."] = "Armed: %s on %s. First hit starts the clock."
+L["%s damage \194\183 %s DPS in %s on %s"] = "%s damage \194\183 %s DPS in %s on %s"
+L["new best (+%.1f%%)"] = "new best (+%.1f%%)"
+L["new best"] = "new best"
+L["tail +%.1fs"] = "tail +%.1fs"
+L["Couldn't read the result: the run is kept as lost."] = "Couldn't read the result: the run is kept as lost."
+
+-- Test mode (modules/Preview.lua, the HUD's marker in modules/Hud.lua)
+L["Test mode is not available in combat."] = "Test mode is not available in combat."
+L["Test mode is not available during a race."] = "Test mode is not available during a race."
+L["Test mode ended: a race was armed."] = "Test mode ended: a race was armed."
+L["Test mode: these numbers are not yours"] = "Test mode: these numbers are not yours"
+L["DPS Race \194\183 TEST"] = "DPS Race \194\183 TEST"
+L["Training Dummy"] = "Training Dummy"

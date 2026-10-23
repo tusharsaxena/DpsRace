@@ -25,10 +25,11 @@ test("schema: the Enable row is labeled with the brand", function()
 end)
 
 test("schema: every row has a group, a label and a page", function()
+    local pages = { general = true, race = true, live = true, history = true }
     for _, row in ipairs(NS.Schema) do
         assertEqual(type(row.group), "string", tostring(row.path))
         assertEqual(type(row.label), "string", tostring(row.path))
-        assertTrue(row.page == "general", tostring(row.path))
+        assertTrue(pages[row.page] == true, tostring(row.path))
     end
 end)
 

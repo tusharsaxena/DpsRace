@@ -155,3 +155,206 @@ test("slash: the stub carries no library string but the refusal format", functio
         end
     end
 end)
+
+-- ── the feature verbs (spec §6.4) ────────────────────────────────────────────────────────────────
+
+local FEATURE_VERBS = { "arm", "cancel", "hud", "results", "target", "test", "lock", "unlock" }
+local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
+
+--- The printed lines without the chat tag.
+local function bare(M)
+    local out = {}
+    for i, l in ipairs(M.__printed()) do out[i] = (l:gsub("^|cff00ffff%[DR%]|r ", "")) end
+    return out
+end
+
+--- An instance whose Race.Arm only records what it was asked.
+local function armSpy()
+    local inst = T.load()
+    local asked = {}
+    inst.NS.Race.Arm = function(length, count)
+        asked[#asked + 1] = { length = length, count = count }
+        return true
+    end
+    return inst, asked
+end
+
+test("slash: the feature verbs follow `version`, in the spec's order", function()
+    local names = {}
+    for _, row in ipairs(T.NS.COMMANDS) do names[#names + 1] = row[1] end
+    local joined = table.concat(names, ",")
+    assertTrue(joined:find("version," .. table.concat(FEATURE_VERBS, ","), 1, true) ~= nil, joined)
+end)
+
+test("slash: arm parses 90, 1:30, 3m and rejects 0 and 901", function()
+    local inst, asked = armSpy()
+    local NS, M = inst.NS, inst.mocks
+    for _, text in ipairs({ "90", "1:30", "3m" }) do NS.Slash:OnSlash("arm " .. text) end
+    assertEqual(#asked, 3)
+    assertEqual(asked[1].length, 90)
+    assertEqual(asked[2].length, 90)
+    assertEqual(asked[3].length, 180)
+    M.__resetPrinted()
+    for _, text in ipairs({ "0", "901", "soon" }) do NS.Slash:OnSlash("arm " .. text) end
+    assertEqual(#asked, 3, "an out-of-range or unreadable length reached Race.Arm")
+    local out = bare(M)
+    assertEqual(#out, 3)
+    for _, line in ipairs(out) do assertEqual(line, NS.Format.ArmRefusal("bad_length")) end
+end)
+
+test("slash: a bare arm uses the last length, and an armed length becomes the last one", function()
+    local inst, asked = armSpy()
+    local NS = inst.NS
+    NS.Slash:OnSlash("arm")
+    assertEqual(asked[1].length, 180, "no length raced yet: the default race length")
+    NS.Slash:OnSlash("arm 1:30")
+    NS.Slash:OnSlash("arm")
+    assertEqual(asked[3].length, 90)
+    assertEqual(NS.db.profile.race.lastLength, 90)
+end)
+
+test("slash: arm prints the refusal line Race.Arm's reason maps to", function()
+    local f = RaceClock.new()
+    local NS, M = f.NS, f.M
+    M.__inCombat = true
+    M.__resetPrinted()
+    NS.Slash:OnSlash("arm 60")
+    assertEqual(NS.Race.State(), "idle")
+    assertEqual(bare(M)[1], NS.Format.ArmRefusal("in_combat"))
+end)
+
+test("slash: arm then cancel goes armed and back to idle, one line each", function()
+    local f = RaceClock.new()
+    local NS, M = f.NS, f.M
+    M.__resetPrinted()
+    NS.Slash:OnSlash("arm 60")
+    assertEqual(NS.Race.State(), "armed")
+    local armed = bare(M)
+    assertEqual(#armed, 1)
+    assertTrue(armed[1]:find("^Armed: 1:00") ~= nil, armed[1])
+    M.__resetPrinted()
+    NS.Slash:OnSlash("cancel")
+    assertEqual(NS.Race.State(), "idle")
+    assertEqual(#bare(M), 1)
+    M.__resetPrinted()
+    NS.Slash:OnSlash("cancel")
+    assertEqual(bare(M)[1], "Nothing to cancel.")
+end)
+
+test("slash: target prints name, npcID and category", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    M.__setTarget({ guid = "Creature-0-3767-2393-123-243205-00001A2B3C", name = "Reinforced Golem" })
+    M.__resetPrinted()
+    NS.Slash:OnSlash("target")
+    assertEqual(bare(M)[1], "Target: Reinforced Golem \194\183 creature 243205 \194\183 category Boss-level")
+    M.__setTarget(nil)
+    M.__resetPrinted()
+    NS.Slash:OnSlash("target")
+    assertEqual(bare(M)[1], "No target.")
+end)
+
+test("slash: an uncataloged target reads as Other", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    M.__setTarget({ guid = "Creature-0-1-2-3-99999-0000000000", name = "Angry Boar" })
+    M.__resetPrinted()
+    NS.Slash:OnSlash("target")
+    assertEqual(bare(M)[1], "Target: Angry Boar \194\183 creature 99999 \194\183 category Other")
+end)
+
+test("slash: hud show, hide and toggle; a bare hud toggles", function()
+    local inst = T.load()
+    local NS = inst.NS
+    NS.Slash:OnSlash("hud show")
+    assertTrue(NS.Hud.IsShown())
+    NS.Slash:OnSlash("hud hide")
+    assertFalse(NS.Hud.IsShown())
+    NS.Slash:OnSlash("hud toggle")
+    assertTrue(NS.Hud.IsShown())
+    NS.Slash:OnSlash("hud")
+    assertFalse(NS.Hud.IsShown())
+    inst.mocks.__resetPrinted()
+    NS.Slash:OnSlash("hud sideways")
+    assertTrue(bare(inst.mocks)[1]:find("/dr hud show", 1, true) ~= nil, "an unknown word prints the usage")
+end)
+
+test("slash: results opens the Results window; results bests opens the bests", function()
+    local inst = T.load()
+    local NS = inst.NS
+    NS.Slash:OnSlash("results")
+    assertTrue(NS.Results.IsShown())
+    assertEqual(NS.Results.Tab(), "runs")
+    NS.Slash:OnSlash("results bests")
+    assertEqual(NS.Results.Tab(), "bests")
+end)
+
+test("slash: test turns test mode on and off through the Master controls row", function()
+    local inst = T.load()
+    local NS = inst.NS
+    NS.Slash:OnSlash("test")
+    assertTrue(NS.Preview.IsActive())
+    assertTrue(NS.GetSetting("state.testMode"))
+    NS.Slash:OnSlash("test")
+    assertFalse(NS.Preview.IsActive())
+end)
+
+test("slash: lock and unlock write the Lock frame row through the seam and echo it", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    M.__resetPrinted()
+    NS.Slash:OnSlash("lock")
+    assertEqual(NS.db.profile.locked, true)
+    assertTrue(NS.Hud.locked, "the row's reaction ran")
+    assertTrue(anyLine(M, "locked"))
+    NS.Slash:OnSlash("unlock")
+    assertEqual(NS.db.profile.locked, false)
+end)
+
+test("slash: /dr and /dpsrace both dispatch", function()
+    local inst = T.load()
+    local M = inst.mocks
+    local console = M.LibStub("AceConsole-3.0")
+    for _, command in ipairs({ "dr", "dpsrace" }) do
+        assertTrue(console.commands[command] ~= nil, "/" .. command .. " is not registered")
+        M.__resetPrinted()
+        console:__slash(command, "version")
+        assertTrue(anyLine(M, "0.1.0"), "/" .. command .. " did not reach the dispatcher")
+    end
+end)
+
+test("slash: feature verbs answer the enable line while disabled", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    assertTrue(NS.SetByPath("enabled", false))
+    local refusal = NS.Slash:DisabledLine()
+    for _, verb in ipairs(FEATURE_VERBS) do
+        M.__resetPrinted()
+        NS.Slash:OnSlash(verb .. " 60")
+        local out = bare(M)
+        assertEqual(#out, 1, verb)
+        assertEqual(out[1], refusal, verb)
+    end
+    assertEqual(NS.Race.State(), "idle")
+    assertFalse(NS.Preview.IsActive())
+    assertFalse(NS.Hud.wanted)
+    assertEqual(NS.db.profile.locked, false)
+end)
+
+test("slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept", function()
+    local f = RaceClock.new()
+    local NS = f.NS
+    local key = assert(f.M._G.DpsRaceArmToggle, "no DpsRaceArmToggle button")
+    assertEqual(type(f.M._G["BINDING_NAME_CLICK DpsRaceArmToggle:LeftButton"]), "string", "no label")
+    key:__fire("OnClick", "LeftButton", true)
+    assertEqual(NS.Race.State(), "armed")
+    key:__fire("OnClick", "LeftButton", true)
+    assertEqual(NS.Race.State(), "idle")
+    -- Running, then past the buzzer: the key cancels a running race but never discards a result.
+    assertTrue(f:arm(30))
+    f:start(25)
+    f:to(130)
+    assertEqual(NS.Race.State(), "stopping")
+    key:__fire("OnClick", "LeftButton", true)
+    assertEqual(NS.Race.State(), "stopping", "a key press discarded a pending result")
+end)

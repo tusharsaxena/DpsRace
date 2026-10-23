@@ -36,10 +36,6 @@ files["tests/"] = {
     globals = { "_G.DPSRACE_TEST", "_G.DpsRaceDB", "_G.DpsRacePerfDB" },
 }
 
--- The published slash surface (`Sl:OnSlash`, `PrintHelp`, `LandingRows`, `DisabledLine`, `Register`)
--- is colon-called by the host and the suites and forwards to the dispatcher upvalue.
-files["settings/Slash.lua"] = { ignore = { "212/self" } }
-
 -- spec §8 rule 1, made a lint fact: the client's secret detectors are readable from core/Secrets.lua
 -- only, and C_DamageMeter from modules/Meter.lua only. Anywhere else, naming one is a warning.
 files["core/Secrets.lua"] = {
@@ -84,6 +80,17 @@ files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+
+-- Share (T9): which channels the player is in, the chat send (C_ChatInfo, with the old global under it),
+-- the whisper popup's player-target name, and the channel menu.
+files["modules/Share.lua"] = {
+    read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "SendChatMessage", "UnitIsPlayer", "MenuUtil" },
+}
+
+-- The published slash surface (`Sl:OnSlash`, `PrintHelp`, `LandingRows`, `DisabledLine`, `Register`)
+-- is colon-called by the host and the suites and forwards to the dispatcher upvalue; `/dr target`
+-- asks whether there is a target before it snapshots one (T9).
+files["settings/Slash.lua"] = { ignore = { "212/self" }, read_globals = { "UnitExists" } }
 
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }

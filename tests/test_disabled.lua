@@ -112,8 +112,10 @@ end
 test("Disabled 4: no timer, ticker or OnUpdate is left armed, and none re-arms", function()
     -- red under: drop `addon:CancelAllTimers()` from standDown in core/LifecycleSetup.lua
     local inst, NS, M = scene()
+    -- The baseline's own: test mode's script ticker (modules/Preview.lua).
+    local baseline = #M.__timers()
     NS.addon:ScheduleTimer(function() NS.Print("timer fired") end, 5)
-    assertEqual(#M.__timers(), 1, "the fixture needs one armed timer")
+    assertEqual(#M.__timers(), baseline + 1, "the fixture needs one armed timer")
     assertTrue(NS.SetByPath("enabled", false))
     assertEqual(#M.__timers(), 0)
     M.__fireTimers()
@@ -299,7 +301,7 @@ test("Disabled 8: launcher clicks and the key binding write nothing and show not
 
     -- The key binding: one refusal line, no toggle.
     local refusal = refusalLine(inst)
-    for _, name in ipairs({ "DpsRaceToggleHud", "DpsRaceToggleResults" }) do
+    for _, name in ipairs({ "DpsRaceToggleHud", "DpsRaceToggleResults", "DpsRaceArmToggle" }) do
         M.__resetPrinted()
         local hudWanted, resultsWanted = NS.Hud.wanted, NS.Results.wanted
         M._G[name]:__fire("OnClick", "LeftButton", true)

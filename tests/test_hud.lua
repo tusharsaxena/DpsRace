@@ -426,9 +426,12 @@ test("hud: Race again re-arms the same length; Details and Share reach their mod
     assertEqual(f.Race.Current().race.length, 30)
 end)
 
-test("hud: Share is grayed until a Share module exists", function()
+test("hud: Share is live on a result card, and grayed without a Share module", function()
     local f = hud()
     resolved(f)
+    assertTrue(body(f).w.share:IsEnabled())
+    f.NS.Share = nil
+    f.Hud.Refresh()
     assertFalse(body(f).w.share:IsEnabled())
 end)
 

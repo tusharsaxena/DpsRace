@@ -9,12 +9,24 @@ local L = NS.L
 local function out(line) NS.Print(line) end
 
 local cli   -- built at the bottom, once NS.COMMANDS exists; handlers reach it at CALL time
-local doEnabled, doDebug, doPerf
+local doEnabled, doDebug, doPerf, doSetVerb
+local doArm, doCancel, doHud, doResults, doTarget, doLock
+
+--- A feature verb's handler behind the stand-down: the dispatcher refuses every feature verb while the
+--- `disabled` hold is taken, and this answers the `perf` hold's line (slash-commands-§7, "Which
+--- refusal, by hold") before the handler can act.
+local function feature(fn)
+    return function(rest)
+        local line = NS.StoodDownRefusal()
+        if line then return out(line) end
+        return fn(rest)
+    end
+end
 
 -- Positional triples {name, desc, fn}: a table of named fields is invisible to the library. The
 -- reserved verbs mean the same thing in every Ka0s addon (slash-commands-§2); `diagnostics` has no
--- alias of any kind. T9 appends the feature rows (arm, cancel, hud, results, target, test, lock,
--- unlock) after `version`.
+-- alias of any kind. The feature verbs (spec §6.4) follow `version`; the dispatcher refuses each of
+-- them with the one line while the addon is disabled (slash-commands-§2, §7).
 NS.COMMANDS = {
     { "help",        L["Show this help"],                          function() cli:PrintHelp() end },
     { "config",      L["Open the settings panel"],                 function() NS.OpenOptionsPanel() end },
@@ -31,6 +43,22 @@ NS.COMMANDS = {
                                                                    function() NS.DebugLog:RunDiagnostics() end },
     { "perf",        L["Performance capture; try /dr perf help"], function(rest) doPerf(rest) end },
     { "version",     L["Print the addon version"],                 function() cli:CliVersion() end },
+    -- Feature verbs (spec §6.4). Each handler sits behind feature(), below.
+    { "arm",         L["Arm a race: /dr arm [length], e.g. 90, 1:30 or 3m"],
+                                                                   feature(function(rest) doArm(rest) end) },
+    { "cancel",      L["Cancel the armed or running race, or discard a pending result"],
+                                                                   feature(function() doCancel() end) },
+    { "hud",         L["The race HUD: /dr hud show, hide or toggle"],
+                                                                   feature(function(rest) doHud(rest) end) },
+    { "results",     L["Open the Results window; /dr results bests opens the bests"],
+                                                                   feature(function(rest) doResults(rest) end) },
+    { "target",      L["Print your target's name, creature ID and category"],
+                                                                   feature(function() doTarget() end) },
+    { "test",        L["Turn test mode on or off"],                feature(function() NS.ToggleTestMode() end) },
+    { "lock",        L["Lock the race HUD in place"],
+                                                                   feature(function() doLock(true) end) },
+    { "unlock",      L["Unlock the race HUD to move and resize it"],
+                                                                   feature(function() doLock(false) end) },
 }
 
 --- Run one verb's handler by name: the launcher's Enabled entry reaches `enable`/`disable` through
@@ -137,22 +165,32 @@ cli = SlashLib:New({
 })
 Sl.__dispatcher = cli
 
---- `enable` / `disable`: a write to the composed `enabled` row through the seam, echoed by the CLI
---- so the stored value is what the player reads back. Degraded, the write goes through the seam's
---- writeThrough list and is acknowledged only if it landed (options-ui-§1).
-function doEnabled(want)
-    if not degraded and NS.FindSchemaRow("enabled") then
-        cli:CliSet("enabled " .. tostring(want))
+--- A verb that writes one composed Master row (`enable`/`disable` the `enabled` row, `lock`/`unlock`
+--- the `locked` row): through the seam, echoed by the CLI so the stored value is what the player reads
+--- back (slash-commands-§2, §8). Degraded, the write goes through the seam's writeThrough list and is
+--- acknowledged only if it landed (options-ui-§1); a written-through value runs no onChange, so the
+--- caller's `react` stands in for it.
+function doSetVerb(path, want, react)
+    if not degraded and NS.FindSchemaRow(path) then
+        cli:CliSet(path .. " " .. tostring(want))
         return
     end
-    local ok, err = NS.SetByPath("enabled", want)
+    local ok, err = NS.SetByPath(path, want)
     if ok then
-        -- A written-through value runs no onChange; take the hold here so the switch still acts.
-        NS.ApplyEnabled(want)
-        out(L["enabled = %s"]:format(tostring(want)))
+        if react then react(want) end
+        out(L["%s = %s"]:format(path, tostring(want)))
     else
         out(tostring(err))
     end
+end
+
+function doEnabled(want)
+    doSetVerb("enabled", want, NS.ApplyEnabled)
+end
+
+--- `lock` / `unlock`: the Lock frame row (slash-commands-§8).
+function doLock(want)
+    doSetVerb("locked", want, function(v) NS.Hud.SetLocked(v) end)
 end
 
 --- `diagnostics` is tested FIRST (debug-logging-§14), then `on`/`off`; any other word, or none,
@@ -166,6 +204,66 @@ function doPerf(rest)
     local lines = NS.Perf.OnCommand(rest)
     if type(lines) ~= "table" then return end
     for _, line in ipairs(lines) do out(line) end
+end
+
+-- ── the feature verbs (spec §6.4) ─────────────────────────────────────────────────────────────────
+-- Each reaches the race and the windows through the same handlers the HUD's buttons, the launcher and
+-- the key bindings run (core/DpsRace.lua, modules/Hud.lua), never a copy. The dispatcher has already
+-- refused them while disabled; a perf-held stand-down refuses inside those handlers.
+
+--- `arm [length]`: the typed length ("90", "1:30", "3m"; 0:10 to 15:00) becomes the HUD's pick, as if
+--- clicked, and is armed; with none, the HUD's own length (the last one raced, else the default).
+function doArm(rest)
+    local text = tostring(rest or ""):match("^%s*(.-)%s*$")
+    if text ~= "" then
+        local n = NS.Format.ParseLength(text)
+        if not n or n < NS.Race.MIN_LENGTH or n > NS.Race.MAX_LENGTH then
+            return out(NS.Format.ArmRefusal("bad_length"))
+        end
+        NS.Hud.Act.pickLength(n)
+    end
+    NS.Hud.Act.arm()
+end
+
+-- What `cancel` did, said in the state it found (Race.Cancel answers only whether it acted).
+local CANCELED = {
+    armed    = "Race canceled.",
+    running  = "Race canceled: the run is deleted.",
+    stopping = "Pending result discarded: the run is deleted.",
+    result   = "Result closed. The run stays in your history.",
+}
+
+--- `cancel`: the armed or running race, or the run waiting for its result (spec §6.4).
+function doCancel()
+    local state = NS.Race.State()
+    if not NS.Race.Cancel() then return out(L["Nothing to cancel."]) end
+    out(L[CANCELED[state] or "Race canceled."])
+end
+
+local HUD_WORDS = { show = true, hide = true, toggle = true }
+
+--- `hud show|hide|toggle`; a bare `hud` toggles.
+function doHud(rest)
+    local word = tostring(rest or ""):match("^%s*(%S*)"):lower()
+    if word == "" then word = "toggle" end
+    if not HUD_WORDS[word] then return out(L["Usage: %s hud show, %s hud hide or %s hud toggle"]:format(NS.SLASH, NS.SLASH, NS.SLASH)) end
+    NS.SetHudShown(word)
+end
+
+--- `results [bests]`.
+function doResults(rest)
+    local word = tostring(rest or ""):match("^%s*(%S*)"):lower()
+    NS.ShowResults(word)
+end
+
+--- `target`: what the race would record about the current target (spec §4.6), so a new dummy can be
+--- added to the catalog from a measurement.
+function doTarget()
+    if not (UnitExists and UnitExists("target")) then return out(L["No target."]) end
+    local t = NS.Recorder.SnapshotTarget("target")
+    local name = t.name or L["Unknown"]
+    local creature = t.npcID and L["creature %d"]:format(t.npcID) or L["not a creature"]
+    out(L["Target: %s \194\183 %s \194\183 category %s"]:format(name, creature, NS.Dummies.Label(t.category)))
 end
 
 function Sl:OnSlash(msg) return cli:OnSlash(msg) end

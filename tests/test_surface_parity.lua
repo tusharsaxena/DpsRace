@@ -150,11 +150,14 @@ test("parity: the hollow composers cost the library-absent load exactly the Mast
     -- row a page declares outside a composer (options-ui-§1: pin both counts and the delta)
     local l, d = pair()
     local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
-    assertEqual(#l.NS.Schema, 7, "the full load's row count")
-    assertEqual(#d.NS.Schema, 0, "the library-absent load's row count")
+    -- The rows the pages declare by hand (General's Race HUD tab, Race, Live breakdown, History): a
+    -- degraded load keeps every one of them.
+    local PAGE_ROWS = 12
+    assertEqual(#l.NS.Schema, MASTER_CONTROLS_ROWS + PAGE_ROWS, "the full load's row count")
+    assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")
     assertEqual(#l.NS.Schema - #d.NS.Schema, MASTER_CONTROLS_ROWS,
         "the gap is not the Master-controls rows the hollow composer drops")
-    for _, row in ipairs(l.NS.Schema) do
-        assertEqual(row.group, "Master controls", row.path .. " is outside the composer's group")
+    for _, row in ipairs(d.NS.Schema) do
+        assertTrue(row.group ~= "Master controls", row.path .. " survived the hollow composer")
     end
 end)

@@ -56,6 +56,31 @@ local descriptor = {
     debug         = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
 }
 
+--- One schema page (Race, Live breakdown, History): its panel, its page-wide Defaults button, and every
+--- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
+--- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
+--- the stub's no-op.
+--- @param spec table { key, title, panelName, defaultsTooltip, afterGroup? }
+NS.pageCtx = NS.pageCtx or {}   -- each built page's ctx, by key, for a page that repaints off the bus
+function NS.RegisterTabbedPage(spec)
+    NS.RegisterOptionsPage(spec.key, spec.title, function(mainCategory)
+        if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
+        local H = NS.Helpers
+        local ctx = H.CreatePanel(spec.panelName, spec.title, {
+            pageKey         = spec.key,
+            defaultsButton  = true,
+            defaultsTooltip = spec.defaultsTooltip,
+        })
+        ctx.panel.defaultsOnClick = function() H.RestoreDefaults(spec.key, ctx) end
+        H.SetRenderer(ctx, function(c)
+            H.ClearScroll(c)
+            H.RenderTabbedSchema(c, spec.key, spec.afterGroup)
+        end)
+        NS.pageCtx[spec.key] = ctx
+        return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, spec.title)
+    end)
+end
+
 if not lib then
     -- The LOAD-COMPLETING stub (options-ui-§1): every member a page file touches at load, the global
     -- reset kept real, everything else a no-op or one honest line. The composers are HOLLOW and

@@ -183,7 +183,9 @@ function NS.SchemaForPage(pageKey)
     return out
 end
 
-local VALID_PAGES = { general = true, profiles = true }
+-- The page keys a row may name: the five sub-pages, in their panel order (settings/General.lua first,
+-- settings/Profiles.lua last).
+local VALID_PAGES = { general = true, race = true, live = true, history = true, profiles = true }
 
 -- The Minimap row declares no stored `shown`: it answers no root here, and its stored key
 -- (`global.minimap.hide`) is checked against the defaults by the suite instead (architecture-§5).

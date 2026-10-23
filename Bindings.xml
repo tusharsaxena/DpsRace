@@ -7,4 +7,7 @@
 	     client reads this file by name. -->
 	<Binding name="CLICK DpsRaceToggleHud:LeftButton" header="DPSRACE" category="ADDONS"/>
 	<Binding name="CLICK DpsRaceToggleResults:LeftButton" category="ADDONS"/>
+	<!-- Arm / cancel race (spec §6.4): the same shape, on its own named button; its click runs NS.ToggleArm,
+	     the handler `/dr arm` and `/dr cancel` share. -->
+	<Binding name="CLICK DpsRaceArmToggle:LeftButton" category="ADDONS"/>
 </Bindings>

@@ -97,8 +97,32 @@ for _, row in ipairs(masterRows) do
     row.onChange = reactions[row.path] or row.onChange
     local own = ownStorage[row.path]
     if own then row.get, row.set = own.get, own.set end
+    -- options-ui-§15: Test mode "is ended by Reset all settings (the row declares default = false)".
+    -- The composer (Compose minor 7) emits the row without one, so the reset's session-row walk
+    -- would skip it; the host stamps it here.
+    if row.path == TEST_MODE_PATH and row.default == nil then row.default = false end
 end
 NS.RegisterSchemaRows(masterRows)
+
+-- ── Race HUD ────────────────────────────────────────────────────────────────────────────────────
+-- Its own tab after Master controls (spec §6.3 General: show the HUD on arm only, or always). The HUD's
+-- scale and lock are the Master rows above: the HUD is the addon's positionable display.
+local SHOW_MODES = { onArm = true, always = true }
+
+NS.RegisterSchemaRows({
+    { path = "hud.showMode", page = PAGE, group = L["Race HUD"], type = "string",
+      label = L["Show the race HUD"], default = NS.defaults.profile.hud.showMode,
+      values = {
+          { value = "onArm", text = L["When a race is armed"] },
+          { value = "always", text = L["Always"] },
+      },
+      validate = function(v) return SHOW_MODES[v] == true end,
+      tooltip = L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."],
+      -- "always" opens it now; back to "onArm" leaves an open window open, as a player-opened one is.
+      onChange = function(v)
+          if v == "always" then NS.Hud.Show() end
+      end },
+})
 
 -- ── The page ────────────────────────────────────────────────────────────────────────────────────
 local function build(mainCategory)

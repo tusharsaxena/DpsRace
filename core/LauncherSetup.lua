@@ -1,6 +1,7 @@
 local addonName, NS = ...
 -- core/LauncherSetup.lua — the ONE LibDataBroker launcher, registered twice (minimap button and broker
--- row) through LibKa0s-Launcher-1.0, and the two Show-window key-binding buttons (launcher-§6).
+-- row) through LibKa0s-Launcher-1.0, the two Show-window key-binding buttons (launcher-§6) and the
+-- Arm / cancel key's button (spec §6.4).
 
 local Launcher = LibStub and LibStub("LibKa0s-Launcher-1.0", true)
 local L = NS.L
@@ -16,6 +17,9 @@ end
 -- ARE PERMANENT: the client stores the player's key against them, so a rename unbinds every key.
 NS.TOGGLE_HUD_BUTTON     = "DpsRaceToggleHud"
 NS.TOGGLE_RESULTS_BUTTON = "DpsRaceToggleResults"
+-- The Arm / cancel key (spec §6.4), built the same way: a CLICK binding on a plain named button whose
+-- click runs NS.ToggleArm, the handler the slash verbs share.
+NS.ARM_TOGGLE_BUTTON     = "DpsRaceArmToggle"
 do
     local hud = CreateFrame("Button", NS.TOGGLE_HUD_BUTTON, UIParent)
     hud:RegisterForClicks("AnyDown")
@@ -26,11 +30,17 @@ do
     results:RegisterForClicks("AnyDown")
     results:SetScript("OnClick", function() NS.ToggleResults() end)
     results:Hide()
+
+    local arm = CreateFrame("Button", NS.ARM_TOGGLE_BUTTON, UIParent)
+    arm:RegisterForClicks("AnyDown")
+    arm:SetScript("OnClick", function() NS.ToggleArm() end)
+    arm:Hide()
 end
 -- The labels' global names hold a space and a colon, so no identifier can spell them: rawset.
 rawset(_G, "BINDING_HEADER_DPSRACE", L["Ka0s DPS Race"])
 rawset(_G, "BINDING_NAME_CLICK " .. NS.TOGGLE_HUD_BUTTON .. ":LeftButton", L["Toggle race HUD"])
 rawset(_G, "BINDING_NAME_CLICK " .. NS.TOGGLE_RESULTS_BUTTON .. ":LeftButton", L["Toggle results window"])
+rawset(_G, "BINDING_NAME_CLICK " .. NS.ARM_TOGGLE_BUTTON .. ":LeftButton", L["Arm / cancel race"])
 
 if not Launcher then
     -- Degrade, never error: no button and no broker row, said once, and the Minimap button row still
