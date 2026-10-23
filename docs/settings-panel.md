@@ -11,7 +11,7 @@ built on first show (options-ui-§1, §5).
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows, and what its running clock shows |
-| Race | The default race length, the countdown cue and the buzzer; the scoring rules (late-cast grace, damage-restart gap) and the sticky-combat hint's delay |
+| Race | The default race length, the countdown cue, the buzzer and the center-screen countdown; the scoring rules (late-cast grace, damage-restart gap) and the sticky-combat hint's delay |
 | Live breakdown | The running HUD's rows shown, live reads per second, spell icons and live DPS |
 | History | Runs to keep (0 = never prune), the stored count, *Delete all runs…* |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
@@ -72,8 +72,11 @@ The *Test mode* row is the composer's, with `default = false` stamped by `settin
 | *Length* heading | | | |
 | Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A change clears the remembered pick (`race.lastLength`) and redraws the HUD (`Hud.ForgetLength`) |
 | *Sounds* heading | | | |
-| Countdown cue (10, 5, 3, 2, 1) | `race.countdownCue` | checkbox | Read when the race starts running and again at each mark (off silences the race in progress) |
+| Countdown cue (10, 5, 3, 2, 1) | `race.countdownCue` | checkbox | The cue at 10, 5, 3, 2, 1 s left and with each center number, once a second at most; read at each mark, and a change re-arms the marks at once (`Countdown.Refresh`) |
 | Buzzer raid warning and sound | `race.buzzer` | checkbox | Read at the buzzer |
+| *Final countdown* heading | | | |
+| Center-screen countdown | `race.centerCountdown` | checkbox | The large numbers in the middle of the screen in the last seconds; off hides a number on screen at once (`Countdown.Refresh`). Test mode follows it |
+| Countdown from (s) | `race.finalCountdown` | slider 3 to 10, step 1 | Seconds left when the numbers start; a change re-arms the marks (`Countdown.Refresh`) |
 
 #### Tab: Scoring rules
 

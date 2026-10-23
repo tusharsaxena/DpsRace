@@ -295,8 +295,15 @@ L["Default race length"] = "Default race length"
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
 L["Countdown cue (10, 5, 3, 2, 1)"] = "Countdown cue (10, 5, 3, 2, 1)"
-L["A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."] =
-    "A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."
+L["A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."] =
+    "A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."
+L["Final countdown"] = "Final countdown"
+L["Center-screen countdown"] = "Center-screen countdown"
+L["Large numbers in the middle of the screen for the last seconds of the race, one a second down to 1, like a pull timer. Only you see them."] =
+    "Large numbers in the middle of the screen for the last seconds of the race, one a second down to 1, like a pull timer. Only you see them."
+L["Countdown from (s)"] = "Countdown from (s)"
+L["How many seconds before the buzzer the center countdown starts. 3 to 10."] =
+    "How many seconds before the buzzer the center countdown starts. 3 to 10."
 L["Buzzer raid warning and sound"] = "Buzzer raid warning and sound"
 L["A raid warning that says STOP, with a sound, the moment the race ends."] =
     "A raid warning that says STOP, with a sound, the moment the race ends."

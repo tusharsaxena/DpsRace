@@ -18,9 +18,10 @@ local _, NS = ...
 -- RUNNING: DAMAGE_METER_COMBAT_SESSION_UPDATED, coalesced into one live read per 1/live.hz seconds
 -- (4 Hz by default), never from OnUpdate. While shown and RUNNING or STOPPING: one OnUpdate, redrawing
 -- at 20 Hz for the clock text while RUNNING and at 4 Hz while STOPPING (no clock; combat may hold for
--- minutes), the drop-combat spells asked once per race and the stop chips rebuilt only on a change. Nothing else. The countdown cue (10, 5, 3, 2, 1) is a set of timers armed when
--- the race starts running, and the buzzer's raid warning answers RACE_BUZZER: both work with the
--- window closed. Stand-down (Suspend) drops every registration, timer and the OnUpdate.
+-- minutes), the drop-combat spells asked once per race and the stop chips rebuilt only on a change.
+-- Nothing else. The buzzer's raid warning answers RACE_BUZZER, with the window closed too. The
+-- countdown cue and the center-screen numbers of the last seconds are modules/Countdown.lua's.
+-- Stand-down (Suspend) drops every registration, timer and the OnUpdate.
 --
 -- NO DECISION FROM A METER VALUE. The body for STOPPING (Stop! or Waiting) is chosen from GetTime(),
 -- the stored damage-update stamp (run.race.lastDamage) and the combat flag; live values go only to
@@ -48,8 +49,6 @@ Hud.MIN_HEIGHT = CONTENT_TOP + NS.HudStates.MinContentHeight() + CONTENT_BOTTOM
 Hud.TICK = 0.05
 -- STOPPING has no clock to animate: its figures (seconds, one decimal, and the phase) redraw at 4 Hz.
 Hud.STOP_TICK = 0.25
--- The countdown cue's marks, in seconds left (spec §4.3).
-Hud.CUES = { 10, 5, 3, 2, 1 }
 -- Abilities that drop combat, for the sticky-combat hint (spec §4.4): named only when known.
 Hud.DROP_COMBAT = {
     { id = 5384, name = "Feign Death" }, { id = 1856, name = "Vanish" },
@@ -59,7 +58,6 @@ Hud.DROP_COMBAT = {
 Hud.MAX_TARGETS = 20
 Hud.FRAME_NAME = "DpsRaceHud"
 
-local SOUND_CUE = 25477      -- SOUNDKIT.UI_BATTLEGROUND_COUNTDOWN_TIMER, if the table is absent
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
 local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
 local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
@@ -69,7 +67,6 @@ local events                   -- this module's AceEvent target (nil until first
 local registered = "none"      -- "none" | "idle" | "live"
 local ticking, tickAcc = false, 0
 local liveTimer, lastRead, liveData
-local cueTimers = {}
 local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
 local preview                  -- what Hud.Render pushed while test mode is on
@@ -152,31 +149,6 @@ local function play(kitName, fallback)
     if type(PlaySound) ~= "function" then return end
     local id = (SOUNDKIT and SOUNDKIT[kitName]) or fallback
     pcall(PlaySound, id, "Master")
-end
-
-local function cancelCues()
-    for i = #cueTimers, 1, -1 do
-        cueTimers[i]:Cancel()
-        cueTimers[i] = nil
-    end
-end
-
-local function cue()
-    if NS.IsStoodDown() or NS.Race.State() ~= S().RUNNING then return end
-    -- Read at each mark, so switching the cue off silences the race in progress too.
-    if setting("race.countdownCue") == false then return end
-    play("UI_BATTLEGROUND_COUNTDOWN_TIMER", SOUND_CUE)
-end
-
---- The countdown cue (spec §4.3): one timer per mark still ahead, armed when the race runs.
-local function scheduleCues()
-    cancelCues()
-    if setting("race.countdownCue") == false then return end
-    local left = NS.Race.TimeLeft()
-    if not left then return end
-    for _, mark in ipairs(Hud.CUES) do
-        if left > mark then cueTimers[#cueTimers + 1] = C_Timer.NewTimer(left - mark, cue) end
-    end
 end
 
 --- The buzzer (spec §4.4): a raid-warning STOP and a sound, when the setting allows.
@@ -787,7 +759,6 @@ end
 --- (Race.Suspend goes to idle without a message), so the stand-up must not bring it back.
 function Hud.Suspend()
     if autoShown then Hud.wanted, autoShown = false, false end
-    cancelCues()
     cancelLive()
     hideWindow()
     if events then events:UnregisterAllEvents() end
@@ -797,7 +768,6 @@ end
 --- The stand-up (and OnEnable): "always" shows the window; then re-decide from current state.
 function Hud.Resume()
     if setting("hud.showMode") == "always" then Hud.wanted = true end
-    if NS.Race.State() == S().RUNNING then scheduleCues() end
     Hud.Refresh()
 end
 
@@ -826,7 +796,6 @@ local function onState(_, from, to)
     -- Straight from idle into a live race is the /reload (or stand-up) resume: its HUD comes back
     -- as the arm's did, and closes with the race the same way.
     if from == St.IDLE and (to == St.RUNNING or to == St.STOPPING) then autoShow() end
-    if to == St.RUNNING then scheduleCues() else cancelCues() end
     if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode") == "onArm" then
         Hud.wanted, autoShown = false, false
     end

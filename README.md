@@ -3,7 +3,7 @@
 ![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.5-purple)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-439%2F439_passing-green)
+![Tests](https://img.shields.io/badge/Tests-460%2F460_passing-green)
 
 DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
 
@@ -13,7 +13,7 @@ Each run is saved with your spec, item level and the dummy you hit, which makes 
 
 Open the race window with `/dr hud show`, pick a length (presets from 30 seconds to 5 minutes, or type your own between 10 seconds and 15 minutes), target a dummy and press Arm. The window fills in the dummy's type, and for a cleave dummy you can set how many targets you're hitting. You have to be out of combat to arm, because the race starts on a fresh fight. Pre-pot and pre-cast as you would on a real pull: nothing counts until your first hit lands, and from then on the window shows the time elapsed in green beside the time left in red, to a tenth of a second, along with your top abilities as they climb. The General settings page can show just one of the two clocks instead.
 
-When the buzzer goes, stop. Anything already in flight still counts, so a DoT that ticks after the buzzer is yours. Start a new cast more than a second late, though, and the run gets a flag for it (it isn't thrown out). The dummies that hit back tend to hold you in combat long after you've stopped; walk away, or Feign Death, Vanish or Shadowmeld if your class has one, and the result appears once combat drops. You can close the window while you wait.
+In the last ten seconds a big countdown pops up in the middle of the screen, the way a pull timer does, with a tick each second (only you see it; the Race settings page can start it later, at 3 to 10 seconds, or turn it off). When the buzzer goes, stop. Anything already in flight still counts, so a DoT that ticks after the buzzer is yours. Start a new cast more than a second late, though, and the run gets a flag for it (it isn't thrown out). The dummies that hit back tend to hold you in combat long after you've stopped; walk away, or Feign Death, Vanish or Shadowmeld if your class has one, and the result appears once combat drops. You can close the window while you wait.
 
 The result card shows your damage and DPS, how far you are above or below your best, and your top five abilities. Race again from there, open the run in the Results window, or post a one-line summary to chat. The Results window opens from the chart button on the race window's title bar, from `/dr results`, or from a key binding, and it keeps every run you've ever done. Filter it by character, spec, dummy type, length or date, sort it by DPS or item level, and open any run to see its full breakdown and a timeline of when the buzzer went, when your damage stopped and when combat ended. The Bests tab has your top run for each spec, dummy type and length.
 

@@ -85,6 +85,7 @@ local SUITES = {
     "test_race_resume",
     "test_format",
     "test_hud",
+    "test_countdown",
     "test_results",
     "test_schema",
     "test_settings",

@@ -275,6 +275,29 @@ Total.
 - hud: the library-absent load still draws the HUD without a grip or a close control
 - hud: the diagnostics state section names the body, the event set and the countdown driver
 
+### test_countdown.lua (20)
+
+- countdown: 10..1 show one per second in the last 10s, then go at the buzzer
+- countdown: its own frame, center of UIParent, above everything, never taking the mouse
+- countdown: each number pops in through an animation
+- countdown: the digits are Blizzard's BigGold set, cut by texcoord
+- countdown: without the digit art it falls back to a large outlined number
+- countdown: finalCountdown 3 starts at 3
+- countdown: switched off, no frame is ever built and only the cue marks sound
+- countdown: switching it off mid-countdown hides the number at once
+- countdown: works with the HUD window closed
+- countdown: one cue per second of the numbers, never two in a second
+- countdown: the cue off keeps the numbers and silences every second
+- countdown: a cancel at 5s left hides it and nothing more shows or sounds
+- countdown: combat ending before the buzzer hides it
+- countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
+- countdown: a /reload before the window shows nothing until it opens
+- countdown: a /reload past the buzzer shows nothing
+- countdown: test mode demonstrates it in its running phase, and it stops with test mode
+- countdown: the test race's buzzer clears it, and the setting holds in test mode
+- countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
+- countdown: the diagnostics state section names what it shows and holds
+
 ### test_results.lua (24)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
@@ -417,7 +440,7 @@ Total.
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the three buttons, with no default key
 
-### test_disabled.lua (16)
+### test_disabled.lua (17)
 
 - Disabled 1: enabled, the addon registers something and shows something at all
 - Disabled 2+3: disabling through the write seam leaves NO registration behind
@@ -425,6 +448,7 @@ Total.
 - Disabled 2+3 (degraded): a module's bus receiver goes at stand-down and comes back
 - Disabled 4: no timer, ticker or OnUpdate is left armed, and none re-arms
 - Disabled 5: every display that was shown is hidden, refused at the source
+- Disabled 5 (countdown): the center numbers go at the stand-down and nothing re-arms them
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every verb answers while disabled; a feature verb answers one refusal line
 - Disabled 7 (degraded): the library-absent dispatcher gates a feature verb the same way
@@ -551,6 +575,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 7 |
 | test_hud.lua | 54 |
+| test_countdown.lua | 20 |
 | test_results.lua | 24 |
 | test_schema.lua | 15 |
 | test_settings.lua | 18 |
@@ -558,7 +583,7 @@ Total.
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
 | test_launcher.lua | 8 |
-| test_disabled.lua | 16 |
+| test_disabled.lua | 17 |
 | test_surface_parity.lua | 15 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
@@ -569,4 +594,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **439** |
+| **Total** | **460** |

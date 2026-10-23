@@ -119,6 +119,14 @@ the rules don't change between the two. Only the HUD copy does.
 
 - The HUD shows the time elapsed (green) and the time left (red), to a tenth of a second, side by side or either alone (a setting), and the live breakdown (§6.1).
 - An optional **countdown cue** plays at 10s, 5s, 3, 2, 1 (sound only; a setting, default on).
+- A **center-screen countdown**, like Blizzard's `/pull 10` or the Mythic+ start: when
+  *Countdown from* seconds remain (3–10, default 10), a large number pops in (scale and fade) in the
+  middle of the screen each second down to 1, and goes at the buzzer; the buzzer's raid warning
+  *STOP* and its sound stay. A setting, default on. While it shows, the cue sounds with each number,
+  once a second at most. It is drawn on the addon's own frame with Blizzard's BigGold digit art
+  (`Interface\Timer\BigTimerNumbers`), falling back to a large outlined number; nothing is sent to
+  the group (no `C_PartyInfo.DoCountdown`) and no Blizzard timer handler runs. It shows whether or
+  not the HUD is open, and a `/reload` inside the window resumes on the number of the moment.
 - **Combat drops before the buzzer** (you stopped attacking, died, or the dummy reset): the run
   becomes `incomplete`. It is read and stored like any other, marked *Incomplete (combat ended at
   1:42)*, and **never counts toward personal bests**. Dying shows *Incomplete: died*.
@@ -304,7 +312,7 @@ section headers and global reset.
 | Page | Settings |
 |---|---|
 | **General** | The standard's Master controls (Enable, visibility, scale and lock, which apply to the HUD; scale applies to the Results window too; test mode; the minimap button) · a *Race HUD* tab: show HUD on arm only / always · race clock: elapsed and time left (default) / time left / time elapsed |
-| **Race** | Default race length (the presets) · countdown cue (on/off) · buzzer sound and raid warning (on/off) · **late-cast grace (s)** · **restart gap (s)** · sticky-combat hint delay (5–60s) |
+| **Race** | Default race length (the presets) · countdown cue (on/off) · center-screen countdown (on/off) and *Countdown from* (3–10s, default 10) · buzzer sound and raid warning (on/off) · **late-cast grace (s)** · **restart gap (s)** · sticky-combat hint delay (5–60s) |
 | **Live breakdown** | Rows shown (3–15) · live reads per second (2–10) · show spell icons · show live DPS |
 | **History** | **Runs to keep:** 0–10000, **default 0 = never prune**. Above 0, the oldest runs are pruned first and a run holding a best is always kept · *Delete all runs* (with confirmation) |
 | **Profiles** | AceDBOptions |
@@ -352,7 +360,7 @@ Waiting, then Result, where it holds. It shows the library's `TestStrip` saying 
 numbers. Combat or Arm ends it*, so the layout can be arranged without a dummy. Test runs are never
 written to history and never move the race engine. Test mode ends itself the moment a real race is
 armed or combat starts, and is refused during a real armed, running or stopping race and in combat.
-On a test result card, Cancel, Discard and closing the HUD end test mode, Race again and Details
+The sample race's last seconds show the center countdown (silently, when the setting is on), and it goes with the sample buzzer and with test mode. On a test result card, Cancel, Discard and closing the HUD end test mode, Race again and Details
 are grayed, and none of them reaches the real race.
 
 ## 7. Data model
@@ -439,6 +447,7 @@ DpsRace/
     Bests.lua         working out personal bests, deltas and prune protection
     Format.lua        the one secret-safe number formatter, clock and length text
     Hud.lua · Hud_States.lua · Hud_Breakdown.lua   the Race HUD, its state bodies, the spell rows (§6.1)
+    Countdown.lua     the final seconds: the countdown cue and the center-screen numbers (§4.3)
     Results.lua · Results_Table.lua · Results_Runs.lua · Results_Detail.lua · Results_Bests.lua
     Share.lua         the chat summary and the race's chat lines
     Preview.lua       test mode (§6.5)
@@ -531,3 +540,4 @@ call.
 | 2026-10-23 | Live DPS is a rung chain (`Meter.ReadLive`): the source's `amountPerSecond`, else the `combatSources` row whose `isLocalPlayer` is readable and true, else the Dps meter type's `totalAmount`. The owner's smoke test (Beast Mastery hunter) found the source field absent, so *DPS · LIVE* stayed a dash. Each rung is an opaque copy; damage ÷ elapsed is never computed in combat. |
 | 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |
 | 2026-10-23 | The running clock shows the time elapsed (green) and the time left (red): both side by side by default, or either alone (`hud.clock`, General → Race HUD). The single clock no longer turns amber in the last 10s: time left is red throughout, and the final seconds have the center countdown. The armed and stop bodies keep their own clock and STOP. |
+| 2026-10-23 | A center-screen final countdown (`modules/Countdown.lua`): from `race.finalCountdown` seconds left (3–10, default 10; `race.centerCountdown`, default on) a number pops in each second down to 1 on the addon's own frame, with Blizzard's BigGold digit art by texcoord and a font fallback. No pull timer is broadcast and no TimerTracker handler is called. The countdown cue moves into the same module: one timer per whole second, one sound per second at most (a cue mark inside the numbers' window sounds once), and a cue change now takes effect mid-race. |

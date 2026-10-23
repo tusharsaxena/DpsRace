@@ -138,6 +138,26 @@ test("Disabled 5: every display that was shown is hidden, refused at the source"
     assertFalse(NS.Preview.IsActive(), "test mode survived the stand-down")
 end)
 
+test("Disabled 5 (countdown): the center numbers go at the stand-down and nothing re-arms them", function()
+    -- red under: drop "Countdown" from standDown's module list in core/LifecycleSetup.lua
+    local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
+    local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+    local f = RaceClock.new{ mutate = function(m) Widgets.install(m) end }
+    local NS = f.NS
+    assertTrue(f:arm(30))
+    f:start(25)
+    f:to(124)
+    assertEqual(NS.Countdown.Shown(), 6, "the fixture needs a number on screen")
+    local frame = NS.Countdown.__ui().frame
+    assertTrue(NS.SetByPath("enabled", false))
+    assertEqual(NS.Countdown.Shown(), nil, "a number survived the stand-down")
+    assertFalse(frame:IsShown(), "the countdown frame stayed on screen")
+    assertEqual(NS.Countdown.Diagnose().scheduled, 0, "a mark is still armed")
+    f:to(131)
+    assertEqual(NS.Countdown.Shown(), nil, "a mark showed a number while disabled")
+    assertFalse(frame:IsShown())
+end)
+
 --- Every game event of the baseline, with each target (the addon object, the HUD's event frame)
 --- that held it, so a stood-down handler can be reached straight.
 local function eventTargets(inst)

@@ -667,6 +667,7 @@ end)
 
 test("hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled", function()
     local f = hud()
+    f.NS.db.profile.race.centerCountdown = false     -- the cue marks alone (tests/test_countdown.lua has both)
     f.Hud.Hide()            -- the cue and the buzzer do not need the window
     running(f, 30)
     f.Hud.Hide()
@@ -688,6 +689,7 @@ end)
 
 test("hud: the cue stops when the race is canceled", function()
     local f = hud()
+    f.NS.db.profile.race.centerCountdown = false
     running(f, 30)
     f:to(121)
     f.Race.Cancel()
@@ -697,6 +699,7 @@ end)
 
 test("hud: switching the cue off mid-race silences the marks still ahead", function()
     local f = hud()
+    f.NS.db.profile.race.centerCountdown = false
     running(f, 30)
     f:to(121)
     assertTrue(f.NS.SetByPath("race.countdownCue", false))

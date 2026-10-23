@@ -18,8 +18,8 @@ local function standDown()
     end
     NS.BusStandDown()
     -- Each feature module stands down on its own terms: the race (its timers and in-memory run), the
-    -- race watchers (every registration), and the HUD, Results window and preview.
-    for _, name in ipairs({ "Race", "Watchers", "Preview", "Hud", "Results" }) do
+    -- race watchers (every registration), and the HUD, the countdown, Results window and preview.
+    for _, name in ipairs({ "Race", "Watchers", "Preview", "Hud", "Countdown", "Results" }) do
         local m = NS[name]
         if m and m.Suspend then m.Suspend() end
     end
@@ -32,7 +32,7 @@ local function standUp()
     if NS.RegisterGameEvents then NS.RegisterGameEvents() end
     -- The race resumes a stored run from its own status (spec §4.5, as after a /reload); the
     -- watchers then register for the state it lands in.
-    for _, name in ipairs({ "Race", "Watchers", "Hud", "Results" }) do
+    for _, name in ipairs({ "Race", "Watchers", "Hud", "Countdown", "Results" }) do
         local m = NS[name]
         if m and m.Resume then m.Resume() end
     end

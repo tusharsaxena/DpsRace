@@ -96,9 +96,19 @@ local FIGURES = {
     result = function() return { isNew = true, delta = 2.4, icons = true } end,
 }
 
+-- The center countdown (modules/Countdown.lua) shows in the sample race's last seconds, silently, and
+-- goes with its buzzer and with test mode.
+local function countdown(key, figures)
+    local C = NS.Countdown
+    if not C then return end
+    if key == "running" then C.Preview(figures.timeLeft) else C.EndPreview() end
+end
+
 local function draw(now)
     local step = Preview.SCRIPT[phase]
-    NS.Hud.Render(step.key, run, FIGURES[step.key](now - phaseAt))
+    local figures = FIGURES[step.key](now - phaseAt)
+    NS.Hud.Render(step.key, run, figures)
+    countdown(step.key, figures)
 end
 
 local function cancelTicker()
@@ -175,6 +185,7 @@ function Preview.Stop(reason)
     Preview.active = false
     cancelTicker()
     run = nil
+    if NS.Countdown then NS.Countdown.EndPreview() end
     if reason == "combat" then NS.SayTestModeEnded() end
     if opened and reason ~= "race" then
         opened = false
@@ -193,6 +204,7 @@ function Preview.Suspend()
     local was = Preview.active
     Preview.active = false
     cancelTicker()
+    if NS.Countdown then NS.Countdown.EndPreview() end
     run, opened = nil, false
     if was then repaintPanel() end
 end

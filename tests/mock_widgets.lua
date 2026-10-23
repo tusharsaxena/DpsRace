@@ -12,6 +12,9 @@
 --   __text / __value / __min / __max / __texture / __scale   what it was last handed
 --   W.secretFrames[obj]   true once it was handed a secret (Kit.secret) by any setter
 --   W.geomReads           every Get{Width,Height,Size,Point,...} call, as { frame, method }
+--   __texCoord / __font / __strata / __mouse   a region's texcoords, font, strata and mouse flag
+--   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
+--                         SetTexture answer false for that path (a texture the client cannot load)
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
 -- the HUD makes none at all while it draws live values.
 --
@@ -62,7 +65,8 @@ return function(T)
 
     --- Install on one mock build; answers the recorder.
     function Widgets.install(M)
-        local W = { secretFrames = {}, geomReads = {}, sounds = {}, notices = {}, known = {}, objects = {} }
+        local W = { secretFrames = {}, geomReads = {}, sounds = {}, notices = {}, known = {}, objects = {},
+                    animPlays = {}, missingTextures = {} }
 
         local function mark(o, ...)
             for i = 1, select("#", ...) do
@@ -88,7 +92,20 @@ return function(T)
                 mark(self, a, b)
                 return self
             end)
-            rawset(o, "SetTexture", function(self, p) self.__texture = p; mark(self, p); return self end)
+            rawset(o, "SetTexture", function(self, p)
+                self.__texture = p
+                mark(self, p)
+                if p ~= nil and W.missingTextures[p] then return false end
+                return true
+            end)
+            rawset(o, "SetTexCoord", function(self, ...) self.__texCoord = { ... }; return self end)
+            rawset(o, "SetFont", function(self, path, size, flags)
+                self.__font = { path = path, size = size, flags = flags }
+                return true
+            end)
+            rawset(o, "SetFrameStrata", function(self, strata) self.__strata = strata; return self end)
+            rawset(o, "EnableMouse", function(self, on) self.__mouse = on and true or false; return self end)
+            rawset(o, "CreateAnimationGroup", function(self) return W.NewAnimationGroup(self) end)
             rawset(o, "SetTextColor", function(self, r, g, b, a) self.__color = { r, g, b, a }; return self end)
             rawset(o, "SetScale", function(self, s) self.__scale = s; return self end)
             rawset(o, "CreateFontString", function(self) return region(self) end)
@@ -100,6 +117,31 @@ return function(T)
                     return 0
                 end)
             end
+        end
+
+        --- A recording AnimationGroup: its animations remember every setter, Play is counted.
+        function W.NewAnimationGroup(owner)
+            local g = { owner = owner, anims = {}, playing = false }
+            local function recorder(kind)
+                local a = { kind = kind, set = {} }
+                return setmetatable(a, { __index = function(_, k)
+                    return function(_, ...) a.set[k] = { ... }; return a end
+                end })
+            end
+            function g:CreateAnimation(kind)
+                local a = recorder(kind)
+                self.anims[#self.anims + 1] = a
+                return a
+            end
+            function g:Play()
+                self.playing = true
+                W.animPlays[#W.animPlays + 1] = { owner = owner, t = M.__now }
+            end
+            function g:Stop() self.playing = false end
+            function g:IsPlaying() return self.playing end
+            function g:SetToFinalAlpha() return self end
+            function g:SetScript() return self end
+            return g
         end
 
         local baseCreate = M.CreateFrame

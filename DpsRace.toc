@@ -101,6 +101,9 @@ modules\Hud_States.lua
 # NS.HudStates.MinContentHeight() (modules\Hud_States.lua, which reaches modules\Hud_Breakdown.lua) for
 # its minimum height.
 modules\Hud.lua
+# The race's final seconds: the countdown cue and the center-screen numbers, its own frame. LOAD-BEARING:
+# builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua.
+modules\Countdown.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE (and the detail NS.HudBreakdown's row pitch), so each follows the files it captures.
 modules\Results_Table.lua

@@ -154,10 +154,14 @@ race.
   `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
   (`NS.Share.Prompt`).
-- **Sounds**: the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1 s left) armed when the
-  race runs (when `race.countdownCue` is on) and canceled when it leaves RUNNING; each mark reads the
-  row again, so switching it off silences the race in progress. `RACE_BUZZER` raises the raid
-  warning *STOP* and its sound (`race.buzzer`). Neither needs the window.
+- **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
+  down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
+  leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
+  a cue mark 10, 5, 3, 2, 1 or a second of the numbers), then the center-screen number
+  (`race.centerCountdown`, within `race.finalCountdown`). A change to any of the three re-arms the
+  marks (`Countdown.Refresh`); a resume mid-window shows the number of the moment at once, silently.
+  `RACE_BUZZER` raises the raid warning *STOP* and its sound (`race.buzzer`, `modules/Hud.lua`).
+  None of it needs the HUD window.
 - **Who opened the window**: the player (`Hud.Show`, the toggle) or the addon (an arm or a result
   under `onArm`, and test mode through `Hud.AutoShow`). Only an addon-opened window closes by itself
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because

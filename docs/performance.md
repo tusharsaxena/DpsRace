@@ -17,7 +17,7 @@ test when capture is off.
 | `hudTick` | the HUD window's `OnUpdate` pass in `modules/Hud.lua`: the countdown text, the stop figures, the Stop!/Waiting phase | 20 Hz while RUNNING, 4 Hz while STOPPING; attached only while the window is shown and the race in one of them |
 
 The HUD's other work is not a hot path: its own AceEvent target (target and regen edges while shown)
-redraws on an edge, and the countdown cue is five one-shot `C_Timer`s armed when the race runs.
+redraws on an edge. The final seconds (`modules/Countdown.lua`) are at most ten one-shot `C_Timer`s armed when the race runs, each a sound and a texcoord change; no `OnUpdate`.
 
 The race's own timers are one buzzer (`C_Timer.NewTimer`) while running and one 0.5 s readiness
 poll (`C_Timer.NewTicker`) while stopping; neither exists while idle, and the stand-down cancels both.

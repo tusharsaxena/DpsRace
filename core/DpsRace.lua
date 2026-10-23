@@ -34,6 +34,8 @@ function NS:OnEnable()
     NS.Race.Resume()
     -- The HUD's login decision ("always" shows it) after the race it may be showing.
     NS.Hud.Resume()
+    -- The final seconds' marks, for a race the resume left running.
+    NS.Countdown.Resume()
 end
 
 -- ── Game events ─────────────────────────────────────────────────────────────────────────────────

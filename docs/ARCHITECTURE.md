@@ -57,7 +57,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, Live breakdown, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 | `probe/` | `DpsRaceProbe`, the measurement addon the spec's numbers came from; never loaded, never shipped |
@@ -85,7 +85,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide; `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
@@ -165,8 +165,13 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 `modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
 countdown text is one `OnUpdate` on the window, attached only while the race is RUNNING (20 Hz) or
-STOPPING (4 Hz: no clock, and combat may hold for minutes), and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed when the race runs.
+STOPPING (4 Hz: no clock, and combat may hold for minutes), and that is all.
 `Hud.Suspend()` drops all of it at the stand-down.
+
+`modules/Countdown.lua` registers no game event: the race's final seconds are one `C_Timer` per
+whole second still ahead (10 down to 1), armed when the race runs and canceled when it leaves
+RUNNING, each playing the countdown cue once and showing its center-screen number on the module's
+own frame. `Countdown.Suspend()` drops them at the stand-down.
 
 | Event | Registered | Handler | Why |
 |---|---|---|---|
@@ -211,6 +216,9 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store,
   so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
   config; its only geometry read is its own anchor on drag stop.
+- The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
+  textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
+  broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -299,4 +307,4 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 
 Nothing is over the cap today. One authored file is in the 1000–1500 on-notice band:
 `probe/DpsRaceProbe/DpsRaceProbe.lua` at 1140 lines, under the `probe/` deviation row above (it leaves
-the repo with `probe/`). The largest shipped file is `modules/Hud.lua` at 947 lines (layout-§1).
+the repo with `probe/`). The largest shipped file is `modules/Hud.lua` at 922 lines (layout-§1).

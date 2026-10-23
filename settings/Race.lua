@@ -16,8 +16,10 @@ local function lengthValues()
 end
 
 -- A new default replaces the length remembered from the last pick (the HUD redraws with it). The
--- cue, the buzzer and the hint read their rows when they fire, so they need no reaction.
+-- buzzer and the hint read their rows when they fire, so they need no reaction; the cue and the center
+-- countdown re-arm the race's marks (modules/Countdown.lua), so a change takes effect at once.
 local function newDefault() NS.Hud.ForgetLength() end
+local function rearm() NS.Countdown.Refresh() end
 
 NS.RegisterSchemaRows({
     -- ── Race ──
@@ -27,11 +29,19 @@ NS.RegisterSchemaRows({
       onChange = newDefault },
     { path = "race.countdownCue", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
       label = L["Countdown cue (10, 5, 3, 2, 1)"], default = D.countdownCue,
-      tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."],
-      startsLine = true },
+      tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."],
+      onChange = rearm, startsLine = true },
     { path = "race.buzzer", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
       label = L["Buzzer raid warning and sound"], default = D.buzzer,
       tooltip = L["A raid warning that says STOP, with a sound, the moment the race ends."] },
+    { path = "race.centerCountdown", page = PAGE, group = RACE, subgroup = L["Final countdown"], type = "bool",
+      label = L["Center-screen countdown"], default = D.centerCountdown,
+      tooltip = L["Large numbers in the middle of the screen for the last seconds of the race, one a second down to 1, like a pull timer. Only you see them."],
+      onChange = rearm, startsLine = true },
+    { path = "race.finalCountdown", page = PAGE, group = RACE, subgroup = L["Final countdown"], type = "number",
+      min = 3, max = 10, step = 1, label = L["Countdown from (s)"], default = D.finalCountdown,
+      tooltip = L["How many seconds before the buzzer the center countdown starts. 3 to 10."],
+      onChange = rearm },
 
     -- ── Scoring rules ── (spec §5.2, §5.3: a run keeps the values it was raced with)
     { path = "race.grace", page = PAGE, group = SCORING, type = "number", min = 0, max = 5, step = 0.1,

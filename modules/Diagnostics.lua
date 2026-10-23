@@ -43,6 +43,8 @@ function NS.Diagnostics.Sections()
             local hud = NS.Hud.Diagnose()
             out:add("Diag", "hud body=%s events=%s ticking=%s locked=%s", hud.body, hud.events, hud.ticking,
                 hud.locked)
+            local cd = NS.Countdown.Diagnose()
+            out:add("Diag", "countdown shown=%s scheduled=%s owner=%s", cd.shown, cd.scheduled, cd.owner)
             local test = NS.Preview.Diagnose()
             out:add("Diag", "test active=%s phase=%s ticking=%s", test.active, test.phase, test.ticking)
             local results = NS.Results.Diagnose()
