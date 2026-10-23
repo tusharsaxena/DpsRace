@@ -142,6 +142,8 @@ end
 
 local function cue()
     if NS.IsStoodDown() or NS.Race.State() ~= S().RUNNING then return end
+    -- Read at each mark, so switching the cue off silences the race in progress too.
+    if setting("race.countdownCue", true) == false then return end
     play("UI_BATTLEGROUND_COUNTDOWN_TIMER", SOUND_CUE)
 end
 
@@ -743,7 +745,10 @@ function Hud.Render(state, run, extra)
 end
 
 --- The lifecycle's stand-down: the window hides, and every registration, timer and the OnUpdate go.
+--- A window the addon opened (onArm, test mode) is dropped: the race or preview it opened for is gone
+--- (Race.Suspend goes to idle without a message), so the stand-up must not bring it back.
 function Hud.Suspend()
+    if autoShown then Hud.wanted, autoShown = false, false end
     cancelCues()
     cancelLive()
     hideWindow()
@@ -765,6 +770,13 @@ local function autoShow()
     Hud.wanted, autoShown = true, true
 end
 
+--- Show the window as the addon's own opening, not the player's: test mode's (modules/Preview.lua).
+--- A race armed while it is up inherits it, so onArm closes it when that race goes back to idle.
+function Hud.AutoShow()
+    autoShow()
+    Hud.Refresh()
+end
+
 local function onState(_, from, to)
     local St = S()
     if to == St.ARMED then
@@ -773,7 +785,7 @@ local function onState(_, from, to)
         autoShow()
     end
     if to == St.RUNNING then scheduleCues() else cancelCues() end
-    if to == St.IDLE and autoShown and setting("hud.showMode", "onArm") == "onArm" then
+    if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode", "onArm") == "onArm" then
         Hud.wanted, autoShown = false, false
     end
     debug("race %s -> %s", tostring(from), tostring(to))

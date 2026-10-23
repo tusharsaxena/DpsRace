@@ -289,8 +289,8 @@ L["Default race length"] = "Default race length"
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
 L["Countdown cue (10, 5, 3, 2, 1)"] = "Countdown cue (10, 5, 3, 2, 1)"
-L["A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."] =
-    "A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."
+L["A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."] =
+    "A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."
 L["Buzzer raid warning and sound"] = "Buzzer raid warning and sound"
 L["A raid warning that says STOP, with a sound, the moment the race ends."] =
     "A raid warning that says STOP, with a sound, the moment the race ends."

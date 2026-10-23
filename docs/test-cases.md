@@ -200,7 +200,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (40)
+### test_hud.lua (42)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -229,6 +229,8 @@ Total.
 - hud: closing a result card dismisses it and keeps the run
 - hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
 - hud: the cue stops when the race is canceled
+- hud: switching the cue off mid-race silences the marks still ahead
+- hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
 - hud: the countdown turns amber in the last 10s
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
@@ -349,7 +351,7 @@ Total.
 - share: a result prints the score line with the delta, the flags and the tail
 - share: the race's own result is printed once, when it resolves
 
-### test_preview.lua (12)
+### test_preview.lua (14)
 
 - preview: preview runs armed->running->stop->waiting->result and never writes a run
 - preview: the running body counts the 30s race down with live figures
@@ -363,6 +365,8 @@ Total.
 - preview: Start again restarts the script; Reset all settings ends it
 - preview: the stand-down ends it silently and cancels its timer
 - preview: over a real result card its controls never touch the real race
+- preview: a HUD test mode opened is handed to the race that ended it, and closes with it
+- preview: a stand-down drops the HUD test mode opened
 
 ### test_launcher.lua (8)
 
@@ -508,13 +512,13 @@ Total.
 | test_race.lua | 44 |
 | test_race_resume.lua | 13 |
 | test_format.lua | 7 |
-| test_hud.lua | 40 |
+| test_hud.lua | 42 |
 | test_results.lua | 22 |
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
 | test_slash.lua | 27 |
 | test_share.lua | 12 |
-| test_preview.lua | 12 |
+| test_preview.lua | 14 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
 | test_surface_parity.lua | 15 |
@@ -527,4 +531,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **397** |
+| **Total** | **401** |

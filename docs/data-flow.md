@@ -144,8 +144,13 @@ race.
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
   (`NS.Share.Prompt`).
 - **Sounds**: the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1 s left) armed when the
-  race runs and canceled when it leaves RUNNING (`race.countdownCue`); `RACE_BUZZER` raises the raid
+  race runs (when `race.countdownCue` is on) and canceled when it leaves RUNNING; each mark reads the
+  row again, so switching it off silences the race in progress. `RACE_BUZZER` raises the raid
   warning *STOP* and its sound (`race.buzzer`). Neither needs the window.
+- **Who opened the window**: the player (`Hud.Show`, the toggle) or the addon (an arm or a result
+  under `onArm`, and test mode through `Hud.AutoShow`). Only an addon-opened window closes by itself
+  when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
+  `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
   one is remembered as `race.lastLength`) and the target count from the stepper go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line

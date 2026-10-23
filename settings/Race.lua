@@ -27,7 +27,7 @@ NS.RegisterSchemaRows({
       onChange = newDefault },
     { path = "race.countdownCue", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
       label = L["Countdown cue (10, 5, 3, 2, 1)"], default = D.countdownCue,
-      tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."],
+      tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left. Switching it off silences the race in progress; switching it on takes effect from the next race."],
       startsLine = true },
     { path = "race.buzzer", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
       label = L["Buzzer raid warning and sound"], default = D.buzzer,

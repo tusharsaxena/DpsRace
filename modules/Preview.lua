@@ -147,8 +147,10 @@ function Preview.Start()
     run = sampleRun()
     phase, phaseAt = 1, GetTime()
     -- Shown for the preview; closed again at the end only if the player had not opened it.
+    -- Opened as the addon's own (Hud.AutoShow): a race that ends test mode inherits it, and onArm
+    -- closes it with that race; the stand-down drops it (Hud.Suspend).
     opened = not NS.Hud.wanted
-    if opened then NS.Hud.Show() end
+    if opened then NS.Hud.AutoShow() end
     draw(phaseAt)
     ticker = C_Timer.NewTicker(Preview.TICK, beat)
     debug("test mode on")
