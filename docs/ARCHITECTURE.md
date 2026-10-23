@@ -200,7 +200,9 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 
 ## Documented deviations
 
-None.
+| Rule | What differs | Why | Decided | Re-check trigger |
+|---|---|---|---|---|
+| `layout-§1` | A non-standard root folder, `probe/`, holds `DpsRaceProbe` (1068 lines of authored Lua, a second addon). It is linted under its own scoped `.luacheckrc` stanza, ignored by `.pkgmeta` and never loaded by this addon | It is the measurement record the spec's numbers and the plan's test fixtures (T4 probe runs 4 and 6) came from; kept byte-for-byte so a disputed figure can be re-measured with the same code | 2026-10-23 | Open questions O1 to O7 closed in smoke tests, after which `probe/` moves out of this repo |
 
 ### Files over the 1500-line cap
 
