@@ -66,7 +66,11 @@ alias reaches both). There is no `diag` or `dump`; those are ordinary unknown wo
 
 The **state** section also carries the race line: `race state=<state> run=<id> session=<id>
 pending=<n> meter=<available>` (the race's state, the current run and its session, the stored runs
-still running or stopping, and whether Blizzard's meter is available). Later tasks add their own.
+still running or stopping, and whether Blizzard's meter is available), and the HUD line: `hud
+body=<idle|armed|running|stop|waiting|result|none> events=<none|idle|live> ticking=<bool>
+locked=<bool>` (the body on screen, the event set the HUD's frame holds, whether the 20 Hz countdown
+`OnUpdate` is attached). Later tasks add their own. The HUD's trace lines carry the `Hud` tag (the
+window built, each race transition it heard); `Format` says when the client's formatter is refused.
 
 ### Caps
 

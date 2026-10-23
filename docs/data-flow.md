@@ -113,3 +113,40 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).
+
+## The Race HUD (spec §6.1)
+
+`modules/Hud.lua` hears the race on its own bus target and draws it; it decides nothing about the
+race.
+
+- **Which body**: `RACE_STATE_CHANGED` → `Hud.Refresh()` builds a view from `Race.State()`,
+  `Race.Current()` and the race's clock queries: idle, armed, running and result map one to one.
+  STOPPING is one state shown in two phases: *Stop!* while the run's last DamageDone stamp
+  (`run.race.lastDamage`) is under 2.5 s old, then *Waiting* (for combat to end, or for the read); a
+  run that ended before the buzzer waits from the start. The live tail is `lastDamage − length`, the
+  time in combat `Race.SinceBuzzer()`. After `race.hintDelay` seconds in combat past the buzzer the
+  waiting body names the drop-combat spells `IsPlayerSpell` says the character has.
+- **Showing**: `IsShown()` = wanted and `NS.MasterVisibilityAllows()`. With `hud.showMode = "onArm"`
+  the window opens on arm and on `RACE_RESULT`, and closes again when the race it opened for goes
+  back to idle; the player's own Show/Hide/close wins. Closing a result card (the × or Escape)
+  dismisses it through `Race.Cancel()`; the run stays stored.
+- **The clock**: one `OnUpdate` at 20 Hz on the window, only while it is shown and the race RUNNING
+  or STOPPING, redraws the body (`hudTick`). The countdown turns amber at 10 s left.
+- **The live breakdown**: while shown and RUNNING the HUD's frame holds
+  `DAMAGE_METER_COMBAT_SESSION_UPDATED`; an update arms one `C_Timer` for the next free slot at
+  `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled
+  rows (`hudLive`): bars by `SetMinMaxValues(0, maxAmount)` / `SetValue(total)` (the first row's
+  total when there is no `maxAmount`), amounts by `Format.Number`, names and icons by `C_Spell`, in
+  Blizzard's order, `live.rows` of them, no %. A missing live DPS figure shows a dash.
+- **The result card**: plain numbers from the read: damage, DPS, the best delta
+  (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
+  `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race again*
+  (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
+  (`NS.Share.Prompt`, grayed until T9 adds it).
+- **Sounds**: the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1 s left) armed when the
+  race runs and canceled when it leaves RUNNING (`race.countdownCue`); `RACE_BUZZER` raises the raid
+  warning *STOP* and its sound (`race.buzzer`). Neither needs the window.
+- **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
+  one is remembered as `race.lastLength`) and the target count from the stepper go to `Race.Arm`; a
+  refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
+  while a run is pending, in combat or with the meter unavailable.

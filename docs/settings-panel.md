@@ -40,12 +40,12 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 |---|---|---|---|
 | Enable Ka0s DPS Race | `enabled` | checkbox | Off takes the latch's `disabled` hold: every event, message, timer and window goes down (slash-commands-§7) |
 | General visibility | `visibility` | dropdown | `always`, `inCombat`, `outOfCombat`, `never`; also decides whether `PLAYER_REGEN_ENABLED` is registered |
-| Master scale | `scale` | slider | The HUD's scale (T7) |
-| Lock frame | `locked` | checkbox | The HUD's position lock (T7) |
+| Master scale | `scale` | slider | The Race HUD window's scale (`Hud.Refresh`) |
+| Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
 | Test mode | `state.testMode` | checkbox, session-only | Starts or stops the preview; refused in combat, ended by combat |
-| Reset position | — | button | Puts the HUD back at its default position |
+| Reset position | — | button | Puts the HUD back at its default position and size (`Hud.ResetPosition`) |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
 ### Profiles
