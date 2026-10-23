@@ -31,7 +31,7 @@ A suite gates a **commit** and a **release** (the tag) differently, so both are 
 |---|---|---|---|
 | `lint` | `luacheck .` | yes | yes |
 | `tests` | `lua tests/run.lua` | yes | yes |
-| `perf` | `lua tests/perf.lua` (lands in T10) | no, recorded only | yes, at `pass` (a `skip` is not evaluated) |
+| `perf` | `lua tests/perf.lua` | no, recorded only | yes, at `pass` (a `skip` is not evaluated) |
 | `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` | no, recorded only | yes, at `pass` with zero functions above CCN 15 |
 
 The release is gated on all four at `pass` plus zero functions above CCN 15, `blindFiles` at 0 and a

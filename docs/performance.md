@@ -53,10 +53,22 @@ by `/dev-copilot:wow-perf-analysis` from the report and the JSON line.
 
 ## Offline scenarios
 
-`tests/perf.lua`, the offline scenario runner, lands in T10 with the first automated-test bundle. It
-measures call counts and allocation per iteration of the hot paths, never wall-clock time, sits
-outside the commit gate, and ships a zero-overhead scenario proving the bracket costs nothing when
-capture is off (performance-§9). Its runs are kept in
+`tests/perf.lua` is the offline scenario runner (performance-§9). It measures bytes allocated and
+bracket notes per iteration of the hot paths, never wall-clock time, and sits outside the commit
+gate. On a 15:00 race running on session 25 with the HUD shown, it measures each of the four
+bracketed paths with capture off and on:
+
+| Scenario pair | Path | What it pins |
+|---|---|---|
+| `raceEvent` | a DamageDone update for the run's session, through `modules/Watchers.lua`'s AceEvent target | the timeline stamp allocates next to nothing |
+| `hudTick` | `Hud.Tick()`, the HUD's `OnUpdate` pass while RUNNING | the countdown redraw's per-frame cost |
+| `hudLive` | `Hud.ReadLive()`, one live read and breakdown redraw from secret values | the throttled read's cost |
+| `combatEvent` | `NS:OnCombatChanged`, the addon object's regen handler | one HUD refresh |
+
+Each pair is the zero-overhead evidence: capture off allocates nothing over capture on, and capture
+on at most 64 bytes (one note) over off. Every scenario has a byte ceiling and a pinned note count
+(0 off, 1 on). A fifth scenario, `raceInputStoodDown`, pins a disabled addon's race input at 0 bytes.
+The ceilings and their measured figures are in the file's header. Its runs are kept in
 [`automated-tests/`](automated-tests/README.md), not in `perf-analysis/`.
 
 ## Complexity
