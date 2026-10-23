@@ -4,9 +4,11 @@ local _, NS = ...
 -- answers Update(view) (and the running body SetLive(live, rows, icons)); modules/Hud.lua owns the
 -- shell, decides which body shows and builds the view.
 --
--- LAYOUT FROM CONFIG. Every position is a constant offset or an anchor; the only width a body uses is
--- the one Layout(width) hands it, which modules/Hud.lua computes from the stored window size. No body
--- reads the size or position of anything that has displayed a meter value. The chip strips measure
+-- LAYOUT FROM CONFIG. Every position is a constant offset or an anchor; the only size a body uses is
+-- the one Layout(width, height) hands it, which modules/Hud.lua computes from the stored window size.
+-- No body reads the size or position of anything that has displayed a meter value. The spell rows
+-- are capped to what fits between a body's fixed top and bottom at that height (RowCapacity), and
+-- States.MinContentHeight() is the tallest body's fixed stack, which sets the window's minimum. The chip strips measure
 -- their own text (GetStringWidth on a label that only ever holds plain copy), never a value.
 --
 -- A body's buttons call NS.Hud.Act.* at CALL time, so the act is the shell's and a test may drive it.
@@ -39,6 +41,13 @@ local KPI_HEIGHT = 46
 local BUTTON_HEIGHT = 26
 local LINK_HEIGHT = 22
 local GAP = 8
+-- The idle body's Arm button and the refusal line under it.
+local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = 172, 34, 14
+-- The running body's rows sit between the KPIs and the caption over CANCEL.
+local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
+local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
+-- The fewest spell rows any window size may leave a body (the minimum height is set from it).
+local MIN_ROWS = 3
 -- The preset race lengths (spec §4.1), then Custom.
 States.PRESETS = { 30, 60, 120, 180, 300 }
 local DASH = "\226\128\148"   -- an em dash: "no figure"
@@ -163,6 +172,9 @@ end
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 
 local CHIP_HEIGHT, CHIP_GAP = 18, 5
+-- The result card's rows sit under two lines of chips and above its three buttons.
+local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
+local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
 local function newChip(parent)
     local f = panel(parent)
@@ -306,6 +318,22 @@ local function wideButton(body, label, onClick, style, height)
     return b
 end
 
+--- How many spell rows fit in `height` pixels (rows at the breakdown's pitch, the last without its gap).
+--- @param height number
+--- @return number
+function States.RowCapacity(height)
+    local B = NS.HudBreakdown
+    local pitch = B.ROW_HEIGHT + B.ROW_GAP
+    return math.max(0, math.floor((height + B.ROW_GAP) / pitch))
+end
+
+-- `wanted` rows, or fewer: what fits between `top` and `bottom` in the height Layout handed the body.
+local function rowsFor(body, top, bottom, wanted)
+    wanted = wanted or 0
+    if type(body.height) ~= "number" then return wanted end
+    return math.min(wanted, States.RowCapacity(body.height - top - bottom))
+end
+
 local Builders = {}
 
 -- IDLE: length presets, the target card, Arm (spec §6.1; screen 02).
@@ -332,10 +360,10 @@ function Builders.idle(parent)
     w.warn = text(f, 10, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -154)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -154)
-    w.arm = wideButton(body, L["ARM RACE"], function() act("arm") end, "primary", 34)
+    w.arm = wideButton(body, L["ARM RACE"], function() act("arm") end, "primary", ARM_HEIGHT)
     w.arm.label:SetFont(fontPath(), 14, "")
-    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -172)
-    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -172)
+    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
+    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
     w.reason = text(f, 10, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
     w.reason:SetPoint("TOPRIGHT", w.arm, "BOTTOMRIGHT", 0, -4)
@@ -411,8 +439,10 @@ function Builders.running(parent)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
     w.damage, w.dps = kpiPair(f, -52, L["DAMAGE"], L["DPS \194\183 LIVE"])
     w.rows = CreateFrame("Frame", nil, f)
-    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -52 - KPI_HEIGHT - GAP)
-    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, BUTTON_HEIGHT + 22)
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RUNNING_ROWS_TOP)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
+    -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
+    w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
     w.order = text(f, 9, C.dim)
     w.order:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, BUTTON_HEIGHT + 8)
@@ -423,12 +453,14 @@ function Builders.running(parent)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
 
+    function body.Layout(self, _, height) self.height = height end
+
     function body.Update(self, v)
         local left = v.timeLeft or 0
         self.w.clock:SetText(NS.Format.Clock(left))
         paintText(self.w.clock, left <= 10 and C.amber or C.text)
         self.w.dps.frame:SetShown(v.showDps ~= false)
-        self.w.count:SetText(L["%d rows"]:format(v.rows or 0))
+        self.w.count:SetText(L["%d rows"]:format(rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, v.rows)))
     end
 
     --- The live figures: opaque values, straight to the formatter and the rows.
@@ -441,7 +473,7 @@ function Builders.running(parent)
         end
         setKpi(self.w.damage, NS.Format.Number(live.total))
         if live.dps == nil then setKpi(self.w.dps, DASH) else setKpi(self.w.dps, NS.Format.Number(live.dps)) end
-        self.w.list:ShowLive(live, rows or 8, icons ~= false)
+        self.w.list:ShowLive(live, rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, rows), icons ~= false)
     end
     return body
 end
@@ -578,10 +610,11 @@ function Builders.result(parent)
     w.damage, w.dps = kpiPair(f, 0, L["DAMAGE"], L["DPS"], C.green)
     w.chips = chips(f, -KPI_HEIGHT - GAP)
     w.lost = text(f, 12, C.red)
-    w.lost:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -KPI_HEIGHT - GAP - 2 * (CHIP_HEIGHT + CHIP_GAP) - 4)
+    w.lost:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
     w.rows = CreateFrame("Frame", nil, f)
-    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -KPI_HEIGHT - GAP - 2 * (CHIP_HEIGHT + CHIP_GAP) - 4)
-    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, LINK_HEIGHT + GAP)
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
+    w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
     local links = footerButtons(body, {
         { L["RACE AGAIN"], function() act("raceAgain") end, "primary" },
@@ -589,7 +622,17 @@ function Builders.result(parent)
         { L["SHARE"], function() act("share") end, width = 72 },
     })
     w.again, w.details, w.share = links[1], links[2], links[3]
-    function body.Layout(self, width) self.w.chips.width = width end
+    -- DETAILS sits left of SHARE and RACE AGAIN takes what is left, so the three never overlap at
+    -- the minimum width (a centered DETAILS would run into a fixed-width RACE AGAIN there).
+    w.details:ClearAllPoints()
+    w.details:SetPoint("BOTTOMRIGHT", w.share, "BOTTOMLEFT", -6, 0)
+    w.again:ClearAllPoints()
+    w.again:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+    w.again:SetPoint("BOTTOMRIGHT", w.details, "BOTTOMLEFT", -6, 0)
+    function body.Layout(self, width, height)
+        self.w.chips.width = width
+        self.height = height
+    end
     function body.Update(self, v)
         local run = v.run or {}
         local result = run.result or {}
@@ -598,7 +641,8 @@ function Builders.result(parent)
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
         self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
-        if lost then self.w.list:Clear() else self.w.list:ShowResult(run, States.RESULT_ROWS, v.icons ~= false) end
+        local n = rowsFor(self, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, States.RESULT_ROWS)
+        if lost then self.w.list:Clear() else self.w.list:ShowResult(run, n, v.icons ~= false) end
         setEnabled(self.w.share, v.canShare == true)
         -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
         setEnabled(self.w.again, v.preview ~= true)
@@ -609,6 +653,18 @@ end
 
 -- The result card's spell rows (spec §6.1: the top 5 with %).
 States.RESULT_ROWS = 5
+
+--- The content height the tallest body's fixed stack needs: the idle body down to its links, and
+--- the running and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- @return number
+function States.MinContentHeight()
+    local B = NS.HudBreakdown
+    local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
+    local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
+    local running = RUNNING_ROWS_TOP + rows + RUNNING_ROWS_BOTTOM
+    local result = RESULT_ROWS_TOP + rows + RESULT_ROWS_BOTTOM
+    return math.max(idle, running, result)
+end
 
 --- Build one body into `parent`.
 --- @param key string  idle | armed | running | stop | waiting | result

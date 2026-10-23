@@ -419,6 +419,92 @@ test("hud: the sticky-combat hint asks for the player's spells once per race", f
     assertEqual(asked, #f.Hud.DROP_COMBAT, "IsPlayerSpell on every tick")
 end)
 
+-- ── layout at every size ────────────────────────────────────────────────────────────────────────
+
+-- The window's chrome above and below the content (title bar + gap, footer + gap) and each body's
+-- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
+local CHROME, PITCH = 36 + 30, 24
+local RUNNING_TOP, RUNNING_BOTTOM = 106, 48
+local RESULT_TOP, RESULT_BOTTOM = 104, 30
+
+local function fits(height, top, bottom)
+    return math.floor((height - CHROME - top - bottom + 2) / PITCH)
+end
+
+local function session(n)
+    local s = { damage = 9000000, dps = 300000, duration = 30, spells = {} }
+    for i = 1, n do s.spells[i] = { id = 2000 + i, dmg = 1000000 - i, dps = 1000 } end
+    return s
+end
+
+test("hud: the live rows stop above the caption and CANCEL at every window height", function()
+    for _, height in ipairs({ 0, 360, 700 }) do
+        local f = hud()
+        local h = math.max(height, f.Hud.MIN_HEIGHT)
+        f.NS.db.profile.windows.hud.height = h
+        f.NS.db.profile.live.rows = 15
+        f.Hud.Show()
+        running(f, 30)
+        f.meter.SetSession(25, session(15))
+        f.meter.SetSecret(true)
+        pump(f, 0.5)
+        local want = math.min(15, fits(h, RUNNING_TOP, RUNNING_BOTTOM))
+        assertTrue(want >= 3, "the minimum height leaves room for " .. want .. " rows")
+        assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
+        assertEqual(body(f).w.count.__text, ("%d rows"):format(want))
+    end
+end)
+
+test("hud: the result card's rows stop above its buttons at every window height", function()
+    for _, height in ipairs({ 0, 360 }) do
+        local f = hud()
+        local h = math.max(height, f.Hud.MIN_HEIGHT)
+        f.NS.db.profile.windows.hud.height = h
+        local run = resolved(f)
+        run.spells = {}
+        for i = 1, 8 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
+        f.Hud.Refresh()
+        local want = math.min(f.NS.HudStates.RESULT_ROWS, fits(h, RESULT_TOP, RESULT_BOTTOM))
+        assertTrue(want >= 3)
+        assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
+    end
+end)
+
+test("hud: the minimum height holds the idle body's whole stack", function()
+    local f = hud()
+    -- ARM RACE at 172 and 34 tall, its refusal line (4 + 14), then 4 and the 22px links.
+    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 172 + 34 + 4 + 14 + 4 + 22, "ARM RACE meets the links")
+    assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
+    f.NS.db.profile.windows.hud.height = 200
+    f.Hud.Show()
+    assertEqual(f.Hud.Diagnose().height, f.Hud.MIN_HEIGHT, "a stored height below the minimum is used as is")
+end)
+
+test("hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width", function()
+    local f = hud{ mutate = function(m)
+        local base = m.CreateFrame
+        m.CreateFrame = function(...)
+            local fr = base(...)
+            rawset(fr, "ClearAllPoints", function(self) self.__pts = {} end)
+            rawset(fr, "SetPoint", function(self, point, rel, relPoint)
+                self.__pts = self.__pts or {}
+                self.__pts[#self.__pts + 1] = { point, rel, relPoint }
+            end)
+            return fr
+        end
+    end }
+    resolved(f)
+    local w = body(f).w
+    local function anchoredTo(b, point, rel, relPoint)
+        for _, p in ipairs(b.__pts or {}) do
+            if p[1] == point and p[2] == rel and p[3] == relPoint then return true end
+        end
+        return false
+    end
+    assertTrue(anchoredTo(w.details, "BOTTOMRIGHT", w.share, "BOTTOMLEFT"), "DETAILS is not left of SHARE")
+    assertTrue(anchoredTo(w.again, "BOTTOMRIGHT", w.details, "BOTTOMLEFT"), "RACE AGAIN can run under DETAILS")
+end)
+
 test("hud: Discard run on the waiting body throws the attempt away", function()
     local f = hud()
     running(f, 30)

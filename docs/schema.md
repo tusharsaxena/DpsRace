@@ -37,7 +37,7 @@ row's `default` reads from it.
 | `live.showDps` | `true` | *Show live DPS*, Live breakdown page | Blizzard's live DPS figure, labeled *live* |
 | `live.hz` | `4` | *Live reads per second*, Live breakdown page | Live reads per second, 2-10 (spec §10) |
 | `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
-| `windows.hud.width` / `.height` | `300` / `360` | none (geometry) | The HUD's size; the minimum 260x240 is the spec's, in `modules/Hud.lua` |
+| `windows.hud.width` / `.height` | `300` / `360` | none (geometry) | The HUD's size; the minimum is 260x316 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
 | `windows.results.width` / `.height` | `1040` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 760x420 is in `modules/Results.lua`. Its scale is the Master controls' `scale` |
 
 Every `race.*`, `live.*` and `hud.showMode` key has its row; `race.lastLength` is state, below.

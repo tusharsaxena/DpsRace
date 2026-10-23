@@ -4,7 +4,7 @@ local _, NS = ...
 -- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
--- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x360, min 260x240), with its
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x360, min 260x316), with its
 -- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
 -- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
 --
@@ -32,10 +32,18 @@ NS.Hud = Hud
 local L = NS.L
 local Perf = NS.Perf
 
--- The default size is the defaults tree's (savedvariables-§2); the minimum is the spec's.
+local HEADER_H, FOOTER_H, PAD = 26, 22, 12
+local CONTENT_TOP = HEADER_H + 10
+local CONTENT_BOTTOM = FOOTER_H + 8
+
+-- The default size is the defaults tree's (savedvariables-§2). The minimum width is the spec's; the
+-- minimum height is the chrome plus the tallest body's fixed stack (modules/Hud_States.lua), so no
+-- size the grip allows clips Arm or runs a body's rows into its buttons. The spec's 240 could not
+-- hold the idle body: Arm at 172 px and the links under it need 250 px of content.
 Hud.WIDTH = NS.defaults.profile.windows.hud.width
 Hud.HEIGHT = NS.defaults.profile.windows.hud.height
-Hud.MIN_WIDTH, Hud.MIN_HEIGHT = 260, 240
+Hud.MIN_WIDTH = 260
+Hud.MIN_HEIGHT = CONTENT_TOP + NS.HudStates.MinContentHeight() + CONTENT_BOTTOM
 -- The countdown text's refresh period (spec §10: 20 Hz).
 Hud.TICK = 0.05
 -- STOPPING has no clock to animate: its figures (seconds, one decimal, and the phase) redraw at 4 Hz.
@@ -51,8 +59,6 @@ Hud.DROP_COMBAT = {
 Hud.MAX_TARGETS = 20
 Hud.FRAME_NAME = "DpsRaceHud"
 
-local HEADER_H, FOOTER_H, PAD = 26, 22, 12
-local CONTENT_TOP = HEADER_H + 10
 local SOUND_CUE = 25477      -- SOUNDKIT.UI_BATTLEGROUND_COUNTDOWN_TIMER, if the table is absent
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
 local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
@@ -341,17 +347,24 @@ local function contentWidth()
     return width - 2 * PAD
 end
 
+-- The content frame's height: the window's tracked height less the chrome and the test strip.
+local function contentHeight()
+    local height = ui and ui.height
+    if not height then height = select(2, storedSize()) end
+    return height - CONTENT_TOP - ((ui and ui.drop) or 0) - CONTENT_BOTTOM
+end
+
 local function layoutBodies()
-    local width = contentWidth()
+    local width, height = contentWidth(), contentHeight()
     for _, body in pairs(ui.body) do
-        if body.Layout then body:Layout(width) end
+        if body.Layout then body:Layout(width, height) end
     end
 end
 
 local function applyPlacement()
     local f, w = ui.frame, store() or {}
     local width, height = storedSize()
-    ui.width = width
+    ui.width, ui.height = width, height
     f:ClearAllPoints()
     f:SetPoint(w.point or "CENTER", UIParent, w.relativePoint or "CENTER", w.x or 0, w.y or 0)
     f:SetSize(width, height)
@@ -370,8 +383,9 @@ local function savePosition()
     w.x, w.y = math.floor(x + 0.5), math.floor(y + 0.5)
 end
 
-local function onResized(width)
+local function onResized(width, height)
     if type(width) == "number" then ui.width = math.max(Hud.MIN_WIDTH, width) end
+    if type(height) == "number" then ui.height = math.max(Hud.MIN_HEIGHT, height) end
     layoutBodies()
 end
 
@@ -481,7 +495,7 @@ local function ensureWindow()
     buildFooter(f)
     ui.content = CreateFrame("Frame", nil, f)
     ui.content:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, -CONTENT_TOP)
-    ui.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, FOOTER_H + 8)
+    ui.content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PAD, CONTENT_BOTTOM)
     ui.content:SetClipsChildren(true)
     NS.ApplySkin(f)
     f:SetScript("OnHide", function() onHide() end)
@@ -538,6 +552,7 @@ local function applyTestMarker()
     if ui.drop ~= drop then
         ui.drop = drop
         ui.content:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", PAD, -(CONTENT_TOP + drop))
+        layoutBodies()
     end
     ui.frame.title:SetText(titleText())
 end
@@ -547,7 +562,7 @@ local function showBody(key)
     if not body then
         body = NS.HudStates.Build(key, ui.content)
         ui.body[key] = body
-        if body.Layout then body:Layout(contentWidth()) end
+        if body.Layout then body:Layout(contentWidth(), contentHeight()) end
     end
     if ui.current ~= key then
         local old = ui.current and ui.body[ui.current]
@@ -921,7 +936,8 @@ end
 --- What the HUD is doing, for the diagnostics report: the body on screen, the event set it holds
 --- ("none" | "idle" | "live"), whether the countdown OnUpdate is attached, and the lock.
 function Hud.Diagnose()
-    return { body = ui and ui.current or "none", events = registered, ticking = ticking, locked = Hud.locked }
+    return { body = ui and ui.current or "none", events = registered, ticking = ticking, locked = Hud.locked,
+             height = (ui and ui.height) or select(2, storedSize()) }
 end
 
 --- The built window and its bodies, for the suites (nil until first shown).

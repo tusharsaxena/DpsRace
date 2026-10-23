@@ -96,7 +96,9 @@ modules\Format.lua
 modules\Hud_Breakdown.lua
 modules\Hud_States.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT) at FILE SCOPE
-# through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
+# through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its default size, and calls
+# NS.HudStates.MinContentHeight() (modules\Hud_States.lua, which reaches modules\Hud_Breakdown.lua) for
+# its minimum height.
 modules\Hud.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE (and the detail NS.HudBreakdown's row pitch), so each follows the files it captures.

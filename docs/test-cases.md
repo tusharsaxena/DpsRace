@@ -200,7 +200,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (45)
+### test_hud.lua (49)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -222,6 +222,10 @@ Total.
 - hud: waiting hint appears after hintDelay and names only owned drop-combat spells
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
+- hud: the live rows stop above the caption and CANCEL at every window height
+- hud: the result card's rows stop above its buttons at every window height
+- hud: the minimum height holds the idle body's whole stack
+- hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width
 - hud: Discard run on the waiting body throws the attempt away
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
@@ -518,7 +522,7 @@ Total.
 | test_race.lua | 44 |
 | test_race_resume.lua | 13 |
 | test_format.lua | 7 |
-| test_hud.lua | 45 |
+| test_hud.lua | 49 |
 | test_results.lua | 23 |
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
@@ -537,4 +541,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **407** |
+| **Total** | **411** |
