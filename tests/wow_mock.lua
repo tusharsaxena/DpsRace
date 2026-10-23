@@ -165,6 +165,26 @@ local function build()
     end
     M.GetBuildInfo = function() return "12.0.5", "60000", "Oct 1 2026", M.__context.build end
 
+    -- C_Timer.NewTicker, which the kit's C_Timer does not carry (modules/Race.lua's readiness poll).
+    -- One queue entry per period: firing it re-queues it until canceled or out of iterations, so
+    -- `M.__fireTimers()` runs one tick and `M.__timers()` sees a live ticker as armed.
+    M.C_Timer.NewTicker = function(interval, fn, iterations)
+        local t = { delay = interval }
+        t.Cancel = function() t.cancelled = true end
+        t.IsCancelled = function() return t.cancelled == true end
+        local left = iterations
+        t.fn = function()
+            fn(t)
+            if left then
+                left = left - 1
+                if left <= 0 then t.cancelled = true end
+            end
+            if not t.cancelled then M.__timers[#M.__timers + 1] = t end
+        end
+        M.__timers[#M.__timers + 1] = t
+        return t
+    end
+
     -- The target: { guid, name, level, classification } or nil. Any field may be a Kit.secret.
     M.__target = nil
     function M.__setTarget(t)

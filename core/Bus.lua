@@ -7,6 +7,10 @@ local addonName, NS = ...
 NS.MSG = {
     -- Sender: modules/Race.lua (T5). Payload: (run, fromState, toState).
     RACE_STATE_CHANGED = "Ka0s_DpsRace_RaceStateChanged",
+    -- Sender: modules/Race.lua (T5). Payload: (run) -- the buzzer went; the run is now stopping.
+    RACE_BUZZER        = "Ka0s_DpsRace_RaceBuzzer",
+    -- Sender: modules/Race.lua (T5). Payload: (run) -- resolved: complete, incomplete or lost.
+    RACE_RESULT        = "Ka0s_DpsRace_RaceResult",
     -- Sender: modules/Recorder.lua (T3). Payload: (run).
     RUN_SAVED          = "Ka0s_DpsRace_RunSaved",
     -- Sender: modules/Recorder.lua (T3). Payload: none -- a delete or a prune changed the store.

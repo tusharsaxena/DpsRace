@@ -11,7 +11,7 @@ test("perf: the descriptor declares the buckets, the SavedVariable and the one l
     local d = assert(NS.Perf.descriptor, "NS.Perf carries no descriptor; was the stub loaded?")
     local keys = {}
     for i, b in ipairs(d.buckets) do keys[i] = b.key end
-    assertEqual(table.concat(keys, ","), "combatEvent")
+    assertEqual(table.concat(keys, ","), "combatEvent,raceEvent")
     assertEqual(d.sv, "DpsRacePerfDB")
     assertTrue(d.lifecycle == NS.lifecycle, "the harness holds a latch other than NS.lifecycle")
     assertEqual(d.suspend, nil, "a second teardown path beside the latch (performance-§6)")
@@ -20,11 +20,16 @@ end)
 
 test("perf: every declared bucket is reached by a real bracket", function()
     -- red under: drop the `Perf.Note("combatEvent", ...)` line from NS:OnCombatChanged
-    local inst = T.load()
+    local inst = T.load{ mutate = function(m) T.mockMeter.install(m) end }
     local NS, M = inst.NS, inst.mocks
     local reach = {
         -- combatEvent: the combat-boundary handler, through the event the client fires.
         combatEvent = function() M.__fire("PLAYER_REGEN_DISABLED") end,
+        -- raceEvent: the race watchers' handler, live once a race is armed.
+        raceEvent = function()
+            assert(NS.Race.Arm(30), "the fixture could not arm")
+            M.__fire("DAMAGE_METER_RESET")
+        end,
     }
     NS.Perf.on = true          -- inside an experiment window: what the sampler sets when one opens
     for _, b in ipairs(NS.Perf.descriptor.buckets) do

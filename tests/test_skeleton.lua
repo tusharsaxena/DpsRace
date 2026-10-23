@@ -59,8 +59,9 @@ test("skeleton: the DB defaults load (global.runs empty, global.schema 1, schema
     assertEqual(g.minimap.hide, false)
 end)
 
-test("skeleton: NS.MSG declares the four bus names, each Ka0s_DpsRace_<PascalCase>", function()
-    local want = { "RACE_STATE_CHANGED", "RUN_SAVED", "RUNS_CHANGED", "SETTINGS_CHANGED" }
+test("skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>", function()
+    local want = { "RACE_STATE_CHANGED", "RACE_BUZZER", "RACE_RESULT", "RUN_SAVED", "RUNS_CHANGED",
+                   "SETTINGS_CHANGED" }
     for _, key in ipairs(want) do
         local wire = NS.MSG[key]
         assertEqual(type(wire), "string", key .. " is declared")

@@ -27,6 +27,8 @@ end
 function NS:OnEnable()
     if NS.IsStoodDown() then return end
     NS.RegisterGameEvents()
+    -- Runs a /reload left running or stopping carry on from their stored status (spec §4.5).
+    NS.Race.Resume()
 end
 
 -- ── Game events ─────────────────────────────────────────────────────────────────────────────────

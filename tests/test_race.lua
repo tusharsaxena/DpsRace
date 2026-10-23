@@ -1,0 +1,575 @@
+-- tests/test_race.lua — modules/Race.lua, the race lifecycle (spec §4): arming and its refusals, the
+-- clock starting on the new meter session, the session-ID capture, the buzzer, late casts after the
+-- grace (§5.2), incomplete runs, the result read gated on combat end AND 2.5s of quiet (§4.5), the
+-- read by session ID, the restart flag (§5.3), a meter reset, cancel, and the list fallback (§9).
+--
+-- Race is driven through its inputs with a fake clock (tests/race_clock.lua); Watchers is loaded but
+-- never fired here, so every input is the one the case calls.
+
+local T = _G.DPSRACE_TEST
+local test, assertEqual, assertTrue, assertFalse, assertNil =
+    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
+
+local F = dofile(T.root .. "/tests/race_clock.lua")(T)
+
+local function near(got, want, msg)
+    assertTrue(type(got) == "number" and math.abs(got - want) < 1e-6,
+        (msg or "value") .. ": expected " .. tostring(want) .. ", got " .. tostring(got))
+end
+
+--- Armed at 100 for `length`, started at 100 on session 25.
+local function running(length)
+    local f = F.new()
+    assertTrue(f:arm(length or 30))
+    f:start(25)
+    assertEqual(f.Race.State(), "running")
+    return f, f.Race.Current()
+end
+
+--- Running at 100 for 30s, the buzzer gone at 130.
+local function stopping()
+    local f, run = running(30)
+    f:to(130)
+    assertEqual(f.Race.State(), "stopping")
+    return f, run
+end
+
+-- ── arming ──────────────────────────────────────────────────────────────────────────────────────
+
+test("race: the state names are the interface's", function()
+    local S = T.NS.Race.STATE
+    assertEqual(S.IDLE, "idle")
+    assertEqual(S.ARMED, "armed")
+    assertEqual(S.RUNNING, "running")
+    assertEqual(S.STOPPING, "stopping")
+    assertEqual(S.RESULT, "result")
+    assertEqual(T.NS.Race.State(), "idle")
+    assertNil(T.NS.Race.Current())
+end)
+
+test("race: arm refuses in combat and while a run is pending", function()
+    local f = F.new()
+    f.M.__inCombat = true
+    local ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "in_combat")
+    assertEqual(f.Race.State(), "idle")
+    f.M.__inCombat = false
+
+    -- Armed or running: busy.
+    assertTrue(f:arm(30))
+    ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "busy")
+    f:start(25)
+    ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "busy", "running")
+
+    -- Stopping (the result is unresolved): pending, even once combat has dropped.
+    f:to(130)
+    assertEqual(f.Race.State(), "stopping")
+    ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "pending")
+    f.M.__inCombat = false
+    ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "pending", "out of combat, still waiting for the read")
+    assertEqual(#f.NS.Recorder.All(), 1, "a refusal stored nothing")
+end)
+
+test("race: arm refuses while a stored run is pending, even when idle", function()
+    local f = F.new()
+    f.NS.db.global.runs["1-1000"] = F.storedRun({ id = "1-1000", status = "stopping" })
+    local ok, why = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "pending")
+end)
+
+test("race: arm refuses when meter unavailable", function()
+    local f = F.new()
+    f.meter.SetAvailable(false, "Damage meter is disabled")
+    local ok, why, detail = f:arm(30)
+    assertFalse(ok)
+    assertEqual(why, "meter_unavailable")
+    assertEqual(detail, "Damage meter is disabled", "Blizzard's reason, verbatim")
+    assertEqual(f.Race.State(), "idle")
+    assertEqual(#f.heard.states, 0)
+end)
+
+test("race: arm refuses a length outside 10s-15:00 and arms a valid one", function()
+    local f = F.new()
+    for _, bad in ipairs({ 9, 901, "30", 0 }) do
+        local ok, why = f:arm(bad)
+        assertFalse(ok, tostring(bad))
+        assertEqual(why, "bad_length", tostring(bad))
+    end
+    assertTrue(f:arm(10))
+    assertEqual(f.Race.State(), "armed")
+    assertEqual(f.Race.Current().race.length, 10)
+    assertEqual(f:trail(), "idle>armed")
+end)
+
+-- ── the start ───────────────────────────────────────────────────────────────────────────────────
+
+test("race: session created starts the clock and persists the run as running", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    assertEqual(run.status, "armed")
+    assertNil(f:stored(run.id), "an armed run is not stored")
+    assertNil(f.Race.Elapsed())
+    assertNil(f.Race.TimeLeft())
+
+    f:advance(42)                 -- a long wait at the dummy: arming is cheap
+    assertEqual(f.Race.State(), "armed")
+    f.Race.OnSessionCreated(f:now())
+    assertEqual(f.Race.State(), "running")
+    assertTrue(f:stored(run.id) == run, "the run is stored the moment the clock starts")
+    assertEqual(run.status, "running")
+    near(run.race.startedAt, 142, "the start is GetTime() at the session event")
+    assertEqual(f.Race.Elapsed(), 0)
+    f:advance(5)
+    near(f.Race.Elapsed(), 5)
+    near(f.Race.TimeLeft(), 25)
+    assertNil(f.Race.SinceBuzzer())
+    assertEqual(f:trail(), "idle>armed,armed>running")
+end)
+
+test("race: the target is re-read at combat start and the arm-time count is kept", function()
+    local f = F.new()
+    f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = "Cleave Training Dummy" })
+    assertTrue(f:arm(30, 5))
+    local run = f.Race.Current()
+    assertEqual(run.target.count, 5)
+    -- Combat starts with the same dummy targeted, its name now sealed: the arm-time read fills it.
+    f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = T.secret("x") })
+    f:start(25)
+    assertEqual(run.target.npcID, 243208)
+    assertEqual(run.target.name, "Cleave Training Dummy")
+    assertEqual(run.target.count, 5, "the count picked at arm survives the re-read")
+
+    -- A different dummy at combat start: the combat-start read is the one stored.
+    local g = F.new()
+    g.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = "Cleave Training Dummy" })
+    assertTrue(g:arm(30, 5))
+    g.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243205-0000ABCDEF", name = "Reinforced Golem" })
+    g:start(25)
+    local t = g.Race.Current().target
+    assertEqual(t.npcID, 243205)
+    assertEqual(t.category, "boss")
+    assertEqual(t.count, 1, "another target takes its own catalog count")
+end)
+
+test("race: sessionID captured from first DamageDone update with non-zero id", function()
+    local f = F.new()
+    f.meter.SetSession(24, F.SESSION)          -- an earlier fight's session, there at arm time
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(100)
+    f.Race.OnSessionCreated(100)
+    assertNil(run.race.sessionID)
+    f.Race.OnMeterUpdate(7, 25, 100)           -- another meter type
+    assertNil(run.race.sessionID, "only DamageDone names the session")
+    f.Race.OnMeterUpdate(0, 0, 100)
+    assertNil(run.race.sessionID, "a zero id is not a session")
+    f.Race.OnMeterUpdate(0, T.secret(25), 100)
+    assertNil(run.race.sessionID, "a secret id is never keyed on")
+    f.Race.OnMeterUpdate(0, 24, 100)
+    assertNil(run.race.sessionID, "a session that existed at arm time is another fight's")
+    f.Race.OnMeterUpdate(0, 25, 100.2)
+    assertEqual(run.race.sessionID, 25)
+    assertEqual(f:stored(run.id).race.sessionID, 25)
+    f.Race.OnMeterUpdate(0, 26, 101)
+    assertEqual(run.race.sessionID, 25, "the first capture holds")
+end)
+
+test("race: a DamageDone update heard just before the session event is adopted at the start", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.M.__inCombat = true
+    f.Race.OnMeterUpdate(0, 25, 100)
+    f.Race.OnSessionCreated(100)
+    assertEqual(f.Race.Current().race.sessionID, 25)
+end)
+
+-- ── the buzzer ──────────────────────────────────────────────────────────────────────────────────
+
+test("race: buzzer at start+length moves to stopping and emits RACE_BUZZER", function()
+    local f, run = running(30)
+    f:to(129.9)
+    assertEqual(f.Race.State(), "running")
+    assertEqual(#f.heard.buzzers, 0)
+    near(f.Race.TimeLeft(), 0.1)
+    f:to(130)
+    assertEqual(f.Race.State(), "stopping")
+    assertEqual(#f.heard.buzzers, 1)
+    assertTrue(f.heard.buzzers[1] == run)
+    assertEqual(run.status, "stopping")
+    assertEqual(f:stored(run.id).status, "stopping")
+    assertEqual(f.Race.TimeLeft(), 0)
+    near(f.Race.SinceBuzzer(), 0)
+    f:to(131.5)
+    near(f.Race.SinceBuzzer(), 1.5)
+    near(f.Race.Elapsed(), 31.5)
+    assertEqual(f:trail(), "idle>armed,armed>running,running>stopping")
+end)
+
+-- ── late casts (spec §5.2) ──────────────────────────────────────────────────────────────────────
+
+test("race: cast started 0.5s after buzzer is not late at grace 1.0", function()
+    local f, run = stopping()
+    f.Race.OnCast("start", 29722, 130.5)
+    f.Race.OnCast("succeeded", 29722, 132.0)
+    f.Race.OnCast("start", 348, 131.0)          -- exactly buzzer + grace: on time
+    assertEqual(#run.flags.lateCasts, 0)
+end)
+
+test("race: cast started 1.4s after buzzer is recorded as late with spellID", function()
+    local f, run = stopping()
+    f.Race.OnCast("start", 29722, 131.4)
+    f.Race.OnCast("succeeded", 29722, 133.9)    -- its finish is the same cast, not a second one
+    assertEqual(#run.flags.lateCasts, 1)
+    near(run.flags.lateCasts[1].t, 1.4)
+    assertEqual(run.flags.lateCasts[1].spellID, 29722)
+    -- An instant has no start: its success time is used.
+    f.Race.OnCast("succeeded", 17962, 132.0)
+    -- A channel counts at its start.
+    f.Race.OnCast("channel", 5740, 134.25)
+    assertEqual(#run.flags.lateCasts, 3)
+    near(run.flags.lateCasts[2].t, 2.0)
+    assertEqual(run.flags.lateCasts[2].spellID, 17962)
+    near(run.flags.lateCasts[3].t, 4.25)
+end)
+
+test("race: cast that started before buzzer and succeeded after is not late", function()
+    local f, run = running(30)
+    f:to(128.5)
+    f.Race.OnCast("start", 116858, f:now())
+    f:to(130)
+    f.Race.OnCast("succeeded", 116858, 131.5)
+    assertEqual(#run.flags.lateCasts, 0)
+end)
+
+test("race: the grace in force is the run's own, not the profile's", function()
+    local f, run = running(30)
+    f.NS.db.profile.race.grace = 5
+    f:to(130)
+    f.Race.OnCast("start", 29722, 131.4)
+    assertEqual(#run.flags.lateCasts, 1, "the profile changed mid-run; the run keeps 1.0")
+end)
+
+-- ── incomplete runs ─────────────────────────────────────────────────────────────────────────────
+
+test("race: combat end before buzzer -> incomplete with endedAt", function()
+    local f, run = running(60)
+    f:to(120)
+    f:combatEnd()
+    assertEqual(f.Race.State(), "stopping", "waits for the read like any other run")
+    assertEqual(run.status, "stopping")
+    near(run.result.endedAt, 20)
+    assertNil(f.Race.SinceBuzzer(), "no buzzer went")
+    f:to(170)
+    assertEqual(#f.heard.buzzers, 0, "the buzzer was canceled")
+    assertEqual(f.Race.State(), "result")
+    assertEqual(run.status, "incomplete")
+    assertEqual(run.result.damage, F.SESSION.damage)
+    near(run.result.dps, F.SESSION.damage / 20)
+    near(run.result.endedAt, 20)
+end)
+
+test("race: death -> incomplete, died flag", function()
+    local f, run = running(60)
+    f:to(110)
+    f.Race.OnDeath(f:now())
+    assertTrue(run.flags.died)
+    assertEqual(f.Race.State(), "stopping")
+    f:to(111)
+    f:combatEnd()
+    f:to(115)
+    assertEqual(run.status, "incomplete")
+    near(run.result.endedAt, 10, "ended at the death")
+    assertTrue(run.flags.died)
+end)
+
+test("race: death after the buzzer flags died and the run stays complete", function()
+    local f, run = stopping()
+    f.Race.OnDeath(131)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(run.status, "complete")
+    assertTrue(run.flags.died)
+end)
+
+-- ── the result read (spec §4.5) ─────────────────────────────────────────────────────────────────
+
+test("race: result read only after combat end AND 2.5s quiet", function()
+    local f, run = stopping()
+    f:to(130.2)
+    f:combatEnd()                      -- combat drops at buzzer + 0.2
+    assertEqual(f:reads(), 0, "updates may still come: no read at the regen edge")
+    f:to(131.5)
+    f:update(25)                       -- the probe's late update, combat end + 1.3s
+    f:to(133.9)                        -- combat end + 3.7s: the last poll (133.5) saw 2.0s of quiet
+    assertEqual(f:reads(), 0, "not quiet for 2.5s yet")
+    assertEqual(f.Race.State(), "stopping")
+    f:to(134.0)                        -- combat end + 3.8s: the update + 2.5s, on a poll
+    assertEqual(f:reads(), 1, "read at combat end + 3.8s, the first poll 2.5s quiet")
+    assertEqual(f.Race.State(), "result")
+    assertEqual(#f.heard.results, 1)
+    assertTrue(f.heard.results[1] == run)
+    assertEqual(run.status, "complete")
+end)
+
+test("race: no read while combat holds, however quiet the meter is", function()
+    local f = stopping()
+    f:to(200)
+    assertEqual(f:reads(), 0)
+    assertEqual(f.Race.State(), "stopping")
+    near(f.Race.SinceBuzzer(), 70)
+end)
+
+test("race: read uses ReadSession(sessionID), never Current", function()
+    local f, run = stopping()
+    f.meter.SetSession(99, { damage = 1, dps = 1, duration = 1, spells = {} })   -- now Current
+    f:combatEnd()
+    f:to(133)
+    assertEqual(f.Race.State(), "result")
+    assertEqual(#f.meter.CallsTo("GetCombatSessionFromType"), 0)
+    assertEqual(#f.meter.CallsTo("GetCombatSessionSourceFromType"), 0)
+    local calls = f.meter.CallsTo("GetCombatSessionFromID")
+    assertEqual(calls[1].args[1], 25)
+    assertEqual(run.result.damage, F.SESSION.damage)
+    near(run.result.dps, F.SESSION.damage / 30, "damage over the race length")
+    assertEqual(run.result.meterDps, F.SESSION.dps, "Blizzard's figure, for reference")
+    assertEqual(run.result.sessionDuration, F.SESSION.duration)
+    assertEqual(#run.spells, 3)
+    assertEqual(run.spells[1].id, 29722)
+    assertEqual(f:stored(run.id).status, "complete")
+end)
+
+test("race: tail and combat end are stored relative to the buzzer", function()
+    local f, run = stopping()
+    f:to(131)
+    f:update(25)
+    f:to(133.17)
+    f:update(25)
+    f:to(137.34)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(run.status, "complete")
+    near(run.result.tail, 3.17)
+    near(run.result.combatEnd, 7.34)
+    assertNil(run.flags.restartedAt, "2s spacing is a tail, not a restart")
+end)
+
+test("race: restart after a 10s gap sets flags.restartedAt", function()
+    local f, run = stopping()
+    f:to(131)
+    f:update(25)
+    f:to(141)
+    f:update(25)                       -- 10s of quiet, then damage again
+    f:to(142)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(run.status, "complete")
+    near(run.flags.restartedAt, 11)
+    near(run.result.tail, 11)
+end)
+
+test("race: updates for another session never move the timeline", function()
+    local f, run = stopping()
+    f:to(131)
+    f:combatEnd()
+    f:to(132)
+    f.Race.OnMeterUpdate(0, 26, 132)   -- another session's update: not this run's quiet
+    f:to(133.5)
+    assertEqual(f.Race.State(), "result")
+    assertEqual(run.result.tail, 0)
+end)
+
+-- ── lost runs and the meter reset ───────────────────────────────────────────────────────────────
+
+test("race: meter reset while stopping -> lost", function()
+    local f, run = stopping()
+    f.Race.OnMeterReset()
+    assertEqual(f.Race.State(), "result")
+    assertEqual(run.status, "lost")
+    assertNil(run.result, "a lost run has no result")
+    assertEqual(f:stored(run.id).status, "lost", "kept, with its metadata")
+    assertEqual(#f.heard.results, 1)
+    assertEqual(f.clock.live(), 0, "the poll stopped")
+end)
+
+test("race: meter reset while running -> lost, and the buzzer never goes", function()
+    local f, run = running(30)
+    f:to(110)
+    f.Race.OnMeterReset()
+    assertEqual(run.status, "lost")
+    f:to(140)
+    assertEqual(#f.heard.buzzers, 0)
+end)
+
+test("race: meter reset while armed forgets the arm-time sessions and keeps the arm", function()
+    local f = F.new()
+    f.meter.SetSession(24, F.SESSION)
+    assertTrue(f:arm(30))
+    f.Race.OnMeterReset()
+    assertEqual(f.Race.State(), "armed")
+end)
+
+test("race: a session the client no longer holds is lost at the read", function()
+    local f, run = stopping()
+    f.meter.RemoveSession(25)
+    f:combatEnd()
+    f:to(133)
+    assertEqual(run.status, "lost")
+end)
+
+test("race: a read that stays sealed is retried, then lost", function()
+    local f, run = stopping()
+    f.meter.SetSealed(25, true)
+    f:combatEnd()
+    f:to(133)
+    assertEqual(f.Race.State(), "stopping", "a sealed read is retried")
+    f.meter.SetSealed(25, false)
+    f:to(133.5)
+    assertEqual(run.status, "complete")
+
+    local g, run2 = stopping()
+    g.meter.SetSealed(25, true)
+    g:combatEnd()
+    g:to(200)
+    assertEqual(run2.status, "lost", "never readable: lost rather than waiting forever")
+end)
+
+test("race: a read that raises is lost, not a Lua error", function()
+    local f, run = stopping()
+    f.meter.SetRaise("GetCombatSessionFromID", "boom")
+    f:combatEnd()
+    f:to(133)
+    assertEqual(run.status, "lost")
+end)
+
+-- ── the session-list fallback (spec §9) ─────────────────────────────────────────────────────────
+
+test("race: a session ID never captured falls back to the newest session after arming", function()
+    local f = F.new()
+    f.meter.SetSession(24, { damage = 5, dps = 5, duration = 5, spells = {} })
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.meter.SetSession(25, F.SESSION)
+    f.Race.OnCombatStart(100)
+    f.Race.OnSessionCreated(100)     -- no DamageDone update ever names the session
+    f:to(130)
+    f:combatEnd()
+    f:to(133)
+    assertEqual(run.status, "complete")
+    assertEqual(run.race.sessionID, 25)
+    assertTrue(run.flags.sessionFromList)
+    assertEqual(run.result.damage, F.SESSION.damage)
+end)
+
+test("race: no new session at all is lost", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.Race.OnSessionCreated(100)
+    f:to(130)
+    f:combatEnd()
+    f:to(133)
+    assertEqual(run.status, "lost")
+end)
+
+-- ── cancel ──────────────────────────────────────────────────────────────────────────────────────
+
+test("race: cancel in armed/running stores nothing; cancel in stopping discards", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local armed = f.Race.Current()
+    assertTrue(f.Race.Cancel())
+    assertEqual(f.Race.State(), "idle")
+    assertNil(f.Race.Current())
+    assertNil(f:stored(armed.id))
+
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f:start(25)
+    assertTrue(f:stored(run.id) ~= nil)
+    assertTrue(f.Race.Cancel())
+    assertNil(f:stored(run.id), "a canceled running run is removed from the store")
+    f:to(140)
+    assertEqual(#f.heard.buzzers, 0, "the buzzer was canceled")
+
+    local g, run2 = stopping()
+    assertTrue(g.Race.Cancel())
+    assertEqual(g.Race.State(), "idle")
+    assertNil(g:stored(run2.id), "discarded")
+    assertEqual(g.clock.live(), 0, "no timer or poll left armed")
+    assertEqual(#g.NS.Recorder.All(), 0)
+    assertFalse(g.Race.Cancel(), "nothing to cancel")
+end)
+
+test("race: cancel on a result dismisses it and keeps the run; race again arms", function()
+    local f, run = stopping()
+    f:combatEnd()
+    f:to(133)
+    assertEqual(f.Race.State(), "result")
+    assertTrue(f.Race.Current() == run)
+    assertTrue(f:arm(30), "race again from the result card")
+    assertEqual(f.Race.State(), "armed")
+    assertTrue(f.Race.Cancel())
+    assertEqual(f:stored(run.id).status, "complete")
+
+    local g = stopping()
+    g:combatEnd()
+    g:to(133)
+    assertTrue(g.Race.Cancel())
+    assertEqual(g.Race.State(), "idle")
+    assertEqual(#g.NS.Recorder.All(), 1)
+end)
+
+-- ── inputs out of turn ──────────────────────────────────────────────────────────────────────────
+
+test("race: inputs in the wrong state change nothing", function()
+    local f = F.new()
+    f.Race.OnSessionCreated(100)
+    f.Race.OnMeterUpdate(0, 25, 100)
+    f.Race.OnCombatStart(100)
+    f.Race.OnCombatEnd(100)
+    f.Race.OnCast("start", 1, 100)
+    f.Race.OnDeath(100)
+    f.Race.OnMeterReset()
+    assertEqual(f.Race.State(), "idle")
+    assertEqual(#f.heard.states, 0)
+    assertEqual(#f.NS.Recorder.All(), 0)
+    -- Armed: combat without the session event leaves it armed.
+    assertTrue(f:arm(30))
+    f.Race.OnCombatStart(101)
+    f.Race.OnCombatEnd(102)
+    f.Race.OnCast("start", 1, 102)
+    assertEqual(f.Race.State(), "armed")
+end)
+
+-- ── diagnostics ─────────────────────────────────────────────────────────────────────────────────
+
+test("race: the diagnostics state section names the race state, run, session and pending count", function()
+    local f, run = running(30)
+    local lines = {}
+    local out = { add = function(_, _, fmt, ...)
+        local args = { ... }
+        for i = 1, select("#", ...) do args[i] = tostring(args[i]) end
+        lines[#lines + 1] = fmt:format(unpack(args, 1, select("#", ...)))
+    end }
+    for _, section in ipairs(f.NS.Diagnostics.Sections()) do
+        if section[1] == "state" then section[2](out) end
+    end
+    local want = ("race state=running run=%s session=25 pending=1 meter=true"):format(run.id)
+    local found = false
+    for _, l in ipairs(lines) do if l == want then found = true end end
+    assertTrue(found, "no race line; got: " .. table.concat(lines, " | "))
+end)

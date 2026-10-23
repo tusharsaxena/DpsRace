@@ -83,6 +83,8 @@ modules\Meter.lua
 modules\Recorder.lua
 modules\Timeline.lua
 modules\Scoring.lua
+modules\Race.lua
+modules\Watchers.lua
 modules\Placeholders.lua
 modules\Diagnostics.lua
 

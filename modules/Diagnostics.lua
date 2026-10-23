@@ -34,6 +34,10 @@ function NS.Diagnostics.Sections()
                 return
             end
             out:add("Diag", "runs stored=%s", countRuns())
+            local run = NS.Race.Current()
+            out:add("Diag", "race state=%s run=%s session=%s pending=%s meter=%s", NS.Race.State(),
+                run and run.id, run and run.race and run.race.sessionID, #NS.Recorder.Pending(),
+                (NS.Meter.IsAvailable()))
             out:add("Diag", "hud shown=%s results shown=%s testMode=%s", NS.Hud.IsShown(),
                 NS.Results.IsShown(), NS.Preview.IsActive())
         end },

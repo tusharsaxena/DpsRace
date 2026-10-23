@@ -80,6 +80,8 @@ local SUITES = {
     "test_recorder",
     "test_timeline",
     "test_scoring",
+    "test_race",
+    "test_race_resume",
     "test_schema",
     "test_slash",
     "test_launcher",

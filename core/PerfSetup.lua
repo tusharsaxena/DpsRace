@@ -30,6 +30,7 @@ NS.Perf = lib:New({
     -- engine (T2-T6) and the HUD (T7) add theirs beside it, each reached by a real bracket.
     buckets = {
         { key = "combatEvent" },     -- PLAYER_REGEN_* in core/DpsRace.lua
+        { key = "raceEvent" },       -- every race event in modules/Watchers.lua
     },
     -- The latch the capture's suspended arm takes its `perf` hold on. suspend/resume are NOT passed:
     -- the latch's standDown/standUp (core/LifecycleSetup.lua) are the one teardown.

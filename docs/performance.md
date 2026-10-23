@@ -12,6 +12,7 @@ test when capture is off.
 | Bucket | Path | Why it is hot |
 |---|---|---|
 | `combatEvent` | `NS:OnCombatChanged` in `core/DpsRace.lua` (`PLAYER_REGEN_DISABLED`, and `PLAYER_REGEN_ENABLED` when visibility needs it) | It runs on every combat edge |
+| `raceEvent` | the event handler in `modules/Watchers.lua`: every meter, combat, death and cast event while a race is armed, running or stopping | `DAMAGE_METER_COMBAT_SESSION_UPDATED` and the cast events fire throughout a run |
 
 That is the scaffold's only combat path. The spec's design budget (§10) names what later tasks add
 and bracket, each in the change that adds it:
@@ -19,8 +20,10 @@ and bracket, each in the change that adds it:
 - the live breakdown read, throttled to `live.hz` (4 Hz by default), only while the HUD's Running
   body is visible, coalesced from `DAMAGE_METER_COMBAT_SESSION_UPDATED` and never run from
   `OnUpdate` (T7);
-- the countdown text's one `OnUpdate` at 20 Hz, attached only while Running or Stopping (T7);
-- the meter and cast event handlers (T5).
+- the countdown text's one `OnUpdate` at 20 Hz, attached only while Running or Stopping (T7).
+
+The race's own timers are one buzzer (`C_Timer.NewTimer`) while running and one 0.5 s readiness
+poll (`C_Timer.NewTicker`) while stopping; neither exists while idle, and the stand-down cancels both.
 
 While idle the addon should run nothing but the combat-edge handler.
 

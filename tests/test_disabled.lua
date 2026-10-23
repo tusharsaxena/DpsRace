@@ -340,3 +340,89 @@ test("Disabled: a profile switch re-reads the stored switch while disabled", fun
     NS.db:SetProfile("Default")
     assertTrue(NS.IsDisabled(), "switching back re-took the hold")
 end)
+
+-- ── the race watchers (T5) ──────────────────────────────────────────────────────────────────────
+-- Watchers registers nothing while idle, so the baseline scene above never sees it. These cases arm
+-- and run a race first, so the meter, combat and cast events are live when the addon is disabled.
+
+local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
+
+--- The rows on the Watchers frame, as "event|unit".
+local function watcherRows(inst)
+    local frame, out = inst.NS.Watchers.Frame(), {}
+    for _, r in ipairs(inst.mocks.__registrations()) do
+        if frame and r.target == frame then out[#out + 1] = tostring(r.event) .. "|" .. tostring(r.unit) end
+    end
+    table.sort(out)
+    return out
+end
+
+test("Disabled (race): Watchers holds no registrations and Race does nothing while disabled", function()
+    -- red under: drop "Watchers" from the stand-down list in core/LifecycleSetup.lua
+    local f = RaceClock.new()
+    local NS, M = f.NS, f.M
+    assertEqual(#watcherRows(f.inst), 0, "idle: Watchers watches nothing")
+    assertTrue(f:arm(30))
+    local armed = watcherRows(f.inst)
+    assertTrue(#armed > 0, "armed: the meter and combat events are live")
+    f:start(25)
+    local run = NS.Race.Current()
+    assertTrue(#watcherRows(f.inst) > #armed, "running: the player's cast events join them")
+
+    M.__resetPrinted()
+    assertTrue(NS.SetByPath("enabled", false))
+    assertEqual(#watcherRows(f.inst), 0, "still registered: " .. table.concat(watcherRows(f.inst), ", "))
+    assertEqual(#regKeys(f.inst), 0)
+    assertEqual(#M.__timers(), 0, "the buzzer or the poll survived the stand-down")
+    assertEqual(NS.Race.State(), "idle")
+
+    -- Every event fired anyway, straight at the Watchers frame, and every input called directly.
+    local events = { "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_COMBAT_SESSION_UPDATED",
+                     "DAMAGE_METER_RESET", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_DEAD",
+                     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED" }
+    for _, event in ipairs(events) do
+        assertEqual(M.__fireUnconditional(NS.Watchers.Frame(), event, "player", 25, 25), 1, event)
+    end
+    NS.Race.OnSessionCreated(150)
+    NS.Race.OnMeterReset()
+    NS.Race.OnCombatEnd(150)
+    f:advance(60)
+    assertEqual(run.status, "running", "the stored run was left exactly as it was")
+    assertEqual(NS.Race.State(), "idle")
+    assertEqual(#f.heard.buzzers, 0)
+    local ok, why = NS.Race.Arm(30)
+    assertFalse(ok)
+    assertEqual(why, "disabled")
+    assertEqual(#M.__printed(), 0, "the race printed while disabled")
+
+    -- Standing back up resumes the stored run from its own status (spec §4.5), cast events and all.
+    assertTrue(NS.SetByPath("enabled", true))
+    assertEqual(NS.Race.State(), "stopping")
+    assertTrue(run.flags.reloaded)
+    assertTrue(#watcherRows(f.inst) > #armed)
+end)
+
+test("Disabled (race): an armed race is dropped by the stand-down and not resumed", function()
+    local f = RaceClock.new()
+    local NS = f.NS
+    assertTrue(f:arm(30))
+    NS.Lifecycle:Hold(NS.HOLD_PERF)
+    assertEqual(#watcherRows(f.inst), 0, "the perf hold took the registrations too")
+    assertEqual(NS.Race.State(), "idle")
+    NS.Lifecycle:Release(NS.HOLD_PERF)
+    assertEqual(NS.Race.State(), "idle", "an armed run was never stored, so nothing resumes")
+    assertEqual(#watcherRows(f.inst), 0)
+end)
+
+test("Disabled (race): a disabled login resumes nothing until the addon is enabled", function()
+    local f = RaceClock.new{ enable = false }
+    local NS = f.NS
+    f.meter.SetSession(25, RaceClock.SESSION)
+    NS.db.global.runs["1-1000"] = RaceClock.storedRun({ id = "1-1000", status = "stopping" })
+    assertTrue(NS.SetByPath("enabled", false))
+    f:enable()
+    assertEqual(NS.Race.State(), "idle")
+    assertEqual(NS.db.global.runs["1-1000"].status, "stopping", "untouched while disabled")
+    assertTrue(NS.SetByPath("enabled", true))
+    assertEqual(NS.db.global.runs["1-1000"].status, "complete", "read at the stand-up edge")
+end)

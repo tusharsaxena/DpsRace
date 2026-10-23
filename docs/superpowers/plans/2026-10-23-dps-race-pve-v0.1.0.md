@@ -40,7 +40,7 @@ The **UI** (HUD, Results window, settings pages) listens on the message bus and 
 | T2 Secrets + Meter adapter | M2 | [x] |
 | T3 Dummy catalog + Recorder | M2 | [x] |
 | T4 Timeline + Scoring (pure) | M2 | [x] |
-| T5 Race state machine + Watchers | M2 | [ ] |
+| T5 Race state machine + Watchers | M2 | [x] |
 | T6 Bests + pruning | M2 | [ ] |
 | T7 Race HUD | M3 | [ ] |
 | T8 Results window | M3 | [ ] |

@@ -77,13 +77,17 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` (T5) | `run, fromState, toState` | HUD (T7), Results (T8) |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | HUD (T7), Results (T8) |
+| `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | HUD's STOP, sound and raid warning (T7) |
+| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | HUD's result card (T7), Results (T8) |
 | `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | Bests cache and pruning (T6), Results list (T8) |
 | `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | Bests cache (T6), Results list (T8) |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | none in the scaffold |
 
-T5 adds `RACE_BUZZER(run)` and `RACE_RESULT(run)`. Four messages today; the Tier 2 `message-bus.md`
-trigger is more than ten.
+Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
+`modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
+watchers are the race's event wiring, and their registration set must follow the state on the same
+call, with or without the bus library.
 
 ## Slash Commands
 
@@ -121,9 +125,21 @@ from current settings on every stand-up (slash-commands-§7).
 | `PLAYER_REGEN_DISABLED` | always while standing up | `NS:OnCombatChanged` (`core/DpsRace.lua`) | combat ends test mode; refreshes the HUD's show decision |
 | `PLAYER_REGEN_ENABLED` | only while `visibility` is `inCombat` or `outOfCombat` | `NS:OnCombatChanged` | the show decision needs the leaving edge |
 
-T5's `modules/Watchers.lua` adds the meter events (`DAMAGE_METER_*`), the combat edges and
-`PLAYER_DEAD`, and registers the three `UNIT_SPELLCAST_*` events for `player` only while a run is
-RUNNING or STOPPING. The pipeline from event to screen: [data-flow.md](data-flow.md).
+`modules/Watchers.lua` registers on its own frame, through the same `SafeRegister*` family, only
+while a race needs it. Nothing is registered while the race is idle or showing a result, and nothing
+while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and the stand-up's
+`Watchers.Resume()` rebuilds the set from the race's current state.
+
+| Event | Registered | Handler | Why |
+|---|---|---|---|
+| `DAMAGE_METER_CURRENT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnSessionCreated` | the clock starts on the new session (spec §4.2) |
+| `DAMAGE_METER_COMBAT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnMeterUpdate` | names the run's session; each update is a timeline stamp (tail, restart, quiet) |
+| `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
+| `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
+| `PLAYER_DEAD` | ARMED, RUNNING, STOPPING | `Race.OnDeath` | the `died` flag; incomplete before the buzzer |
+| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_SUCCEEDED` (`player`) | RUNNING, STOPPING | `Race.OnCast` | late casts after the grace (spec §5.2) |
+
+The pipeline from event to screen: [data-flow.md](data-flow.md).
 
 ## Taint Notes
 

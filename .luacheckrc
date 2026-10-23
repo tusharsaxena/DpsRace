@@ -57,6 +57,9 @@ files["modules/Recorder.lua"] = {
     },
 }
 
+-- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
+files["modules/Race.lua"] = { read_globals = { "time" } }
+
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
 

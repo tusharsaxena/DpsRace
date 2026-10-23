@@ -17,9 +17,9 @@ local function standDown()
         if addon.CancelAllTimers then addon:CancelAllTimers() end
     end
     NS.BusStandDown()
-    -- Each feature module stands down on its own terms: the placeholders today, the real HUD,
-    -- Results window, preview and race watchers once their tasks replace them.
-    for _, name in ipairs({ "Preview", "Hud", "Results" }) do
+    -- Each feature module stands down on its own terms: the race (its timers and in-memory run), the
+    -- race watchers (every registration), and the HUD, Results window and preview.
+    for _, name in ipairs({ "Race", "Watchers", "Preview", "Hud", "Results" }) do
         local m = NS[name]
         if m and m.Suspend then m.Suspend() end
     end
@@ -30,7 +30,9 @@ end
 local function standUp()
     NS.BusStandUp()
     if NS.RegisterGameEvents then NS.RegisterGameEvents() end
-    for _, name in ipairs({ "Hud", "Results" }) do
+    -- The race resumes a stored run from its own status (spec §4.5, as after a /reload); the
+    -- watchers then register for the state it lands in.
+    for _, name in ipairs({ "Race", "Watchers", "Hud", "Results" }) do
         local m = NS[name]
         if m and m.Resume then m.Resume() end
     end

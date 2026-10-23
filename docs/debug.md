@@ -64,8 +64,9 @@ alias reaches both). There is no `diag` or `dump`; those are ordinary unknown wo
 - **rejected**: event names the client refused at registration (`NS.rejectedEvents`).
 - The end marker, `[Diag] ==== Ka0s DPS Race diagnostics end: N line(s) ====`.
 
-T5 and later add domain sections (the current run's state and session ID, pending runs, the meter's
-availability).
+The **state** section also carries the race line: `race state=<state> run=<id> session=<id>
+pending=<n> meter=<available>` (the race's state, the current run and its session, the stored runs
+still running or stopping, and whether Blizzard's meter is available). Later tasks add their own.
 
 ### Caps
 

@@ -14,7 +14,7 @@ Total.
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
 - skeleton: the DB defaults load (global.runs empty, global.schema 1, schemaVersion stamped)
-- skeleton: NS.MSG declares the four bus names, each Ka0s_DpsRace_<PascalCase>
+- skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
 - skeleton: every authored Lua file opens with the NS bootstrap and a path comment
@@ -104,6 +104,55 @@ Total.
 - scoring: Flags names late-cast spells through an optional resolver
 - scoring: a clean complete run has no flags; lost stands alone at the end
 
+### test_race.lua (35)
+
+- race: the state names are the interface's
+- race: arm refuses in combat and while a run is pending
+- race: arm refuses while a stored run is pending, even when idle
+- race: arm refuses when meter unavailable
+- race: arm refuses a length outside 10s-15:00 and arms a valid one
+- race: session created starts the clock and persists the run as running
+- race: the target is re-read at combat start and the arm-time count is kept
+- race: sessionID captured from first DamageDone update with non-zero id
+- race: a DamageDone update heard just before the session event is adopted at the start
+- race: buzzer at start+length moves to stopping and emits RACE_BUZZER
+- race: cast started 0.5s after buzzer is not late at grace 1.0
+- race: cast started 1.4s after buzzer is recorded as late with spellID
+- race: cast that started before buzzer and succeeded after is not late
+- race: the grace in force is the run's own, not the profile's
+- race: combat end before buzzer -> incomplete with endedAt
+- race: death -> incomplete, died flag
+- race: death after the buzzer flags died and the run stays complete
+- race: result read only after combat end AND 2.5s quiet
+- race: no read while combat holds, however quiet the meter is
+- race: read uses ReadSession(sessionID), never Current
+- race: tail and combat end are stored relative to the buzzer
+- race: restart after a 10s gap sets flags.restartedAt
+- race: updates for another session never move the timeline
+- race: meter reset while stopping -> lost
+- race: meter reset while running -> lost, and the buzzer never goes
+- race: meter reset while armed forgets the arm-time sessions and keeps the arm
+- race: a session the client no longer holds is lost at the read
+- race: a read that stays sealed is retried, then lost
+- race: a read that raises is lost, not a Lua error
+- race: a session ID never captured falls back to the newest session after arming
+- race: no new session at all is lost
+- race: cancel in armed/running stores nothing; cancel in stopping discards
+- race: cancel on a result dismisses it and keeps the run; race again arms
+- race: inputs in the wrong state change nothing
+- race: the diagnostics state section names the race state, run, session and pending count
+
+### test_race_resume.lua (8)
+
+- resume: running past buzzer becomes stopping+reloaded
+- resume: running before buzzer keeps running with remaining time
+- resume: stopping out of combat reads immediately
+- resume: stopping in combat waits for the regen edge
+- resume: an incomplete run waiting for its read stays incomplete
+- resume: session gone becomes lost
+- resume: an older unresolved run is settled as lost; the newest is carried on
+- resume: nothing stored leaves the race idle and touches nothing
+
 ### test_schema.lua (14)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -148,7 +197,7 @@ Total.
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the two buttons, with no default key
 
-### test_disabled.lua (13)
+### test_disabled.lua (16)
 
 - Disabled 1: enabled, the addon registers something and shows something at all
 - Disabled 2+3: disabling through the write seam leaves NO registration behind
@@ -163,6 +212,9 @@ Total.
 - Disabled 9: re-enabling restores the set FROM CURRENT STATE, not a snapshot
 - Disabled 10: releasing ONE hold does not resurrect an addon the other holds down
 - Disabled: a profile switch re-reads the stored switch while disabled
+- Disabled (race): Watchers holds no registrations and Race does nothing while disabled
+- Disabled (race): an armed race is dropped by the stand-down and not resumed
+- Disabled (race): a disabled login resumes nothing until the addon is enabled
 
 ### test_surface_parity.lua (14)
 
@@ -273,10 +325,12 @@ Total.
 | test_recorder.lua | 19 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
+| test_race.lua | 35 |
+| test_race_resume.lua | 8 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
-| test_disabled.lua | 13 |
+| test_disabled.lua | 16 |
 | test_surface_parity.lua | 14 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
@@ -287,4 +341,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **193** |
+| **Total** | **239** |

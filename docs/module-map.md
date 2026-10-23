@@ -40,6 +40,8 @@ drift from what the client loads (testing-§9).
 | `modules/Recorder.lua` | `NS.Recorder`: the player, target and place snapshots (every value through `NS.Secrets`, so no secret reaches SavedVariables), `NewRun` with the scoring settings frozen in, and the run store (`Save`, `Get`, `All`, `Pending`, `Delete`, `DeleteAll`) that fires `RUN_SAVED` / `RUNS_CHANGED` | conventional (reached at call time) |
 | `modules/Timeline.lua` | `NS.Timeline`: pure. `New()` gives a run's damage-update timeline (`AddDamage`, `LastDamage`, `Tail`, `RestartAt`, `QuietFor`), stamps from `GetTime()` only | conventional (reached at call time) |
 | `modules/Scoring.lua` | `NS.Scoring`: pure. `IsLateCast`, `Dps` (damage over the race length, or over `endedAt` for an incomplete run), `QUIET_BEFORE_READ` and `Flags(run, nameOf?)` in display order | conventional (reached at call time) |
+| `modules/Race.lua` | `NS.Race`: the lifecycle state machine (`STATE`, `Arm`, `Cancel`, `Elapsed`, `TimeLeft`, `SinceBuzzer`), the buzzer timer, the 0.5s readiness poll while stopping, late casts, the read by session ID (with the session-list fallback), `Suspend` and the `/reload` `Resume`; sends `RACE_STATE_CHANGED`, `RACE_BUZZER`, `RACE_RESULT` | conventional (reached at call time) |
+| `modules/Watchers.lua` | `NS.Watchers`: the race's event frame. `Sync()` registers the meter, combat, death and (from RUNNING) the player's cast events for the race's state, nothing while idle or stood down; dispatches each to a `Race.On*` input with `GetTime()` | after `modules/Race.lua` by convention (reached at call time) |
 | `modules/Placeholders.lua` | stand-in `NS.Hud`, `NS.Results`, `NS.Preview`; T7, T8 and T9 replace them | conventional |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
@@ -56,7 +58,6 @@ From the plan's file map; each lands with its task and gets a row above in the s
 
 | File | Task | Job |
 |---|---|---|
-| `modules/Race.lua`, `modules/Watchers.lua` | T5 | state machine, clock, buzzer; event wiring |
 | `modules/Bests.lua` | T6 | personal bests and prune protection |
 | `modules/Format.lua`, `modules/Hud*.lua` | T7 | number formatting; the Race HUD |
 | `modules/Results*.lua` | T8 | the Results window |
@@ -69,6 +70,8 @@ From the plan's file map; each lands with its task and gets a row above in the s
 | `tests/run.lua` | the runner: load list from the TOC, lifecycle kick, suite list |
 | `tests/wow_mock.lua` | this addon's extender over `tests/_kit/mock_base.lua`, including the scriptable target (`M.__setTarget`) and the snapshot APIs |
 | `tests/mock_meter.lua` | the scripted `C_DamageMeter`: secret while the combat restriction is on, plain after, sessions by ID |
+| `tests/race_clock.lua` | the Race suites' fixture: an instance on the scripted meter, a fake clock that fires `C_Timer` timers and tickers at their due `GetTime()`, and drivers for Race's inputs |
+| `tests/prose_waivers.lua` | the US-spelling gate's per-file, per-word waivers (the kit's own spelling of its timer-cancel field) |
 | `tests/test_*.lua` | the suites (see [testing.md](testing.md)) |
 | `probe/DpsRaceProbe/` | the pre-build measurement addon; excluded by `.luacheckrc` and `.pkgmeta` |
 | `media/logos/*.png`, `*.jpg` | the editable logo sources; `.pkgmeta` excludes them |
