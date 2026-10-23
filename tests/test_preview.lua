@@ -69,6 +69,8 @@ test("preview: the test strip says so on the display while it is on, and only th
     assertTrue(f.Preview.Start())
     local strip = assert(ui(f).strip, "no test strip on the HUD")
     assertTrue(strip:IsShown())
+    -- standalone-windows: one localized line saying what test mode shows and what ends it.
+    assertEqual(strip.text:GetText(), "Test mode: sample numbers. Combat or Arm ends it")
     assertEqual(ui(f).frame.title.__text, "DPS Race", "one marker per mode: the strip, not the title too")
     f.Preview.Stop()
     assertFalse(strip:IsShown())

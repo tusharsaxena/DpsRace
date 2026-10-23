@@ -504,7 +504,8 @@ function Hud.TitleText() return titleText() end
 local function ensureStrip()
     if ui.stripTried then return ui.strip end
     ui.stripTried = true
-    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: these numbers are not yours"])
+    -- What test mode shows and what ends it, in one line short enough for the minimum width.
+    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"])
     if strip then
         strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + 1))
         strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + 1))

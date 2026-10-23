@@ -213,7 +213,7 @@ timer or `OnUpdate`.
   `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
   holds until test mode ends. The engine never moves and nothing is stored.
 - **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
-  these numbers are not yours*) under the title bar and moves the content down by its height; with no
+  sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
   Widgets library the title reads *DPS Race · TEST* instead, never both.
 - **Off**: its own switch, *Reset all settings* (the row's `default = false`), combat
   (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
