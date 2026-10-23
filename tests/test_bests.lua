@@ -71,6 +71,7 @@ test("bests: cleanOnly excludes flagged", function()
         run("restart", 2, 850, { flags = { lateCasts = {}, restartedAt = 14.2 } }),
         run("reload", 3, 800, { flags = { lateCasts = {}, reloaded = true } }),
         run("died", 4, 750, { flags = { lateCasts = {}, died = true } }),
+        run("byList", 6, 700, { flags = { lateCasts = {}, sessionFromList = true } }),
         run("clean", 5, 500),
     }
     assertEqual(NS.Bests.Compute(runs)["267|boss|30"].id, "late", "flags inform, never void")

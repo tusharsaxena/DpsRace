@@ -607,6 +607,10 @@ test("race: a session ID never captured falls back to the newest session after a
     assertEqual(run.race.sessionID, 25)
     assertTrue(run.flags.sessionFromList)
     assertEqual(run.result.damage, F.SESSION.damage)
+    local flags = f.NS.Scoring.Flags(run)
+    assertEqual(#flags, 1, "the guessed session is shown, so the run is not clean")
+    assertEqual(flags[1].key, "sessionFromList")
+    assertEqual(flags[1].text, "Session matched by list")
 end)
 
 test("race: no new session at all is lost", function()

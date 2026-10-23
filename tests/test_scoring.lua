@@ -60,18 +60,19 @@ test("scoring: Flags order and text", function()
         result = { endedAt = 12.5 },
         flags = {
             lateCasts = { { t = 1.4, spellID = 29722 }, { t = 2.0, spellID = 17962 } },
-            restartedAt = 14.2, reloaded = true, died = true,
+            restartedAt = 14.2, reloaded = true, sessionFromList = true, died = true,
         },
     })
     local f = S.Flags(r)
-    local want = { "lateCasts", "restarted", "reloaded", "died", "incomplete" }
+    local want = { "lateCasts", "restarted", "reloaded", "sessionFromList", "died", "incomplete" }
     assertEqual(#f, #want)
     for i, key in ipairs(want) do assertEqual(f[i].key, key) end
     assertEqual(f[1].text, "2 late casts (+1.4s, +2.0s)")
     assertEqual(f[2].text, "Damage restarted at +14.2s")
     assertEqual(f[3].text, "Reloaded mid-run: casts after the buzzer not tracked")
-    assertEqual(f[4].text, "Died during the run")
-    assertEqual(f[5].text, "Incomplete: combat ended before the buzzer")
+    assertEqual(f[4].text, "Session matched by list")
+    assertEqual(f[5].text, "Died during the run")
+    assertEqual(f[6].text, "Incomplete: combat ended before the buzzer")
     for _, flag in ipairs(f) do assertTrue(type(flag.text) == "string" and flag.text ~= "") end
     assertEqual(L["Damage restarted at +%.1fs"], "Damage restarted at +%.1fs", "the text is a locale key")
 end)

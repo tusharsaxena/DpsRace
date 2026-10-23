@@ -57,8 +57,8 @@ local function lateCastsText(list, nameOf)
     return NS.L["%d late casts (%s)"]:format(#list, joined)
 end
 
---- The run's flags as an array of { key, text }, in the order: lateCasts, restarted, reloaded, died,
---- incomplete, lost. `nameOf(spellID) -> name|nil` is optional: the caller (the UI) resolves spell
+--- The run's flags as an array of { key, text }, in the order: lateCasts, restarted, reloaded,
+--- sessionFromList (spec §9: the session ID was never captured), died, incomplete, lost. `nameOf(spellID) -> name|nil` is optional: the caller (the UI) resolves spell
 --- names through C_Spell, so this file stays pure; without it a late cast shows its offset only.
 function Scoring.Flags(run, nameOf)
     local L, out = NS.L, {}
@@ -71,6 +71,7 @@ function Scoring.Flags(run, nameOf)
         add("restarted", L["Damage restarted at +%.1fs"]:format(flags.restartedAt))
     end
     if flags.reloaded then add("reloaded", L["Reloaded mid-run: casts after the buzzer not tracked"]) end
+    if flags.sessionFromList then add("sessionFromList", L["Session matched by list"]) end
     if flags.died then add("died", L["Died during the run"]) end
     local status = type(run) == "table" and run.status or nil
     if status == "incomplete" then add("incomplete", L["Incomplete: combat ended before the buzzer"]) end
