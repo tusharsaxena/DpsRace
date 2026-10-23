@@ -370,11 +370,15 @@ end)
 
 local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
 
---- The rows on the Watchers frame, as "event|unit".
+--- The rows on the Watchers' two registrants (its AceEvent target and its unit-filter frame), as
+--- "event|unit".
 local function watcherRows(inst)
-    local frame, out = inst.NS.Watchers.Frame(), {}
+    local W, out = inst.NS.Watchers, {}
+    local frame, target = W.Frame(), W.EventTarget()
     for _, r in ipairs(inst.mocks.__registrations()) do
-        if frame and r.target == frame then out[#out + 1] = tostring(r.event) .. "|" .. tostring(r.unit) end
+        if (frame and r.target == frame) or (target and r.target == target) then
+            out[#out + 1] = tostring(r.event) .. "|" .. tostring(r.unit)
+        end
     end
     table.sort(out)
     return out
@@ -399,12 +403,14 @@ test("Disabled (race): Watchers holds no registrations and Race does nothing whi
     assertEqual(#M.__timers(), 0, "the buzzer or the poll survived the stand-down")
     assertEqual(NS.Race.State(), "idle")
 
-    -- Every event fired anyway, straight at the Watchers frame, and every input called directly.
+    -- Every event fired anyway, straight at the Watchers' registrants, and every input called directly.
     local events = { "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_COMBAT_SESSION_UPDATED",
-                     "DAMAGE_METER_RESET", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_DEAD",
-                     "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED",
-                     "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
+                     "DAMAGE_METER_RESET", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_DEAD" }
     for _, event in ipairs(events) do
+        assertEqual(M.__fireUnconditional(NS.Watchers.EventTarget(), event, 0, 25), 1, event)
+    end
+    for _, event in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_EMPOWER_START", "UNIT_SPELLCAST_SUCCEEDED",
+                             "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }) do
         assertEqual(M.__fireUnconditional(NS.Watchers.Frame(), event, "player", 25, 25), 1, event)
     end
     NS.Race.OnSessionCreated(150)

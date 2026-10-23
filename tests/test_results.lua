@@ -287,6 +287,14 @@ test("results: timing strip positions buzzer, grace, tail, late casts, combat en
 
     run.result.tail = 14
     assertEqual(Detail.Timing(run).span, 18, "a long tail widens the axis")
+    -- No combat end heard (a resumed run): the restart and the late casts still size the axis.
+    local gap = mkRun("e", {
+        result = { damage = 1, dps = 1, tail = 1.2 },
+        flags = { lateCasts = { { t = 15, spellID = 348 } }, restartedAt = 14 },
+    })
+    local mg = Detail.Timing(gap)
+    assertEqual(mg.span, 18, "a mark after a missing combat end was skipped")
+    assertTrue(mg.restart < 1 and mg.late[1] < 1, "a mark clamped to the strip's edge")
     local inc = mkRun("b", { status = "incomplete", result = { damage = 1, dps = 1, endedAt = 90 } })
     local mi = Detail.Timing(inc)
     assertEqual(mi.raceFill, 0.5)
@@ -306,6 +314,15 @@ test("results: timing strip positions buzzer, grace, tail, late casts, combat en
     assertTrue(d.w.combatEnd:IsShown())
     assertEqual(d.w.tailLine.__text, "Damage stopped +9.0s after the buzzer \194\183 combat ended +7.5s")
     assertEqual(d.w.axisRight.__text, "+12s")
+end)
+
+test("results: the detail lists every spell of the run, not a capped top few", function()
+    local i = inst()
+    local spells = {}
+    for n = 1, 45 do spells[n] = { id = 1000 + n, dmg = 100 - n, dps = 1 } end
+    seed(i, { mkRun("a", { spells = spells }) })
+    i.R.ShowRun("a")
+    assertEqual(#ui(i).detail.w.list.rows, 45, "the ability breakdown is the full list (spec §6.2)")
 end)
 
 test("results: detail flags name late-cast spells and the session matched by list", function()

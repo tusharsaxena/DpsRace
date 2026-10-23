@@ -71,7 +71,7 @@ test("resume: stopping out of combat reads immediately", function()
     assertEqual(run.status, "complete")
     assertEqual(run.result.damage, F.SESSION.damage)
     assertEqual(#f.heard.results, 1)
-    assertFalse(run.flags.reloaded, "a stopping run is not re-flagged")
+    assertTrue(run.flags.reloaded, "a reload between the buzzer and the read missed what was cast")
     assertEqual(f.clock.live(), 0, "nothing left polling")
 end)
 
@@ -161,6 +161,39 @@ local function reloadAt(f, run, at, inCombat)
     f:to(at)
     return reload(run, { now = at, inCombat = inCombat })
 end
+
+test("resume: a stopping run that ended before its buzzer is not flagged reloaded", function()
+    local run = F.storedRun({ status = "stopping", result = { endedAt = 12 } })
+    reload(run, { now = 160 })
+    assertFalse(run.flags.reloaded, "it never reached its buzzer")
+end)
+
+test("resume: a run another character left pending is not resumed here", function()
+    local run = F.storedRun({ status = "stopping" })
+    run.char = { name = "Otherchar", realm = "Testrealm" }
+    local f = reload(run, { now = 160 })
+    assertEqual(f.Race.State(), "idle", "another character's run was resumed")
+    assertEqual(run.status, "stopping", "left pending for its own character")
+    assertTrue(f:arm(30), "another character's pending run blocks the arm")
+end)
+
+test("resume: a reload that outlasts the restart gap while DoTs tick is not a restart", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f:start(25)
+    f:to(131)
+    f:update(25)                           -- the last update heard before the reload, +1s
+    local g = reloadAt(f, run, 138, true)  -- the loading screen took 7s: resumed at 138
+    g:to(138.2)
+    g:update(25)                           -- the first update heard after it: 7.2s after the last
+    g:to(140)
+    g:update(25)
+    g:combatEnd()
+    g:advance(3)
+    assertEqual(run.status, "complete")
+    assertNil(run.flags.restartedAt, "the gap spans the reload, not a stop in the damage")
+end)
 
 test("resume: the tail and a restart heard before a /reload survive it", function()
     local f = F.new()

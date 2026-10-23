@@ -23,7 +23,6 @@ Detail.NOTE_MAX = 200       -- characters (spec §6.2)
 Detail.STRIP_GAP = 3        -- the gap between the race and the after-the-buzzer segments
 Detail.STRIP_RATIO = 1.2    -- the race segment's share against the after-buzzer one's 1 (mockup)
 Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this, at least two steps
-Detail.MAX_SPELLS = 40
 
 local PADX = 12
 local BUTTON_H = 22
@@ -64,11 +63,34 @@ local function clamp01(x)
 end
 
 -- The after-buzzer axis: long enough for every mark, in whole steps, at least two of them.
-local function spanFor(marks)
+-- `marks` is a list whose entries may be nil (a mark the run does not have): walked to `n`, never
+-- with ipairs, which would stop at the first hole.
+local function spanFor(marks, n)
     local top = 0
-    for _, v in ipairs(marks) do if type(v) == "number" and v > top then top = v end end
+    for i = 1, n do
+        local v = marks[i]
+        if type(v) == "number" and v > top then top = v end
+    end
     local step = Detail.SPAN_STEP
     return math.max(2 * step, step * math.ceil(top / step))
+end
+
+-- The after-buzzer half of the model: the axis span, then each mark as a fraction of it.
+local function afterBuzzer(m, grace, result, flags)
+    local tail, late = result.tail or 0, flags.lateCasts or {}
+    local marks, n = { grace, tail, result.combatEnd, flags.restartedAt }, 4
+    for _, cast in ipairs(late) do
+        n = n + 1
+        marks[n] = cast.t
+    end
+    m.span = spanFor(marks, n)
+    m.grace, m.tail = clamp01(grace / m.span), clamp01(tail / m.span)
+    m.combatEnd = result.combatEnd and clamp01(result.combatEnd / m.span)
+    m.restart = flags.restartedAt and clamp01(flags.restartedAt / m.span)
+    for i, cast in ipairs(late) do
+        m.late[i] = clamp01((cast.t or 0) / m.span)
+        m.lateAt[i] = cast.t
+    end
 end
 
 --- The strip as fractions of its two segments: the race (start to buzzer) and the time after the
@@ -88,17 +110,7 @@ function Detail.Timing(run)
         return m
     end
     m.raceFill = 1
-    local grace, tail = race.grace or 0, result.tail or 0
-    local marks = { grace, tail, result.combatEnd, flags.restartedAt }
-    for _, cast in ipairs(flags.lateCasts or {}) do marks[#marks + 1] = cast.t end
-    m.span = spanFor(marks)
-    m.grace, m.tail = clamp01(grace / m.span), clamp01(tail / m.span)
-    m.combatEnd = result.combatEnd and clamp01(result.combatEnd / m.span)
-    m.restart = flags.restartedAt and clamp01(flags.restartedAt / m.span)
-    for i, cast in ipairs(flags.lateCasts or {}) do
-        m.late[i] = clamp01((cast.t or 0) / m.span)
-        m.lateAt[i] = cast.t
-    end
+    afterBuzzer(m, race.grace or 0, result, flags)
     return m
 end
 
@@ -402,7 +414,7 @@ function Pane:Show(run)
     self:fillHeader(run)
     self:fillScore(run)
     local spells = Detail.SortedSpells(run)
-    self.w.list:ShowResult({ spells = spells, result = run.result }, math.min(#spells, Detail.MAX_SPELLS), true)
+    self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
     self:fillFlags(run)
     self.noteText = type(run.note) == "string" and run.note ~= "" and L["Note: %s"]:format(run.note) or ""

@@ -65,7 +65,7 @@ local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_
 local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
 
 local ui                       -- the built window
-local events                   -- the event frame (nil until first shown)
+local events                   -- this module's AceEvent target (nil until first shown)
 local registered = "none"      -- "none" | "idle" | "live"
 local ticking, tickAcc = false, 0
 local liveTimer, lastRead, liveData
@@ -634,7 +634,8 @@ local function requestLive()
     liveTimer = C_Timer.NewTimer(wait, readLive)
 end
 
-local function onEvent(_, event)
+-- An AceEvent function handler: (event, ...).
+local function onAceEvent(event)
     if NS.IsStoodDown() then return end
     if event == METER_EVENT then return requestLive() end
     if event == "PLAYER_TARGET_CHANGED" then pick.target, pick.count = nil, nil end
@@ -654,13 +655,12 @@ local function syncEvents()
     if events then events:UnregisterAllEvents() end
     registered = want
     if want == "none" then return end
-    if not events then
-        events = CreateFrame("Frame")
-        events:SetScript("OnEvent", onEvent)
-    end
-    for _, event in ipairs(BASE_EVENTS) do NS.SafeRegisterEvent(events, event, nil, NS.rejectedEvents) end
+    -- Its own AceEvent target (events-frames-taint-§1): keyed apart from the addon object and
+    -- modules/Watchers.lua, so the same PLAYER_REGEN_* on each never clobbers another's handler.
+    if not events then events = LibStub("AceEvent-3.0"):Embed({}) end
+    for _, event in ipairs(BASE_EVENTS) do NS.SafeRegisterEvent(events, event, onAceEvent, NS.rejectedEvents) end
     if want == "live" then
-        NS.SafeRegisterEvent(events, METER_EVENT, nil, NS.rejectedEvents)
+        NS.SafeRegisterEvent(events, METER_EVENT, onAceEvent, NS.rejectedEvents)
         requestLive()
     end
 end
@@ -817,6 +817,9 @@ local function onState(_, from, to)
         pick.editing = false
         autoShow()
     end
+    -- Straight from idle into a live race is the /reload (or stand-up) resume: its HUD comes back
+    -- as the arm's did, and closes with the race the same way.
+    if from == St.IDLE and (to == St.RUNNING or to == St.STOPPING) then autoShow() end
     if to == St.RUNNING then scheduleCues() else cancelCues() end
     if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode") == "onArm" then
         Hud.wanted, autoShown = false, false

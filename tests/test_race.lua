@@ -210,6 +210,37 @@ test("race: a session event heard out of combat does not start the clock", funct
     near(f.Race.Elapsed(), 0)
 end)
 
+test("race: a DamageDone update for a stray session heard out of combat is never adopted at the start", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    -- A groupmate's pull nearby: session 31, its update, the player never in combat.
+    f.Race.OnSessionCreated(100)
+    f.Race.OnMeterUpdate(0, 31, 100)
+    f:to(110)
+    assertEqual(f.Race.State(), "armed")
+    -- The real pull on session 32.
+    f:start(32)
+    assertEqual(f.Race.State(), "running")
+    assertEqual(f.Race.Current().race.sessionID, 32, "the stray session 31 was adopted")
+end)
+
+test("race: the target is re-read at the combat that starts the clock, not an earlier one", function()
+    local f = F.new()
+    f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = "Cleave Training Dummy" })
+    assertTrue(f:arm(30))
+    -- A stray mob aggroes the player; combat drops; the race is still armed.
+    f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-99999-0000ABCDEF", name = "Stray Mob" })
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(100)
+    f.M.__inCombat = false
+    f.Race.OnCombatEnd(101)
+    assertEqual(f.Race.State(), "armed")
+    f:to(110)
+    f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243205-0000ABCDEF", name = "Reinforced Golem" })
+    f:start(25)
+    assertEqual(f.Race.Current().target.npcID, 243205, "the stray combat's target was kept")
+end)
+
 test("race: a session event with the regen edge on an earlier frame does not start the clock", function()
     local f = F.new()
     assertTrue(f:arm(30))
@@ -226,6 +257,18 @@ test("race: a buzzer heard out of combat with the regen edge missed is still rea
     assertEqual(f.Race.State(), "result", "the poll notices combat is over")
     assertTrue(run.status == "complete" or run.status == "incomplete", run.status)
     assertEqual(f.clock.live(), 0)
+end)
+
+test("race: an empowered cast held across the buzzer is never late", function()
+    local f = running(30)
+    local frame = f.NS.Watchers.Frame()
+    f:to(129.5)                                -- Fire Breath starts charging 0.5s before the buzzer
+    assertEqual(f.M.__fireUnconditional(frame, "UNIT_SPELLCAST_EMPOWER_START", "player", "Cast-1", 357208), 1)
+    f:to(131.5)                                -- released 1.5s after it (grace 1.0)
+    assertEqual(f.M.__fireUnconditional(frame, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", 357208), 1)
+    assertEqual(#f.Race.Current().flags.lateCasts, 0, "the release was judged as an instant")
+    f.M.__fireUnconditional(frame, "UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-2", 361469)
+    assertEqual(#f.Race.Current().flags.lateCasts, 1, "a fresh instant after it is still judged")
 end)
 
 -- ── the buzzer ──────────────────────────────────────────────────────────────────────────────────

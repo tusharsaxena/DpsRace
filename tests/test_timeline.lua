@@ -1,5 +1,5 @@
 -- tests/test_timeline.lua — modules/Timeline.lua: the run session's damage-update timeline (spec §5.3),
--- its tail after the buzzer, the damage-restarted check and the quiet time before the result read.
+-- its tail after the buzzer, the damage-restarted check and a gap that spans a /reload's resume.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertNil, assertNear =
@@ -68,11 +68,12 @@ test("timeline: no damage after the buzzer gives tail 0 and no restart", functio
     assertNil(empty:LastDamage())
 end)
 
-test("timeline: QuietFor with no damage is huge", function()
-    local tl = T.NS.Timeline.New()
-    assertEqual(tl:QuietFor(BUZZER), math.huge)
-    tl:AddDamage(BUZZER + 1.3)
-    assertNear(tl:QuietFor(BUZZER + 3.8), 2.5, 1e-6)
+test("timeline: a gap that spans a resume is measured from the resume", function()
+    local tl = timeline({ 1.0, 8.2, 9.0 })     -- a /reload from 1.0 to a resume at 8.0
+    assertNil(tl:RestartAt(BUZZER, 6, BUZZER + 8), "the loading screen is not a stop in the damage")
+    assertNear(tl:RestartAt(BUZZER, 6), 8.2, 1e-6, "without the resume it is a restart")
+    local real = timeline({ 1.0, 9.5 })        -- resumed at 2.0, quiet 7.5s after it: a restart
+    assertNear(real:RestartAt(BUZZER, 6, BUZZER + 2), 9.5, 1e-6)
 end)
 
 test("timeline: an out-of-order or non-number update is handled", function()

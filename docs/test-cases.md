@@ -62,7 +62,7 @@ Total.
 - dummies: six categories in order, each with an enUS label
 - dummies: every cataloged category is one of the six
 
-### test_recorder.lua (19)
+### test_recorder.lua (21)
 
 - recorder: SnapshotPlayer records who the player is (spec §7 char)
 - recorder: SnapshotPlayer tolerates a client without the spec and ilvl APIs
@@ -80,6 +80,8 @@ Total.
 - recorder: All orders by date desc and excludes armed
 - recorder: All breaks a date tie by id, so the order is stable
 - recorder: Pending returns running and stopping only
+- recorder: Pending holds only the logged-in character's runs
+- recorder: a run written by a later schema is left alone
 - recorder: Delete fires RUNS_CHANGED
 - recorder: DeleteAll empties the store and fires RUNS_CHANGED
 - recorder: the store is account-wide and survives a profile switch
@@ -93,7 +95,7 @@ Total.
 - timeline: the quiet stretch starts at the buzzer when the last damage was before it
 - timeline: a gap of exactly the setting counts as a restart
 - timeline: no damage after the buzzer gives tail 0 and no restart
-- timeline: QuietFor with no damage is huge
+- timeline: a gap that spans a resume is measured from the resume
 - timeline: an out-of-order or non-number update is handled
 - timeline: two timelines are independent
 
@@ -130,7 +132,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (44)
+### test_race.lua (47)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -142,8 +144,11 @@ Total.
 - race: sessionID captured from first DamageDone update with non-zero id
 - race: a DamageDone update heard just before the session event is adopted at the start
 - race: a session event heard out of combat does not start the clock
+- race: a DamageDone update for a stray session heard out of combat is never adopted at the start
+- race: the target is re-read at the combat that starts the clock, not an earlier one
 - race: a session event with the regen edge on an earlier frame does not start the clock
 - race: a buzzer heard out of combat with the regen edge missed is still read
+- race: an empowered cast held across the buzzer is never late
 - race: buzzer at start+length moves to stopping and emits RACE_BUZZER
 - race: cast started 0.5s after buzzer is not late at grace 1.0
 - race: cast started 1.4s after buzzer is recorded as late with spellID
@@ -177,7 +182,7 @@ Total.
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
 
-### test_race_resume.lua (13)
+### test_race_resume.lua (16)
 
 - resume: running past buzzer becomes stopping+reloaded
 - resume: running before buzzer keeps running with remaining time
@@ -189,6 +194,9 @@ Total.
 - resume: nothing stored leaves the race idle and touches nothing
 - resume: running before the buzzer with combat already over is incomplete and read at once
 - resume: a stand-down mid-run whose combat ends unseen never hangs in stopping
+- resume: a stopping run that ended before its buzzer is not flagged reloaded
+- resume: a run another character left pending is not resumed here
+- resume: a reload that outlasts the restart gap while DoTs tick is not a restart
 - resume: the tail and a restart heard before a /reload survive it
 - resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
 - resume: a run with no session ID never adopts a session from before its arm
@@ -203,7 +211,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (50)
+### test_hud.lua (51)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -249,6 +257,7 @@ Total.
 - hud: General visibility and the stand-down hide it at the source
 - hud: onArm shows it on arm and hides it when the race it opened for is canceled
 - hud: showMode always shows it at login
+- hud: a race resumed after a /reload shows the HUD under onArm
 - hud: a result arriving while the window is closed opens it
 - hud: Render draws a given body only while test mode is on
 - hud: the stand-down drops every registration, timer and the OnUpdate
@@ -256,7 +265,7 @@ Total.
 - hud: the library-absent load still draws the HUD without a grip or a close control
 - hud: the diagnostics state section names the body, the event set and the countdown driver
 
-### test_results.lua (23)
+### test_results.lua (24)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: incomplete and lost runs say so in the DPS column
@@ -265,6 +274,7 @@ Total.
 - results: the list is pooled and scrolls through more runs than fit
 - results: detail renders breakdown sorted with percentages
 - results: timing strip positions buzzer, grace, tail, late casts, combat end
+- results: the detail lists every spell of the run, not a capped top few
 - results: detail flags name late-cast spells and the session matched by list
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
@@ -519,15 +529,15 @@ Total.
 | test_secrets.lua | 11 |
 | test_meter.lua | 18 |
 | test_dummies.lua | 5 |
-| test_recorder.lua | 19 |
+| test_recorder.lua | 21 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 44 |
-| test_race_resume.lua | 13 |
+| test_race.lua | 47 |
+| test_race_resume.lua | 16 |
 | test_format.lua | 7 |
-| test_hud.lua | 50 |
-| test_results.lua | 23 |
+| test_hud.lua | 51 |
+| test_results.lua | 24 |
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
 | test_slash.lua | 27 |
@@ -545,4 +555,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **415** |
+| **Total** | **425** |

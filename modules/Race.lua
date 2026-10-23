@@ -27,7 +27,7 @@ local Secrets = NS.Secrets
 local STATE = { IDLE = "idle", ARMED = "armed", RUNNING = "running", STOPPING = "stopping", RESULT = "result" }
 Race.STATE = STATE
 
--- The readiness poll's period while STOPPING (plan T5: a 0.5s ticker, only in that state).
+-- The readiness poll's period while STOPPING (a 0.5s ticker, only in that state).
 Race.POLL_INTERVAL = 0.5
 -- Polls a still-sealed read is retried before the run is given up as lost (10s at 0.5s).
 Race.SEALED_RETRIES = 20
@@ -35,12 +35,14 @@ Race.SEALED_RETRIES = 20
 Race.MIN_LENGTH, Race.MAX_LENGTH = 10, 900
 
 local state = STATE.IDLE
--- The race in progress. Fields: run, armSet (session IDs present at arm), stash (a session ID heard
--- while armed), combatAt / sessionAt (the regen edge and the session event while armed, paired on one
--- frame to start the clock), startedAt, buzzerAt, combatEndedAt (the regen edge), quietFrom (when the quiet before
--- the read starts counting), timeline, inFlight (the cast begun and not yet finished: its plain spell
--- ID and castGUID, either nil when sealed), buzzer, ticker,
--- sealedTries, reread.
+-- The race in progress. Fields: run, armSet (session IDs present at arm), armTarget (the arm-time
+-- target snapshot), stash / stashAt / stashHeld (a session ID heard while armed, when, and whether in
+-- combat), combatAt / sessionAt (the regen edge and the session event while armed, paired on one
+-- frame to start the clock), startedAt, buzzerAt, combatEndedAt (the regen edge), quietFrom (when the
+-- quiet before the read starts counting), resumedAt (when a /reload's resume ran: the damage heard
+-- during the loading screen is unknown, so no restart gap spans it), timeline, inFlight (the cast
+-- begun and not yet finished: its plain spell ID and castGUID, either nil when sealed), buzzer,
+-- ticker, sealedTries, reread.
 local cur = {}
 
 local function debug(fmt, ...)
@@ -170,7 +172,8 @@ local function stamp(t)
     cur.timeline:AddDamage(t)
     run.race.lastDamage = round2(t - cur.startedAt)
     if buzzerAt and not run.flags.restartedAt then
-        run.flags.restartedAt = round2(cur.timeline:RestartAt(buzzerAt, run.race.restartGap))
+        run.flags.restartedAt = round2(cur.timeline:RestartAt(buzzerAt, run.race.restartGap, cur.resumedAt))
+        if run.flags.restartedAt then debug("damage restarted at +%.2f", run.flags.restartedAt) end
     end
 end
 
@@ -183,6 +186,7 @@ local function complete(data)
     run.result = result
     run.spells = data.spells
     result.dps = NS.Scoring.Dps(result.damage, run)
+    debug("read session: %s, damage %s", run.status, result.damage ~= nil and "present" or "absent")
     NS.Recorder.Save(run)
     finish()
 end
@@ -193,6 +197,7 @@ local function read()
     local data, err = NS.Meter.ReadSession(id)
     if err == "sealed" then
         cur.sealedTries = cur.sealedTries + 1
+        debug("session %d still sealed (try %d)", id, cur.sealedTries)
         if cur.sealedTries < Race.SEALED_RETRIES then return end
     end
     if not data then return lose(err) end
@@ -207,6 +212,7 @@ local function checkReady(t)
     local from, last = cur.quietFrom, cur.timeline:LastDamage()
     if last and last > from then from = last end
     if t - from < NS.Scoring.QUIET_BEFORE_READ then return end
+    debug("quiet for %.2fs since %.2f: reading", t - from, from)
     read()
 end
 
@@ -217,6 +223,7 @@ local function poll()
     if isDown() then return end
     local t = GetTime()
     if state == STATE.STOPPING and not cur.quietFrom and not UnitAffectingCombat("player") then
+        debug("out of combat with no regen edge heard: the quiet counts from %.2f", t)
         cur.quietFrom = t
     end
     checkReady(t)
@@ -231,6 +238,7 @@ end
 
 local function stop()
     local run = cur.run
+    debug("stopping: waiting for combat to end and %.1fs of quiet", NS.Scoring.QUIET_BEFORE_READ)
     run.status = "stopping"
     NS.Recorder.Save(run)
     setState(STATE.STOPPING)
@@ -242,6 +250,7 @@ local function buzz()
     if isDown() or state ~= STATE.RUNNING then return end
     -- The buzzer's own time, not the moment the timer was serviced.
     cur.buzzerAt = cur.startedAt + cur.run.race.length
+    debug("buzzer at %.2f", cur.buzzerAt)
     stop()
     NS.SendBus(NS.MSG.RACE_BUZZER, cur.run)
 end
@@ -255,6 +264,7 @@ local function endEarly(t)
     if cur.buzzer then cur.buzzer:Cancel() end
     cur.buzzer = nil
     cur.run.result = { endedAt = round2(t - cur.startedAt) }
+    debug("combat ended before the buzzer, at +%.2f: incomplete", cur.run.result.endedAt)
     stop()
 end
 
@@ -278,15 +288,25 @@ end
 --- @return string|nil reason  "in_combat" | "meter_unavailable" | "pending" | "busy" |
 ---                            "bad_length" | "disabled"
 --- @return string|nil detail  for "meter_unavailable": Blizzard's own reason, verbatim
-function Race.Arm(length, targetCount)
-    if isDown() then return false, "disabled" end
+local function armRefusal(length)
+    if isDown() then return "disabled" end
     local refusal = stateRefusal()
-    if refusal then return false, refusal end
-    if not validLength(length) then return false, "bad_length" end
-    if UnitAffectingCombat("player") then return false, "in_combat" end
+    if refusal then return refusal end
+    if not validLength(length) then return "bad_length" end
+    if UnitAffectingCombat("player") then return "in_combat" end
     local ok, why = NS.Meter.IsAvailable()
-    if not ok then return false, "meter_unavailable", why end
+    if not ok then return "meter_unavailable", why end
+    return nil
+end
+
+function Race.Arm(length, targetCount)
+    local refusal, detail = armRefusal(length)
+    if refusal then
+        debug("arm refused: %s", refusal)
+        return false, refusal, detail
+    end
     newRace(NS.Recorder.NewRun(length, targetCount))
+    cur.armTarget = cur.run.target
     -- Every session the client holds now belongs to an earlier fight: never this run's. The newest of
     -- them is kept on the run, so a /reload (which loses the set) still knows.
     cur.armSet = NS.Meter.SessionIDs()
@@ -295,13 +315,18 @@ function Race.Arm(length, targetCount)
         if mark == nil or id > mark then mark = id end
     end
     cur.run.race.armMaxSession = mark
+    debug("armed %ds; newest session before the arm: %s", length, tostring(mark))
     setState(STATE.ARMED)
     return true
 end
 
 -- Capture the run's session, unless it existed before the arm (another fight's).
 local function adopt(id)
-    if beforeArm(id) then return end
+    if beforeArm(id) then
+        debug("session %d ignored: it existed before the arm", id)
+        return
+    end
+    debug("session %d adopted", id)
     cur.run.race.sessionID = id
     NS.Recorder.Save(cur.run)
 end
@@ -313,10 +338,12 @@ local function begin(t)
     run.date = time()
     run.race.startedAt = t
     cur.startedAt = t
-    if cur.stash then
+    -- Only an update heard in combat, or on this frame, is this pull's (see stashUpdate).
+    if cur.stash and (cur.stashHeld or cur.stashAt == t) then
         adopt(cur.stash)
         if run.race.sessionID then stamp(t) end
     end
+    debug("clock started at %.2f", t)
     NS.Recorder.Save(run)
     armBuzzer(run.race.length)
     setState(STATE.RUNNING)
@@ -335,7 +362,7 @@ end
 -- takes its own catalog count.
 local function rereadTarget()
     local run = cur.run
-    local prior = run.target or {}
+    local prior = cur.armTarget or run.target or {}
     local fresh = NS.Recorder.SnapshotTarget("target", prior)
     if fresh.npcID ~= nil and fresh.npcID == prior.npcID then fresh.count = prior.count or fresh.count end
     run.target = fresh
@@ -359,8 +386,14 @@ end
 --- Combat ends: before the buzzer the run is incomplete; after it, the read waits for the quiet.
 function Race.OnCombatEnd(t)
     if isDown() then return end
+    if state == STATE.ARMED then
+        -- A combat that never started the clock: the next one re-reads the target and pairs anew.
+        cur.reread, cur.combatAt = nil, nil
+        return
+    end
     if state == STATE.RUNNING then endEarly(t) end
     if state ~= STATE.STOPPING then return end
+    debug("combat ended at %.2f: the quiet counts from it", t)
     cur.combatEndedAt, cur.quietFrom = t, t
     checkReady(t)
 end
@@ -373,16 +406,22 @@ function Race.OnDeath(t)
     if state == STATE.RUNNING then endEarly(t) end
 end
 
+-- A DamageDone update heard while armed, kept for the start. One heard in combat (or on the regen
+-- edge's frame) is this pull's and holds; one heard out of combat (a groupmate's pull, a trailing
+-- update) counts only if the clock starts on its own frame, and a later update replaces it.
+local function stashUpdate(id, t)
+    if beforeArm(id) or (cur.stash and cur.stashHeld) then return end
+    local held = UnitAffectingCombat("player") or cur.combatAt == t
+    cur.stash, cur.stashAt, cur.stashHeld = id, t, held and true or false
+end
+
 --- A DAMAGE_METER_COMBAT_SESSION_UPDATED(statType, sessionID). The first DamageDone update with a
 --- non-zero ID names the run's session (spec §4.2); every update for it is a stamp on the timeline.
 function Race.OnMeterUpdate(statType, sessionID, t)
     if isDown() then return end
     local stat, id = Secrets.PlainNumber(statType), Secrets.PlainNumber(sessionID)
     if stat ~= NS.Meter.STAT_DAMAGE_DONE or not id or id == 0 then return end
-    if state == STATE.ARMED then
-        if not beforeArm(id) and not cur.stash then cur.stash = id end
-        return
-    end
+    if state == STATE.ARMED then return stashUpdate(id, t) end
     if state ~= STATE.RUNNING and state ~= STATE.STOPPING then return end
     if not cur.run.race.sessionID then adopt(id) end
     if id == cur.run.race.sessionID then stamp(t) end
@@ -397,6 +436,7 @@ local function judge(spellID, t)
     if not NS.Scoring.IsLateCast(offset, run.race.grace) then return end
     local list = run.flags.lateCasts
     list[#list + 1] = { t = round2(offset), spellID = spellID }
+    debug("late cast %s at +%.2f", tostring(spellID), offset)
 end
 
 -- Spells whose success repeats on its own once started (Auto Shot, a wand's Shoot): never a press.
@@ -457,7 +497,7 @@ end
 function Race.OnMeterReset()
     if isDown() then return end
     if state == STATE.ARMED then
-        cur.armSet, cur.stash = {}, nil
+        cur.armSet, cur.stash, cur.stashHeld = {}, nil, nil
         cur.run.race.armMaxSession = nil
     elseif state == STATE.RUNNING or state == STATE.STOPPING then
         lose("meter reset")
@@ -499,20 +539,17 @@ end
 
 -- A run stored as running: still racing (true), or now waiting for its read (false). Before the
 -- buzzer and out of combat, combat ended while nothing listened: the run is incomplete, ended no later
--- than now (the edge's real time is unknowable). Past the buzzer, casts after it went unseen.
+-- than now (the edge's real time is unknowable).
 local function resumeRunning(run, now)
     local elapsed = now - cur.startedAt
     local left = run.race.length - elapsed
     if left > 0 and UnitAffectingCombat("player") then
+        debug("resumed running, %.2fs left", left)
         setState(STATE.RUNNING)
         armBuzzer(left)
         return true
     end
-    if left > 0 then
-        run.result = { endedAt = round2(elapsed) }
-    else
-        run.flags.reloaded = true
-    end
+    if left > 0 then run.result = { endedAt = round2(elapsed) } end
     run.status = "stopping"
     NS.Recorder.Save(run)
     return false
@@ -521,14 +558,19 @@ end
 local function resumeRun(run, now)
     newRace(run)
     cur.startedAt = startOf(run, now)
-    cur.reread = true
+    cur.reread, cur.resumedAt = true, now
     -- The last update before the reload, so the tail and a restart gap still measure from it.
     local last = Secrets.PlainNumber(run.race.lastDamage)
     if last then cur.timeline:AddDamage(cur.startedAt + last) end
     local id = run.race.sessionID
     if id ~= nil and not NS.Meter.HasSession(id) then return lose("session gone") end
     if run.status == "running" and resumeRunning(run, now) then return end
-    if not (run.result and run.result.endedAt) then cur.buzzerAt = cur.startedAt + run.race.length end
+    -- Past its buzzer and not yet read: what was cast during the reload went unseen (spec §4.5).
+    if not (run.result and run.result.endedAt) then
+        cur.buzzerAt = cur.startedAt + run.race.length
+        run.flags.reloaded = true
+    end
+    debug("resumed stopping (%s)", cur.buzzerAt and "past the buzzer, reloaded" or "incomplete")
     setState(STATE.STOPPING)
     startPolling()
     -- Combat already over (spec §4.5): read straight away. The quiet was spent during the reload.
@@ -539,14 +581,16 @@ local function resumeRun(run, now)
 end
 
 --- Carry on the runs a /reload (or a stand-down) left running or stopping. Called from OnEnable and
---- from the lifecycle's stand-up. The newest is followed; an older one (two cannot be pending) is
---- settled as lost.
+--- from the lifecycle's stand-up. Only the logged-in character's runs are pending here (another
+--- character's waits for that character). The newest is followed; an older one (two cannot be
+--- pending) is settled as lost.
 function Race.Resume()
     if isDown() or state ~= STATE.IDLE then return end
     local pending = NS.Recorder.Pending()
     local n = #pending
     if n == 0 then return end
     for i = 1, n - 1 do
+        debug("older pending run %s settled as lost", tostring(pending[i].id))
         pending[i].status, pending[i].result = "lost", nil
         NS.Recorder.Save(pending[i])
     end

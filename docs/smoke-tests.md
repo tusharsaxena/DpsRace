@@ -97,17 +97,18 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
 | X1 | `/reload` at 0:15 left, still attacking | The HUD comes back on the same countdown (the race's clock survived the reload); at the buzzer the run reaches Stop! and resolves normally | The countdown before and after the reload |
-| X2 | **O4.** On the Dungeoneer's dummy, `/reload` 2 s after the buzzer while still in combat | After the reload the HUD is in *Waiting*; once combat drops the result reads, with the *Reloaded* chip, and the tail still counts updates heard before the reload | The card, and the run's detail timing strip |
+| X2 | **O4.** On the Dungeoneer's dummy, `/reload` 2 s after the buzzer while still in combat | After the reload the HUD is in *Waiting*; once combat drops the result reads, with the *Reloaded* chip, and the tail still counts updates heard before the reload. A loading screen longer than 6 s while DoTs tick does not raise *Restarted* | The card, and the run's detail timing strip |
 | X3 | `/reload` mid-race, then drop combat before the buzzer would have gone | The run resolves as incomplete, read at once, without the *Reloaded* chip | The card |
-| X4 | `/reload` while waiting out of combat, before the read | The result reads straight after the reload | |
+| X4 | `/reload` while waiting out of combat, before the read | The result reads straight after the reload, with the *Reloaded* chip (the run was past its buzzer) | |
 | X5 | **O3, the restart case.** Stop at the buzzer, stay in combat on the Dungeoneer's dummy for 10 s without attacking, then attack again | The result carries *Restarted +x.xs* (about +10 s), and the run still counts on the board | The card. If no chip: the debug trace, and whether damage was landing during the 10 s (a DoT) |
 | X6 | **O5.** Arm and race on the Dungeoneer's dummy, log out to the character screen while waiting, log back in | Either the result reads, or the run shows *Lost* (*Couldn't read the result*) and keeps its metadata. Record which: it settles O5 | Which of the two, and the run's detail |
+| X7 | Race, and while waiting for the read log out to the character screen and into **another** character | The other character is idle: no HUD resume, and *Arm* works there. Back on the first character the run resumes (or is *Lost*, per X6) | Which character resumed it |
 
 ## 6. Results window
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| W1 | Open Results after sections 4 and 5 | *RUNS* tab: every resolved run, newest first; incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
+| W1 | Open Results after sections 4 and 5 | *RUNS* tab: every resolved run, sorted by DPS, highest first (unranked runs last); incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
 | W2 | Hover the class and spec icons | The class icon is cropped cleanly (from `CLASS_ICON_TCOORDS`), the spec icon is the spec's own (from `GetSpecializationInfoByID`); each tooltip names it | A screenshot of a bad crop |
 | W3 | Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
 | W4 | Sort by DPS, ilvl and date | Each sorts both ways; incomplete and lost sort last on DPS | |
@@ -127,7 +128,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
 | P1 | *SHARE* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
-| P2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · character · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
+| P2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · spec ilvl · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
 | P3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
 | P4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |
 | P5 | `/dr test` | Armed, Running, Stop!, Waiting and Result play on the HUD with the amber strip under the title (*Test mode: sample numbers. Combat or Arm ends it*); it holds on the result card. The sample spells show real icons and names (re-check the Preview spell IDs on this patch) | Any spell shown as *Unknown spell* or a question-mark icon |

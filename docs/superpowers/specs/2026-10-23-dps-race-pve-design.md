@@ -141,17 +141,22 @@ the rules don't change between the two. Only the HUD copy does.
   becomes `lost`. A missing session, an unavailable meter or a raising call makes it `lost` at once.
 - The run is read **by its session ID** (`GetCombatSessionFromID` /
   `GetCombatSessionSourceFromID` with the player's GUID), never as "the current session".
-- **Sticky combat** just means waiting. The HUD can be closed. The result card opens when it's ready,
-  or the run shows as *Waiting for result* in the Results window.
+- **Sticky combat** just means waiting. The HUD can be closed (and reopened with `/dr hud show`).
+  The result card opens when it's ready, and the run lands in the Results window once it is read.
 - **After a `/reload`**, `OnEnable` finds runs whose status is `running` or `stopping`:
-  - A `running` run that has passed its buzzer time is moved to `stopping`, with the flag
-    *Reloaded mid-run: casts after the buzzer not tracked*.
+  - Only the logged-in character's runs are resumed. Another character's pending run waits for
+    that character's login.
+  - A run that has passed its buzzer time and was not yet read (stored `running` or `stopping`) is
+    `stopping`, with the flag *Reloaded mid-run: casts after the buzzer not tracked*: whatever was
+    cast during the loading screen went unseen.
   - A `running` run found out of combat before its buzzer ended early: it becomes `incomplete`, with
     `endedAt` the time of the resume (an upper bound; the real combat edge was missed), and is read
     at once. It does not carry the *Reloaded* flag, because it never reached its buzzer.
   - The run's start is `race.startedAt` when it is not in the future, else it is derived from the
     epoch `date` (after a client restart). The tail and restart tracking resume from
-    `race.lastDamage`, the offset of the last damage update heard before the reload.
+    `race.lastDamage`, the offset of the last damage update heard before the reload. The loading
+    screen is not a gap in the damage: the first update after the resume measures its quiet from
+    the resume, so a long reload while DoTs tick never raises *Damage restarted*.
   - Only the newest pending run is resumed; an older one (an anomaly, since arming refuses while one
     is pending) is settled as `lost`.
   - If the player is still in combat, the addon waits for the regen edge as usual.
@@ -319,9 +324,10 @@ Grace and restart gap carry the note *Applies to new runs. Saved runs keep the v
   window* and *Arm / cancel race*. The arm key arms the HUD's length, cancels an armed or running
   race, and never discards a run that is waiting for its result (it prints a line pointing at
   `/dpsrace cancel`).
-- **Slash commands**: `/dpsrace` and `/dr`, dispatched through the standard's slash library. `/dr`
-  is short and another addon may already have it. The library skips a name that's taken, so
-  `/dpsrace` always works, and the clash is written to the debug log.
+- **Slash commands**: `/dpsrace` and `/dr`, dispatched through the standard's slash library and
+  registered through AceConsole, as slash-commands-§1 prescribes. `/dr` is short and another addon
+  may also register it; AceConsole does not check for that, so which addon answers `/dr` is then
+  the client's choice. `/dpsrace` is this addon's own and always works.
 
 | Command | Does |
 |---|---|

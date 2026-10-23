@@ -1,7 +1,7 @@
 local _, NS = ...
 -- modules/Timeline.lua — the run session's damage-update timeline (spec §5.3): when your damage
--- stopped after the buzzer (the tail), whether it landed again after a quiet gap (damage restarted)
--- and how long it has been quiet (the 2.5s wait before the result read, spec §4.5).
+-- stopped after the buzzer (the tail) and whether it landed again after a quiet gap (damage restarted).
+-- The quiet before the result read (spec §4.5) is Race's checkReady, from LastDamage.
 --
 -- PURE. No WoW API, no meter value: a timeline holds only GetTime() stamps that Race records when a
 -- DAMAGE_METER_COMBAT_SESSION_UPDATED arrives for the run's session (spec §8 rule 2: decisions come
@@ -47,23 +47,20 @@ end
 
 --- The offset from the buzzer of the first damage update after it that follows a quiet stretch of at
 --- least `gap` seconds. The stretch starts at the previous update or the buzzer, whichever is later.
+--- With `resumedAt` (a /reload's resume), what landed during the loading screen is unknown, so the
+--- first update after it measures its stretch from the resume, never across the reload.
 --- nil when the damage never restarted.
-function methods:RestartAt(buzzer, gap)
+function methods:RestartAt(buzzer, gap, resumedAt)
     local prev = buzzer
     local times = self.times
     for i = 1, self.n do
         local t = times[i]
         if t > buzzer then
-            if t - prev >= gap then return t - buzzer end
+            local from = prev
+            if resumedAt and t >= resumedAt and resumedAt > from then from = resumedAt end
+            if t - from >= gap then return t - buzzer end
             prev = t
         end
     end
     return nil
-end
-
---- Seconds since the last damage update at `now`; math.huge when there has been none.
-function methods:QuietFor(now)
-    local last = self.times[self.n]
-    if not last then return math.huge end
-    return now - last
 end

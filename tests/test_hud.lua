@@ -333,7 +333,7 @@ test("hud: live reads stop when hud hidden or state leaves running", function()
     pump(f, 2)
     assertEqual(liveReads(f), again, "read after the buzzer")
     for _, r in ipairs(f.M.__registrations()) do
-        assertFalse(r.event == METER_EVENT and r.target ~= f.NS.Watchers.Frame(), "the HUD still listens to the meter")
+        assertFalse(r.event == METER_EVENT and r.target ~= f.NS.Watchers.EventTarget(), "the HUD still listens to the meter")
     end
 end)
 
@@ -809,6 +809,21 @@ test("hud: showMode always shows it at login", function()
     f:enable()
     assertTrue(f.Hud.IsShown())
     assertTrue(ui(f).frame:IsShown())
+end)
+
+test("hud: a race resumed after a /reload shows the HUD under onArm", function()
+    for _, case in ipairs({ { now = 110, want = "running" }, { now = 145, want = "stopping" } }) do
+        local f = hud{ enable = false }
+        f.M.__now, f.M.__inCombat = case.now, true
+        f.meter.SetSession(25, RaceClock.SESSION)
+        local run = RaceClock.storedRun({ status = "running" })
+        f.NS.db.global.runs[run.id] = run
+        f:enable()
+        assertEqual(f.Race.State(), case.want)
+        assertTrue(f.Hud.IsShown(), case.want .. ": the countdown or the wait is hidden after the reload")
+        f.Race.Cancel()
+        assertFalse(f.Hud.IsShown(), case.want .. ": the window the resume opened outlived its race")
+    end
 end)
 
 test("hud: a result arriving while the window is closed opens it", function()

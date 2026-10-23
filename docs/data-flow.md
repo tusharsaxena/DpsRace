@@ -56,13 +56,17 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   a run resumed after a `/reload` (which loses the set) still never adopts an earlier fight's session.
 - **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
   combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
-  combat, such as a trailing update from the last fight, leaves the race armed). The start time is
+  combat, such as a trailing update from the last fight, leaves the race armed, and a DamageDone
+  update heard out of combat is adopted only if the clock starts on its own frame). The start time is
   `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
   the run is written to SavedVariables as `running`. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
-  the target (`Recorder.SnapshotTarget("target", armTimeTarget)`); that read is the one stored.
-  Watchers adds the player's cast events (start, channel start, success, interrupt, channel stop).
+  the target (`Recorder.SnapshotTarget("target", armTimeTarget)`); that read is the one stored. A
+  combat that ends while still armed (it never started the clock) clears the re-read, so the combat
+  that does start it reads the target again.
+  Watchers adds the player's cast events (start, channel start, empower start, success, interrupt,
+  channel stop); an empowered cast is in flight from its start, like any other.
 - **Running**: the HUD counts down (`Race.TimeLeft()`) and shows the live breakdown, read through
   `modules/Meter.lua` at the configured rate, with every value opaque. Every DamageDone update for
   the run's session is a stamp on its `Timeline`, and its offset from the start is kept on the run as
@@ -90,11 +94,16 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   dismisses the card; `Race.Arm` races again.
 - **Cancel** before the result discards the run: an armed one was never stored, a running or
   stopping one is deleted from the store.
-- **Resume** (`OnEnable` and the stand-up): the newest stored `running` or `stopping` run is carried
-  on. Its session gone: `lost`. Running, before its buzzer and in combat: running, with the buzzer
-  re-armed for the time left. Running, before its buzzer and out of combat (combat dropped while
-  nothing listened): `incomplete`, `endedAt` = the time at the resume, read at once. Running past it: `stopping` with `flags.reloaded`. Stopping and out of combat: read
-  at once; in combat: wait for the regen edge. An older unresolved run is settled as `lost`. The
+- **Resume** (`OnEnable` and the stand-up): the logged-in character's newest stored `running` or
+  `stopping` run is carried on (`Recorder.Pending` holds only this character's runs; another
+  character's waits for its own login). Its session gone: `lost`. Running, before its buzzer and in
+  combat: running, with the buzzer re-armed for the time left. Running, before its buzzer and out of
+  combat (combat dropped while nothing listened): `incomplete`, `endedAt` = the time at the resume,
+  read at once. Any run past its buzzer and not yet read (stored `running` or `stopping`): `stopping`
+  with `flags.reloaded`, because what was cast during the reload went unseen. Out of combat: read at
+  once; in combat: wait for the regen edge. The restart check never measures a gap across the
+  loading screen: the first update after the resume counts its quiet from the resume. An older
+  unresolved run is settled as `lost`. The
   stand-down (disabled or a perf capture) drops the in-memory race and its timers and keeps the stored
   run, so the stand-up resumes it exactly like a `/reload`.
 

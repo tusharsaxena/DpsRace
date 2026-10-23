@@ -146,8 +146,10 @@ from current settings on every stand-up (slash-commands-§7).
 | `PLAYER_REGEN_DISABLED` | always while standing up | `NS:OnCombatChanged` (`core/DpsRace.lua`) | combat ends test mode; refreshes the HUD's show decision |
 | `PLAYER_REGEN_ENABLED` | only while `visibility` is `inCombat` or `outOfCombat` | `NS:OnCombatChanged` | the show decision needs the leaving edge |
 
-`modules/Watchers.lua` registers on its own frame, through the same `SafeRegister*` family, only
-while a race needs it. Nothing is registered while the race is idle or showing a result, and nothing
+`modules/Watchers.lua` registers, through the same `SafeRegister*` family, only while a race needs
+it: the non-unit events on its own AceEvent target (keyed apart from the addon object, so the shared
+`PLAYER_REGEN_*` never clobber one another's handler), and the player's casts on a unit-filter frame
+whose only job is `RegisterUnitEvent(..., "player")` (events-frames-taint-§1's carve-out). Nothing is registered while the race is idle or showing a result, and nothing
 while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and the stand-up's
 `Watchers.Resume()` rebuilds the set from the race's current state.
 
@@ -158,9 +160,9 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 | `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
 | `PLAYER_DEAD` | ARMED, RUNNING, STOPPING | `Race.OnDeath` | the `died` flag; incomplete before the buzzer |
-| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_SUCCEEDED` / `_INTERRUPTED` / `_CHANNEL_STOP` (`player`) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an interrupt or a channel's stop closes the cast in flight |
+| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_EMPOWER_START` / `_SUCCEEDED` / `_INTERRUPTED` / `_CHANNEL_STOP` (`player`, the unit-filter frame) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an empowered cast is in flight from its start; an interrupt or a channel's stop closes the cast in flight |
 
-`modules/Hud.lua` registers on its own event frame only while the HUD window is on screen; hidden,
+`modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
 countdown text is one `OnUpdate` on the window, attached only while the race is RUNNING (20 Hz) or
 STOPPING (4 Hz: no clock, and combat may hold for minutes), and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed when the race runs.

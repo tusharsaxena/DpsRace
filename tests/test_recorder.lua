@@ -239,6 +239,30 @@ test("recorder: Pending returns running and stopping only", function()
     assertEqual(p[1].status, "running", "oldest first")
 end)
 
+test("recorder: Pending holds only the logged-in character's runs", function()
+    local NS = fresh()
+    local mine, other, nameless = run("1-1", 101, "stopping"), run("2-1", 102, "stopping"), run("3-1", 103, "running")
+    mine.char = { name = "Testchar", realm = "Testrealm" }
+    other.char = { name = "Otherchar", realm = "Testrealm" }
+    for _, r in ipairs({ mine, other, nameless }) do NS.Recorder.Save(r) end
+    local p = NS.Recorder.Pending()
+    assertEqual(#p, 2)
+    assertTrue(p[1] == mine and p[2] == nameless, "another character's run is not this one's to resume")
+    assertFalse(NS.Recorder.IsMine({ char = { name = "Testchar", realm = "Elsewhere" } }), "same name, another realm")
+end)
+
+test("recorder: a run written by a later schema is left alone", function()
+    local NS = fresh()
+    local future = run("9-1", 50, "stopping")
+    future.schema = NS.Recorder.RUN_SCHEMA + 1
+    NS.Recorder.Save(future)
+    for i = 1, 3 do NS.Recorder.Save(run(i .. "-1", 100 + i, "complete")) end
+    assertEqual(#NS.Recorder.All(), 3, "listed")
+    assertEqual(#NS.Recorder.Pending(), 0, "resumed")
+    NS.Recorder.Prune(1)
+    assertTrue(NS.Recorder.Get("9-1") ~= nil, "pruned as the oldest")
+end)
+
 test("recorder: Delete fires RUNS_CHANGED", function()
     local NS = fresh()
     NS.Recorder.Save(run("100-1", 100, "complete"))

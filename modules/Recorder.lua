@@ -222,10 +222,16 @@ local function newerFirst(a, b)
     return tostring(a.id) > tostring(b.id)
 end
 
+-- A run written by a later version (a higher run schema than this one knows) is left alone: never
+-- listed, ranked, resumed or pruned (docs/schema.md).
+local function known(run)
+    return type(run) == "table" and not (type(run.schema) == "number" and run.schema > Recorder.RUN_SCHEMA)
+end
+
 local function collect(keep, order)
     local out = {}
     for _, run in pairs(store() or {}) do
-        if type(run) == "table" and keep(run.status) then out[#out + 1] = run end
+        if known(run) and keep(run.status, run) then out[#out + 1] = run end
     end
     table.sort(out, order)
     return out
@@ -237,11 +243,26 @@ function Recorder.All()
     return collect(function(status) return status ~= "armed" end, newerFirst)
 end
 
---- The runs a /reload left unresolved (status running or stopping), oldest first: Race.Resume's list.
+--- Whether a run is the logged-in character's: the same name, and the same realm when both sides
+--- know it. A run (or a client) with no readable name is taken as this character's.
+--- @return boolean
+function Recorder.IsMine(run)
+    local char = type(run) == "table" and type(run.char) == "table" and run.char or {}
+    local name = Secrets.PlainString(ask(UnitName, "player"))
+    if not (name and char.name) then return true end
+    if name ~= char.name then return false end
+    local realm = Secrets.PlainString(ask(GetRealmName))
+    return not (realm and char.realm) or realm == char.realm
+end
+
+--- The logged-in character's runs a /reload left unresolved (status running or stopping), oldest
+--- first: Race.Resume's list and the arm's "pending" refusal. Another character's pending run waits
+--- for that character's login.
 --- @return table runs
 function Recorder.Pending()
-    return collect(function(status) return status == "running" or status == "stopping" end,
-        function(a, b) return newerFirst(b, a) end)
+    return collect(function(status, run)
+        return (status == "running" or status == "stopping") and Recorder.IsMine(run)
+    end, function(a, b) return newerFirst(b, a) end)
 end
 
 --- Store a run's note (already clamped by the caller). A note is not a race result: it fires

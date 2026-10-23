@@ -6,11 +6,16 @@ local _, NS = ...
 -- WHAT IS REGISTERED, BY RACE STATE (spec §10: nothing runs while idle):
 --   idle, result      nothing
 --   armed             the meter's three events, the regen edges and PLAYER_DEAD
---   running, stopping the same, plus UNIT_SPELLCAST_START / _CHANNEL_START / _SUCCEEDED /
---                     _INTERRUPTED / _CHANNEL_STOP for `player`
+--   running, stopping the same, plus UNIT_SPELLCAST_START / _CHANNEL_START / _EMPOWER_START /
+--                     _SUCCEEDED / _INTERRUPTED / _CHANNEL_STOP for `player`
 -- Race calls Watchers.Sync() on every transition, so the set always follows the state. Every
 -- registration goes through the SafeRegister family (events-frames-taint-§1), so an event name a
 -- client does not know costs only itself and lands in NS.rejectedEvents.
+--
+-- TWO REGISTRANTS (events-frames-taint-§1). The non-unit events ride this module's own AceEvent
+-- target (AceEvent keys a registration by event and target, so the addon object's own
+-- PLAYER_REGEN_DISABLED handler is never clobbered). The casts ride the unit-filter frame, whose
+-- only job is RegisterUnitEvent(..., "player") and the one OnEvent that dispatches it.
 --
 -- STAND-DOWN (slash-commands-§7). The lifecycle's stand-down calls Watchers.Suspend(), which drops
 -- every registration; Sync answers "nothing" while stood down, and the stand-up's Resume rebuilds the
@@ -36,17 +41,23 @@ local RACE_EVENTS = {
 
 -- The player's casts, from RUNNING on (a start before the buzzer is what keeps its finish on time).
 -- An interrupt or a channel's stop closes the cast in flight, so a later cast is judged on its own.
-local CAST_EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_SUCCEEDED",
-                      "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
+-- An empowered cast (an Evoker's hold-and-release) fires EMPOWER_START, not START, and its release
+-- fires SUCCEEDED with the same castGUID: it is a cast in flight like any other, so one begun before
+-- the buzzer is never late. Its EMPOWER_STOP is not listened to: the SUCCEEDED that follows the
+-- release closes it, and a STOP heard first would make that SUCCEEDED look like a fresh instant.
+local CAST_EVENTS = { "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_EMPOWER_START",
+                      "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
 local CAST_KIND = {
     UNIT_SPELLCAST_START         = "start",
     UNIT_SPELLCAST_CHANNEL_START = "channel",
+    UNIT_SPELLCAST_EMPOWER_START = "start",
     UNIT_SPELLCAST_SUCCEEDED     = "succeeded",
     UNIT_SPELLCAST_INTERRUPTED   = "interrupted",
     UNIT_SPELLCAST_CHANNEL_STOP  = "channelStop",
 }
 
-local frame
+local target       -- this module's AceEvent target: the non-unit events (nil until a race needs it)
+local frame        -- the unit-filter frame: the player's casts (nil until a race first runs)
 -- The set registered now: "none" | "race" | "casts".
 local registered = "none"
 
@@ -84,11 +95,25 @@ end
 
 -- ── registration ────────────────────────────────────────────────────────────────────────────────
 
+-- AceEvent hands a function handler (event, ...); the frame's OnEvent hands (frame, event, ...).
+local function onAceEvent(event, ...) onEvent(nil, event, ...) end
+
+local function ensureTarget()
+    if target then return target end
+    target = LibStub("AceEvent-3.0"):Embed({})
+    return target
+end
+
 local function ensureFrame()
     if frame then return frame end
     frame = CreateFrame("Frame")
     frame:SetScript("OnEvent", onEvent)
     return frame
+end
+
+local function unregisterAll()
+    if target then target:UnregisterAllEvents() end
+    if frame then frame:UnregisterAllEvents() end
 end
 
 -- The set the race's state asks for.
@@ -101,11 +126,12 @@ local function wanted()
 end
 
 local function register(set)
-    local f = ensureFrame()
+    local t = ensureTarget()
     for _, event in ipairs(RACE_EVENTS) do
-        NS.SafeRegisterEvent(f, event, nil, NS.rejectedEvents)
+        NS.SafeRegisterEvent(t, event, onAceEvent, NS.rejectedEvents)
     end
     if set ~= "casts" then return end
+    local f = ensureFrame()
     for _, event in ipairs(CAST_EVENTS) do
         NS.SafeRegisterUnitEvent(f, event, NS.rejectedEvents, "player")
     end
@@ -116,14 +142,14 @@ end
 function Watchers.Sync()
     local want = wanted()
     if want == registered then return end
-    if frame then frame:UnregisterAllEvents() end
+    unregisterAll()
     registered = want
     if want ~= "none" then register(want) end
 end
 
 --- The lifecycle's stand-down: every registration goes.
 function Watchers.Suspend()
-    if frame then frame:UnregisterAllEvents() end
+    unregisterAll()
     registered = "none"
 end
 
@@ -133,7 +159,12 @@ function Watchers.Resume()
     Watchers.Sync()
 end
 
---- The event frame (nil until a race first needed one), for the disabled-state suite and diagnostics.
+--- The unit-filter frame (nil until a race first ran), for the disabled-state suite.
 function Watchers.Frame()
     return frame
+end
+
+--- The AceEvent target for the non-unit events (nil until a race first armed), for the suites.
+function Watchers.EventTarget()
+    return target
 end
