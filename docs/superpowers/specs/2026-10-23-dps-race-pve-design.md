@@ -85,6 +85,12 @@ the rules don't change between the two. Only the HUD copy does.
 - **Arming needs you out of combat.** The start signal is a *new* meter session, and none is created
   while you're already in combat. The Arm button is disabled with "Leave combat to arm" until
   `PLAYER_REGEN_ENABLED`.
+- Arming is also refused, with its own line, while an earlier run is still waiting for its result,
+  while the damage meter is unavailable (Blizzard's reason is shown), while the addon is disabled, and
+  for a length outside 10s–15:00. A refusal never starts a run that could capture another fight.
+- **Sessions that existed at arm time are never the run's.** Arming records the session IDs the
+  client holds and the highest of them (`race.armMaxSession`, kept on the run so a `/reload` still
+  knows it). Session IDs only grow, so any ID at or below the mark belongs to an earlier fight.
 - **Race length:** presets 0:30 · 1:00 · 2:00 · 3:00 · 5:00 plus custom (10s–15:00). The last choice is remembered.
 - **Target:** read from `target` at arm time and **re-read when combat starts** (the probe saw
   players arm on one dummy and hit another). The combat-start read is the one stored. The creature
@@ -96,8 +102,11 @@ the rules don't change between the two. Only the HUD copy does.
 
 ### 4.2 ARMED → RUNNING (the clock starts)
 
-- **Start signal:** the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming, together with
-  `PLAYER_REGEN_DISABLED` on the same frame. The start time is `GetTime()` at that event.
+- **Start signal:** the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming, with the player
+  in combat (`UnitAffectingCombat`) or `PLAYER_REGEN_DISABLED` arriving on the same `GetTime()` frame
+  in either order. A session event out of combat with no regen edge on its frame does not start the
+  clock. The start time is `GetTime()` at that event, kept on the run as `race.startedAt`, and the
+  run's `date` is restamped to the start.
 - **Session ID:** taken from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` with `type = DamageDone`
   and a non-zero `sessionID`.
 - **The run is written to SavedVariables now**, with status `running`. A `/reload` mid-run therefore
@@ -125,8 +134,11 @@ the rules don't change between the two. Only the HUD copy does.
 
 ### 4.5 STOPPING → RESULT (reading the result)
 
-- **Ready to read** = `PLAYER_REGEN_ENABLED` has fired **and** no `DamageDone` update for this
-  session in the last 2.5s. The probe saw updates up to 1.3s after combat ended.
+- **Ready to read** = `PLAYER_REGEN_ENABLED` has fired **and** 2.5s have passed since the later of
+  that edge and the last `DamageDone` update for this session. The probe saw updates up to 1.3s after
+  combat ended, so the read always waits a full 2.5s past the edge.
+- A read that finds the session still sealed is retried every 0.5s for up to 10s, then the run
+  becomes `lost`. A missing session, an unavailable meter or a raising call makes it `lost` at once.
 - The run is read **by its session ID** (`GetCombatSessionFromID` /
   `GetCombatSessionSourceFromID` with the player's GUID), never as "the current session".
 - **Sticky combat** just means waiting. The HUD can be closed. The result card opens when it's ready,
@@ -134,6 +146,14 @@ the rules don't change between the two. Only the HUD copy does.
 - **After a `/reload`**, `OnEnable` finds runs whose status is `running` or `stopping`:
   - A `running` run that has passed its buzzer time is moved to `stopping`, with the flag
     *Reloaded mid-run: casts after the buzzer not tracked*.
+  - A `running` run found out of combat before its buzzer ended early: it becomes `incomplete`, with
+    `endedAt` the time of the resume (an upper bound; the real combat edge was missed), and is read
+    at once. It does not carry the *Reloaded* flag, because it never reached its buzzer.
+  - The run's start is `race.startedAt` when it is not in the future, else it is derived from the
+    epoch `date` (after a client restart). The tail and restart tracking resume from
+    `race.lastDamage`, the offset of the last damage update heard before the reload.
+  - Only the newest pending run is resumed; an older one (an anomaly, since arming refuses while one
+    is pending) is settled as `lost`.
   - If the player is still in combat, the addon waits for the regen edge as usual.
   - If combat already ended, it reads the run straight away.
   - If the session is gone (a logout, or `DAMAGE_METER_RESET`), the run becomes `lost` and the HUD
@@ -149,7 +169,7 @@ A small table in `defaults/Dummies.lua`, keyed by creature ID. Entries are added
 |---|---|---|---|---|
 | 243167 | Dungeoneer's Training Dummy | Dungeoneer (hits back) | 1 | 2026-10-23, Silvermoon |
 | 243168 | Dungeoneer's Training Dummy | Dungeoneer (hits back) | 1 | 2026-10-23, Silvermoon |
-| 243208 | Cleave Training Dummy | Cleave | from the group, measured in-game | 2026-10-23, Silvermoon |
+| 243208 | Cleave Training Dummy | Cleave | 1 until the group is counted in-game (O7) | 2026-10-23, Silvermoon |
 | 243205 | Reinforced Golem | Boss-level (level −1) | 1 | 2026-10-23, Silvermoon |
 | 243211 | PvP Training Dummy | PvP | 1 | MultiMeters, 2026-09-26 |
 
@@ -174,9 +194,14 @@ of different lengths sit side by side in the history.
 
 ### 5.2 Casts after the buzzer (flag)
 
-- Casts are tracked from the buzzer until the result is read, using `UNIT_SPELLCAST_START`,
+- Casts are judged from the buzzer until the result is read, using `UNIT_SPELLCAST_START`,
   `UNIT_SPELLCAST_CHANNEL_START` and `UNIT_SPELLCAST_SUCCEEDED` on `player`. A cast counts at its
-  **start**. An instant has no start, so its success time is used.
+  **start**. An instant has no start, so its success time is used. Starts are tracked from RUNNING on,
+  so the success of a cast begun before the buzzer is recognized as that cast finishing.
+- One cast is in flight at a time. A success is matched to it by castGUID, else spell ID, else
+  assumed; `UNIT_SPELLCAST_INTERRUPTED` and `UNIT_SPELLCAST_CHANNEL_STOP` clear it. Auto-repeat
+  successes (Auto Shot, a wand's Shoot) are never a press and never late. A sealed spell ID is stored
+  as absent.
 - A cast that **starts later than buzzer + grace** is a *late cast*. A cast that started before the
   buzzer and finished after it is never late.
 - **Grace:** default 1.0s, configurable from 0 to 5s in 0.1s steps. The grace in force is stored on
@@ -201,6 +226,8 @@ of different lengths sit side by side in the history.
 | Late casts | §5.2 | Yes; the flag is shown on the board |
 | Damage restarted | §5.3 | Yes; the flag is shown on the board |
 | Reloaded mid-run | §4.5 | Yes; the flag is shown on the board |
+| Session matched by list | §9 | Yes; the flag is shown on the board |
+| Died | Death after the buzzer (before it, the run is incomplete) | Yes; the flag is shown on the board |
 | Incomplete | Combat ended before the buzzer | **No** |
 | Lost | The session couldn't be read | **No** (there is no score) |
 
@@ -225,9 +252,9 @@ A shorter window caps the live and result rows to what fits, never drawing them 
 | **Idle** | Race-length presets and custom · target card (name, category badge, count stepper, *Unknown target* warning) · **Arm** (disabled in combat, with the reason) · links to the last result and to the Results window. |
 | **Armed** | The big race length, unmoving, with *First hit starts the clock* · target card · **Cancel**. |
 | **Running** | Big countdown (`2:41.3`), turning amber in the last 10s · total damage and live DPS (Blizzard's live figure, labelled *live*) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
-| **Stopping: Stop!** | Large **STOP** · *Damage stopped +x.xs* updating live · late-cast counter · *In combat +y.ys* |
-| **Stopping: Waiting for result** | *Waiting for combat to end* · elapsed time · the hint (§4.4) · **Discard run** · the HUD can be closed. |
-| **Result** | Damage · DPS · delta to personal best (▲ new best / ▼ −3.2%) · flag chips · top 5 spells with % · **Race again** (re-arms with the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
+| **Stopping: Stop!** | Large **STOP** · *Damage stopped +x.xs* updating live · late-cast counter · *In combat +y.ys*. Shown while the last damage update is under 2.5s old. |
+| **Stopping: Waiting for result** | *Waiting for combat to end* (in combat) or *Reading the result* (out of it) · elapsed time · the hint (§4.4) · **Discard run** · the HUD can be closed. A run that ended before the buzzer comes straight here and shows when combat ended. |
+| **Result** | Damage · DPS · delta to personal best (*New best +2.4%*, *New best* for a board's first run, or *−3.2% vs best*; words, because the client font may lack arrow glyphs) · flag chips (short labels; each chip's tooltip is the full flag text) · top 5 spells with % · **Race again** (re-arms with the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
 
 **The live breakdown never sorts and never shows percentages.** Both are arithmetic on secret
 values. Bars are drawn with `SetMinMaxValues(0, maxAmount)` and `SetValue(totalAmount)`, so the
@@ -243,7 +270,9 @@ secret. So no layout reads geometry back off a bar row. All layout comes from co
 The primary standalone window (default 1040×560, resizable), with a tab strip and lazy-built tabs.
 
 - **Runs:** a filter bar (character, spec, category, race length, date range, *Hide flagged*,
-  *Include incomplete*) over a pooled, sortable list. Columns: date · **class icon · spec icon** ·
+  *Include incomplete*) over a pooled, sortable list. Filters are view state, not settings: each
+  login starts at *All* and *All time*, with *Include incomplete* on. The list shows resolved runs
+  only; a running or stopping run is the HUD's. Columns: date · **class icon · spec icon** ·
   character (class-coloured) · **ilvl** · target (category badge, count) · length · damage · DPS ·
   flags. The class and spec icons have tooltips with their names, and ilvl is sortable. Clicking a row
   opens **Run detail** in the right-hand pane. On narrow windows the detail replaces the list, with a
@@ -255,9 +284,11 @@ The primary standalone window (default 1040×560, resizable), with a tab strip a
   - **Timing strip:** a horizontal timeline from the start to the result, with the buzzer, the
     tail, each late cast as a tick, and the end of combat.
   - Flags, with their explanations.
-  - Note (free text, 200 chars) · **Share** · **Delete** (with confirmation).
+  - Note (free text, 200 chars; stored trimmed, control characters as spaces, `|` as `/` so no chat
+    escape can reach a later share) · **Share** · **Delete** (with confirmation).
 - **Bests:** the best run per **spec × category × race length**, across every character on the
-  account. Filters are spec and category; *Clean runs only* is off by default. Each row has the date,
+  account. Filters are spec and category; the category filter shows one category at a time (no
+  *All*), starting on the first present in catalog order. *Clean runs only* is off by default. Each row has the date,
   character, ilvl, damage, DPS and flags. Clicking one opens its run detail.
 
 ### 6.3 Settings (options-ui)
@@ -267,9 +298,9 @@ section headers and global reset.
 
 | Page | Settings |
 |---|---|
-| **General** | Enable · HUD scale · lock HUD · show HUD on arm only / always · the minimap button |
-| **Race** | Default race length · countdown cue (on/off, sound) · buzzer sound and raid warning (on/off) · **late-cast grace (s)** · **restart gap (s)** · sticky-combat hint delay (s) |
-| **Live breakdown** | Rows shown (3–15) · show spell icons · show live DPS |
+| **General** | The standard's Master controls (Enable, visibility, scale and lock, which apply to the HUD; scale applies to the Results window too; test mode; the minimap button) · a *Race HUD* tab: show HUD on arm only / always |
+| **Race** | Default race length (the presets) · countdown cue (on/off) · buzzer sound and raid warning (on/off) · **late-cast grace (s)** · **restart gap (s)** · sticky-combat hint delay (5–60s) |
+| **Live breakdown** | Rows shown (3–15) · live reads per second (2–10) · show spell icons · show live DPS |
 | **History** | **Runs to keep:** 0–10000, **default 0 = never prune**. Above 0, the oldest runs are pruned first and a run holding a best is always kept · *Delete all runs* (with confirmation) |
 | **Profiles** | AceDBOptions |
 
@@ -284,7 +315,10 @@ Grace and restart gap carry the note *Applies to new runs. Saved runs keep the v
     results* or *Arm last race* item. The Results window is reachable from the HUD's title bar,
     `/dpsrace results` and its key binding; arming is the HUD's Arm button, `/dpsrace arm` and the
     *Arm / cancel race* binding.
-- **Key bindings:** *Show race HUD* (the standard's *Show window* binding) and *Arm / cancel race*.
+- **Key bindings:** *Toggle race HUD* (the standard's *Show window* binding), *Toggle results
+  window* and *Arm / cancel race*. The arm key arms the HUD's length, cancels an armed or running
+  race, and never discards a run that is waiting for its result (it prints a line pointing at
+  `/dpsrace cancel`).
 - **Slash commands**: `/dpsrace` and `/dr`, dispatched through the standard's slash library. `/dr`
   is short and another addon may already have it. The library skips a name that's taken, so
   `/dpsrace` always works, and the clash is written to the debug log.
@@ -295,19 +329,25 @@ Grace and restart gap carry the note *Applies to new runs. Saved runs keep the v
 | `/dpsrace help` | The command index |
 | `/dpsrace arm [length]` | Arms a race. `length` is `90`, `1:30` or `3m`; without it, the last length is used |
 | `/dpsrace cancel` | Cancels the armed or running race, or discards a pending result |
-| `/dpsrace hud show\|hide\|toggle` | The Race HUD |
-| `/dpsrace results` | Opens the Results window |
+| `/dpsrace hud show\|hide\|toggle` | The Race HUD; a bare `hud` toggles |
+| `/dpsrace results [bests]` | Opens the Results window, on the Bests tab when asked |
 | `/dpsrace target` | Prints the target's name, creature ID and catalog category |
 | `/dpsrace test` | Preview mode (§6.5) |
 | `/dpsrace lock` / `unlock` | The HUD position |
 | `/dpsrace debug …` | Debug logging (LibKa0s debug console) |
 
+The standard's own verbs (`config`, `enable`, `disable`, `list`, `get`, `set`, `reset`, `resetall`,
+`diagnostics`, `perf`, `version`) are there too; `/dpsrace help` lists them all.
+
 ### 6.5 Preview (test) mode
 
 `/dpsrace test` runs a scripted 30s race on the HUD with made-up numbers: Armed, Running, Stop!,
-Waiting, then Result. It shows the library's `TestStrip` saying *Test mode: these numbers are not
-yours*, so the layout can be arranged without a dummy. Test runs are never written to history. Test
-mode ends itself the moment a real race is armed.
+Waiting, then Result, where it holds. It shows the library's `TestStrip` saying *Test mode: sample
+numbers. Combat or Arm ends it*, so the layout can be arranged without a dummy. Test runs are never
+written to history and never move the race engine. Test mode ends itself the moment a real race is
+armed or combat starts, and is refused during a real armed, running or stopping race and in combat.
+On a test result card, Cancel, Discard and closing the HUD end test mode, Race again and Details
+are grayed, and none of them reaches the real race.
 
 ## 7. Data model
 
@@ -316,35 +356,59 @@ schema version for migrations.
 
 ```lua
 run = {
-  id        = "1792758447-4429",        -- time() .. "-" .. random
+  id        = "1792758447-4429",        -- time() .. "-" .. random(1000, 9999); redrawn on a clash
   schema    = 1,
   status    = "complete",               -- running | stopping | complete | incomplete | lost
-  addon     = "0.1.0",  build = 120105,  date = 1792758447,   -- epoch at start
-  race      = { length = 30, grace = 1.0, restartGap = 6,
-                startSource = "meterSession", sessionID = 25 },
+                                        -- ("armed" exists in memory only and is never stored)
+  addon     = "0.1.0",  build = 120105,  -- GetBuildInfo's interface number
+  date      = 1792758447,               -- epoch: stamped at arm, restamped at the start
+  race      = { length = 30, grace = 1.0, restartGap = 6,    -- grace and gap frozen at arm
+                startSource = "meterSession",
+                startedAt = 81234.56,   -- GetTime() at the start; Resume's clock after a /reload
+                sessionID = 25,         -- the captured session (or the list match, §9)
+                armMaxSession = 24,     -- the highest session ID at arm: older ones are never the run's
+                lastDamage = 39.17 },   -- s after the start of the last DamageDone update heard
   char      = { name = "Lânfear", realm = "Frostmourne", class = "WARLOCK",
                 specID = 267, spec = "Destruction", role = "DAMAGER",
-                ilvl = 313.2, ilvlOverall = 313.4, level = 90, race = "BloodElf" },
-  target    = { npcID = 243205, name = "Reinforced Golem", category = "boss",
+                ilvl = 313.2, ilvlOverall = 313.4,   -- equipped and overall, one decimal
+                level = 90, race = "BloodElf" },
+  target    = { npcID = 243205, name = "Reinforced Golem", category = "boss",  -- re-read at combat start
                 count = 1, level = -1, classification = "normal" },
   where     = { mapID = 2393, zone = "Silvermoon City", subzone = "Falconwing Square",
                 instanceType = "none" },
   result    = { damage = 1539711, dps = 51323.7, meterDps = 39479.8,  -- probe run 8
                 sessionDuration = 39, tail = 9.17, combatEnd = 7.34,   -- s after the buzzer
                 endedAt = nil },                                       -- incomplete: s after the start
-  flags     = { lateCasts = { { t = 1.4, spellID = 29722 } },
-                restartedAt = nil, reloaded = false, died = false },
+  flags     = { lateCasts = { { t = 1.4, spellID = 29722 } },          -- spellID absent when sealed
+                restartedAt = nil,        -- s after the buzzer
+                reloaded = false, died = false,
+                sessionFromList = nil },  -- true when §9's list fallback chose the session
   spells    = { { id = 29722, dmg = 482113, dps = 2678.4 }, ... },     -- sorted highest first
   note      = "",
 }
 ```
 
+- **Every value in the record is plain.** A field read in combat (the target re-read at combat
+  start) passes through `Secrets`; a sealed field is simply absent, and a sealed re-read keeps the
+  arm-time value when it is recognizably the same target. No secret ever reaches SavedVariables.
+- A `lost` run keeps its metadata and has no `result`. An `incomplete` run's `result` has `endedAt`
+  and no `tail` or `combatEnd`.
+- A target's `name` is the client's (localized) unit name; the catalog's name is used only when the
+  unit's name can't be read. An uncataloged target has `category = "other"` and `count = 1`.
+- `note` is stored trimmed, with control characters as spaces and `|` as `/`, cut at 200 UTF-8
+  characters (never inside one). Saving a note does not count as a saved run, so it never triggers a
+  prune.
+- The run is saved at the start, when its session is captured, at the buzzer and at the result, so a
+  `/reload` at any point finds it.
+
 - About 1–1.5 KB per run, so roughly 1.5 MB of SavedVariables per 1000 runs. By default nothing is
   pruned (*Runs to keep* = 0, §6.3). Pruning runs at login and after each saved run, and only when
-  the setting is above 0.
+  the setting is above 0; changing the setting prunes nothing on the spot. A prune never removes a
+  running or stopping run, the run just saved, or the race's own run.
 - **Personal bests are worked out** from the runs when the Results window opens, and cached per
   session. They are not stored separately, so deleting a run updates them for free. Pruning never
-  removes a run that currently holds a best.
+  removes a run that currently holds a best, on either the all-runs or the clean-only board. Ties go
+  to the earlier run, then the lower id.
 - Spell names and icons are resolved for display through `C_Spell` and never stored. Locale and
   patch renames then resolve themselves.
 
@@ -354,25 +418,29 @@ run = {
 DpsRace/
   DpsRace.toc
   libs/        Ace3, LibStub, CallbackHandler, LibDataBroker, LibDBIcon, LibSharedMedia, LibKa0s (vendored)
+  Bindings.xml the three key bindings
   locales/     enUS.lua
-  core/        DpsRace.lua (AceAddon, events) · Compat.lua · Secrets.lua · Database.lua · Format.lua
-  defaults/    Defaults.lua · Dummies.lua
+  core/        DpsRace.lua (AceAddon, events) · Compat.lua · Secrets.lua · Database.lua · Bus.lua ·
+               the *Setup.lua descriptors (Core, Env, Lifecycle, Perf, DebugLog, Launcher, Pool, Widgets, Media)
+  defaults/    Profile.lua (every default) · Dummies.lua (the catalog)
   modules/
-    Meter.lua        the ONLY caller of C_DamageMeter: session-by-ID reads and the live reads (secret-safe)
-    Race.lua         the lifecycle state machine (§4), the clock and the buzzer
-    Watchers.lua     cast tracking (§5.2), tail and restart tracking (§5.3), combat edges
-    Recorder.lua     metadata snapshots, the run record (§7), resuming after a reload, pruning
-    Bests.lua        working out personal bests and their filters
-    Hud.lua          the Race HUD and its state bodies (§6.1)
-    HudBreakdown.lua the live and result spell rows (pooled)
-    Results.lua      the Results window shell and its tabs
-    ResultsRuns.lua  · ResultsDetail.lua · ResultsBests.lua
-    Share.lua        chat summary output
-    Preview.lua      test mode (§6.5)
-    Slash.lua · Launcher.lua
-  settings/    Panel.lua (AceConfig tables per page)
+    Meter.lua         the ONLY caller of C_DamageMeter: session-by-ID reads and the live reads (secret-safe)
+    Timeline.lua      damage-update stamps: the tail, the restart, the quiet before a read (§5.3)
+    Scoring.lua       the late-cast rule, DPS and the flag texts (§5)
+    Race.lua          the lifecycle state machine (§4), the clock, the buzzer, cast judging, resume
+    Watchers.lua      the race's event wiring, registered only while a race needs it
+    Recorder.lua      metadata snapshots, the run record (§7), the run store, pruning
+    Bests.lua         working out personal bests, deltas and prune protection
+    Format.lua        the one secret-safe number formatter, clock and length text
+    Hud.lua · Hud_States.lua · Hud_Breakdown.lua   the Race HUD, its state bodies, the spell rows (§6.1)
+    Results.lua · Results_Table.lua · Results_Runs.lua · Results_Detail.lua · Results_Bests.lua
+    Share.lua         the chat summary and the race's chat lines
+    Preview.lua       test mode (§6.5)
+    Diagnostics.lua   the diagnostics report's sections
+  settings/    Schema.lua · Slash.lua · OptionsSetup.lua · one file per page (General, Race, Live,
+               History, Profiles)
   tests/       headless suites (LibKa0s test kit)
-  docs/        ARCHITECTURE.md, testing.md, smoke-tests.md, superpowers/…
+  docs/        ARCHITECTURE.md and the tier docs, testing.md, smoke-tests.md, superpowers/…
   probe/       DpsRaceProbe (not packaged)
 ```
 
@@ -386,8 +454,11 @@ Rules carried over from MultiMeters, enforced in one place each:
 4. **Event registration is isolated** (`SafeRegisterEvent`), so an event name a client doesn't know
    costs only itself.
 
-`Race.lua` emits `RACE_STATE_CHANGED(run, from, to)` on the addon's message bus. The HUD, Recorder
-and Results listen to it and never poke each other directly.
+`Race.lua` emits `RACE_STATE_CHANGED(run, from, to)`, `RACE_BUZZER(run)` and `RACE_RESULT(run)` on
+the addon's message bus; `Recorder.lua` emits `RUN_SAVED(run)` and `RUNS_CHANGED`. The HUD, Results,
+Bests, Share and Preview listen and never poke each other directly. Race calls the Recorder and its
+own Watchers directly, because the watchers' registration set must follow the state on the same
+call.
 
 ## 9. Error and edge handling
 
@@ -407,8 +478,8 @@ and Results listen to it and never poke each other directly.
 - **Live reads are throttled to 4 Hz** (configurable 2–10), and only while the HUD's Running state
   is visible. They are triggered by `DAMAGE_METER_COMBAT_SESSION_UPDATED`, coalesced, and never run
   in `OnUpdate`.
-- The countdown text updates at 20 Hz from one `OnUpdate`, which is attached only while Running or
-  Stopping.
+- The countdown text updates at 20 Hz from one `OnUpdate`, which is attached only while Running;
+  Stopping has no clock and redraws at 4 Hz.
 - Nothing runs while idle except the regen and target events.
 - Perf instrumentation follows the standard's `performance` section (`/dpsrace perf`).
 
@@ -449,5 +520,6 @@ and Results listen to it and never poke each other directly.
 | 2026-10-23 | History: *Runs to keep* setting, default 0 = never prune. |
 | 2026-10-23 | The Results tables show class icon, spec icon and item level. |
 | 2026-10-23 | Slash commands: `/dpsrace` and `/dr`. |
+| 2026-10-23 | Spec synced to the shipped build (T10): the §7 record gains `race.startedAt`, `race.lastDamage`, `race.armMaxSession` and `flags.sessionFromList`, and states the note's sanitizing; arm refusals (§4.1); the start rule's same-frame edge (§4.2); the quiet measured from the later of combat end and the last update, the sealed-read retry and the resume cases (§4.5); single in-flight cast tracking and auto-repeat (§5.2); the *Session matched by list* and *Died* flags (§5.4); the result delta in words (§6.1); the filters' defaults and the Bests category filter (§6.2); the settings pages as built (§6.3); three key bindings and the extra slash forms (§6.4); test mode's strip text and refusals (§6.5); the file tree and the bus (§8); Stopping at 4 Hz (§10). |
 | 2026-10-23 | The launcher's right-click menu is the standard's fixed set (launcher-§2). *Show results* and *Arm last race* are dropped from it: the library takes no host entries, and both are one HUD click, one slash verb or one key binding away. |
 | 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |
