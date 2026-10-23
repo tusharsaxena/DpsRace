@@ -76,9 +76,20 @@ end
 
 -- ── settings and stored state ───────────────────────────────────────────────────────────────────
 
-local function setting(path, fallback)
+-- The shipped default for a profile path: defaults/Profile.lua is the only place a default is
+-- written (savedvariables-§2), so no literal fallback lives here.
+local function shipped(path)
+    local node = NS.defaults and NS.defaults.profile
+    for key in path:gmatch("[^.]+") do
+        if type(node) ~= "table" then return nil end
+        node = node[key]
+    end
+    return node
+end
+
+local function setting(path)
     local v = NS.GetSetting(path)
-    if v == nil then return fallback end
+    if v == nil then return shipped(path) end
     return v
 end
 
@@ -104,7 +115,7 @@ local function currentLength()
     local p = NS.db and NS.db.profile
     local last = p and p.race and p.race.lastLength
     if type(last) == "number" then return last end
-    return setting("race.defaultLength", 180)
+    return setting("race.defaultLength")
 end
 
 local function rememberLength(n)
@@ -143,14 +154,14 @@ end
 local function cue()
     if NS.IsStoodDown() or NS.Race.State() ~= S().RUNNING then return end
     -- Read at each mark, so switching the cue off silences the race in progress too.
-    if setting("race.countdownCue", true) == false then return end
+    if setting("race.countdownCue") == false then return end
     play("UI_BATTLEGROUND_COUNTDOWN_TIMER", SOUND_CUE)
 end
 
 --- The countdown cue (spec §4.3): one timer per mark still ahead, armed when the race runs.
 local function scheduleCues()
     cancelCues()
-    if setting("race.countdownCue", true) == false then return end
+    if setting("race.countdownCue") == false then return end
     local left = NS.Race.TimeLeft()
     if not left then return end
     for _, mark in ipairs(Hud.CUES) do
@@ -160,7 +171,7 @@ end
 
 --- The buzzer (spec §4.4): a raid-warning STOP and a sound, when the setting allows.
 local function buzzer()
-    if setting("race.buzzer", true) == false then return end
+    if setting("race.buzzer") == false then return end
     play("RAID_WARNING", SOUND_BUZZER)
     local notice, frame = RaidNotice_AddMessage, RaidWarningFrame
     if type(notice) ~= "function" or not frame then return end
@@ -230,7 +241,7 @@ local function stopView(v)
     v.endedAt = run.result and run.result.endedAt
     v.lateCasts = run.flags and run.flags.lateCasts
     v.grace = run.race and run.race.grace
-    local delay = setting("race.hintDelay", 15)
+    local delay = setting("race.hintDelay")
     if v.key == "waiting" and v.inCombat and (v.sinceBuzzer or 0) >= delay then v.hint = hintText() end
 end
 
@@ -267,7 +278,7 @@ local function resultView(v)
     local run = v.run
     if run.status == "complete" then v.delta, v.isNew = NS.Bests.Delta(run) end
     v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function"
-    v.icons = setting("live.icons", true) ~= false
+    v.icons = setting("live.icons") ~= false
 end
 
 local function runningView(v)
@@ -278,10 +289,10 @@ end
 local FILL = { idle = idleView, running = runningView, result = resultView }
 
 local function commonView(v)
-    v.rows = setting("live.rows", 8)
-    v.icons = setting("live.icons", true) ~= false
-    v.showDps = setting("live.showDps", true) ~= false
-    v.hz = setting("live.hz", 4)
+    v.rows = setting("live.rows")
+    v.icons = setting("live.icons") ~= false
+    v.showDps = setting("live.showDps") ~= false
+    v.hz = setting("live.hz")
 end
 
 local function raceView()
@@ -339,7 +350,7 @@ local function applyPlacement()
     f:ClearAllPoints()
     f:SetPoint(w.point or "CENTER", UIParent, w.relativePoint or "CENTER", w.x or 0, w.y or 0)
     f:SetSize(width, height)
-    f:SetScale(setting("scale", 1))
+    f:SetScale(setting("scale"))
     layoutBodies()
 end
 
@@ -549,7 +560,7 @@ local function footer(v)
     if char.name then parts[#parts + 1] = char.name end
     ui.footLeft:SetText(table.concat(parts, " \194\183 "))
     local right = type(char.ilvl) == "number" and L["ilvl %d"]:format(math.floor(char.ilvl)) or ""
-    if v.key == "running" then right = L["live \194\183 %d Hz"]:format(v.hz or 4) end
+    if v.key == "running" then right = L["live \194\183 %d Hz"]:format(v.hz) end
     if v.key == "waiting" then right = L["result pending"] end
     ui.footRight:SetText(right)
 end
@@ -588,7 +599,7 @@ local function readLive()
     liveData = NS.Meter.ReadLive() or liveData
     local body = ui.body.running
     if body and ui.current == "running" then
-        body:SetLive(liveData, setting("live.rows", 8), setting("live.icons", true) ~= false)
+        body:SetLive(liveData, setting("live.rows"), setting("live.icons") ~= false)
     end
     if t0 then Perf.Note("hudLive", debugprofilestop() - t0) end
 end
@@ -597,7 +608,7 @@ Hud.ReadLive = readLive
 --- A meter update: coalesced into at most one read per 1/live.hz seconds (spec §10).
 local function requestLive()
     if liveTimer or not liveWanted() then return end
-    local hz = math.max(1, tonumber(setting("live.hz", 4)) or 4)
+    local hz = math.max(1, tonumber(setting("live.hz")) or 1)
     local wait = 0
     if lastRead then wait = math.max(0, lastRead + 1 / hz - GetTime()) end
     liveTimer = C_Timer.NewTimer(wait, readLive)
@@ -697,7 +708,7 @@ function Hud.Refresh()
     ensureWindow()
     applyLock()
     applyTestMarker()
-    ui.frame:SetScale(setting("scale", 1))
+    ui.frame:SetScale(setting("scale"))
     if not windowShown() then
         pick.target, pick.count = nil, nil
         ui.frame:Show()
@@ -759,7 +770,7 @@ end
 
 --- The stand-up (and OnEnable): "always" shows the window; then re-decide from current state.
 function Hud.Resume()
-    if setting("hud.showMode", "onArm") == "always" then Hud.wanted = true end
+    if setting("hud.showMode") == "always" then Hud.wanted = true end
     if NS.Race.State() == S().RUNNING then scheduleCues() end
     Hud.Refresh()
 end
@@ -786,7 +797,7 @@ local function onState(_, from, to)
         autoShow()
     end
     if to == St.RUNNING then scheduleCues() else cancelCues() end
-    if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode", "onArm") == "onArm" then
+    if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode") == "onArm" then
         Hud.wanted, autoShown = false, false
     end
     debug("race %s -> %s", tostring(from), tostring(to))

@@ -182,6 +182,17 @@ test("hud: a changed Default race length takes effect over the remembered pick",
     assertEqual(f.Race.Current().race.length, 300)
 end)
 
+test("hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own", function()
+    local f = hud()
+    local D = f.NS.defaults.profile
+    D.race.defaultLength, D.live.hz, D.live.rows = 120, 6, 5
+    f.NS.GetSetting = function() return nil end      -- a degraded load: the store cannot answer
+    local v = f.Hud.View()
+    assertEqual(v.length, 120, "a second default for race.defaultLength")
+    assertEqual(v.hz, 6, "a second default for live.hz")
+    assertEqual(v.rows, 5, "a second default for live.rows")
+end)
+
 local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" }
 local BOAR = { guid = "Creature-0-1-2-3-99999-0001", name = "Angry Boar" }
 

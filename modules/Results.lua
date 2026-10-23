@@ -288,8 +288,9 @@ local function paintTabs()
 end
 
 local function footer()
-    local keep = tonumber(NS.GetSetting("global.history.keep")) or 0
-    ui.footRight:SetText(keep > 0 and L["Runs to keep: %d"]:format(keep) or L["Runs to keep: 0 (never prune)"])
+    -- GetSetting answers the shipped default itself (settings/Schema.lua); no second literal here.
+    local keep = tonumber(NS.GetSetting("global.history.keep"))
+    ui.footRight:SetText(keep and keep > 0 and L["Runs to keep: %d"]:format(keep) or L["Runs to keep: 0 (never prune)"])
 end
 
 function renderDetail()
@@ -342,7 +343,8 @@ end
 function Results.Refresh()
     if not Results.IsShown() then return hideWindow() end
     ensureWindow()
-    ui.frame:SetScale(tonumber(NS.GetSetting("scale")) or 1)
+    local scale = tonumber(NS.GetSetting("scale"))
+    if scale then ui.frame:SetScale(scale) end
     if not windowShown() then ui.frame:Show() end
     renderTab()
 end
