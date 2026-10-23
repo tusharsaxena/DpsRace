@@ -233,10 +233,21 @@ test("meter: modules/Meter.lua is the only file that names C_DamageMeter", funct
     assertEqual(hits[1], "modules/Meter.lua")
 end)
 
-test("meter: core/Secrets.lua is the only file that names the client's secret detectors", function()
+test("meter: core/Compat.lua is the only file that names the client's secret detectors", function()
     for _, name in ipairs({ "issecretvalue", "canaccessvalue", "canaccesstable", "issecrettable" }) do
         local hits = filesNaming(name)
         assertEqual(#hits, 1, name .. ": " .. table.concat(hits, ", "))
-        assertEqual(hits[1], "core/Secrets.lua", name)
+        assertEqual(hits[1], "core/Compat.lua", name)
+    end
+end)
+
+test("meter: core/Secrets.lua is the only caller of NS.Compat's secret guards", function()
+    for _, name in ipairs({ "IsSecret", "CanAccess", "IsSafeKey" }) do
+        local callers = {}
+        for _, path in ipairs(filesNaming("Compat%." .. name)) do
+            if path ~= "core/Compat.lua" then callers[#callers + 1] = path end
+        end
+        assertEqual(#callers, 1, name .. ": " .. table.concat(callers, ", "))
+        assertEqual(callers[1], "core/Secrets.lua", name)
     end
 end)

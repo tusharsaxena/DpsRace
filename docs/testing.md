@@ -58,7 +58,7 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | Suite | What it covers |
 |---|---|
 | `test_skeleton` | Registration, the printer, both slash commands, DB defaults, `NS.MSG`, produced interfaces, icons, file headers |
-| `test_secrets` | `core/Secrets.lua`: the guards over plain, nil and secret on both arms (LibKa0s-Compat and the stub), the conversions, `SafeIterate`'s bound, nil stop and refusal |
+| `test_secrets` | `core/Secrets.lua`: the guards over plain, nil and secret on both arms (LibKa0s-Compat and `core/Compat.lua`'s stub), routed through `NS.Compat`, the table detector's two rungs, the conversions, `SafeIterate`'s bound, nil stop and refusal |
 | `test_meter` | `modules/Meter.lua` on `tests/mock_meter.lua`: availability, the plain sorted after-combat read, `sealed`, `missing`, a raising client, the opaque live read under secrets, the session list, and the one-file rules for `C_DamageMeter` and the secret detectors |
 | `test_dummies` | `defaults/Dummies.lua`: the measured catalog rows, `Lookup` (known, unknown, a copy), the six categories and their labels |
 | `test_recorder` | `modules/Recorder.lua`: the player, target and place snapshots (a Creature GUID's npcID, a secret GUID, a sealed re-read filled from the arm-time snapshot), `NewRun` freezing grace and restart gap, unique ids, and the store's order, `Pending` filter and bus messages |

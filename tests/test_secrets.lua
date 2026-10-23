@@ -1,5 +1,5 @@
 -- tests/test_secrets.lua — core/Secrets.lua: the guards over plain, nil and secret values on both arms
--- (LibKa0s-Compat and the stub), the conversions, and SafeIterate's four rules.
+-- (LibKa0s-Compat and core/Compat.lua's stub), the conversions, and SafeIterate's four rules.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -41,6 +41,30 @@ test("secrets: the guards are LibKa0s-Compat's when the library loaded", functio
     assertEqual(T.NS.Secrets.IsSecret, Compat.IsSecret)
     assertEqual(T.NS.Secrets.CanAccess, Compat.CanAccess)
     assertEqual(T.NS.Secrets.IsSafeKey, Compat.IsSafeKey)
+end)
+
+test("secrets: the guards are routed through NS.Compat, the compat family's root", function()
+    local NS = T.NS
+    assertEqual(NS.Secrets.IsSecret, NS.Compat.IsSecret)
+    assertEqual(NS.Secrets.CanAccess, NS.Compat.CanAccess)
+    assertEqual(NS.Secrets.IsSafeKey, NS.Compat.IsSafeKey)
+    local inst = T.load{ libFiles = {}, init = false }
+    assertEqual(inst.NS.Secrets.IsSecret, inst.NS.Compat.IsSecret, "the stub arm is NS.Compat's too")
+end)
+
+test("secrets: CanAccessTable asks the client's table detector through NS.Compat", function()
+    local inst = T.load{ libFiles = {}, init = false, mutate = function(m)
+        m.canaccesstable = function(t) return t.open == true end
+    end }
+    local S = inst.NS.Secrets
+    assertTrue(S.CanAccessTable({ open = true }))
+    assertFalse(S.CanAccessTable({ open = false }), "a sealed table is refused")
+    assertFalse(S.CanAccessTable("t"), "a non-table never reaches the client")
+    local older = T.load{ libFiles = {}, init = false, mutate = function(m)
+        m.issecrettable = function(t) return t.sealed == true end
+    end }
+    assertFalse(older.NS.Secrets.CanAccessTable({ sealed = true }), "the issecrettable rung")
+    assertTrue(older.NS.Secrets.CanAccessTable({}))
 end)
 
 test("secrets: the stub arm answers the same with the library absent", function()

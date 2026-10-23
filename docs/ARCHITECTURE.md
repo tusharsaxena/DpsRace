@@ -177,8 +177,11 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
   line is plain text with every `|` replaced, so no chat escape reaches a channel.
 - The settings panel's combat lock is the library's (options-ui-§2): the panel refuses to open under
   lockdown, and the addon draws no page-level lock of its own.
-- Meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests them, and
-  `.luacheckrc` scopes the client's detectors to it (and `C_DamageMeter` to `modules/Meter.lua`).
+- Meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests them. The
+  client's detectors live in the compat family's root, `core/Compat.lua` (LibKa0s-Compat-1.0's
+  guards with their stub, and the table detector's ladder), whose guards `core/Secrets.lua` alone
+  calls; `.luacheckrc` scopes the detectors to `core/Compat.lua`, `C_DamageMeter` to
+  `modules/Meter.lua`, and `test_meter` scans for both fences.
   A frame given a secret through `SetValue` has secret geometry, so no layout reads geometry back
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
@@ -236,8 +239,8 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | `slash-dispatch.md` | Present | 21 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
-| `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: `core/Secrets.lua` (T2) binds the LibKa0s-Compat guards and owns none; re-check when one is added |
-| `compat-layer.md` | Not applicable | `core/Compat.lua` is present with two shims (`ChatSender`, `NewNumberFormatter`); the trigger is three or more |
+| `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |
+| `compat-layer.md` | Present | `core/Compat.lua` publishes three hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |

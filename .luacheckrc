@@ -36,11 +36,9 @@ files["tests/"] = {
     globals = { "_G.DPSRACE_TEST", "_G.DpsRaceDB", "_G.DpsRacePerfDB" },
 }
 
--- spec §8 rule 1, made a lint fact: the client's secret detectors are readable from core/Secrets.lua
--- only, and C_DamageMeter from modules/Meter.lua only. Anywhere else, naming one is a warning.
-files["core/Secrets.lua"] = {
-    read_globals = { "issecretvalue", "canaccessvalue", "issecrettable", "canaccesstable" },
-}
+-- spec §8 rule 1, made a lint fact: the client's secret detectors are readable from the compat family
+-- only (core/Compat.lua, whose guards core/Secrets.lua alone calls), and C_DamageMeter from
+-- modules/Meter.lua only. Anywhere else, naming one is a warning.
 files["modules/Meter.lua"] = { read_globals = { "C_DamageMeter" } }
 
 -- The run record's metadata snapshots (spec §7): who, against what and where. Scoped to the one file
@@ -57,7 +55,12 @@ files["modules/Recorder.lua"] = {
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 
 -- The compat family (compat): the version-variant client calls, and the only file that may name them.
-files["core/Compat.lua"] = { read_globals = { "C_ChatInfo", "SendChatMessage", "C_StringUtil" } }
+files["core/Compat.lua"] = {
+    read_globals = {
+        "C_ChatInfo", "SendChatMessage", "C_StringUtil",
+        "issecretvalue", "canaccessvalue", "issecrettable", "canaccesstable",
+    },
+}
 
 -- The Race HUD (T7). The formatter is the client's (C_StringUtil, through NS.Compat) with
 -- AbbreviateNumbers beneath it; spell names and icons come through C_Spell; the shell plays the cue and

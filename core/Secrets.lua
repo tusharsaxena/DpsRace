@@ -1,6 +1,7 @@
 local _, NS = ...
 -- core/Secrets.lua — the ONLY file that inspects a value that may be secret (spec §8 rule 1): the
--- LibKa0s-Compat guards with their stub arm, plain-number conversion and the bounded array walk.
+-- secret guards (NS.Compat's, which core/Compat.lua routes through LibKa0s-Compat-1.0 with its stub
+-- arm), plain-number conversion and the bounded array walk.
 --
 -- THE CONTRACT (WoW 12.0 secret values), measured by the probe (spec §2): while the Combat addon
 -- restriction is active, meter numbers, spell IDs, GUIDs and the isLocalPlayer flag arrive
@@ -19,54 +20,33 @@ local _, NS = ...
 --
 -- No perf brackets here: core/PerfSetup.lua loads after this file, and a per-value NS lookup is the
 -- cost the perf contract forbids. Callers carry the brackets.
+--
+-- LOAD ORDER: binds NS.Compat's guards at FILE SCOPE, so core/Compat.lua loads first (the TOC says so).
+-- This file names no client global: the detectors and their ladders live in the compat family.
 
 local Secrets = {}
 NS.Secrets = Secrets
+local Compat = NS.Compat
 
 -- ---------------------------------------------------------------------------
--- The three guards: LibKa0s-Compat-1.0's, with the stub arm.
+-- The three guards: NS.Compat's (LibKa0s-Compat-1.0's, or core/Compat.lua's stub arm)
 -- ---------------------------------------------------------------------------
---
--- THE GUARD ARM is a deliberate, documented duplication (LibKa0s docs/api/Compat/version-1-docs.md,
--- "Guards: the stub re-implements the body"). "The library is missing" is not "the client has no
--- secrets system": a stub answering IsSecret -> false on a 12.x client would send a secret into a
--- comparison mid-pull, on exactly the degraded path the stub exists to survive. The client globals
--- are read BARE and at CALL time, as the library reads them, so the harness's mock reaches both arms.
-
-local CompatLib = LibStub and LibStub("LibKa0s-Compat-1.0", true)
-
-local function isSecretStub(v)
-    local fn = issecretvalue
-    if not fn then return false end
-    return fn(v) and true or false
-end
-
-local function canAccessStub(v)
-    local fn = canaccessvalue
-    if fn then return fn(v) and true or false end
-    return not isSecretStub(v)
-end
-
-local function isSafeKeyStub(v)
-    if isSecretStub(v) then return false end
-    return v ~= nil
-end
 
 --- Whether `v` is a secret value. False on a client without the secrets system.
 --- @param v any
 --- @return boolean
-Secrets.IsSecret = CompatLib and CompatLib.IsSecret or isSecretStub
+Secrets.IsSecret = Compat.IsSecret
 
 --- Whether this context may look at `v`: the question that decides whether arithmetic or a
 --- comparison on it is legal. A plain value always answers true.
 --- @param v any
 --- @return boolean
-Secrets.CanAccess = CompatLib and CompatLib.CanAccess or canAccessStub
+Secrets.CanAccess = Compat.CanAccess
 
 --- Whether `v` may be a table KEY right now (not secret, not nil).
 --- @param v any
 --- @return boolean
-Secrets.IsSafeKey = CompatLib and CompatLib.IsSafeKey or isSafeKeyStub
+Secrets.IsSafeKey = Compat.IsSafeKey
 
 -- ---------------------------------------------------------------------------
 -- Value conversion
@@ -133,11 +113,7 @@ end
 --- @return boolean
 function Secrets.CanAccessTable(t)
     if type(t) ~= "table" then return false end
-    local can = canaccesstable
-    if can then return can(t) and true or false end
-    local isSecretTable = issecrettable
-    if isSecretTable then return not isSecretTable(t) end
-    return true
+    return Compat.CanAccessTable(t)
 end
 
 -- Hard ceiling on one walk. `#` is forbidden on a secret and a table dense past any sane length would

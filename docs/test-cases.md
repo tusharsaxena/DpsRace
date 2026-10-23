@@ -19,10 +19,12 @@ Total.
 - skeleton: every declared icon resolves to a shipped path
 - skeleton: every authored Lua file opens with the NS bootstrap and a path comment
 
-### test_secrets.lua (9)
+### test_secrets.lua (11)
 
 - secrets: IsSecret/PlainNumber over plain, nil and secret
 - secrets: the guards are LibKa0s-Compat's when the library loaded
+- secrets: the guards are routed through NS.Compat, the compat family's root
+- secrets: CanAccessTable asks the client's table detector through NS.Compat
 - secrets: the stub arm answers the same with the library absent
 - secrets: without the secrets system every value is plain
 - secrets: PlainTruth and PlainEquals never test a secret
@@ -31,7 +33,7 @@ Total.
 - secrets: SafeIterate refuses a table this context may not read
 - secrets: PlainString passes a plain string and refuses nil, a number and a secret
 
-### test_meter.lua (17)
+### test_meter.lua (18)
 
 - meter: the stat and session constants come from the client enum
 - meter: the constants fall back to 0 and 1 without the enum
@@ -49,7 +51,8 @@ Total.
 - meter: the live read answers nil with no session, no API or a raising client
 - meter: SessionIDs and HasSession track the client's list by plain ID
 - meter: modules/Meter.lua is the only file that names C_DamageMeter
-- meter: core/Secrets.lua is the only file that names the client's secret detectors
+- meter: core/Compat.lua is the only file that names the client's secret detectors
+- meter: core/Secrets.lua is the only caller of NS.Compat's secret guards
 
 ### test_dummies.lua (5)
 
@@ -513,8 +516,8 @@ Total.
 | Suite | Cases |
 |-------|------:|
 | test_skeleton.lua | 8 |
-| test_secrets.lua | 9 |
-| test_meter.lua | 17 |
+| test_secrets.lua | 11 |
+| test_meter.lua | 18 |
 | test_dummies.lua | 5 |
 | test_recorder.lua | 19 |
 | test_timeline.lua | 10 |
@@ -542,4 +545,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **412** |
+| **Total** | **415** |
