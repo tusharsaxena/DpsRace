@@ -112,6 +112,15 @@ local function rememberLength(n)
     if p and p.race then p.race.lastLength = n end
 end
 
+--- The Default race length row's reaction: a new default replaces the remembered pick, in this
+--- session and the stored one, so the setting takes effect on the HUD and the Arm key.
+function Hud.ForgetLength()
+    pick.length = nil
+    local p = NS.db and NS.db.profile
+    if p and p.race then p.race.lastLength = nil end
+    Hud.Refresh()
+end
+
 local function previewOn()
     return NS.Preview ~= nil and NS.Preview.IsActive() == true
 end

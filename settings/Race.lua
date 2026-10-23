@@ -15,16 +15,16 @@ local function lengthValues()
     return out
 end
 
--- The race's own reactions: the cue is armed when a race starts running, and the buzzer and the hint
--- read their rows when they fire, so only the HUD's idle body (the length it offers) needs a redraw.
-local function redraw() NS.Hud.Refresh() end
+-- A new default replaces the length remembered from the last pick (the HUD redraws with it). The
+-- cue, the buzzer and the hint read their rows when they fire, so they need no reaction.
+local function newDefault() NS.Hud.ForgetLength() end
 
 NS.RegisterSchemaRows({
     -- ── Race ──
     { path = "race.defaultLength", page = PAGE, group = RACE, subgroup = L["Length"], type = "number",
       label = L["Default race length"], default = D.defaultLength, values = lengthValues(),
-      tooltip = L["The race length the HUD offers until you pick another. The last length you raced is remembered."],
-      onChange = redraw },
+      tooltip = L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."],
+      onChange = newDefault },
     { path = "race.countdownCue", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
       label = L["Countdown cue (10, 5, 3, 2, 1)"], default = D.countdownCue,
       tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left. Takes effect from the next race."],

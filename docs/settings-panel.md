@@ -69,7 +69,7 @@ The *Test mode* row is the composer's, with `default = false` stamped by `settin
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
 | *Length* heading | | | |
-| Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A redraw of the HUD |
+| Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A change clears the remembered pick (`race.lastLength`) and redraws the HUD (`Hud.ForgetLength`) |
 | *Sounds* heading | | | |
 | Countdown cue (10, 5, 3, 2, 1) | `race.countdownCue` | checkbox | Read when the race starts running |
 | Buzzer raid warning and sound | `race.buzzer` | checkbox | Read at the buzzer |

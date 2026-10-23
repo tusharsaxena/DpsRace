@@ -167,6 +167,21 @@ test("hud: an unknown target is allowed and said so", function()
     assertEqual(body(f).w.card.name.__text, "No target")
 end)
 
+test("hud: a changed Default race length takes effect over the remembered pick", function()
+    local f = hud()
+    f.Hud.Show()
+    f.Hud.Act.pickLength(60)
+    assertEqual(f.Hud.View().length, 60)
+    assertTrue(f.NS.SetByPath("race.defaultLength", 300))
+    assertEqual(f.NS.db.profile.race.lastLength, nil, "the remembered pick outlived the new default")
+    assertEqual(f.Hud.View().length, 300)
+    local selected
+    for _, b in ipairs(body(f).w.presets) do if b.selected then selected = b.length end end
+    assertEqual(selected, 300, "the idle body still selects the old length")
+    assertTrue(f.NS.ToggleArm())
+    assertEqual(f.Race.Current().race.length, 300)
+end)
+
 local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" }
 local BOAR = { guid = "Creature-0-1-2-3-99999-0001", name = "Angry Boar" }
 

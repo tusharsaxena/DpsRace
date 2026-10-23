@@ -200,7 +200,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (39)
+### test_hud.lua (40)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -208,6 +208,7 @@ Total.
 - hud: idle Arm uses the picked length and target count; a refusal prints its line
 - hud: a custom length is parsed, range-checked and selected
 - hud: an unknown target is allowed and said so
+- hud: a changed Default race length takes effect over the remembered pick
 - hud: a target changed while the HUD is closed is never armed with the old count
 - hud: reopening the HUD offers the target of the moment, not the one cached at close
 - hud: running render raises nothing with secret values
@@ -506,7 +507,7 @@ Total.
 | test_race.lua | 44 |
 | test_race_resume.lua | 13 |
 | test_format.lua | 7 |
-| test_hud.lua | 39 |
+| test_hud.lua | 40 |
 | test_results.lua | 22 |
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
@@ -525,4 +526,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **395** |
+| **Total** | **396** |
