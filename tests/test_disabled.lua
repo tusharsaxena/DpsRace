@@ -79,6 +79,35 @@ test("Disabled 2+3: disabling through the write seam leaves NO registration behi
     assertEqual(#after, 0, "still registered: " .. table.concat(after, ", "))
 end)
 
+--- A bus receiver on a target from NS.NewBusTarget(), counting what it hears.
+local function busReceiver(NS)
+    local hits = { n = 0 }
+    local target = assert(NS.NewBusTarget(), "no bus target (AceEvent absent?)")
+    target:RegisterMessage(NS.MSG.RUN_SAVED, function() hits.n = hits.n + 1 end)
+    return hits
+end
+
+for _, arm in ipairs({ { label = "live", opts = nil }, { label = "degraded", opts = { libFiles = {} } } }) do
+    test("Disabled 2+3 (" .. arm.label .. "): a module's bus receiver goes at stand-down and comes back", function()
+        -- red under (degraded): make the Bus stub's StandDown in core/Bus.lua `return 0` again
+        local inst = T.load(arm.opts)
+        local NS = inst.NS
+        local hits = busReceiver(NS)
+        NS.SendBus(NS.MSG.RUN_SAVED)
+        assertEqual(hits.n, 1, "the fixture's receiver never heard the bus")
+        NS.RunVerb("disable")
+        assertTrue(NS.IsDisabled())
+        NS.SendBus(NS.MSG.RUN_SAVED)
+        assertEqual(hits.n, 1, "a bus receiver fired while disabled")
+        local left = regKeys(inst)
+        assertEqual(#left, 0, "still registered: " .. table.concat(left, ", "))
+        NS.RunVerb("enable")
+        assertFalse(NS.IsStoodDown())
+        NS.SendBus(NS.MSG.RUN_SAVED)
+        assertEqual(hits.n, 2, "the receiver was not replayed at stand-up")
+    end)
+end
+
 test("Disabled 4: no timer, ticker or OnUpdate is left armed, and none re-arms", function()
     -- red under: drop `addon:CancelAllTimers()` from standDown in core/LifecycleSetup.lua
     local inst, NS, M = scene()
@@ -124,43 +153,57 @@ test("Disabled 6: every event fired anyway writes nothing, prints nothing, shows
     assertFalse(NS.Hud.IsShown())
 end)
 
-test("Disabled 7: every verb answers while disabled; a feature verb answers one refusal line", function()
-    local inst, NS, M = scene()
-    local opened = 0
-    NS.OpenOptionsPanel = function() opened = opened + 1 end
-    assertTrue(NS.SetByPath("enabled", false))
-    local refusal = refusalLine(inst)
+--- Until T9 appends the real feature verbs every shipped verb is reserved, so a case that walks only
+--- NS.COMMANDS would check the refusal path zero times. A probe feature row, appended to THIS
+--- instance's table (the dispatcher holds the same table), routes through the shared handler and
+--- counts its own calls: while disabled the DISPATCHER must refuse it (zero calls), under the perf
+--- hold alone the dispatcher lets it through and the handler's own refusal answers.
+local function addProbeVerb(NS)
+    local probe = { calls = 0 }
+    NS.COMMANDS[#NS.COMMANDS + 1] = { "probe", "a feature verb for the test", function()
+        probe.calls = probe.calls + 1
+        NS.ToggleHud()
+    end }
+    return probe
+end
 
-    NS.Slash:OnSlash("")
-    assertEqual(opened, 1, "bare /dr opens the panel while disabled")
-
+--- Walk every verb while disabled; returns how many feature (non-reserved) verbs were checked.
+local function verbsWhileDisabled(NS, M, refusal)
+    local features = 0
     for _, row in ipairs(NS.COMMANDS) do
         local verb = row[1]
         M.__resetPrinted()
         M.__resetSvWrites()
+        local wanted = NS.Hud.wanted
         NS.Slash:OnSlash(verb)
         local out = printedBare(M)
         if RESERVED[verb] then
             -- `help` may name the disabled state above its index; refused means the line ALONE.
             assertFalse(#out == 1 and out[1] == refusal, verb .. " was refused while disabled")
         else
+            features = features + 1
             assertEqual(#out, 1, verb .. ": exactly one line")
             assertEqual(out[1], refusal, verb)
             assertEqual(#M.__svWrites(), 0, verb .. " reached a write seam")
+            assertEqual(NS.Hud.wanted, wanted, verb .. " acted while disabled")
         end
         if verb == "enable" then
             assertFalse(NS.IsDisabled(), "`enable` switched the addon back on")
             assertTrue(NS.SetByPath("enabled", false))
         end
     end
-    assertTrue(opened >= 2, "`config` opened the panel")
+    return features
+end
 
-    -- Under the `perf` hold alone a feature refuses with the capture line, never the disabled one.
+--- Under the `perf` hold alone a feature refuses with the capture line, never the disabled one.
+local function verbsUnderPerfHold(NS, M)
     assertTrue(NS.SetByPath("enabled", true))
     NS.Lifecycle:Hold(NS.HOLD_PERF)
     assertEqual(NS.StoodDownRefusal(), PERF_LINE)
+    local features = 0
     for _, row in ipairs(NS.COMMANDS) do
         if not RESERVED[row[1]] then
+            features = features + 1
             M.__resetPrinted()
             NS.Slash:OnSlash(row[1])
             local out = printedBare(M)
@@ -169,6 +212,47 @@ test("Disabled 7: every verb answers while disabled; a feature verb answers one 
         end
     end
     NS.Lifecycle:Release(NS.HOLD_PERF)
+    return features
+end
+
+test("Disabled 7: every verb answers while disabled; a feature verb answers one refusal line", function()
+    -- red under: drop `isEnabled` from the descriptor in settings/Slash.lua (the probe's handler
+    -- then runs while disabled; its own refusal would hide that, so its call count pins the gate)
+    local inst, NS, M = scene()
+    local probe = addProbeVerb(NS)
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
+    assertTrue(NS.SetByPath("enabled", false))
+
+    NS.Slash:OnSlash("")
+    assertEqual(opened, 1, "bare /dr opens the panel while disabled")
+
+    assertTrue(verbsWhileDisabled(NS, M, refusalLine(inst)) >= 1, "no feature verb was exercised")
+    assertEqual(probe.calls, 0, "the dispatcher let a feature verb through while disabled")
+    assertTrue(opened >= 2, "`config` opened the panel")
+    assertTrue(verbsUnderPerfHold(NS, M) >= 1, "no feature verb was exercised under the perf hold")
+    assertEqual(probe.calls, 1, "under the perf hold alone the handler itself answers")
+end)
+
+test("Disabled 7 (degraded): the library-absent dispatcher gates a feature verb the same way", function()
+    -- red under: drop the `d.isEnabled` check from the stub's OnSlash in settings/Slash.lua
+    local inst = T.load{ libFiles = {} }
+    local NS, M = inst.NS, inst.mocks
+    NS.OpenOptionsPanel = function() end
+    -- Degraded, a write to `enabled` is written through with no onChange; the verb takes the hold.
+    NS.RunVerb("disable")
+    assertTrue(NS.IsDisabled())
+    local probeRan = false
+    NS.COMMANDS[#NS.COMMANDS + 1] = { "probe", "a feature verb", function() probeRan = true end }
+    M.__resetPrinted()
+    NS.Slash:OnSlash("probe")
+    local out = printedBare(M)
+    assertFalse(probeRan, "the stub dispatched a feature verb while disabled")
+    assertEqual(out[#out], refusalLine(T), "the stub's refusal is not the one disabled line")
+    -- A reserved verb still answers.
+    M.__resetPrinted()
+    NS.Slash:OnSlash("version")
+    assertTrue(#M.__printed() > 0, "version was refused while disabled")
 end)
 
 test("Disabled 8: launcher clicks and the key binding write nothing and show nothing", function()
