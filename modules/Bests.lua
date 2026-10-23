@@ -123,20 +123,22 @@ function Bests.HoldingIDs(runs)
     return ids
 end
 
---- Prune to the stored setting (0 = never). Called at OnEnable and on every RUN_SAVED.
+--- Prune to the stored setting (0 = never). Called at OnEnable and on every RUN_SAVED, which passes
+--- the saved run's id so the run just stored is never the one removed.
+--- @param protect string|nil  a run id the prune keeps
 --- @return number removed
-function Bests.PruneToSetting()
+function Bests.PruneToSetting(protect)
     local keep = NS.GetSetting and NS.GetSetting("global.history.keep")
-    return NS.Recorder.Prune(keep)
+    return NS.Recorder.Prune(keep, protect)
 end
 
 -- ── bus ─────────────────────────────────────────────────────────────────────────────────────────
 
 local receiver = NS.NewBusTarget and NS.NewBusTarget()
 if receiver then
-    receiver:RegisterMessage(NS.MSG.RUN_SAVED, function()
+    receiver:RegisterMessage(NS.MSG.RUN_SAVED, function(_, run)
         Bests.Invalidate()
-        Bests.PruneToSetting()
+        Bests.PruneToSetting(type(run) == "table" and run.id or nil)
     end)
     receiver:RegisterMessage(NS.MSG.RUNS_CHANGED, function() Bests.Invalidate() end)
 end

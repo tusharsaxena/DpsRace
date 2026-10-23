@@ -105,9 +105,10 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
   `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
   with the best on its board before it.
-- **Pruning** (`Recorder.Prune(keep)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
+- **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
-  holding a best on either board and never a `running` or `stopping` run, and fires `RUNS_CHANGED`
+  holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
+  just stored and never the race's current run (the one on the result card), and fires `RUNS_CHANGED`
   once. While stood down the bus receiver is dropped, so nothing prunes.
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or

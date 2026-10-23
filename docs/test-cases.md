@@ -104,7 +104,7 @@ Total.
 - scoring: Flags names late-cast spells through an optional resolver
 - scoring: a clean complete run has no flags; lost stands alone at the end
 
-### test_bests.lua (18)
+### test_bests.lua (20)
 
 - bests: Key is specID|category|length
 - bests: incomplete and lost never count
@@ -122,6 +122,8 @@ Total.
 - bests: prune keeps best-holding runs
 - bests: prune never removes a running or stopping run, and stops at the holders
 - bests: prune runs on RUN_SAVED with the global history.keep setting
+- bests: prune never removes the run just saved, nor the race's own run
+- bests: a raced run that lands below the best survives the prune its own save fires
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
@@ -360,7 +362,7 @@ Total.
 | test_recorder.lua | 19 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
-| test_bests.lua | 18 |
+| test_bests.lua | 20 |
 | test_race.lua | 44 |
 | test_race_resume.lua | 13 |
 | test_schema.lua | 14 |
@@ -377,4 +379,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **271** |
+| **Total** | **273** |

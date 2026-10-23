@@ -228,6 +228,40 @@ test("bests: prune runs on RUN_SAVED with the global history.keep setting", func
     assertTrue(runs.a and runs.e, "kept the best and the run just saved")
 end)
 
+test("bests: prune never removes the run just saved, nor the race's own run", function()
+    local NS = fresh()
+    NS.db.global.history.keep = 1
+    storeAll(NS, { run("best", 1, 900) })                 -- the older run holds the board
+    assertTrue(NS.Recorder.Save(run("new", 2, 100)))      -- a slower run, just finished
+    local runs = NS.db.global.runs
+    assertTrue(runs.new ~= nil, "the run just saved was pruned in the same call")
+    assertTrue(runs.best ~= nil)
+    -- An explicit protected id, and the race's current run, are kept by a direct prune too.
+    storeAll(NS, { run("x", 3, 50) })
+    assertEqual(NS.Recorder.Prune(1, "new"), 1)
+    assertTrue(runs.new ~= nil and runs.x == nil)
+end)
+
+test("bests: a raced run that lands below the best survives the prune its own save fires", function()
+    local F = dofile(T.root .. "/tests/race_clock.lua")(T)
+    local f = F.new()
+    f.NS.db.global.history.keep = 1
+    local old = F.storedRun({ id = "1-1000", status = "complete", date = 1000,
+                              result = { damage = 9e9, dps = 9e9 } })
+    f.NS.db.global.runs[old.id] = old
+    assertTrue(f:arm(30))
+    local raced = f.Race.Current()
+    f:start(25)
+    old.char, old.target = raced.char, raced.target            -- the same board as the raced run
+    assertEqual(f.NS.Bests.Key(old), f.NS.Bests.Key(raced))
+    f:to(130)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(f.Race.State(), "result")
+    assertEqual(raced.status, "complete")
+    assertTrue(f.NS.db.global.runs[raced.id] == raced, "the run on the result card was pruned")
+end)
+
 test("bests: prune runs at OnEnable", function()
     -- Initialized but not enabled: the store is seeded as a previous session left it, then the
     -- client's enable fires.

@@ -271,12 +271,24 @@ end
 -- The statuses a prune may remove: resolved runs. A running or stopping run is Race.Resume's.
 local PRUNABLE = { complete = true, incomplete = true, lost = true }
 
+-- The runs a prune never removes besides the holders: `protect` (the run a RUN_SAVED just stored)
+-- and the race's own run (the one being raced or on the result card).
+local function protectedIDs(protect)
+    local ids = {}
+    if Secrets.IsSafeKey(protect) then ids[protect] = true end
+    local current = NS.Race and NS.Race.Current and NS.Race.Current()
+    if type(current) == "table" and Secrets.IsSafeKey(current.id) then ids[current.id] = true end
+    return ids
+end
+
 --- Remove the oldest runs until at most `keep` are stored, never one holding a best (all-runs or
---- clean-only board) and never one still running or stopping (spec §6.3, §7). With nothing left to
---- remove the store may stay above `keep`. Fires RUNS_CHANGED once when anything was removed.
+--- clean-only board), never one still running or stopping (spec §6.3, §7), never `protect` and never
+--- the race's current run. With nothing left to remove the store may stay above `keep`. Fires
+--- RUNS_CHANGED once when anything was removed.
 --- @param keep number|nil  0 (the default) or anything not a positive number is a no-op
+--- @param protect string|nil  a run id to keep (the run just saved)
 --- @return number removed
-function Recorder.Prune(keep)
+function Recorder.Prune(keep, protect)
     local runs = store()
     keep = Secrets.PlainNumber(keep)
     if not runs or not keep or keep < 1 then return 0 end
@@ -285,6 +297,7 @@ function Recorder.Prune(keep)
     for _ in pairs(runs) do total = total + 1 end
     if total <= keep then return 0 end
     local holding = NS.Bests.HoldingIDs(Recorder.All())
+    for id in pairs(protectedIDs(protect)) do holding[id] = true end
     local oldestFirst = collect(function(status) return PRUNABLE[status] == true end,
         function(a, b) return newerFirst(b, a) end)
     local n = 0
