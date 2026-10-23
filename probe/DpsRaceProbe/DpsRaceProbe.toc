@@ -1,0 +1,9 @@
+## Interface: 120105
+## Title: DPS Race Probe
+## Notes: Throwaway feasibility probe for Ka0s DPS Race. Measures C_DamageMeter timing, secrecy and duel behaviour.
+## Author: add1kted2ka0s
+## Version: 0.2.0
+## SavedVariables: DpsRaceProbeDB, DpsRaceProbeSecretDB
+## DefaultState: enabled
+
+DpsRaceProbe.lua
