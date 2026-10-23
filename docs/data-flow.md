@@ -142,7 +142,7 @@ race.
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
-  (`NS.Share.Prompt`, grayed until T9 adds it).
+  (`NS.Share.Prompt`).
 - **Sounds**: the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1 s left) armed when the
   race runs and canceled when it leaves RUNNING (`race.countdownCue`); `RACE_BUZZER` raises the raid
   warning *STOP* and its sound (`race.buzzer`). Neither needs the window.
@@ -178,3 +178,38 @@ timer or `OnUpdate`.
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
   `SETTINGS_CHANGED` for `global.history.keep` redraws the footer.
+
+## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
+
+- **Share**: the HUD's result card, the Results detail and a row's double-click call
+  `Share.Prompt(run)`. A run with no score (lost) prints one line and opens nothing; in combat, or in
+  the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
+  Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
+  sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
+  DPS Race)*) through `C_ChatInfo.SendChatMessage`; Whisper asks for a name first
+  (`DPSRACE_SHARE_WHISPER`, the player target's name offered). The line is plain text, every `|`
+  replaced.
+- **The race's own lines**, in the player's chat only: `RACE_STATE_CHANGED` to armed prints
+  `Share.ArmedLine(run)` (*Armed: 3:00 on Cleave Training Dummy ×5. First hit starts the clock.*), so
+  every surface that arms says so once; `RACE_RESULT` prints `Share.ResultLine(run, Bests.Delta(run))`
+  (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
+  a lost run could not be read.
+
+## Test mode (spec §6.5, preview-mode)
+
+- **On**: the Master controls' *Test mode* row (`state.testMode`), `/dr test` and the launcher's *Test
+  mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. A start is refused
+  with one line in combat and while a real race is armed, running or waiting for its result; the
+  checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
+- **The script**: a fresh sample run (the player's own name and spec, a single-target dummy, a
+  made-up 147.6K DPS) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result, drawn by
+  `NS.Hud.Render(state, run, figures)`: the HUD's own bodies, so the layout is the real one. One
+  `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
+  holds until test mode ends. The engine never moves and nothing is stored.
+- **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
+  these numbers are not yours*) under the title bar and moves the content down by its height; with no
+  Widgets library the title reads *DPS Race · TEST* instead, never both.
+- **Off**: its own switch, *Reset all settings* (the row's `default = false`), combat
+  (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
+  receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). A HUD that test mode
+  opened is closed again, except for a race. The stand-down ends it silently (`Preview.Suspend`).

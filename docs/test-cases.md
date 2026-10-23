@@ -222,7 +222,7 @@ Total.
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
 - hud: Race again re-arms the same length; Details and Share reach their modules
-- hud: Share is grayed until a Share module exists
+- hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 - hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
 - hud: the cue stops when the race is canceled
@@ -252,7 +252,7 @@ Total.
 - results: detail flags name late-cast spells and the session matched by list
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
-- results: Share is grayed until a Share module exists; a double-click shares
+- results: Share is grayed without a Share module; a double-click shares
 - results: bests tab groups by spec x category x length with clean-only toggle
 - results: list refreshes on RUN_SAVED
 - results: the HUD's Last result opens the newest run's detail
@@ -281,7 +281,26 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_slash.lua (13)
+### test_settings.lua (16)
+
+- settings: every schema row has default, enUS label and desc
+- settings: every row sits on a page the panel draws, and every page has a group
+- settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
+- settings: the scoring sliders say they apply to new runs
+- settings: the Race page's rows, ranges and defaults
+- settings: the Live breakdown page's rows 3..15 and reads 2..10 per second
+- settings: a write out of range is refused and stores nothing
+- settings: changing grace does not alter saved runs
+- settings: a live breakdown change redraws the HUD
+- settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
+- settings: the Race, Live breakdown and History pages register and render quietly
+- settings: the pages register in the panel's order, General first and Profiles last
+- settings: History says how many runs are stored
+- settings: Delete all runs asks first, then deletes through Recorder.DeleteAll
+- settings: Delete all runs is refused while a race is armed
+- settings: lowering Runs to keep never deletes on the spot
+
+### test_slash.lua (27)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -296,6 +315,49 @@ Total.
 - slash: library absent, /dr still answers, and enable/disable still land
 - slash: the stub's live-verb set is the library's LIVE_VERBS, no more and no less
 - slash: the stub carries no library string but the refusal format
+- slash: the feature verbs follow `version`, in the spec's order
+- slash: arm parses 90, 1:30, 3m and rejects 0 and 901
+- slash: a bare arm uses the last length, and an armed length becomes the last one
+- slash: arm prints the refusal line Race.Arm's reason maps to
+- slash: arm then cancel goes armed and back to idle, one line each
+- slash: target prints name, npcID and category
+- slash: an uncataloged target reads as Other
+- slash: hud show, hide and toggle; a bare hud toggles
+- slash: results opens the Results window; results bests opens the bests
+- slash: test turns test mode on and off through the Master controls row
+- slash: lock and unlock write the Lock frame row through the seam and echo it
+- slash: /dr and /dpsrace both dispatch
+- slash: feature verbs answer the enable line while disabled
+- slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept
+
+### test_share.lua (12)
+
+- share: Share.Line matches the mockup format
+- share: one target drops the count; an uncataloged target is named; incomplete is said
+- share: a lost run has no line, and the prompt says so
+- share: no chat escape survives into the line
+- share: Share refuses in combat
+- share: the prompt offers say, party, raid, guild and whisper; a channel you are not in is grayed
+- share: a send that finds the player in combat since the menu opened is refused
+- share: whisper asks for a name, then sends to it
+- share: the HUD's and the Results window's Share are live now Share exists
+- share: arming prints the armed line with the length and the target
+- share: a result prints the score line with the delta, the flags and the tail
+- share: the race's own result is printed once, when it resolves
+
+### test_preview.lua (11)
+
+- preview: preview runs armed->running->stop->waiting->result and never writes a run
+- preview: the running body counts the 30s race down with live figures
+- preview: the result card is the sample run, with its chips
+- preview: the test strip says so on the display while it is on, and only then
+- preview: with no Widgets library the title carries the marker
+- preview: arming a real race ends preview
+- preview: a start in combat is refused with one line; combat ends it and says so
+- preview: a start during a real race is refused
+- preview: turning it off gives the HUD back, closing it if test mode opened it
+- preview: Start again restarts the script; Reset all settings ends it
+- preview: the stand-down ends it silently and cancels its timer
 
 ### test_launcher.lua (8)
 
@@ -306,7 +368,7 @@ Total.
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
-- bindings: Bindings.xml names exactly the two buttons, with no default key
+- bindings: Bindings.xml names exactly the three buttons, with no default key
 
 ### test_disabled.lua (16)
 
@@ -444,7 +506,10 @@ Total.
 | test_hud.lua | 37 |
 | test_results.lua | 21 |
 | test_schema.lua | 14 |
-| test_slash.lua | 13 |
+| test_settings.lua | 16 |
+| test_slash.lua | 27 |
+| test_share.lua | 12 |
+| test_preview.lua | 11 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
 | test_surface_parity.lua | 15 |
@@ -457,4 +522,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **339** |
+| **Total** | **392** |

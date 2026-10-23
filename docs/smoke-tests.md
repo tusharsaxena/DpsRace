@@ -23,7 +23,14 @@ GitHub issue.
 - *Settings → AddOns → Ka0s DPS Race* exists right after login, before the panel was ever opened.
 - The landing page shows the logo, the notes line and the command list. Switching pages and back
   does not leave the logo drawn under the command list.
-- General has one tab, *Master controls*, with the rows in canonical order.
+- General has two tabs, *Master controls* (the rows in canonical order) and *Race HUD*.
+- Race, Live breakdown and History are listed between General and Profiles, each drawn as a tab
+  strip with subsection headings; each page's Defaults button restores only its own rows.
+- The Race page's grace slider steps by 0.1 from 0 to 5 and its tooltip says it applies to new runs;
+  the length dropdown offers 0:30 to 5:00.
+- History shows the stored count; *Delete all runs…* asks first and the Results window empties on
+  accept; with a race armed it refuses with one line. A large *Runs to keep* value is typed into the
+  slider's box without a stall.
 - Opening the panel in combat is refused with a notice; it opens once combat ends.
 - *Reset all settings* asks first; after it, the minimap button keeps its state.
 - Profiles: create, switch, copy and delete a profile. Run history is unaffected (it is global).
@@ -34,8 +41,23 @@ GitHub issue.
   Test mode and Show window.
 - Hovering shows the version and status, also while disabled.
 - *Minimap button* off hides the button; on brings it back in the same place.
-- *Key Bindings → AddOns → Ka0s DPS Race* lists *Toggle race HUD* and *Toggle results window*, with
-  no key set.
+- *Key Bindings → AddOns → Ka0s DPS Race* lists *Toggle race HUD*, *Toggle results window* and
+  *Arm / cancel race*, with no key set. The Arm / cancel key arms the HUD's length, cancels an armed
+  or running race, and only prints a line while a result is pending.
+
+## Feature verbs, Share and test mode (T9)
+
+- `/dr arm 1:30` arms 1:30 and prints the *Armed* line; `/dr arm 0` prints the length line;
+  `/dr cancel` cancels; `/dr target` on a catalog dummy prints its creature ID and category.
+- `/dr hud show|hide|toggle`, `/dr results`, `/dr results bests`, `/dr lock`, `/dr unlock` act and
+  echo; `/dpsrace` answers the same as `/dr`.
+- A result prints the score line once. *Share* on the result card and in the Results detail opens a
+  menu (Say, Party, Raid, Guild, Whisper…) with the channels you are not in grayed; Say posts the
+  mockup's line, Whisper asks for a name. In combat Share refuses with one line.
+- `/dr test` plays Armed, Running, Stop!, Waiting and Result on the HUD with the amber strip under
+  the title; the HUD can be dragged and resized while it plays. Entering combat ends it with one
+  line; arming a real race ends it and the HUD shows the real race; *Reset all settings* unticks
+  *Test mode*. The strip glyph (the info icon) and its text render at the HUD's minimum width.
 
 ## Disabled state
 

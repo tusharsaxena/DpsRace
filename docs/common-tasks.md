@@ -8,27 +8,31 @@ feature recipes (a dummy, a flag, a HUD state) once their files exist.
 
 - Add the default to `defaults/Profile.lua` (`profile` or `global`). It is the only place a default
   is written.
-- Add the row to the page file that owns it (`settings/General.lua` today): `path`, `page`, `group`
+- Add the row to the page file that owns it (`settings/General.lua`, `Race.lua`, `Live.lua` or
+  `History.lua`): `path`, `page`, `group`
   (its tab), `label`, `desc`, `type`, `default` read from `NS.defaults`, and an `onChange` if
   something must react.
 - Add `enUS` keys for the `label` **and** the `desc` in `locales/enUS.lua`.
 - If the reaction registers anything, it must also be rebuilt from current settings on stand-up
   (`standUp` in `core/LifecycleSetup.lua`).
 - Update [schema.md](schema.md) and [settings-panel.md](settings-panel.md); `test_schema.lua` checks
-  that every row resolves and has a group and label.
+  that every row resolves and has a group and label, and `test_settings.lua` that every row has a
+  default and both its enUS strings.
 
 ## Add a settings page
 
-- Create `settings/<Page>.lua`: build the context with `NS.Helpers.CreatePanel`, render through
-  `RenderTabbedSchema`, register with `NS.RegisterOptionsPage`.
+- Create `settings/<Page>.lua`: register its rows, then call `NS.RegisterTabbedPage{ key, title,
+  panelName, defaultsTooltip, afterGroup? }` (`settings/OptionsSetup.lua`), which builds the panel,
+  its Defaults button and the tabbed render (options-ui-§13).
 - Add its key to `VALID_PAGES` in `settings/Schema.lua`, and its TOC line after `settings/General.lua`
   and before `settings/Profiles.lua` (the page order is the registration order).
 
 ## Add a slash command
 
 - Append a positional triple `{ "verb", L["What it does"], function(rest) … end }` to `NS.COMMANDS`
-  in `settings/Slash.lua`. A feature verb calls the same handler its launcher entry or key binding
-  calls, which refuses through `NS.StoodDownRefusal()` while stood down.
+  in `settings/Slash.lua`. A feature verb wraps its handler in `feature()`, which answers
+  `NS.StoodDownRefusal()` under the perf hold, and calls the same handler its launcher entry or key
+  binding calls.
 - Add the `enUS` key. The help index and the landing page pick the row up on their own.
 - `test_disabled.lua` step 7 classifies every row, so the new verb's disabled behavior is checked
   without editing the test. Update the hub's *Slash Commands* table.

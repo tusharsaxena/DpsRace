@@ -3,7 +3,7 @@
 ![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.5-purple)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-339%2F339_passing-green)
+![Tests](https://img.shields.io/badge/Tests-392%2F392_passing-green)
 
 DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
 
@@ -17,7 +17,7 @@ When the buzzer goes, stop. Anything already in flight still counts, so a DoT th
 
 The result card shows your damage and DPS, how far you are above or below your best, and your top five abilities. Race again from there, or open the run in the Results window, or post a one-line summary to chat. The Results window keeps every run you've ever done. Filter it by character, spec, dummy type, length or date, sort it by DPS or item level, and open any run to see its full breakdown and a timeline of when the buzzer went, when your damage stopped and when combat ended. The Bests tab has your top run for each spec, dummy type and length.
 
-The race window can be moved and resized, and locked once you're happy with it. To arrange it without a dummy nearby, turn on test mode: it plays a short made-up race with a strip across the top saying the numbers aren't yours, and it switches off the moment you enter combat. The minimap button opens the settings on a left-click, and a right-click lets you switch the addon on or off, lock the window, toggle test mode or show the window. You can also bind keys to show the race window and the Results window under Key Bindings, AddOns, Ka0s DPS Race.
+The race window can be moved and resized, and locked once you're happy with it. To arrange it without a dummy nearby, turn on test mode: it plays a short made-up race with a strip across the top saying the numbers aren't yours, and it switches off the moment you enter combat. The minimap button opens the settings on a left-click, and a right-click lets you switch the addon on or off, lock the window, toggle test mode or show the window. You can also bind keys to show the race window and the Results window, and one to arm a race or cancel it, under Key Bindings, AddOns, Ka0s DPS Race.
 
 Everything else is on the addon's page under Settings → AddOns, and `/dr` (or `/dpsrace`) on its own opens it. `/dr help` prints the full command list.
 

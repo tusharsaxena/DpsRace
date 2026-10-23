@@ -22,10 +22,9 @@ pool, message bus, settings schema) come from the vendored `LibKa0s` v1.76.0; th
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **Where the build stands.** The scaffold (T1), the engine (T2 to T6), the Race HUD (T7,
-`modules/Hud*.lua` with `modules/Format.lua`) and the Results window (T8, `modules/Results*.lua`)
-are in the tree. The settings pages, feature verbs, Share and Preview (T9) are not yet;
-`modules/Placeholders.lua` holds the `NS.Preview` surface the scaffold already calls, which T9
-replaces. Sections below say which parts are planned rather than present.
+`modules/Hud*.lua` with `modules/Format.lua`), the Results window (T8, `modules/Results*.lua`) and
+the settings pages, feature verbs, Share, test mode and the Arm / cancel key (T9) are in the tree.
+What is left is the release record (T10) and the whole-branch review (T11).
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -48,8 +47,8 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Diagnostics.lua` (the report's sections) and `Placeholders.lua` (the stand-in T9 replaces) |
-| `settings/` | the schema runtime, the slash table, the options descriptor, the General and Profiles pages |
+| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, Live breakdown, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 | `probe/` | `DpsRaceProbe`, the measurement addon the spec's numbers came from; never loaded, never shipped |
 
@@ -76,11 +75,11 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the countdown cue's timers, the onArm show and hide; `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
-| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card |
-| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show) |
-| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone |
+| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
+| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
+| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `settings/History.lua`: repaints the stored count |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
@@ -109,10 +108,17 @@ in `settings/Slash.lua`, in its declared order:
 | `diagnostics` | Write the diagnostics report to the debug console |
 | `perf …` | Performance capture; `/dr perf help` |
 | `version` | Print the addon version |
+| `arm [length]` | Arm a race; `length` is `90`, `1:30` or `3m` (0:10 to 15:00); with none, the HUD's length |
+| `cancel` | Cancel the armed or running race, or discard a pending result |
+| `hud [show\|hide\|toggle]` | The race HUD; a bare `hud` toggles |
+| `results [bests]` | Open the Results window, on the Bests tab when asked |
+| `target` | Print the target's name, creature ID and catalog category |
+| `test` | Turn test mode on or off (the Master controls' *Test mode* row) |
+| `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
 
-T9 appends the feature verbs `arm [length]`, `cancel`, `hud show|hide|toggle`, `results`, `target`,
-`test`, `lock` and `unlock` (spec §6.4). The dispatch rules, the disabled gate and the live list:
-[slash-dispatch.md](slash-dispatch.md).
+The eight feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
+disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
+The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
 
 ## Event Subscriptions
 
@@ -154,12 +160,21 @@ STOPPING, and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed
 receiver (`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while
 the window is on screen.
 
+`modules/Preview.lua` (test mode) registers no game event either; combat ends it through
+`NS:OnCombatChanged`. While it plays its script it holds one `C_Timer` ticker at 10 Hz, canceled when
+the script reaches the result card, when test mode ends and at the stand-down. `modules/Share.lua`
+and `settings/History.lua` hold only their bus receivers.
+
 The pipeline from event to screen: [data-flow.md](data-flow.md).
 
 ## Taint Notes
 
-- The addon creates no secure frame and calls no protected API. The two key-binding buttons
-  (`DpsRaceToggleHud`, `DpsRaceToggleResults`) are plain, hidden and not secure (launcher-§6).
+- The addon creates no secure frame and calls no protected API. The three key-binding buttons
+  (`DpsRaceToggleHud`, `DpsRaceToggleResults`, `DpsRaceArmToggle`) are plain, hidden and not secure
+  (launcher-§6).
+- Share sends one chat line from a menu click (a hardware event), through `C_ChatInfo.SendChatMessage`
+  with the old global beneath it, and only out of combat and out of the client's chat lockdown. The
+  line is plain text with every `|` replaced, so no chat escape reaches a channel.
 - The settings panel's combat lock is the library's (options-ui-§2): the panel refuses to open under
   lockdown, and the addon draws no page-level lock of its own.
 - Meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests them, and
@@ -179,11 +194,12 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 
 ## Known Limitations
 
-- **No settings pages, Share or test mode yet (T9).** *Test mode* acts on the placeholder in
-  `modules/Placeholders.lua` and draws nothing. The HUD's and the Results window's *Share* stay
-  grayed (and a Results row's double-click does nothing) until `NS.Share` exists. The race and live
-  keys the HUD reads (`race.defaultLength`, `race.countdownCue`, `race.buzzer`, `race.hintDelay`,
-  `live.*`, `hud.showMode`) have their defaults but no schema rows until T9.
+- **The launcher menu has no *Show results* or *Arm last race* entry** (spec §6.4). The right-click
+  menu is `LibKa0s-Launcher-1.0`'s fixed set in launcher-§2's one order (Enabled, Locked, Test mode,
+  Show window), which takes no host entries. The Results window and arming are one key binding, one
+  verb or one HUD click away.
+- **Lowering *Runs to keep* deletes nothing on the spot.** The prune runs at login and after each
+  saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's filters are the session's.** They start at *all* (with *Include incomplete*
   on) at every login; they are view state, not settings.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
@@ -217,12 +233,12 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | Doc | Status | Trigger |
 |---|---|---|
 | `perf-analysis/README.md` | Present | The performance harness is wired (`core/PerfSetup.lua`) |
-| `slash-dispatch.md` | Present | 13 commands in `NS.COMMANDS` (eight or more) |
+| `slash-dispatch.md` | Present | 21 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: `core/Secrets.lua` (T2) binds the LibKa0s-Compat guards and owns none; re-check when one is added |
 | `compat-layer.md` | Not applicable | No `core/Compat.lua` (compat's applicability condition): no version-variant call is owned |
-| `message-bus.md` | Not applicable | 4 messages in `NS.MSG` (the trigger is more than ten) |
+| `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |
 

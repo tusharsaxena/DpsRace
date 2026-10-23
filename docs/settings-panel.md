@@ -10,10 +10,15 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows |
+| Race | The default race length, the countdown cue and the buzzer; the scoring rules (late-cast grace, damage-restart gap) and the sticky-combat hint's delay |
+| Live breakdown | The running HUD's rows shown, live reads per second, spell icons and live DPS |
+| History | Runs to keep (0 = never prune), the stored count, *Delete all runs…* |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
-T9 adds the **Race**, **Live breakdown** and **History** pages (spec §6.3).
+The pages register in that order (the order the panel lists them): General first, Profiles last.
+Race, Live breakdown and History are each built by `NS.RegisterTabbedPage` (`settings/OptionsSetup.lua`),
+with a page-wide **Defaults** button that restores that page's rows on the current profile.
 
 ## The tree (page → tab → row)
 
@@ -48,6 +53,64 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 | Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`) |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
+The *Test mode* row is the composer's, with `default = false` stamped by `settings/General.lua`, so
+*Reset all settings* ends test mode (options-ui-§15); the composer emits the row without one.
+
+#### Tab: Race HUD
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now |
+
+### Race
+
+#### Tab: Race
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Length* heading | | | |
+| Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A redraw of the HUD |
+| *Sounds* heading | | | |
+| Countdown cue (10, 5, 3, 2, 1) | `race.countdownCue` | checkbox | Read when the race starts running |
+| Buzzer raid warning and sound | `race.buzzer` | checkbox | Read at the buzzer |
+
+#### Tab: Scoring rules
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| Late-cast grace (s) | `race.grace` | slider 0 to 5, step 0.1 | Copied onto each new run; a saved run keeps its own (spec §5.2). The tooltip says *Applies to new runs* |
+| Damage-restart gap (s) | `race.restartGap` | slider 3 to 15 | Copied onto each new run, as grace is (spec §5.3) |
+| Sticky-combat hint after (s) | `race.hintDelay` | slider 5 to 60 | How long combat may hold after the buzzer before the HUD's waiting body suggests ways to drop it |
+
+### Live breakdown
+
+#### Tab: Live breakdown
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Rows* heading | | | |
+| Rows shown | `live.rows` | slider 3 to 15 | Spells the running HUD lists, in Blizzard's order |
+| Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
+| *Display* heading | | | |
+| Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
+| Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
+
+Every row's reaction is `NS.Hud.Refresh()`.
+
+### History
+
+#### Tab: History
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Storage* heading | | | |
+| Runs to keep | `global.history.keep` | slider 0 to 10000 | 0 (the default) never prunes. Above 0 the prune runs at login and after each saved run (spec §7), never on the change itself |
+| *Stored now* | — | text | `NS.History.StoredLine()`: the stored count and its size at about 1.5 KB a run; repainted on `RUN_SAVED` / `RUNS_CHANGED` |
+| *Danger zone* heading | | | |
+| Delete all runs… | — | button | `NS.History.ConfirmDeleteAll()`: asks first (`DPSRACE_DELETE_ALL_RUNS`), then `Recorder.DeleteAll()`, which fires `RUNS_CHANGED`. Refused while a race is armed, running or waiting for its result |
+
+The page's Defaults button restores *Runs to keep* only; it never touches a stored run.
+
 ### Profiles
 
 Untabbed: AceDBOptions' own table, drawn by AceConfigDialog into the library's panel. No Defaults
@@ -61,8 +124,9 @@ button. See [profiles.md](profiles.md).
 | Options menu entries | **Enabled** (`/dr enable` / `disable`), **Locked** (`NS.ToggleLock`, the *Lock frame* row), **Test mode** (`NS.ToggleTestMode`, the *Test mode* row), **Show window** (`NS.ToggleHud`, the race HUD). While disabled, only *Enabled* stays clickable; the rest are grayed and write nothing (launcher-§2) |
 | Key binding: *Toggle race HUD* | `CLICK DpsRaceToggleHud:LeftButton`, under **Key Bindings → AddOns → Ka0s DPS Race**. Presses the same `NS.ToggleHud` the *Show window* entry runs (launcher-§6) |
 | Key binding: *Toggle results window* | `CLICK DpsRaceToggleResults:LeftButton`, same category. Runs `NS.ToggleResults` |
+| Key binding: *Arm / cancel race* | `CLICK DpsRaceArmToggle:LeftButton`, same category. Runs `NS.ToggleArm`: arms the HUD's length, or cancels an armed or running race; never discards a pending result (spec §6.4) |
 
-Neither binding has a default key. Both refuse with the one disabled line while the addon is off,
+No binding has a default key. Each refuses with the one disabled line while the addon is off,
 and with the capture line under a perf run, exactly as the verbs do (slash-commands-§7). The button
 names are permanent: renaming one unbinds every player's key.
 

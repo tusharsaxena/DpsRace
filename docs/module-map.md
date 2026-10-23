@@ -28,12 +28,12 @@ drift from what the client loads (testing-§9).
 | `core/Secrets.lua` | `NS.Secrets`: the LibKa0s-Compat guards with their stub arm, `PlainNumber`, `PlainString`, `PlainTruth`, `PlainEquals`, `CanAccessTable`, the bounded `SafeIterate`; the only file that inspects a possibly-secret value | **load-bearing**: `modules/Meter.lua` captures `NS.Secrets` at file scope |
 | `core/Bus.lua` | `NS.MSG` names, the bus record, `NS.NewBusTarget`, `NS.SendBus` | conventional |
 | `core/PoolSetup.lua` | `NS.Pool` (`LibKa0s-Pool-1.0`), for the HUD and Results rows | conventional |
-| `core/WidgetsSetup.lua` | `NS.MakeDropdown`, `NS.CloseMenu`, `NS.MakeTestStrip`, `NS.HasWidgets` (`LibKa0s-Widgets-1.0`): the Results filter bars' dropdowns, with the catalog's `chevron-down` and `confirm` marks; nil (no control) when the library is absent | conventional (reached at call time) |
+| `core/WidgetsSetup.lua` | `NS.MakeDropdown`, `NS.CloseMenu`, `NS.MakeTestStrip`, `NS.TEST_STRIP_HEIGHT`, `NS.HasWidgets` (`LibKa0s-Widgets-1.0`): the Results filter bars' dropdowns, with the catalog's `chevron-down` and `confirm` marks, and the HUD's test-mode strip; nil (no control) when the library is absent | conventional (reached at call time) |
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
 | `core/PerfSetup.lua` | `NS.Perf` (`LibKa0s-Perf-1.0`) and its declared buckets | **load-bearing**: before any module holding `NS.Perf` as an upvalue |
 | `core/DebugLogSetup.lua` | `NS.DebugLog`, the gated sink `NS.Debug` and its gates (`LibKa0s-DebugLog-1.0`) | **load-bearing**: needs `FONT_MONO`, the flag and the printer; before any `NS.Debug` call |
-| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the two key-binding buttons | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
-| `core/DpsRace.lua` | AceAddon registration, `OnInitialize`/`OnEnable`, the game events, the shared toggle handlers | **load-bearing**: reclaims `NS.Print` from AceConsole's embed |
+| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the three key-binding buttons (the two Show-window keys and *Arm / cancel race*) | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
+| `core/DpsRace.lua` | AceAddon registration, `OnInitialize`/`OnEnable`, the game events, the shared handlers the launcher, the key bindings and the verbs run (`ToggleHud`, `ToggleResults`, `ToggleLock`, `ToggleTestMode`, `ToggleArm`, `SetHudShown`, `ShowResults`) | **load-bearing**: reclaims `NS.Print` from AceConsole's embed |
 | `core/Database.lua` | AceDB, the profile callbacks, the migration runner | conventional (reached at call time) |
 | `defaults/Profile.lua` | the AceDB defaults tree | the defaults group |
 | `defaults/Dummies.lua` | `NS.Dummies`: the measured training-dummy catalog (spec §4.6), `Lookup(npcID)`, the six `CATEGORIES` and their labels | **load-bearing**: reads `NS.L` at file scope |
@@ -53,23 +53,20 @@ drift from what the client loads (testing-§9).
 | `modules/Results_Detail.lua` | `NS.ResultsDetail`: the run detail pane (header, score with the best delta, the breakdown sorted with %, the timing strip, the flags with what each means, the note, Share, Delete, the narrow window's back control). Pure `Timing`, `Place`, `FlagLines`, `SortedSpells`, `Meta`, `ClampNote` (200 characters) | after `modules/Results_Table.lua`; captures `NS.HudBreakdown`'s row pitch at file scope |
 | `modules/Results_Bests.lua` | `NS.ResultsBests`: the Bests tab over `NS.Bests.Board` (spec and category filters, *Clean runs only*); pure `Rows`, `Options`, `Columns` | after `modules/Results_Table.lua` |
 | `modules/Results.lua` | `NS.Results`: the Results window (skin, close, Escape, resize, Master scale, stored position), the lazily built tabs, wide or narrow placement of the detail, the footer, the delete confirmation; `Show`/`Hide`/`Toggle`/`IsShown`/`ShowRun`/`ShowTab`/`Back`/`Selected`/`Tab`/`Mode`/`ConfirmDelete`/`DeleteRun`/`SetNote`/`ResetPosition`/`Refresh`/`Suspend`/`Resume`/`Diagnose` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) and reads `NS.defaults` for its size |
-| `modules/Placeholders.lua` | stand-in `NS.Preview`; T9 replaces it and deletes the file | conventional |
+| `modules/Share.lua` | `NS.Share`: `Line(run)` (the one-line share, mockup screen 12; nil for a run with no score), `Prompt(run, owner?)` (the channel menu: say, party, raid, guild, whisper, the ones the player is not in grayed; refused in combat), `Send`, `CHANNELS`, and the race's own chat lines `ArmedLine` / `ResultLine`, printed on `RACE_STATE_CHANGED` (armed) and `RACE_RESULT` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) |
+| `modules/Preview.lua` | `NS.Preview`: test mode. `Start` (refused in combat and during a race) / `Stop(reason?)` / `IsActive` / `Suspend` / `Diagnose`, the scripted 30s race (`SCRIPT`, `LENGTH`, `TICK`) drawn through `NS.Hud.Render`; ends on arming a real race | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
 | `settings/Slash.lua` | `NS.COMMANDS` and the `LibKa0s-Slash-1.0` descriptor | conventional |
-| `settings/OptionsSetup.lua` | `NS.Helpers`, the `LibKa0s-Options-1.0` instance | **load-bearing**: every page file captures `NS.Helpers` at file scope |
-| `settings/General.lua` | the General page (Master controls) and the landing spec `NS.LANDING` | **load-bearing**: registers first; page order is registration order |
+| `settings/OptionsSetup.lua` | `NS.Helpers`, the `LibKa0s-Options-1.0` instance; `NS.RegisterTabbedPage(spec)`, the one builder of the Race, Live breakdown and History pages, and `NS.pageCtx` | **load-bearing**: every page file captures `NS.Helpers` at file scope and the three pages call `NS.RegisterTabbedPage` at file scope |
+| `settings/General.lua` | the General page (Master controls, then the Race HUD tab: `hud.showMode`) and the landing spec `NS.LANDING` | **load-bearing**: registers first; page order is registration order |
+| `settings/Race.lua` | the Race page: default race length, countdown cue, buzzer, and the scoring rules (grace, restart gap, hint delay) | after `settings/General.lua` (page order); reads `NS.HudStates.PRESETS` and `NS.Format` at file scope |
+| `settings/Live.lua` | the Live breakdown page: rows shown, live reads per second, spell icons, live DPS | after `settings/Race.lua` (page order) |
+| `settings/History.lua` | the History page: Runs to keep, the stored count, *Delete all runs…* (`NS.History`: `StoredLine`, `ConfirmDeleteAll`, `DeleteAll`) | after `settings/Live.lua` (page order); builds its bus receiver at file scope |
 | `settings/Profiles.lua` | the Profiles page (AceDBOptions) | registers last |
 
-Not listed in the TOC: `Bindings.xml` (the client reads it by name; two `CLICK` bindings).
-
-## Planned files
-
-From the plan's file map; each lands with its task and gets a row above in the same change.
-
-| File | Task | Job |
-|---|---|---|
-| `settings/Race.lua`, `Live.lua`, `History.lua`, `modules/Share.lua`, `modules/Preview.lua` | T9 | settings pages, chat share, test mode |
+Not listed in the TOC: `Bindings.xml` (the client reads it by name; three `CLICK` bindings: the two
+Show-window keys and *Arm / cancel race*).
 
 ## Not shipped
 

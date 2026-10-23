@@ -26,22 +26,21 @@ row's `default` reads from it.
 | `visibility` | `"always"` | *General visibility* | `always`, `inCombat`, `outOfCombat` or `never` |
 | `scale` | `1.0` | *Master scale* | The HUD window's scale (`modules/Hud.lua`): the HUD is the addon's positionable display |
 | `locked` | `false` | *Lock frame* | The HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
-| `race.grace` | `1.0` | none yet (T9) | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
-| `race.restartGap` | `6` | none yet (T9) | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
-| `race.defaultLength` | `180` | none yet (T9) | The HUD's race length until the player picks one (spec §4.1) |
-| `race.countdownCue` | `true` | none yet (T9) | The cue sound at 10, 5, 3, 2 and 1 s left (spec §4.3) |
-| `race.buzzer` | `true` | none yet (T9) | The raid-warning STOP and its sound at the buzzer (spec §4.4) |
-| `race.hintDelay` | `15` | none yet (T9) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
-| `live.rows` | `8` | none yet (T9) | Spells in the live breakdown, 3-15 |
-| `live.icons` | `true` | none yet (T9) | Spell icons on the HUD's rows |
-| `live.showDps` | `true` | none yet (T9) | Blizzard's live DPS figure, labeled *live* |
-| `live.hz` | `4` | none yet (T9) | Live reads per second, 2-10 (spec §10) |
-| `hud.showMode` | `"onArm"` | none yet (T9) | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
+| `race.grace` | `1.0` | *Late-cast grace (s)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
+| `race.restartGap` | `6` | *Damage-restart gap (s)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
+| `race.defaultLength` | `180` | *Default race length*, Race page | The HUD's race length until the player picks one (spec §4.1) |
+| `race.countdownCue` | `true` | *Countdown cue*, Race page | The cue sound at 10, 5, 3, 2 and 1 s left (spec §4.3) |
+| `race.buzzer` | `true` | *Buzzer raid warning and sound*, Race page | The raid-warning STOP and its sound at the buzzer (spec §4.4) |
+| `race.hintDelay` | `15` | *Sticky-combat hint after (s)*, Race page (5-60) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
+| `live.rows` | `8` | *Rows shown*, Live breakdown page | Spells in the live breakdown, 3-15 |
+| `live.icons` | `true` | *Show spell icons*, Live breakdown page | Spell icons on the HUD's rows |
+| `live.showDps` | `true` | *Show live DPS*, Live breakdown page | Blizzard's live DPS figure, labeled *live* |
+| `live.hz` | `4` | *Live reads per second*, Live breakdown page | Live reads per second, 2-10 (spec §10) |
+| `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
 | `windows.hud.width` / `.height` | `300` / `360` | none (geometry) | The HUD's size; the minimum 260x240 is the spec's, in `modules/Hud.lua` |
 | `windows.results.width` / `.height` | `1040` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 760x420 is in `modules/Results.lua`. Its scale is the Master controls' `scale` |
 
-T9 adds the rows for `race.*`, `live.*` and `hud.showMode`; until then `NS.GetSetting` answers their
-defaults.
+Every `race.*`, `live.*` and `hud.showMode` key has its row; `race.lastLength` is state, below.
 
 ### Global (`db.global`)
 
@@ -50,7 +49,7 @@ defaults.
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
 | `schema` | `1` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
-| `history.keep` | `0` | *Runs to keep* (spec §6.3): 0 = never prune. Above 0, `Recorder.Prune` removes the oldest resolved runs at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. T9 adds the History page's row |
+| `history.keep` | `0` | *Runs to keep* (spec §6.3): 0 = never prune. Above 0, `Recorder.Prune` removes the oldest resolved runs at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. Its row is *Runs to keep* on the History page (0-10000); a change prunes nothing on the spot |
 | `minimap` | `{ hide = false }` | LibDBIcon's own table, handed straight to `:Register` (launcher-§3) |
 
 ### Session-only (never persisted)
@@ -58,7 +57,7 @@ defaults.
 | State | Where | Why session-only |
 |---|---|---|
 | Debug logging flag | `NS.State.debug` (`core/State.lua`) | debug-logging-§5 |
-| Test mode | `NS.Preview` (`modules/Placeholders.lua`, T9's `modules/Preview.lua`) | preview-mode: on until turned off, ended by combat |
+| Test mode | `NS.Preview` (`modules/Preview.lua`), through the `state.testMode` row (`default = false`, so *Reset all settings* ends it) | preview-mode: on until turned off, ended by combat and by arming a real race; its sample run is never stored |
 | Debug console shown | the console itself, through the `state.debugConsole` row | a window toggle, not a setting |
 
 ## Migrations
@@ -92,12 +91,12 @@ and a closed list of writers.
 
 | Storage key | Owner | Writers |
 |---|---|---|
-| `global.runs` | `modules/Recorder.lua` | `Recorder.Save`, `Recorder.Delete`, `Recorder.DeleteAll`, `Recorder.Prune` (T6); a run's `note` through `Recorder.Save` from the Results detail pane (T8) |
+| `global.runs` | `modules/Recorder.lua` | `Recorder.Save`, `Recorder.Delete`, `Recorder.DeleteAll` (the History page's *Delete all runs…*, T9), `Recorder.Prune` (T6); a run's `note` through `Recorder.Save` from the Results detail pane (T8) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |
 | `profile.windows.hud` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Hud.lua` | the HUD's drag stop (position) and resize grip (size); `Hud.ResetPosition` clears them (the Master controls' *Reset position*) |
-| `profile.race.lastLength` | `modules/Hud.lua` | `Hud.Act.pickLength` / `customLength`: the last race length picked on the HUD, offered next (spec §4.1). No default: absent means `race.defaultLength` |
+| `profile.race.lastLength` | `modules/Hud.lua` | `Hud.Act.pickLength` / `customLength`, and `/dr arm <length>` through `Hud.Act.pickLength`: the last race length picked, offered next (spec §4.1). No default: absent means `race.defaultLength` |
 | `profile.windows.results` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Results.lua` | the window's title-bar drag stop (position) and resize grip (size); `Results.ResetPosition` clears them (the Master controls' *Reset position*) |
 
 The Results window's filters, sort, selected run and tab are session-only view state and are not

@@ -37,15 +37,16 @@ The descriptor's `isEnabled` is `not NS.IsDisabled()`: only the `disabled` hold 
 capture's `perf` hold alone never prints the disabled line. While disabled:
 
 - every **reserved** verb keeps answering (`help`, `config`, `enable`, `disable`, `list`, `get`,
-  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`), which is the whole table
-  today;
-- a **feature** verb (T9's `arm`, `cancel`, `hud`, `results`, `target`, `test`, `lock`, `unlock`)
-  prints one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
+  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`);
+- a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `lock`, `unlock`) prints
+  one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
   (slash-commands-§2, §7).
 
-Feature handlers are the same functions the launcher and the key bindings call
-(`NS.ToggleHud`, `NS.ToggleResults`, `NS.ToggleLock`, `NS.ToggleTestMode`), and each refuses through
-`NS.StoodDownRefusal()`, which picks the disabled line or the capture line by hold.
+Every feature row's handler is wrapped in `feature()` (`settings/Slash.lua`), which answers
+`NS.StoodDownRefusal()` before the handler can act. The dispatcher has already refused while
+disabled, so in practice the wrapper speaks for the `perf` hold alone, with the capture line. Behind
+it each verb runs the same handler the launcher, the key bindings and the HUD's buttons run, never a
+copy.
 
 ## Host verbs
 
@@ -55,6 +56,25 @@ Feature handlers are the same functions the launcher and the key bindings call
 | `debug` | `doDebug` | `NS.DebugLog:DebugVerb(rest)` first (`diagnostics`, `on`, `off`), else toggles the window |
 | `diagnostics` | `NS.DebugLog:RunDiagnostics()` | See [debug.md](debug.md) |
 | `perf` | `doPerf` | Prints the lines `NS.Perf.OnCommand(rest)` returns; see [performance.md](performance.md) |
+
+## Feature verbs
+
+| Verb | Handler | Notes |
+|---|---|---|
+| `arm [length]` | `doArm` | `NS.Format.ParseLength` reads `90`, `90s`, `1:30`, `3m` and `1m30s`; a length outside 0:10 to 15:00, or one it cannot read, prints `Format.ArmRefusal("bad_length")` and arms nothing. A good length becomes the HUD's pick (`Hud.Act.pickLength`, so it is remembered as the last length), then `Hud.Act.arm()` arms it with the HUD's target count; a refusal prints `Format.ArmRefusal(reason)`. With no length it arms the HUD's own (the last raced, else `race.defaultLength`). The *Armed* line is printed by `modules/Share.lua` on `RACE_STATE_CHANGED`, so every surface that arms prints it |
+| `cancel` | `doCancel` | `NS.Race.Cancel()`, then one line for the state it found (canceled, discarded, result closed) or *Nothing to cancel.* |
+| `hud [show\|hide\|toggle]` | `doHud` | `NS.SetHudShown(word)`; a bare `hud` toggles, any other word prints the usage line |
+| `results [bests]` | `doResults` | `NS.ShowResults(word)`: `NS.Results.Show()`, or `ShowTab("bests")` |
+| `target` | `doTarget` | `Recorder.SnapshotTarget("target")`: `Target: <name> · creature <npcID> · category <label>`, or *No target.* |
+| `test` | `NS.ToggleTestMode` | Writes `state.testMode` through the seam, so the Master controls' checkbox follows |
+| `lock` / `unlock` | `doLock` | Writes the `locked` row through the seam and echoes it in the `set` shape (slash-commands-§8); degraded, written through with the HUD's `SetLocked` as the reaction |
+
+## The Arm / cancel key
+
+`CLICK DpsRaceArmToggle:LeftButton` (`Bindings.xml`) clicks a plain hidden button whose `OnClick` runs
+`NS.ToggleArm()` (`core/DpsRace.lua`): idle or on a result card it arms the HUD's length
+(`Hud.Act.arm`), armed or running it cancels. A run waiting for its result is never discarded by a
+key press; the key prints *A run is waiting for its result: /dr cancel discards it.* instead.
 
 The dispatcher's own refusals land in the console as `[Cmd]` lines through the descriptor's `debug`.
 

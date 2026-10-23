@@ -6,7 +6,8 @@ page (`settings/Profiles.lua`).
 ## What a profile holds
 
 Everything under `db.profile`: today the Master controls (`enabled`, `visibility`, `scale`,
-`locked`); from T7 to T9 the HUD, race, live-breakdown and window settings. See
+`locked`), the HUD's show mode (`hud.showMode`), the Race page (`race.*`), the Live breakdown page
+(`live.*`) and the windows' size and position (`windows.*`). See
 [schema.md](schema.md) for the full list.
 
 What a profile does **not** hold, by design:
