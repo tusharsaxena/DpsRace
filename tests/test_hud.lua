@@ -378,6 +378,47 @@ test("hud: waiting hint appears after hintDelay and names only owned drop-combat
     assertEqual(ui(f).footRight.__text, "result pending")
 end)
 
+test("hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing", function()
+    local f = hud()
+    running(f, 30)
+    f:to(130)
+    f:advance(0.5)
+    f:update(25)
+    assertEqual(f.Race.State(), "stopping")
+    tick(f)
+    assertEqual(current(f), "stop")
+    local onUpdate = assert(ui(f).frame:GetScript("OnUpdate"), "no countdown driver in STOPPING")
+    local b = body(f)
+    local updates, update = 0, b.Update
+    b.Update = function(...) updates = updates + 1; return update(...) end
+    for _ = 1, 4 do onUpdate(ui(f).frame, 0.05) end
+    assertEqual(updates, 0, "STOPPING has no clock: it need not redraw at 20 Hz")
+    onUpdate(ui(f).frame, 0.05)
+    assertEqual(updates, 1)
+
+    local sets, set = 0, b.w.chips.Set
+    b.w.chips.Set = function(...) sets = sets + 1; return set(...) end
+    for _ = 1, 10 do tick(f) end
+    assertEqual(sets, 0, "the chips were rebuilt with nothing changed")
+    f:advance(0.9)
+    f:update(25)
+    f.Race.OnCast("start", 29722, f:now(), "Cast-1")
+    tick(f)
+    assertEqual(sets, 1, "a new late cast did not reach the chips")
+end)
+
+test("hud: the sticky-combat hint asks for the player's spells once per race", function()
+    local f = hud()
+    local asked, known = 0, f.M.IsPlayerSpell
+    f.M.IsPlayerSpell = function(id) asked = asked + 1; return known(id) end
+    running(f, 30)
+    f:to(130)
+    f:advance(16)
+    for _ = 1, 20 do tick(f) end
+    assertTrue(body(f).w.hint:IsShown())
+    assertEqual(asked, #f.Hud.DROP_COMBAT, "IsPlayerSpell on every tick")
+end)
+
 test("hud: Discard run on the waiting body throws the attempt away", function()
     local f = hud()
     running(f, 30)

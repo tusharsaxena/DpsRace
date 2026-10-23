@@ -130,8 +130,10 @@ race.
   the window opens on arm and on `RACE_RESULT`, and closes again when the race it opened for goes
   back to idle; the player's own Show/Hide/close wins. Closing a result card (the × or Escape)
   dismisses it through `Race.Cancel()`; the run stays stored.
-- **The clock**: one `OnUpdate` at 20 Hz on the window, only while it is shown and the race RUNNING
-  or STOPPING, redraws the body (`hudTick`). The countdown turns amber at 10 s left.
+- **The clock**: one `OnUpdate` on the window, only while it is shown and the race RUNNING (20 Hz)
+  or STOPPING (4 Hz, `Hud.STOP_TICK`: no clock there), redraws the body (`hudTick`). The stop body
+  rebuilds its chips only when the late casts or the grace change, and the sticky-combat hint asks
+  `IsPlayerSpell` once per race. The countdown turns amber at 10 s left.
 - **The live breakdown**: while shown and RUNNING the HUD's frame holds
   `DAMAGE_METER_COMBAT_SESSION_UPDATED`; an update arms one `C_Timer` for the next free slot at
   `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled

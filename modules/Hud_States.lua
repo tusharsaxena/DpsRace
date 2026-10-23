@@ -476,19 +476,29 @@ function Builders.stop(parent)
     w.note = text(f, 11, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
     w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
-    function body.Layout(self, width) self.w.chips.width = width end
+    function body.Layout(self, width)
+        self.w.chips.width = width
+        self.shownKey = nil   -- the chips wrap at the new width on the next redraw
+    end
     function body.Update(self, v)
         v.unitTail = L["s after buzzer"]
         setStopFigures(self.w, v)
-        local list, late = {}, v.lateCasts or {}
+        -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
+        -- only when what they say (the late casts, the grace) changed.
+        local late, grace = v.lateCasts or {}, v.grace or 0
+        local first = late[1] and late[1].t or 0
+        local key = ("%d|%.1f|%.1f"):format(#late, first, grace)
+        if key == self.shownKey then return end
+        self.shownKey = key
+        local list = {}
         if #late == 1 then
-            list[1] = { text = L["1 late cast \194\183 +%.1fs"]:format(late[1].t or 0), color = C.amber }
+            list[1] = { text = L["1 late cast \194\183 +%.1fs"]:format(first), color = C.amber }
         elseif #late > 1 then
-            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(#late, late[1].t or 0), color = C.amber }
+            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(#late, first), color = C.amber }
         end
-        list[#list + 1] = { text = L["Grace %.1fs"]:format(v.grace or 0), color = C.info }
+        list[#list + 1] = { text = L["Grace %.1fs"]:format(grace), color = C.info }
         self.w.chips:Set(list)
-        self.w.note:SetText(L["Damage still landing (DoTs, travel time) counts. Casts that start more than %.1fs after the buzzer are flagged on the result."]:format(v.grace or 0))
+        self.w.note:SetText(L["Damage still landing (DoTs, travel time) counts. Casts that start more than %.1fs after the buzzer are flagged on the result."]:format(grace))
     end
     return body
 end

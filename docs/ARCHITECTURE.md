@@ -146,8 +146,8 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 
 `modules/Hud.lua` registers on its own event frame only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
-countdown text is one `OnUpdate` at 20 Hz on the window, attached only while the race is RUNNING or
-STOPPING, and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed when the race runs.
+countdown text is one `OnUpdate` on the window, attached only while the race is RUNNING (20 Hz) or
+STOPPING (4 Hz: no clock, and combat may hold for minutes), and the countdown cue is one `C_Timer` per mark (10, 5, 3, 2, 1) armed when the race runs.
 `Hud.Suspend()` drops all of it at the stand-down.
 
 | Event | Registered | Handler | Why |

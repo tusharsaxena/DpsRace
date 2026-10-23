@@ -16,8 +16,9 @@ local _, NS = ...
 -- WHAT RUNS, AND WHEN (spec §10). While the window is shown: PLAYER_TARGET_CHANGED and the regen edges
 -- (the idle target card and the Arm button's combat refusal). While it is shown AND the race is
 -- RUNNING: DAMAGE_METER_COMBAT_SESSION_UPDATED, coalesced into one live read per 1/live.hz seconds
--- (4 Hz by default), never from OnUpdate. While shown and RUNNING or STOPPING: one OnUpdate at 20 Hz
--- for the clock text. Nothing else. The countdown cue (10, 5, 3, 2, 1) is a set of timers armed when
+-- (4 Hz by default), never from OnUpdate. While shown and RUNNING or STOPPING: one OnUpdate, redrawing
+-- at 20 Hz for the clock text while RUNNING and at 4 Hz while STOPPING (no clock; combat may hold for
+-- minutes), the drop-combat spells asked once per race and the stop chips rebuilt only on a change. Nothing else. The countdown cue (10, 5, 3, 2, 1) is a set of timers armed when
 -- the race starts running, and the buzzer's raid warning answers RACE_BUZZER: both work with the
 -- window closed. Stand-down (Suspend) drops every registration, timer and the OnUpdate.
 --
@@ -37,6 +38,8 @@ Hud.HEIGHT = NS.defaults.profile.windows.hud.height
 Hud.MIN_WIDTH, Hud.MIN_HEIGHT = 260, 240
 -- The countdown text's refresh period (spec §10: 20 Hz).
 Hud.TICK = 0.05
+-- STOPPING has no clock to animate: its figures (seconds, one decimal, and the phase) redraw at 4 Hz.
+Hud.STOP_TICK = 0.25
 -- The countdown cue's marks, in seconds left (spec §4.3).
 Hud.CUES = { 10, 5, 3, 2, 1 }
 -- Abilities that drop combat, for the sticky-combat hint (spec §4.4): named only when known.
@@ -65,6 +68,7 @@ local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
 local preview                  -- what Hud.Render pushed while test mode is on
 local pick = {}                -- the idle body's choices: length, count, target, editing
+local dropNames                -- Hud.OwnedDropSpells() for this race, asked once (reset on arm)
 -- pick.target and pick.count are the target of the moment only while the window is shown (the one
 -- time PLAYER_TARGET_CHANGED is heard): forgotten on every show and on an arm from a closed window.
 
@@ -226,7 +230,8 @@ function Hud.OwnedDropSpells()
 end
 
 local function hintText()
-    local names = Hud.OwnedDropSpells()
+    dropNames = dropNames or Hud.OwnedDropSpells()
+    local names = dropNames
     if #names == 0 then return L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] end
     return L["Combat is holding. Walk out of range, or use %s. Your score is safe: it waits for combat to end, however long that takes."]
         :format(table.concat(names, L[" or "]))
@@ -647,13 +652,14 @@ end
 
 local function onUpdate(_, elapsed)
     tickAcc = tickAcc + (elapsed or 0)
-    if tickAcc < Hud.TICK then return end
+    local period = NS.Race.State() == S().STOPPING and Hud.STOP_TICK or Hud.TICK
+    if tickAcc < period - 1e-9 then return end
     tickAcc = 0
     local t0 = Perf.on and debugprofilestop()
     render(false)
     if t0 then Perf.Note("hudTick", debugprofilestop() - t0) end
 end
-Hud.Tick = function() tickAcc = Hud.TICK; onUpdate(nil, 0) end
+Hud.Tick = function() tickAcc = Hud.STOP_TICK; onUpdate(nil, 0) end
 
 local function syncTicker()
     local state = NS.Race.State()
@@ -792,7 +798,7 @@ end
 local function onState(_, from, to)
     local St = S()
     if to == St.ARMED then
-        liveData, lastRead = nil, nil
+        liveData, lastRead, dropNames = nil, nil, nil
         pick.editing = false
         autoShow()
     end
