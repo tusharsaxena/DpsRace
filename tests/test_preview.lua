@@ -89,14 +89,25 @@ test("preview: the test strip says so on the display while it is on, and only th
 end)
 
 test("preview: with no Widgets library the title carries the marker", function()
-    local inst = T.load{ libFiles = {} }
+    local inst = T.load{ libFiles = {}, mutate = function(m) Widgets.install(m) end }
     local NS = inst.NS
     assertTrue(NS.Preview.Start())
     local u = assert(NS.Hud.__ui())
     assertEqual(u.strip, nil)
-    assertTrue(NS.Hud.TitleText():find("TEST", 1, true) ~= nil, NS.Hud.TitleText())
+    assertEqual(NS.Hud.TitleText(), "DPS Race \194\183 Test", "the marker in Title Case, not a shout")
+    -- The longer title sits left and stops at the drag strip, clear of the title-bar controls.
+    local pts = u.frame.title.__points
+    assertEqual(#pts, 2, "the title is bounded on both sides")
+    assertEqual(pts[1][1], "LEFT")
+    assertEqual(pts[2][1], "RIGHT")
+    assertEqual(pts[2][2], u.drag, "the title stops where the drag strip does")
+    assertEqual(u.frame.title.__justifyH, "LEFT")
     NS.Preview.Stop()
     assertEqual(NS.Hud.TitleText(), "DPS Race")
+    NS.Hud.Show()
+    pts = u.frame.title.__points
+    assertEqual(#pts, 1, "back to one point")
+    assertEqual(pts[1][1], "CENTER", "the plain title is centered again")
 end)
 
 test("preview: arming a real race ends preview", function()

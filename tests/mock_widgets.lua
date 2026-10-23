@@ -112,6 +112,13 @@ return function(T)
             rawset(o, "SetTextColor", function(self, r, g, b, a) self.__color = { r, g, b, a }; return self end)
             rawset(o, "SetScale", function(self, s) self.__scale = s; return self end)
             rawset(o, "SetFontObject", function(self, font) self.__fontObject = font; return self end)
+            rawset(o, "SetPoint", function(self, ...)
+                self.__points = self.__points or {}
+                self.__points[#self.__points + 1] = { ... }
+                return self
+            end)
+            rawset(o, "ClearAllPoints", function(self) self.__points = {}; return self end)
+            rawset(o, "SetJustifyH", function(self, j) self.__justifyH = j; return self end)
             rawset(o, "SetVertexColor", function(self, r, g, b, a) self.__vertex = { r, g, b, a }; return self end)
             rawset(o, "CreateFontString", function(self, _, _, template) return region(self, template) end)
             rawset(o, "CreateTexture", function(self) return region(self) end)

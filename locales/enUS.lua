@@ -375,5 +375,5 @@ L["Test mode is not available in combat."] = "Test mode is not available in comb
 L["Test mode is not available during a race."] = "Test mode is not available during a race."
 L["Test mode ended: a race was armed."] = "Test mode ended: a race was armed."
 L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbers. Combat or Arm ends it"
-L["DPS Race \194\183 TEST"] = "DPS Race \194\183 TEST"
+L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"

@@ -96,7 +96,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     i.R.Show()
     local pane = runsPane(i)
     local labels = {}
-    for n, head in ipairs(pane.list.heads) do labels[n] = head.col.label end
+    for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
     assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Length|Damage|DPS|")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
@@ -670,21 +670,23 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
     assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
     local Tbl = i.NS.ResultsTable
-    assertEqual(Tbl.ROW_H, 20, "LootHistory's compact row")
+    assertEqual(Tbl.ROW_H, 18, "LootHistory's compact row (BrowserTable.ROW_H_DEFAULT)")
     assertEqual(Tbl.HEADER_H, 20, "LootHistory's 20px header")
     local pane = runsPane(i)
     for _, head in ipairs(pane.list.heads) do
         assertEqual(head.label.__fontObject, "GameFontNormalSmall", "a column header")
-        local label = head.col.label or ""
+        local label = (head.label.__text or ""):gsub("|T.-|t", "")
         assertFalse(label:find("%u%u%u%u") ~= nil, "an ALL-CAPS header: " .. label)
     end
     local cells = assert(visible(pane)[1], "no row drawn").cells
     assertEqual(cells.char.fs.__fontObject, "GameFontHighlightSmall", "a cell")
+    assertEqual(cells.flag.glyph.__fontObject, "GameFontHighlightSmall", "the flag glyph is cell text")
     assertEqual(cells.target.fs.__fontObject, "GameFontHighlightSmall", "the badge")
     for _, b in pairs(runsPane(i).checks) do assertEqual(b.label.__fontObject, "GameFontHighlightSmall") end
     assertEqual(pane.count.__fontObject, "GameFontDisableSmall")
     i.R.ShowRun("a")
     local d = ui(i).detail
+    assertEqual(d.w.name.__fontObject, "GameFontHighlight", "the name that heads the pane")
     assertEqual(d.w.damage.label.__text, "Damage")
     assertEqual(d.w.damage.label.__fontObject, "GameFontDisableSmall", "a KPI caption")
     assertEqual(d.w.damage.value.__fontObject, "GameFontNormalHuge", "a KPI figure stays large")

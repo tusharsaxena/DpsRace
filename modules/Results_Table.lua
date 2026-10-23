@@ -23,8 +23,8 @@ local L = NS.L
 local Style = NS.Style
 local FONT = Style.FONT
 
--- Compact rows under a 20px header, as LootHistory's list draws them (modules/Style.lua).
-Tbl.ROW_H = 20
+-- Compact rows under a 20px header, as LootHistory's list draws them (BrowserTable: 18px rows).
+Tbl.ROW_H = 18
 Tbl.HEADER_H = 20
 Tbl.PAD = 6                 -- the gap between two cells, and the row's inner margin
 Tbl.SCROLLBAR_W = 8
@@ -227,7 +227,7 @@ function Cells.badge(row)
 end
 
 function Cells.flag(row)
-    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TITLE, C.amber, "CENTER") }
+    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TEXT, C.amber, "CENTER") }
     cell.icon:SetSize(12, 12)
     cell.icon:SetVertexColor(C.amber[1], C.amber[2], C.amber[3])
     cell.spot = Tbl.TipSpot(row)

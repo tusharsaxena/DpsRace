@@ -231,7 +231,7 @@ local function buildHeader(p, c)
     w.class:SetSize(18, 18)
     w.spec = c:CreateTexture(nil, "ARTWORK")
     w.spec:SetSize(18, 18)
-    w.name = Tbl.Text(c, FONT.TITLE, C.text)
+    w.name = Tbl.Text(c, FONT.HEADING, C.text)
     w.specName = Tbl.Text(c, FONT.TEXT, C.dim)
     w.meta = { Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim) }
     w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)

@@ -59,7 +59,7 @@ local IDLE_CARD_Y = IDLE_TARGET_Y + 14
 local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 6
 local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_WARN_Y + 28, 24, 14
 States.IDLE_ARM_Y, States.ARM_HEIGHT = IDLE_ARM_Y, ARM_HEIGHT
--- The running body's rows sit between the KPIs and the caption over CANCEL.
+-- The running body's rows sit between the KPIs and the caption over Cancel.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
 -- The fewest spell rows any window size may leave a body (the minimum height is set from it).

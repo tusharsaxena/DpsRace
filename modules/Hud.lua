@@ -471,9 +471,30 @@ end
 -- content moved down by its height. With no Widgets library there is no strip, and the title carries
 -- the word instead; never both (one marker per mode).
 
+local function titleMarked()
+    return previewOn() and not (ui and ui.strip)
+end
+
 local function titleText()
-    if previewOn() and not (ui and ui.strip) then return L["DPS Race \194\183 TEST"] end
+    if titleMarked() then return L["DPS Race \194\183 Test"] end
     return L["DPS Race"]
+end
+
+-- The plain title is centered. The marked one is too long to center at the minimum width without
+-- reaching the controls, so it sits left and stops where the drag strip does.
+local function placeTitle(marked)
+    if ui.titleMarked == marked then return end
+    ui.titleMarked = marked
+    local t = ui.frame.title
+    t:ClearAllPoints()
+    if marked then
+        t:SetPoint("LEFT", ui.frame, "TOPLEFT", 10, -HEADER_H / 2)
+        t:SetPoint("RIGHT", ui.drag, "RIGHT", -4, 0)
+        t:SetJustifyH("LEFT")
+    else
+        t:SetPoint("CENTER", ui.frame, "TOP", 0, -HEADER_H / 2)
+        t:SetJustifyH("CENTER")
+    end
 end
 
 --- The title the window shows now, for the suites.
@@ -502,6 +523,7 @@ local function applyTestMarker()
         ui.content:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", PAD, -(CONTENT_TOP + drop))
         layoutBodies()
     end
+    placeTitle(titleMarked())
     ui.frame.title:SetText(titleText())
 end
 

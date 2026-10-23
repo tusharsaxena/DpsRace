@@ -39,7 +39,7 @@ the catalog (spec §4.6).
 | S3 | Open General | Two tabs: *Master controls* (rows in the standard's order) and *Race HUD* (show mode) | A screenshot |
 | S4 | Look at the page order | Race, Live breakdown and History sit between General and Profiles, each a tab strip with subsection headings | A screenshot |
 | S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
-| S6 | On Live breakdown, set *Rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under CANCEL) | A screenshot |
+| S6 | On Live breakdown, set *Rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
 | S7 | On History, type 10000 into *Runs to keep*'s box | Accepted at once, without a stall; nothing is deleted on the spot | How long it froze, if it did |
 | S8 | Press each page's *Defaults* button after changing one row on every page | Only that page's rows go back | Which page's rows moved |
 | S9 | History: *Delete all runs…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
@@ -73,9 +73,9 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R2 | Target a non-dummy creature | The card warns *Unknown target: recorded as Other: name* | A screenshot |
 | R3 | *Custom*: type `90`, then `1:30`, then `3m`, then `5` | The first three are accepted (1:30, 1:30, 3:00); `5` is refused with the 0:10 to 15:00 line | Each result |
 | R4 | Enter combat on anything, then look at *Arm Race* | Grayed with *Leave combat to arm*; a click prints the same line | A screenshot |
-| R5 | Arm 0:30 out of combat | Armed body: 0:30 large and still, *First hit starts the clock*, the target card, *CANCEL*; the chat prints the *Armed* line | A screenshot |
+| R5 | Arm 0:30 out of combat | Armed body: 0:30 large and still, *First hit starts the clock*, the target card, *Cancel*; the chat prints the *Armed* line | A screenshot |
 | R6 | Open with a cast-time spell, then on a second run with an instant | Both times the countdown starts on the frame the first hit lands (not on the cast's start), to a tenth of a second | Debug lines tagged `Race`, and which opener failed |
-| R7 | Keep attacking through the race | Running body: with *Race clock* at its default, *Elapsed* in green on the left and *Left* in red on the right, each in `m:ss.t`, counting up and down together; DAMAGE and *DPS · Live* figures; the live rows with icon, name, bar and amount, and no percentages; the header reads *Live order · % after the race* | A screenshot at about 0:15 left |
+| R7 | Keep attacking through the race | Running body: with *Race clock* at its default, *Elapsed* in green on the left and *Left* in red on the right, each in `m:ss.t`, counting up and down together; *Damage* and *DPS · Live* figures; the live rows with icon, name, bar and amount, and no percentages; the header reads *Live order · % after the race* | A screenshot at about 0:15 left |
 | R7a | General → Race HUD → *Race clock*: *Time left*, then *Time elapsed*, then back to *Elapsed and time left*, during a race and in test mode; then drag the HUD to its minimum width (260) | One big red clock, then one big green clock, then the pair; the switch takes effect at once. At 260 px wide the two clocks and their captions do not touch or clip, also at 9:59.9 | A screenshot at the minimum width |
 | R8 | Hear the last 10 s | With the defaults the cue sounds once a second from 10 down to 1, never twice in a second. With *Center-screen countdown* off it sounds at 10, 5, 3, 2 and 1 only. *Countdown cue* off silences it mid-race | Which seconds were silent or doubled |
 | R8a | Watch the last 10 s of a 0:30 race, HUD open, then again with the HUD closed | Gold numbers 10 down to 1 pop in (grow and fade in, with a glow flash) in the middle of the screen above the character, one a second; *10* is two digits, centered; they vanish at the buzzer, and the raid-warning *STOP* still shows. Nothing is clickable through them (the mouse passes through). Nobody else in the group sees a pull timer | A screenshot of *10* and of *1*, and whether a groupmate saw anything |
@@ -86,7 +86,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *Damage Stopped +x.xs* climbing while DoTs tick, the late-cast count, *In Combat +y.ys* | A screenshot |
 | R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *Discard Run*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
 | R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
-| R12 | Read the result card | Damage, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *Race Again*, *DETAILS*, *SHARE*; the chat prints the score line once | A screenshot and the score line |
+| R12 | Read the result card | Damage, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *Race Again*, *Details*, *Share*; the chat prints the score line once | A screenshot and the score line |
 | R13 | *Race Again* | Re-arms 0:30 against the same target | The armed length |
 | R14 | Stop attacking at about 0:12 left and drop combat | The run becomes incomplete: the card says *Incomplete (combat ended at m:ss)* and its DPS is damage ÷ the time fought; it never appears on the Bests board | A screenshot |
 | R15 | Let the Dungeoneer's dummy kill you mid-race | *Incomplete: died* on the card | A screenshot |
@@ -123,7 +123,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | W7 | Make the window narrower than 900 px and click a run | The detail replaces the list with a back control; back returns to the list with the row still selected | A screenshot |
 | W8 | Type a note with a `|` in it and press Enter; reopen the run | The note is saved with `/` in place of `|`; Escape instead cancels the edit; at most 200 characters fit | The stored note |
 | W9 | *Delete* a run holding a best | It asks first; on accept the run goes and the Bests board promotes the next run | The board before and after |
-| W10 | *Bests* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 LATE*, *RESTARTED*, *RELOADED*, *BY LIST*, *DIED*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
+| W10 | *Bests* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 late*, *Restarted*, *Reloaded*, *By list*, *Died*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
 | W11 | Move and resize the window, `/reload` | Position and size persist; *Master scale* scales it too | |
 | W12 | Escape with the window focused; Alt-Z | Escape closes it; Alt-Z hides and shows it without counting as a close | |
 | W13 | Open and use the window in combat | It opens, redraws and sorts with no taint error or blocked-action message | The error text |
@@ -135,7 +135,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| P1 | *SHARE* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
+| P1 | *Share* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
 | P2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · spec ilvl · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
 | P3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
 | P4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |

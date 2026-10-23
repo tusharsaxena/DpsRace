@@ -6,7 +6,7 @@ local _, NS = ...
 --
 -- Session-only and on until turned off (the Master controls' Test mode row, `/dr test`, the launcher).
 -- It ENDS on combat (core/DpsRace.lua's PLAYER_REGEN_DISABLED), on arming a real race, on its own
--- switch, on Reset all settings (the row's default), on closing the HUD or its sample CANCEL
+-- switch, on Reset all settings (the row's default), on closing the HUD or its sample Cancel
 -- (modules/Hud.lua's acts, which never touch the real race), and silently on the stand-down. A start is refused
 -- in combat and while a real race is armed, running or waiting for its result. It never touches the
 -- race engine and never writes a run: the sample run lives only in this file.

@@ -151,7 +151,7 @@ race.
   Blizzard's order, `live.rows` of them, no %. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race again*
+  `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race Again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
   (`NS.Share.Prompt`).
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
@@ -231,7 +231,7 @@ timer or `OnUpdate`.
   holds until test mode ends. The engine never moves and nothing is stored.
 - **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
-  Widgets library the title reads *DPS Race · TEST* instead, never both.
+  Widgets library the title reads *DPS Race · Test* instead, never both.
 - **Off**: its own switch, *Reset all settings* (the row's `default = false`), combat
   (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
   receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). A HUD that test mode
