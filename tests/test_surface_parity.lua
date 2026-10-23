@@ -68,6 +68,8 @@ end)
 
 test("parity: the DebugLog stub carries every member this addon calls", function()
     local l, d = pair()
+    -- members from: grep -rhoE "DebugLog[.:][A-Za-z]+" core/ modules/ settings/ | sort -u, plus
+    -- Hide, IsEnabled and SetEnabled, which the console row and the diagnostics contract reach
     local used = { "Add", "Debug", "Show", "Hide", "Toggle", "IsShown", "IsEnabled", "SetEnabled",
                    "ConsoleCheckbox", "RunDiagnostics", "DebugVerb", "DebugOnce", "DebugChanged",
                    "DebugAtEnable" }
@@ -77,9 +79,69 @@ test("parity: the DebugLog stub carries every member this addon calls", function
     end
 end)
 
-test("parity: the Pool stub carries the array-shape members", function()
+--- Each named member has the same type on the live and the library-absent load: the "asserted
+--- present on both arms" half of testing-§8 for a seam whose stub is not a mirror of one table.
+local function bothArms(label, get, members)
+    local l, d = pair()
+    for name, want in pairs(members) do
+        assertEqual(type(get(l.NS)[name]), want, "live " .. label .. "." .. name)
+        assertEqual(type(get(d.NS)[name]), want, "stub " .. label .. "." .. name)
+    end
+end
+
+test("parity: the Pool stub carries the array-shape members, on both arms", function()
+    -- members from: grep -nE "^function lib\.(New|Acquire|ReleaseAll|Counts)\(" libs/LibKa0s/Pool.lua
+    -- (the array shape; nothing calls NS.Pool until the T7/T8 windows, the Keyed shape is not adopted)
+    bothArms("NS.Pool", function(NS) return NS.Pool end,
+        { New = "function", Acquire = "function", ReleaseAll = "function", Counts = "function" })
+end)
+
+test("parity: the Perf stub carries every member this addon reads, on both arms", function()
+    -- members from: grep -rhoE "Perf[.:][A-Za-z]+" core/ modules/ settings/
+    bothArms("NS.Perf", function(NS) return NS.Perf end,
+        { on = "boolean", Note = "function", OnCommand = "function" })
+end)
+
+test("parity: the Core seam carries every member this addon reads, on both arms", function()
+    -- members from: grep -rhoE "NS\.(Print|SafeToString|IsConcatSafe|SafeRegister[A-Za-z]*|ApplySkin|SKIN|MakeCloseButton)" core/ modules/ settings/
+    bothArms("NS", function(NS) return NS end, {
+        Print = "function", SafeToString = "function", IsConcatSafe = "function",
+        SafeRegisterEvent = "function", SafeRegisterUnitEvent = "function",
+        SafeRegisterEvents = "function", ApplySkin = "function", SKIN = "table",
+        MakeCloseButton = "function",
+    })
+    bothArms("NS.Util", function(NS) return NS.Util end, { print = "function" })
+    local l, d = pair()
+    assertTrue(l.NS.Print == l.NS.Util.print, "live: NS.Print is not NS.Util.print (architecture-§2)")
+    assertTrue(d.NS.Print == d.NS.Util.print, "stub: NS.Print is not NS.Util.print (architecture-§2)")
+end)
+
+test("parity: the Media seam answers on both arms, nil being a real answer", function()
+    -- members from: grep -rhoE "NS\.(Icon|MediaFont)" core/ modules/ settings/
+    bothArms("NS", function(NS) return NS end, { Icon = "function", MediaFont = "function" })
     local _, d = pair()
-    for _, name in ipairs({ "New", "Acquire", "ReleaseAll", "Counts" }) do
-        assertEqual(type(d.NS.Pool[name]), "function", name)
+    assertEqual(d.NS.Icon("close"), nil, "the stub invented an icon path")
+    assertEqual(d.NS.MediaFont("any"), nil, "the stub invented a font path")
+end)
+
+test("parity: the Env seam answers the TOC's version on both arms", function()
+    -- members from: grep -rhoE "NS\.(Meta|Version)\b" core/ modules/ settings/
+    bothArms("NS", function(NS) return NS end, { Meta = "function", Version = "function" })
+    local l, d = pair()
+    assertEqual(d.NS.Version(), l.NS.Version(), "the stub reads a different version")
+    assertEqual(d.NS.Meta("Version"), l.NS.Meta("Version"))
+end)
+
+test("parity: the hollow composers cost the library-absent load exactly the Master-controls rows", function()
+    -- red under: make Helpers.MasterControls in settings/OptionsSetup.lua's stub emit rows, or add a
+    -- row a page declares outside a composer (options-ui-§1: pin both counts and the delta)
+    local l, d = pair()
+    local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
+    assertEqual(#l.NS.Schema, 7, "the full load's row count")
+    assertEqual(#d.NS.Schema, 0, "the library-absent load's row count")
+    assertEqual(#l.NS.Schema - #d.NS.Schema, MASTER_CONTROLS_ROWS,
+        "the gap is not the Master-controls rows the hollow composer drops")
+    for _, row in ipairs(l.NS.Schema) do
+        assertEqual(row.group, "Master controls", row.path .. " is outside the composer's group")
     end
 end)

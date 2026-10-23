@@ -77,6 +77,8 @@ local SUITES = {
     "test_launcher",
     "test_disabled",
     "test_surface_parity",
+    "test_perf_harness",
+    "test_loadorder",
     "test_vendor_sync",
     { name = "test_eol", dir = "tests/_kit/" },
     { name = "test_prose", dir = "tests/_kit/" },

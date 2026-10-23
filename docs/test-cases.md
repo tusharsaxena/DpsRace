@@ -36,7 +36,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_slash.lua (11)
+### test_slash.lua (13)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -49,6 +49,8 @@ Total.
 - slash: `resetall` asks first, through the one popup
 - slash: the stub's refusal format is byte-equal to the live library's
 - slash: library absent, /dr still answers, and enable/disable still land
+- slash: the stub's live-verb set is the library's LIVE_VERBS, no more and no less
+- slash: the stub carries no library string but the refusal format
 
 ### test_launcher.lua (8)
 
@@ -61,20 +63,23 @@ Total.
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the two buttons, with no default key
 
-### test_disabled.lua (10)
+### test_disabled.lua (13)
 
 - Disabled 1: enabled, the addon registers something and shows something at all
 - Disabled 2+3: disabling through the write seam leaves NO registration behind
+- Disabled 2+3 (live): a module's bus receiver goes at stand-down and comes back
+- Disabled 2+3 (degraded): a module's bus receiver goes at stand-down and comes back
 - Disabled 4: no timer, ticker or OnUpdate is left armed, and none re-arms
 - Disabled 5: every display that was shown is hidden, refused at the source
 - Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
 - Disabled 7: every verb answers while disabled; a feature verb answers one refusal line
+- Disabled 7 (degraded): the library-absent dispatcher gates a feature verb the same way
 - Disabled 8: launcher clicks and the key binding write nothing and show nothing
 - Disabled 9: re-enabling restores the set FROM CURRENT STATE, not a snapshot
 - Disabled 10: releasing ONE hold does not resurrect an addon the other holds down
 - Disabled: a profile switch re-reads the stored switch while disabled
 
-### test_surface_parity.lua (9)
+### test_surface_parity.lua (14)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
@@ -84,7 +89,25 @@ Total.
 - parity: the Lifecycle stub carries the live latch's surface
 - parity: the Launcher stub carries the live launcher's surface
 - parity: the DebugLog stub carries every member this addon calls
-- parity: the Pool stub carries the array-shape members
+- parity: the Pool stub carries the array-shape members, on both arms
+- parity: the Perf stub carries every member this addon reads, on both arms
+- parity: the Core seam carries every member this addon reads, on both arms
+- parity: the Media seam answers on both arms, nil being a real answer
+- parity: the Env seam answers the TOC's version on both arms
+- parity: the hollow composers cost the library-absent load exactly the Master-controls rows
+
+### test_perf_harness.lua (4)
+
+- perf: the descriptor declares the buckets, the SavedVariable and the one latch
+- perf: every declared bucket is reached by a real bracket
+- perf: outside an experiment the bracket records nothing
+- perf: suspend takes the perf hold and the addon is inert; resume restores it
+
+### test_loadorder.lua (3)
+
+- load order: the runner loaded exactly the TOC's files, in the TOC's order
+- load order: every derived path exists on disk
+- load order: no libs/ path leaked into the addon's own list
 
 ### test_vendor_sync.lua (3)
 
@@ -160,10 +183,12 @@ Total.
 |-------|------:|
 | test_skeleton.lua | 8 |
 | test_schema.lua | 14 |
-| test_slash.lua | 11 |
+| test_slash.lua | 13 |
 | test_launcher.lua | 8 |
-| test_disabled.lua | 10 |
-| test_surface_parity.lua | 9 |
+| test_disabled.lua | 13 |
+| test_surface_parity.lua | 14 |
+| test_perf_harness.lua | 4 |
+| test_loadorder.lua | 3 |
 | test_vendor_sync.lua | 3 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
@@ -171,4 +196,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **109** |
+| **Total** | **126** |

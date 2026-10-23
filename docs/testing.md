@@ -57,8 +57,10 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | `test_schema` | The schema's shape, the write seam, the Master controls rows, the minimap row, resets, test mode, migrations, the panel |
 | `test_slash` | The dispatcher: help, aliases, enable/disable, debug, perf, the schema CLI, the library-absent load |
 | `test_launcher` | The launcher object, its clicks and menu, the minimap button, the two key bindings |
-| `test_disabled` | All ten steps of slash-commands-§7 |
-| `test_surface_parity` | Each degradation stub against the live library surface it stands in for (testing-§8) |
+| `test_disabled` | All ten steps of slash-commands-§7, a probe feature verb and a bus receiver on both load arms |
+| `test_surface_parity` | Each degradation stub against the live library surface it stands in for, every adopted module on both arms, and the schema row counts with the hollow-composer delta (testing-§8, options-ui-§1) |
+| `test_perf_harness` | The Perf descriptor, every declared bucket reached by a real bracket, and the perf hold making the addon inert |
+| `test_loadorder` | The runner's load list against a fresh TOC derivation: order, files on disk, no `libs/` path (testing-§9) |
 | `test_vendor_sync` | The vendored payloads against the tag (delegates to `tests/_kit/vendor_sync.lua`) |
 | kit: `test_eol`, `test_prose`, `test_layout_cap`, `test_diagnostics_contract`, `test_lizard_sighted` | Line endings, US spelling, the 1500-line cap, the diagnostics contract, the complexity sanitizer |
 
