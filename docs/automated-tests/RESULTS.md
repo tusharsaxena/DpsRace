@@ -32,15 +32,16 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261023-225647`](20261023-225647/) | `7e86054` | clean | 0.1.0 → 0.1.0 | 0/0 | 79 | 428/1/429 | pass | 13953 | 1819 | 7.0 | 2.4 | 15 | 0 | **green** |
 | [`20261023-225205`](20261023-225205/) | `d817bdb` | clean | 0.1.0 → 0.1.0 | 0/0 | 79 | 428/1/429 | pass | 13913 | 1796 | 7.1 | 2.5 | 36 | 4 | **green** |
 
 ## Test suite
 
 **429 cases** — 428 passed, 0 failed, 1 skipped. The generated inventory
-[`20261023-225205/test-cases.md`](20261023-225205/test-cases.md) is the authority on which cases existed at this run;
+[`20261023-225647/test-cases.md`](20261023-225647/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-This is the first recorded run, so there is no trend to read yet.
+Unchanged from the previous run at 429 cases.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
 the release gate it is NOT EVALUATED rather than passed (`automated-tests-§3`).
@@ -57,27 +58,27 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **9 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261023-225205/perf.json`](20261023-225205/perf.json).
+[`20261023-225647/perf.json`](20261023-225647/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `notes/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `raceEventCaptureOff` | 2000 | 0.00166 | 0.00 | 0.3 |
-| `raceEventCaptureOn` | 2000 | 0.00222 | 1.00 | 0.3 |
-| `hudTickCaptureOff` | 2000 | 0.00773 | 0.00 | 928.3 |
-| `hudTickCaptureOn` | 2000 | 0.00795 | 1.00 | 928.3 |
-| `hudLiveCaptureOff` | 2000 | 0.03330 | 0.00 | 6384.1 |
-| `hudLiveCaptureOn` | 2000 | 0.04028 | 1.00 | 6384.1 |
-| `combatEventCaptureOff` | 2000 | 0.03389 | 0.00 | 2784.5 |
-| `combatEventCaptureOn` | 2000 | 0.03887 | 1.00 | 2784.5 |
-| `raceInputStoodDown` | 2000 | 0.00015 | 0.00 | 0.0 |
+| `raceEventCaptureOff` | 2000 | 0.00183 | 0.00 | 0.3 |
+| `raceEventCaptureOn` | 2000 | 0.00204 | 1.00 | 0.3 |
+| `hudTickCaptureOff` | 2000 | 0.00732 | 0.00 | 928.3 |
+| `hudTickCaptureOn` | 2000 | 0.00733 | 1.00 | 928.3 |
+| `hudLiveCaptureOff` | 2000 | 0.03576 | 0.00 | 6384.1 |
+| `hudLiveCaptureOn` | 2000 | 0.04234 | 1.00 | 6384.1 |
+| `combatEventCaptureOff` | 2000 | 0.03556 | 0.00 | 2784.5 |
+| `combatEventCaptureOn` | 2000 | 0.04159 | 1.00 | 2784.5 |
+| `raceInputStoodDown` | 2000 | 0.00019 | 0.00 | 0.0 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261023-225205`](20261023-225205/) — **this run's measurement, not its diff.** Max CCN **36** across 1796
-functions, **4** of them warned on; 1 file(s) in the 1000–1500 band and 0 over the 1500 cap
+Current as of [`20261023-225647`](20261023-225647/) — **this run's measurement, not its diff.** Max CCN **15** across 1819
+functions, **0** of them warned on; 1 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
 Every row below is generated from this run's own `lizard` output. **The `Disposition` column is
@@ -89,16 +90,14 @@ cell is this file saying something crossed and nobody has ruled on it yet.
 
 | Function | CCN | Location | Disposition |
 |---|---|---|---|
-| `analyzeDamageStop` | 22 | `probe/DpsRaceProbe/DpsRaceProbe.lua` | Owner decision pending — probe kept byte-for-byte (layout-§1 row) |
-| `summarize` | 28 | `probe/DpsRaceProbe/DpsRaceProbe.lua` | Owner decision pending — probe kept byte-for-byte (layout-§1 row) |
-| `finalizeResult` | 32 | `probe/DpsRaceProbe/DpsRaceProbe.lua` | Owner decision pending — probe kept byte-for-byte (layout-§1 row) |
-| `DPSRACEPROBE` | 36 | `probe/DpsRaceProbe/DpsRaceProbe.lua` | Owner decision pending — probe kept byte-for-byte (layout-§1 row) |
+
+None.
 
 ### Files by `layout-§1` band
 
 | Band | File | LOC | Disposition |
 |---|---|---|---|
-| 1000–1500 (on notice) | `probe/DpsRaceProbe/DpsRaceProbe.lua` | 1068 | Accepted — under the `layout-§1` probe/ deviation row; leaves with probe/ |
+| 1000–1500 (on notice) | `probe/DpsRaceProbe/DpsRaceProbe.lua` | 1140 | Accepted — under the `layout-§1` probe/ deviation row; leaves with probe/ |
 
 `lizard` counts every `and`/`or` short-circuit as a decision, so in Lua a run of
 `t.k = rec.k or D.k` defaulting lines scores high with no visible branching at all: a large CCN

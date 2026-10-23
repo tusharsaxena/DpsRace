@@ -41,7 +41,8 @@ is `/dev-copilot:bump-version`'s, read from the release run's `manifest.json`.
 
 ## Status
 
-The first bundle is [`20261023-225205/`](20261023-225205/ANALYSIS.md), a `--release 0.1.0` run:
-all four suites pass, but the release gate (zero functions above CCN 15) is not met. Its four
-warnings are all in `probe/DpsRaceProbe/DpsRaceProbe.lua`, which is the owner's call before the
-tag (see that run's `ANALYSIS.md`, Actions). [`RESULTS.md`](RESULTS.md) holds the row.
+The v0.1.0 release record is [`20261023-225647/`](20261023-225647/ANALYSIS.md), a
+`--release 0.1.0` run: all four suites pass and the release gate is met, with zero functions above
+CCN 15. The first bundle, [`20261023-225205/`](20261023-225205/ANALYSIS.md), was a release run
+whose gate was not met: its four warnings, all in `probe/DpsRaceProbe/DpsRaceProbe.lua`, were split
+before the second run. [`RESULTS.md`](RESULTS.md) holds both rows.

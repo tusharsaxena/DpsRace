@@ -46,7 +46,7 @@ The **UI** (HUD, Results window, settings pages) listens on the message bus and 
 | T8 Results window | M3 | [x] |
 | T9 Settings pages, slash verbs, Share, Preview, key bindings | M3 | [x] |
 | T10 Docs, README, smoke tests, automated-test bundle | M4 | [x] |
-| T11 Whole-branch review + fixes | M4 | [ ] |
+| T11 Whole-branch review + fixes | M4 | [x] |
 
 ## Global Constraints
 
@@ -445,25 +445,25 @@ Steps:
 **Files:** Modify `README.md`, `docs/ARCHITECTURE.md` and every Tier-1 and Tier-2 doc. Create `docs/smoke-tests.md` (in full), `docs/test-cases.md` (from `lua tests/run.lua --list`), and `docs/automated-tests/<stamp>/` with `RESULTS.md`.
 
 Steps:
-- [ ] **Step 1:** Write the README to documentation-§1's structure:
+- [x] **Step 1:** Write the README to documentation-§1's structure:
   - player-facing, `- ` bullet lists only, no logo, no library list;
   - Usage covers arming, the race, the buzzer rule, flags and the Results window;
   - the FAQ explains why there are no live percentages, why DPS is ours rather than the meter's, and sticky dummies;
   - Version History starts with `0.1.0`.
-- [ ] **Step 2:** Write `docs/smoke-tests.md`. It holds the owner's end-of-run in-game checklist:
+- [x] **Step 2:** Write `docs/smoke-tests.md`. It holds the owner's end-of-run in-game checklist:
   - every HUD state on a real dummy;
   - O1–O7 from spec §12, each with pass/fail criteria and the fallback to note;
   - the reload-in-combat case;
   - the restart case (stop, wait 10s in combat, attack again);
   - the Results window, settings, `/dr` and `/dpsrace`, the launcher, key bindings, test mode, and disable/enable.
-- [ ] **Step 3:** Complete `docs/ARCHITECTURE.md` (the hub, at most ~400 lines, including the Documentation map and the 1500-line census) and the tier docs: `scope`, `module-map`, `schema`, `settings-panel`, `data-flow`, `common-tasks`, `debug`, `performance`.
-- [ ] **Step 4:** Run `tests/_kit/run-automated-tests.sh --release 0.1.0`, then write the bundle's `ANALYSIS.md` and the standing sections of `RESULTS.md`. Expected: lint, tests, perf and complexity all pass, with zero functions above CCN 15. If a function exceeds 15, split it and re-run.
-- [ ] **Step 5:** Commit `docs: v0.1.0 README, docs set, smoke tests, automated-test record`, then push.
+- [x] **Step 3:** Complete `docs/ARCHITECTURE.md` (the hub, at most ~400 lines, including the Documentation map and the 1500-line census) and the tier docs: `scope`, `module-map`, `schema`, `settings-panel`, `data-flow`, `common-tasks`, `debug`, `performance`.
+- [x] **Step 4:** Run `tests/_kit/run-automated-tests.sh --release 0.1.0`, then write the bundle's `ANALYSIS.md` and the standing sections of `RESULTS.md`. Expected: lint, tests, perf and complexity all pass, with zero functions above CCN 15. If a function exceeds 15, split it and re-run.
+- [x] **Step 5:** Commit `docs: v0.1.0 README, docs set, smoke tests, automated-test record`, then push.
 
 ### Task 11: Whole-branch review and fixes
 
-- [ ] **Step 1:** A fresh, independent review of `main..feat/pve-v0.1.0` against the spec and the standard. It looks for spec coverage, secret-safety, lifecycle edges, standard deviations, and dead or duplicated code.
-- [ ] **Step 2:** Adversarially verify each finding, fix the confirmed ones, run the gate, commit, and push.
+- [x] **Step 1:** A fresh, independent review of `main..feat/pve-v0.1.0` against the spec and the standard. It looks for spec coverage, secret-safety, lifecycle edges, standard deviations, and dead or duplicated code.
+- [x] **Step 2:** Adversarially verify each finding, fix the confirmed ones, run the gate, commit, and push.
 - [ ] **Step 3:** Hand over: the branch, test counts, the automated-test record, the smoke-test checklist, and the open items. **Do not merge.** The owner smoke-tests in-game, then gives the go-ahead.
 - [ ] **Step 4 (after the go-ahead):**
   - merge into `main` with `git merge --no-ff` (versioning-git) and push; the branch name's

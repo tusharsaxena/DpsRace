@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "addon": "DpsRace",
+  "addonVersion": "0.1.0",
+  "run": "20261023-225647",
+  "startedAt": "2026-10-23T22:56:47+05:30",
+  "durationMs": 14740,
+  "label": null,
+  "release": "0.1.0",
+  "git": { "sha": "7e860542879d2f64ab14ba9b2969d6f4b87a474a", "branch": "feat/pve-v0.1.0", "dirty": false },
+  "host": { "lua": "Lua 5.1.5  Copyright (C) 1994-2012 Lua.org, PUC-Rio", "luacheck": "Luacheck: 1.2.0", "lizard": "1.24.0", "timingSource": "date +%s%3N" },
+  "suites": {
+    "lint": { "status": "pass", "durationMs": 2176, "warnings": 0, "errors": 0, "files": 79, "gating": true, "gates": { "commit": true, "release": true } },
+    "tests": { "status": "pass", "durationMs": 7056, "passed": 428, "failed": 0, "skipped": 1, "total": 429, "gating": true, "gates": { "commit": true, "release": true } },
+    "perf": { "status": "pass", "durationMs": 2371, "scenarios": 9, "gating": false, "gates": { "commit": false, "release": true } },
+    "complexity": { "status": "pass", "durationMs": 2401, "warnings": 0, "maxCcn": 15, "nloc": 13953, "functions": 1819, "avgCcn": 2.4, "avgNloc": 7.0, "avgToken": 62.5, "warnFunRatio": 0.00, "warnNlocRatio": 0.00, "bandFiles": 1, "overCapFiles": 0, "blindFiles": 0, "crashedFiles": 0, "gating": false, "gates": { "commit": false, "release": true } }
+  },
+  "verdict": "green"
+}
