@@ -41,6 +41,7 @@ is `/dev-copilot:bump-version`'s, read from the release run's `manifest.json`.
 
 ## Status
 
-No run has been recorded yet. The first bundle, and with it `RESULTS.md`, is produced in T10 with
-`--release 0.1.0`, before the `v0.1.0` tag. `tests/perf.lua` lands in the same task; until then the
-`perf` suite reports a skip.
+The first bundle is [`20261023-225205/`](20261023-225205/ANALYSIS.md), a `--release 0.1.0` run:
+all four suites pass, but the release gate (zero functions above CCN 15) is not met. Its four
+warnings are all in `probe/DpsRaceProbe/DpsRaceProbe.lua`, which is the owner's call before the
+tag (see that run's `ANALYSIS.md`, Actions). [`RESULTS.md`](RESULTS.md) holds the row.
