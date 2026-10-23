@@ -464,7 +464,7 @@ Steps:
 
 - [x] **Step 1:** A fresh, independent review of `main..feat/pve-v0.1.0` against the spec and the standard. It looks for spec coverage, secret-safety, lifecycle edges, standard deviations, and dead or duplicated code.
 - [x] **Step 2:** Adversarially verify each finding, fix the confirmed ones, run the gate, commit, and push.
-- [ ] **Step 3:** Hand over: the branch, test counts, the automated-test record, the smoke-test checklist, and the open items. **Do not merge.** The owner smoke-tests in-game, then gives the go-ahead.
+- [x] **Step 3:** Hand over: the branch, test counts, the automated-test record, the smoke-test checklist, and the open items. **Do not merge.** The owner smoke-tests in-game, then gives the go-ahead.
 - [ ] **Step 4 (after the go-ahead):**
   - merge into `main` with `git merge --no-ff` (versioning-git) and push; the branch name's
     `feat/<YYYY-MM-DD>-<topic>` shape is the owner's call before the merge (a rename only);

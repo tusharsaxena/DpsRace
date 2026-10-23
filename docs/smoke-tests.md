@@ -5,6 +5,12 @@ client behavior the spec could not measure ahead of time. The owner runs them on
 before a release. One pass takes about an hour on a character in Silvermoon, which has every dummy in
 the catalog (spec §4.6).
 
+## Sign-off
+
+| Date | Build | Result |
+|---|---|---|
+| 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, centre countdown, restyle, title-bar hover) |
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
