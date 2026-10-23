@@ -119,6 +119,13 @@ function NS.FormatSchemaValue(row, value)
     return tostring(value)
 end
 
+--- The one sender of SETTINGS_CHANGED (architecture-§4): the write seam's tail below, and
+--- core/Database.lua's profile callbacks, which announce a wholesale profile change as
+--- ("profile", key) through this same function.
+function NS.AnnounceSettingsChanged(path, value)
+    NS.SendBus(NS.MSG.SETTINGS_CHANGED, path, value)
+end
+
 local S = SchemaLib:New({
     rows = NS.Schema,
     -- `global.<...>` paths live in the global store; everything else in the active profile.
@@ -130,7 +137,7 @@ local S = SchemaLib:New({
     -- mode) announce nothing -- nothing downstream stores or redraws from them.
     announce = function(row, path, value)
         if row.sessionOnly then return end
-        NS.SendBus(NS.MSG.SETTINGS_CHANGED, path, value)
+        NS.AnnounceSettingsChanged(path, value)
     end,
     debug        = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
     debugEnabled = function() return NS.State.debug end,

@@ -46,7 +46,7 @@ files["modules/Meter.lua"] = { read_globals = { "C_DamageMeter" } }
 files["modules/Recorder.lua"] = {
     read_globals = {
         "time", "UnitExists", "UnitLevel", "UnitRace", "UnitClassification", "GetRealmName",
-        "GetSpecialization", "GetSpecializationInfo", "GetAverageItemLevel", "C_Map",
+        "GetAverageItemLevel", "C_Map",
         "GetZoneText", "GetSubZoneText", "GetInstanceInfo", "GetBuildInfo",
     },
 }
@@ -58,11 +58,12 @@ files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 files["core/Compat.lua"] = {
     read_globals = {
         "C_ChatInfo", "SendChatMessage", "C_StringUtil",
+        "C_SpecializationInfo", "GetSpecialization", "GetSpecializationInfo",
         "issecretvalue", "canaccessvalue", "issecrettable", "canaccesstable",
     },
 }
 
--- The Race HUD (T7). The formatter is the client's (C_StringUtil, through NS.Compat) with
+-- The Race HUD. The formatter is the client's (C_StringUtil, through NS.Compat) with
 -- AbbreviateNumbers beneath it; spell names and icons come through C_Spell; the shell plays the cue and
 -- the buzzer's raid warning, names the drop-combat spells the player knows and draws tooltips.
 files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
@@ -75,7 +76,7 @@ files["modules/Hud.lua"] = {
     },
 }
 
--- The Results window (T8): the run dates, the class icons, colors and names, the spec names and icons,
+-- The Results window: the run dates, the class icons, colors and names, the spec names and icons,
 -- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
 local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
@@ -87,7 +88,7 @@ files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 
--- Share (T9): which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
+-- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.
 files["modules/Share.lua"] = {
     read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "UnitIsPlayer", "MenuUtil" },
@@ -95,7 +96,7 @@ files["modules/Share.lua"] = {
 
 -- The published slash surface (`Sl:OnSlash`, `PrintHelp`, `LandingRows`, `DisabledLine`, `Register`)
 -- is colon-called by the host and the suites and forwards to the dispatcher upvalue; `/dr target`
--- asks whether there is a target before it snapshots one (T9).
+-- asks whether there is a target before it snapshots one.
 files["settings/Slash.lua"] = { ignore = { "212/self" }, read_globals = { "UnitExists" } }
 
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.

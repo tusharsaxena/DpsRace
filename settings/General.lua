@@ -19,8 +19,10 @@ NS.LANDING = {
 }
 
 -- ── The global reset ────────────────────────────────────────────────────────────────────────────
+-- options-ui-§12's one wording, verbatim. The run history is account-wide (db.global), so a profile
+-- reset never reaches it; the profile is all the popup speaks of.
 StaticPopupDialogs["DPSRACE_RESET_ALL"] = {
-    text         = L["Reset this profile to the addon defaults? Every setting goes back to its shipped value. Your run history and your other profiles are not affected."],
+    text         = L["Reset this profile to the addon's defaults? Everything you have configured or added in it is discarded — your other profiles are not affected."],
     button1      = L["Yes"],
     button2      = L["No"],
     timeout      = 0,

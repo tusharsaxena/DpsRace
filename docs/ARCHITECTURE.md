@@ -90,7 +90,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
 | `RUNS_CHANGED` | `modules/Recorder.lua` | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `settings/History.lua`: repaints the stored count |
-| `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
+| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
@@ -265,7 +265,7 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |
-| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes three hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`); the trigger is three or more |
+| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`, `PopupEditBox`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |
@@ -295,5 +295,6 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. The largest authored file is `modules/Hud.lua` at 944 lines; no
-file is in the 1000–1500 on-notice band either (layout-§1).
+Nothing is over the cap today. One authored file is in the 1000–1500 on-notice band:
+`probe/DpsRaceProbe/DpsRaceProbe.lua` at 1068 lines, under the `probe/` deviation row above (it leaves
+the repo with `probe/`). The largest shipped file is `modules/Hud.lua` at 947 lines (layout-§1).

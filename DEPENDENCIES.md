@@ -13,7 +13,7 @@ such rather than listed as a requirement.
   Retail only.
 - **Blizzard's built-in damage meter, switched on.** Every number the addon shows comes from
   `C_DamageMeter`, which exists from 12.0 (spec §2, §8). The code that reads it,
-  `modules/Meter.lua`, lands in Task 2; when the meter is unavailable the HUD shows Blizzard's own
+  `modules/Meter.lua`; when the meter is unavailable the HUD shows Blizzard's own
   reason and refuses to arm (spec §9).
 - **Nothing else.** Every library is vendored under `libs/` and committed (library-stack), so the
   player installs no separate library addon. `## OptionalDeps:` names the vendored libraries for

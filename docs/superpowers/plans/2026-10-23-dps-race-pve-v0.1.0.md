@@ -466,6 +466,7 @@ Steps:
 - [ ] **Step 2:** Adversarially verify each finding, fix the confirmed ones, run the gate, commit, and push.
 - [ ] **Step 3:** Hand over: the branch, test counts, the automated-test record, the smoke-test checklist, and the open items. **Do not merge.** The owner smoke-tests in-game, then gives the go-ahead.
 - [ ] **Step 4 (after the go-ahead):**
-  - merge into `main` and push;
+  - merge into `main` with `git merge --no-ff` (versioning-git) and push; the branch name's
+    `feat/<YYYY-MM-DD>-<topic>` shape is the owner's call before the merge (a rename only);
   - add the roster row to `../WowAddonStandards/standards/ADDONS.md`. That is a separate repo, so ask before committing there;
   - delete the branches, stashes and worktrees this run created.

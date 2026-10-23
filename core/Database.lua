@@ -19,7 +19,8 @@ function NS.OnProfileChanged(event, _db, key)
     NS.Debug("Set", "%s '%s'", event or "profile", key or (NS.db and NS.db:GetCurrentProfile()) or "?")
     NS.SyncEnabledHold()
     if NS.OnVisibilityChanged then NS.OnVisibilityChanged() end
-    NS.SendBus(NS.MSG.SETTINGS_CHANGED, "profile", key)
+    -- Announced through settings/Schema.lua, the message's one sender.
+    if NS.AnnounceSettingsChanged then NS.AnnounceSettingsChanged("profile", key) end
 end
 
 function NS:InitDB()

@@ -55,6 +55,17 @@ test("recorder: SnapshotPlayer tolerates a client without the spec and ilvl APIs
     assertNil(c.race)
 end)
 
+test("recorder: SnapshotPlayer reads the spec through the compat family on a C_SpecializationInfo client", function()
+    local NS = fresh(function(m)
+        local index, info = m.GetSpecialization, m.GetSpecializationInfo
+        m.C_SpecializationInfo = { GetSpecialization = index, GetSpecializationInfo = info }
+        m.GetSpecialization, m.GetSpecializationInfo = nil, nil
+    end)
+    local c = NS.Recorder.SnapshotPlayer()
+    assertEqual(c.specID, 267, "only the deprecated globals were asked")
+    assertEqual(c.spec, "Blood")
+end)
+
 test("recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes known dummies", function()
     local NS, M = fresh()
     M.__setTarget({ guid = GOLEM_GUID, name = "Reinforced Golem", level = -1, classification = "elite" })

@@ -47,6 +47,22 @@ test("schema: a write goes through the seam, reacts, and announces SETTINGS_CHAN
     assertEqual(seen[1][2], true)
 end)
 
+test("schema: a profile change announces SETTINGS_CHANGED through the one sender", function()
+    -- architecture-§4: one sender per message. core/Database.lua's profile callbacks go through
+    -- settings/Schema.lua's NS.AnnounceSettingsChanged, never a SendBus of their own.
+    local inst = T.load()
+    local NSi, calls, seen = inst.NS, {}, 0
+    local real = NSi.AnnounceSettingsChanged
+    NSi.AnnounceSettingsChanged = function(path, value)
+        calls[#calls + 1] = path
+        return real(path, value)
+    end
+    NSi.NewBusTarget():RegisterMessage(NSi.MSG.SETTINGS_CHANGED, function() seen = seen + 1 end)
+    NSi.db:SetProfile("Other")
+    assertEqual(table.concat(calls, ","), "profile")
+    assertEqual(seen, 1, "the message went out once, through the announce")
+end)
+
 test("schema: an unknown path is refused and stores nothing", function()
     local inst = T.load()
     local ok = inst.NS.SetByPath("no.such.path", 3)

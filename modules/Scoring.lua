@@ -5,7 +5,7 @@ local _, NS = ...
 --
 -- PURE. No WoW API and no meter value: every input is a plain number already stored on the run (the
 -- damage comes from Meter.ReadSession after combat). NS.L is read at CALL time for the flag text.
--- Flags inform, never void: only `incomplete` and `lost` keep a run off the bests (Bests, T6, reads
+-- Flags inform, never void: only `incomplete` and `lost` keep a run off the bests (modules/Bests.lua reads
 -- run.status for that, not this list).
 
 local Scoring = {}

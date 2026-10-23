@@ -62,10 +62,11 @@ Total.
 - dummies: six categories in order, each with an enUS label
 - dummies: every cataloged category is one of the six
 
-### test_recorder.lua (21)
+### test_recorder.lua (22)
 
 - recorder: SnapshotPlayer records who the player is (spec §7 char)
 - recorder: SnapshotPlayer tolerates a client without the spec and ilvl APIs
+- recorder: SnapshotPlayer reads the spec through the compat family on a C_SpecializationInfo client
 - recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes known dummies
 - recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes unknown targets as other
 - recorder: SnapshotTarget on a player or with no target is other with no npcID
@@ -292,13 +293,14 @@ Total.
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
 
-### test_schema.lua (14)
+### test_schema.lua (15)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
 - schema: the Enable row is labeled with the brand
 - schema: every row has a group, a label and a page
 - schema: a write goes through the seam, reacts, and announces SETTINGS_CHANGED once
+- schema: a profile change announces SETTINGS_CHANGED through the one sender
 - schema: an unknown path is refused and stores nothing
 - schema: the Minimap row reads SHOWN and stores LibDBIcon's inverted `hide`
 - schema: Reset all settings is a profile reset and never touches the Minimap button
@@ -309,7 +311,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (16)
+### test_settings.lua (17)
 
 - settings: every schema row has default, enUS label and desc
 - settings: every row sits on a page the panel draws, and every page has a group
@@ -327,6 +329,7 @@ Total.
 - settings: Delete all runs asks first, then deletes through Recorder.DeleteAll
 - settings: Delete all runs is refused while a race is armed
 - settings: lowering Runs to keep never deletes on the spot
+- settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
 ### test_slash.lua (27)
 
@@ -529,7 +532,7 @@ Total.
 | test_secrets.lua | 11 |
 | test_meter.lua | 18 |
 | test_dummies.lua | 5 |
-| test_recorder.lua | 21 |
+| test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
@@ -538,8 +541,8 @@ Total.
 | test_format.lua | 7 |
 | test_hud.lua | 51 |
 | test_results.lua | 24 |
-| test_schema.lua | 14 |
-| test_settings.lua | 16 |
+| test_schema.lua | 15 |
+| test_settings.lua | 17 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 15 |
@@ -555,4 +558,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **425** |
+| **Total** | **428** |

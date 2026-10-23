@@ -24,8 +24,8 @@ L["%s is unavailable: the LibKa0s library did not load."] = "%s is unavailable: 
 L["Not available during a performance capture."] = "Not available during a performance capture."
 
 -- Master controls tab (settings/General.lua)
-L["Reset this profile to the addon defaults? Every setting goes back to its shipped value. Your run history and your other profiles are not affected."] =
-    "Reset this profile to the addon defaults? Every setting goes back to its shipped value. Your run history and your other profiles are not affected."
+L["Reset this profile to the addon's defaults? Everything you have configured or added in it is discarded — your other profiles are not affected."] =
+    "Reset this profile to the addon's defaults? Everything you have configured or added in it is discarded — your other profiles are not affected."
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
@@ -47,7 +47,6 @@ L["Debug console; on/off set logging, diagnostics writes the report"] =
 L["Write the diagnostics report to the debug console"] = "Write the diagnostics report to the debug console"
 L["Performance capture; try /dr perf help"] = "Performance capture; try /dr perf help"
 L["Print the addon version"] = "Print the addon version"
-L["List profiles, or switch to one: profile name"] = "List profiles, or switch to one: profile name"
 L["%s version %s"] = "%s version %s"
 L["%s commands (reduced: the LibKa0s library is missing)"] = "%s commands (reduced: the LibKa0s library is missing)"
 L["%s = %s"] = "%s = %s"

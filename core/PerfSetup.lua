@@ -26,8 +26,8 @@ NS.Perf = lib:New({
     slash     = NS.SLASH,
     sv        = "DpsRacePerfDB",     -- declared in the TOC (toc-file-§2)
     version   = NS.Version(),
-    -- Declared in report order. The scaffold's one hot path is the combat-boundary handler; the
-    -- engine (T2-T6) and the HUD (T7) add theirs beside it, each reached by a real bracket.
+    -- Declared in report order: the combat-boundary handler, the race's event handler and the
+    -- HUD's two paths, each reached by a real bracket.
     buckets = {
         { key = "combatEvent" },     -- PLAYER_REGEN_* in core/DpsRace.lua
         { key = "raceEvent" },       -- every race event in modules/Watchers.lua

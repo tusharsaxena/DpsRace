@@ -5,11 +5,15 @@ local _, NS = ...
 --
 -- Routed through LibKa0s-Compat-1.0 (library-stack-§7), each with its library-absent stub:
 --   Compat.IsSecret(v)  Compat.CanAccess(v)  Compat.IsSafeKey(v)   the three secret-value guards
+--   Compat.GetSpecialization()  Compat.GetSpecializationInfo(index)
+--                                C_SpecializationInfo first, then the deprecated globals
 -- Hand-written ladders across Retail patches:
 --   Compat.CanAccessTable(t)     canaccesstable, then issecrettable, then "readable"
 --   Compat.ChatSender()          C_ChatInfo.SendChatMessage, then the bare global (deprecated 11.2.0)
 --   Compat.NewNumberFormatter()  C_StringUtil's abbreviated-number formatter constructor, then its
 --                                numeric-rule constructor
+--   Compat.PopupEditBox(dialog)  a StaticPopup's edit box: the GetEditBox method, then the editBox /
+--                                EditBox field
 -- Every client global is read at CALL time, so a client (or the harness's mock) that adds the API
 -- later is seen.
 --
@@ -77,6 +81,37 @@ function Compat.CanAccessTable(t)
 end
 
 -- ---------------------------------------------------------------------------
+-- The player's specialization: LibKa0s-Compat-1.0's, with the stub arm
+-- ---------------------------------------------------------------------------
+-- The stubs walk the library's two rungs: C_SpecializationInfo where it exists, else the deprecated
+-- global. Both read the client at CALL time.
+
+local function getSpecializationStub()
+    local api = C_SpecializationInfo
+    if api and api.GetSpecialization then return (api.GetSpecialization()) end
+    local bare = GetSpecialization
+    if bare then return (bare()) end
+    return nil
+end
+
+local function getSpecializationInfoStub(index)
+    if not index then return nil end
+    local api = C_SpecializationInfo
+    if api and api.GetSpecializationInfo then return api.GetSpecializationInfo(index) end
+    local bare = GetSpecializationInfo
+    if bare then return bare(index) end
+    return nil
+end
+
+--- The player's active specialization index, or nil.
+--- @return number|nil
+Compat.GetSpecialization = CompatLib and CompatLib.GetSpecialization or getSpecializationStub
+
+--- The specialization's info for `index` (specID, name, description, icon, role, ...), or nil.
+--- @param index number
+Compat.GetSpecializationInfo = CompatLib and CompatLib.GetSpecializationInfo or getSpecializationInfoStub
+
+-- ---------------------------------------------------------------------------
 -- Chat and number formatting
 -- ---------------------------------------------------------------------------
 
@@ -101,4 +136,14 @@ function Compat.NewNumberFormatter()
     local ok, f = pcall(make)
     if not ok then return nil end
     return f
+end
+
+--- A StaticPopup dialog's edit box, or nil: the GetEditBox method on current clients, the editBox
+--- (or EditBox) field before it.
+--- @param dialog table|nil
+--- @return table|nil
+function Compat.PopupEditBox(dialog)
+    if dialog == nil then return nil end
+    if type(dialog.GetEditBox) == "function" then return dialog:GetEditBox() end
+    return dialog.editBox or dialog.EditBox
 end

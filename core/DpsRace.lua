@@ -86,7 +86,7 @@ end
 
 -- ── Host handlers ───────────────────────────────────────────────────────────────────────────────
 -- ONE handler per act, shared by every surface that performs it: the launcher menu, the key binding
--- and (from T9) the slash verb. Each refuses through the one hold-aware helper while stood down.
+-- and the slash verb. Each refuses through the one hold-aware helper while stood down.
 
 local function refused()
     local line = NS.StoodDownRefusal()

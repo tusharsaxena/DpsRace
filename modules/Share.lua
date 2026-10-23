@@ -114,9 +114,7 @@ end
 
 -- The whisper's recipient: a name typed into the popup, the player target's name offered first.
 local function whisperBox(dialog)
-    if dialog == nil then return nil end
-    if type(dialog.GetEditBox) == "function" then return dialog:GetEditBox() end
-    return dialog.editBox or dialog.EditBox
+    return NS.Compat.PopupEditBox(dialog)
 end
 
 local function acceptWhisper(dialog, run)

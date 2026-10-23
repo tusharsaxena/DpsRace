@@ -57,9 +57,10 @@ end
 -- ── snapshots ───────────────────────────────────────────────────────────────────────────────────
 
 local function snapshotSpec(char)
-    local specIndex = Secrets.PlainNumber(ask(GetSpecialization))
+    local Compat = NS.Compat
+    local specIndex = Secrets.PlainNumber(ask(Compat.GetSpecialization))
     if not specIndex then return end
-    local specID, specName, _, _, role = ask(GetSpecializationInfo, specIndex)
+    local specID, specName, _, _, role = ask(Compat.GetSpecializationInfo, specIndex)
     char.specID = Secrets.PlainNumber(specID)
     char.spec = Secrets.PlainString(specName)
     char.role = Secrets.PlainString(role)

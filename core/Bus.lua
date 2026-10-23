@@ -5,17 +5,18 @@ local addonName, NS = ...
 -- same typo is a nil name at the call site (architecture-§4). The wire name is
 -- Ka0s_<Addon>_<Event>, <Event> PascalCase; the SCREAMING_SNAKE key never leaks into it.
 NS.MSG = {
-    -- Sender: modules/Race.lua (T5). Payload: (run, fromState, toState).
+    -- Sender: modules/Race.lua. Payload: (run, fromState, toState).
     RACE_STATE_CHANGED = "Ka0s_DpsRace_RaceStateChanged",
-    -- Sender: modules/Race.lua (T5). Payload: (run) -- the buzzer went; the run is now stopping.
+    -- Sender: modules/Race.lua. Payload: (run) -- the buzzer went; the run is now stopping.
     RACE_BUZZER        = "Ka0s_DpsRace_RaceBuzzer",
-    -- Sender: modules/Race.lua (T5). Payload: (run) -- resolved: complete, incomplete or lost.
+    -- Sender: modules/Race.lua. Payload: (run) -- resolved: complete, incomplete or lost.
     RACE_RESULT        = "Ka0s_DpsRace_RaceResult",
-    -- Sender: modules/Recorder.lua (T3). Payload: (run).
+    -- Sender: modules/Recorder.lua. Payload: (run).
     RUN_SAVED          = "Ka0s_DpsRace_RunSaved",
-    -- Sender: modules/Recorder.lua (T3). Payload: none -- a delete or a prune changed the store.
+    -- Sender: modules/Recorder.lua. Payload: none -- a delete or a prune changed the store.
     RUNS_CHANGED       = "Ka0s_DpsRace_RunsChanged",
-    -- Sender: settings/Schema.lua's write seam. Payload: (path, value).
+    -- Sender: settings/Schema.lua (NS.AnnounceSettingsChanged: the write seam, and the profile
+    -- callbacks' wholesale change). Payload: (path, value); ("profile", key) on a profile change.
     SETTINGS_CHANGED   = "Ka0s_DpsRace_SettingsChanged",
 }
 

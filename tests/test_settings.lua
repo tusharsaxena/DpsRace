@@ -234,3 +234,13 @@ test("settings: lowering Runs to keep never deletes on the spot", function()
     assertTrue(NS.SetByPath("global.history.keep", 1))
     assertEqual(#NS.Recorder.All(), 4, "the prune runs at login and after a saved run (spec §7)")
 end)
+
+test("settings: the global reset confirms with options-ui-§12's one wording, verbatim", function()
+    local inst = T.load()
+    local d = inst.mocks.StaticPopupDialogs.DPSRACE_RESET_ALL
+    assertEqual(d.text, "Reset this profile to the addon's defaults? Everything you have configured or added in it "
+        .. "is discarded \226\128\148 your other profiles are not affected.")
+    assertEqual(d.button1, "Yes")
+    assertEqual(d.button2, "No")
+    assertTrue(d.timeout == 0 and d.whileDead == true and d.hideOnEscape == true)
+end)
