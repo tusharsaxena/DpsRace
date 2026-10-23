@@ -53,6 +53,19 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 Untabbed: AceDBOptions' own table, drawn by AceConfigDialog into the library's panel. No Defaults
 button. See [profiles.md](profiles.md).
 
+## The launcher and the key bindings
+
+| Surface | What it does |
+|---|---|
+| Minimap button / broker row | One LibDataBroker launcher (`core/LauncherSetup.lua`, launcher-§1). Left-click always opens this panel; right-click opens the options menu. The tooltip is the library's status tooltip |
+| Options menu entries | **Enabled** (`/dr enable` / `disable`), **Locked** (`NS.ToggleLock`, the *Lock frame* row), **Test mode** (`NS.ToggleTestMode`, the *Test mode* row), **Show window** (`NS.ToggleHud`, the race HUD). While disabled, only *Enabled* stays clickable; the rest are grayed and write nothing (launcher-§2) |
+| Key binding: *Toggle race HUD* | `CLICK DpsRaceToggleHud:LeftButton`, under **Key Bindings → AddOns → Ka0s DPS Race**. Presses the same `NS.ToggleHud` the *Show window* entry runs (launcher-§6) |
+| Key binding: *Toggle results window* | `CLICK DpsRaceToggleResults:LeftButton`, same category. Runs `NS.ToggleResults` |
+
+Neither binding has a default key. Both refuse with the one disabled line while the addon is off,
+and with the capture line under a perf run, exactly as the verbs do (slash-commands-§7). The button
+names are permanent: renaming one unbinds every player's key.
+
 ## Mapping to the schema
 
 Every control reads through `NS.GetSetting(path)` and writes through `NS.SetByPath(path, value)`,
