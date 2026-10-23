@@ -29,7 +29,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Cfg` | the options panel's combat lock |
 | `Perf` | the performance harness |
 | `Diag` | the diagnostics report |
-| `Race` | `modules/Race.lua`: each combat-start edge with the state it met, and why a run was lost |
+| `Race` | `modules/Race.lua`, one line per edge (debug-logging-§8): the arm (length, newest session before it) and each refusal with its reason code; a session adopted, or ignored because it existed before the arm; the clock start; each combat-start and combat-end edge; the buzzer; an incomplete run's early end; the stopping hold and the quiet that releases the read; a still-sealed read's retry; the read's outcome (status, damage present or absent, never the figure); each late cast and a restart; the resume's decision after a `/reload`; and why a run was lost |
 | `Meter` | `modules/Meter.lua`: a `C_DamageMeter` call that raised, with the error |
 | `Recorder` | `modules/Recorder.lua`: a snapshot call that raised, and each prune's count |
 | `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |
