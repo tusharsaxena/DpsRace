@@ -433,8 +433,8 @@ end
 function Results.SetNote(id, text)
     local r = run(id)
     if not r then return nil end
-    r.note = NS.ResultsDetail.ClampNote(text)
-    NS.Recorder.Save(r)
+    -- Through Recorder.SetNote, not Save: RUN_SAVED would prune the store for a typed note.
+    NS.Recorder.SetNote(id, NS.ResultsDetail.ClampNote(text))
     return r.note
 end
 

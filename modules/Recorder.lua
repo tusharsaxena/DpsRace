@@ -244,6 +244,17 @@ function Recorder.Pending()
         function(a, b) return newerFirst(b, a) end)
 end
 
+--- Store a run's note (already clamped by the caller). A note is not a race result: it fires
+--- RUNS_CHANGED, never RUN_SAVED, whose receiver prunes the store (modules/Bests.lua).
+--- @return boolean stored
+function Recorder.SetNote(id, note)
+    local runs = store()
+    if not runs or not Secrets.IsSafeKey(id) or type(runs[id]) ~= "table" then return false end
+    runs[id].note = note
+    NS.SendBus(NS.MSG.RUNS_CHANGED)
+    return true
+end
+
 --- Remove one run. Fires RUNS_CHANGED only when something was removed.
 --- @return boolean removed
 function Recorder.Delete(id)

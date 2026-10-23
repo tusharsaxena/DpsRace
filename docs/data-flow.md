@@ -171,7 +171,8 @@ timer or `OnUpdate`.
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. From
   900 px wide it sits beside the list; below, it replaces the list with a back control.
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
-  `Recorder.Save` (`RUN_SAVED`). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
+  `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
+  delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
   `Results.DeleteRun` → `Recorder.Delete` (`RUNS_CHANGED`).
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
   same list widget. *Clean runs only* switches to the clean board.

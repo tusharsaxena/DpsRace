@@ -361,7 +361,7 @@ test("results: note limited to 200 chars", function()
     assertEqual(Detail.ClampNote(nil), "")
 
     seed(i, { mkRun("a") })
-    local saved = heard(i, "RUN_SAVED")
+    local saved, changed = heard(i, "RUN_SAVED"), heard(i, "RUNS_CHANGED")
     i.R.ShowRun("a")
     local d = ui(i).detail
     assertEqual(d.w.addNote.label.__text, "ADD NOTE")
@@ -370,10 +370,24 @@ test("results: note limited to 200 chars", function()
     d.w.noteBox:SetText(string.rep("x", 260))
     d.w.noteBox:__fire("OnEnterPressed")
     assertEqual(#i.NS.Recorder.Get("a").note, 200)
-    assertEqual(saved.count, 1, "the note was not saved through the Recorder")
+    assertEqual(saved.count, 0, "a note is not a race result: RUN_SAVED would prune the store")
+    assertEqual(changed.count, 1, "the note was not announced as a store change")
     assertFalse(d.editing)
     assertEqual(d.w.addNote.label.__text, "EDIT NOTE")
     assertEqual(d.w.note.__text, "Note: " .. string.rep("x", 200))
+end)
+
+test("results: saving a note never prunes the store", function()
+    local i = inst()
+    local runs = {}
+    for n = 1, 4 do runs[n] = mkRun("r" .. n, { date = NOW - n * DAY, result = { damage = 1000 * n, dps = 10 * n } }) end
+    seed(i, runs)
+    i.NS.db.global.history.keep = 1         -- lowered with four stored: nothing goes until the next race
+    assertEqual(i.R.SetNote("r4", "old pull"), "old pull")
+    local left = 0
+    for _ in pairs(i.NS.db.global.runs) do left = left + 1 end
+    assertEqual(left, 4, "typing a note deleted runs")
+    assertEqual(i.NS.Recorder.Get("r4").note, "old pull")
 end)
 
 test("results: Share is grayed without a Share module; a double-click shares", function()
