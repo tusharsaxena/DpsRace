@@ -49,6 +49,8 @@ core\EnvSetup.lua
 # LOAD-BEARING: after NS.PREFIX, before anything that prints; publishes NS.Util.print, which
 # core\DpsRace.lua reclaims at FILE SCOPE, and NS.LIBKA0S_MISSING, which the stubs below read.
 core\CoreSetup.lua
+# The compat family's root (compat): NS.Compat, read by modules at CALL time only.
+core\Compat.lua
 # LOAD-BEARING: publishes NS.Secrets, which modules\Meter.lua captures at FILE SCOPE. Reads only
 # LibStub (LibKa0s-Compat-1.0, with its own stub arm), so it may sit anywhere before the modules.
 core\Secrets.lua

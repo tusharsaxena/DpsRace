@@ -56,10 +56,13 @@ files["modules/Recorder.lua"] = {
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 
--- The Race HUD (T7). The formatter is the client's (C_StringUtil) with AbbreviateNumbers beneath it;
--- spell names and icons come through C_Spell; the shell plays the cue and the buzzer's raid warning,
--- names the drop-combat spells the player knows and draws tooltips.
-files["modules/Format.lua"] = { read_globals = { "C_StringUtil", "AbbreviateNumbers" } }
+-- The compat family (compat): the version-variant client calls, and the only file that may name them.
+files["core/Compat.lua"] = { read_globals = { "C_ChatInfo", "SendChatMessage", "C_StringUtil" } }
+
+-- The Race HUD (T7). The formatter is the client's (C_StringUtil, through NS.Compat) with
+-- AbbreviateNumbers beneath it; spell names and icons come through C_Spell; the shell plays the cue and
+-- the buzzer's raid warning, names the drop-combat spells the player knows and draws tooltips.
+files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
 files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
 files["modules/Hud.lua"] = {
@@ -81,10 +84,10 @@ files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 
--- Share (T9): which channels the player is in, the chat send (C_ChatInfo, with the old global under it),
--- the whisper popup's player-target name, and the channel menu.
+-- Share (T9): which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
+-- NS.Compat's), the whisper popup's player-target name, and the channel menu.
 files["modules/Share.lua"] = {
-    read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "SendChatMessage", "UnitIsPlayer", "MenuUtil" },
+    read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "UnitIsPlayer", "MenuUtil" },
 }
 
 -- The published slash surface (`Sl:OnSlash`, `PrintHelp`, `LandingRows`, `DisabledLine`, `Register`)

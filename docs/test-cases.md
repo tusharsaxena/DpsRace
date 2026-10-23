@@ -338,7 +338,7 @@ Total.
 - slash: feature verbs answer the enable line while disabled
 - slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept
 
-### test_share.lua (12)
+### test_share.lua (13)
 
 - share: Share.Line matches the mockup format
 - share: one target drops the count; an uncataloged target is named; incomplete is said
@@ -352,6 +352,7 @@ Total.
 - share: arming prints the armed line with the length and the target
 - share: a result prints the score line with the delta, the flags and the tail
 - share: the race's own result is printed once, when it resolves
+- share: the chat sender and the number formatter are reached only through NS.Compat
 
 ### test_preview.lua (15)
 
@@ -520,7 +521,7 @@ Total.
 | test_schema.lua | 14 |
 | test_settings.lua | 16 |
 | test_slash.lua | 27 |
-| test_share.lua | 12 |
+| test_share.lua | 13 |
 | test_preview.lua | 15 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
@@ -534,4 +535,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **404** |
+| **Total** | **405** |

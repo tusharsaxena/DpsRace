@@ -44,12 +44,10 @@ local function debug(fmt, ...)
     if NS.Debug then NS.Debug("Format", fmt, ...) end
 end
 
+-- The client's constructor is version-variant: core/Compat.lua owns it (compat).
 local function newFormatter()
-    local util = C_StringUtil
-    local make = util and (util.CreateAbbreviatedNumberFormatter or util.CreateNumericRuleFormatter)
-    if type(make) ~= "function" then return nil end
-    local ok, f = pcall(make)
-    if not ok or f == nil or type(f.SetBreakpoints) ~= "function" then return nil end
+    local f = NS.Compat.NewNumberFormatter()
+    if f == nil or type(f.SetBreakpoints) ~= "function" then return nil end
     return f
 end
 

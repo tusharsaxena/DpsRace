@@ -194,7 +194,7 @@ timer or `OnUpdate`.
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
   sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
-  DPS Race)*) through `C_ChatInfo.SendChatMessage`; Whisper asks for a name first
+  DPS Race)*) through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`); Whisper asks for a name first
   (`DPSRACE_SHARE_WHISPER`, the player target's name offered). The line is plain text, every `|`
   replaced.
 - **The race's own lines**, in the player's chat only: `RACE_STATE_CHANGED` to armed prints

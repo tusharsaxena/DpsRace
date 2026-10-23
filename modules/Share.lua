@@ -91,10 +91,9 @@ local function refuseInCombat()
     return false
 end
 
+-- The send call is version-variant: core/Compat.lua owns it (compat).
 local function sender()
-    local info = C_ChatInfo
-    if info and type(info.SendChatMessage) == "function" then return info.SendChatMessage end
-    return SendChatMessage
+    return NS.Compat.ChatSender()
 end
 
 --- Send `run`'s line to one channel. Refused in combat.

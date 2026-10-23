@@ -173,3 +173,26 @@ test("share: the race's own result is printed once, when it resolves", function(
     assertEqual(#out, 1)
     assertTrue(out[1]:find(" damage \194\183 ", 1, true) ~= nil, out[1])
 end)
+
+-- compat: every deprecated or version-variant client call lives in the compat family (core/Compat*.lua)
+-- and the rest of the addon reaches it through NS.Compat.
+test("share: the chat sender and the number formatter are reached only through NS.Compat", function()
+    local toc = assert(io.open(T.root .. "/DpsRace.toc", "r"))
+    local offenders = {}
+    for line in toc:lines() do
+        local path = line:gsub("\r$", ""):gsub("\\", "/")
+        if path:match("^[%w_]+/.*%.lua$") and not path:match("^libs/") and not path:match("^core/Compat") then
+            local f = assert(io.open(T.root .. "/" .. path, "r"))
+            local code = f:read("*a"):gsub("%-%-[^\n]*", "")
+            f:close()
+            for _, name in ipairs({ "SendChatMessage", "C_StringUtil" }) do
+                if code:find(name, 1, true) then offenders[#offenders + 1] = path .. ": " .. name end
+            end
+        end
+    end
+    toc:close()
+    assertEqual(table.concat(offenders, "; "), "")
+    local Compat = assert(T.NS.Compat, "no NS.Compat")
+    assertEqual(type(Compat.ChatSender), "function")
+    assertEqual(type(Compat.NewNumberFormatter), "function")
+end)

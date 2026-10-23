@@ -172,7 +172,7 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 - The addon creates no secure frame and calls no protected API. The three key-binding buttons
   (`DpsRaceToggleHud`, `DpsRaceToggleResults`, `DpsRaceArmToggle`) are plain, hidden and not secure
   (launcher-§6).
-- Share sends one chat line from a menu click (a hardware event), through `C_ChatInfo.SendChatMessage`
+- Share sends one chat line from a menu click (a hardware event), through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`)
   with the old global beneath it, and only out of combat and out of the client's chat lockdown. The
   line is plain text with every `|` replaced, so no chat escape reaches a channel.
 - The settings panel's combat lock is the library's (options-ui-§2): the panel refuses to open under
@@ -237,7 +237,7 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: `core/Secrets.lua` (T2) binds the LibKa0s-Compat guards and owns none; re-check when one is added |
-| `compat-layer.md` | Not applicable | No `core/Compat.lua` (compat's applicability condition): no version-variant call is owned |
+| `compat-layer.md` | Not applicable | `core/Compat.lua` is present with two shims (`ChatSender`, `NewNumberFormatter`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |
