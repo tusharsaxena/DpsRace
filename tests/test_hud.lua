@@ -95,7 +95,7 @@ test("hud: a run that ended before the buzzer waits for its read on the waiting 
     assertEqual(f.Race.State(), "stopping")
     assertEqual(current(f), "waiting")
     assertEqual(body(f).w.title.__text, "Reading the result")
-    assertEqual(body(f).w.tail.label.__text, "COMBAT ENDED AT")
+    assertEqual(body(f).w.tail.label.__text, "Combat Ended")
 end)
 
 test("hud: idle arm button disabled with reason in combat", function()
@@ -124,7 +124,7 @@ test("hud: idle Arm uses the picked length and target count; a refusal prints it
     f.Hud.Show()
     local b = body(f)
     assertEqual(b.w.card.npc.__text, "#243208")
-    assertEqual(b.w.card.badgeText.__text, "CLEAVE")
+    assertEqual(b.w.card.badgeText.__text, "Cleave")
     f.Hud.Act.pickLength(60)
     f.Hud.Act.stepCount(1)
     f.Hud.Act.stepCount(1)
@@ -442,9 +442,10 @@ end)
 
 -- The window's chrome above and below the content (title bar + gap, footer + gap) and each body's
 -- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
-local CHROME, PITCH = 36 + 30, 24
-local RUNNING_TOP, RUNNING_BOTTOM = 106, 48
-local RESULT_TOP, RESULT_BOTTOM = 104, 30
+-- The 30px title bar + 10, the 20px footer + 8; 18px rows on a 20px pitch; 20px buttons.
+local CHROME, PITCH = 40 + 28, 20
+local RUNNING_TOP, RUNNING_BOTTOM = 106, 42
+local RESULT_TOP, RESULT_BOTTOM = 104, 28
 
 local function fits(height, top, bottom)
     return math.floor((height - CHROME - top - bottom + 2) / PITCH)
@@ -504,8 +505,12 @@ end)
 
 test("hud: the minimum height holds the idle body's whole stack", function()
     local f = hud()
-    -- ARM RACE at 172 and 34 tall, its refusal line (4 + 14), then 4 and the 22px links.
-    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 172 + 34 + 4 + 14 + 4 + 22, "ARM RACE meets the links")
+    -- Arm Race at 162 and 24 tall, its refusal line (4 + 14), then 4 and the 20px links.
+    local States = f.NS.HudStates
+    assertEqual(States.IDLE_ARM_Y, 162)
+    assertEqual(States.ARM_HEIGHT, 24)
+    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 162 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
+    assertEqual(f.Hud.MIN_HEIGHT, 296, "the minimum height, re-derived for the compact rows and buttons")
     assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
     f.NS.db.profile.windows.hud.height = 200
     f.Hud.Show()
@@ -742,8 +747,8 @@ test("hud: the running clock shows elapsed in green beside time left in red by d
     assertEqual(w.left.__text, "0:17.5")
     assertTrue(colored(w.elapsed, GREEN), "elapsed is green")
     assertTrue(colored(w.left, RED), "time left is red")
-    assertEqual(w.elapsedCap.__text, "ELAPSED")
-    assertEqual(w.leftCap.__text, "LEFT")
+    assertEqual(w.elapsedCap.__text, "Elapsed")
+    assertEqual(w.leftCap.__text, "Left")
     f:to(121.04)
     tick(f)
     assertEqual(w.left.__text, "0:08.9")
@@ -973,4 +978,132 @@ test("hud: the diagnostics state section names the body, the event set and the c
         if l == "hud body=running events=live ticking=true locked=false" then found = true end
     end
     assertTrue(found, "no hud line; got: " .. table.concat(lines, " | "))
+end)
+-- ── the collection's look (modules/Style.lua) ─────────────────────────────────────────────────────
+
+-- A run of four or more capitals in a label (texture markup stripped): an ALL-CAPS word. STOP is the
+-- one shout the HUD keeps, as big as the clock; DPS is an abbreviation.
+local function shouts(s)
+    if type(s) ~= "string" then return false end
+    s = s:gsub("|T.-|t", "")
+    for word in s:gmatch("%u%u%u%u+") do
+        if word ~= "STOP" then return true end
+    end
+    return false
+end
+
+local function shouting(W)
+    local out = {}
+    for _, o in ipairs(W.objects) do
+        if shouts(o.__text) then out[#out + 1] = o.__text end
+    end
+    return out
+end
+
+test("hud: labels take the collection's font objects; the clocks and KPI figures stay large", function()
+    local f = hud()
+    f.Hud.Show()
+    local u, F = ui(f), f.NS.Style.FONT
+    assertEqual(u.frame.title.__fontObject, "GameFontNormal", "the title")
+    assertEqual(F.TITLE, "GameFontNormal")
+    assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
+    assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
+    local w = body(f).w
+    assertEqual(w.lengthCap.__fontObject, "GameFontNormalSmall", "a section label is a header")
+    assertEqual(w.lengthCap.__text, "Race Length")
+    assertEqual(w.targetCap.__text, "Target")
+    assertEqual(w.presets[1].label.__fontObject, "GameFontHighlightSmall", "a preset button")
+    assertEqual(w.lastResult.label.__fontObject, "GameFontHighlightSmall", "a link button")
+    assertEqual(w.lastResult.label.__text, "Last Result")
+    assertEqual(w.arm.label.__text, "Arm Race")
+    assertEqual(w.card.name.__fontObject, "GameFontHighlight", "the target's name")
+    assertEqual(w.card.badgeText.__fontObject, "GameFontHighlightSmall")
+    running(f, 30)
+    f.meter.SetSession(25, session(5))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    w = body(f).w
+    assertEqual(w.damage.label.__fontObject, "GameFontDisableSmall", "a KPI caption")
+    assertEqual(w.damage.label.__text, "Damage")
+    assertEqual(w.dps.label.__text, "DPS \194\183 Live")
+    assertEqual(w.damage.value.__fontObject, "GameFontNormalHuge", "a KPI figure stays large")
+    assertEqual(w.elapsed.__font.size, f.NS.HudStates.CLOCK_PAIR_SIZE, "the clock pair keeps its size")
+    assertEqual(w.clock.__font.size, 40, "the single clock keeps its size")
+    assertEqual(w.cancel.label.__text, "Cancel")
+    local row = assert(w.list.rows[1], "no live row")
+    assertEqual(row.name.__fontObject, "GameFontHighlightSmall", "a spell row")
+    assertEqual(row.amount.__fontObject, "GameFontHighlightSmall")
+    assertEqual(f.NS.HudBreakdown.ROW_HEIGHT, 18, "LootHistory's compact row")
+end)
+
+test("hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)", function()
+    local f = hud()
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(5))
+    pump(f, 0.5)
+    f:to(129.9)
+    f:update(25)
+    f:to(130)
+    tick(f)
+    assertEqual(current(f), "stop")
+    f:advance(3)
+    tick(f)
+    assertEqual(current(f), "waiting")
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(current(f), "result")
+    local loud = shouting(f.W)
+    assertEqual(#loud, 0, "ALL CAPS: " .. table.concat(loud, " | "))
+    local w = body(f).w
+    assertEqual(w.again.label.__text, "Race Again")
+    assertEqual(w.details.label.__text, "Details")
+    assertEqual(w.share.label.__text, "Share")
+end)
+
+test("hud: a title-bar control turns gold under the pointer and back at rest, a late leave included", function()
+    local f = hud()
+    f.Hud.Show()
+    local u = ui(f)
+    local GOLD, REST = f.NS.Style.GOLD, f.NS.Style.REST
+    local function is(b, c)
+        local v = b.icon.__vertex
+        return v ~= nil and v[1] == c[1] and v[2] == c[2] and v[3] == c[3] and (v[4] == nil or v[4] == 1)
+    end
+    local controls = { u.close, u.lock, u.settings, u.results }
+    for _, b in ipairs(controls) do assertTrue(is(b, REST), "a control is not at rest") end
+    u.results:__fire("OnEnter")
+    assertTrue(is(u.results, GOLD), "the hovered control is gold")
+    assertTrue(is(u.settings, REST) and is(u.lock, REST) and is(u.close, REST), "only the hovered one")
+    assertTrue(f.M.GameTooltip:IsShown(), "the tooltip stays")
+    -- The pointer moves to the next control and the old control's leave arrives after its enter.
+    u.settings:__fire("OnEnter")
+    u.results:__fire("OnLeave")
+    assertTrue(is(u.settings, GOLD), "a late leave took the gold off the control under the pointer")
+    assertTrue(is(u.results, REST))
+    u.settings:__fire("OnLeave")
+    for _, b in ipairs(controls) do assertTrue(is(b, REST), "back at rest") end
+    -- The close control's own hover (the library's red) is repainted gold, and back to its gray.
+    u.close:__fire("OnEnter")
+    assertTrue(is(u.close, GOLD), "the close control is gold under the pointer")
+    u.close:__fire("OnLeave")
+    assertTrue(is(u.close, REST))
+    -- Lock swaps the padlock's art, not its tint.
+    f.Hud.SetLocked(true)
+    u.lock:__fire("OnEnter")
+    assertEqual(u.lock.iconName, "lock")
+    assertTrue(is(u.lock, GOLD))
+end)
+
+test("hud: the minimum size still holds every body after the compact restyle", function()
+    local f = hud()
+    f.NS.db.profile.windows.hud.width = 1
+    f.NS.db.profile.windows.hud.height = 1
+    f.Hud.Show()
+    assertEqual(f.Hud.Diagnose().height, f.Hud.MIN_HEIGHT)
+    local States = f.NS.HudStates
+    local content = f.Hud.MIN_HEIGHT - CHROME
+    assertTrue(content >= States.IDLE_ARM_Y + States.ARM_HEIGHT + 4 + 14 + 4 + 20, "idle")
+    assertTrue(content >= RUNNING_TOP + 3 * PITCH - 2 + RUNNING_BOTTOM, "running with three rows")
+    assertTrue(content >= RESULT_TOP + 3 * PITCH - 2 + RESULT_BOTTOM, "result with three rows")
 end)

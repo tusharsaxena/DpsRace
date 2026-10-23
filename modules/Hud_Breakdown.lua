@@ -18,19 +18,15 @@ NS.HudBreakdown = Breakdown
 
 local L = NS.L
 
-Breakdown.ROW_HEIGHT = 22
+-- Compact rows, as LootHistory's list draws them (18px, GameFontHighlightSmall): modules/Style.lua.
+Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2
-local ICON_SIZE = 18
+local ICON_SIZE = 16
 local PCT_WIDTH = 44
 local BAR_TEXTURE = "Interface\\Buttons\\WHITE8x8"
 local BAR_COLOR = { 0.29, 0.29, 0.45, 0.85 }
 local TRACK_COLOR = { 1, 1, 1, 0.04 }
-local NAME_COLOR = { 0.93, 0.93, 0.95 }
-local DIM_COLOR = { 0.62, 0.62, 0.68 }
-
-local function fontPath()
-    return STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-end
+local FONT = NS.Style.FONT
 
 --- A spell's name through C_Spell (a secret ID is accepted; the name may come back secret, which
 --- only SetText ever sees). Never stored: names resolve per locale and per patch (spec §7).
@@ -55,15 +51,6 @@ function Breakdown.SpellIcon(id)
     return nil
 end
 
-local function label(parent, size, color, justify)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(fontPath(), size, "")
-    fs:SetTextColor(color[1], color[2], color[3])
-    fs:SetJustifyH(justify)
-    fs:SetWordWrap(false)
-    return fs
-end
-
 local function newRow(parent)
     local row = CreateFrame("Frame", nil, parent)
     row:SetHeight(Breakdown.ROW_HEIGHT)
@@ -77,9 +64,9 @@ local function newRow(parent)
     track:SetAllPoints(bar)
     track:SetColorTexture(TRACK_COLOR[1], TRACK_COLOR[2], TRACK_COLOR[3], TRACK_COLOR[4])
     row.icon, row.bar = icon, bar
-    row.name = label(bar, 11, NAME_COLOR, "LEFT")
-    row.amount = label(bar, 11, NAME_COLOR, "RIGHT")
-    row.pct = label(bar, 10, DIM_COLOR, "RIGHT")
+    row.name = NS.Style.Text(bar, FONT.TEXT, nil, "LEFT")
+    row.amount = NS.Style.Text(bar, FONT.TEXT, nil, "RIGHT")
+    row.pct = NS.Style.Text(bar, FONT.CAPTION, nil, "RIGHT")
     return row
 end
 

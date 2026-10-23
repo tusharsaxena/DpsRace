@@ -206,26 +206,26 @@ end
 --- length, damage, DPS, flags.
 function Runs.Columns()
     return {
-        { key = "date", label = L["DATE"], width = 80, desc = true,
+        { key = "date", label = L["Date"], width = 80, desc = true,
           sort = function(run) return run.date end,
           text = function(run) return Tbl.Date(run.date, "%d %b %H:%M") end },
-        { key = "icons", label = L["CLS \194\183 SPEC"], width = 40, kind = "icons" },
-        { key = "char", label = L["CHARACTER"], flex = true, min = 60, desc = false,
+        { key = "icons", label = L["Class"], width = 40, kind = "icons" },
+        { key = "char", label = L["Character"], flex = true, min = 60, desc = false,
           sort = function(run) return tostring(run.char and run.char.name or ""):lower() end,
           text = function(run)
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "ilvl", label = L["ILVL"], width = 40, justify = "RIGHT", desc = true,
+        { key = "ilvl", label = L["iLvl"], width = 40, justify = "RIGHT", desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        { key = "target", label = L["TARGET"], width = 90, kind = "badge", desc = false,
+        { key = "target", label = L["Target"], width = 84, kind = "badge", desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
-        { key = "length", label = L["LEN"], width = 36, justify = "RIGHT", desc = true,
+        { key = "length", label = L["Length"], width = 46, justify = "RIGHT", desc = true,
           sort = function(run) return run.race and run.race.length end,
           text = function(run) return NS.Format.Length(run.race and run.race.length) end },
-        { key = "damage", label = L["DAMAGE"], width = 56, justify = "RIGHT", desc = true,
+        { key = "damage", label = L["Damage"], width = 60, justify = "RIGHT", desc = true,
           sort = function(run) return run.result and run.result.damage end,
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, justify = "RIGHT", desc = true,
@@ -242,7 +242,7 @@ View.__index = View
 local function checkbox(view, parent, spec)
     local b = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
     b:SetSize(20, 20)
-    b.label = Tbl.Text(b, 11, C.text)
+    b.label = Tbl.Text(b, Tbl.FONT.TEXT)
     b.label:SetPoint("LEFT", b, "RIGHT", 1, 0)
     b.label:SetText(L[spec.label])
     b:SetScript("OnClick", function() view:SetFilter(spec.key, not view.filters[spec.key]) end)
@@ -269,7 +269,7 @@ local function buildBar(view)
         end
     end
     for _, spec in ipairs(CHECKS) do view.checks[spec.key] = checkbox(view, bar, spec) end
-    view.count = Tbl.Text(bar, 11, C.dim, "RIGHT")
+    view.count = Tbl.Text(bar, Tbl.FONT.CAPTION, nil, "RIGHT")
     view.count:SetWidth(COUNT_W)
     view.bar = bar
 end

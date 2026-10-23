@@ -13,6 +13,8 @@
 --   W.secretFrames[obj]   true once it was handed a secret (Kit.secret) by any setter
 --   W.geomReads           every Get{Width,Height,Size,Point,...} call, as { frame, method }
 --   __texCoord / __font / __strata / __mouse   a region's texcoords, font, strata and mouse flag
+--   __fontObject   the Blizzard font object a font string was made with or handed (SetFontObject)
+--   __vertex       a texture's last SetVertexColor, { r, g, b, a }
 --   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
 --                         SetTexture answer false for that path (a texture the client cannot load)
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
@@ -75,9 +77,10 @@ return function(T)
         end
 
         local dress
-        local function region(parent)
+        local function region(parent, template)
             local r = M.__stubFrame()
             r.__parentFrame = parent
+            r.__fontObject = template
             dress(r)
             return r
         end
@@ -108,7 +111,9 @@ return function(T)
             rawset(o, "CreateAnimationGroup", function(self) return W.NewAnimationGroup(self) end)
             rawset(o, "SetTextColor", function(self, r, g, b, a) self.__color = { r, g, b, a }; return self end)
             rawset(o, "SetScale", function(self, s) self.__scale = s; return self end)
-            rawset(o, "CreateFontString", function(self) return region(self) end)
+            rawset(o, "SetFontObject", function(self, font) self.__fontObject = font; return self end)
+            rawset(o, "SetVertexColor", function(self, r, g, b, a) self.__vertex = { r, g, b, a }; return self end)
+            rawset(o, "CreateFontString", function(self, _, _, template) return region(self, template) end)
             rawset(o, "CreateTexture", function(self) return region(self) end)
             for _, name in ipairs(GEOMETRY) do
                 rawset(o, name, function(self)

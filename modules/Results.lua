@@ -33,7 +33,9 @@ Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside t
 Results.FRAME_NAME = "DpsRaceResults"
 Results.TABS = { "runs", "bests" }
 
-local HEADER_H, TAB_H, FOOTER_H = 28, 30, 24
+-- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
+local Style = NS.Style
+local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
 local C = NS.ResultsTable.COLORS
 
 local ui                 -- the built window
@@ -120,31 +122,35 @@ local function buildTab(name)
 end
 
 local function tabButton(name, label, i)
+    -- LootHistory's tab: GameFontNormal, gold and underlined when active, gray when not.
     local b = CreateFrame("Button", nil, ui.frame)
-    b:SetSize(80, TAB_H)
-    b:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 8 + (i - 1) * 84, -HEADER_H)
-    b.label = NS.ResultsTable.Text(b, 12, C.dim, "CENTER")
-    b.label:SetAllPoints(b)
+    b:SetSize(Style.TAB_W, TAB_H)
+    b:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 7 + (i - 1) * Style.TAB_PITCH, -HEADER_H)
+    b.label = Style.Text(b, Style.FONT.TAB, nil, "CENTER")
+    b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
     b.underline = b:CreateTexture(nil, "OVERLAY")
     b.underline:SetColorTexture(C.gold[1], C.gold[2], C.gold[3], 1)
     b.underline:SetHeight(2)
-    b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 6, 0)
-    b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -6, 0)
+    b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 8, 0)
+    b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
     b:SetScript("OnClick", function() Results.ShowTab(name) end)
     ui.tabs[name] = b
 end
 
 local function buildChrome(f)
-    f.title = NS.ResultsTable.Text(f, 13, C.gold)
-    f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -8)
+    -- The title centered in the title bar (GameFontNormal, the header gold), as LootHistory's is.
+    f.title = Style.Text(f, Style.FONT.TITLE, C.gold, "CENTER")
+    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race \226\128\148 Results"])
     f.divider = f:CreateTexture(nil, "ARTWORK")
     f.divider:SetHeight(1)
     f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
     f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
-    ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
-    if ui.close then ui.close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -5, -5) end
+    -- The close control is gold under the pointer, as the HUD's controls are (modules/Style.lua).
+    ui.controls = Style.NewStrip()
+    ui.close = Style.AddToStrip(ui.controls, NS.MakeCloseButton(f, function() Results.Hide() end))
+    if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
     drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28, -HEADER_H)
@@ -156,8 +162,8 @@ local function buildChrome(f)
         savePosition()
     end)
     ui.drag = drag
-    tabButton("runs", L["RUNS"], 1)
-    tabButton("bests", L["BESTS"], 2)
+    tabButton("runs", L["Runs"], 1)
+    tabButton("bests", L["Bests"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
     line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
@@ -171,11 +177,11 @@ local function buildFooter(f)
     line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
     line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
     line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
-    ui.footLeft = NS.ResultsTable.Text(f, 10, C.dim)
-    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 7)
+    ui.footLeft = Style.Text(f, Style.FONT.CAPTION)
+    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
     ui.footLeft:SetText(L["Click a row for details \194\183 double-click to share"])
-    ui.footRight = NS.ResultsTable.Text(f, 10, C.dim, "RIGHT")
-    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 7)
+    ui.footRight = Style.Text(f, Style.FONT.CAPTION, nil, "RIGHT")
+    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
 end
 
 local onHide
@@ -279,7 +285,7 @@ end
 local function paintTabs()
     for _, name in ipairs(Results.TABS) do
         local b, on = ui.tabs[name], name == tab
-        local c = on and C.gold or C.dim
+        local c = on and C.gold or Style.TAB_IDLE
         b.label:SetTextColor(c[1], c[2], c[3])
         b.underline:SetShown(on)
         local pane = ui.panes[name]

@@ -62,30 +62,30 @@ end
 --- The Bests board's columns (mockup screen 09).
 function Bests.Columns()
     return {
-        { key = "icons", label = L["CLS \194\183 SPEC"], flex = true, min = 120, kind = "icons", withName = true,
+        { key = "icons", label = L["Class \194\183 Spec"], flex = true, min = 120, kind = "icons", withName = true,
           desc = false, sort = function(run) return tostring(run.char and run.char.spec or ""):lower() end },
-        { key = "char", label = L["CHARACTER"], width = 130, desc = false,
+        { key = "char", label = L["Character"], width = 130, desc = false,
           sort = function(run) return tostring(run.char and run.char.name or ""):lower() end,
           text = function(run)
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "length", label = L["LEN"], width = 50, justify = "RIGHT", desc = true,
+        { key = "length", label = L["Length"], width = 56, justify = "RIGHT", desc = true,
           sort = function(run) return run.race and run.race.length end,
           text = function(run) return NS.Format.Length(run.race and run.race.length) end },
-        { key = "ilvl", label = L["ILVL"], width = 56, justify = "RIGHT", desc = true,
+        { key = "ilvl", label = L["iLvl"], width = 56, justify = "RIGHT", desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        { key = "damage", label = L["DAMAGE"], width = 80, justify = "RIGHT", desc = true,
+        { key = "damage", label = L["Damage"], width = 80, justify = "RIGHT", desc = true,
           sort = function(run) return run.result and run.result.damage end,
           text = function(run) return NS.Format.Number(run.result and run.result.damage or 0) end },
         { key = "dps", label = L["DPS"], width = 80, justify = "RIGHT", desc = true,
           sort = function(run) return run.result and run.result.dps end,
           text = function(run) return NS.Format.Number(run.result and run.result.dps or 0), C.green end },
-        { key = "date", label = L["DATE"], width = 64, desc = true,
+        { key = "date", label = L["Date"], width = 64, desc = true,
           sort = function(run) return run.date end,
           text = function(run) return Tbl.Date(run.date, "%d %b") end },
-        { key = "flags", label = L["FLAGS"], width = 110, kind = "badge",
+        { key = "flags", label = L["Flags"], width = 110, kind = "badge",
           text = function(run) return Tbl.ShortFlags(run), C.amber end },
     }
 end
@@ -118,11 +118,11 @@ function Bests.Build(parent, hooks)
     view.clean = CreateFrame("CheckButton", nil, bar, "UICheckButtonTemplate")
     view.clean:SetSize(20, 20)
     view.clean:SetPoint("TOPLEFT", bar, "TOPLEFT", x, -6)
-    view.clean.label = Tbl.Text(view.clean, 11, C.text)
+    view.clean.label = Tbl.Text(view.clean, Tbl.FONT.TEXT)
     view.clean.label:SetPoint("LEFT", view.clean, "RIGHT", 1, 0)
     view.clean.label:SetText(L["Clean runs only"])
     view.clean:SetScript("OnClick", function() view:SetFilter("cleanOnly", not view.filters.cleanOnly) end)
-    view.hint = Tbl.Text(bar, 11, C.dim, "RIGHT")
+    view.hint = Tbl.Text(bar, Tbl.FONT.CAPTION, nil, "RIGHT")
     view.hint:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -GAP - 2, -10)
     view.hint:SetText(L["Best per spec \195\151 category \195\151 race length, all characters"])
     view.bar = bar

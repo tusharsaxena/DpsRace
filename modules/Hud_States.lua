@@ -17,11 +17,13 @@ local States = {}
 NS.HudStates = States
 
 local L = NS.L
+local Style = NS.Style
+local FONT = Style.FONT
 
 local C = {
     text  = { 0.93, 0.93, 0.95 },
     dim   = { 0.62, 0.62, 0.68 },
-    gold  = { 1.0, 0.82, 0.0 },
+    gold  = Style.GOLD,
     amber = { 1.0, 0.72, 0.29 },
     red   = { 1.0, 0.32, 0.32 },
     green = { 0.36, 0.86, 0.46 },
@@ -31,8 +33,10 @@ States.COLORS = C
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local PANEL_BG, PANEL_EDGE = { 1, 1, 1, 0.03 }, { 1, 1, 1, 0.10 }
+-- The plain button is LootHistory's bar button (a dark fill, the window's divider gray for an edge,
+-- white GameFontHighlightSmall that turns gold under the pointer); primary and danger keep a tinted edge.
 local BUTTON_STYLES = {
-    normal  = { bg = { 1, 1, 1, 0.05 }, edge = { 1, 1, 1, 0.16 }, text = C.text },
+    normal  = { bg = { 0.1, 0.1, 0.12, 0.9 }, edge = { 0.24, 0.24, 0.27, 0.9 }, text = { 1, 1, 1 } },
     primary = { bg = { 1, 0.82, 0, 0.12 }, edge = { 1, 0.82, 0, 0.75 }, text = C.gold },
     danger  = { bg = { 1, 0.32, 0.32, 0.08 }, edge = { 1, 0.32, 0.32, 0.6 }, text = C.red },
 }
@@ -43,11 +47,18 @@ local BIG = 40           -- the clock and STOP
 local CLOCK_PAIR = 26
 States.CLOCK_PAIR_SIZE = CLOCK_PAIR
 local KPI_HEIGHT = 46
-local BUTTON_HEIGHT = 26
-local LINK_HEIGHT = 22
+-- Every button is LootHistory's 20px; Arm alone is a little taller, the one action of the idle body.
+local BUTTON_HEIGHT = 20
+local LINK_HEIGHT = 20
 local GAP = 8
--- The idle body's Arm button and the refusal line under it.
-local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = 172, 34, 14
+-- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
+-- warning line (two lines at the minimum width), then Arm and the refusal line under it.
+local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
+local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + 8
+local IDLE_CARD_Y = IDLE_TARGET_Y + 14
+local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 6
+local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_WARN_Y + 28, 24, 14
+States.IDLE_ARM_Y, States.ARM_HEIGHT = IDLE_ARM_Y, ARM_HEIGHT
 -- The running body's rows sit between the KPIs and the caption over CANCEL.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
@@ -64,20 +75,25 @@ end
 
 -- ── widgets ─────────────────────────────────────────────────────────────────────────────────────
 
-local function fontPath(mono)
-    if mono and NS.Constants and NS.Constants.FONT_MONO then return NS.Constants.FONT_MONO end
-    return STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-end
-
 local function paintText(fs, c)
     fs:SetTextColor(c[1], c[2], c[3])
 end
 
-local function text(parent, size, color, justify, mono)
+--- A label in one of the shared font objects (modules/Style.lua), recolored when `color` is given.
+--- Unlike Style.Text it may wrap: a body's notes run to two lines at the minimum width.
+local function text(parent, font, color, justify)
+    local fs = Style.Text(parent, font, color, justify)
+    fs:SetWordWrap(true)
+    return fs
+end
+
+-- A race clock or STOP: the one label kept in its own monospace face and size (modules/Style.lua).
+local function bigText(parent, size, color)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(fontPath(mono), size, "")
-    paintText(fs, color or C.text)
-    fs:SetJustifyH(justify or "LEFT")
+    local face = NS.Constants and NS.Constants.FONT_MONO or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+    fs:SetFont(face, size, "")
+    paintText(fs, color)
+    fs:SetJustifyH("CENTER")
     return fs
 end
 
@@ -97,22 +113,30 @@ local function paintButton(b)
     local edge = (b.selected and C.gold) or s.edge
     b:SetBackdropColor(s.bg[1], s.bg[2], s.bg[3], on and s.bg[4] or s.bg[4] * 0.4)
     b:SetBackdropBorderColor(edge[1], edge[2], edge[3], on and (edge[4] or 1) or 0.25)
-    local t = b.selected and C.gold or s.text
+    local t = ((b.selected or (b.hot and on)) and C.gold) or s.text
     b.label:SetTextColor(t[1], t[2], t[3], on and 1 or 0.4)
 end
 
---- A flat button: a label, a style, and a click that a disabled button never runs.
+local function setHot(b, on)
+    b.hot = on
+    paintButton(b)
+end
+
+--- A flat button: a label, a style, and a click that a disabled button never runs. Its label is
+--- GameFontHighlightSmall and turns gold under the pointer (LootHistory's bar button).
 local function button(parent, label, onClick, style)
     local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
     if b.SetBackdrop then b:SetBackdrop(FLAT) end
     b:SetHeight(BUTTON_HEIGHT)
     b.style = BUTTON_STYLES[style or "normal"]
-    b.label = text(b, 11, b.style.text, "CENTER")
+    b.label = Style.Text(b, FONT.TEXT, b.style.text, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
     b:SetScript("OnClick", function(self)
         if self:IsEnabled() then onClick(self) end
     end)
+    b:SetScript("OnEnter", function(self) setHot(self, true) end)
+    b:SetScript("OnLeave", function(self) setHot(self, false) end)
     paintButton(b)
     return b
 end
@@ -129,17 +153,18 @@ local function setSelected(b, on)
     paintButton(b)
 end
 
---- A figure in a box: a small caps label, a value and its unit.
+--- A figure in a box: a small caption, a large value and its unit (LootHistory's Insights card: a
+--- GameFontNormalHuge figure over a GameFontDisableSmall caption).
 local function kpi(parent, label, valueColor)
     local f = panel(parent)
     f:SetHeight(KPI_HEIGHT)
     local k = { frame = f }
-    k.label = text(f, 9, C.dim)
+    k.label = Style.Text(f, FONT.CAPTION)
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     k.label:SetText(label)
-    k.value = text(f, 17, valueColor or C.text, "LEFT", true)
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
-    k.unit = text(f, 10, C.dim)
+    k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
+    k.unit = Style.Text(f, FONT.CAPTION)
     k.unit:SetPoint("BOTTOMLEFT", k.value, "BOTTOMRIGHT", 3, 1)
     return k
 end
@@ -159,8 +184,9 @@ local function kpiPair(parent, y, leftLabel, rightLabel, rightColor)
     return a, b
 end
 
+-- A section label: header gold, Title Case (a column header's look).
 local function caption(parent, label, y)
-    local fs = text(parent, 9, C.dim)
+    local fs = Style.Text(parent, FONT.HEADER)
     fs:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     fs:SetText(label)
     return fs
@@ -184,7 +210,7 @@ local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 local function newChip(parent)
     local f = panel(parent)
     f:SetHeight(CHIP_HEIGHT)
-    f.label = text(f, 9, C.text, "CENTER")
+    f.label = Style.Text(f, FONT.TEXT, C.text, "CENTER")
     f.label:SetPoint("CENTER", f, "CENTER", 0, 0)
     f:EnableMouse(true)
     f:SetScript("OnEnter", function(self)
@@ -236,7 +262,7 @@ end
 
 -- ── the target card ─────────────────────────────────────────────────────────────────────────────
 
-local CARD_HEIGHT = 52
+local CARD_HEIGHT = 46
 
 local function targetCard(parent, y, stepper)
     local f = panel(parent)
@@ -244,23 +270,23 @@ local function targetCard(parent, y, stepper)
     f:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     f:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
     local card = { frame = f }
-    card.name = text(f, 13, C.text)
-    card.name:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -8)
-    card.name:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -8)
+    card.name = Style.Text(f, FONT.HEADING)
+    card.name:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
+    card.name:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
     card.badge = panel(f, { 1, 0.72, 0.29, 0.08 }, { 1, 0.72, 0.29, 0.6 })
     card.badge:SetHeight(16)
-    card.badge:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 7)
-    card.badgeText = text(card.badge, 9, C.amber, "CENTER")
+    card.badge:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
+    card.badgeText = Style.Text(card.badge, FONT.TEXT, C.amber, "CENTER")
     card.badgeText:SetPoint("CENTER", card.badge, "CENTER", 0, 0)
-    card.meta = text(f, 11, C.dim)
+    card.meta = Style.Text(f, FONT.TEXT, C.dim)
     card.meta:SetPoint("LEFT", card.badge, "RIGHT", 8, 0)
-    card.npc = text(f, 10, C.dim, "RIGHT", true)
-    card.npc:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 9)
+    card.npc = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
+    card.npc:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 8)
     if stepper then
         card.minus = button(f, "-", function() act("stepCount", -1) end)
         card.minus:SetSize(18, 18)
         card.minus:SetPoint("LEFT", card.meta, "RIGHT", 6, 0)
-        card.count = text(f, 12, C.text, "CENTER", true)
+        card.count = Style.Text(f, FONT.HEADING, C.text, "CENTER")
         card.count:SetWidth(22)
         card.count:SetPoint("LEFT", card.minus, "RIGHT", 2, 0)
         card.plus = button(f, "+", function() act("stepCount", 1) end)
@@ -273,7 +299,7 @@ end
 local function setTarget(card, target, count)
     target = target or {}
     card.name:SetText(target.name or L["No target"])
-    local badge = (NS.Dummies.Label(target.category or "other")):upper()
+    local badge = NS.Dummies.Label(target.category or "other")
     card.badgeText:SetText(badge)
     card.badge:SetWidth(math.floor(textWidth(card.badgeText, badge) + 12))
     card.npc:SetText(type(target.npcID) == "number" and ("#%d"):format(target.npcID) or "")
@@ -345,7 +371,7 @@ local Builders = {}
 function Builders.idle(parent)
     local body = newBody(parent, "idle")
     local f, w = body.frame, body.w
-    caption(f, L["RACE LENGTH"], 0)
+    w.lengthCap = caption(f, L["Race Length"], 0)
     w.presets = {}
     for i, n in ipairs(States.PRESETS) do
         w.presets[i] = button(f, NS.Format.Length(n), function() act("pickLength", n) end)
@@ -354,27 +380,27 @@ function Builders.idle(parent)
     w.custom = button(f, L["Custom"], function() act("openCustom") end)
     w.customBox = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     w.customBox:SetAutoFocus(false)
-    w.customBox:SetFont(fontPath(true), 12, "")
+    w.customBox:SetFontObject(FONT.TEXT)
     w.customBox:SetJustifyH("CENTER")
     w.customBox:SetMaxLetters(6)
     w.customBox:SetScript("OnEnterPressed", function(self) act("customLength", self:GetText()) end)
     w.customBox:SetScript("OnEscapePressed", function() act("closeCustom") end)
     w.customBox:Hide()
-    caption(f, L["TARGET"], -84)
-    w.card = targetCard(f, -98, true)
-    w.warn = text(f, 10, C.amber)
-    w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -154)
-    w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -154)
-    w.arm = wideButton(body, L["ARM RACE"], function() act("arm") end, "primary", ARM_HEIGHT)
-    w.arm.label:SetFont(fontPath(), 14, "")
+    w.targetCap = caption(f, L["Target"], -IDLE_TARGET_Y)
+    w.card = targetCard(f, -IDLE_CARD_Y, true)
+    w.warn = text(f, FONT.TEXT, C.amber)
+    w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
+    w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
+    w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT)
+    w.arm.label:SetFontObject(FONT.TITLE)
     w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
     w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
-    w.reason = text(f, 10, C.amber, "CENTER")
+    w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
     w.reason:SetPoint("TOPRIGHT", w.arm, "BOTTOMRIGHT", 0, -4)
     local links = footerButtons(body, {
-        { L["LAST RESULT"], function() act("lastResult") end },
-        { L["RESULTS"], function() act("results") end, width = 72 },
+        { L["Last Result"], function() act("lastResult") end },
+        { L["Results"], function() act("results") end, width = 72 },
     })
     w.lastResult, w.results = links[1], links[2]
 
@@ -385,8 +411,8 @@ function Builders.idle(parent)
         for i, b in ipairs(all) do
             local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
             b:ClearAllPoints()
-            b:SetSize(cell, 28)
-            b:SetPoint("TOPLEFT", self.frame, "TOPLEFT", col * (cell + 6), -14 - row * 34)
+            b:SetSize(cell, PRESET_H)
+            b:SetPoint("TOPLEFT", self.frame, "TOPLEFT", col * (cell + 6), -PRESET_TOP - row * (PRESET_H + PRESET_GAP))
         end
         self.w.customBox:ClearAllPoints()
         self.w.customBox:SetAllPoints(self.w.custom)
@@ -415,17 +441,17 @@ end
 function Builders.armed(parent)
     local body = newBody(parent, "armed")
     local f, w = body.frame, body.w
-    w.clock = text(f, BIG, C.text, "CENTER", true)
+    w.clock = bigText(f, BIG, C.text)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
-    w.sub = text(f, 11, C.dim, "CENTER")
+    w.sub = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.sub:SetPoint("TOP", f, "TOP", 0, -52)
     w.sub:SetText(L["First hit starts the clock"])
     w.card = targetCard(f, -74, false)
-    w.note = text(f, 11, C.dim)
-    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -136)
-    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -136)
+    w.note = text(f, FONT.TEXT, C.dim)
+    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -128)
+    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -128)
     w.note:SetText(L["Pre-cast and pre-pot as you would on a pull. The clock starts when damage lands, not when you press the button."])
-    w.cancel = wideButton(body, L["CANCEL"], function() act("cancel") end)
+    w.cancel = wideButton(body, L["Cancel"], function() act("cancel") end)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
     function body.Update(self, v)
@@ -459,35 +485,35 @@ end
 function Builders.running(parent)
     local body = newBody(parent, "running")
     local f, w = body.frame, body.w
-    w.clock = text(f, BIG, C.red, "CENTER", true)
+    w.clock = bigText(f, BIG, C.red)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
     -- "both": elapsed (green) in the left half, time left (red) in the right, a caption under each.
     -- Halves by anchor, as the KPI pair below: no width is read.
-    w.elapsed = text(f, CLOCK_PAIR, C.green, "CENTER", true)
+    w.elapsed = bigText(f, CLOCK_PAIR, C.green)
     w.elapsed:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -6)
     w.elapsed:SetPoint("TOPRIGHT", f, "TOP", -4, -6)
-    w.left = text(f, CLOCK_PAIR, C.red, "CENTER", true)
+    w.left = bigText(f, CLOCK_PAIR, C.red)
     w.left:SetPoint("TOPLEFT", f, "TOP", 4, -6)
     w.left:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -6)
-    w.elapsedCap = text(f, 9, C.dim, "CENTER")
+    w.elapsedCap = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.elapsedCap:SetPoint("TOP", w.elapsed, "BOTTOM", 0, -3)
-    w.elapsedCap:SetText(L["ELAPSED"])
-    w.leftCap = text(f, 9, C.dim, "CENTER")
+    w.elapsedCap:SetText(L["Elapsed"])
+    w.leftCap = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.leftCap:SetPoint("TOP", w.left, "BOTTOM", 0, -3)
-    w.leftCap:SetText(L["LEFT"])
-    w.damage, w.dps = kpiPair(f, -52, L["DAMAGE"], L["DPS \194\183 LIVE"])
+    w.leftCap:SetText(L["Left"])
+    w.damage, w.dps = kpiPair(f, -52, L["Damage"], L["DPS \194\183 Live"])
     w.rows = CreateFrame("Frame", nil, f)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RUNNING_ROWS_TOP)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
-    w.order = text(f, 9, C.dim)
+    w.order = Style.Text(f, FONT.CAPTION)
     w.order:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, BUTTON_HEIGHT + 8)
     w.order:SetText(L["Live order \194\183 % after the race"])
-    w.count = text(f, 9, C.dim, "RIGHT")
+    w.count = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
     w.count:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, BUTTON_HEIGHT + 8)
-    w.cancel = wideButton(body, L["CANCEL"], function() act("cancel") end)
+    w.cancel = wideButton(body, L["Cancel"], function() act("cancel") end)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
 
@@ -517,17 +543,17 @@ end
 -- The two figures the stop and waiting bodies share: the tail and the time in combat since the buzzer.
 local function setStopFigures(w, v)
     if v.endedEarly then
-        w.tail.label:SetText(L["COMBAT ENDED AT"])
+        w.tail.label:SetText(L["Combat Ended"])
         setKpi(w.tail, NS.Format.Length(v.endedAt or 0))
     else
-        w.tail.label:SetText(L["DAMAGE STOPPED"])
+        w.tail.label:SetText(L["Damage Stopped"])
         setKpi(w.tail, NS.Format.Seconds(v.tail), v.unitTail)
     end
     if v.inCombat then
-        w.combat.label:SetText(L["IN COMBAT"])
+        w.combat.label:SetText(L["In Combat"])
         setKpi(w.combat, NS.Format.Seconds(v.sinceBuzzer or 0), L["s"])
     else
-        w.combat.label:SetText(L["OUT OF COMBAT"])
+        w.combat.label:SetText(L["Out of Combat"])
         setKpi(w.combat, DASH)
     end
 end
@@ -536,12 +562,12 @@ end
 function Builders.stop(parent)
     local body = newBody(parent, "stop")
     local f, w = body.frame, body.w
-    w.big = text(f, BIG + 8, C.red, "CENTER")
+    w.big = bigText(f, BIG + 8, C.red)
     w.big:SetPoint("TOP", f, "TOP", 0, -2)
     w.big:SetText(L["STOP"])
-    w.tail, w.combat = kpiPair(f, -56, L["DAMAGE STOPPED"], L["IN COMBAT"])
+    w.tail, w.combat = kpiPair(f, -56, L["Damage Stopped"], L["In Combat"])
     w.chips = chips(f, -56 - KPI_HEIGHT - GAP)
-    w.note = text(f, 11, C.dim)
+    w.note = text(f, FONT.TEXT, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
     w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
     function body.Layout(self, width)
@@ -575,20 +601,20 @@ end
 function Builders.waiting(parent)
     local body = newBody(parent, "waiting")
     local f, w = body.frame, body.w
-    w.title = text(f, 16, C.text, "CENTER")
+    w.title = Style.Text(f, FONT.TITLE, nil, "CENTER")
     w.title:SetPoint("TOP", f, "TOP", 0, -10)
-    w.tail, w.combat = kpiPair(f, -40, L["DAMAGE STOPPED"], L["IN COMBAT"])
+    w.tail, w.combat = kpiPair(f, -40, L["Damage Stopped"], L["In Combat"])
     w.hint = panel(f, { 1, 0.72, 0.29, 0.07 }, { 1, 0.72, 0.29, 0.35 })
     w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -40 - KPI_HEIGHT - GAP)
     w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -40 - KPI_HEIGHT - GAP)
     w.hint:SetHeight(64)
-    w.hintText = text(w.hint, 11, { 0.95, 0.85, 0.67 })
+    w.hintText = text(w.hint, FONT.TEXT, { 0.95, 0.85, 0.67 })
     w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", 8, -7)
     w.hintText:SetPoint("BOTTOMRIGHT", w.hint, "BOTTOMRIGHT", -8, 7)
     w.hintText:SetJustifyV("TOP")
     local links = footerButtons(body, {
-        { L["DISCARD RUN"], function() act("discard") end, "danger" },
-        { L["CLOSE (KEEP WAITING)"], function() act("close") end, width = 140 },
+        { L["Discard Run"], function() act("discard") end, "danger" },
+        { L["Close (Keep Waiting)"], function() act("close") end, width = 140 },
     })
     w.discard, w.close = links[1], links[2]
     function body.Update(self, v)
@@ -643,9 +669,9 @@ end
 function Builders.result(parent)
     local body = newBody(parent, "result")
     local f, w = body.frame, body.w
-    w.damage, w.dps = kpiPair(f, 0, L["DAMAGE"], L["DPS"], C.green)
+    w.damage, w.dps = kpiPair(f, 0, L["Damage"], L["DPS"], C.green)
     w.chips = chips(f, -KPI_HEIGHT - GAP)
-    w.lost = text(f, 12, C.red)
+    w.lost = Style.Text(f, FONT.TEXT, C.red)
     w.lost:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
     w.rows = CreateFrame("Frame", nil, f)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
@@ -653,13 +679,13 @@ function Builders.result(parent)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
     local links = footerButtons(body, {
-        { L["RACE AGAIN"], function() act("raceAgain") end, "primary" },
-        { L["DETAILS"], function() act("details") end, width = 72 },
-        { L["SHARE"], function() act("share") end, width = 72 },
+        { L["Race Again"], function() act("raceAgain") end, "primary" },
+        { L["Details"], function() act("details") end, width = 72 },
+        { L["Share"], function() act("share") end, width = 72 },
     })
     w.again, w.details, w.share = links[1], links[2], links[3]
-    -- DETAILS sits left of SHARE and RACE AGAIN takes what is left, so the three never overlap at
-    -- the minimum width (a centered DETAILS would run into a fixed-width RACE AGAIN there).
+    -- Details sits left of Share and Race Again takes what is left, so the three never overlap at
+    -- the minimum width (a centered Details would run into a fixed-width Race Again there).
     w.details:ClearAllPoints()
     w.details:SetPoint("BOTTOMRIGHT", w.share, "BOTTOMLEFT", -6, 0)
     w.again:ClearAllPoints()

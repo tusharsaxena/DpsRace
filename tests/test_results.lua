@@ -96,8 +96,8 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     i.R.Show()
     local pane = runsPane(i)
     local labels = {}
-    for n, head in ipairs(pane.list.heads) do labels[n] = head.label.__text end
-    assertEqual(table.concat(labels, "|"), "DATE|CLS \194\183 SPEC|CHARACTER|ILVL|TARGET|LEN|DAMAGE|DPS|")
+    for n, head in ipairs(pane.list.heads) do labels[n] = head.col.label end
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Length|Damage|DPS|")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -108,7 +108,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.char.fs.__text, "Lanfear")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
-    assertEqual(c.target.fs.__text, "CLEAVE \195\1515")
+    assertEqual(c.target.fs.__text, "Cleave \195\1515")
     assertEqual(c.length.fs.__text, "3:00")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
@@ -198,8 +198,9 @@ test("results: sort by DPS desc default; by ilvl", function()
     local pane = runsPane(i)
     assertEqual(visibleIDs(pane), "hi,mid,lo,inc", "an unranked run sorts last")
     local heads = pane.list.heads
-    assertEqual(heads[8].label.__color[1], 1.0, "the sorted header is gold")
-    assertTrue(heads[8].arrow:IsShown(), "the sorted header carries the direction mark")
+    assertEqual(heads[8].label.__color[2], 0.82, "the header is the header gold")
+    assertTrue(heads[8].label.__text:find("sort-down", 1, true) ~= nil, "the sorted header carries the direction mark")
+    assertEqual(heads[7].label.__text, "Damage", "an unsorted header carries no mark")
     heads[4]:__fire("OnClick")
     assertEqual(pane.list.sortKey, "ilvl")
     local ilvls = {}
@@ -255,7 +256,7 @@ test("results: detail renders breakdown sorted with percentages", function()
     assertEqual(d.w.meterDps.value.__text, "5", "Blizzard's figure, muted")
     assertEqual(d.w.name.__text, "Lanfear")
     assertEqual(d.w.meta[1].__text, "Frostmourne \194\183 ilvl 313.2 \194\183 Silvermoon City, Falconwing Square")
-    assertEqual(d.w.meta[2].__text, "Cleave Training Dummy \194\183 CLEAVE \195\1515 \194\183 3:00")
+    assertEqual(d.w.meta[2].__text, "Cleave Training Dummy \194\183 Cleave \195\1515 \194\183 3:00")
     assertTrue(d.w.meta[3].__text:find("build 120105", 1, true) ~= nil)
     assertTrue(d.w.meta[3].__text:find("v0.1.0", 1, true) ~= nil)
 end)
@@ -345,7 +346,7 @@ test("results: detail flags name late-cast spells and the session matched by lis
     i.R.ShowRun("b")
     assertTrue(d.w.flagTitle.__text:find("Incomplete", 1, true) ~= nil, d.w.flagTitle.__text)
     assertTrue(d.w.flagBody.__text:find("does not count toward bests", 1, true) ~= nil)
-    assertEqual(d.w.dps.label.__text, "DPS \194\183 INCOMPLETE")
+    assertEqual(d.w.dps.label.__text, "DPS \194\183 Incomplete")
 end)
 
 test("results: delete asks confirmation then fires RUNS_CHANGED", function()
@@ -381,7 +382,7 @@ test("results: note limited to 200 chars", function()
     local saved, changed = heard(i, "RUN_SAVED"), heard(i, "RUNS_CHANGED")
     i.R.ShowRun("a")
     local d = ui(i).detail
-    assertEqual(d.w.addNote.label.__text, "ADD NOTE")
+    assertEqual(d.w.addNote.label.__text, "Add Note")
     d.w.addNote:__fire("OnClick")
     assertTrue(d.editing, "Add note opened no editor")
     d.w.noteBox:SetText(string.rep("x", 260))
@@ -390,7 +391,7 @@ test("results: note limited to 200 chars", function()
     assertEqual(saved.count, 0, "a note is not a race result: RUN_SAVED would prune the store")
     assertEqual(changed.count, 1, "the note was not announced as a store change")
     assertFalse(d.editing)
-    assertEqual(d.w.addNote.label.__text, "EDIT NOTE")
+    assertEqual(d.w.addNote.label.__text, "Edit Note")
     assertEqual(d.w.note.__text, "Note: " .. string.rep("x", 200))
 end)
 
@@ -453,7 +454,7 @@ test("results: bests tab groups by spec x category x length with clean-only togg
     assertEqual(top.icons.fs.__text, "Destruction")
     assertEqual(top.char.fs.__text, "Lanfear")
     assertEqual(top.dps.fs.__text, "150.0K")
-    assertEqual(top.flags.fs.__text, "1 LATE")
+    assertEqual(top.flags.fs.__text, "1 late")
     assertEqual(top.date.fs.__text, os.date("%d %b", NOW - HOUR))
 
     pane.clean:__fire("OnClick")
@@ -651,4 +652,62 @@ test("results: the diagnostics state section names the tab, the layout and the s
         if l == "results tab=runs mode=wide rows=1 selected=a" then found = true end
     end
     assertTrue(found, "no results line; got: " .. table.concat(lines, " | "))
+end)
+
+-- ── the collection's look (modules/Style.lua) ─────────────────────────────────────────────────────
+
+test("results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.Show()
+    local u = ui(i)
+    assertEqual(u.frame.title.__fontObject, "GameFontNormal", "the title")
+    assertEqual(u.tabs.runs.label.__text, "Runs")
+    assertEqual(u.tabs.bests.label.__text, "Bests")
+    assertEqual(u.tabs.runs.label.__fontObject, "GameFontNormal", "a tab")
+    assertEqual(u.tabs.runs.label.__color[2], 0.82, "the active tab is gold")
+    assertEqual(u.tabs.bests.label.__color[1], 0.7, "an idle tab is gray")
+    assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
+    assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
+    local Tbl = i.NS.ResultsTable
+    assertEqual(Tbl.ROW_H, 20, "LootHistory's compact row")
+    assertEqual(Tbl.HEADER_H, 20, "LootHistory's 20px header")
+    local pane = runsPane(i)
+    for _, head in ipairs(pane.list.heads) do
+        assertEqual(head.label.__fontObject, "GameFontNormalSmall", "a column header")
+        local label = head.col.label or ""
+        assertFalse(label:find("%u%u%u%u") ~= nil, "an ALL-CAPS header: " .. label)
+    end
+    local cells = assert(visible(pane)[1], "no row drawn").cells
+    assertEqual(cells.char.fs.__fontObject, "GameFontHighlightSmall", "a cell")
+    assertEqual(cells.target.fs.__fontObject, "GameFontHighlightSmall", "the badge")
+    for _, b in pairs(runsPane(i).checks) do assertEqual(b.label.__fontObject, "GameFontHighlightSmall") end
+    assertEqual(pane.count.__fontObject, "GameFontDisableSmall")
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    assertEqual(d.w.damage.label.__text, "Damage")
+    assertEqual(d.w.damage.label.__fontObject, "GameFontDisableSmall", "a KPI caption")
+    assertEqual(d.w.damage.value.__fontObject, "GameFontNormalHuge", "a KPI figure stays large")
+    assertEqual(d.w.meterDps.label.__text, "Meter DPS")
+    assertEqual(d.w.timingLabel.__text, "Timing")
+    assertEqual(d.w.share.label.__text, "Share")
+    assertEqual(d.w.delete.label.__text, "Delete")
+    assertEqual(d.w.share.label.__fontObject, "GameFontHighlightSmall", "a button")
+    assertEqual(d.w.list.rows[1].name.__fontObject, "GameFontHighlightSmall", "a breakdown row")
+end)
+
+test("results: the close control turns gold under the pointer and back to its gray", function()
+    local i = inst()
+    i.R.Show()
+    local close = assert(ui(i).close, "no close control")
+    local GOLD, REST = i.NS.Style.GOLD, i.NS.Style.REST
+    local function is(c)
+        local v = close.icon.__vertex
+        return v ~= nil and v[1] == c[1] and v[2] == c[2] and v[3] == c[3]
+    end
+    assertTrue(is(REST), "at rest")
+    close:__fire("OnEnter")
+    assertTrue(is(GOLD), "under the pointer")
+    close:__fire("OnLeave")
+    assertTrue(is(REST), "back at rest")
 end)

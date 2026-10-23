@@ -18,6 +18,7 @@ NS.ResultsDetail = Detail
 local L = NS.L
 local Tbl = NS.ResultsTable
 local C = Tbl.COLORS
+local FONT = NS.Style.FONT
 
 Detail.NOTE_MAX = 200       -- characters (spec §6.2)
 Detail.STRIP_GAP = 3        -- the gap between the race and the after-the-buzzer segments
@@ -25,7 +26,7 @@ Detail.STRIP_RATIO = 1.2    -- the race segment's share against the after-buzzer
 Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this, at least two steps
 
 local PADX = 12
-local BUTTON_H = 22
+local BUTTON_H = 20
 local KPI_H = 46
 local ROW_PITCH = NS.HudBreakdown.ROW_HEIGHT + NS.HudBreakdown.ROW_GAP
 local STRIP_H = 34
@@ -209,15 +210,16 @@ Pane.__index = Pane
 local function kpi(parent, label, color)
     local f = Tbl.Panel(parent)
     f:SetHeight(KPI_H)
-    local k = { frame = f, label = Tbl.Text(f, 9, C.dim), value = Tbl.Text(f, 17, color or C.text) }
+    -- LootHistory's Insights card: a GameFontNormalHuge figure over a GameFontDisableSmall caption.
+    local k = { frame = f, label = Tbl.Text(f, FONT.CAPTION), value = Tbl.Text(f, FONT.FIGURE, color or C.text) }
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     k.label:SetText(label)
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
     return k
 end
 
-local function wrapText(parent, size, color)
-    local fs = Tbl.Text(parent, size, color)
+local function wrapText(parent, font, color)
+    local fs = Tbl.Text(parent, font, color)
     fs:SetWordWrap(true)
     fs:SetJustifyV("TOP")
     return fs
@@ -229,15 +231,15 @@ local function buildHeader(p, c)
     w.class:SetSize(18, 18)
     w.spec = c:CreateTexture(nil, "ARTWORK")
     w.spec:SetSize(18, 18)
-    w.name = Tbl.Text(c, 16, C.text)
-    w.specName = Tbl.Text(c, 12, C.dim)
-    w.meta = { Tbl.Text(c, 11, C.dim), Tbl.Text(c, 11, C.dim), Tbl.Text(c, 11, C.dim) }
-    w.damage, w.dps, w.meterDps = kpi(c, L["DAMAGE"]), kpi(c, L["DPS"], C.green), kpi(c, L["METER DPS"], C.dim)
-    w.delta = Tbl.Text(c, 11, C.green)
+    w.name = Tbl.Text(c, FONT.TITLE, C.text)
+    w.specName = Tbl.Text(c, FONT.TEXT, C.dim)
+    w.meta = { Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim) }
+    w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)
+    w.delta = Tbl.Text(c, FONT.TEXT, C.green)
 end
 
 local function legendItem(c, color, label, dashed)
-    local item = { swatch = c:CreateTexture(nil, "ARTWORK"), fs = Tbl.Text(c, 10, C.dim) }
+    local item = { swatch = c:CreateTexture(nil, "ARTWORK"), fs = Tbl.Text(c, FONT.CAPTION) }
     item.swatch:SetSize(9, 9)
     item.swatch:SetColorTexture(color[1], color[2], color[3], dashed and 0.35 or 0.8)
     item.fs:SetText(label)
@@ -254,8 +256,8 @@ end
 
 local function buildTiming(p, c)
     local w = p.w
-    w.timingLabel = Tbl.Text(c, 9, C.dim)
-    w.timingLabel:SetText(L["TIMING"])
+    w.timingLabel = Tbl.Text(c, FONT.HEADER)
+    w.timingLabel:SetText(L["Timing"])
     w.strip = CreateFrame("Frame", nil, c)
     w.strip:SetHeight(STRIP_H)
     w.segA = Tbl.Panel(w.strip, { 0.07, 0.07, 0.1, 1 }, { 1, 1, 1, 0.08 })
@@ -266,9 +268,10 @@ local function buildTiming(p, c)
     w.combatEnd = stripMark(w.strip, CYAN)
     w.restart = stripMark(w.strip, C.amber)
     w.ticks = NS.Pool.New()
-    w.axisLeft, w.axisMid, w.axisRight = Tbl.Text(c, 10, C.dim), Tbl.Text(c, 10, C.dim, "CENTER"), Tbl.Text(c, 10, C.dim, "RIGHT")
-    w.axisRace = Tbl.Text(c, 10, C.dim)
-    w.tailLine = Tbl.Text(c, 11, C.text)
+    w.axisLeft = Tbl.Text(c, FONT.CAPTION)
+    w.axisMid, w.axisRight = Tbl.Text(c, FONT.CAPTION, nil, "CENTER"), Tbl.Text(c, FONT.CAPTION, nil, "RIGHT")
+    w.axisRace = Tbl.Text(c, FONT.CAPTION)
+    w.tailLine = Tbl.Text(c, FONT.TEXT, C.text)
     w.legend = {
         legendItem(c, RACE, L["Race"]), legendItem(c, C.amber, L["Tail (damage still landing)"]),
         legendItem(c, C.green, L["Grace"], true), legendItem(c, RED, L["Late cast"]),
@@ -279,17 +282,17 @@ end
 local function buildFlags(p, c)
     local w = p.w
     w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
-    w.flagTitle = Tbl.Text(w.flags, 12, { 0.95, 0.84, 0.65 })
+    w.flagTitle = Tbl.Text(w.flags, FONT.HEADER, { 0.95, 0.84, 0.65 })
     w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -7)
-    w.flagBody = wrapText(w.flags, 11, { 0.94, 0.84, 0.65 })
+    w.flagBody = wrapText(w.flags, FONT.TEXT, { 0.94, 0.84, 0.65 })
     w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -24)
     w.flagBody:SetPoint("BOTTOMRIGHT", w.flags, "BOTTOMRIGHT", -9, 6)
-    w.note = wrapText(c, 11, C.dim)
+    w.note = wrapText(c, FONT.TEXT, C.dim)
     w.noteBox = CreateFrame("EditBox", nil, c, "BackdropTemplate")
     w.noteBox:SetAutoFocus(false)
-    w.noteBox:SetFont(Tbl.Font(), 11, "")
+    w.noteBox:SetFontObject(FONT.TEXT)
     w.noteBox:SetMaxLetters(Detail.NOTE_MAX)
-    w.noteBox:SetHeight(22)
+    w.noteBox:SetHeight(20)
     if w.noteBox.SetBackdrop then
         w.noteBox:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
         w.noteBox:SetBackdropColor(0.1, 0.1, 0.12, 0.9)
@@ -303,7 +306,7 @@ end
 
 local function buildButtons(p)
     local w, f, Button = p.w, p.frame, NS.HudStates.Button
-    w.back = Button(f, L["BACK"], function() if p.hooks.back then p.hooks.back() end end)
+    w.back = Button(f, L["Back"], function() if p.hooks.back then p.hooks.back() end end)
     w.back:SetSize(78, BUTTON_H)
     w.back:SetPoint("TOPLEFT", f, "TOPLEFT", PADX, -8)
     w.back.label:SetPoint("CENTER", w.back, "CENTER", 6, 0)
@@ -311,9 +314,9 @@ local function buildButtons(p)
     w.back.icon:SetSize(10, 10)
     w.back.icon:SetPoint("LEFT", w.back, "LEFT", 8, 0)
     w.back.icon:SetTexture(NS.Icon("arrow-left"))
-    w.addNote = Button(f, L["ADD NOTE"], function() p:openNote() end)
-    w.share = Button(f, L["SHARE"], function() if p.run and p.hooks.share then p.hooks.share(p.run) end end)
-    w.delete = Button(f, L["DELETE"], function() if p.run and p.hooks.delete then p.hooks.delete(p.run) end end, "danger")
+    w.addNote = Button(f, L["Add Note"], function() p:openNote() end)
+    w.share = Button(f, L["Share"], function() if p.run and p.hooks.share then p.hooks.share(p.run) end end)
+    w.delete = Button(f, L["Delete"], function() if p.run and p.hooks.delete then p.hooks.delete(p.run) end end, "danger")
     for i, b in ipairs({ w.addNote, w.share }) do
         b:SetSize(84, BUTTON_H)
         b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + (i - 1) * 90, 8)
@@ -333,7 +336,7 @@ function Detail.Build(parent, hooks)
     p.scrollFrame:SetScrollChild(p.content)
     p.scrollFrame:EnableMouseWheel(true)
     p.scrollFrame:SetScript("OnMouseWheel", function(_, delta) p:Scroll(delta) end)
-    p.w.empty = Tbl.Text(frame, 12, C.dim, "CENTER")
+    p.w.empty = Tbl.Text(frame, FONT.EMPTY, nil, "CENTER")
     p.w.empty:SetPoint("CENTER", frame, "CENTER", 0, 0)
     p.w.empty:SetText(L["Select a run to see its detail."])
     local c = p.content
@@ -383,7 +386,7 @@ function Pane:fillScore(run)
     w.damage.value:SetText(lost and DASH or NS.Format.Number(result.damage or 0))
     w.dps.value:SetText(lost and DASH or NS.Format.Number(result.dps or 0))
     w.meterDps.value:SetText(type(result.meterDps) == "number" and NS.Format.Number(result.meterDps) or DASH)
-    w.dps.label:SetText(run.status == "incomplete" and L["DPS \194\183 INCOMPLETE"] or L["DPS"])
+    w.dps.label:SetText(run.status == "incomplete" and L["DPS \194\183 Incomplete"] or L["DPS"])
     setDelta(w.delta, run)
 end
 
@@ -419,7 +422,7 @@ function Pane:Show(run)
     self:fillFlags(run)
     self.noteText = type(run.note) == "string" and run.note ~= "" and L["Note: %s"]:format(run.note) or ""
     self.w.note:SetText(self.noteText)
-    self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["EDIT NOTE"] or L["ADD NOTE"])
+    self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["Edit Note"] or L["Add Note"])
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
     self.scroll = 0
     self:Layout(self.width, self.height, self.narrow)

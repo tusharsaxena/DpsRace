@@ -20,9 +20,12 @@ local Tbl = {}
 NS.ResultsTable = Tbl
 
 local L = NS.L
+local Style = NS.Style
+local FONT = Style.FONT
 
-Tbl.ROW_H = 30
-Tbl.HEADER_H = 24
+-- Compact rows under a 20px header, as LootHistory's list draws them (modules/Style.lua).
+Tbl.ROW_H = 20
+Tbl.HEADER_H = 20
 Tbl.PAD = 6                 -- the gap between two cells, and the row's inner margin
 Tbl.SCROLLBAR_W = 8
 Tbl.ICON = 16
@@ -35,7 +38,7 @@ local CLASS_ATLAS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASS
 local C = {
     text  = { 0.93, 0.93, 0.95 },
     dim   = { 0.62, 0.62, 0.68 },
-    gold  = { 1.0, 0.82, 0.0 },
+    gold  = Style.GOLD,
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
 }
@@ -53,21 +56,10 @@ Tbl.CATEGORY_COLORS = {
 
 -- ── the run, as the window draws it ─────────────────────────────────────────────────────────────
 
-local function fontPath()
-    return STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-end
-Tbl.Font = fontPath
-
---- A FontString with the window's face, size, color and justification, never wrapping.
-function Tbl.Text(parent, size, color, justify)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(fontPath(), size, "")
-    color = color or C.text
-    fs:SetTextColor(color[1], color[2], color[3])
-    fs:SetJustifyH(justify or "LEFT")
-    fs:SetWordWrap(false)
-    return fs
-end
+--- A FontString in one of the shared font objects (modules/Style.lua: Style.FONT), recolored when
+--- `color` is given, never wrapping.
+Tbl.Text = Style.Text
+Tbl.FONT = FONT
 
 --- A flat panel (the HUD's): a 1px edge over a faint fill.
 function Tbl.Panel(parent, bg, edge)
@@ -121,12 +113,12 @@ function Tbl.SpecInfo(specID, fallbackName)
     return fallbackName, nil
 end
 
---- The category badge: "CLEAVE", or "CLEAVE ×5" for a counted group, and its color.
+--- The category badge: "Cleave", or "Cleave ×5" for a counted group, and its color.
 --- @return string text, table color
 function Tbl.Badge(target)
     target = type(target) == "table" and target or {}
     local category = target.category or "other"
-    local text = NS.Dummies.Label(category):upper()
+    local text = NS.Dummies.Label(category)
     if type(target.count) == "number" and target.count > 1 then
         text = L["%s \195\151%d"]:format(text, target.count)
     end
@@ -146,16 +138,16 @@ function Tbl.FlagTexts(run)
     return out
 end
 
--- Each flag's chip word on the bests board (mockup screen 09: "1 LATE").
+-- Each flag's chip word on the bests board (mockup screen 09: "1 late").
 local SHORT = {
-    lateCasts = function(run) return L["%d LATE"]:format(#run.flags.lateCasts) end,
-    restarted = function() return L["RESTARTED"] end,
-    reloaded = function() return L["RELOADED"] end,
-    sessionFromList = function() return L["BY LIST"] end,
-    died = function() return L["DIED"] end,
+    lateCasts = function(run) return L["%d late"]:format(#run.flags.lateCasts) end,
+    restarted = function() return L["Restarted"] end,
+    reloaded = function() return L["Reloaded"] end,
+    sessionFromList = function() return L["By list"] end,
+    died = function() return L["Died"] end,
 }
 
---- The run's flags as chip words, joined ("1 LATE · RELOADED"), or "" for a clean run.
+--- The run's flags as chip words, joined ("1 late · Reloaded"), or "" for a clean run.
 function Tbl.ShortFlags(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run)) do
@@ -210,7 +202,7 @@ end
 local Cells = {}
 
 function Cells.text(row, col)
-    return { fs = Tbl.Text(row, col.size or 12, C.text, col.justify) }
+    return { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
 end
 
 -- The class and spec icons, each with a hover naming it, and (on the bests board) the spec's name.
@@ -222,20 +214,20 @@ function Cells.icons(row, col)
     cell.classSpot.row, cell.specSpot.row = row, row
     cell.classSpot:SetAllPoints(cell.class)
     cell.specSpot:SetAllPoints(cell.spec)
-    if col.withName then cell.fs = Tbl.Text(row, 12, C.text) end
+    if col.withName then cell.fs = Tbl.Text(row, FONT.TEXT, C.text) end
     return cell
 end
 
 function Cells.badge(row)
     local cell = { box = Tbl.Panel(row) }
-    cell.box:SetHeight(18)
-    cell.fs = Tbl.Text(cell.box, 9, C.amber, "CENTER")
+    cell.box:SetHeight(16)
+    cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
     return cell
 end
 
 function Cells.flag(row)
-    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, 13, C.amber, "CENTER") }
+    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TITLE, C.amber, "CENTER") }
     cell.icon:SetSize(12, 12)
     cell.icon:SetVertexColor(C.amber[1], C.amber[2], C.amber[3])
     cell.spot = Tbl.TipSpot(row)
@@ -352,15 +344,17 @@ function Tbl.Columns(columns, width)
     return out
 end
 
+-- The sort marks: the catalog's arrows inline after the label, tinted the header gold (an inline
+-- texture ignores its FontString's color), Blizzard's arrows beneath them (LootHistory's).
+local ARROW_UP = " " .. Style.IconMarkup("sort-up", "Interface\\Buttons\\Arrow-Up-Up", Style.GOLD)
+local ARROW_DOWN = " " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", Style.GOLD)
+
+-- A column header: GameFontNormalSmall in the header gold, Title Case, the sort mark after its label.
 local function newHeader(t, i, col)
     local b = CreateFrame("Button", nil, t.header)
     b:SetHeight(Tbl.HEADER_H)
-    b.label = Tbl.Text(b, 10, C.dim, col.justify)
+    b.label = Tbl.Text(b, FONT.HEADER, C.gold, col.justify)
     b.label:SetText(col.label or "")
-    b.arrow = b:CreateTexture(nil, "OVERLAY")
-    b.arrow:SetSize(10, 10)
-    b.arrow:SetVertexColor(C.gold[1], C.gold[2], C.gold[3])
-    b.arrow:Hide()
     b.col = col
     if col.sort then
         b:SetScript("OnClick", function() t:SetSort(col.key) end)
@@ -448,7 +442,7 @@ function Tbl.New(parent, columns, opts)
     t.body:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
     t.body:EnableMouseWheel(true)
     t.body:SetScript("OnMouseWheel", function(_, delta) t:Scroll(delta) end)
-    t.empty = Tbl.Text(t.body, 12, C.dim, "CENTER")
+    t.empty = Tbl.Text(t.body, FONT.EMPTY, nil, "CENTER")
     t.empty:SetPoint("TOP", t.body, "TOP", 0, -24)
     t.empty:SetText(opts.empty or "")
     buildScrollbar(t)
@@ -460,13 +454,15 @@ function Table:column(key)
     for _, col in ipairs(self.columns) do if col.key == key then return col end end
 end
 
+--- The sort mark the header shows now: "" off the sorted column, else the direction's arrow.
+function Table:SortMark(key)
+    if key ~= self.sortKey then return "" end
+    return self.sortDesc and ARROW_DOWN or ARROW_UP
+end
+
 function Table:paintHeader()
     for _, b in ipairs(self.heads) do
-        local on = b.col.key == self.sortKey
-        paint(b.label, on and C.gold or C.dim)
-        local path = on and NS.Icon(self.sortDesc and "sort-down" or "sort-up")
-        b.arrow:SetShown(path and true or false)
-        if path then b.arrow:SetTexture(path) end
+        b.label:SetText((b.col.label or "") .. self:SortMark(b.col.key))
     end
 end
 
@@ -618,12 +614,6 @@ function Table:Layout(width, height)
         b:SetWidth(spot.w)
         b.label:ClearAllPoints()
         b.label:SetAllPoints(b)
-        b.arrow:ClearAllPoints()
-        if b.col.justify == "RIGHT" then
-            b.arrow:SetPoint("RIGHT", b, "LEFT", -2, 0)
-        else
-            b.arrow:SetPoint("LEFT", b, "LEFT", math.min(spot.w - 10, #(b.col.label or "") * 7 + 4), 0)
-        end
     end
     self:Bind()
 end

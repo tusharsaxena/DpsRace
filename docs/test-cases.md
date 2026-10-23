@@ -220,7 +220,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (54)
+### test_hud.lua (58)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -276,6 +276,10 @@ Total.
 - hud: hidden with its parent is not closed by the player
 - hud: the library-absent load still draws the HUD without a grip or a close control
 - hud: the diagnostics state section names the body, the event set and the countdown driver
+- hud: labels take the collection's font objects; the clocks and KPI figures stay large
+- hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)
+- hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
+- hud: the minimum size still holds every body after the compact restyle
 
 ### test_countdown.lua (20)
 
@@ -300,7 +304,7 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
-### test_results.lua (24)
+### test_results.lua (26)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: incomplete and lost runs say so in the DPS column
@@ -326,6 +330,8 @@ Total.
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
+- results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
+- results: the close control turns gold under the pointer and back to its gray
 
 ### test_schema.lua (15)
 
@@ -576,9 +582,9 @@ Total.
 | test_race.lua | 47 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 7 |
-| test_hud.lua | 54 |
+| test_hud.lua | 58 |
 | test_countdown.lua | 20 |
-| test_results.lua | 24 |
+| test_results.lua | 26 |
 | test_schema.lua | 15 |
 | test_settings.lua | 18 |
 | test_slash.lua | 27 |
@@ -596,4 +602,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **462** |
+| **Total** | **468** |

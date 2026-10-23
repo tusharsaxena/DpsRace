@@ -69,12 +69,14 @@ files["core/Compat.lua"] = {
 files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
 files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
+-- The shared look: a title-bar control draws its tooltip.
+files["modules/Style.lua"] = { read_globals = { "GameTooltip" } }
 -- The final seconds' cue sound (the center numbers draw on their own frame, no client global).
 files["modules/Countdown.lua"] = { read_globals = { "PlaySound", "SOUNDKIT" } }
 files["modules/Hud.lua"] = {
     read_globals = {
         "IsPlayerSpell", "PlaySound", "SOUNDKIT", "RaidNotice_AddMessage", "RaidWarningFrame",
-        "ChatTypeInfo", "GameTooltip",
+        "ChatTypeInfo",
     },
 }
 

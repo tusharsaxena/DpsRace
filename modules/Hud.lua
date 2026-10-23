@@ -4,7 +4,7 @@ local _, NS = ...
 -- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
--- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x460, min 260x316), with its
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x460, min 260x296), with its
 -- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
 -- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
 --
@@ -33,14 +33,15 @@ NS.Hud = Hud
 local L = NS.L
 local Perf = NS.Perf
 
-local HEADER_H, FOOTER_H, PAD = 26, 22, 12
+-- The title bar is the collection's (modules/Style.lua: 30px, the title centered in GameFontNormal).
+local HEADER_H, FOOTER_H, PAD = NS.Style.TITLE_BAR_H, 20, 12
 local CONTENT_TOP = HEADER_H + 10
 local CONTENT_BOTTOM = FOOTER_H + 8
 
 -- The default size is the defaults tree's (savedvariables-§2). The minimum width is the spec's; the
 -- minimum height is the chrome plus the tallest body's fixed stack (modules/Hud_States.lua), so no
 -- size the grip allows clips Arm or runs a body's rows into its buttons. The spec's 240 could not
--- hold the idle body: Arm at 172 px and the links under it need 250 px of content.
+-- hold the idle body: Arm at 162 px and the links under it need 228 px of content.
 Hud.WIDTH = NS.defaults.profile.windows.hud.width
 Hud.HEIGHT = NS.defaults.profile.windows.hud.height
 Hud.MIN_WIDTH = 260
@@ -373,64 +374,37 @@ local function saveSize(width, height)
     if type(height) == "number" then w.height = math.floor(height + 0.5) end
 end
 
-local function setIcon(b, name, glyph)
-    local path = NS.Icon(name)
-    b.icon:SetShown(path ~= nil)
-    b.glyph:SetShown(path == nil)
-    if path then b.icon:SetTexture(path) else b.glyph:SetText(glyph) end
-    b.iconName = name
+-- One title-bar control, the `slot`-th from the right edge, vertically centered in the title bar.
+local function placeControl(b, f, slot)
+    b:SetPoint("RIGHT", f, "TOPRIGHT", -6 - slot * NS.Style.CONTROL_PITCH, -HEADER_H / 2)
 end
 
---- A title-bar control drawn from the shared catalog, a plain character beneath it (standalone-windows).
-local function iconButton(parent, name, glyph, tip, onClick)
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(18, 18)
-    b.icon = b:CreateTexture(nil, "OVERLAY")
-    b.icon:SetPoint("CENTER", b, "CENTER", 0, 0)
-    b.icon:SetSize(12, 12)
-    b.icon:SetVertexColor(0.7, 0.7, 0.72)
-    b.glyph = b:CreateFontString(nil, "OVERLAY")
-    b.glyph:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 11, "")
-    b.glyph:SetPoint("CENTER", b, "CENTER", 0, 0)
-    b.tip = tip
-    setIcon(b, name, glyph)
-    b:SetScript("OnClick", function() onClick() end)
-    b:SetScript("OnEnter", function(self)
-        self.icon:SetVertexColor(1, 1, 1)
-        if not GameTooltip then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(self.tip, 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    b:SetScript("OnLeave", function(self)
-        self.icon:SetVertexColor(0.7, 0.7, 0.72)
-        if GameTooltip then GameTooltip:Hide() end
-    end)
-    return b
-end
-
+-- The title bar: the title centered (GameFontNormal, gold once ApplySkin tints it), the divider, and
+-- the four controls on the right, each gold under the pointer (one shared strip, modules/Style.lua).
 local function buildHeader(f)
-    f.title = f:CreateFontString(nil, "OVERLAY")
-    f.title:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 13, "")
-    f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -7)
+    local Style = NS.Style
+    f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
+    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race"])
     f.divider = f:CreateTexture(nil, "ARTWORK")
     f.divider:SetHeight(1)
     f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
     f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    ui.controls = Style.NewStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
-    if close then close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4) end
-    ui.close = close
-    ui.lock = iconButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
-    ui.lock:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, -4)
-    ui.settings = iconButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
-    ui.settings:SetPoint("TOPRIGHT", f, "TOPRIGHT", -48, -4)
-    ui.results = iconButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
-    ui.results:SetPoint("TOPRIGHT", f, "TOPRIGHT", -70, -4)
+    if close then placeControl(close, f, 0) end
+    ui.close = Style.AddToStrip(ui.controls, close)
+    ui.lock = Style.ControlButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
+    ui.settings = Style.ControlButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
+    ui.results = Style.ControlButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
+    for slot, b in ipairs({ ui.lock, ui.settings, ui.results }) do
+        placeControl(b, f, slot)
+        Style.AddToStrip(ui.controls, b)
+    end
     -- The drag strip: the title bar left of the controls.
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -92, -HEADER_H)
+    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -(8 + 4 * NS.Style.CONTROL_PITCH), -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() if not Hud.locked then f:StartMoving() end end)
@@ -447,14 +421,11 @@ local function buildFooter(f)
     line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
     line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
     line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
-    ui.footLeft = f:CreateFontString(nil, "OVERLAY")
-    ui.footLeft:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 10, "")
-    ui.footLeft:SetTextColor(0.62, 0.62, 0.68)
-    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 6)
-    ui.footRight = f:CreateFontString(nil, "OVERLAY")
-    ui.footRight:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 10, "")
-    ui.footRight:SetTextColor(0.62, 0.62, 0.68)
-    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 6)
+    -- The footer's two lines are GameFontDisableSmall, as every Ka0s window's footer is.
+    ui.footLeft = NS.Style.Text(f, NS.Style.FONT.CAPTION)
+    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
+    ui.footRight = NS.Style.Text(f, NS.Style.FONT.CAPTION, nil, "RIGHT")
+    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
 end
 
 local onHide
@@ -490,7 +461,7 @@ local function ensureWindow()
 end
 
 local function applyLock()
-    setIcon(ui.lock, Hud.locked and "lock" or "unlock", Hud.locked and "L" or "U")
+    NS.Style.SetControlIcon(ui.lock, Hud.locked and "lock" or "unlock", Hud.locked and "L" or "U")
     local grip = ui.frame.resizeGrip
     if grip then grip:SetShown(not Hud.locked) end
 end
@@ -873,8 +844,8 @@ function Act.stepCount(delta)
     Hud.Refresh()
 end
 
--- In test mode the bodies are the sample's: CANCEL and DISCARD RUN end test mode, never the real
--- race the preview may be covering (a result card), and the sample card's RACE AGAIN and DETAILS
+-- In test mode the bodies are the sample's: Cancel and Discard Run end test mode, never the real
+-- race the preview may be covering (a result card), and the sample card's Race Again and Details
 -- (drawn disabled) do nothing.
 function Act.cancel()
     if previewOn() then return NS.Preview.Stop() end
