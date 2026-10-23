@@ -3,7 +3,7 @@
 -- compares the stub against the live surface; a trimmed name is one this addon never calls.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
+local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
 local live, degraded
 local function pair()
@@ -114,6 +114,19 @@ test("parity: the Core seam carries every member this addon reads, on both arms"
     local l, d = pair()
     assertTrue(l.NS.Print == l.NS.Util.print, "live: NS.Print is not NS.Util.print (architecture-§2)")
     assertTrue(d.NS.Print == d.NS.Util.print, "stub: NS.Print is not NS.Util.print (architecture-§2)")
+end)
+
+test("parity: the Widgets seam answers on both arms, nil being a real answer", function()
+    -- members from: grep -rhoE "NS\.(MakeDropdown|MakeTestStrip|CloseMenu|HasWidgets)" core/ modules/
+    bothArms("NS", function(NS) return NS end, {
+        MakeDropdown = "function", MakeTestStrip = "function", CloseMenu = "function", HasWidgets = "function",
+    })
+    local l, d = pair()
+    assertTrue(l.NS.HasWidgets(), "the live load has no Widgets library")
+    assertFalse(d.NS.HasWidgets())
+    assertEqual(d.NS.MakeDropdown(d.mocks.UIParent, 100), nil, "the stub drew a dead dropdown")
+    assertEqual(d.NS.MakeTestStrip(d.mocks.UIParent, "x"), nil)
+    d.NS.CloseMenu()
 end)
 
 test("parity: the Media seam answers on both arms, nil being a real answer", function()

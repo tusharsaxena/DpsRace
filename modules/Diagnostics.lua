@@ -43,6 +43,9 @@ function NS.Diagnostics.Sections()
             local hud = NS.Hud.Diagnose()
             out:add("Diag", "hud body=%s events=%s ticking=%s locked=%s", hud.body, hud.events, hud.ticking,
                 hud.locked)
+            local results = NS.Results.Diagnose()
+            out:add("Diag", "results tab=%s mode=%s rows=%s selected=%s", results.tab, results.mode,
+                results.rows, results.selected)
         end },
         { "rejected", function(out)
             out:list("Diag", "rejected events", NS.rejectedEvents or {})

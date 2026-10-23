@@ -89,7 +89,8 @@ test("skeleton: the produced interfaces exist", function()
 end)
 
 test("skeleton: every declared icon resolves to a shipped path", function()
-    for _, name in ipairs({ "close", "copy", "clear", "settings", "lock", "unlock" }) do
+    for _, name in ipairs({ "close", "copy", "clear", "settings", "lock", "unlock", "chart", "flag",
+                            "chevron-down", "arrow-left", "sort-down", "sort-up", "confirm", "info" }) do
         local path = NS.Icon(name)
         assertEqual(type(path), "string", name)
         assertTrue(path:find("Interface\\AddOns\\DpsRace\\", 1, true) == 1, path)

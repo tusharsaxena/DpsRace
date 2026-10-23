@@ -240,6 +240,30 @@ Total.
 - hud: the library-absent load still draws the HUD without a grip or a close control
 - hud: the diagnostics state section names the body, the event set and the countdown driver
 
+### test_results.lua (21)
+
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
+- results: incomplete and lost runs say so in the DPS column
+- results: filters: character, spec, category, length, date range, hide flagged, include incomplete
+- results: sort by DPS desc default; by ilvl
+- results: the list is pooled and scrolls through more runs than fit
+- results: detail renders breakdown sorted with percentages
+- results: timing strip positions buzzer, grace, tail, late casts, combat end
+- results: detail flags name late-cast spells and the session matched by list
+- results: delete asks confirmation then fires RUNS_CHANGED
+- results: note limited to 200 chars
+- results: Share is grayed until a Share module exists; a double-click shares
+- results: bests tab groups by spec x category x length with clean-only toggle
+- results: list refreshes on RUN_SAVED
+- results: the HUD's Last result opens the newest run's detail
+- results: the window is skinned, closable with Escape, resizable and clamped
+- results: position, size and Master scale persist; Reset position restores them
+- results: below 900px wide the detail replaces the list, with a back control
+- results: hidden with its parent is not closed by the player
+- results: the stand-down hides it and the stand-up brings it back
+- results: the library-absent load still draws the window, with no dropdowns or close control
+- results: the diagnostics state section names the tab, the layout and the selection
+
 ### test_schema.lua (14)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -303,7 +327,7 @@ Total.
 - Disabled (race): an armed race is dropped by the stand-down and not resumed
 - Disabled (race): a disabled login resumes nothing until the addon is enabled
 
-### test_surface_parity.lua (14)
+### test_surface_parity.lua (15)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
@@ -316,6 +340,7 @@ Total.
 - parity: the Pool stub carries the array-shape members, on both arms
 - parity: the Perf stub carries every member this addon reads, on both arms
 - parity: the Core seam carries every member this addon reads, on both arms
+- parity: the Widgets seam answers on both arms, nil being a real answer
 - parity: the Media seam answers on both arms, nil being a real answer
 - parity: the Env seam answers the TOC's version on both arms
 - parity: the hollow composers cost the library-absent load exactly the Master-controls rows
@@ -417,11 +442,12 @@ Total.
 | test_race_resume.lua | 13 |
 | test_format.lua | 7 |
 | test_hud.lua | 37 |
+| test_results.lua | 21 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
-| test_surface_parity.lua | 14 |
+| test_surface_parity.lua | 15 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
 | test_vendor_sync.lua | 3 |
@@ -431,4 +457,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **317** |
+| **Total** | **339** |

@@ -39,4 +39,4 @@ Green gate before every commit: `lua tests/run.lua` and `luacheck .` (0/0). Neve
 push and never bump the version without an explicit instruction.
 
 Bundles [LibKa0s](https://github.com/tusharsaxena/LibKa0s) v1.76.0 (MIT).
-LibKa0s icons: chart, chat, clear, close, confirm, copy, export, info, lock, reset, settings, sort-down, sort-up, unlock.
+LibKa0s icons: arrow-left, chart, chat, chevron-down, clear, close, confirm, copy, export, flag, info, lock, reset, settings, sort-down, sort-up, unlock.

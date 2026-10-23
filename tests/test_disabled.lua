@@ -1,9 +1,8 @@
 -- tests/test_disabled.lua — the disabled state is total (slash-commands-§7): all ten steps of the
 -- conformance test, driven through the kit's recording mocks.
 --
--- The owned frames: the Race HUD (modules/Hud.lua, T7) is a real window, so step 5 asserts both its
--- show decision and its frame; the Results placeholder (modules/Placeholders.lua) draws nothing yet,
--- so step 5 asserts its SHOW DECISION, which is the source the standard says a hide is enforced at.
+-- The owned frames: the Race HUD (modules/Hud.lua, T7) and the Results window (modules/Results.lua,
+-- T8) are real windows, so step 5 asserts both each one's show decision and its frame.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -128,10 +127,12 @@ test("Disabled 5: every display that was shown is hidden, refused at the source"
     local _, NS = scene()
     local hud = assert(NS.Hud.__ui(), "the baseline never built the HUD window")
     assertTrue(hud.frame:IsShown(), "the HUD window is not on screen to be hidden")
+    assertTrue(assert(NS.Results.__ui(), "the baseline never built the Results window").frame:IsShown())
     assertTrue(NS.SetByPath("enabled", false))
     assertFalse(NS.Hud.IsShown(), "the HUD still decides to show")
     assertFalse(hud.frame:IsShown(), "the HUD window stayed on screen")
     assertFalse(NS.Results.IsShown(), "the Results window still decides to show")
+    assertFalse(NS.Results.__ui().frame:IsShown(), "the Results window stayed on screen")
     assertFalse(NS.Preview.IsActive(), "test mode survived the stand-down")
 end)
 

@@ -73,6 +73,18 @@ files["modules/Hud.lua"] = {
     },
 }
 
+-- The Results window (T8): the run dates, the class icons, colors and names, the spec names and icons,
+-- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
+local resultsGlobals = {
+    "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
+    "GetSpecializationInfoByID",
+}
+files["modules/Results.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
 

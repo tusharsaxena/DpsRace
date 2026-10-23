@@ -165,6 +165,27 @@ local function build()
     end
     M.GetBuildInfo = function() return "12.0.5", "60000", "Oct 1 2026", M.__context.build end
 
+    -- The class and spec reference data the Results window draws a run with (modules/Results_Table.lua):
+    -- a few classes' icon coordinates, colors and names, and the spec lookup by ID. Plain client tables.
+    M.CLASS_ICON_TCOORDS = {
+        WARLOCK = { 0.75, 1, 0.25, 0.5 }, MAGE = { 0.25, 0.5, 0, 0.25 },
+        DRUID = { 0.75, 1, 0, 0.25 }, EVOKER = { 0.25, 0.5, 0.75, 1 },
+    }
+    M.RAID_CLASS_COLORS = {
+        WARLOCK = { r = 0.53, g = 0.53, b = 0.93 }, MAGE = { r = 0.25, g = 0.78, b = 0.92 },
+        DRUID = { r = 1, g = 0.49, b = 0.04 }, EVOKER = { r = 0.2, g = 0.58, b = 0.5 },
+    }
+    M.LOCALIZED_CLASS_NAMES_MALE = { WARLOCK = "Warlock", MAGE = "Mage", DRUID = "Druid", EVOKER = "Evoker" }
+    M.__specs = {
+        [267] = { "Destruction", 136186 }, [63] = { "Fire", 135810 },
+        [102] = { "Balance", 136096 }, [1467] = { "Devastation", 4511811 },
+    }
+    M.GetSpecializationInfoByID = function(id)
+        local s = M.__specs[id]
+        if not s then return nil end
+        return id, s[1], "", s[2], "DAMAGER"
+    end
+
     -- C_Timer.NewTicker, which the kit's C_Timer does not carry (modules/Race.lua's readiness poll).
     -- One queue entry per period: firing it re-queues it until canceled or out of iterations, so
     -- `M.__fireTimers()` runs one tick and `M.__timers()` sees a live ticker as armed.

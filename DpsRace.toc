@@ -54,6 +54,8 @@ core\CoreSetup.lua
 core\Secrets.lua
 core\Bus.lua
 core\PoolSetup.lua
+# Reads LibStub (LibKa0s-Widgets-1.0) at FILE SCOPE and NS.Icon at CALL time only.
+core\WidgetsSetup.lua
 # LOAD-BEARING: core\PerfSetup.lua hands NS.lifecycle to LibKa0s-Perf-1.0, which RAISES at :New
 # without it, so the latch is built first.
 core\LifecycleSetup.lua
@@ -94,6 +96,15 @@ modules\Hud_States.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
 modules\Hud.lua
+# The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
+# SCOPE (and the detail NS.HudBreakdown's row pitch), so each follows the files it captures.
+modules\Results_Table.lua
+modules\Results_Runs.lua
+modules\Results_Detail.lua
+modules\Results_Bests.lua
+# LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
+# through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
+modules\Results.lua
 modules\Placeholders.lua
 modules\Diagnostics.lua
 

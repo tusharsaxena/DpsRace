@@ -33,9 +33,11 @@ NS.defaults = {
         },
         -- The HUD's show mode (spec §6.3 General): "onArm" | "always". T9 adds the row.
         hud = { showMode = "onArm" },
-        -- Window geometry (standalone-windows): the HUD's size; its position is written when moved.
+        -- Window geometry (standalone-windows): each window's size; its position is written when
+        -- moved. The Results window (T8) follows Master scale like the HUD.
         windows = {
             hud = { width = 300, height = 360 },
+            results = { width = 1040, height = 560 },
         },
     },
     global = {

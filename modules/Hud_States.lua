@@ -108,6 +108,7 @@ local function setEnabled(b, on)
     b:SetEnabled(on and true or false)
     paintButton(b)
 end
+States.SetEnabled = setEnabled
 
 local function setSelected(b, on)
     b.selected = on and true or false

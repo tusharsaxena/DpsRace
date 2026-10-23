@@ -56,7 +56,10 @@ local masterRows, masterTail = H.MasterControls({
         scale      = D.scale,
         locked     = D.locked,
     },
-    onResetPosition  = function() NS.Hud.ResetPosition() end,
+    onResetPosition  = function()
+        NS.Hud.ResetPosition()
+        NS.Results.ResetPosition()
+    end,
     onResetAll       = function() NS.ShowResetAll() end,
 })
 
@@ -83,7 +86,10 @@ end
 local reactions = {
     enabled    = function(v) NS.ApplyEnabled(v) end,
     visibility = function() NS.OnVisibilityChanged() end,
-    scale      = function() NS.Hud.Refresh() end,
+    scale      = function()
+        NS.Hud.Refresh()
+        NS.Results.Refresh()
+    end,
     locked     = function(v) NS.Hud.SetLocked(v) end,
 }
 
