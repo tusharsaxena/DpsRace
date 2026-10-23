@@ -178,23 +178,32 @@ end
 --   a) "source"    the source table's own amountPerSecond;
 --   b) "localRow"  the Current DamageDone session's combatSources row whose isLocalPlayer is plainly
 --                  true (the probe measured the flag readable mid-combat), its amountPerSecond;
---   c) "dpsType"   the Dps meter type's source for the player: its totalAmount (else amountPerSecond).
+--   c) "dpsType"   the Dps meter type's source for the player: its amountPerSecond only. No probe has
+--                  read that type, so its totalAmount (the DamageDone type's damage total) is never
+--                  taken for a rate: a dash beats a confident wrong number (smoke C3 records it).
 -- Each is the METER's rate (its total over its whole-second session duration): a live figure only.
 -- The score stays ours (spec §5.1). damage / elapsed is never computed: arithmetic on a secret.
--- The rung that served is logged once per race (NewLiveRace resets it) under the Meter tag.
-local loggedRung
+-- The rung that served is logged once per race (NewLiveRace resets it) under the Meter tag, and is
+-- tried first on the next read (the 4 Hz path skips the session build of a rung that went quiet).
+local loggedRung, servedRung
+
+-- localRowDps's iterator, at file scope so no closure is made per read; it writes rowDps.
+local rowDps
+local function takeLocalRow(_, src)
+    if not Secrets.CanAccessTable(src) then return end
+    if Secrets.PlainTruth(src.isLocalPlayer) then
+        rowDps = src.amountPerSecond
+        return false
+    end
+end
 
 local function localRowDps()
     local ok, session = call("GetCombatSessionFromType", Meter.SESSION_CURRENT, Meter.STAT_DAMAGE_DONE)
     if not ok or not Secrets.CanAccessTable(session) then return nil end
-    local dps
-    Secrets.SafeIterate(session.combatSources, function(_, src)
-        if not Secrets.CanAccessTable(src) then return end
-        if Secrets.PlainTruth(src.isLocalPlayer) then
-            dps = src.amountPerSecond
-            return false
-        end
-    end)
+    rowDps = nil
+    Secrets.SafeIterate(session.combatSources, takeLocalRow)
+    local dps = rowDps
+    rowDps = nil
     return dps
 end
 
@@ -202,23 +211,39 @@ local function dpsTypeRate()
     local ok, src = call("GetCombatSessionSourceFromType", Meter.SESSION_CURRENT, Meter.STAT_DPS,
         UnitGUID("player"), nil)
     if not ok or not Secrets.CanAccessTable(src) then return nil end
-    if src.totalAmount ~= nil then return src.totalAmount end
     return src.amountPerSecond
 end
 
---- The live DPS figure (opaque) and the rung that served it, or nil, nil.
+local function sourceDps(source) return source.amountPerSecond end
+
+local RUNGS = { { "source", sourceDps }, { "localRow", localRowDps }, { "dpsType", dpsTypeRate } }
+local RUNG_FN = {}
+for _, r in ipairs(RUNGS) do RUNG_FN[r[1]] = r[2] end
+
+--- The live DPS figure (opaque) and the rung that served it, or nil, nil. The rung that served last
+--- goes first; on nil the chain runs in order (skipping it).
 local function liveDps(source)
-    if source.amountPerSecond ~= nil then return source.amountPerSecond, "source" end
-    local dps = localRowDps()
-    if dps ~= nil then return dps, "localRow" end
-    dps = dpsTypeRate()
-    if dps ~= nil then return dps, "dpsType" end
+    local first = servedRung and RUNG_FN[servedRung]
+    if first then
+        local dps = first(source)
+        if dps ~= nil then return dps, servedRung end
+    end
+    for _, r in ipairs(RUNGS) do
+        if r[1] ~= servedRung then
+            local dps = r[2](source)
+            if dps ~= nil then
+                servedRung = r[1]
+                return dps, r[1]
+            end
+        end
+    end
+    servedRung = nil
     return nil, nil
 end
 
 --- A new race: the next live read logs the rung that serves it (modules/Hud.lua, on arm).
 function Meter.NewLiveRace()
-    loggedRung = nil
+    loggedRung, servedRung = nil, nil
 end
 
 --- Read the player's live breakdown from the Current session. Every value is OPAQUE (secret in

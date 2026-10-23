@@ -37,9 +37,10 @@ local BUTTON_STYLES = {
     danger  = { bg = { 1, 0.32, 0.32, 0.08 }, edge = { 1, 0.32, 0.32, 0.6 }, text = C.red },
 }
 local BIG = 40           -- the clock and STOP
--- The running body's two clocks side by side ("both"): six monospace glyphs each, so two fit the
--- minimum width's 236 px of content (an advance of at most 0.62 em: 2 x 6 x 0.62 x 28 + 8 = 216).
-local CLOCK_PAIR = 28
+-- The running body's two clocks side by side ("both"): up to seven monospace glyphs each (a race
+-- of 10:00 or more reads "15:00.0"), so two fit the minimum width's 236 px of content (an advance of
+-- at most 0.62 em: 2 x 7 x 0.62 x 26 + 8 = 234).
+local CLOCK_PAIR = 26
 States.CLOCK_PAIR_SIZE = CLOCK_PAIR
 local KPI_HEIGHT = 46
 local BUTTON_HEIGHT = 26

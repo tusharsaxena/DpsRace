@@ -72,7 +72,7 @@ The *Test mode* row is the composer's, with `default = false` stamped by `settin
 | *Length* heading | | | |
 | Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A change clears the remembered pick (`race.lastLength`) and redraws the HUD (`Hud.ForgetLength`) |
 | *Sounds* heading | | | |
-| Countdown cue (10, 5, 3, 2, 1) | `race.countdownCue` | checkbox | The cue at 10, 5, 3, 2, 1 s left and with each center number, once a second at most; read at each mark, and a change re-arms the marks at once (`Countdown.Refresh`) |
+| Countdown cue sound | `race.countdownCue` | checkbox | The cue at 10, 5, 3, 2, 1 s left and with each center number (so every second from 10 with the defaults), once a second at most; read at each mark, and a change re-arms the marks at once (`Countdown.Refresh`) |
 | Buzzer raid warning and sound | `race.buzzer` | checkbox | Read at the buzzer |
 | *Final countdown* heading | | | |
 | Center-screen countdown | `race.centerCountdown` | checkbox | The large numbers in the middle of the screen in the last seconds; off hides a number on screen at once (`Countdown.Refresh`). Test mode follows it |

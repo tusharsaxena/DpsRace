@@ -294,7 +294,7 @@ L["Sounds"] = "Sounds"
 L["Default race length"] = "Default race length"
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
-L["Countdown cue (10, 5, 3, 2, 1)"] = "Countdown cue (10, 5, 3, 2, 1)"
+L["Countdown cue sound"] = "Countdown cue sound"
 L["A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."] =
     "A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."
 L["Final countdown"] = "Final countdown"

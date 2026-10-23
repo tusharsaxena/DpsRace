@@ -772,8 +772,11 @@ end)
 test("hud: the clock pair fits the minimum width; the stop body keeps its own STOP", function()
     local f = hud()
     local States = f.NS.HudStates
-    -- Six monospace glyphs (m:ss.t) each, an advance of at most 0.62 em, a gap between the halves.
-    local need = 2 * 6 * 0.62 * States.CLOCK_PAIR_SIZE + 8
+    -- The longest clock a race can show (m:ss.t at the longest length, "15:00.0"), an advance of
+    -- at most 0.62 em per glyph, a gap between the halves.
+    local glyphs = #f.NS.Format.Clock(f.NS.Race.MAX_LENGTH)
+    assertTrue(glyphs >= 7, "the longest race clock has two minute digits")
+    local need = 2 * glyphs * 0.62 * States.CLOCK_PAIR_SIZE + 8
     assertTrue(need <= f.Hud.MIN_WIDTH - 24, "the pair needs " .. need .. " px of the minimum content width")
     running(f, 30)
     f:to(129.9)

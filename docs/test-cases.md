@@ -33,7 +33,7 @@ Total.
 - secrets: SafeIterate refuses a table this context may not read
 - secrets: PlainString passes a plain string and refuses nil, a number and a secret
 
-### test_meter.lua (24)
+### test_meter.lua (26)
 
 - meter: the stat and session constants come from the client enum
 - meter: the constants fall back to 0 and 1 without the enum
@@ -53,6 +53,8 @@ Total.
 - meter: with no source amountPerSecond, live DPS is the local row's, opaque (rung b)
 - meter: a local row whose flag is secret is no claim; the Dps meter type answers (rung c)
 - meter: a local row with no figure of its own falls through to the Dps meter type
+- meter: the Dps meter type's totalAmount is never shown as the rate (unprobed field)
+- meter: a rung that served is tried first on the next read; the chain still falls back
 - meter: with no rung answering, live DPS is nil and the rest of the read stands
 - meter: the rung that served is logged once per race, under the Meter tag
 - meter: SessionIDs and HasSession track the client's list by plain ID
@@ -565,7 +567,7 @@ Total.
 |-------|------:|
 | test_skeleton.lua | 8 |
 | test_secrets.lua | 11 |
-| test_meter.lua | 24 |
+| test_meter.lua | 26 |
 | test_dummies.lua | 5 |
 | test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
@@ -594,4 +596,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **460** |
+| **Total** | **462** |

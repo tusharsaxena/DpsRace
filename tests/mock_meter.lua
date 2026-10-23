@@ -24,7 +24,10 @@
 --         localFlagPlain = true  the row's isLocalPlayer stays PLAIN while every other value is
 --                             secret (the probe measured it readable mid-combat)
 --         dpsType = true      the Dps meter type (Enum.DamageMeterType.Dps) answers a source for the
---                             player whose totalAmount is the session's dps (secret in combat)
+--                             player: totalAmount the session's damage, amountPerSecond its dps,
+--                             as the DamageDone type's (no probe has read the Dps type; the
+--                             adapter must take only the rate field)
+--         dpsTypeRate = false  that Dps-type source carries no amountPerSecond
 --   RemoveSession(id) · SetCurrent(id|nil)
 --   SetSecret(on)      the combat restriction: every value read while on is a secret wrapper.
 --   SetSealed(id, on)  that one session answers secrets even with the restriction off (a value
@@ -104,12 +107,13 @@ return function(Kit)
                  amountPerSecond = s.sourceDps ~= false and w(s.dps) or nil }
     end
 
-    -- The Dps meter type's source for the player: its totalAmount is the session's rate.
+    -- The Dps meter type's source for the player: totalAmount the damage, amountPerSecond the rate.
     local function dpsSourceTable(ctl, id, guid)
         local s = id and ctl.sessions[id]
         if not s or not s.dpsType or s.player == false or guid ~= ctl.guid then return nil end
         local w = wrapper(ctl, id)
-        return { combatSpells = {}, totalAmount = w(s.dps) }
+        return { combatSpells = {}, totalAmount = w(s.damage),
+                 amountPerSecond = s.dpsTypeRate ~= false and w(s.dps) or nil }
     end
 
     local function record(ctl, fn, ...)

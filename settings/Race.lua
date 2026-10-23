@@ -28,7 +28,7 @@ NS.RegisterSchemaRows({
       tooltip = L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."],
       onChange = newDefault },
     { path = "race.countdownCue", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
-      label = L["Countdown cue (10, 5, 3, 2, 1)"], default = D.countdownCue,
+      label = L["Countdown cue sound"], default = D.countdownCue,
       tooltip = L["A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."],
       onChange = rearm, startsLine = true },
     { path = "race.buzzer", page = PAGE, group = RACE, subgroup = L["Sounds"], type = "bool",
