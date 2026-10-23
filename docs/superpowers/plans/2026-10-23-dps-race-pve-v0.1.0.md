@@ -37,7 +37,7 @@ The **UI** (HUD, Results window, settings pages) listens on the message bus and 
 | Task | Milestone | Status |
 |---|---|---|
 | T1 Scaffold (born compliant) | M1 | [x] |
-| T2 Secrets + Meter adapter | M2 | [ ] |
+| T2 Secrets + Meter adapter | M2 | [x] |
 | T3 Dummy catalog + Recorder | M2 | [ ] |
 | T4 Timeline + Scoring (pure) | M2 | [ ] |
 | T5 Race state machine + Watchers | M2 | [ ] |

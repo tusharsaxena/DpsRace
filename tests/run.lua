@@ -7,6 +7,8 @@ package.path = root .. "/tests/?.lua;" .. package.path
 local Kit     = dofile(root .. "/tests/_kit/framework.lua")
 local Loader  = dofile(root .. "/tests/_kit/loader.lua")
 local mockmod = assert(loadfile(root .. "/tests/wow_mock.lua"))(root)
+-- The scripted C_DamageMeter (T2), built on the kit's secret wrappers.
+local MockMeter = dofile(root .. "/tests/mock_meter.lua")(Kit)
 
 Loader.addonName = "DpsRace"
 
@@ -72,6 +74,8 @@ local shared = loadInstance()
 
 local SUITES = {
     "test_skeleton",
+    "test_secrets",
+    "test_meter",
     "test_schema",
     "test_slash",
     "test_launcher",
@@ -116,6 +120,11 @@ _G.DPSRACE_TEST = Kit.expose{
     libFiles         = LIB_FILES,
     loadedAddonFiles = ADDON_FILES,
     Loader           = Loader,
+    mockMeter        = MockMeter,
+    secret           = Kit.secret,
+    isSecret         = Kit.isSecret,
+    reveal           = Kit.reveal,
+    installSecretValue = Kit.installSecretValue,
 }
 
 Kit.run{ dir = root .. "/tests/", suites = SUITES }

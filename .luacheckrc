@@ -40,6 +40,13 @@ files["tests/"] = {
 -- is colon-called by the host and the suites and forwards to the dispatcher upvalue.
 files["settings/Slash.lua"] = { ignore = { "212/self" } }
 
+-- spec §8 rule 1, made a lint fact: the client's secret detectors are readable from core/Secrets.lua
+-- only, and C_DamageMeter from modules/Meter.lua only. Anywhere else, naming one is a warning.
+files["core/Secrets.lua"] = {
+    read_globals = { "issecretvalue", "canaccessvalue", "issecrettable", "canaccesstable" },
+}
+files["modules/Meter.lua"] = { read_globals = { "C_DamageMeter" } }
+
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
 

@@ -19,6 +19,37 @@ Total.
 - skeleton: every declared icon resolves to a shipped path
 - skeleton: every authored Lua file opens with the NS bootstrap and a path comment
 
+### test_secrets.lua (8)
+
+- secrets: IsSecret/PlainNumber over plain, nil and secret
+- secrets: the guards are LibKa0s-Compat's when the library loaded
+- secrets: the stub arm answers the same with the library absent
+- secrets: without the secrets system every value is plain
+- secrets: PlainTruth and PlainEquals never test a secret
+- secrets: SafeIterate stops at nil and at 512
+- secrets: SafeIterate never applies # or ipairs and passes secrets through untouched
+- secrets: SafeIterate refuses a table this context may not read
+
+### test_meter.lua (17)
+
+- meter: the stat and session constants come from the client enum
+- meter: the constants fall back to 0 and 1 without the enum
+- meter: IsAvailable passes Blizzard's failure reason through
+- meter: IsAvailable answers false with a reason on a client without the API
+- meter: IsAvailable catches a raising client and reports the error
+- meter: ReadSession returns plain sorted spells after combat
+- meter: ReadSession reads by ID, for the player's GUID, on DamageDone
+- meter: ReadSession on a sealed session returns nil,"sealed"
+- meter: ReadSession of a session the client no longer holds returns nil,"missing"
+- meter: ReadSession catches a raising client and never throws
+- meter: ReadSession with no damage of the player's is a zero result, not an error
+- meter: live read never performs arithmetic on secrets
+- meter: the live read keeps Blizzard's order and reads the Current session
+- meter: the live read answers nil with no session, no API or a raising client
+- meter: SessionIDs and HasSession track the client's list by plain ID
+- meter: modules/Meter.lua is the only file that names C_DamageMeter
+- meter: core/Secrets.lua is the only file that names the client's secret detectors
+
 ### test_schema.lua (14)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -182,6 +213,8 @@ Total.
 | Suite | Cases |
 |-------|------:|
 | test_skeleton.lua | 8 |
+| test_secrets.lua | 8 |
+| test_meter.lua | 17 |
 | test_schema.lua | 14 |
 | test_slash.lua | 13 |
 | test_launcher.lua | 8 |
@@ -196,4 +229,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **126** |
+| **Total** | **151** |

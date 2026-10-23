@@ -131,9 +131,10 @@ RUNNING or STOPPING. The pipeline from event to screen: [data-flow.md](data-flow
   (`DpsRaceToggleHud`, `DpsRaceToggleResults`) are plain, hidden and not secure (launcher-§6).
 - The settings panel's combat lock is the library's (options-ui-§2): the panel refuses to open under
   lockdown, and the addon draws no page-level lock of its own.
-- From T2 on, meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests
-  them; a frame given a secret through `SetValue` has secret geometry, so no layout reads geometry
-  back off a breakdown row (spec §6.1).
+- Meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests them, and
+  `.luacheckrc` scopes the client's detectors to it (and `C_DamageMeter` to `modules/Meter.lua`).
+  A frame given a secret through `SetValue` has secret geometry, so no layout reads geometry back
+  off a breakdown row (spec §6.1).
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -175,7 +176,7 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 | `slash-dispatch.md` | Present | 13 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
-| `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own yet; re-check when `core/Secrets.lua` (T2) lands |
+| `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: `core/Secrets.lua` (T2) binds the LibKa0s-Compat guards and owns none; re-check when one is added |
 | `compat-layer.md` | Not applicable | No `core/Compat.lua` (compat's applicability condition): no version-variant call is owned |
 | `message-bus.md` | Not applicable | 4 messages in `NS.MSG` (the trigger is more than ten) |
 | `known-limitations.md` | Not applicable | Known Limitations above is under ~60 lines |

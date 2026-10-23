@@ -25,6 +25,7 @@ drift from what the client loads (testing-§9).
 | `core/State.lua` | session-only state (`NS.State.debug`) | conventional |
 | `core/EnvSetup.lua` | `NS.Meta`, `NS.Version` (`LibKa0s-Env-1.0`) | **load-bearing**: resolves `NS.version` at file scope; `core/PerfSetup.lua` calls `NS.Version()` |
 | `core/CoreSetup.lua` | `NS.Print`, `SafeToString`, the `SafeRegister*` family, `ApplySkin`, the one `NS.MakeCloseButton` wrapper (`LibKa0s-Core-1.0`) | **load-bearing**: before anything that prints; publishes `NS.LIBKA0S_MISSING` |
+| `core/Secrets.lua` | `NS.Secrets`: the LibKa0s-Compat guards with their stub arm, `PlainNumber`, `PlainTruth`, `PlainEquals`, `CanAccessTable`, the bounded `SafeIterate`; the only file that inspects a possibly-secret value | **load-bearing**: `modules/Meter.lua` captures `NS.Secrets` at file scope |
 | `core/Bus.lua` | `NS.MSG` names, the bus record, `NS.NewBusTarget`, `NS.SendBus` | conventional |
 | `core/PoolSetup.lua` | `NS.Pool` (`LibKa0s-Pool-1.0`), for the HUD and Results rows | conventional |
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
@@ -34,6 +35,7 @@ drift from what the client loads (testing-§9).
 | `core/DpsRace.lua` | AceAddon registration, `OnInitialize`/`OnEnable`, the game events, the shared toggle handlers | **load-bearing**: reclaims `NS.Print` from AceConsole's embed |
 | `core/Database.lua` | AceDB, the profile callbacks, the migration runner | conventional (reached at call time) |
 | `defaults/Profile.lua` | the AceDB defaults tree | the defaults group |
+| `modules/Meter.lua` | `NS.Meter`: availability, the session list, the after-combat `ReadSession(id)` (plain, sorted, or `sealed`) and the opaque `ReadLive()`; the only caller of `C_DamageMeter` | **load-bearing**: first module; resolves the meter enums at file scope |
 | `modules/Placeholders.lua` | stand-in `NS.Hud`, `NS.Results`, `NS.Preview`; T7, T8 and T9 replace them | conventional |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
@@ -50,8 +52,6 @@ From the plan's file map; each lands with its task and gets a row above in the s
 
 | File | Task | Job |
 |---|---|---|
-| `core/Secrets.lua` | T2 | the only file that inspects a possibly-secret value |
-| `modules/Meter.lua` | T2 | the only caller of `C_DamageMeter` |
 | `defaults/Dummies.lua`, `modules/Recorder.lua` | T3 | dummy catalog; snapshots and the run store |
 | `modules/Timeline.lua`, `modules/Scoring.lua` | T4 | pure timing and scoring rules |
 | `modules/Race.lua`, `modules/Watchers.lua` | T5 | state machine, clock, buzzer; event wiring |
@@ -66,6 +66,7 @@ From the plan's file map; each lands with its task and gets a row above in the s
 |---|---|
 | `tests/run.lua` | the runner: load list from the TOC, lifecycle kick, suite list |
 | `tests/wow_mock.lua` | this addon's extender over `tests/_kit/mock_base.lua` |
+| `tests/mock_meter.lua` | the scripted `C_DamageMeter`: secret while the combat restriction is on, plain after, sessions by ID |
 | `tests/test_*.lua` | the suites (see [testing.md](testing.md)) |
 | `probe/DpsRaceProbe/` | the pre-build measurement addon; excluded by `.luacheckrc` and `.pkgmeta` |
 | `media/logos/*.png`, `*.jpg` | the editable logo sources; `.pkgmeta` excludes them |

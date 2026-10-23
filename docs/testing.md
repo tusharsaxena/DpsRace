@@ -47,6 +47,9 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
   It runs `OnInitialize` and `OnEnable` like the client, and `loadInstance` builds isolated
   instances (a library-absent load passes `libFiles = {}`).
 - **`tests/wow_mock.lua`** extends `tests/_kit/mock_base.lua` with what this addon calls.
+- **`tests/mock_meter.lua`** is a scripted `C_DamageMeter` built on the kit's secret wrappers
+  (`Kit.secret`): `SetSecret(true)` models the combat restriction, `SetSealed(id)` a session captured
+  in combat. A suite installs it through `T.load{ mutate = ... }` so the enums resolve at load.
 - Every negative assertion was proven able to fail by mutating the code under test (testing-§12).
 
 ## The suites
@@ -54,6 +57,8 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | Suite | What it covers |
 |---|---|
 | `test_skeleton` | Registration, the printer, both slash commands, DB defaults, `NS.MSG`, produced interfaces, icons, file headers |
+| `test_secrets` | `core/Secrets.lua`: the guards over plain, nil and secret on both arms (LibKa0s-Compat and the stub), the conversions, `SafeIterate`'s bound, nil stop and refusal |
+| `test_meter` | `modules/Meter.lua` on `tests/mock_meter.lua`: availability, the plain sorted after-combat read, `sealed`, `missing`, a raising client, the opaque live read under secrets, the session list, and the one-file rules for `C_DamageMeter` and the secret detectors |
 | `test_schema` | The schema's shape, the write seam, the Master controls rows, the minimap row, resets, test mode, migrations, the panel |
 | `test_slash` | The dispatcher: help, aliases, enable/disable, debug, perf, the schema CLI, the library-absent load |
 | `test_launcher` | The launcher object, its clicks and menu, the minimap button, the two key bindings |
@@ -64,7 +69,7 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | `test_vendor_sync` | The vendored payloads against the tag (delegates to `tests/_kit/vendor_sync.lua`) |
 | kit: `test_eol`, `test_prose`, `test_layout_cap`, `test_diagnostics_contract`, `test_lizard_sighted` | Line endings, US spelling, the 1500-line cap, the diagnostics contract, the complexity sanitizer |
 
-The engine and window suites arrive with their tasks (T2 to T9; see the plan).
+The remaining engine and window suites arrive with their tasks (T3 to T9; see the plan).
 
 ## Inventory and badge
 
