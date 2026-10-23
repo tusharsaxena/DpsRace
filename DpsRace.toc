@@ -1,0 +1,85 @@
+## Interface: 120105
+## Title: Ka0s DPS Race
+## Notes: A timed DPS race against training dummies, with a live HUD, a run history and personal bests.
+## Author: add1kted2ka0s
+## Version: 0.1.0
+## IconTexture: Interface\AddOns\DpsRace\media\logos\dpsrace.logo.128.tga
+## SavedVariables: DpsRaceDB, DpsRacePerfDB
+## OptionalDeps: Ace3, LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, LibDataBroker-1.1, LibDBIcon-1.0
+## DefaultState: enabled
+## Category-enUS: Combat
+## X-License: MIT
+## X-Standard: https://github.com/tusharsaxena/WowAddonStandards
+# X-Curse-Project-ID: not published on CurseForge yet
+
+# Libraries (must load first) -- vendored in libs/, .xml where the lib ships one, else .lua
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+libs\AceAddon-3.0\AceAddon-3.0.lua
+libs\AceEvent-3.0\AceEvent-3.0.lua
+libs\AceTimer-3.0\AceTimer-3.0.lua
+libs\AceDB-3.0\AceDB-3.0.lua
+libs\AceDBOptions-3.0\AceDBOptions-3.0.lua
+libs\AceConsole-3.0\AceConsole-3.0.lua
+libs\AceGUI-3.0\AceGUI-3.0.xml
+libs\AceConfig-3.0\AceConfig-3.0.xml
+# ONE line: the .xml is itself the file list (library-stack-§7). After Ace3.
+libs\LibKa0s\LibKa0s.xml
+libs\LibSharedMedia-3.0\lib.xml
+libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
+libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+libs\LibDBIcon-1.0\lib.xml
+
+# Locales
+# LOAD-BEARING: creates NS.L, which core\LauncherSetup.lua and every settings\ file read at FILE SCOPE.
+locales\enUS.lua
+
+# Core -- dependency-correct order (layout-§1). Every LOAD-BEARING note says what resolves at load;
+# core\State.lua, core\Bus.lua, core\PoolSetup.lua and core\Database.lua are conventional and may
+# move within the group (nothing else in core\ reads them at FILE SCOPE).
+# LOAD-BEARING: publishes NS.PREFIX, NS.name, NS.BRAND and the version fallback every file below reads.
+core\Namespace.lua
+# LOAD-BEARING: publishes NS.MediaFont, which core\Constants.lua resolves FONT_MONO from at FILE SCOPE.
+core\MediaSetup.lua
+core\Constants.lua
+core\State.lua
+# LOAD-BEARING: resolves NS.version at FILE SCOPE (needs core\Namespace.lua's fallback), and
+# core\PerfSetup.lua calls NS.Version() at FILE SCOPE, so this precedes it.
+core\EnvSetup.lua
+# LOAD-BEARING: after NS.PREFIX, before anything that prints; publishes NS.Util.print, which
+# core\DpsRace.lua reclaims at FILE SCOPE, and NS.LIBKA0S_MISSING, which the stubs below read.
+core\CoreSetup.lua
+core\Bus.lua
+core\PoolSetup.lua
+# LOAD-BEARING: core\PerfSetup.lua hands NS.lifecycle to LibKa0s-Perf-1.0, which RAISES at :New
+# without it, so the latch is built first.
+core\LifecycleSetup.lua
+# LOAD-BEARING: before any module taking NS.Perf as a load-time upvalue.
+core\PerfSetup.lua
+# LOAD-BEARING: after core\Constants.lua (FONT_MONO), core\State.lua (the flag) and core\CoreSetup.lua
+# (the printer), before any NS.Debug call.
+core\DebugLogSetup.lua
+# LOAD-BEARING: reads NS.Constants.LOGO_128 and NS.L at FILE SCOPE (the library raises on a launcher
+# with no icon). Everything else it names is resolved at CALL time.
+core\LauncherSetup.lua
+# LOAD-BEARING: promotes NS to the AceAddon object and reclaims NS.Print from NS.Util.print at FILE
+# SCOPE, so it follows core\CoreSetup.lua.
+core\DpsRace.lua
+core\Database.lua
+
+# Defaults (the only place a default is hardcoded -- savedvariables-§2)
+defaults\Profile.lua
+
+# Modules -- conventional order: each reaches the others at CALL time.
+modules\Placeholders.lua
+modules\Diagnostics.lua
+
+# Settings (last -- depend on everything else being initialized)
+# LOAD-BEARING: publishes NS.RegisterSchemaRows, which settings\General.lua calls at FILE SCOPE.
+settings\Schema.lua
+settings\Slash.lua
+# LOAD-BEARING: publishes NS.Helpers, which every page file below captures at FILE SCOPE.
+settings\OptionsSetup.lua
+# LOAD-BEARING: General registers FIRST and Profiles LAST -- the page order IS the registration order.
+settings\General.lua
+settings\Profiles.lua

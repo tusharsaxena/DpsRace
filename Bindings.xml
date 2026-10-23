@@ -1,0 +1,10 @@
+<Bindings>
+	<!-- The Show window keys (launcher-§6): each clicks a plain, hidden button core/LauncherSetup.lua
+	     creates at load, whose OnClick is the SAME handler the launcher menu runs (NS.ToggleHud,
+	     NS.ToggleResults), so a press while stood down refuses exactly as the verb does. Both labels
+	     are set there. No default key: the player picks one under Key Bindings, AddOns. The button
+	     names are permanent; renaming one unbinds every player's key. Not listed in the TOC: the
+	     client reads this file by name. -->
+	<Binding name="CLICK DpsRaceToggleHud:LeftButton" header="DPSRACE" category="ADDONS"/>
+	<Binding name="CLICK DpsRaceToggleResults:LeftButton" category="ADDONS"/>
+</Bindings>
