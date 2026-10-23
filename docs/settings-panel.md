@@ -10,7 +10,7 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows, and what its running clock shows |
 | Race | The default race length, the countdown cue and the buzzer; the scoring rules (late-cast grace, damage-restart gap) and the sticky-combat hint's delay |
 | Live breakdown | The running HUD's rows shown, live reads per second, spell icons and live DPS |
 | History | Runs to keep (0 = never prune), the stored count, *Delete all runs…* |
@@ -61,6 +61,7 @@ The *Test mode* row is the composer's, with `default = false` stamped by `settin
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now |
+| Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
 
 ### Race
 

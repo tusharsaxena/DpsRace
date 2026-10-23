@@ -107,6 +107,8 @@ L["Pre-cast and pre-pot as you would on a pull. The clock starts when damage lan
 L["CANCEL"] = "CANCEL"
 L["DAMAGE"] = "DAMAGE"
 L["DPS \194\183 LIVE"] = "DPS \194\183 LIVE"
+L["ELAPSED"] = "ELAPSED"
+L["LEFT"] = "LEFT"
 L["Live order \194\183 % after the race"] = "Live order \194\183 % after the race"
 L["%d rows"] = "%d rows"
 L["COMBAT ENDED AT"] = "COMBAT ENDED AT"
@@ -278,6 +280,12 @@ L["When a race is armed"] = "When a race is armed"
 L["Always"] = "Always"
 L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."] =
     "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."
+L["Race clock"] = "Race clock"
+L["Elapsed and time left"] = "Elapsed and time left"
+L["Time left"] = "Time left"
+L["Time elapsed"] = "Time elapsed"
+L["What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."] =
+    "What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."
 
 -- Race page (settings/Race.lua)
 L["Scoring rules"] = "Scoring rules"

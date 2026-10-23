@@ -81,7 +81,8 @@ end
 local FIGURES = {
     armed = function() return {} end,
     running = function(t)
-        return { timeLeft = math.max(0, Preview.LENGTH - t), live = liveAt(math.min(t, Preview.LENGTH)) }
+        local elapsed = math.min(t, Preview.LENGTH)
+        return { timeLeft = Preview.LENGTH - elapsed, elapsed = elapsed, live = liveAt(elapsed) }
     end,
     stop = function(t)
         return { tail = math.min(t, TAIL), sinceBuzzer = t, inCombat = true, grace = 1.0,

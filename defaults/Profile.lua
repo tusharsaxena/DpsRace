@@ -31,8 +31,10 @@ NS.defaults = {
             showDps = true,   -- Blizzard's live DPS figure, labeled live
             hz      = 4,      -- live reads per second, 2-10 (spec §10)
         },
-        -- The HUD's show mode (spec §6.3): "onArm" | "always". Its row is General's Race HUD tab.
-        hud = { showMode = "onArm" },
+        -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
+        -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
+        -- on General's Race HUD tab.
+        hud = { showMode = "onArm", clock = "both" },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {

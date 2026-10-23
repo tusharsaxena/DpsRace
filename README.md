@@ -3,7 +3,7 @@
 ![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.5-purple)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-435%2F435_passing-green)
+![Tests](https://img.shields.io/badge/Tests-439%2F439_passing-green)
 
 DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
 
@@ -11,7 +11,7 @@ Each run is saved with your spec, item level and the dummy you hit, which makes 
 
 ## Usage
 
-Open the race window with `/dr hud show`, pick a length (presets from 30 seconds to 5 minutes, or type your own between 10 seconds and 15 minutes), target a dummy and press Arm. The window fills in the dummy's type, and for a cleave dummy you can set how many targets you're hitting. You have to be out of combat to arm, because the race starts on a fresh fight. Pre-pot and pre-cast as you would on a real pull: nothing counts until your first hit lands, and from then on the window counts down to a tenth of a second and shows your top abilities as they climb.
+Open the race window with `/dr hud show`, pick a length (presets from 30 seconds to 5 minutes, or type your own between 10 seconds and 15 minutes), target a dummy and press Arm. The window fills in the dummy's type, and for a cleave dummy you can set how many targets you're hitting. You have to be out of combat to arm, because the race starts on a fresh fight. Pre-pot and pre-cast as you would on a real pull: nothing counts until your first hit lands, and from then on the window shows the time elapsed in green beside the time left in red, to a tenth of a second, along with your top abilities as they climb. The General settings page can show just one of the two clocks instead.
 
 When the buzzer goes, stop. Anything already in flight still counts, so a DoT that ticks after the buzzer is yours. Start a new cast more than a second late, though, and the run gets a flag for it (it isn't thrown out). The dummies that hit back tend to hold you in combat long after you've stopped; walk away, or Feign Death, Vanish or Shadowmeld if your class has one, and the result appears once combat drops. You can close the window while you wait.
 

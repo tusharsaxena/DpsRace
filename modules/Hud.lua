@@ -294,6 +294,10 @@ end
 
 local function runningView(v)
     v.timeLeft = NS.Race.TimeLeft()
+    local length = v.run and v.run.race and v.run.race.length
+    local elapsed = NS.Race.Elapsed()
+    if elapsed and length then elapsed = math.min(elapsed, length) end
+    v.elapsed = elapsed
     v.live = liveData
 end
 
@@ -304,6 +308,7 @@ local function commonView(v)
     v.icons = setting("live.icons") ~= false
     v.showDps = setting("live.showDps") ~= false
     v.hz = setting("live.hz")
+    v.clockMode = setting("hud.clock")
 end
 
 local function raceView()

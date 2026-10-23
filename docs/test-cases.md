@@ -218,7 +218,7 @@ Total.
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 
-### test_hud.lua (52)
+### test_hud.lua (54)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -258,7 +258,9 @@ Total.
 - hud: the cue stops when the race is canceled
 - hud: switching the cue off mid-race silences the marks still ahead
 - hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
-- hud: the countdown turns amber in the last 10s
+- hud: the running clock shows elapsed in green beside time left in red by default
+- hud: a single-clock mode shows one big clock in its own color
+- hud: the clock pair fits the minimum width; the stop body keeps its own STOP
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
 - hud: dragging is refused while locked and the position is stored when it ends
@@ -318,7 +320,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (17)
+### test_settings.lua (18)
 
 - settings: every schema row has default, enUS label and desc
 - settings: every row sits on a page the panel draws, and every page has a group
@@ -330,6 +332,7 @@ Total.
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
 - settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
+- settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the Race, Live breakdown and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
 - settings: History says how many runs are stored
@@ -384,10 +387,11 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (15)
+### test_preview.lua (16)
 
 - preview: preview runs armed->running->stop->waiting->result and never writes a run
 - preview: the running body counts the 30s race down with live figures
+- preview: the running clock follows the Race clock setting
 - preview: the result card is the sample run, with its chips
 - preview: the test strip says so on the display while it is on, and only then
 - preview: with no Widgets library the title carries the marker
@@ -546,13 +550,13 @@ Total.
 | test_race.lua | 47 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 7 |
-| test_hud.lua | 52 |
+| test_hud.lua | 54 |
 | test_results.lua | 24 |
 | test_schema.lua | 15 |
-| test_settings.lua | 17 |
+| test_settings.lua | 18 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
-| test_preview.lua | 15 |
+| test_preview.lua | 16 |
 | test_launcher.lua | 8 |
 | test_disabled.lua | 16 |
 | test_surface_parity.lua | 15 |
@@ -565,4 +569,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **435** |
+| **Total** | **439** |

@@ -152,7 +152,7 @@ test("parity: the hollow composers cost the library-absent load exactly the Mast
     local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
     -- The rows the pages declare by hand (General's Race HUD tab, Race, Live breakdown, History): a
     -- degraded load keeps every one of them.
-    local PAGE_ROWS = 12
+    local PAGE_ROWS = 13
     assertEqual(#l.NS.Schema, MASTER_CONTROLS_ROWS + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")
     assertEqual(#l.NS.Schema - #d.NS.Schema, MASTER_CONTROLS_ROWS,

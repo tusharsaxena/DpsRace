@@ -48,9 +48,21 @@ test("preview: the running body counts the 30s race down with live figures", fun
     f:advance(f.Preview.SCRIPT[1].secs + 5)
     assertEqual(current(f), "running")
     local body = ui(f).body.running
-    assertEqual(body.w.clock.__text, "0:25.0")
+    assertEqual(body.w.left.__text, "0:25.0")
+    assertEqual(body.w.elapsed.__text, "0:05.0")
     assertTrue(body.w.list:Count() > 0, "no live rows")
     assertTrue(body.w.damage.value.__text ~= "\226\128\148", "no damage figure")
+end)
+
+test("preview: the running clock follows the Race clock setting", function()
+    local f = fixture()
+    f.NS.db.profile.hud.clock = "elapsed"
+    assertTrue(f.Preview.Start())
+    f:advance(f.Preview.SCRIPT[1].secs + 5)
+    local w = ui(f).body.running.w
+    assertTrue(w.clock:IsShown())
+    assertFalse(w.left:IsShown())
+    assertEqual(w.clock.__text, "0:05.0")
 end)
 
 test("preview: the result card is the sample run, with its chips", function()

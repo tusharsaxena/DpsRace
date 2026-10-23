@@ -156,6 +156,27 @@ test("settings: the HUD's show mode is a General tab of its own; `always` opens 
     assertFalse(NS.SetByPath("hud.showMode", "sometimes"))
 end)
 
+test("settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD", function()
+    local inst = T.load()
+    local NS = inst.NS
+    local clock = row(NS, "hud.clock")
+    assertEqual(clock.page, "general")
+    assertEqual(clock.group, row(NS, "hud.showMode").group, "beside the show mode, on the Race HUD tab")
+    assertEqual(clock.default, "both")
+    assertEqual(NS.GetSetting("hud.clock"), "both")
+    local offered = {}
+    for _, v in ipairs(clock.values) do offered[#offered + 1] = v.value end
+    assertEqual(table.concat(offered, ","), "both,left,elapsed")
+    local refreshed = 0
+    local real = NS.Hud.Refresh
+    NS.Hud.Refresh = function() refreshed = refreshed + 1 return real() end
+    assertTrue(NS.SetByPath("hud.clock", "left"))
+    assertTrue(refreshed > 0, "the HUD was not redrawn")
+    assertEqual(NS.db.profile.hud.clock, "left")
+    assertFalse(NS.SetByPath("hud.clock", "sideways"))
+    assertEqual(NS.db.profile.hud.clock, "left")
+end)
+
 test("settings: the Race, Live breakdown and History pages register and render quietly", function()
     local inst = T.load()
     local M = inst.mocks

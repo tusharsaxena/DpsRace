@@ -37,6 +37,10 @@ local BUTTON_STYLES = {
     danger  = { bg = { 1, 0.32, 0.32, 0.08 }, edge = { 1, 0.32, 0.32, 0.6 }, text = C.red },
 }
 local BIG = 40           -- the clock and STOP
+-- The running body's two clocks side by side ("both"): six monospace glyphs each, so two fit the
+-- minimum width's 236 px of content (an advance of at most 0.62 em: 2 x 6 x 0.62 x 28 + 8 = 216).
+local CLOCK_PAIR = 28
+States.CLOCK_PAIR_SIZE = CLOCK_PAIR
 local KPI_HEIGHT = 46
 local BUTTON_HEIGHT = 26
 local LINK_HEIGHT = 22
@@ -431,12 +435,45 @@ function Builders.armed(parent)
     return body
 end
 
--- RUNNING: the countdown, live damage and DPS, the live breakdown with no % (screen 04).
+-- The running clock (hud.clock): "left" or "elapsed" is one big clock in its color; anything else is
+-- "both", the pair. Plain numbers from GetTime(), never a meter value.
+local PAIR = { "elapsed", "left", "elapsedCap", "leftCap" }
+
+local function setClocks(w, v)
+    local mode, left, elapsed = v.clockMode, v.timeLeft or 0, v.elapsed or 0
+    local both = mode ~= "left" and mode ~= "elapsed"
+    for _, key in ipairs(PAIR) do w[key]:SetShown(both) end
+    w.clock:SetShown(not both)
+    if both then
+        w.elapsed:SetText(NS.Format.Clock(elapsed))
+        w.left:SetText(NS.Format.Clock(left))
+        return
+    end
+    local isElapsed = mode == "elapsed"
+    w.clock:SetText(NS.Format.Clock(isElapsed and elapsed or left))
+    paintText(w.clock, isElapsed and C.green or C.red)
+end
+
+-- RUNNING: the race clock (hud.clock), live damage and DPS, the live breakdown with no % (screen 04).
 function Builders.running(parent)
     local body = newBody(parent, "running")
     local f, w = body.frame, body.w
-    w.clock = text(f, BIG, C.text, "CENTER", true)
+    w.clock = text(f, BIG, C.red, "CENTER", true)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
+    -- "both": elapsed (green) in the left half, time left (red) in the right, a caption under each.
+    -- Halves by anchor, as the KPI pair below: no width is read.
+    w.elapsed = text(f, CLOCK_PAIR, C.green, "CENTER", true)
+    w.elapsed:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -6)
+    w.elapsed:SetPoint("TOPRIGHT", f, "TOP", -4, -6)
+    w.left = text(f, CLOCK_PAIR, C.red, "CENTER", true)
+    w.left:SetPoint("TOPLEFT", f, "TOP", 4, -6)
+    w.left:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -6)
+    w.elapsedCap = text(f, 9, C.dim, "CENTER")
+    w.elapsedCap:SetPoint("TOP", w.elapsed, "BOTTOM", 0, -3)
+    w.elapsedCap:SetText(L["ELAPSED"])
+    w.leftCap = text(f, 9, C.dim, "CENTER")
+    w.leftCap:SetPoint("TOP", w.left, "BOTTOM", 0, -3)
+    w.leftCap:SetText(L["LEFT"])
     w.damage, w.dps = kpiPair(f, -52, L["DAMAGE"], L["DPS \194\183 LIVE"])
     w.rows = CreateFrame("Frame", nil, f)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RUNNING_ROWS_TOP)
@@ -456,9 +493,7 @@ function Builders.running(parent)
     function body.Layout(self, _, height) self.height = height end
 
     function body.Update(self, v)
-        local left = v.timeLeft or 0
-        self.w.clock:SetText(NS.Format.Clock(left))
-        paintText(self.w.clock, left <= 10 and C.amber or C.text)
+        setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         self.w.count:SetText(L["%d rows"]:format(rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, v.rows)))
     end

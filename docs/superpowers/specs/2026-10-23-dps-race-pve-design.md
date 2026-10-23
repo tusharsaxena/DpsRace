@@ -117,7 +117,7 @@ the rules don't change between the two. Only the HUD copy does.
 
 ### 4.3 RUNNING
 
-- The HUD counts down the time left, to a tenth of a second, and shows the live breakdown (§6.1).
+- The HUD shows the time elapsed (green) and the time left (red), to a tenth of a second, side by side or either alone (a setting), and the live breakdown (§6.1).
 - An optional **countdown cue** plays at 10s, 5s, 3, 2, 1 (sound only; a setting, default on).
 - **Combat drops before the buzzer** (you stopped attacking, died, or the dummy reset): the run
   becomes `incomplete`. It is read and stored like any other, marked *Incomplete (combat ended at
@@ -256,7 +256,7 @@ A shorter window caps the live and result rows to what fits, never drawing them 
 |---|---|
 | **Idle** | Race-length presets and custom · target card (name, category badge, count stepper, *Unknown target* warning) · **Arm** (disabled in combat, with the reason) · links to the last result and to the Results window. |
 | **Armed** | The big race length, unmoving, with *First hit starts the clock* · target card · **Cancel**. |
-| **Running** | Big countdown (`2:41.3`), turning amber in the last 10s · total damage and live DPS (Blizzard's live figure, labelled *live*: the source's `amountPerSecond`, else the player's own `combatSources` row, else the Dps meter type; the meter's rate, never the score) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
+| **Running** | The race clock, by the *Race clock* setting: by default the time elapsed in green beside the time left in red, each `m:ss.t` (`0:18.7` · `2:41.3`) with an *ELAPSED* / *LEFT* caption, sized so both fit the minimum width; or one big clock, the time left in red or the time elapsed in green · total damage and live DPS (Blizzard's live figure, labelled *live*: the source's `amountPerSecond`, else the player's own `combatSources` row, else the Dps meter type; the meter's rate, never the score) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
 | **Stopping: Stop!** | Large **STOP** · *Damage stopped +x.xs* updating live · late-cast counter · *In combat +y.ys*. Shown while the last damage update is under 2.5s old. |
 | **Stopping: Waiting for result** | *Waiting for combat to end* (in combat) or *Reading the result* (out of it) · elapsed time · the hint (§4.4) · **Discard run** · the HUD can be closed. A run that ended before the buzzer comes straight here and shows when combat ended. |
 | **Result** | Damage · DPS · delta to personal best (*New best +2.4%*, *New best* for a board's first run, or *−3.2% vs best*; words, because the client font may lack arrow glyphs) · flag chips (short labels; each chip's tooltip is the full flag text) · top 5 spells with % · **Race again** (re-arms with the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
@@ -303,7 +303,7 @@ section headers and global reset.
 
 | Page | Settings |
 |---|---|
-| **General** | The standard's Master controls (Enable, visibility, scale and lock, which apply to the HUD; scale applies to the Results window too; test mode; the minimap button) · a *Race HUD* tab: show HUD on arm only / always |
+| **General** | The standard's Master controls (Enable, visibility, scale and lock, which apply to the HUD; scale applies to the Results window too; test mode; the minimap button) · a *Race HUD* tab: show HUD on arm only / always · race clock: elapsed and time left (default) / time left / time elapsed |
 | **Race** | Default race length (the presets) · countdown cue (on/off) · buzzer sound and raid warning (on/off) · **late-cast grace (s)** · **restart gap (s)** · sticky-combat hint delay (5–60s) |
 | **Live breakdown** | Rows shown (3–15) · live reads per second (2–10) · show spell icons · show live DPS |
 | **History** | **Runs to keep:** 0–10000, **default 0 = never prune**. Above 0, the oldest runs are pruned first and a run holding a best is always kept · *Delete all runs* (with confirmation) |
@@ -530,3 +530,4 @@ call.
 | 2026-10-23 | The launcher's right-click menu is the standard's fixed set (launcher-§2). *Show results* and *Arm last race* are dropped from it: the library takes no host entries, and both are one HUD click, one slash verb or one key binding away. |
 | 2026-10-23 | Live DPS is a rung chain (`Meter.ReadLive`): the source's `amountPerSecond`, else the `combatSources` row whose `isLocalPlayer` is readable and true, else the Dps meter type's `totalAmount`. The owner's smoke test (Beast Mastery hunter) found the source field absent, so *DPS · LIVE* stayed a dash. Each rung is an opaque copy; damage ÷ elapsed is never computed in combat. |
 | 2026-10-23 | The HUD's default size is 300×460, so all 8 default live rows show (mockup screen 04); its minimum is 260×316, because 240 px could not hold the idle body's Arm button and links. Rows are capped to the window's height. |
+| 2026-10-23 | The running clock shows the time elapsed (green) and the time left (red): both side by side by default, or either alone (`hud.clock`, General → Race HUD). The single clock no longer turns amber in the last 10s: time left is red throughout, and the final seconds have the center countdown. The armed and stop bodies keep their own clock and STOP. |

@@ -721,19 +721,64 @@ test("hud: a stand-down drops a window onArm opened, so the stand-up does not br
     assertTrue(g.Hud.IsShown(), "a window the player opened was dropped")
 end)
 
-test("hud: the countdown turns amber in the last 10s", function()
+local GREEN, RED = { 0.36, 0.86, 0.46 }, { 1.0, 0.32, 0.32 }
+
+local function colored(fs, c)
+    return fs.__color ~= nil and fs.__color[1] == c[1] and fs.__color[2] == c[2] and fs.__color[3] == c[3]
+end
+
+test("hud: the running clock shows elapsed in green beside time left in red by default", function()
     local f = hud()
+    running(f, 30)
+    f:to(112.5)
+    tick(f)
+    local w = body(f).w
+    assertFalse(w.clock:IsShown(), "the single clock beside the pair")
+    assertTrue(w.elapsed:IsShown() and w.left:IsShown())
+    assertEqual(w.elapsed.__text, "0:12.5")
+    assertEqual(w.left.__text, "0:17.5")
+    assertTrue(colored(w.elapsed, GREEN), "elapsed is green")
+    assertTrue(colored(w.left, RED), "time left is red")
+    assertEqual(w.elapsedCap.__text, "ELAPSED")
+    assertEqual(w.leftCap.__text, "LEFT")
+    f:to(121.04)
+    tick(f)
+    assertEqual(w.left.__text, "0:08.9")
+    assertEqual(w.elapsed.__text, "0:21.0")
+    assertEqual(ui(f).footRight.__text, "live \194\183 4 Hz")
+end)
+
+test("hud: a single-clock mode shows one big clock in its own color", function()
+    local f = hud()
+    f.NS.db.profile.hud.clock = "left"
     running(f, 30)
     f:to(115)
     tick(f)
-    local clock = body(f).w.clock
-    assertEqual(clock.__text, "0:15.0")
-    assertEqual(clock.__color[2], 0.93)
-    f:to(121.04)
+    local w = body(f).w
+    assertTrue(w.clock:IsShown())
+    assertFalse(w.elapsed:IsShown() or w.left:IsShown() or w.elapsedCap:IsShown() or w.leftCap:IsShown())
+    assertEqual(w.clock.__text, "0:15.0")
+    assertTrue(colored(w.clock, RED), "time left is red")
+    assertTrue(f.NS.SetByPath("hud.clock", "elapsed"))
+    f:to(118)
     tick(f)
-    assertEqual(clock.__text, "0:08.9")
-    assertEqual(clock.__color[2], 0.72)
-    assertEqual(ui(f).footRight.__text, "live \194\183 4 Hz")
+    assertEqual(w.clock.__text, "0:18.0")
+    assertTrue(colored(w.clock, GREEN), "elapsed is green")
+end)
+
+test("hud: the clock pair fits the minimum width; the stop body keeps its own STOP", function()
+    local f = hud()
+    local States = f.NS.HudStates
+    -- Six monospace glyphs (m:ss.t) each, an advance of at most 0.62 em, a gap between the halves.
+    local need = 2 * 6 * 0.62 * States.CLOCK_PAIR_SIZE + 8
+    assertTrue(need <= f.Hud.MIN_WIDTH - 24, "the pair needs " .. need .. " px of the minimum content width")
+    running(f, 30)
+    f:to(129.9)
+    f:update(25)
+    f:to(130)
+    tick(f)
+    assertEqual(current(f), "stop")
+    assertEqual(body(f).w.big.__text, "STOP")
 end)
 
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
@@ -868,9 +913,10 @@ test("hud: Render draws a given body only while test mode is on", function()
     assertEqual(current(f), "result")
     assertEqual(body(f).w.chips:Texts()[1], "New best +4.2%")
     assertEqual(body(f).w.damage.value.__text, "2.00M")
-    f.Hud.Render("running", nil, { timeLeft = 12.3, live = { total = 1000, dps = 50, spells = {} } })
+    f.Hud.Render("running", nil, { timeLeft = 12.3, elapsed = 17.7, live = { total = 1000, dps = 50, spells = {} } })
     assertEqual(current(f), "running")
-    assertEqual(body(f).w.clock.__text, "0:12.3")
+    assertEqual(body(f).w.left.__text, "0:12.3")
+    assertEqual(body(f).w.elapsed.__text, "0:17.7")
     f.NS.Preview.Stop()
     assertEqual(current(f), "idle", "test mode off: back to the race's own state")
 end)
