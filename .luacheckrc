@@ -109,7 +109,7 @@ files["core/DpsRace.lua"] = { ignore = { "212/self" } }
 files["tests/wow_mock.lua"] = { ignore = { "212/self", "432/self" } }
 
 -- probe/DpsRaceProbe is the pre-build measurement addon the spec's numbers came from: never shipped
--- (.pkgmeta), never loaded by this addon, kept byte-for-byte as a record (docs/ARCHITECTURE.md ->
+-- (.pkgmeta), never loaded by this addon, kept as a record; the measured code is commit 5ad52a5 (docs/ARCHITECTURE.md ->
 -- Documented deviations). It reaches client API the addon does not, so its globals are scoped to it,
 -- and its one unused argument is the event's positional signature, left as measured.
 files["probe/"] = {

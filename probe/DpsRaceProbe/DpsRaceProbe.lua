@@ -433,15 +433,12 @@ end
 -- and did it resume after an idle gap (contamination)?
 local RESUME_GAP = 4
 
-local function analyzeDamageStop(r)
-    local buzz, sid = r.t.buzzer, r.sessionID
-    if not (buzz and sid) then
-        r.damageStop = { verdict = "n/a (buzzer=" .. show(buzz) .. " sessionID=" .. show(sid) .. ")" }
-        return
-    end
+-- The run's own DamageDone updates after the buzzer: how many, the last, and the first resume
+-- after an idle gap; updates of other types or sessions are only counted.
+local function scanAfterBuzzer(timeline, buzz, sid)
     local d = { afterBuzzer = 0, otherTypesAfterBuzzer = 0, otherSessionsAfterBuzzer = 0 }
     local prev = buzz
-    for _, e in ipairs(r.dm.timeline) do
+    for _, e in ipairs(timeline) do
         if e.t > buzz then
             if e.id ~= sid then
                 d.otherSessionsAfterBuzzer = d.otherSessionsAfterBuzzer + 1
@@ -459,28 +456,46 @@ local function analyzeDamageStop(r)
             end
         end
     end
-    -- Updates per stat type over the whole run, to see which types are noise.
+    return d
+end
+
+-- Updates per stat type over the whole run, to see which types are noise.
+local function countByType(timeline, sid)
     local byType = {}
-    for _, e in ipairs(r.dm.timeline) do
+    for _, e in ipairs(timeline) do
         if e.id == sid then
             local k = tostring(e.ty)
             byType[k] = (byType[k] or 0) + 1
         end
     end
-    d.byType = byType
-    d.lastCast = r.t.lastCast and (r.t.lastCast - buzz) or nil
-    d.castsAfterBuzzer = r.castsAfterBuzzer or 0
-    d.verdict = string.format("damage stopped %s after buzzer (last cast %s, casts after %d); resumed after idle gap: %s",
+    return byType
+end
+
+local function damageStopVerdict(d)
+    return string.format("damage stopped %s after buzzer (last cast %s, casts after %d); resumed after idle gap: %s",
         d.lastUpdate and string.format("+%.2fs", d.lastUpdate) or "before/at buzzer",
         d.lastCast and string.format("%+.2fs", d.lastCast) or "-", d.castsAfterBuzzer,
         d.resumedAt and string.format("YES at +%.2fs after a %.1fs gap", d.resumedAt, d.resumeGap) or "no")
+end
+
+local function analyzeDamageStop(r)
+    local buzz, sid = r.t.buzzer, r.sessionID
+    if not (buzz and sid) then
+        r.damageStop = { verdict = "n/a (buzzer=" .. show(buzz) .. " sessionID=" .. show(sid) .. ")" }
+        return
+    end
+    local d = scanAfterBuzzer(r.dm.timeline, buzz, sid)
+    d.byType = countByType(r.dm.timeline, sid)
+    d.lastCast = r.t.lastCast and (r.t.lastCast - buzz) or nil
+    d.castsAfterBuzzer = r.castsAfterBuzzer or 0
+    d.verdict = damageStopVerdict(d)
     r.damageStop = d
 end
 
-local function summarize(r)
+-- The summary's timing lines: when the run started and ended, relative to its start.
+local function summaryTiming(r, out)
     local t = r.t
     local start = t.start
-    local out = {}
     local function rel(name) return (t[name] and start) and fmt(t[name] - start) or "-" end
     out[#out + 1] = string.format("[%s] %s run, %s", r.date, r.kind, r.duration and (r.duration .. "s") or "duel")
     out[#out + 1] = string.format("start=%s (first of meter/unit signals). relative: regenOn=%s firstCast=%s firstMeter=%s firstUnitCombat=%s firstHealthTarget=%s firstHealthPlayer=%s",
@@ -491,6 +506,11 @@ local function summarize(r)
     local m = r.meter
     out[#out + 1] = string.format("meter events: %d, avg interval %s, max gap %s", m.n,
         m.n > 1 and fmt(m.intervals / (m.n - 1)) or "-", fmt(m.maxGap))
+end
+
+-- The summary's duration comparison: the meter's own duration against ours.
+local function summaryDuration(r, out)
+    local t = r.t
     if r.finalDuration then
         out[#out + 1] = string.format("durationSeconds(post)=%s | ours: firstMeter->lastMeter=%s regenOn->regenOff=%s firstMeter->regenOff=%s",
             r.finalDuration,
@@ -498,6 +518,10 @@ local function summarize(r)
             (t.regenDisabled and t.regenEnabled) and fmt(t.regenEnabled - t.regenDisabled) or "-",
             (t.firstMeterUpdate and t.regenEnabled) and fmt(t.regenEnabled - t.firstMeterUpdate) or "-")
     end
+end
+
+-- The summary's outcome lines: the session, the result, the live display and the test verdicts.
+local function summaryOutcome(r, out)
     if r.newSession ~= nil then
         out[#out + 1] = "new meter session created by this run: " .. show(r.newSession)
     end
@@ -516,19 +540,26 @@ local function summarize(r)
     if r.resumedAfterReload then
         out[#out + 1] = "|cffffff00TEST E|r resumed after /reload: " .. (r.reloadVerdict or "-")
     end
+end
+
+local function summarize(r)
+    local out = {}
+    summaryTiming(r, out)
+    summaryDuration(r, out)
+    summaryOutcome(r, out)
     return out
 end
 
-local function finalizeResult()
-    if not run then return end
-    -- Q1: did this run create a session, and does it hold our damage?
-    local after = sessionList()
-    run.sessionsAfter = after
-    local before = sessionIdSet(run.sessionsBefore)
+-- Q1: did this run create a session? Compares the session list now with the one at arm time.
+local function createdSession(before, after)
+    local seen = sessionIdSet(before)
     local created = false
-    for _, e in ipairs(after) do if not before[e.id] then created = true end end
-    run.newSession = created
+    for _, e in ipairs(after) do if not seen[e.id] then created = true end end
+    return created
+end
 
+-- The Current session's totals and spell counts for the player, as plain copies.
+local function readResult()
     local res = {}
     local done = readSession(STAT.DamageDone)
     if canTable(done) then
@@ -543,6 +574,48 @@ local function finalizeResult()
     if canTable(mineDone) then res.doneSpells = (safeEach(mineDone.combatSpells, function() end)) end
     local mineTaken = readSource(STAT.DamageTaken, UnitGUID("player"), nil)
     if canTable(mineTaken) then res.takenSpells = (safeEach(mineTaken.combatSpells, function() end)) end
+    return res
+end
+
+-- The by-ID read's one-line verdict: its total against Current's (cur).
+local function byIdVerdict(sid, b, cur)
+    return string.format("id=%s inList=%s total=%s current=%s -> %s, spells=%s, duration=%s",
+        show(sid), show(b.presentInList), show(b.total), show(cur),
+        (b.total and cur) and (b.total == cur and "MATCH" or "MISMATCH") or "unreadable",
+        show(b.spells), show(b.duration))
+end
+
+-- Read the run's own session by ID and compare with Current.
+local function readById(sid, after, res)
+    local b = {}
+    if not (sid and DM and DM.GetCombatSessionFromID) then
+        b.verdict = "no sessionID captured"
+        return b
+    end
+    local present = false
+    for _, e in ipairs(after) do if e.id == tostring(sid) then present = true end end
+    b.presentInList = present
+    local ok, s = pcall(DM.GetCombatSessionFromID, sid, STAT.DamageDone)
+    if ok and canTable(s) then
+        local row = localPlayerRow(s)
+        b.total = row and plainNumber(row.totalAmount)
+        b.duration = plainNumber(s.durationSeconds)
+    else
+        b.error = show(s)
+    end
+    local okSrc, src = pcall(DM.GetCombatSessionSourceFromID, sid, STAT.DamageDone, UnitGUID("player"), nil)
+    if okSrc and canTable(src) then b.spells = (safeEach(src.combatSpells, function() end)) end
+    b.verdict = byIdVerdict(sid, b, plainNumber(res.done))
+    return b
+end
+
+local function finalizeResult()
+    if not run then return end
+    local after = sessionList()
+    run.sessionsAfter = after
+    run.newSession = createdSession(run.sessionsBefore, after)
+
+    local res = readResult()
     -- store plain copies only
     run.result = { done = show(res.done), taken = show(res.taken),
         doneSpells = res.doneSpells, takenSpells = res.takenSpells }
@@ -553,31 +626,7 @@ local function finalizeResult()
         if final and early then run.snapshot.overshoot = final - early end
     end
 
-    -- Read the run's own session by ID and compare with Current.
-    local b = {}
-    local sid = run.sessionID
-    if sid and DM and DM.GetCombatSessionFromID then
-        local present = false
-        for _, e in ipairs(after) do if e.id == tostring(sid) then present = true end end
-        b.presentInList = present
-        local ok, s = pcall(DM.GetCombatSessionFromID, sid, STAT.DamageDone)
-        if ok and canTable(s) then
-            local row = localPlayerRow(s)
-            b.total = row and plainNumber(row.totalAmount)
-            b.duration = plainNumber(s.durationSeconds)
-        else
-            b.error = show(s)
-        end
-        local okSrc, src = pcall(DM.GetCombatSessionSourceFromID, sid, STAT.DamageDone, UnitGUID("player"), nil)
-        if okSrc and canTable(src) then b.spells = (safeEach(src.combatSpells, function() end)) end
-        local cur = plainNumber(res.done)
-        b.verdict = string.format("id=%s inList=%s total=%s current=%s -> %s, spells=%s, duration=%s",
-            show(sid), show(present), show(b.total), show(cur),
-            (b.total and cur) and (b.total == cur and "MATCH" or "MISMATCH") or "unreadable",
-            show(b.spells), show(b.duration))
-    else
-        b.verdict = "no sessionID captured"
-    end
+    local b = readById(run.sessionID, after, res)
     run.byId = b
 
     analyzeDamageStop(run)
@@ -1014,55 +1063,78 @@ local HELP = {
     "/drp show|hide | status | clear",
 }
 
+-- One handler per verb, each given the text after the verb.
+local VERBS = {}
+
+function VERBS.arm(rest)
+    if run then endRun("re-armed") end
+    newRun("pve", tonumber(rest) or 30)
+end
+
+function VERBS.duel()
+    if run then endRun("re-armed") end
+    newRun("duel")
+end
+
+function VERBS.stop() endRun("manual stop") end
+
+function VERBS.read()
+    if run then pcall(fullRead, "manual") else chat("no active run") end
+end
+
+function VERBS.partner(rest)
+    partner = rest ~= "" and rest or nil
+    chat("partner = " .. show(partner))
+end
+
+function VERBS.ping(rest)
+    if not partner then chat("no partner set") return end
+    local tag = rest ~= "" and rest or "manual"
+    local msg = string.format("ping %s t=%s", tag, fmt(now()))
+    local ok, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "WHISPER", partner)
+    local line = string.format("ADDON_MSG send to %s [%s] ok=%s result=%s combat=%s",
+        partner, tag, show(ok), show(result), show(InCombatLockdown()))
+    glog(line)
+    local r = run or lastRun
+    if r then
+        r.addonMsgs = r.addonMsgs or {}
+        r.addonMsgs[#r.addonMsgs + 1] = line
+    end
+    chat(line)
+end
+
+function VERBS.svtest(rest)
+    db.svtest = (rest == "on")
+    chat("svtest = " .. show(db.svtest) .. (db.svtest and " (run this test LAST; it may break saving)" or ""))
+end
+
+function VERBS.last()
+    local r = db.runs[#db.runs]
+    if r and r.summary then for _, l in ipairs(r.summary) do chat(l) end else chat("no finished run") end
+end
+
+function VERBS.show() frame:Show() end
+
+function VERBS.hide() frame:Hide() end
+
+function VERBS.status()
+    chat(string.format("runs saved: %d, active: %s, partner: %s, svtest: %s",
+        #db.runs, run and run.kind or "none", show(partner), show(db.svtest)))
+    chat("events registered: " .. #registered .. ", rejected: " .. (#rejected > 0 and table.concat(rejected, ", ") or "none"))
+end
+
+function VERBS.clear()
+    db.runs, db.globalLog = {}, {}
+    chat("cleared")
+end
+
+local function help()
+    for _, l in ipairs(HELP) do chat(l) end
+end
+
 SLASH_DPSRACEPROBE1 = "/drp"
 SlashCmdList.DPSRACEPROBE = function(input)
     local cmd, rest = (input or ""):match("^(%S*)%s*(.-)$")
-    cmd = cmd:lower()
-    if cmd == "arm" then
-        if run then endRun("re-armed") end
-        newRun("pve", tonumber(rest) or 30)
-    elseif cmd == "duel" then
-        if run then endRun("re-armed") end
-        newRun("duel")
-    elseif cmd == "stop" then
-        endRun("manual stop")
-    elseif cmd == "read" then
-        if run then pcall(fullRead, "manual") else chat("no active run") end
-    elseif cmd == "partner" then
-        partner = rest ~= "" and rest or nil
-        chat("partner = " .. show(partner))
-    elseif cmd == "ping" then
-        if not partner then chat("no partner set") return end
-        local tag = rest ~= "" and rest or "manual"
-        local msg = string.format("ping %s t=%s", tag, fmt(now()))
-        local ok, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, "WHISPER", partner)
-        local line = string.format("ADDON_MSG send to %s [%s] ok=%s result=%s combat=%s",
-            partner, tag, show(ok), show(result), show(InCombatLockdown()))
-        glog(line)
-        local r = run or lastRun
-        if r then
-            r.addonMsgs = r.addonMsgs or {}
-            r.addonMsgs[#r.addonMsgs + 1] = line
-        end
-        chat(line)
-    elseif cmd == "svtest" then
-        db.svtest = (rest == "on")
-        chat("svtest = " .. show(db.svtest) .. (db.svtest and " (run this test LAST; it may break saving)" or ""))
-    elseif cmd == "last" then
-        local r = db.runs[#db.runs]
-        if r and r.summary then for _, l in ipairs(r.summary) do chat(l) end else chat("no finished run") end
-    elseif cmd == "show" then
-        frame:Show()
-    elseif cmd == "hide" then
-        frame:Hide()
-    elseif cmd == "status" then
-        chat(string.format("runs saved: %d, active: %s, partner: %s, svtest: %s",
-            #db.runs, run and run.kind or "none", show(partner), show(db.svtest)))
-        chat("events registered: " .. #registered .. ", rejected: " .. (#rejected > 0 and table.concat(rejected, ", ") or "none"))
-    elseif cmd == "clear" then
-        db.runs, db.globalLog = {}, {}
-        chat("cleared")
-    else
-        for _, l in ipairs(HELP) do chat(l) end
-    end
+    local handler = VERBS[cmd:lower()] or help
+    handler(rest)
 end
