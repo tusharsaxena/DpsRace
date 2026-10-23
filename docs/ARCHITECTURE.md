@@ -80,8 +80,8 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | HUD (T7), Results (T8) |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | HUD's STOP, sound and raid warning (T7) |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | HUD's result card (T7), Results (T8) |
-| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | Bests cache and pruning (T6), Results list (T8) |
-| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | Bests cache (T6), Results list (T8) |
+| `RUN_SAVED` | `modules/Recorder.lua` (T3) | `run` | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; Results list (T8) |
+| `RUNS_CHANGED` | `modules/Recorder.lua` (T3) | none: a delete or a prune changed the store | `modules/Bests.lua`: drops the bests cache; Results list (T8) |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` write seam; `core/Database.lua` on a profile change | `path, value` (`"profile", key` on a profile change) | none in the scaffold |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own

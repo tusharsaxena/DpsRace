@@ -83,6 +83,8 @@ modules\Meter.lua
 modules\Recorder.lua
 modules\Timeline.lua
 modules\Scoring.lua
+# LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED) at FILE SCOPE through core\Bus.lua.
+modules\Bests.lua
 modules\Race.lua
 modules\Watchers.lua
 modules\Placeholders.lua

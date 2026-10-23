@@ -27,10 +27,12 @@ local function regKeys(inst)
     return out
 end
 
+--- The GAME events registered. Bus messages (kind "message": modules/Bests.lua's receiver) are left
+--- out: they are not game events to fire, and steps 2+3 and the bus-receiver cases cover them.
 local function eventNames(inst)
     local seen, out = {}, {}
     for _, r in ipairs(inst.mocks.__registrations()) do
-        if r.event and not seen[r.event] then
+        if r.event and r.kind ~= "message" and not seen[r.event] then
             seen[r.event] = true
             out[#out + 1] = r.event
         end

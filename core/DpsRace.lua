@@ -27,6 +27,9 @@ end
 function NS:OnEnable()
     if NS.IsStoodDown() then return end
     NS.RegisterGameEvents()
+    -- Login prune to the stored "Runs to keep" (0 = never; spec §7). Never a running or stopping run,
+    -- so it cannot take what Resume below carries on.
+    NS.Bests.PruneToSetting()
     -- Runs a /reload left running or stopping carry on from their stored status (spec §4.5).
     NS.Race.Resume()
 end

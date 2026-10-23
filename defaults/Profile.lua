@@ -27,6 +27,10 @@ NS.defaults = {
         -- The run store, keyed by run id (modules/Recorder.lua, T3). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},
+        -- Runs to keep (spec §6.3): 0 = never prune. Above 0, the oldest runs go first and a run
+        -- holding a best is always kept (modules/Recorder.lua Prune). Global like the store it
+        -- bounds. T9 adds the History page's row.
+        history = { keep = 0 },
         -- LibDBIcon's own table, handed straight to :Register (launcher-§3). Global, because the
         -- button belongs to the installation and a profile switch must not move it.
         minimap = { hide = false },

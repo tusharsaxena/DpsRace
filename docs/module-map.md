@@ -37,9 +37,10 @@ drift from what the client loads (testing-§9).
 | `defaults/Profile.lua` | the AceDB defaults tree | the defaults group |
 | `defaults/Dummies.lua` | `NS.Dummies`: the measured training-dummy catalog (spec §4.6), `Lookup(npcID)`, the six `CATEGORIES` and their labels | **load-bearing**: reads `NS.L` at file scope |
 | `modules/Meter.lua` | `NS.Meter`: availability, the session list, the after-combat `ReadSession(id)` (plain, sorted, or `sealed`) and the opaque `ReadLive()`; the only caller of `C_DamageMeter` | **load-bearing**: first module; resolves the meter enums at file scope |
-| `modules/Recorder.lua` | `NS.Recorder`: the player, target and place snapshots (every value through `NS.Secrets`, so no secret reaches SavedVariables), `NewRun` with the scoring settings frozen in, and the run store (`Save`, `Get`, `All`, `Pending`, `Delete`, `DeleteAll`) that fires `RUN_SAVED` / `RUNS_CHANGED` | conventional (reached at call time) |
+| `modules/Recorder.lua` | `NS.Recorder`: the player, target and place snapshots (every value through `NS.Secrets`, so no secret reaches SavedVariables), `NewRun` with the scoring settings frozen in, and the run store (`Save`, `Get`, `All`, `Pending`, `Delete`, `DeleteAll`, `Prune(keep)`) that fires `RUN_SAVED` / `RUNS_CHANGED`; `Prune` never removes a best-holding, running or stopping run | conventional (reached at call time) |
 | `modules/Timeline.lua` | `NS.Timeline`: pure. `New()` gives a run's damage-update timeline (`AddDamage`, `LastDamage`, `Tail`, `RestartAt`, `QuietFor`), stamps from `GetTime()` only | conventional (reached at call time) |
 | `modules/Scoring.lua` | `NS.Scoring`: pure. `IsLateCast`, `Dps` (damage over the race length, or over `endedAt` for an incomplete run), `QUIET_BEFORE_READ` and `Flags(run, nameOf?)` in display order | conventional (reached at call time) |
+| `modules/Bests.lua` | `NS.Bests`: pure over stored runs. `Key(run)` (`specID|category|length`), `Compute(runs, opts)` (complete runs only, `cleanOnly` drops flagged ones), the cached `Board(opts)`, `Delta(run, runs?)` against the best before the run, `HoldingIDs(runs)` (both boards) and `PruneToSetting()`; its bus receiver drops the cache on `RUN_SAVED` / `RUNS_CHANGED` and prunes on `RUN_SAVED` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) |
 | `modules/Race.lua` | `NS.Race`: the lifecycle state machine (`STATE`, `Arm`, `Cancel`, `Elapsed`, `TimeLeft`, `SinceBuzzer`), the buzzer timer, the 0.5s readiness poll while stopping, late casts, the read by session ID (with the session-list fallback), `Suspend` and the `/reload` `Resume`; sends `RACE_STATE_CHANGED`, `RACE_BUZZER`, `RACE_RESULT` | conventional (reached at call time) |
 | `modules/Watchers.lua` | `NS.Watchers`: the race's event frame. `Sync()` registers the meter, combat, death and (from RUNNING) the player's cast events for the race's state, nothing while idle or stood down; dispatches each to a `Race.On*` input with `GetTime()` | after `modules/Race.lua` by convention (reached at call time) |
 | `modules/Placeholders.lua` | stand-in `NS.Hud`, `NS.Results`, `NS.Preview`; T7, T8 and T9 replace them | conventional |
@@ -58,7 +59,6 @@ From the plan's file map; each lands with its task and gets a row above in the s
 
 | File | Task | Job |
 |---|---|---|
-| `modules/Bests.lua` | T6 | personal bests and prune protection |
 | `modules/Format.lua`, `modules/Hud*.lua` | T7 | number formatting; the Race HUD |
 | `modules/Results*.lua` | T8 | the Results window |
 | `settings/Race.lua`, `Live.lua`, `History.lua`, `modules/Share.lua`, `modules/Preview.lua` | T9 | settings pages, chat share, test mode |

@@ -104,6 +104,27 @@ Total.
 - scoring: Flags names late-cast spells through an optional resolver
 - scoring: a clean complete run has no flags; lost stands alone at the end
 
+### test_bests.lua (18)
+
+- bests: Key is specID|category|length
+- bests: incomplete and lost never count
+- bests: the highest result.dps holds the board; a tie keeps the earlier run
+- bests: cleanOnly excludes flagged
+- bests: two Dungeoneer npcIDs share one board
+- bests: spec, category and length each split the board
+- bests: deleting a best promotes the next run
+- bests: the cache is invalidated by RUN_SAVED and keeps cleanOnly apart
+- bests: Delta reports new best and percentage vs previous best
+- bests: Delta ignores later runs, other boards and runs that never count
+- bests: Delta defaults its run list to the store
+- bests: HoldingIDs names the holders of the all-runs and the clean-only boards
+- bests: prune keep=0 removes nothing
+- bests: prune keeps best-holding runs
+- bests: prune never removes a running or stopping run, and stops at the holders
+- bests: prune runs on RUN_SAVED with the global history.keep setting
+- bests: prune runs at OnEnable
+- bests: no prune and no cache work while disabled
+
 ### test_race.lua (35)
 
 - race: the state names are the interface's
@@ -325,6 +346,7 @@ Total.
 | test_recorder.lua | 19 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
+| test_bests.lua | 18 |
 | test_race.lua | 35 |
 | test_race_resume.lua | 8 |
 | test_schema.lua | 14 |
@@ -341,4 +363,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **239** |
+| **Total** | **257** |

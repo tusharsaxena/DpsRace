@@ -40,6 +40,7 @@ here with its task.
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
 | `schema` | `1` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
+| `history.keep` | `0` | *Runs to keep* (spec §6.3): 0 = never prune. Above 0, `Recorder.Prune` removes the oldest resolved runs at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. T9 adds the History page's row |
 | `minimap` | `{ hide = false }` | LibDBIcon's own table, handed straight to `:Register` (launcher-§3) |
 
 ### Session-only (never persisted)

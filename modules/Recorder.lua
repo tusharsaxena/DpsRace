@@ -13,8 +13,9 @@ local _, NS = ...
 -- yields an absent field, never a Lua error on the arm path.
 --
 -- THE STORE is db.global.runs, keyed by run id: account-wide, so a profile switch never hides a
--- character's history and bests span alts (spec §7). Save fires RUN_SAVED(run); Delete and DeleteAll
--- fire RUNS_CHANGED. Pruning (T6) lives here too and fires RUNS_CHANGED.
+-- character's history and bests span alts (spec §7). Save fires RUN_SAVED(run); Delete, DeleteAll and
+-- Prune fire RUNS_CHANGED. Prune asks NS.Bests (CALL time) which runs hold a best, and never removes
+-- one, nor a run still running or stopping (Race.Resume needs it).
 
 local Recorder = {}
 NS.Recorder = Recorder
@@ -264,5 +265,39 @@ function Recorder.DeleteAll()
         n = n + 1
     end
     if n > 0 then NS.SendBus(NS.MSG.RUNS_CHANGED) end
+    return n
+end
+
+-- The statuses a prune may remove: resolved runs. A running or stopping run is Race.Resume's.
+local PRUNABLE = { complete = true, incomplete = true, lost = true }
+
+--- Remove the oldest runs until at most `keep` are stored, never one holding a best (all-runs or
+--- clean-only board) and never one still running or stopping (spec §6.3, §7). With nothing left to
+--- remove the store may stay above `keep`. Fires RUNS_CHANGED once when anything was removed.
+--- @param keep number|nil  0 (the default) or anything not a positive number is a no-op
+--- @return number removed
+function Recorder.Prune(keep)
+    local runs = store()
+    keep = Secrets.PlainNumber(keep)
+    if not runs or not keep or keep < 1 then return 0 end
+    keep = math.floor(keep)
+    local total = 0
+    for _ in pairs(runs) do total = total + 1 end
+    if total <= keep then return 0 end
+    local holding = NS.Bests.HoldingIDs(Recorder.All())
+    local oldestFirst = collect(function(status) return PRUNABLE[status] == true end,
+        function(a, b) return newerFirst(b, a) end)
+    local n = 0
+    for _, run in ipairs(oldestFirst) do
+        if total - n <= keep then break end
+        if not holding[run.id] then
+            runs[run.id] = nil
+            n = n + 1
+        end
+    end
+    if n > 0 then
+        debug("pruned %d run(s) to keep %d", n, keep)
+        NS.SendBus(NS.MSG.RUNS_CHANGED)
+    end
     return n
 end

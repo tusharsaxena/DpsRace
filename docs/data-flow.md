@@ -14,7 +14,8 @@ two levels and must not contradict each other. The race pipeline is summarized f
   stored `enabled` takes or releases the `disabled` hold (`NS.SyncEnabledHold`), the launcher
   registers, the settings category registers eagerly, and `/dr` and `/dpsrace` register.
 - **`OnEnable`**: if the latch is down, nothing; otherwise `NS.RegisterGameEvents()` registers the
-  combat events the current settings need, and `NS.Race.Resume()` carries on the runs a `/reload`
+  combat events the current settings need, `NS.Bests.PruneToSetting()` prunes the store to
+  `global.history.keep` (0 = never), and `NS.Race.Resume()` carries on the runs a `/reload`
   interrupted (spec §4.5). The stand-up edge calls the same `Resume`.
 
 ## A setting changes
@@ -85,6 +86,18 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   at once; in combat: wait for the regen edge. An older unresolved run is settled as `lost`. The
   stand-down (disabled or a perf capture) drops the in-memory race and its timers and keeps the stored
   run, so the stand-up resumes it exactly like a `/reload`.
+
+## Bests and pruning (spec §6.2, §7)
+
+- **Bests** are worked out, never stored: `Bests.Compute(runs, opts)` keeps the highest
+  `result.dps` per `specID|category|length` board, over `complete` runs only (`cleanOnly` drops
+  flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
+  `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
+  with the best on its board before it.
+- **Pruning** (`Recorder.Prune(keep)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
+  `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
+  holding a best on either board and never a `running` or `stopping` run, and fires `RUNS_CHANGED`
+  once. While stood down the bus receiver is dropped, so nothing prunes.
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).

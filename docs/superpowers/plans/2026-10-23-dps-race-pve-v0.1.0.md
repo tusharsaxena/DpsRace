@@ -41,7 +41,7 @@ The **UI** (HUD, Results window, settings pages) listens on the message bus and 
 | T3 Dummy catalog + Recorder | M2 | [x] |
 | T4 Timeline + Scoring (pure) | M2 | [x] |
 | T5 Race state machine + Watchers | M2 | [x] |
-| T6 Bests + pruning | M2 | [ ] |
+| T6 Bests + pruning | M2 | [x] |
 | T7 Race HUD | M3 | [ ] |
 | T8 Results window | M3 | [ ] |
 | T9 Settings pages, slash verbs, Share, Preview, key bindings | M3 | [ ] |
