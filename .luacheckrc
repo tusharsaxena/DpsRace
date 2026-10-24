@@ -86,7 +86,7 @@ files["modules/Hud.lua"] = {
 -- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
 local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
-    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent",
+    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent", "MenuUtil",
 }
 files["modules/Results.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }

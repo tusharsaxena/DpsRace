@@ -114,14 +114,20 @@ local function build()
             local rootDesc = {}
             function rootDesc:CreateTitle(text) menu.titles[#menu.titles + 1] = text return {} end
             function rootDesc:CreateDivider() return {} end
-            function rootDesc:CreateButton(text, onClick, data)
+            -- A button may hold a submenu: its own CreateButton/CreateTitle record into
+            -- entry.children (a nested menu, read like the root through entry:Find / entry:Click).
+            local function button(list, text, onClick, data)
                 local entry = { text = text, setSelected = onClick, data = data, enabled = true,
-                                isSelected = function() return false end }
-                menu.entries[#menu.entries + 1] = entry
+                                isSelected = function() return false end, children = {} }
+                list[#list + 1] = entry
                 local element = {}
                 function element:SetEnabled(on) entry.enabled = on and true or false end
+                function element:CreateButton(t, fn, d) return button(entry.children, t, fn, d) end
+                function element:CreateTitle() return {} end
+                function element:CreateDivider() return {} end
                 return element
             end
+            function rootDesc:CreateButton(text, onClick, data) return button(menu.entries, text, onClick, data) end
             function rootDesc:CreateCheckbox(text, isSelected, setSelected, data)
                 local entry = { text = text, isSelected = isSelected, setSelected = setSelected,
                                 data = data, enabled = true }

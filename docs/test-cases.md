@@ -348,7 +348,7 @@ Total.
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
 - results: saving a note never prunes the store
-- results: Share is grayed without a Share module; a double-click shares
+- results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: bests tab groups by spec x category x length with clean-only toggle
 - results: the Bests board shows one category at a time, so a spec and length is one row
 - results: list refreshes on RUN_SAVED

@@ -155,8 +155,19 @@ local function pick(run, channel)
     return Share.Send(run, channel)
 end
 
---- The Share button (the HUD's result card, the Results detail, a row's double-click): a menu of
---- channels, the ones the player is not in grayed. Refused in combat with one line.
+--- Add the channels to a menu description (the Share menu's root, or the Results row menu's Share
+--- submenu), the ones the player is not in grayed.
+--- @param desc table  a MenuUtil description
+--- @param run table
+function Share.FillMenu(desc, run)
+    for _, c in ipairs(Share.CHANNELS) do
+        local button = desc:CreateButton(L[c.label], function() pick(run, c.key) end)
+        if c.open and not c.open() then button:SetEnabled(false) end
+    end
+end
+
+--- The Share button (the HUD's result card, the Results detail): a menu of channels, the ones the
+--- player is not in grayed. Refused in combat with one line.
 --- @param run table
 --- @param owner table|nil  the region the menu opens at (the clicked control)
 --- @return boolean opened
@@ -173,10 +184,7 @@ function Share.Prompt(run, owner)
     end
     MenuUtil.CreateContextMenu(owner or UIParent, function(_, root)
         root:CreateTitle(L["Share to"])
-        for _, c in ipairs(Share.CHANNELS) do
-            local button = root:CreateButton(L[c.label], function() pick(run, c.key) end)
-            if c.open and not c.open() then button:SetEnabled(false) end
-        end
+        Share.FillMenu(root, run)
     end)
     return true
 end

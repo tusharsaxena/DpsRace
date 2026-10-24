@@ -196,7 +196,7 @@ timer or `OnUpdate`.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% (the smallest of the runs passed) to 100% (the largest), sorts them (newest first by default, reset at every login and `/reload`; on DPS an unranked run sorts last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a double-click shares it.
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
@@ -217,7 +217,7 @@ timer or `OnUpdate`.
 
 ## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
 
-- **Share**: the HUD's result card, the Results detail and a row's double-click call
+- **Share**: the HUD's result card, the Results detail and a row's right-click menu (its Share submenu) call
   `Share.Prompt(run)`. A run with no score (lost) prints one line and opens nothing; in combat, or in
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and

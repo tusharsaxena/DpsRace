@@ -447,7 +447,7 @@ end
 local function newRow(t)
     local row = CreateFrame("Button", nil, t.body)
     row:SetHeight(Tbl.ROW_H)
-    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp") end
+    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
     rowBackground(row)
     row.cells = {}
     for i, col in ipairs(t.columns) do
@@ -458,11 +458,16 @@ local function newRow(t)
     row.groupLabel = Tbl.Text(row, FONT.HEADER, C.gold)
     row.groupLabel:SetPoint("LEFT", row, "LEFT", Tbl.PAD, 0)
     row.groupLabel:Hide()
-    row:SetScript("OnClick", function(self)
+    -- Left: select (a header folds its group). Right: the row's menu (LootHistory's).
+    row:SetScript("OnClick", function(self, button)
         if self.group then return t:ToggleCollapse(self.group.key) end
-        if self.run and t.onClick then t.onClick(self.run) end
+        if not self.run then return end
+        if button == "RightButton" then
+            if t.onRightClick then t.onRightClick(self.run, self) end
+            return
+        end
+        if t.onClick then t.onClick(self.run) end
     end)
-    row:SetScript("OnDoubleClick", function(self) if self.run and t.onDoubleClick then t.onDoubleClick(self.run) end end)
     row:EnableMouseWheel(true)
     row:SetScript("OnMouseWheel", function(_, delta) t:Scroll(delta) end)
     row:SetScript("OnEnter", function(self)
@@ -502,7 +507,7 @@ end
 --- @param columns table  { key, label, kind = "text"|"icons"|"badge", width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
---- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text,
+--- @param opts table  { sortKey, sortDesc, onClick(run), onRightClick(run, row), empty = text,
 ---                      stripe = false for uniform rows (default: every other row faintly tinted) }
 function Tbl.New(parent, columns, opts)
     opts = opts or {}
@@ -512,7 +517,7 @@ function Tbl.New(parent, columns, opts)
         frame = frame, columns = columns, heads = {}, pool = NS.Pool.New(), shown = {},
         data = {}, rows = {}, offset = 0, width = 600, height = 300,
         sortKey = opts.sortKey, sortDesc = opts.sortDesc ~= false,
-        onClick = opts.onClick, onDoubleClick = opts.onDoubleClick, stripe = opts.stripe ~= false,
+        onClick = opts.onClick, onRightClick = opts.onRightClick, stripe = opts.stripe ~= false,
     }, Table)
     t.header = CreateFrame("Frame", nil, frame)
     t.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)

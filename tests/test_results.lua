@@ -822,7 +822,7 @@ test("results: saving a note never prunes the store", function()
     assertEqual(i.NS.Recorder.Get("r4").note, "old pull")
 end)
 
-test("results: Share is grayed without a Share module; a double-click shares", function()
+test("results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes", function()
     local i = inst()
     seed(i, { mkRun("a") })
     local module = i.NS.Share
@@ -836,8 +836,27 @@ test("results: Share is grayed without a Share module; a double-click shares", f
     i.R.ShowRun("a")
     assertTrue(d.w.share:IsEnabled())
     d.w.share:__fire("OnClick")
-    visible(runsPane(i))[1]:__fire("OnDoubleClick")
-    assertEqual(table.concat(shared, ","), "a,a")
+    assertEqual(table.concat(shared, ","), "a")
+    i.NS.Share = module
+    -- No double-click share any more; a right-click opens the row's menu.
+    local row = visible(runsPane(i))[1]
+    row:__fire("OnDoubleClick")
+    assertEqual(#shared, 1, "a double-click no longer shares")
+    row:__fire("OnClick", "RightButton")
+    local menu = i.mocks.__menus[#i.mocks.__menus]
+    assert(menu, "no row menu")
+    local labels = {}
+    for n, e in ipairs(menu.entries) do labels[n] = e.text end
+    assertEqual(table.concat(labels, "|"), "Add Note|Share|\124cffff5555Delete\124r")
+    local shareEntry = menu:Find("Share")
+    local channels = {}
+    for n, e in ipairs(shareEntry.children) do channels[n] = e.text end
+    assertEqual(table.concat(channels, "|"), "Say|Party|Raid|Guild|Whisper\226\128\166", "Share's channels as a submenu")
+    menu:Click("Add Note")
+    assertEqual(i.R.Selected(), "a", "Add Note opens the run")
+    assertTrue(ui(i).detail.editing, "with its note box open")
+    menu:Click("\124cffff5555Delete")
+    assertEqual(i.popups[#i.popups].which, "DPSRACE_DELETE_RUN", "Delete asks first")
 end)
 
 -- ── the bests board ─────────────────────────────────────────────────────────────────────────────

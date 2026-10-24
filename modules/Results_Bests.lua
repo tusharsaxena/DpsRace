@@ -131,7 +131,7 @@ function Bests.Build(parent, hooks)
     view.list = Tbl.New(view.listHost, Bests.Columns(), {
         sortKey = "dps", sortDesc = true,
         onClick = function(run) if view.hooks.open then view.hooks.open(run) end end,
-        onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
+        onRightClick = function(run, row) if view.hooks.menu then view.hooks.menu(run, row) end end,
         empty = L["No personal bests yet: finish a race to set one."],
     })
     return view

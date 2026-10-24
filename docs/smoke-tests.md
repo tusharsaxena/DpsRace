@@ -162,7 +162,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| P1 | *Share* on the result card, then in the Results detail; double-click a row | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed | A screenshot |
+| P1 | *Share* on the result card, then in the Results detail; right-click a row, then double-click one | A menu opens (Say, Party, Raid, Guild, Whisper…) with channels you are not in grayed. The right-click opens the row's menu: the run's date as its title, *Add Note* (*Edit Note* once it has one: it opens the run with the note box focused), *Share* with the same channels as a submenu, and *Delete* in red, which asks first. A double-click does nothing more than a click; the footer reads *Click a row for details · right-click for options* | A screenshot of each menu |
 | P2 | Pick *Say* outside an instance | The mockup's one line posts: *DPS Race 0:30 · target ×count · spec ilvl · damage · DPS (Ka0s DPS Race)*, *incomplete* added for an incomplete run, no flags | The posted line |
 | P3 | Pick *Whisper* with a player targeted | A popup with an edit box opens, prefilled with the target's name; accept sends | Whether the box was there and prefilled |
 | P4 | Share in combat; share during the client's chat lockdown (a boss encounter or rated PvP) | Refused with one line each; nothing posts | The lines |

@@ -2,7 +2,7 @@ local _, NS = ...
 -- modules/Results_Runs.lua — the Results window's Runs tab (spec §6.2, mockup screen 08): the filter
 -- bar (character, spec, category, race length, date range, Hide flagged, Include incomplete) over
 -- the pooled, sortable run list. Clicking a row opens its detail (modules/Results_Detail.lua) and a
--- double-click shares it; the shell (modules/Results.lua) places the two.
+-- right-click opens its menu (Add note, Share, Delete); the shell (modules/Results.lua) places the two.
 --
 -- WHAT THE LIST HOLDS. Resolved runs only: complete, incomplete and lost. A running or stopping run
 -- is the race's (it shows on the HUD and lands here once it is read). Include incomplete governs the
@@ -598,7 +598,7 @@ function Runs.Build(parent, hooks)
         -- below) replaces it at every login.
         sortKey = Runs.STOCK_SORT.key, sortDesc = Runs.STOCK_SORT.desc,
         onClick = function(run) if view.hooks.select then view.hooks.select(run) end end,
-        onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
+        onRightClick = function(run, row) if view.hooks.menu then view.hooks.menu(run, row) end end,
         empty = L["No runs match these filters."],
     })
     view:ApplyView(Runs.SavedView())

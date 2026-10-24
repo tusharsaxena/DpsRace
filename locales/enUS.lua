@@ -177,8 +177,8 @@ L["Invisibility"] = "Invisibility"
 L["DPS Race \226\128\148 Results"] = "DPS Race \226\128\148 Results"
 L["Runs"] = "Runs"
 L["Bests"] = "Bests"
-L["Click a row for details \194\183 double-click to share"] =
-    "Click a row for details \194\183 double-click to share"
+L["Click a row for details \194\183 right-click for options"] =
+    "Click a row for details \194\183 right-click for options"
 L["Runs to keep: %d"] = "Runs to keep: %d"
 L["Runs to keep: 0 (never prune)"] = "Runs to keep: 0 (never prune)"
 L["Delete this run? This cannot be undone, and a personal best it holds goes with it."] =

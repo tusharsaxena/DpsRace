@@ -44,7 +44,7 @@ Results.TABS = { "runs", "bests" }
 local Style = NS.Style
 local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
 -- The footer's hint; on the Runs tab the run count goes before it.
-local HINT = L["Click a row for details \194\183 double-click to share"]
+local HINT = L["Click a row for details \194\183 right-click for options"]
 local C = NS.ResultsTable.COLORS
 
 local ui                 -- the built window
@@ -129,12 +129,14 @@ local function buildTab(name)
     if name == "runs" then
         pane = NS.ResultsRuns.Build(ui.body, {
             select = selectRun, share = share, selected = function() return selected end,
+            menu = function(r, row) Results.RowMenu(r, row) end,
             -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
             count = function(text) ui.runsCount = text end,
         })
     else
         pane = NS.ResultsBests.Build(ui.body, {
             open = function(r) Results.ShowRun(r.id) end, share = share,
+            menu = function(r, row) Results.RowMenu(r, row) end,
         })
     end
     ui.panes[name] = pane
@@ -489,6 +491,34 @@ function Results.ResetPosition()
         applyPlacement()
         layout()
     end
+end
+
+-- ── the row menu ────────────────────────────────────────────────────────────────────────────────
+
+--- Open run `id` with its note being written (the row menu's Add Note): its detail, the note box
+--- focused.
+function Results.EditNote(id)
+    if not Results.ShowRun(id) then return false end
+    if ui and ui.detail and ui.detail.openNote then ui.detail:openNote() end
+    return true
+end
+
+--- A row's right-click menu (LootHistory's): Add Note (Edit Note once it has one), Share with the
+--- channels as a submenu, and Delete behind its confirmation.
+--- @param r table  the run
+--- @param owner table  the row
+--- @return boolean opened
+function Results.RowMenu(r, owner)
+    if not (r and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    MenuUtil.CreateContextMenu(owner or UIParent, function(_, root)
+        root:CreateTitle(NS.ResultsTable.Date(r.date, "%d %b %H:%M"))
+        local hasNote = type(r.note) == "string" and r.note ~= ""
+        root:CreateButton(hasNote and L["Edit Note"] or L["Add Note"], function() Results.EditNote(r.id) end)
+        local shareMenu = root:CreateButton(L["Share"])
+        if canShare() and NS.Share.Line(r) then NS.Share.FillMenu(shareMenu, r) else shareMenu:SetEnabled(false) end
+        root:CreateButton("|cffff5555" .. L["Delete"] .. "|r", function() Results.ConfirmDelete(r.id) end)
+    end)
+    return true
 end
 
 -- ── the acts the detail's buttons run ───────────────────────────────────────────────────────────
