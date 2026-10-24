@@ -360,9 +360,10 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (18)
+### test_settings.lua (19)
 
 - settings: every schema row has default, enUS label and desc
+- settings: the stored paths, types, defaults and ranges are exactly the pinned set
 - settings: every row sits on a page the panel draws, and every page has a group
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
@@ -606,7 +607,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 18 |
+| test_settings.lua | 19 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -623,4 +624,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **481** |
+| **Total** | **482** |

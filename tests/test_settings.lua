@@ -33,6 +33,53 @@ test("settings: every schema row has default, enUS label and desc", function()
     end
 end)
 
+-- The stored-setting guard (settings layout, item 020): a layout pass moves, regroups and relabels
+-- rows only. Every stored path, its type, default and range is pinned here, so a key that moves, a
+-- default that drifts or a row that appears or goes fails this test, not a player's profile.
+local STORED = {
+    -- path                     type      default  min   max    step
+    ["enabled"]              = { "bool",   true },
+    ["visibility"]           = { "string", "always" },
+    ["scale"]                = { "number", 1,       0.5,  2,     0.05 },
+    ["locked"]               = { "bool",   false },
+    ["state.debugConsole"]   = { "bool",   nil },
+    ["global.minimap.shown"] = { "bool",   true },
+    ["state.testMode"]       = { "bool",   false },
+    ["hud.showMode"]         = { "string", "onArm" },
+    ["hud.clock"]            = { "string", "both" },
+    ["live.rows"]            = { "number", 8,       3,    15,    1 },
+    ["live.icons"]           = { "bool",   true },
+    ["live.showDps"]         = { "bool",   true },
+    ["live.hz"]              = { "number", 4,       2,    10,    1 },
+    ["race.defaultLength"]   = { "number", 180 },
+    ["race.countdownCue"]    = { "bool",   true },
+    ["race.centerCountdown"] = { "bool",   true },
+    ["race.finalCountdown"]  = { "number", 10,      3,    10,    1 },
+    ["race.buzzer"]          = { "bool",   true },
+    ["race.hintDelay"]       = { "number", 15,      5,    60,    1 },
+    ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
+    ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
+    ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+}
+
+test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
+    local NS = T.NS
+    local seen = 0
+    for _, r in ipairs(NS.Schema) do
+        local pin = STORED[r.path]
+        assertTrue(pin ~= nil, "a stored path appeared: " .. tostring(r.path))
+        seen = seen + 1
+        assertEqual(r.type, pin[1], r.path .. " type")
+        assertEqual(r.default, pin[2], r.path .. " default")
+        assertEqual(r.min, pin[3], r.path .. " min")
+        assertEqual(r.max, pin[4], r.path .. " max")
+        assertEqual(r.step, pin[5], r.path .. " step")
+    end
+    local pinned = 0
+    for _ in pairs(STORED) do pinned = pinned + 1 end
+    assertEqual(seen, pinned, "a stored path went, or one is declared twice")
+end)
+
 test("settings: every row sits on a page the panel draws, and every page has a group", function()
     local NS = T.NS
     local pages = { general = true, race = true, live = true, history = true }
