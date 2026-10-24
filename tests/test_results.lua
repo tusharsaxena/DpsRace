@@ -102,7 +102,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|vs Best|Status|")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status|")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -278,7 +278,7 @@ test("results: Only best keeps the runs holding their board's best", function()
     assertEqual(pane.checks.onlyBest.label.__text, "Only best")
 end)
 
-test("results: vs Best is each run's distance from its board's best", function()
+test("results: v/s Max is each run's distance from the max DPS among the runs the filters pass", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     seed(i, {
@@ -286,24 +286,54 @@ test("results: vs Best is each run's distance from its board's best", function()
         mkRun("slow", { result = { damage = 20000000, dps = 120000 }, date = NOW - 2 * HOUR }),
         mkRun("inc", { status = "incomplete", result = { damage = 1, dps = 180000, endedAt = 9 }, date = NOW - 3 * HOUR }),
         mkRun("lost", { status = "lost", result = NONE, date = NOW - 4 * HOUR }),
-        mkRun("alone", { race = { length = 30, grace = 1 }, status = "incomplete",
-                         result = { damage = 1, dps = 5, endedAt = 9 }, date = NOW - 5 * HOUR }),
+        -- Another board (30 s): it still measures against the view's max, not its own board's best.
+        mkRun("short", { race = { length = 30, grace = 1 }, result = { damage = 1, dps = 75000 },
+                         date = NOW - 5 * HOUR }),
+        mkRun("mage", { char = "mage", result = { damage = 1, dps = 300000 }, date = NOW - 6 * HOUR }),
     })
+    local all = i.NS.Recorder.All()
     local by = {}
-    for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
-    assertEqual(Runs.VsBest(by.top), 0)
-    assertTrue(math.abs(Runs.VsBest(by.slow) - (120000 / 150000 - 1) * 100) < 1e-9)
-    assertTrue(math.abs(Runs.VsBest(by.inc) - 20) < 1e-9, "an incomplete run is compared, never ranked")
-    assertEqual(Runs.VsBest(by.lost), nil)
-    assertEqual(Runs.VsBest(by.alone), nil, "no complete run on its board")
+    for _, run in ipairs(all) do by[run.id] = run end
+    local mine = Runs.Filter(all, {})
+    local top = Runs.MaxDps(mine)
+    assertEqual(top, 150000, "the max is the complete runs' (an incomplete run never sets it)")
+    assertEqual(Runs.VsMax(by.top, top), 0)
+    assertTrue(math.abs(Runs.VsMax(by.slow, top) - (120000 / 150000 - 1) * 100) < 1e-9)
+    assertTrue(math.abs(Runs.VsMax(by.short, top) - -50) < 1e-9, "every board against the one max")
+    assertTrue(math.abs(Runs.VsMax(by.inc, top) - 20) < 1e-9, "an incomplete run is compared, never ranked")
+    assertEqual(Runs.VsMax(by.lost, top), nil)
+    assertEqual(Runs.VsMax(by.slow, nil), nil, "no complete run in the view")
+    assertEqual(Runs.MaxDps({ by.inc, by.lost }), nil)
     i.R.Show()
-    local cells = {}
-    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells.vsBest.fs end
-    assertEqual(cells.top.__text, "0.0%")
-    assertEqual(cells.slow.__text, "-20.0%")
-    assertEqual(cells.slow.__color[1], 1.0, "below the best in red")
-    assertEqual(cells.inc.__text, "+20.0%")
-    assertEqual(cells.lost.__text, "\226\128\148")
+    local pane = runsPane(i)
+    local labels = {}
+    for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
+    assertEqual(labels[9], "v/s Max")
+    local function cells()
+        local out = {}
+        for _, row in ipairs(visible(pane)) do out[row.run.id] = row.cells.vsMax.fs end
+        return out
+    end
+    local c = cells()
+    assertEqual(c.top.__text, "0.0%")
+    assertEqual(c.top.__color[1], i.NS.ResultsTable.COLORS.gold[1], "the max run in gold")
+    assertEqual(c.slow.__text, "-20.0%")
+    assertEqual(c.slow.__color[1], 1.0, "below the max in red")
+    assertEqual(c.short.__text, "-50.0%")
+    assertEqual(c.inc.__text, "+20.0%")
+    assertEqual(c.inc.__color[1], i.NS.ResultsTable.COLORS.dim[1], "an incomplete run muted")
+    assertEqual(c.lost.__text, "\226\128\148")
+    -- All characters: the mage's run is the max now, and every figure follows it.
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    c = cells()
+    assertEqual(c.mage.__text, "0.0%")
+    assertEqual(c.top.__text, "-50.0%")
+    -- Its sort takes every run with a value, an incomplete one included; a lost run sorts last.
+    pane.list:SetSort("vsMax", true)
+    local order = {}
+    for n, run in ipairs(pane.list.rows) do order[n] = run.id end
+    assertEqual(table.concat(order, ","), "mage,inc,top,slow,short,lost")
 end)
 
 test("results: filters: character, spec, category, length, date range, hide flagged, include incomplete", function()

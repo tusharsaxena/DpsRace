@@ -279,25 +279,40 @@ function Runs.Status(run)
     return key, L[tag.label], tag.color, tag.icon
 end
 
---- How far a run's DPS sits from the best on its board now (the all-runs board: spec x category x
---- length), as a percentage: 0 for the run holding it, negative below it. An incomplete run is
---- compared too (it may read above the best: it never ranks). nil for a lost run, a run with no DPS,
---- or a board no complete run holds yet.
---- @param run table
---- @return number|nil pct
-function Runs.VsBest(run)
-    local Bests = NS.Bests
+-- A run's DPS as the v/s Max column reads it: nil for a lost run or one with no DPS.
+local function runDps(run)
     local dps = run.status ~= "lost" and run.result and run.result.dps
-    if type(dps) ~= "number" or not (Bests and Bests.Board) then return nil end
-    local best = Bests.Board()[Bests.Key(run)]
-    local top = best and best.result and best.result.dps
-    if type(top) ~= "number" or top <= 0 then return nil end
-    if best.id == run.id then return 0 end
+    return type(dps) == "number" and dps or nil
+end
+
+--- The max DPS the v/s Max column measures against: the highest among the complete runs in `runs`
+--- (the runs the filters pass). Only a complete run's DPS ranks, so an incomplete one never sets it.
+--- @param runs table  run records
+--- @return number|nil top  nil when no complete run with a positive DPS is in the list
+function Runs.MaxDps(runs)
+    local top
+    for _, run in ipairs(runs or {}) do
+        local dps = run.status == "complete" and runDps(run)
+        if dps and dps > 0 and (top == nil or dps > top) then top = dps end
+    end
+    return top
+end
+
+--- How far a run's DPS sits from `top` (Runs.MaxDps over the runs the filters pass), as a
+--- percentage: 0 on the max run, negative below it. An incomplete run is compared too (it may read
+--- above the max: it never ranks). nil for a lost run, a run with no DPS, or no max.
+--- @param run table
+--- @param top number|nil
+--- @return number|nil pct
+function Runs.VsMax(run, top)
+    local dps = runDps(run)
+    if not dps or type(top) ~= "number" or top <= 0 then return nil end
+    if dps == top then return 0 end
     return (dps / top - 1) * 100
 end
 
-local function vsBestText(run)
-    local pct = Runs.VsBest(run)
+local function vsMaxText(run, top)
+    local pct = Runs.VsMax(run, top)
     if pct == nil then return DASH, C.dim end
     if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.gold end
     local color = run.status == "complete" and (pct < 0 and C.red or C.green) or C.dim
@@ -327,8 +342,10 @@ local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), mat
     math.floor(C.dim[3] * 255 + 0.5))
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length and the tail), damage, DPS, vs best, status, flags.
+--- time (the length and the tail), damage, DPS, v/s max, status, flags. The v/s Max column reads
+--- its max off the whole list the table is handed (its `scan`, every run the filters pass).
 function Runs.Columns()
+    local view = {}
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
           sort = function(run) return run.date end,
@@ -358,9 +375,10 @@ function Runs.Columns()
           sort = sortDps, text = dpsText,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
           barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
-        { key = "vsBest", label = L["vs Best"], width = 56, desc = true,
-          sort = function(run) return run.status == "complete" and Runs.VsBest(run) or nil end,
-          text = vsBestText },
+        { key = "vsMax", label = L["v/s Max"], width = 56, desc = true,
+          scan = function(list) view.top = Runs.MaxDps(list) end,
+          sort = function(run) return Runs.VsMax(run, view.top) end,
+          text = function(run) return vsMaxText(run, view.top) end },
         { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)

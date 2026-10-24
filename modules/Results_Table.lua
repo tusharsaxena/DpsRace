@@ -513,7 +513,8 @@ end
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
 --- @param columns table  { key, label, kind = "text"|"icons"|"badge"|"flag", width | flex+min,
----                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run) }
+---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
+---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
 --- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text,
 ---                      stripe = false for uniform rows (default: every other row faintly tinted) }
 function Tbl.New(parent, columns, opts)
@@ -615,6 +616,8 @@ function Table:SetData(list)
     -- Each bar column's scale: the smallest and the largest value in the whole list (every run the
     -- filters pass, scrolled into view or not), so the bars compare the runs the view holds.
     for _, col in ipairs(self.columns) do
+        -- A column that reads the whole list (the Runs list's v/s Max) sees it here, before a sort.
+        if col.scan then col.scan(self.data) end
         if col.bar then
             local min, max
             for _, run in ipairs(self.data) do
