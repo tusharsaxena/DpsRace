@@ -163,7 +163,7 @@ race.
   Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race Again*
+  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
   (`NS.Share.Prompt`).
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10

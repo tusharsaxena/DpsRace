@@ -779,6 +779,13 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
+    w.rows:EnableMouseWheel(true)
+    w.rows:SetScript("OnMouseWheel", function(_, delta)
+        if body.rowsSetting ~= 0 or not body.shownRun then return end
+        body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
+        body:DrawRows()
+    end)
     local links = footerButtons(body, {
         { L["Race Again"], function() act("raceAgain") end, "primary" },
         { L["Details"], function() act("details") end, width = 72 },
@@ -804,18 +811,42 @@ function Builders.result(parent)
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
         self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
-        local n = rowsFor(self, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, States.RESULT_ROWS)
-        if lost then self.w.list:Clear() else self.w.list:ShowResult(run, n, v.icons ~= false) end
+        if v.run ~= self.shownRun then self.offset = 0 end
+        self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
+        if lost then self.w.list:Clear() else self:DrawRows() end
         setEnabled(self.w.share, v.canShare == true)
         -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
         setEnabled(self.w.again, v.preview ~= true)
         setEnabled(self.w.details, v.preview ~= true)
     end
+    function body.DrawRows(self) Builders.resultRows(self) end
     return body
 end
 
--- The result card's spell rows (spec §6.1: the top 5 with %).
+-- The result card's spell rows follow *Spell rows shown* (live.rows), as the live list does: that many
+-- from the top, or with 0 every spell, as many as fit and the wheel over the rest (the owner's call,
+-- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
+
+function Builders.resultRows(body)
+    local run = body.shownRun
+    local spells = type(run) == "table" and type(run.spells) == "table" and run.spells or {}
+    local rows = tonumber(body.rowsSetting) or States.RESULT_ROWS
+    local total = #spells
+    local cap
+    if rows == 0 then
+        cap = total
+        if type(body.height) == "number" then
+            cap = math.min(total, States.RowCapacity(body.height - RESULT_ROWS_TOP - RESULT_ROWS_BOTTOM))
+        end
+    else
+        cap = rowsFor(body, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, rows)
+    end
+    local offset = 0
+    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    body.offset = offset
+    body.w.list:ShowResult(run, cap, body.icons ~= false, offset)
+end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
 --- the running and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.

@@ -73,7 +73,7 @@ shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
 | *Live breakdown* heading | | | |
-| Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*) |
+| Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*). The HUD result card follows it too, with the same wheel scroll |
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
 | Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |

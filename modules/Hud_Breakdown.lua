@@ -203,16 +203,18 @@ end
 --- @param run table  a resolved run
 --- @param n number
 --- @param icons boolean
+--- @param offset number|nil  spells skipped from the top (default 0), the wheel's
 --- @return number drawn
-function List:ShowResult(run, n, icons)
+function List:ShowResult(run, n, icons, offset)
     self:Clear()
     local spells = type(run) == "table" and run.spells
     if type(spells) ~= "table" or not spells[1] then return 0 end
     local result = type(run.result) == "table" and run.result or {}
     local damage = type(result.damage) == "number" and result.damage or 0
     local top = spells[1].dmg or 0
-    for i = 1, math.min(n, #spells) do
-        fillResult(self:acquire(i, icons, true), spells[i], top, damage, icons)
+    offset = offset or 0
+    for i = 1, math.min(n, #spells - offset) do
+        fillResult(self:acquire(i, icons, true), spells[offset + i], top, damage, icons)
     end
     return #self.rows
 end

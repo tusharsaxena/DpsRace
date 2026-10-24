@@ -525,10 +525,32 @@ test("hud: the result card's rows stop above its buttons at every window height"
         run.spells = {}
         for i = 1, 8 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
         f.Hud.Refresh()
-        local want = math.min(f.NS.HudStates.RESULT_ROWS, fits(h, RESULT_TOP, RESULT_BOTTOM))
+        local want = math.min(f.NS.db.profile.live.rows, fits(h, RESULT_TOP, RESULT_BOTTOM))
         assertTrue(want >= 3)
         assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
     end
+end)
+
+test("hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls", function()
+    local f = hud()
+    f.NS.db.profile.windows.hud.height = 700
+    f.NS.db.profile.live.rows = 3
+    local run = resolved(f)
+    run.spells = {}
+    for i = 1, 40 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
+    f.Hud.Refresh()
+    local b = body(f)
+    assertEqual(b.w.list:Count(), 3, "the set count")
+    f.NS.db.profile.live.rows = 0
+    f.Hud.Refresh()
+    local cap = fits(700, RESULT_TOP, RESULT_BOTTOM)
+    assertTrue(cap > 5 and cap < 40)
+    assertEqual(b.w.list:Count(), cap, "as many as fit, not the top 5")
+    b.w.rows:__fire("OnMouseWheel", -1)
+    assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2002)), "one row down")
+    for _ = 1, 60 do b.w.rows:__fire("OnMouseWheel", -1) end
+    assertEqual(b.w.list:Count(), cap)
+    assertEqual(T.reveal(b.w.list.rows[cap].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2040)), "clamped at the last spell")
 end)
 
 test("hud: the minimum height holds the idle body's whole stack", function()
