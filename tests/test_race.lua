@@ -249,6 +249,102 @@ test("race: a session event with the regen edge on an earlier frame does not sta
     assertEqual(f.Race.State(), "armed")
 end)
 
+-- The second race that never started (the owner's report, 2026-10-24): the meter made the run's
+-- session out of combat (a DoT left on the dummies, an opener landing a frame before the regen
+-- edge), so the session event never paired with the edge. The first update heard in combat starts it.
+test("race: a session made out of combat starts the clock on its first update in combat", function()
+    local f = F.new()
+    f.meter.SetSession(6, F.SESSION)
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    -- A DoT tick on the dummies makes session 7, out of combat; its update holds nothing.
+    f.meter.SetSession(7, F.SESSION)
+    f.Race.OnSessionCreated(100)
+    f.Race.OnMeterUpdate(0, 7, 100)
+    f:to(104)
+    assertEqual(f.Race.State(), "armed", "out of combat: not a start")
+    -- The pull: the regen edge, then the session's next update a frame later.
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(104)
+    assertEqual(f.Race.State(), "armed", "no session event on this frame")
+    f.Race.OnMeterUpdate(0, 7, 104.05)
+    assertEqual(f.Race.State(), "running", "the first update in combat starts the clock")
+    near(run.race.startedAt, 104.05)
+    assertEqual(run.race.sessionID, 7)
+    assertNil(run.flags.sharedSession, "a session made after the arm is the run's own")
+end)
+
+test("race: an update on the regen edge's frame, heard before the edge, starts the clock", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.meter.SetSession(25, F.SESSION)
+    f.Race.OnMeterUpdate(0, 25, 100)           -- the hit lands; combat is flagged later on this frame
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(100)
+    assertEqual(f.Race.State(), "running")
+    assertEqual(f.Race.Current().race.sessionID, 25)
+end)
+
+test("race: a pull that continues a session from before the arm is adopted, flagged and netted", function()
+    local f = F.new()
+    -- The last race's session, still open at the arm (its DoTs still ticking): 600 damage so far.
+    f.meter.SetSession(6, { damage = 600, dps = 5, duration = 5,
+                            spells = { { id = 55078, dmg = 400, dps = 4 }, { id = 6603, dmg = 200, dps = 1 } } })
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.meter.SetSecret(true)
+    f.Race.OnCombatStart(100)
+    f.Race.OnMeterUpdate(0, 6, 100.1)          -- no new session: the meter carried on session 6
+    assertEqual(f.Race.State(), "running")
+    assertEqual(run.race.sessionID, 6)
+    assertTrue(run.flags.sharedSession)
+    -- The session's final read: the race's damage on top of what was there at the arm.
+    f.meter.SetSession(6, { damage = 10600, dps = 300, duration = 36,
+                            spells = { { id = 55078, dmg = 6400, dps = 1 }, { id = 49998, dmg = 3000, dps = 1 },
+                                       { id = 6603, dmg = 1200, dps = 1 } } })
+    f:to(130)
+    f:combatEnd()
+    f:to(133)
+    assertEqual(run.status, "complete")
+    assertEqual(run.result.damage, 10000, "the pre-arm 600 is taken off")
+    near(run.result.dps, 10000 / 30)
+    assertNil(run.result.meterDps, "the meter's rate spans both fights")
+    assertEqual(run.spells[1].id, 55078)
+    assertEqual(run.spells[1].dmg, 6000)
+    assertEqual(run.spells[2].id, 49998)
+    assertEqual(run.spells[3].dmg, 1000)
+    local keys = {}
+    for _, flag in ipairs(f.NS.Scoring.Flags(run)) do keys[#keys + 1] = flag.key end
+    assertEqual(table.concat(keys, ","), "sharedSession")
+    assertNil(F.findSecret(run))
+end)
+
+test("race: a fresh session heard after a shared start replaces the shared one", function()
+    local f = F.new()
+    f.meter.SetSession(6, F.SESSION)
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f.M.__inCombat = true
+    f.Race.OnCombatStart(100)
+    f.Race.OnMeterUpdate(0, 6, 100)            -- the old session's last DoT tick, on the pull's frame
+    assertTrue(run.flags.sharedSession)
+    f.meter.SetSession(25, F.SESSION)
+    f.Race.OnSessionCreated(100.02)
+    f.Race.OnMeterUpdate(0, 25, 100.02)
+    assertEqual(run.race.sessionID, 25, "the pull's own session wins")
+    assertNil(run.flags.sharedSession)
+    assertNil(run.race.baseline)
+    near(run.race.startedAt, 100, "the clock keeps its start")
+end)
+
+test("race: an update in combat for another session never starts a stray combat's clock out of combat", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.Race.OnMeterUpdate(0, 31, 100)           -- out of combat
+    assertEqual(f.Race.State(), "armed")
+end)
+
 test("race: a buzzer heard out of combat with the regen edge missed is still read", function()
     local f, run = running(30)
     f.M.__inCombat = false                     -- combat dropped, its edge never heard

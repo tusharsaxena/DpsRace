@@ -638,6 +638,7 @@ local FLAG_CHIP = {
     restarted = function(run) return L["Restarted +%.1fs"]:format(run.flags.restartedAt) end,
     reloaded = function() return L["Reloaded"] end,
     sessionFromList = function() return L["Session by list"] end,
+    sharedSession = function() return L["Shared session"] end,
     incomplete = function(run)
         if run.flags.died then return L["Incomplete: died"] end
         local at = run.result and run.result.endedAt

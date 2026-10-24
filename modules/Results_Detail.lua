@@ -158,6 +158,10 @@ local EXPLAIN = {
         return L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."]
             .. " " .. L[STILL_COUNTS]
     end,
+    sharedSession = function(_, text)
+        return text .. ". " .. L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
+            .. " " .. L[STILL_COUNTS]
+    end,
     died = function(_, text) return text .. "." end,
     incomplete = function(_, text) return text .. ". " .. L["It does not count toward bests."] end,
     lost = function(_, text) return text .. ". " .. L["There is no score."] end,

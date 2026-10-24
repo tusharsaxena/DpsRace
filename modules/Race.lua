@@ -4,7 +4,8 @@ local _, NS = ...
 -- resume after a /reload.
 --
 -- DECISIONS COME FROM EVENTS AND GetTime() ONLY (spec §8 rule 2). Nothing here reads a meter number
--- in combat: the clock starts on the new-session event, the buzzer is a timer, the tail and restart are
+-- in combat: the clock starts on the new-session event (or the first DamageDone update heard in
+-- combat, when the meter made the session out of combat), the buzzer is a timer, the tail and restart are
 -- update STAMPS on a Timeline, and the score is read once, after combat and 2.5s of quiet, by session
 -- ID through Meter.ReadSession (plain numbers or nothing). An event argument that may be secret (the
 -- meter type, the session ID, a spell ID) passes through NS.Secrets.PlainNumber before it is compared.
@@ -42,7 +43,8 @@ local state = STATE.IDLE
 -- quiet before the read starts counting), resumedAt (when a /reload's resume ran: the damage heard
 -- during the loading screen is unknown, so no restart gap spans it), timeline, inFlight (the cast
 -- begun and not yet finished: its plain spell ID and castGUID, either nil when sealed), buzzer,
--- ticker, sealedTries, reread.
+-- ticker, sealedTries, reread, baseline (what the newest earlier session held at the arm: see
+-- baselineOf).
 local cur = {}
 
 local function debug(fmt, ...)
@@ -177,8 +179,38 @@ local function stamp(t)
     end
 end
 
+--- A shared session's read, netted: the damage the session held at the arm comes off the total and
+--- off each spell (summed by spell ID, since the meter may list one ID twice). The meter's own rate
+--- spans both fights, so it is dropped. With no baseline (the arm-time read failed, or the pull carried
+--- on an older session than the newest) only the rate goes, and the flag says the total may hold more.
+local function net(data, base)
+    data.meterDps = nil
+    if type(base) ~= "table" or type(base.damage) ~= "number" then return end
+    local held = type(base.spells) == "table" and base.spells or {}
+    data.damage = math.max(0, data.damage - base.damage)
+    local sums, order = {}, {}
+    for _, s in ipairs(data.spells) do
+        if not sums[s.id] then
+            order[#order + 1] = s.id
+            sums[s.id] = 0
+        end
+        sums[s.id] = sums[s.id] + s.dmg
+    end
+    local spells = {}
+    for _, id in ipairs(order) do
+        local dmg = sums[id] - (held[id] or 0)
+        if dmg > 0 then spells[#spells + 1] = { id = id, dmg = dmg, dps = 0 } end
+    end
+    table.sort(spells, function(a, b)
+        if a.dmg ~= b.dmg then return a.dmg > b.dmg end
+        return a.id < b.id
+    end)
+    data.spells = spells
+end
+
 local function complete(data)
     local run = cur.run
+    if run.flags.sharedSession then net(data, run.race.baseline) end
     local result = run.result or {}
     result.damage, result.meterDps, result.sessionDuration = data.damage, data.meterDps, data.duration
     timing(result)
@@ -299,6 +331,18 @@ local function armRefusal(length)
     return nil
 end
 
+-- What session `id` holds now (the arm is out of combat, so the read is plain): its damage and each
+-- spell's, summed by spell ID. nil when there is no such session or the read fails. Only consulted if
+-- the pull carries on that session instead of making a new one (see share).
+local function baselineOf(id)
+    if id == nil then return nil end
+    local data = NS.Meter.ReadSession(id)
+    if not data then return nil end
+    local spells = {}
+    for _, s in ipairs(data.spells) do spells[s.id] = (spells[s.id] or 0) + s.dmg end
+    return { session = id, damage = data.damage, spells = spells }
+end
+
 function Race.Arm(length, targetCount)
     local refusal, detail = armRefusal(length)
     if refusal then
@@ -315,6 +359,7 @@ function Race.Arm(length, targetCount)
         if mark == nil or id > mark then mark = id end
     end
     cur.run.race.armMaxSession = mark
+    cur.baseline = baselineOf(mark)
     debug("armed %ds; newest session before the arm: %s", length, tostring(mark))
     setState(STATE.ARMED)
     return true
@@ -329,6 +374,29 @@ local function adopt(id)
     debug("session %d adopted", id)
     cur.run.race.sessionID = id
     NS.Recorder.Save(cur.run)
+end
+
+-- The pull carried on session `id`, which existed at the arm: the meter made no new session for it
+-- (the last fight's DoTs were still ticking, so its session stayed open). It is the only session the
+-- race's damage lands in, so it is adopted, flagged, and netted at the read against what it held at
+-- the arm. A session made after the arm, heard later, replaces it (unshare).
+local function share(id)
+    local run, base = cur.run, cur.baseline
+    run.race.sessionID = id
+    run.flags.sharedSession = true
+    run.race.baseline = (base and base.session == id) and base or nil
+    debug("session %d existed before the arm: adopted as shared (%s)", id,
+        run.race.baseline and "netted at the read" or "no baseline")
+    NS.Recorder.Save(run)
+end
+
+local function unshare(id)
+    local run = cur.run
+    debug("session %d replaces the shared session %s", id, tostring(run.race.sessionID))
+    run.race.sessionID = id
+    run.flags.sharedSession = nil
+    run.race.baseline = nil
+    NS.Recorder.Save(run)
 end
 
 -- The clock starts at `t`.
@@ -376,7 +444,8 @@ function Race.OnCombatStart(t)
     if (state == STATE.ARMED or state == STATE.RUNNING) and not cur.reread then rereadTarget() end
     if state == STATE.ARMED then
         cur.combatAt = t
-        if cur.sessionAt == t then begin(t) end
+        -- The session event, or a DamageDone update, heard on this frame just before the edge.
+        if cur.sessionAt == t or (cur.stash and cur.stashAt == t) then begin(t) end
     elseif state == STATE.STOPPING then
         cur.combatEndedAt, cur.quietFrom = nil, nil
     end
@@ -409,10 +478,30 @@ end
 -- A DamageDone update heard while armed, kept for the start. One heard in combat (or on the regen
 -- edge's frame) is this pull's and holds; one heard out of combat (a groupmate's pull, a trailing
 -- update) counts only if the clock starts on its own frame, and a later update replaces it.
+local function inCombatAt(t)
+    return UnitAffectingCombat("player") or cur.combatAt == t
+end
+
 local function stashUpdate(id, t)
-    if beforeArm(id) or (cur.stash and cur.stashHeld) then return end
-    local held = UnitAffectingCombat("player") or cur.combatAt == t
-    cur.stash, cur.stashAt, cur.stashHeld = id, t, held and true or false
+    if beforeArm(id) then
+        debug("update for session %d held back: it existed before the arm", id)
+        return
+    end
+    if cur.stash and cur.stashHeld then return end
+    cur.stash, cur.stashAt, cur.stashHeld = id, t, inCombatAt(t) and true or false
+end
+
+-- A DamageDone update heard in combat while armed: damage is landing, so the clock starts now, whether
+-- or not the session event paired with the regen edge. The meter can make the run's session out of
+-- combat (a DoT left on the dummies ticks after the last fight's session closed, or the opener lands a
+-- frame before the edge), and then no session event ever pairs. The update's own session is adopted;
+-- one that existed at the arm is shared (see share).
+local function startOnUpdate(id, t)
+    begin(t)
+    local run = cur.run
+    if run.race.sessionID then return end
+    if beforeArm(id) then share(id) else adopt(id) end
+    if run.race.sessionID then stamp(t) end
 end
 
 --- A DAMAGE_METER_COMBAT_SESSION_UPDATED(statType, sessionID). The first DamageDone update with a
@@ -421,10 +510,16 @@ function Race.OnMeterUpdate(statType, sessionID, t)
     if isDown() then return end
     local stat, id = Secrets.PlainNumber(statType), Secrets.PlainNumber(sessionID)
     if stat ~= NS.Meter.STAT_DAMAGE_DONE or not id or id == 0 then return end
-    if state == STATE.ARMED then return stashUpdate(id, t) end
+    if state == STATE.ARMED then
+        stashUpdate(id, t)
+        if inCombatAt(t) then startOnUpdate(id, t) end
+        return
+    end
     if state ~= STATE.RUNNING and state ~= STATE.STOPPING then return end
-    if not cur.run.race.sessionID then adopt(id) end
-    if id == cur.run.race.sessionID then stamp(t) end
+    local run = cur.run
+    if not run.race.sessionID then adopt(id) end
+    if run.flags.sharedSession and id ~= run.race.sessionID and not beforeArm(id) then unshare(id) end
+    if id == run.race.sessionID then stamp(t) end
 end
 
 -- ── casts after the buzzer (spec §5.2) ──────────────────────────────────────────────────────────
