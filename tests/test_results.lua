@@ -102,7 +102,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Status|")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|vs Best|Status|")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -163,6 +163,34 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     assertEqual((Runs.Status(by.slow)), "complete")
     assertEqual((Runs.Status(by.late)), "flagged")
     assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
+end)
+
+test("results: vs Best is each run's distance from its board's best", function()
+    local i = inst()
+    local Runs = i.NS.ResultsRuns
+    seed(i, {
+        mkRun("top", { result = { damage = 27000000, dps = 150000 } }),
+        mkRun("slow", { result = { damage = 20000000, dps = 120000 }, date = NOW - 2 * HOUR }),
+        mkRun("inc", { status = "incomplete", result = { damage = 1, dps = 180000, endedAt = 9 }, date = NOW - 3 * HOUR }),
+        mkRun("lost", { status = "lost", result = NONE, date = NOW - 4 * HOUR }),
+        mkRun("alone", { race = { length = 30, grace = 1 }, status = "incomplete",
+                         result = { damage = 1, dps = 5, endedAt = 9 }, date = NOW - 5 * HOUR }),
+    })
+    local by = {}
+    for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
+    assertEqual(Runs.VsBest(by.top), 0)
+    assertTrue(math.abs(Runs.VsBest(by.slow) - (120000 / 150000 - 1) * 100) < 1e-9)
+    assertTrue(math.abs(Runs.VsBest(by.inc) - 20) < 1e-9, "an incomplete run is compared, never ranked")
+    assertEqual(Runs.VsBest(by.lost), nil)
+    assertEqual(Runs.VsBest(by.alone), nil, "no complete run on its board")
+    i.R.Show()
+    local cells = {}
+    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells.vsBest.fs end
+    assertEqual(cells.top.__text, "0.0%")
+    assertEqual(cells.slow.__text, "-20.0%")
+    assertEqual(cells.slow.__color[1], 1.0, "below the best in red")
+    assertEqual(cells.inc.__text, "+20.0%")
+    assertEqual(cells.lost.__text, "\226\128\148")
 end)
 
 test("results: filters: character, spec, category, length, date range, hide flagged, include incomplete", function()
@@ -608,7 +636,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(minW, 780)
     assertEqual(minH, 420)
-    assertEqual(u.width, 1100)
+    assertEqual(u.width, 1160)
     assertEqual(u.height, 560)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
@@ -638,10 +666,10 @@ test("results: position, size and Master scale persist; Reset position restores 
     i.R.ResetPosition()
     assertEqual(w.point, nil)
     assertEqual(w.width, nil)
-    assertEqual(u.width, 1100)
+    assertEqual(u.width, 1160)
 end)
 
-test("results: below 1060px wide the detail replaces the list, with a back control", function()
+test("results: below 1120px wide the detail replaces the list, with a back control", function()
     local i = inst()
     seed(i, { mkRun("a") })
     i.NS.db.profile.windows.results = { width = 800, height = 500 }

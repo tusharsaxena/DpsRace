@@ -324,11 +324,12 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (28)
+### test_results.lua (29)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Best, Flagged or Complete for a complete run
+- results: vs Best is each run's distance from its board's best
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
@@ -347,7 +348,7 @@ Total.
 - results: Runs opens on the current character and spec, each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
-- results: below 1060px wide the detail replaces the list, with a back control
+- results: below 1120px wide the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
@@ -625,7 +626,7 @@ Total.
 | test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 28 |
+| test_results.lua | 29 |
 | test_schema.lua | 15 |
 | test_settings.lua | 26 |
 | test_slash.lua | 27 |
@@ -644,4 +645,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **502** |
+| **Total** | **503** |

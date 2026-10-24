@@ -275,12 +275,37 @@ function Runs.Status(run)
     return key, L[tag.label], tag.color
 end
 
+--- How far a run's DPS sits from the best on its board now (the all-runs board: spec x category x
+--- length), as a percentage: 0 for the run holding it, negative below it. An incomplete run is
+--- compared too (it may read above the best: it never ranks). nil for a lost run, a run with no DPS,
+--- or a board no complete run holds yet.
+--- @param run table
+--- @return number|nil pct
+function Runs.VsBest(run)
+    local Bests = NS.Bests
+    local dps = run.status ~= "lost" and run.result and run.result.dps
+    if type(dps) ~= "number" or not (Bests and Bests.Board) then return nil end
+    local best = Bests.Board()[Bests.Key(run)]
+    local top = best and best.result and best.result.dps
+    if type(top) ~= "number" or top <= 0 then return nil end
+    if best.id == run.id then return 0 end
+    return (dps / top - 1) * 100
+end
+
+local function vsBestText(run)
+    local pct = Runs.VsBest(run)
+    if pct == nil then return DASH, C.dim end
+    if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.gold end
+    local color = run.status == "complete" and (pct < 0 and C.red or C.green) or C.dim
+    return L["%+.1f%%"]:format(pct), color
+end
+
 -- The tail in the caption gray, after the length (NS.Format.RunTime).
 local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
     math.floor(C.dim[3] * 255 + 0.5))
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length and the tail), damage, DPS, status, flags.
+--- time (the length and the tail), damage, DPS, vs best, status, flags.
 function Runs.Columns()
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
@@ -307,6 +332,9 @@ function Runs.Columns()
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, justify = "RIGHT", desc = true,
           sort = sortDps, text = dpsText },
+        { key = "vsBest", label = L["vs Best"], width = 56, justify = "RIGHT", desc = true,
+          sort = function(run) return run.status == "complete" and Runs.VsBest(run) or nil end,
+          text = vsBestText },
         { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)
