@@ -158,6 +158,40 @@ function Loadouts.Of(run)
     return gear, talents
 end
 
+local function sameRacer(a, b)
+    local ca = type(a.char) == "table" and a.char or {}
+    local cb = type(b.char) == "table" and b.char or {}
+    return ca.name == cb.name and ca.realm == cb.realm and ca.specID == cb.specID
+end
+
+--- The stored run raced just before `run` by the same character on the same spec that has a gear
+--- set recorded, or nil (the Spec cell's "gear changed" note).
+--- @param run table
+--- @param runs table|nil  newest first; defaults to Recorder.All()
+--- @return table|nil
+function Loadouts.Previous(run, runs)
+    if type(run) ~= "table" then return nil end
+    local seen = false
+    for _, r in ipairs(runs or NS.Recorder.All()) do
+        if r.id == run.id then
+            seen = true
+        elseif seen and sameRacer(r, run) and type(r.loadout) == "table" and r.loadout.gear ~= nil then
+            return r
+        end
+    end
+    return nil
+end
+
+--- Whether `run`'s gear differs from the previous run's (Previous); nil when either has none.
+--- @return boolean|nil changed, table|nil previous
+function Loadouts.GearChanged(run, runs)
+    local ref = type(run) == "table" and run.loadout
+    if type(ref) ~= "table" or ref.gear == nil then return nil end
+    local prev = Loadouts.Previous(run, runs)
+    if not prev then return nil end
+    return prev.loadout.gear ~= ref.gear, prev
+end
+
 --- How many sets each bucket holds.
 --- @return number gear, number talents
 function Loadouts.Counts()

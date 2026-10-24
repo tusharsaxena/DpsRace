@@ -62,6 +62,7 @@ local STORED = {
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    ["share.talentsLink"]    = { "bool",   false },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },

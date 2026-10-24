@@ -157,6 +157,8 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
+| *Sharing* heading | | | |
+| Include talents link | `share.talentsLink` | checkbox | Off by default (the owner's call, 2026-10-25): the share stays one line. On, `Share.Messages` appends the run's `talentbuild` link (`[<spec>: <loadout>]`, clickable in others' chat), in the same message when both fit in 255 bytes, else as a second message. A run with no talent string shares the line alone. Registered before *Runs to keep*, so the stored count and *Purge history…* stay under *Storage* |
 | *Storage* heading | | | |
 | Runs to keep | `global.history.keep` | slider 0 to 10000 | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). 0 (the default) never prunes. Above 0 the prune runs at login and after each saved run (spec §7), never on the change itself |
 | *Stored now* | — | text | `NS.History.StoredLine()`: the stored count and its size at about 1.5 KB a run; repainted on `RUN_SAVED` / `RUNS_CHANGED` |

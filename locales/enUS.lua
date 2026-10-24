@@ -642,3 +642,12 @@ L["Copy both strings to see the difference node by node."] = "Copy both strings 
 L["Changed: the other run had nothing here."] = "Changed: the other run had nothing here."
 L["Changed: the other run wore %s."] = "Changed: the other run wore %s."
 L["the other run"] = "the other run"
+
+-- The Spec cell's loadout lines and the share's talents link (#6)
+L["Gear and talents: not recorded"] = "Gear and talents: not recorded"
+L["Talents: %s"] = "Talents: %s"
+L["Gear changed since the previous run"] = "Gear changed since the previous run"
+L["Sharing"] = "Sharing"
+L["Include talents link"] = "Include talents link"
+L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] =
+    "Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."

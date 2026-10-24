@@ -79,6 +79,10 @@ NS.defaults = {
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
         },
+        -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
+        -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
+        -- Its row is History > History > Sharing (settings/History.lua).
+        share = { talentsLink = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {

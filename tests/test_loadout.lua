@@ -436,3 +436,79 @@ test("loadout: the copy window opens on the import string", function()
     local NS = fresh()
     assertTrue(NS.ShowCopy("ABC", "Talent loadout"), "no copy window on a full install")
 end)
+
+-- ── the Spec cell and the share ─────────────────────────────────────────────────────────────────
+
+local function texts(lines)
+    local out = {}
+    for n, l in ipairs(lines) do out[n] = type(l) == "table" and l[1] or l end
+    return out
+end
+
+local function has(lines, want)
+    for _, l in ipairs(texts(lines)) do if l == want then return true end end
+    return false
+end
+
+test("loadout: the Spec cell's tooltip names the loadout and notes gear changed since the previous run", function()
+    local _, NS, M = ui()
+    local first = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
+    M.__gear[16] = STAFF
+    local second = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
+    uiRun(NS, "a", 100, first, { date = NOW - 300 })
+    uiRun(NS, "b", 100, first, { date = NOW - 200 })
+    uiRun(NS, "c", 100, second, { date = NOW - 100 })
+    uiRun(NS, "alt", 100, first, { date = NOW - 150, char = { name = "Other", realm = "Frostmourne", specID = 267 } })
+    local col = { key = "icons" }
+    local tipC = NS.ResultsTips.Cell(col, NS.Recorder.Get("c"))
+    assertTrue(has(tipC, "Talents: Raid ST \194\183 Diabolist"), "the loadout is not named")
+    assertTrue(has(tipC, "Gear changed since the previous run"), "a weapon swap went unnoticed")
+    assertEqual(NS.Loadouts.Previous(NS.Recorder.Get("c")).id, "b", "another character's run counted")
+    local tipB = NS.ResultsTips.Cell(col, NS.Recorder.Get("b"))
+    assertFalse(has(tipB, "Gear changed since the previous run"), "the same set is a change")
+    local tipA = NS.ResultsTips.Cell(col, NS.Recorder.Get("a"))
+    assertFalse(has(tipA, "Gear changed since the previous run"), "a first run has nothing to change from")
+    uiRun(NS, "old", 100, nil, { schema = 1, date = NOW - 400 })
+    assertTrue(has(NS.ResultsTips.Cell(col, NS.Recorder.Get("old")), "Gear and talents: not recorded"))
+end)
+
+test("loadout: the share line takes the talents link only with Include talents link on", function()
+    local _, NS, M = ui()
+    local run = uiRun(NS, "r", 147600, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    local line = NS.Share.Line(run)
+    assertEqual(NS.db.profile.share.talentsLink, false, "on by default")
+    local msgs = NS.Share.Messages(run)
+    assertEqual(#msgs, 1)
+    assertEqual(msgs[1], line, "the line changed with the setting off")
+    assertTrue(NS.SetByPath("share.talentsLink", true))
+    msgs = NS.Share.Messages(run)
+    assertEqual(#msgs, 1)
+    assertEqual(msgs[1], line .. " " .. NS.Share.TalentsLink(run))
+    assertTrue(msgs[1]:find("|Htalentbuild:267:80:" .. M.__talents.importString .. "|h[Destruction: Raid ST]|h", 1, true) ~= nil)
+    -- Too long for one message: the link follows as a second.
+    M.__talents.importString = ("A"):rep(220)
+    local long = uiRun(NS, "long", 147600, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    msgs = NS.Share.Messages(long)
+    assertEqual(#msgs, 2)
+    assertEqual(msgs[1], NS.Share.Line(long))
+    assertTrue(msgs[2]:find("|Htalentbuild:", 1, true) == 11, "the second message is not the link")
+    -- A run with no loadout shares the line alone.
+    local old = uiRun(NS, "old", 100, nil, { schema = 1 })
+    assertEqual(#NS.Share.Messages(old), 1)
+    -- Sent: each message to the channel, in order.
+    local sent = {}
+    NS.Compat.ChatSender = function() return function(text, channel) sent[#sent + 1] = { text, channel } end end
+    assertTrue(NS.Share.Send(long, "SAY"))
+    assertEqual(#sent, 2)
+    assertEqual(sent[2][1], msgs[2])
+    assertEqual(sent[2][2], "SAY")
+end)
+
+test("loadout: Include talents link sits under Sharing on the History tab, before Storage", function()
+    local NS = T.NS
+    local order = {}
+    for _, r in ipairs(NS.SchemaForPage("history")) do
+        if r.group == "History" then order[#order + 1] = r.path end
+    end
+    assertEqual(table.concat(order, ","), "share.talentsLink,global.history.keep")
+end)

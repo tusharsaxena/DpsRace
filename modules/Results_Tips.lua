@@ -42,13 +42,29 @@ function CELL.date(run)
     return lines
 end
 
+-- The Spec cell's loadout lines (#6): the talents it ran, and whether the gear changed since the same
+-- character's previous run on the spec. A run from before #6 says it has none.
+local function loadoutLines(run, lines)
+    if type(run.loadout) ~= "table" then
+        lines[#lines + 1] = { L["Gear and talents: not recorded"], 0.62, 0.62, 0.68 }
+        return
+    end
+    local _, talents = NS.Loadouts.Of(run)
+    if talents then lines[#lines + 1] = L["Talents: %s"]:format(NS.ResultsLoadout.TalentsText(talents)) end
+    local changed = NS.Loadouts.GearChanged(run)
+    if changed then lines[#lines + 1] = { L["Gear changed since the previous run"], C().amber[1], C().amber[2], C().amber[3] } end
+end
+
 function CELL.icons(run)
     local char = run.char or {}
     local spec = Tbl().SpecInfo(char.specID, char.spec)
     local c = Tbl().ClassColor(char.class)
     local role = char.role and L["Role: %s"]:format(char.role:sub(1, 1) .. char.role:sub(2):lower()) or nil
-    return { ("%s %s"):format(spec or L["Unknown spec"], Tbl().ClassName(char.class)),
-             { L["Class color"], c[1], c[2], c[3] }, role }
+    local lines = { ("%s %s"):format(spec or L["Unknown spec"], Tbl().ClassName(char.class)),
+                    { L["Class color"], c[1], c[2], c[3] } }
+    if role then lines[#lines + 1] = role end
+    loadoutLines(run, lines)
+    return lines
 end
 
 function CELL.char(run)
