@@ -243,7 +243,7 @@ end
 Runs.STATUS = {
     best       = { label = "Best", color = C.gold },
     complete   = { label = "Complete", color = C.green },
-    flagged    = { label = "Flagged", color = C.amber },
+    flagged    = { label = "Flagged", color = C.red },
     incomplete = { label = "Incomplete", color = C.red },
     died       = { label = "Died", color = C.red },
     lost       = { label = "Lost", color = C.dim },

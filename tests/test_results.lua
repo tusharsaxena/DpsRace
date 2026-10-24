@@ -118,6 +118,9 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
     assertTrue(c.flag.icon:IsShown(), "the flag mark")
+    local red = i.NS.ResultsTable.COLORS.red
+    assertEqual(c.flag.icon.__vertex[1], red[1], "the flag mark in the Flagged red")
+    assertEqual(c.flag.icon.__vertex[2], red[2])
     assertTrue(c.flag.texts[1]:find("Incinerate", 1, true) ~= nil, "the flag tooltip names the spell")
 end)
 
@@ -161,7 +164,9 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     assertEqual(key, "best")
     assertEqual(text, "Best")
     assertEqual((Runs.Status(by.slow)), "complete")
-    assertEqual((Runs.Status(by.late)), "flagged")
+    local lateKey, _, lateColor = Runs.Status(by.late)
+    assertEqual(lateKey, "flagged")
+    assertEqual(lateColor, i.NS.ResultsTable.COLORS.red, "Flagged in red")
     assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
 end)
 

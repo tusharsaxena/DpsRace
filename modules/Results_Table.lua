@@ -237,10 +237,11 @@ function Cells.badge(row)
     return cell
 end
 
+-- The flag mark, in the Flagged tag's red.
 function Cells.flag(row)
-    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TEXT, C.amber, "CENTER") }
+    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TEXT, C.red, "CENTER") }
     cell.icon:SetSize(12, 12)
-    cell.icon:SetVertexColor(C.amber[1], C.amber[2], C.amber[3])
+    cell.icon:SetVertexColor(C.red[1], C.red[2], C.red[3])
     cell.spot = Tbl.TipSpot(row)
     cell.spot.row = row
     return cell
