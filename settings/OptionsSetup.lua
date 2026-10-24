@@ -108,13 +108,15 @@ if not lib then
         "RefreshScalars", "RefreshPanel", "RestoreDefaults", "PatchAlwaysShowScrollbar",
         "RegisterOptionsPage", "CreateOptionsPanel", "OpenOptionsPanel", "SetChromeHeight", "TabStrip",
         "PageBanner", "RenderTabbedSchema", "SelectTab", "ChoiceGrid", "IdInput", "IdList", "NavRail",
-        "Drawer", "Relayout",
+        "Drawer", "Relayout", "KeybindingsTab", "KeybindRows",
     }) do
         Helpers[name] = function() end
     end
     Helpers.ResolveId         = function() return nil end
     Helpers.UnnamedCandidates = function() return nil end
     Helpers.ID_NAME_HINT      = {}
+    Helpers.StrataTooltip     = function() return "" end
+    Helpers.KEYBINDS_UNCHANGED = "Key bindings are not changed."
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel
