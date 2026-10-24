@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (52)
+### test_race.lua (55)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -195,6 +195,9 @@ Total.
 - race: cancel on a result dismisses it and keeps the run; race again arms
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
+- probe: off without debug logging; nothing is sampled
+- probe: counts the plates with a threat answer, secret or not, and reports them after the result
+- probe: a canceled race drops the probe
 
 ### test_race_resume.lua (16)
 
@@ -329,10 +332,10 @@ Total.
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Best, Flagged or Complete for a complete run
-- results: Damage and DPS carry bars scaled to the largest run the filters pass
+- results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look; the track can take the run's class
 - results: Only best keeps the runs holding their board's best
-- results: vs Best is each run's distance from its board's best
+- results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
@@ -377,7 +380,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (26)
+### test_settings.lua (28)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -385,19 +388,21 @@ Total.
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
-- settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on General > Race HUD
+- settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
 - settings: a write out of range is refused and stores nothing
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
-- settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
+- settings: the HUD's show mode is on the HUD page's Race HUD tab; `always` opens the HUD
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
-- settings: the General, Race and History pages register and render quietly
+- settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: General > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone
+- settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is a one-tab page along the race's timeline, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults says it covers the live breakdown and HUD Appearance, and not the keys
+- settings: General's Defaults names Master controls, and not the keys or the HUD
+- settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
@@ -623,7 +628,7 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 52 |
+| test_race.lua | 55 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
@@ -631,7 +636,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 32 |
 | test_schema.lua | 15 |
-| test_settings.lua | 26 |
+| test_settings.lua | 28 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -648,4 +653,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **506** |
+| **Total** | **511** |

@@ -1,5 +1,5 @@
 local _, NS = ...
--- modules/Hud_Appearance.lua — the HUD's configured look (General > HUD Appearance, settings/General.lua):
+-- modules/Hud_Appearance.lua — the HUD's configured look (HUD > HUD Appearance, settings/Hud.lua):
 -- the two running clocks, the live Damage and DPS figures, and the spell rows' bars and text, which
 -- the Results window's breakdown shares. Each block is a composed group (options-ui-§16) stored under
 -- `appearance.<block>.`; this file turns a block into what a widget setter takes.

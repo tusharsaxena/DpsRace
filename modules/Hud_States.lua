@@ -478,7 +478,7 @@ local function setClocks(w, v)
     w.clock:SetText(NS.Format.Clock(mode == "elapsed" and elapsed or left))
 end
 
--- THE RUNNING BODY'S LOOK (General > HUD Appearance, modules/Hud_Appearance.lua): the elapsed and the
+-- THE RUNNING BODY'S LOOK (HUD > HUD Appearance, modules/Hud_Appearance.lua): the elapsed and the
 -- time-left clocks each in their own font block, the live figures in theirs. The stack below them is
 -- laid out from the configured sizes, never from a measured one: the KPI pair sits under the clocks'
 -- block, and the spell rows under the KPIs. At the defaults this is the shipped layout (KPIs at 52).
