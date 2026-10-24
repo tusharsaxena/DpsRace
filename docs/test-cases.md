@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (55)
+### test_race.lua (52)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -195,9 +195,6 @@ Total.
 - race: cancel on a result dismisses it and keeps the run; race again arms
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
-- probe: off without debug logging; nothing is sampled
-- probe: counts the plates with a threat answer, secret or not, and reports them after the result
-- probe: a canceled race drops the probe
 
 ### test_race_resume.lua (16)
 
@@ -628,7 +625,7 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 55 |
+| test_race.lua | 52 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
@@ -653,4 +650,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **511** |
+| **Total** | **508** |
