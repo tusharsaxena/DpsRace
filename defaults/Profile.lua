@@ -26,7 +26,8 @@ NS.defaults = {
             -- `lastLength` (no default): the last length picked on the HUD, remembered (§4.1). It is
             -- state the HUD writes, not a setting row.
         },
-        -- The live breakdown (spec §6.3; its rows are the Live breakdown page, settings/Live.lua).
+        -- The live breakdown (spec §6.3; its rows are General > Race HUD > Live breakdown,
+        -- settings/General.lua).
         live = {
             rows    = 8,      -- spells shown, 3-15
             icons   = true,   -- spell icons

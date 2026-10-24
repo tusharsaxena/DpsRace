@@ -1,5 +1,5 @@
--- tests/test_settings.lua — the settings pages (spec §6.3): the Race, Live breakdown and History pages
--- and the General page's Race HUD tab, their rows' shape (default, enUS label, tooltip), the ranges
+-- tests/test_settings.lua — the settings pages (spec §6.3): the Race and History pages and the General
+-- page's Race HUD tab (its Display and Live breakdown subsections), their rows' shape (default, enUS label, tooltip), the ranges
 -- the spec fixes, what a write reaches, and the History page's Delete all runs act.
 
 local T = _G.DPSRACE_TEST
@@ -82,7 +82,7 @@ end)
 
 test("settings: every row sits on a page the panel draws, and every page has a group", function()
     local NS = T.NS
-    local pages = { general = true, race = true, live = true, history = true }
+    local pages = { general = true, race = true, history = true }
     for _, r in ipairs(NS.Schema) do
         assertTrue(pages[r.page] == true, tostring(r.path) .. " on page " .. tostring(r.page))
         assertEqual(type(r.group), "string", tostring(r.path))
@@ -133,10 +133,12 @@ test("settings: the Race page's rows, ranges and defaults", function()
     assertTrue(hint.min <= 15 and hint.max >= 15)
 end)
 
-test("settings: the Live breakdown page's rows 3..15 and reads 2..10 per second", function()
+test("settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD", function()
     local NS = T.NS
     local rows = row(NS, "live.rows")
-    assertEqual(rows.page, "live")
+    assertEqual(rows.page, "general")
+    assertEqual(rows.group, "Race HUD")
+    assertEqual(rows.subgroup, "Live breakdown")
     assertEqual(rows.min, 3)
     assertEqual(rows.max, 15)
     assertEqual(rows.default, 8)
@@ -224,14 +226,15 @@ test("settings: the race clock is a Race HUD row: both, left or elapsed, default
     assertEqual(NS.db.profile.hud.clock, "left")
 end)
 
-test("settings: the Race, Live breakdown and History pages register and render quietly", function()
+test("settings: the General, Race and History pages register and render quietly", function()
     local inst = T.load()
     local M = inst.mocks
-    for _, name in ipairs({ "General", "Race", "Live breakdown", "History", "Profiles" }) do
+    for _, name in ipairs({ "General", "Race", "History", "Profiles" }) do
         assertTrue(M.__subcategories[name] ~= nil, name .. " is not registered")
     end
+    assertTrue(M.__subcategories["Live breakdown"] == nil, "the Live breakdown page folded into General")
     M.__resetPrinted()
-    for _, name in ipairs({ "Race", "Live breakdown", "History" }) do
+    for _, name in ipairs({ "General", "Race", "History" }) do
         M.__subcategories[name]:__fire("OnShow")
     end
     assertEqual(#M.__printed(), 0, "a render printed: " .. tostring(M.__printed()[1]))
@@ -241,7 +244,42 @@ test("settings: the pages register in the panel's order, General first and Profi
     local inst = T.load()
     local order = {}
     for _, ctx in ipairs(inst.NS.Helpers.__pages()) do order[#order + 1] = ctx.pageKey or ctx.key end
-    assertEqual(table.concat(order, ","), "general,race,live,history,profiles")
+    assertEqual(table.concat(order, ","), "general,race,history,profiles")
+end)
+
+-- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
+local function tabRows(NS, page, group)
+    local out = {}
+    for _, r in ipairs(NS.SchemaForPage(page)) do
+        if r.group == group then
+            out[#out + 1] = table.concat({ r.path, tostring(r.subgroup), r.label, tostring(r.startsLine == true) }, "|")
+        end
+    end
+    return table.concat(out, "\n")
+end
+
+test("settings: General > Race HUD draws Display, then Live breakdown, in the pinned order", function()
+    local NS = T.NS
+    assertEqual(tabRows(NS, "general", "Race HUD"), table.concat({
+        "hud.showMode|Display|Show the race HUD|false",
+        "hud.clock|Display|Race clock|false",
+        "live.rows|Live breakdown|Spell rows shown|false",
+        "live.icons|Live breakdown|Show spell icons|false",
+        "live.showDps|Live breakdown|Show live DPS|true",
+        "live.hz|Live breakdown|Live reads per second|false",
+    }, "\n"))
+end)
+
+test("settings: the show mode's tooltip points at General visibility", function()
+    local tip = row(T.NS, "hud.showMode").tooltip
+    assertTrue(tip:find("General visibility on Master controls still applies: while it hides the addon, "
+        .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
+end)
+
+test("settings: General's Defaults says it covers the live breakdown, and not the keys", function()
+    local tip = T.mocks.__subcategories["General"].defaultsTooltip
+    assertEqual(tip, "Restore every General setting on this profile to its addon default, including the "
+        .. "Race HUD's live breakdown. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
 end)
 
 -- ── History: stored count, Delete all runs ───────────────────────────────────────────────────────

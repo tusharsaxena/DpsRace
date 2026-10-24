@@ -360,7 +360,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (19)
+### test_settings.lua (22)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -368,14 +368,17 @@ Total.
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
-- settings: the Live breakdown page's rows 3..15 and reads 2..10 per second
+- settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD
 - settings: a write out of range is refused and stores nothing
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
 - settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
-- settings: the Race, Live breakdown and History pages register and render quietly
+- settings: the General, Race and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
+- settings: General > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: the show mode's tooltip points at General visibility
+- settings: General's Defaults says it covers the live breakdown, and not the keys
 - settings: History says how many runs are stored
 - settings: Delete all runs asks first, then deletes through Recorder.DeleteAll
 - settings: Delete all runs is refused while a race is armed
@@ -607,7 +610,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 19 |
+| test_settings.lua | 22 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -624,4 +627,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **482** |
+| **Total** | **485** |

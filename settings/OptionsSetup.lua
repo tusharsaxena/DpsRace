@@ -56,7 +56,7 @@ local descriptor = {
     debug         = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
 }
 
---- One schema page (Race, Live breakdown, History): its panel, its page-wide Defaults button, and every
+--- One schema page (Race, History): its panel, its page-wide Defaults button, and every
 --- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
 --- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
 --- the stub's no-op.

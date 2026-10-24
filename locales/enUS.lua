@@ -35,8 +35,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default."] =
-    "Restore every General setting on this profile to its addon default."
+L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."] =
+    "Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -274,13 +274,14 @@ L["creature %d"] = "creature %d"
 L["not a creature"] = "not a creature"
 L["Target: %s \194\183 %s \194\183 category %s"] = "Target: %s \194\183 %s \194\183 category %s"
 
--- General page: the Race HUD tab (settings/General.lua)
+-- General page: the Race HUD tab (settings/General.lua): Display, then Live breakdown
 L["Race HUD"] = "Race HUD"
+L["Display"] = "Display"
 L["Show the race HUD"] = "Show the race HUD"
 L["When a race is armed"] = "When a race is armed"
 L["Always"] = "Always"
-L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."] =
-    "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login."
+L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."] =
+    "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."
 L["Race clock"] = "Race clock"
 L["Elapsed and time left"] = "Elapsed and time left"
 L["Time left"] = "Time left"
@@ -320,11 +321,9 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
 
--- Live breakdown page (settings/Live.lua)
+-- General page: the Race HUD tab's Live breakdown subsection (settings/General.lua)
 L["Live breakdown"] = "Live breakdown"
-L["Rows"] = "Rows"
-L["Display"] = "Display"
-L["Rows shown"] = "Rows shown"
+L["Spell rows shown"] = "Spell rows shown"
 L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."] =
     "How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."
 L["Live reads per second"] = "Live reads per second"
@@ -335,8 +334,6 @@ L["Draw each spell's icon on the HUD's rows."] = "Draw each spell's icon on the 
 L["Show live DPS"] = "Show live DPS"
 L["Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."] =
     "Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."
-L["Restore every Live breakdown setting on this profile to its addon default."] =
-    "Restore every Live breakdown setting on this profile to its addon default."
 
 -- History page (settings/History.lua)
 L["History"] = "History"
