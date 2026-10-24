@@ -123,8 +123,14 @@ local function finish()
     NS.SendBus(NS.MSG.RACE_RESULT, cur.run)
 end
 
+--- The run's loadout (#6): the combat-end snapshot when one was taken, else the arm-time one.
+local function keepLoadout(run)
+    if run.loadout == nil and cur.armLoadout then NS.Loadouts.Attach(run, cur.armLoadout) end
+end
+
 local function lose(why)
     local run = cur.run
+    keepLoadout(run)
     debug("run %s lost: %s", tostring(run.id), tostring(why))
     run.status = "lost"
     run.result = nil
@@ -218,6 +224,7 @@ local function complete(data)
     run.result = result
     run.spells = data.spells
     result.dps = NS.Scoring.Dps(result.damage, run)
+    keepLoadout(run)
     debug("read session: %s, damage %s", run.status, result.damage ~= nil and "present" or "absent")
     NS.Recorder.Save(run)
     finish()
@@ -351,6 +358,9 @@ function Race.Arm(length, targetCount)
     end
     newRace(NS.Recorder.NewRun(length, targetCount))
     cur.armTarget = cur.run.target
+    -- The fallback loadout (#6), held in memory: gear can still change before the pull, so the one
+    -- stored is the combat-end snapshot (OnCombatEnd), and this only when there is none.
+    cur.armLoadout = NS.Recorder.SnapshotLoadout()
     -- Every session the client holds now belongs to an earlier fight: never this run's. The newest of
     -- them is kept on the run, so a /reload (which loses the set) still knows.
     cur.armSet = NS.Meter.SessionIDs()
@@ -462,6 +472,9 @@ function Race.OnCombatEnd(t)
     end
     if state == STATE.RUNNING then endEarly(t) end
     if state ~= STATE.STOPPING then return end
+    -- Out of combat, beside the read: exactly what raced (gear and talents cannot change in combat;
+    -- a weapon swap in combat is the one exception). Replaces any earlier snapshot.
+    NS.Loadouts.Attach(cur.run, NS.Recorder.SnapshotLoadout())
     debug("combat ended at %.2f: the quiet counts from it", t)
     cur.combatEndedAt, cur.quietFrom = t, t
     checkReady(t)

@@ -15,7 +15,8 @@ local _, NS = ...
 -- THE STORE is db.global.runs, keyed by run id: account-wide, so a profile switch never hides a
 -- character's history and bests span alts (spec §7). Save fires RUN_SAVED(run); Delete, DeleteAll and
 -- Prune fire RUNS_CHANGED. Prune asks NS.Bests (CALL time) which runs hold a best, and never removes
--- one, nor a run still running or stopping (Race.Resume needs it).
+-- one, nor a run still running or stopping (Race.Resume needs it). Each removal also drops the
+-- loadouts (modules/Loadouts.lua) no run refers to any more.
 
 local Recorder = {}
 NS.Recorder = Recorder
@@ -23,7 +24,8 @@ NS.Recorder = Recorder
 local Secrets = NS.Secrets
 
 -- The run record format (spec §7). A stored run carries its own copy; db.global.schema is the same.
-Recorder.RUN_SCHEMA = 1
+-- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one.
+Recorder.RUN_SCHEMA = 2
 
 -- An id is time() .. "-" .. a four-digit random; a clash with a stored run is redrawn this many times.
 local ID_ATTEMPTS = 32
@@ -356,6 +358,7 @@ function Recorder.Delete(id)
     local runs = store()
     if not runs or not Secrets.IsSafeKey(id) or runs[id] == nil then return false end
     runs[id] = nil
+    NS.Loadouts.Sweep()
     NS.SendBus(NS.MSG.RUNS_CHANGED)
     return true
 end
@@ -370,6 +373,7 @@ function Recorder.DeleteAll()
         runs[id] = nil
         n = n + 1
     end
+    NS.Loadouts.Sweep()
     if n > 0 then NS.SendBus(NS.MSG.RUNS_CHANGED) end
     return n
 end
@@ -416,6 +420,7 @@ function Recorder.Prune(keep, protect)
     end
     if n > 0 then
         debug("pruned %d run(s) to keep %d", n, keep)
+        NS.Loadouts.Sweep()
         NS.SendBus(NS.MSG.RUNS_CHANGED)
     end
     return n

@@ -96,10 +96,14 @@ NS.defaults = {
         -- would backfill it onto a legacy account (savedvariables-§1).
         schemaVersion = 0,
         -- The run record format (spec §7). Not a migration stamp: a stored run carries its own copy.
-        schema = 1,
+        -- Format 2 (#6) adds the run's loadout keys.
+        schema = 2,
         -- The run store, keyed by run id (modules/Recorder.lua). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},
+        -- The loadout store (#6, modules/Loadouts.lua): each distinct gear set and talent loadout once,
+        -- by its hash; a run holds only the keys (run.loadout). Orphans go with every removal.
+        loadouts = { gear = {}, talents = {} },
         -- Runs to keep (spec §6.3): 0 = never prune. Above 0, the oldest runs go first and a run
         -- holding a best is always kept (modules/Recorder.lua Prune). Global like the store it
         -- bounds. Its row is the History page's (settings/History.lua).

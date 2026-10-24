@@ -134,12 +134,13 @@ test("schema: a migration runs once and stamps the stored version", function()
     local inst = T.load({ init = false })
     local NSi = inst.NS
     local runs = 0
-    NSi.__migrationSteps[#NSi.__migrationSteps + 1] = { to = 2, run = function() runs = runs + 1 end }
+    local top = NSi.SCHEMA_VERSION + 1
+    NSi.__migrationSteps[#NSi.__migrationSteps + 1] = { to = top, run = function() runs = runs + 1 end }
     NSi:InitDB()
     NSi:RunMigrations()
     NSi:RunMigrations()
     assertEqual(runs, 1)
-    assertEqual(NSi.db.global.schemaVersion, 2)
+    assertEqual(NSi.db.global.schemaVersion, top)
 end)
 
 test("panel: the category registers eagerly and every page body renders on first show", function()

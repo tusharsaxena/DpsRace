@@ -86,6 +86,8 @@ defaults\Dummies.lua
 # module may capture it.
 modules\Meter.lua
 modules\Recorder.lua
+# The loadout store (#6): reached by Recorder and Race at CALL time.
+modules\Loadouts.lua
 modules\Timeline.lua
 modules\Scoring.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED) at FILE SCOPE through core\Bus.lua.

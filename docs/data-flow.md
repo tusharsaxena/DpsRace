@@ -50,7 +50,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Arm** (`Race.Arm(length, count)`, out of combat only): refused with `busy` (armed or running),
   `pending` (a run is stopping, or a stored run is unresolved), `bad_length`, `in_combat`,
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
-  the player, target and place, the session IDs the client holds are remembered (they belong to
+  the player, target and place, `Recorder.SnapshotLoadout` reads the gear links and the talent
+  loadout into memory as the fallback (#6), the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
   combat and death events. The newest of those IDs is kept on the run as `race.armMaxSession`, so
   a run resumed after a `/reload` (which loses the set) still never adopts an earlier fight's session.
@@ -87,14 +88,18 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   never swallows a later instant. An auto-repeat success (Auto Shot, Shoot; with a sealed ID, any
   success while one is repeating) is never a press. A 0.5 s `C_Timer.NewTicker` polls for
   readiness, only in this state; a poll that finds the player out of combat with no regen edge heard
-  starts the quiet itself, so a missed edge never leaves a run waiting.
+  starts the quiet itself, so a missed edge never leaves a run waiting. The race's combat end (the
+  regen edge, out of combat) also re-reads the loadout and stores it on the run through
+  `Loadouts.Attach` (deduped in `global.loadouts`, the run holding only the keys): exactly what raced,
+  bar a weapon swapped in combat. A later combat end in the wait replaces it.
 - **Ready to read**: combat has ended **and** 2.5 s have passed since the later of the combat end and
   the last DamageDone update for the session (updates land up to 1.3 s after combat drops). The
   session is read by its ID through `Meter.ReadSession`, never as "current", into plain numbers. A
   run with no captured ID falls back to the newest session created after the arm and is flagged
   `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
   `sealed` read is retried for 10 s; a missing session, a raise or a
-  meter reset makes the run `lost` (kept, with no result).
+  meter reset makes the run `lost` (kept, with no result). A run resolved with no combat-end
+  loadout takes the arm-time one.
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
   the run the moment its update arrives, so a `/reload` after it keeps it); the run is saved
@@ -130,7 +135,9 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
   just stored and never the race's current run (the one on the result card), and fires `RUNS_CHANGED`
-  once. While stood down the bus receiver is dropped, so nothing prunes.
+  once. While stood down the bus receiver is dropped, so nothing prunes. A prune that removed any run,
+  `Recorder.Delete` and `Recorder.DeleteAll` then drop every loadout no stored run refers to
+  (`Loadouts.Sweep`).
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).

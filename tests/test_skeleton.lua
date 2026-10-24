@@ -48,11 +48,12 @@ test("skeleton: /dr and /dpsrace are both registered on the one dispatcher", fun
     assertEqual(versions, 2, "each command printed the version once")
 end)
 
-test("skeleton: the DB defaults load (global.runs empty, global.schema 1, schemaVersion stamped)", function()
+test("skeleton: the DB defaults load (global.runs empty, global.schema 2, schemaVersion stamped)", function()
     local g = NS.db.global
     assertEqual(type(g.runs), "table")
     assertEqual(next(g.runs), nil, "runs starts empty")
-    assertEqual(g.schema, 1)
+    assertEqual(g.schema, 2, "run format 2 (#6): the loadout keys")
+    assertEqual(type(g.loadouts), "table")
     assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
     assertEqual(NS.db.profile.enabled, true)
     assertEqual(NS.db.profile.visibility, "always")

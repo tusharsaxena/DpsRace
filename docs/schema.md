@@ -56,8 +56,9 @@ Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.
 | Path | Default | What it is |
 |---|---|---|
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
-| `schema` | `1` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy |
+| `schema` | `2` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout` |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
+| `loadouts` | `{ gear = {}, talents = {} }` | The loadout store (#6, `modules/Loadouts.lua`): each distinct gear set (`{ [slot] = link }`) and talent loadout (`{ specID, configID, name, heroSpecID, heroName, importString, serialVersion }`) once, keyed by a djb2 hash of its canonical form (`<hash>-<n>` for a different set with the same hash). A run holds only the keys (`run.loadout`); a set no run refers to is dropped on every removal |
 | `history.keep` | `0` | *Runs to keep* (spec §6.3): 0 = never prune. Above 0, `Recorder.Prune` removes the oldest resolved runs at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. Its row is *Runs to keep* on the History page (0-10000); a change prunes nothing on the spot |
 | `minimap` | `{ hide = false }` | LibDBIcon's own table, handed straight to `:Register` (launcher-§3) |
 
@@ -81,13 +82,15 @@ profile-scoped step sets `perProfile = true` and runs once per stored profile.
 | Version | Step | What it does |
 |---|---|---|
 | 0 → 1 | pre-versioning | Nothing: a fresh install and the first release share one shape |
+| 1 → 2 | the run record's format 2 (#6) | Raises a stored `global.schema` below 2 to 2. No stored run is rewritten: format 2 only adds the optional `loadout`, so a format-1 run (keeping its own `schema = 1`) reads as one with no loadout, *Not recorded* |
 
 Adding a step: [common-tasks.md](common-tasks.md#add-a-saved-variables-migration).
 
 ## The run record
 
-Format 1, exactly as spec §7 lays it out: `id`, `schema`, `status`, `addon`, `build`, `date`,
-`race`, `char`, `target`, `where`, `result`, `flags`, `spells`, `note`. `status` is one of
+Format 2: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
+`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6). A run
+stored before format 2 keeps `schema = 1` and has no `loadout`. `status` is one of
 `armed` (never stored), `running`, `stopping`, `complete`, `incomplete` or `lost`. Every value is
 plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 
@@ -100,6 +103,7 @@ plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 | `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
 | `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
 | `spells` | `{ id, dmg, dps }`, highest first | `Race`, from `Meter.ReadSession` |
+| `loadout` | `gear`, `talents`: the keys of the run's gear set and talent loadout in `global.loadouts`; either may be absent (not readable), and the whole field is absent on a format-1 run | `Loadouts.Attach`, from `Race`: the snapshot at the race's combat end, else the one taken at arm |
 | `note` | trimmed, control characters as spaces, `\|` as `/`, at most 200 UTF-8 characters (`ResultsDetail.ClampNote`) | `Recorder.SetNote` |
 
 The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
@@ -116,6 +120,7 @@ and a closed list of writers.
 | Storage key | Owner | Writers |
 |---|---|---|
 | `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Purge history…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
+| `global.loadouts` (`gear`, `talents`) | `modules/Loadouts.lua` | `Loadouts.Store` / `Loadouts.Attach` (Race, at the race's combat end and, with no combat-end snapshot, at the result), `Loadouts.Sweep` (after `Recorder.Delete`, `Recorder.DeleteAll`, a `Recorder.Prune` that removed any run, and an `Attach` that replaced a run's loadout) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |
