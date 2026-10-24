@@ -270,6 +270,26 @@ test("settings: General > Race HUD draws Display, then Live breakdown, in the pi
     }, "\n"))
 end)
 
+test("settings: Race is a one-tab page along the race's timeline, in the pinned order", function()
+    local NS = T.NS
+    for _, r in ipairs(NS.SchemaForPage("race")) do assertEqual(r.group, "Race", r.path .. " tab") end
+    assertEqual(tabRows(NS, "race", "Race"), table.concat({
+        "race.defaultLength|Length|Default race length|false",
+        "race.countdownCue|Countdown|Countdown cue sound|true",
+        "race.centerCountdown|Countdown|Center-screen countdown|true",
+        "race.finalCountdown|Countdown|Center countdown from (seconds)|false",
+        "race.buzzer|At the buzzer|Buzzer raid warning and sound|false",
+        "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
+        "race.grace|Scoring rules|Late-cast grace (seconds)|false",
+        "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
+    }, "\n"))
+end)
+
+test("settings: the sticky-combat hint's tooltip states its range", function()
+    local tip = row(T.NS, "race.hintDelay").tooltip
+    assertTrue(tip:sub(-#"5 to 60 seconds.") == "5 to 60 seconds.", tip)
+end)
+
 test("settings: the show mode's tooltip points at General visibility", function()
     local tip = row(T.NS, "hud.showMode").tooltip
     assertTrue(tip:find("General visibility on Master controls still applies: while it hides the addon, "

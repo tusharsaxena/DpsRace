@@ -289,35 +289,35 @@ L["Time elapsed"] = "Time elapsed"
 L["What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."] =
     "What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."
 
--- Race page (settings/Race.lua)
-L["Scoring rules"] = "Scoring rules"
+-- Race page (settings/Race.lua): Length, Countdown, At the buzzer, Scoring rules
 L["Length"] = "Length"
-L["Sounds"] = "Sounds"
+L["Countdown"] = "Countdown"
+L["At the buzzer"] = "At the buzzer"
+L["Scoring rules"] = "Scoring rules"
 L["Default race length"] = "Default race length"
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
 L["Countdown cue sound"] = "Countdown cue sound"
 L["A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."] =
     "A sound at 10, 5, 3, 2 and 1 seconds left, and with each number of the center countdown. Takes effect at once, in the race in progress too."
-L["Final countdown"] = "Final countdown"
 L["Center-screen countdown"] = "Center-screen countdown"
 L["Large numbers in the middle of the screen for the last seconds of the race, one a second down to 1, like a pull timer. Only you see them."] =
     "Large numbers in the middle of the screen for the last seconds of the race, one a second down to 1, like a pull timer. Only you see them."
-L["Countdown from (s)"] = "Countdown from (s)"
+L["Center countdown from (seconds)"] = "Center countdown from (seconds)"
 L["How many seconds before the buzzer the center countdown starts. 3 to 10."] =
     "How many seconds before the buzzer the center countdown starts. 3 to 10."
 L["Buzzer raid warning and sound"] = "Buzzer raid warning and sound"
 L["A raid warning that says STOP, with a sound, the moment the race ends."] =
     "A raid warning that says STOP, with a sound, the moment the race ends."
-L["Late-cast grace (s)"] = "Late-cast grace (s)"
+L["Late-cast grace (seconds)"] = "Late-cast grace (seconds)"
 L["A cast that starts later than this after the buzzer flags the run. 0 to 5 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
     "A cast that starts later than this after the buzzer flags the run. 0 to 5 seconds. Applies to new runs. Saved runs keep the value they were raced with."
-L["Damage-restart gap (s)"] = "Damage-restart gap (s)"
+L["Damage-restart gap (seconds)"] = "Damage-restart gap (seconds)"
 L["Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
     "Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."
-L["Sticky-combat hint after (s)"] = "Sticky-combat hint after (s)"
-L["How long combat may hold after the buzzer before the HUD suggests ways to drop it."] =
-    "How long combat may hold after the buzzer before the HUD suggests ways to drop it."
+L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
+L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
+    "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
 

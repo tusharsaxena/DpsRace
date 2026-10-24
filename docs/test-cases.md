@@ -360,7 +360,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (22)
+### test_settings.lua (24)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -377,6 +377,8 @@ Total.
 - settings: the General, Race and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
 - settings: General > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: Race is a one-tab page along the race's timeline, in the pinned order
+- settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
 - settings: General's Defaults says it covers the live breakdown, and not the keys
 - settings: History says how many runs are stored
@@ -610,7 +612,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 22 |
+| test_settings.lua | 24 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -627,4 +629,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **485** |
+| **Total** | **487** |
