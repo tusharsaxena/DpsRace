@@ -921,6 +921,8 @@ test("probe: counts the plates with a threat answer, secret or not, and reports 
     assertTrue(has(lines, "tagged plates over the race: 2 (max at once 2)"))
     assertTrue(has(lines, "nameplate1: name=Cleave Training Dummy level=90 npcID=243208 category=cleave"))
     assertTrue(has(lines, "meter EnemyDamageTaken for session 25"))
+    assertTrue(has(lines, "units followed by GUID: 3"), "every plate is followed by its GUID")
+    assertTrue(has(lines, "Cleave Training Dummy level=90 guid=Creature-0-3770-2552-1234-243208-00001"))
     assertNil(F.findSecret(f.Race.Current()), "the probe put nothing on the run")
 end)
 

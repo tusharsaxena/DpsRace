@@ -72,7 +72,7 @@ files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
 files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
 -- The target probe (debug only): the enemy nameplates it asks about.
 files["modules/TargetProbe.lua"] = {
-    read_globals = { "UnitExists", "UnitCanAttack", "UnitThreatSituation", "UnitLevel" },
+    read_globals = { "UnitExists", "UnitCanAttack", "UnitThreatSituation", "UnitLevel", "UnitHealth" },
 }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
 -- The shared look: a title-bar control draws its tooltip.

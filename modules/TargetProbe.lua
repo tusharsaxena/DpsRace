@@ -16,6 +16,13 @@ local _, NS = ...
 -- question the client allows of a secret (NS.Secrets.IsPresent). The highest tagged count of the race
 -- is the candidate target count.
 --
+-- V2 (2026-10-25, after the first runs: threat is nil on every training dummy, while GUID, name, level
+-- and the combat flag are all PLAIN mid-combat). Each plate is now followed by its GUID: its name,
+-- level and NPC ID are taken while it is in view, the moment its combat flag turns on (seconds from
+-- the clock's start), whether its health is plain and how often it dropped between samples, and how
+-- many UNIT_COMBAT events it took (an AceEvent target of its own, registered only while probing). The
+-- report lists every GUID seen, so the player can say which of them they hit.
+--
 -- AFTER THE RESULT (out of combat, so everything should be plain) it names the tagged plates through
 -- NS.Recorder.SnapshotTarget (name, level, NPC ID, catalog category), and reads the meter's
 -- EnemyDamageTaken view of the run's session (NS.Meter.ReadEnemies) for each enemy's name, creature
@@ -31,7 +38,7 @@ Probe.PLATES = 40
 -- A compact summary line every this many samples (2s at 4 Hz), so a two-minute race is ~60 lines.
 Probe.SUMMARY_EVERY = 8
 
-local QUESTIONS = { "exists", "canAttack", "inCombat", "threat", "guid", "name", "level" }
+local QUESTIONS = { "exists", "canAttack", "inCombat", "threat", "guid", "name", "level", "health" }
 
 local cur          -- the race being probed: { run, ticker, samples, maxTagged, tagged, kinds, firstAt }
 
@@ -60,6 +67,7 @@ local function readPlate(token)
         guid = ask(UnitGUID, token),
         name = ask(UnitName, token),
         level = ask(UnitLevel, token),
+        health = ask(UnitHealth, token),
     }
     local kinds = {}
     for _, q in ipairs(QUESTIONS) do
@@ -84,6 +92,42 @@ local function tally(kinds)
     end
 end
 
+-- One plate's record, by its plain GUID (nil when the GUID is not plain: then it is not followed).
+local function unitFor(raw)
+    local guid = Secrets.PlainString(raw.guid)
+    if not guid then return nil end
+    local u = cur.units[guid]
+    if not u then
+        u = { guid = guid, drops = 0, hits = 0, healthKind = "never" }
+        cur.units[guid] = u
+        cur.order[#cur.order + 1] = guid
+    end
+    u.name = u.name or Secrets.PlainString(raw.name)
+    u.level = u.level or Secrets.PlainNumber(raw.level)
+    return u
+end
+
+local function follow(token, raw, kinds, t)
+    local u = unitFor(raw)
+    if not u then return end
+    cur.plateGUID[token] = u.guid
+    if Secrets.PlainTruth(raw.inCombat) and not u.combatAt then
+        u.combatAt = t
+        log("%s %s (%s) entered combat at +%.2f", token, tostring(u.name), u.guid, t)
+    end
+    u.healthKind = kinds.health
+    local hp = Secrets.PlainNumber(raw.health)
+    if hp then
+        if u.lastHealth and hp < u.lastHealth then u.drops = u.drops + 1 end
+        u.lastHealth = hp
+    end
+end
+
+local function elapsed()
+    local start = cur.run and cur.run.race and cur.run.race.startedAt
+    return type(start) == "number" and (GetTime() - start) or 0
+end
+
 local function sample()
     if not cur or (NS.IsStoodDown and NS.IsStoodDown()) then return Probe.Stop() end
     cur.samples = cur.samples + 1
@@ -94,6 +138,7 @@ local function sample()
         if Secrets.PlainTruth(raw.exists) or kinds.exists == "secret" then
             plates = plates + 1
             tally(kinds)
+            follow(token, raw, kinds, elapsed())
             local isTagged = kinds.threat ~= "error" and Secrets.IsPresent(raw.threat)
             if isTagged then
                 tagged = tagged + 1
@@ -117,7 +162,9 @@ end
 --- Start probing `run` (RUNNING, debug on). A second call while one runs is ignored.
 function Probe.Start(run)
     if cur or not debugOn() then return false end
-    cur = { run = run, samples = 0, maxTagged = 0, tagged = {}, logged = {}, kinds = {} }
+    cur = { run = run, samples = 0, maxTagged = 0, tagged = {}, logged = {}, kinds = {}, units = {}, order = {},
+            plateGUID = {}, hitKinds = {} }
+    Probe.Listen(true)
     log("start: probing nameplates every %.2fs (/dr debug off stops it at the next race)", Probe.INTERVAL)
     sample()
     if cur then cur.ticker = C_Timer.NewTicker(Probe.INTERVAL, sample) end
@@ -129,6 +176,29 @@ end
 function Probe.Stop()
     if cur and cur.ticker then cur.ticker:Cancel() end
     if cur then cur.ticker = nil end
+    Probe.Listen(false)
+end
+
+-- UNIT_COMBAT(unit, action, indicator, amount, school): a hit on a plate followed by GUID. Only the
+-- unit token is compared (plain); every other argument's kind is tallied, never its value.
+local events
+local function onUnitCombat(_, unit, action, _, amount)
+    if not cur or type(unit) ~= "string" or not unit:find("^nameplate") then return end
+    local guid = cur.plateGUID[unit]
+    local u = guid and cur.units[guid]
+    if u then u.hits = u.hits + 1 end
+    local key = "action=" .. Secrets.Kind(action) .. " amount=" .. Secrets.Kind(amount)
+    cur.hitKinds[key] = (cur.hitKinds[key] or 0) + 1
+end
+
+--- Register (true) or drop (false) the probe's UNIT_COMBAT listener.
+function Probe.Listen(on)
+    if on then
+        events = events or LibStub("AceEvent-3.0"):Embed({})
+        NS.SafeRegisterEvent(events, "UNIT_COMBAT", onUnitCombat, NS.rejectedEvents)
+    elseif events then
+        events:UnregisterAllEvents()
+    end
 end
 
 local function kindsReport()
@@ -151,6 +221,19 @@ local function taggedReport()
         log("  %s: name=%s level=%s npcID=%s category=%s (now %s)", token, tostring(t.name), tostring(t.level),
             tostring(t.npcID), tostring(t.category), kindLine(kinds))
     end
+end
+
+local function unitsReport()
+    log("units followed by GUID: %d", #cur.order)
+    for _, guid in ipairs(cur.order) do
+        local u = cur.units[guid]
+        log("  %s level=%s guid=%s combatAt=%s health=%s drops=%d unitCombat=%d", tostring(u.name), tostring(u.level),
+            guid, u.combatAt and ("+%.2f"):format(u.combatAt) or "never", u.healthKind, u.drops, u.hits)
+    end
+    local parts = {}
+    for key, n in pairs(cur.hitKinds) do parts[#parts + 1] = ("%s:%d"):format(key, n) end
+    table.sort(parts)
+    log("UNIT_COMBAT on plates: %s", #parts > 0 and table.concat(parts, " ") or "none heard")
 end
 
 local function meterReport()
@@ -177,6 +260,7 @@ function Probe.Report()
     log("samples=%d", cur.samples)
     local ok, err = pcall(function()
         kindsReport()
+        unitsReport()
         taggedReport()
         meterReport()
     end)
