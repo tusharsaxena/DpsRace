@@ -73,5 +73,5 @@ Mockup: https://claude.ai/artifact/AMWeF6JJ3z9JTLgeBaKGZJ (boards A and B).
 
 ### M4: Finish
 
-- [ ] M4.1 Docs sync: ARCHITECTURE, schema, settings-panel, data-flow, module-map, scope, the
+- [x] M4.1 Docs sync: ARCHITECTURE, schema, settings-panel, data-flow, module-map, scope, the
   smoke-test pending list and the test inventory. A final review pass.

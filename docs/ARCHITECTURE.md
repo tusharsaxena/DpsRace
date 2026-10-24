@@ -26,15 +26,21 @@ setup file per module, each a descriptor plus a degradation stub (anti-pattern #
 - **The engine** decides. `modules/Meter.lua` reads `C_DamageMeter`; `modules/Timeline.lua` and
   `modules/Scoring.lua` are pure timing and scoring; `modules/Race.lua` is the state machine
   (idle, armed, running, stopping, result) driven by `modules/Watchers.lua`'s events and
-  `GetTime()`; `modules/Recorder.lua` snapshots and stores runs; `modules/Bests.lua` works out
-  personal bests and protects them from pruning.
-- **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`), the
-  Results window (`modules/Results*.lua`), the chat share (`modules/Share.lua`) and test mode
+  `GetTime()`; `modules/Recorder.lua` snapshots and stores runs, with the gear and talents raced
+  (`modules/Loadouts.lua` keeps each distinct set once); `modules/Slices.lua` holds the damage
+  chart's buckets for this session only; `modules/Bests.lua` works out personal bests and protects
+  them from pruning.
+- **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`, with
+  the live damage chart and pace bar in `modules/Hud_Chart.lua`), the Results window
+  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout), the chat share (`modules/Share.lua`) and test mode
   (`modules/Preview.lua`). None of them decides anything from a meter value.
 - **The shell** configures and reaches. The settings pages, the slash verbs, the launcher and three
   key bindings, the stand-down latch, the perf harness and the diagnostics report.
 
 The design and every rule's reason are in the spec; [scope.md](scope.md) says what is in and out.
+The 2026-10-25 pass ([`superpowers/plans/2026-10-25-chart-compare-loadout.md`](superpowers/plans/2026-10-25-chart-compare-loadout.md))
+added the live damage chart and pace bar (#2, #3), the run detail's compare (#7), and the gear and
+talents stored with each run (#6, run-record format 2).
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -239,6 +245,11 @@ each frame's strata, level and toplevel.
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
   textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
   broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
+- The detail's *View* (#6) hands a stored `talentbuild` link to `SetItemRef` from an addon button,
+  so Blizzard's handler opens the read-only talent tree on an addon's path. The tree is not
+  protected; whether that path later blocks an action in the talent UI is unconfirmed and is
+  smoke row SM-DR-LO4. The gear grid's modified click goes to the client's own
+  `HandleModifiedItemClick`, and the item tooltips are `GameTooltip:SetHyperlink` on a stored link.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -292,6 +303,12 @@ each frame's strata, level and toplevel.
 - **The chart and the pace bar compare by eye only** (#3). A secret cannot be compared, so neither
   says ahead or behind, and the pace is the best's *average* (its damage spread evenly over its
   length): the best has no stored curve, so an opener-heavy best looks easy early on.
+- **The compare's picked run lasts the session** (#7). *Compare With This Run* is view state, never
+  stored: a `/reload` or login returns every run's compare to its board's best (the runner-up for
+  the best itself). A run alone on its board has nothing to compare with until one is picked.
+- **The share's talents link may need a second message** (#6). With *Include talents link* on, the
+  link follows the score line as its own message when both do not fit in 255 bytes; a link longer
+  than 255 bytes on its own is dropped rather than cut.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 
@@ -354,5 +371,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest file is
-`modules/Hud.lua` at 916 lines (layout-§1).
+Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest files
+are `modules/Hud.lua` at 970 lines and `modules/Hud_States.lua` at 965 (layout-§1); the 2026-10-25
+pass put its new parts in their own modules (`Hud_Chart`, `Results_Compare`, `Results_Loadout`,
+`Slices`, `Loadouts`) rather than grow these two.

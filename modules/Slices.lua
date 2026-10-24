@@ -124,6 +124,14 @@ function Slices.Drawable(run)
     return rec
 end
 
+--- How many races this session hold a record (the diagnostics report).
+--- @return number
+function Slices.Held()
+    local n = 0
+    for _ in pairs(store) do n = n + 1 end
+    return n
+end
+
 --- Drop every record (the suites; nothing in the addon forgets a race within a session).
 function Slices.Reset()
     store = {}

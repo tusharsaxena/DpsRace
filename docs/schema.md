@@ -110,8 +110,10 @@ plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
 old one. Spell names and icons are resolved for display and never stored. About 1 to 1.5 KB per run.
 
-A change to the record's shape raises `global.schema` and adds a migration step that rewrites stored
-runs; a reader that meets a run with a higher `schema` than it knows leaves it alone.
+A change to the record's shape raises `global.schema` and adds a migration step. The step rewrites
+stored runs only when the old shape cannot be read as the new one; format 2 only adds an optional
+field, so its step (1 → 2) rewrites none. A reader that meets a run with a higher `schema` than it
+knows leaves it alone.
 
 ## Named non-setting state
 

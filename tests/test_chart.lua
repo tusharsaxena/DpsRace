@@ -445,3 +445,25 @@ test("chart: test mode honors Show damage chart and Show pace bar", function()
     assertEqual(f.Hud.__ui().current, "result")
     assertFalse(body(f).w.chart.shown, "nor on the sample's result card")
 end)
+
+-- ── diagnostics ─────────────────────────────────────────────────────────────────────────────────
+
+test("chart: the diagnostics state section counts the loadout store and the races holding a chart", function()
+    local f = hud()
+    running(f, 30)
+    pump(f, 2)
+    local lines = {}
+    local out = { add = function(_, _, fmt, ...)
+        local args = { ... }
+        for i = 1, select("#", ...) do args[i] = tostring(args[i]) end
+        lines[#lines + 1] = fmt:format(unpack(args, 1, select("#", ...)))
+    end }
+    for _, section in ipairs(f.NS.Diagnostics.Sections()) do
+        if section[1] == "state" then section[2](out) end
+    end
+    local gear, talents = f.NS.Loadouts.Counts()
+    local want = ("loadouts gear=%d talents=%d chart races=1"):format(gear, talents)
+    local found = false
+    for _, l in ipairs(lines) do if l == want then found = true end end
+    assertTrue(found, "no loadouts line; got: " .. table.concat(lines, " | "))
+end)

@@ -292,7 +292,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (20)
+### test_chart.lua (21)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -314,6 +314,7 @@ Total.
 - chart: a lost run has no chart on the card or in the detail
 - chart: test mode draws the sample's chart against a sample best, then on its result card
 - chart: test mode honors Show damage chart and Show pace bar
+- chart: the diagnostics state section counts the loadout store and the races holding a chart
 
 ### test_countdown.lua (20)
 
@@ -706,7 +707,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
-| test_chart.lua | 20 |
+| test_chart.lua | 21 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 42 |
@@ -730,4 +731,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **576** |
+| **Total** | **577** |
