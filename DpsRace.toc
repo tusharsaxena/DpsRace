@@ -125,9 +125,6 @@ modules\Share.lua
 # core\Bus.lua; drives the HUD (modules\Hud.lua) at CALL time.
 modules\Preview.lua
 modules\Diagnostics.lua
-# The target probe (debug only, 2026-10-24). LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED)
-# at FILE SCOPE through core\Bus.lua.
-modules\TargetProbe.lua
 
 # Settings (last -- depend on everything else being initialized)
 # LOAD-BEARING: publishes NS.RegisterSchemaRows, which settings\General.lua calls at FILE SCOPE.

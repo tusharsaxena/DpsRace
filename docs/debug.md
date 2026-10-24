@@ -30,7 +30,6 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Perf` | the performance harness |
 | `Diag` | the diagnostics report |
 | `Race` | `modules/Race.lua`, one line per edge (debug-logging-§8): the arm (length, newest session before it) and each refusal with its reason code; a session adopted, or ignored because it existed before the arm; the clock start; each combat-start and combat-end edge; the buzzer; an incomplete run's early end; the stopping hold and the quiet that releases the read; a still-sealed read's retry; the read's outcome (status, damage present or absent, never the figure); each late cast and a restart; the resume's decision after a `/reload`; and why a run was lost |
-| `Probe` | `modules/TargetProbe.lua`, only while debug logging is on and a race runs: the first sample of each enemy nameplate and each newly tagged one (every answer's kind: `nil`, `secret`, `sealed` or a plain type), each new maximum of tagged plates, a summary every 2 s, and after the result the report: the kinds tallied over the race, each tagged plate's name, level, NPC ID and category, and the meter's `EnemyDamageTaken` rows. It ends with *end of report* |
 | `Meter` | `modules/Meter.lua`: a `C_DamageMeter` call that raised, with the error |
 | `Recorder` | `modules/Recorder.lua`: a snapshot call that raised, and each prune's count |
 | `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |

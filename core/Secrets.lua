@@ -103,26 +103,6 @@ function Secrets.PlainEquals(a, b)
     return a == b
 end
 
---- What `v` is, for the target probe's report (modules/TargetProbe.lua): "nil", "secret" (or
---- "sealed": present but inaccessible), or the plain value's type. Never inspects a sealed value.
---- @param v any
---- @return string
-function Secrets.Kind(v)
-    if v == nil then return "nil" end
-    if Secrets.IsSecret(v) then return "secret" end
-    if not Secrets.CanAccess(v) then return "sealed" end
-    return type(v)
-end
-
---- Whether `v` is there at all: the nil test, the one question the client allows of a non-boolean
---- secret (pcall'd, for a boolean secret that might refuse even that).
---- @param v any
---- @return boolean
-function Secrets.IsPresent(v)
-    local ok, present = pcall(function() return v ~= nil end)
-    return ok and present == true
-end
-
 -- ---------------------------------------------------------------------------
 -- Table inspection
 -- ---------------------------------------------------------------------------
