@@ -1,8 +1,8 @@
 local _, NS = ...
 -- settings/Hud.lua — the HUD page (the owner's call, 2026-10-25: the two HUD tabs off General onto a
 -- page of their own, between Race and History). Two tabs, in registration order: Race HUD (what the
--- HUD shows and when, and the live breakdown) and HUD Appearance (its look). Same rows, same paths,
--- same defaults as when they sat on General.
+-- HUD shows and when, the live breakdown, the damage chart and the pace bar) and HUD Appearance (its
+-- look). Same rows, same paths, same defaults as when they sat on General.
 
 local L = NS.L
 local H = NS.Helpers
@@ -11,7 +11,8 @@ local PAGE = "hud"
 -- ── Race HUD ────────────────────────────────────────────────────────────────────────────────────
 -- The page's first tab (spec §6.3; on General until 2026-10-25), holding every HUD behavior: Display
 -- (show the HUD on arm only or always, and its clock), then Live breakdown (what the running HUD lists
--- and how often it reads the meter; the Live breakdown page folded in here, item 020). The HUD's scale
+-- and how often it reads the meter; the Live breakdown page folded in here, item 020), then Chart and
+-- pace (#2, #3). The HUD's scale
 -- and lock are General's Master controls rows: the HUD is the addon's positionable display.
 local SHOW_MODES = { onArm = true, always = true }
 local CLOCK_MODES = { both = true, left = true, elapsed = true }
@@ -67,6 +68,19 @@ NS.RegisterSchemaRows({
       onChange = redraw },
 })
 
+-- The damage chart (#2) and the pace bar (#3) on the running HUD: read on every redraw, so a redraw is
+-- the whole reaction. Their look is HUD Appearance > Damage chart.
+NS.RegisterSchemaRows({
+    { path = "live.chart", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
+      label = L["Show damage chart"], default = LIVE.chart,
+      tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its level and its average pace) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
+      onChange = redraw },
+    { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
+      label = L["Show pace bar"], default = LIVE.paceBar,
+      tooltip = L["Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."],
+      onChange = redraw },
+})
+
 -- ── HUD Appearance ──────────────────────────────────────────────────────────────────────────────
 -- The HUD's look (the owner's call, 2026-10-24): its own tab after Race HUD, one subsection per styled
 -- part, each a COMPOSED group (options-ui-§16: the canonical rows, the canonical words, never a
@@ -104,10 +118,22 @@ append(H.BarGroup({
     } },
 }))
 append(fontBlock("spellText", L["Spell text"], 500))
+-- The damage chart's columns and the pace bar (#2, #3): a bar block with the plot's height after it.
+append(H.BarGroup({
+    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Damage chart"], order = 600,
+    classColor = PLAYER_CLASS, defaults = AD.chart,
+    extra = { {
+        path = "appearance.chart.height", type = "number", min = 40, max = 160, step = 2,
+        label = L["Chart height"], default = AD.chart.height, startsLine = true,
+        tooltip = L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."],
+    } },
+}))
+-- The appended rows, in the addon's own words; every other row is the library's.
+local OWN_WORDS = { ["appearance.bars.rowHeight"] = true, ["appearance.chart.height"] = true }
 for _, r in ipairs(appearanceRows) do
     r.onChange = restyle
-    -- The library's words, not this addon's (options-ui-§21), except the appended row height.
-    if r.path ~= "appearance.bars.rowHeight" then r.composed = true end
+    -- The library's words, not this addon's (options-ui-§21), except the appended rows.
+    if not OWN_WORDS[r.path] then r.composed = true end
 end
 NS.RegisterSchemaRows(appearanceRows)
 
@@ -116,5 +142,5 @@ NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["HUD"],
     panelName       = "DpsRaceHudPanel",
-    defaultsTooltip = L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."],
+    defaultsTooltip = L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."],
 })

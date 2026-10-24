@@ -77,12 +77,27 @@ local function liveAt(elapsed)
     return live
 end
 
+-- The sample's chart and pace bar (#2, #3): its damage at each whole second so far, against a made-up
+-- best a little under it, scaled as a race with a best is (plain numbers; a real race's are secret).
+local SAMPLE_BEST = { race = { length = Preview.LENGTH }, result = { damage = DPS * Preview.LENGTH * 0.96 } }
+
+local function sampleChart(elapsed)
+    local values = {}
+    for i = 1, math.floor(elapsed) do values[i] = DPS * i end
+    local chart = { count = NS.Slices.Count(Preview.LENGTH), values = values, length = Preview.LENGTH }
+    chart.best = SAMPLE_BEST.result.damage
+    chart.max = chart.best * NS.HudChart.HEADROOM
+    chart.note = L["vs best pace"]
+    return chart
+end
+
 -- Each body's figures, `t` seconds into its phase.
 local FIGURES = {
     armed = function() return {} end,
     running = function(t)
         local elapsed = math.min(t, Preview.LENGTH)
-        return { timeLeft = Preview.LENGTH - elapsed, elapsed = elapsed, live = liveAt(elapsed) }
+        return { timeLeft = Preview.LENGTH - elapsed, elapsed = elapsed, live = liveAt(elapsed),
+                 chart = sampleChart(elapsed), pace = { max = NS.HudChart.PaceMax(SAMPLE_BEST, elapsed) } }
     end,
     stop = function(t)
         return { tail = math.min(t, TAIL), sinceBuzzer = t, inCombat = true, grace = 1.0,

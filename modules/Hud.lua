@@ -272,6 +272,8 @@ local function runningView(v)
     if elapsed and length then elapsed = math.min(elapsed, length) end
     v.elapsed = elapsed
     v.live = liveData
+    v.chart, v.pace = NS.HudChart.LiveViews(v.run, elapsed, setting("live.chart") ~= false,
+        setting("live.paceBar") ~= false)
 end
 
 local FILL = { idle = idleView, running = runningView, result = resultView }

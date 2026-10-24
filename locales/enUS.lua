@@ -365,8 +365,8 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
-L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."] =
-    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."
+L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
+    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 
 -- HUD page: the Race HUD tab's Live breakdown subsection (settings/Hud.lua)
 L["Live breakdown"] = "Live breakdown"
@@ -392,6 +392,19 @@ L["Draw each spell's icon on the HUD's rows."] = "Draw each spell's icon on the 
 L["Show live DPS"] = "Show live DPS"
 L["Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."] =
     "Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."
+
+-- HUD page: the Race HUD tab's Chart and pace subsection and HUD Appearance's Damage chart (#2, #3)
+L["Chart and pace"] = "Chart and pace"
+L["Show damage chart"] = "Show damage chart"
+L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its level and its average pace) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."] =
+    "Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its level and its average pace) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."
+L["Show pace bar"] = "Show pace bar"
+L["Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
+    "Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."
+L["Damage chart"] = "Damage chart"
+L["Chart height"] = "Chart height"
+L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."] =
+    "The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."
 
 -- History page (settings/History.lua)
 L["History"] = "History"
@@ -585,3 +598,9 @@ L["%s: not cast"] = "%s: not cast"
 L["%s: %s damage"] = "%s: %s damage"
 L["%s: %s damage (%.1f%%)"] = "%s: %s damage (%.1f%%)"
 L["Difference: %s"] = "Difference: %s"
+
+-- The damage chart and the pace bar (modules/Hud_Chart.lua, #2, #3)
+L["Damage over the race"] = "Damage over the race"
+L["vs best pace"] = "vs best pace"
+L["first race on this board"] = "first race on this board"
+L["Best %s"] = "Best %s"

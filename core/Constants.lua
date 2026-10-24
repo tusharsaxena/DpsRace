@@ -37,9 +37,11 @@ C.LOGO = ("Interface\\AddOns\\%s\\media\\logos\\dpsrace.logo.tga"):format(addonN
 -- displacing test strip), content W+2 .. W+8, the library resize grip W+10. The Results detail pane
 -- is laid inside the Runs pane's rectangle in wide mode, so it is set to body + LEVEL.DETAIL (W+3) the
 -- moment it is built, before its children, instead of tying the empty Runs pane (body + 1) by
--- creation order. Its deepest child then sits at W+8, still under the grip. The binding buttons and
+-- creation order. Its deepest child then sits at W+8, still under the grip. The damage chart's overlay
+-- (modules/Hud_Chart.lua: the best line and the pace diagonal) is set to its plot + LEVEL.CHART_OVERLAY,
+-- one band over the plot's columns, which a line on the plot itself would sit under. The binding buttons and
 -- the event frame draw nothing and set no layer (exempt).
 C.LAYERS = {
     STRATA = { HUD = "MEDIUM", WINDOW = "HIGH", SCREEN_ALERT = "FULLSCREEN" },
-    LEVEL  = { DETAIL = 2 },
+    LEVEL  = { DETAIL = 2, CHART_OVERLAY = 2 },
 }

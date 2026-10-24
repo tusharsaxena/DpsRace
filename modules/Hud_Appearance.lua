@@ -1,7 +1,7 @@
 local _, NS = ...
 -- modules/Hud_Appearance.lua — the HUD's configured look (HUD > HUD Appearance, settings/Hud.lua):
--- the two running clocks, the live Damage and DPS figures, and the spell rows' bars and text, which
--- the Results window's breakdown shares. Each block is a composed group (options-ui-§16) stored under
+-- the two running clocks, the live Damage and DPS figures, the spell rows' bars and text, which
+-- the Results window's breakdown shares, and the damage chart's and pace bar's fill. Each block is a composed group (options-ui-§16) stored under
 -- `appearance.<block>.`; this file turns a block into what a widget setter takes.
 --
 -- MEDIA BY NAME. A face or a bar texture is stored by its LibSharedMedia name, so a profile travels
@@ -115,6 +115,12 @@ function Appearance.BarAt(p, def, class)
         texture = fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,
     }
+end
+
+--- The damage chart's columns and the pace bar's fill (HUD Appearance > Damage chart).
+--- @return table { texture, r, g, b, a }
+function Appearance.Chart()
+    return Appearance.BarAt("appearance.chart.", D.chart)
 end
 
 --- The spell rows' height in pixels (the breakdown's pitch adds its gap).

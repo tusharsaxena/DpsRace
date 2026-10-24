@@ -33,6 +33,10 @@ NS.defaults = {
             icons   = true,   -- spell icons
             showDps = true,   -- Blizzard's live DPS figure, labeled live
             hz      = 4,      -- live reads per second, 2-10 (spec §10)
+            -- The running body's damage chart (#2) and pace bar (#3), each on HUD > Race HUD > Chart
+            -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
+            chart   = true,
+            paceBar = true,
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
@@ -58,6 +62,10 @@ NS.defaults = {
                      useClassColorBar = false, rowHeight = 18 },
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
+            -- The damage chart's columns and the pace bar's fill (modules/Hud_Chart.lua): the mockup's
+            -- brighter indigo, and the plot's height in pixels.
+            chart = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
+                      useClassColorBar = false, height = 80 },
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
         -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
@@ -74,7 +82,8 @@ NS.defaults = {
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
-            hud = { width = 300, height = 460 },   -- tall enough for all 8 live rows (screen 04)
+            -- Tall enough for all 8 live rows under the pace bar and the damage chart (screen 04, #2).
+            hud = { width = 300, height = 520 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.

@@ -51,6 +51,8 @@ local STORED = {
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
+    ["live.chart"]           = { "bool",   true },
+    ["live.paceBar"]         = { "bool",   true },
     ["race.defaultLength"]   = { "number", 180 },
     ["race.countdownCue"]    = { "bool",   true },
     ["race.centerCountdown"] = { "bool",   true },
@@ -90,6 +92,11 @@ local STORED = {
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
+    ["appearance.chart.barTexture"] = { "string", "Solid" },
+    ["appearance.chart.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
+    ["appearance.chart.barColor"] = { "color", "table" },
+    ["appearance.chart.useClassColorBar"] = { "bool", false },
+    ["appearance.chart.height"] = { "number", 80, 40, 160, 2 },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
     ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
@@ -315,7 +322,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps M
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 6 + 4 * 6 + 4 + 1, "the Race HUD tab's six rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 8 + 4 * 6 + 4 + 1 + 4 + 1, "the Race HUD tab's eight rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -338,6 +345,8 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
         "live.icons|Live breakdown|Show spell icons|false",
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",
+        "live.chart|Chart and pace|Show damage chart|false",
+        "live.paceBar|Chart and pace|Show pace bar|false",
     }, "\n"))
 end)
 
@@ -377,7 +386,7 @@ end)
 test("settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance", function()
     local tip = T.mocks.__subcategories["HUD"].defaultsTooltip
     assertEqual(tip, "Restore every HUD setting on this profile to its addon default: the Race HUD tab "
-        .. "(display and live breakdown) and HUD Appearance.")
+        .. "(display, live breakdown, chart and pace) and HUD Appearance.")
 end)
 
 -- ── History: stored count, Purge history… ────────────────────────────────────────────────────────

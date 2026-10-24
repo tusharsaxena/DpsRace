@@ -102,6 +102,10 @@ modules\Style.lua
 # at FILE SCOPE; the HUD's and the Results window's files reach it at CALL time.
 modules\Hud_Appearance.lua
 modules\Hud_Breakdown.lua
+# The damage chart and the pace bar (#2, #3). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua)
+# and captures NS.Style at FILE SCOPE; modules\Hud_States.lua and modules\Results_Detail.lua build it at
+# CALL time.
+modules\Hud_Chart.lua
 modules\Hud_States.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT) at FILE SCOPE
 # through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its default size, and calls

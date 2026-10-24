@@ -1,5 +1,6 @@
 -- tests/test_chart.lua — the damage chart and the pace bar (#2, #3): the in-session bucket store
--- (modules/Slices.lua) and the running HUD's captures into it.
+-- (modules/Slices.lua), the chart and pace bar widgets (modules/Hud_Chart.lua) and the running HUD
+-- drawing them live.
 --
 -- The live cases run on the race fixture (tests/race_clock.lua) with the widget recorder
 -- (tests/mock_widgets.lua). The meter is secret in combat, every read answering fresh opaque handles,
@@ -7,9 +8,11 @@
 -- boundary answered, never a value worked out from one.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
+local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
 local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+
+local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
 
 local function hud()
     local W
@@ -18,6 +21,13 @@ local function hud()
     f.NS.Slices.Reset()
     return f
 end
+
+local function body(f)
+    local u = assert(f.Hud.__ui(), "the HUD window was never built")
+    return u.body[u.current]
+end
+
+local function tick(f) f.Hud.Tick() end
 
 -- Every live read the HUD makes: its race-clock time and the total it answered (an opaque handle).
 local function recordReads(f)
@@ -36,6 +46,15 @@ local function running(f, length)
     assertEqual(f.Race.State(), "running")
 end
 
+-- `seconds` of running at 16 meter updates a second, a countdown tick on each.
+local function pump(f, seconds)
+    for _ = 1, math.floor(seconds * 16 + 0.5) do
+        f:advance(1 / 16)
+        f.M.__fire(METER_EVENT, 0, 25)
+        tick(f)
+    end
+end
+
 -- The handle bucket `i` must hold: the first read at or after its boundary, when it came in time.
 local function expected(reads, boundary)
     for _, r in ipairs(reads) do
@@ -45,6 +64,15 @@ local function expected(reads, boundary)
         end
     end
     return nil
+end
+
+-- A complete run on the board the fixture's race lands on (same spec, target and length).
+local function seedBest(f, damage, length)
+    local best = f.NS.Recorder.NewRun(length or 30)
+    best.status, best.date = "complete", 1
+    best.result = { damage = damage, dps = damage / (length or 30) }
+    f.NS.Recorder.Save(best)
+    return best
 end
 
 -- ── the store, pure ─────────────────────────────────────────────────────────────────────────────
@@ -116,6 +144,122 @@ test("chart: Drawable answers only a scored run with slices this session", funct
     assertEqual(S.Drawable(run), nil, "nothing to scale to")
 end)
 
+test("chart: the pace is the best's damage spread evenly over its length", function()
+    local C = T.NS.HudChart
+    local best = { race = { length = 30 }, result = { damage = 3000 } }
+    assertEqual(C.Pace(best, 10), 1000)
+    assertEqual(C.Pace(best, 45), 3000, "clamped at the buzzer")
+    assertEqual(C.Pace(best, -2), 0)
+    assertEqual(C.PaceMax(best, 10), 2000, "half-full is on pace")
+    assertEqual(C.PaceMax(best, 0), 1, "a range at 0:00 all the same")
+end)
+
+-- ── the running HUD ─────────────────────────────────────────────────────────────────────────────
+
+test("chart: each column holds exactly the handle read at its boundary, and none fills early", function()
+    local f = hud()
+    local reads = recordReads(f)
+    running(f, 30)
+    pump(f, 6.5)
+    local b = body(f)
+    assertTrue(b.w.chart.shown, "the chart is up")
+    local cols = b.w.chart.cols
+    assertEqual(#cols, 30, "one column a second for a 0:30 race")
+    local rec = f.NS.Slices.Get(f.Race.Current().id)
+    for i = 1, 6 do
+        local want = expected(reads, i)
+        assertTrue(want ~= nil, "bucket " .. i .. " had a read in time")
+        assertTrue(rawequal(rec.values[i], want), "the store's bucket " .. i)
+        assertTrue(rawequal(cols[i].__value, want), "column " .. i .. " holds its boundary's handle")
+    end
+    for i = 7, 30 do
+        assertEqual(rec.values[i], nil, "bucket " .. i .. " filled before its boundary")
+        assertEqual(cols[i].__value, 0, "column " .. i .. " drawn before its boundary")
+    end
+    assertEqual(#f.W.SecretGeometryReads(), 0, "a geometry read on a frame holding a secret")
+end)
+
+test("chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar", function()
+    local f = hud()
+    local reads = recordReads(f)
+    running(f, 30)
+    pump(f, 3.5)
+    local b = body(f)
+    local chart = b.w.chart
+    local last = reads[#reads].total
+    assertTrue(T.isSecret(chart.cols[1].__max), "the range is a secret")
+    assertTrue(rawequal(chart.cols[1].__max, last), "the range is the latest live total")
+    assertEqual(chart.note.__text, "first race on this board")
+    assertFalse(chart.bestLabel:IsShown(), "a best line with no best")
+    for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "a pace diagonal with no best") end
+    assertFalse(b.w.pace.bar:IsShown(), "a pace bar with no best")
+end)
+
+test("chart: with a best the scale is its damage x 1.15 (A), with its level, its pace and the pace bar", function()
+    local f = hud()
+    local reads = recordReads(f)
+    seedBest(f, 3000000, 30)
+    running(f, 30)
+    pump(f, 3.5)
+    local b = body(f)
+    local chart = b.w.chart
+    assertEqual(chart.cols[1].__max, 3000000 * 1.15, "a plain range")
+    assertTrue(T.isSecret(chart.cols[1].__value), "the value is still the read's handle")
+    assertEqual(chart.note.__text, "vs best pace")
+    assertTrue(chart.bestLabel:IsShown())
+    assertTrue(chart.bestLabel.__text:find("^Best ") ~= nil, chart.bestLabel.__text)
+    -- The diagonal runs from the plot's inner corner to the best's level at the buzzer.
+    local width, plotH = chart.width, chart.plotH
+    local level = 2 + (plotH - 4) / 1.15
+    local first, lastDash = chart.diag[1], chart.diag[#chart.diag]
+    local _, _, x0, y0 = first:GetStartPoint()
+    assertEqual(x0, 2)
+    assertEqual(y0, 2)
+    local _, _, x1, y1 = lastDash:GetEndPoint()
+    assertTrue(math.abs(x1 - (2 + (width - 4) * (1 - 0.4 / #chart.diag))) < 1e-6, "the last dash ends short of the corner")
+    assertTrue(y1 < level and y1 > level - (level - 2) / #chart.diag, "the diagonal climbs to the best's level")
+    local _, _, _, by = chart.bestLine[1]:GetStartPoint()
+    assertTrue(math.abs(by - level) < 1e-6, "the best line sits at the best's level")
+    -- The pace bar: twice the best's average pace now (plain), the live total (opaque).
+    local pace = b.w.pace
+    assertTrue(pace.bar:IsShown())
+    assertEqual(pace.label.__text, "vs best pace")
+    local elapsed = f.Race.Elapsed()
+    assertTrue(math.abs(pace.bar.__max - 2 * 3000000 * elapsed / 30) < 1e-3, "2 x pace at the last redraw")
+    assertTrue(rawequal(pace.bar.__value, reads[#reads].total), "the live total, untouched")
+    assertTrue(pace.tick:IsShown(), "the on-pace tick")
+end)
+
+test("chart: hidden, with the pace bar, while the run is on a shared session", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    running(f, 30)
+    pump(f, 1.5)
+    local b = body(f)
+    assertTrue(b.w.chart.shown)
+    f.Race.Current().flags.sharedSession = true
+    pump(f, 1.5)
+    assertFalse(b.w.chart.shown, "the chart on a shared session")
+    assertFalse(b.w.pace.bar:IsShown(), "the pace bar on a shared session")
+    local rec = f.NS.Slices.Get(f.Race.Current().id)
+    assertEqual(rec.values[2], nil, "a bucket ended on the shared session stays empty")
+end)
+
+test("chart: Show damage chart and Show pace bar turn each off", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    assertTrue(f.NS.SetByPath("live.chart", false))
+    assertTrue(f.NS.SetByPath("live.paceBar", false))
+    running(f, 30)
+    pump(f, 1.5)
+    local b = body(f)
+    assertFalse(b.w.chart.shown)
+    assertFalse(b.w.pace.bar:IsShown())
+    assertTrue(f.NS.SetByPath("live.chart", true))
+    tick(f)
+    assertTrue(b.w.chart.shown, "back on the next redraw")
+end)
+
 test("chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last", function()
     local f = hud()
     local reads = recordReads(f)
@@ -130,4 +274,25 @@ test("chart: a quiet stretch still fills each bucket at its boundary, and the bu
     assertTrue(rawequal(rec.values[30], reads[#reads].total))
     assertEqual(reads[#reads].t, 30)
     assertEqual(rec.filled, 30)
+end)
+
+test("chart: the chart steps aside at the minimum height; the rows keep their three", function()
+    local f = hud()
+    f.NS.db.profile.windows.hud.height = f.Hud.MIN_HEIGHT
+    f.NS.db.profile.live.rows = 15
+    running(f, 30)
+    pump(f, 1)
+    local b = body(f)
+    assertFalse(b.w.chart.shown, "no room for the chart and three rows")
+    assertTrue(b.w.list:Count() >= 3)
+end)
+
+test("chart: the overlay sits one band over the plot's columns", function()
+    local f = hud()
+    running(f, 30)
+    pump(f, 1)
+    local chart = body(f).w.chart
+    local lay = f.M.__layers
+    assertEqual(lay(chart.over).level, lay(chart.plot).level + f.NS.Constants.LAYERS.LEVEL.CHART_OVERLAY)
+    assertTrue(lay(chart.cols[1]).level < lay(chart.over).level, "a column over the lines")
 end)
