@@ -30,4 +30,4 @@ in the same commit, so a fresh session resumes at the first open box.
 - [x] S3 `live.rows` 0 = all, and the running body's wheel scroll.
 - [x] S4 HUD Appearance: clock font, figures font, spell bars (texture, opacity, color, class color,
   row height, font). Applied to the HUD and the Results detail.
-- [ ] S5 Docs (ARCHITECTURE, schema, settings-panel, data-flow, smoke-tests) and the smoke checklist.
+- [x] S5 Docs (ARCHITECTURE, schema, settings-panel, data-flow, smoke-tests) and the smoke checklist.

@@ -16,6 +16,9 @@ the catalog (spec §4.6).
 Rows changed for the Keybindings tab's one key button and not yet run by the owner: SM-DR-KB2
 and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
 
+Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), not yet run: S3, S6,
+W1, W4, W7, W17 and SM-DR-LY1 (rewritten), and section 10 (new).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -47,17 +50,17 @@ and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
 |---|---|---|---|
 | S1 | Open *Settings → AddOns* right after login | *Ka0s DPS Race* is there before the panel was ever opened | Whether `/dr` opens it |
 | S2 | Open the landing page, switch pages and come back | The logo, notes line and command list show; the logo is never drawn under the list | A screenshot |
-| S3 | Open General | Three tabs: *Master controls* (rows in the standard's order), *Race HUD* (*Display* and *Live breakdown*) and *Keybindings* | A screenshot |
+| S3 | Open General | Four tabs: *Master controls* (rows in the standard's order), *Race HUD* (*Display* and *Live breakdown*), *HUD Appearance* and *Keybindings* | A screenshot |
 | S4 | Look at the page order | Race and History sit between General and Profiles, each a one-tab strip with subsection headings; there is no *Live breakdown* page | A screenshot |
 | S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
-| S6 | On General > Race HUD, set *Spell rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
+| S6 | On General > Race HUD, set *Spell rows shown* to 3, then 15, then 0, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*); at 0 as many as fit, the caption reads *1-N of M*, and the mouse wheel scrolls the list a row a notch, stopping at either end | A screenshot |
 | S7 | On History, type 10000 into *Runs to keep*'s box | Accepted at once, without a stall; nothing is deleted on the spot | How long it froze, if it did |
 | S8 | Press each page's *Defaults* button after changing one row on every page | Only that page's rows go back | Which page's rows moved |
 | S9 | History: *Purge history…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
 | S10 | Open the panel in combat | Refused with a notice; it opens once combat ends | Whether any taint error followed |
 | S11 | *Reset all settings* | It asks first; afterwards the minimap button keeps its state and *Test mode* is unticked | The settings that did not reset |
 | S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
-| SM-DR-LY1 | Open General > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the live breakdown and ends *Key bindings are not changed.* Change a live row, press General's *Defaults*: it goes back | A screenshot of the tab |
+| SM-DR-LY1 | Open General > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the live breakdown and HUD Appearance and ends *Key bindings are not changed.* Change a live row, press General's *Defaults*: it goes back | A screenshot of the tab |
 | SM-DR-LY2 | Open Race | One tab, headed *Length*, *Countdown*, *At the buzzer*, *Scoring rules* in that order: *Countdown cue sound* alone on its line, then *Center-screen countdown* \| *Center countdown from (seconds)*; *Buzzer raid warning and sound* \| *Sticky-combat hint after (seconds)* (its tooltip ends *5 to 60 seconds.*); *Late-cast grace (seconds)* \| *Damage-restart gap (seconds)*. No *Scoring rules* tab | A screenshot of the page |
 | SM-DR-LY3 | Open History; hover *Runs to keep* and the last button | *Runs to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
 | SM-DR-LY4 | Before the pass, note every value on General > Race HUD, Race and History (or `/dr list`); after it, compare, then `/reload` and compare again | No setting is lost or changed by the new layout, `/dr list` shows the live rows under *general › Race HUD*, and every value survives the `/reload` | The row that differs |
@@ -134,13 +137,13 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| W1 | Open Results after sections 4 and 5 | *Runs* tab: every resolved run, sorted by DPS, highest first (unranked runs last); incomplete and lost rows show *incomplete* / *lost* muted in the DPS column; no running or stopping run is listed | A screenshot |
+| W1 | Open Results after sections 4 and 5 | *Runs* tab: every resolved run, sorted by DPS, highest first (unranked runs last). The *Time* column reads *2:00 +11.1s* (the tail in gray) or *1:04 / 2:00* for an incomplete run; the DPS column shows every run's DPS, incomplete ones included, and a dash for a lost one; the *Status* column tags each run *Best* (gold), *Complete* (green), *Flagged* (amber), *Incomplete* or *Died* (red) or *Lost* (gray), styled like the *Target* badge; no running or stopping run is listed | A screenshot |
 | W2 | Hover the class and spec icons | The class icon is cropped cleanly (from `CLASS_ICON_TCOORDS`), the spec icon is the spec's own (from `GetSpecializationInfoByID`); each tooltip names it | A screenshot of a bad crop |
 | W3 | Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
-| W4 | Sort by DPS, ilvl and date | Each sorts both ways; incomplete and lost sort last on DPS | |
+| W4 | Sort by DPS, ilvl, date, Time and Status | Each sorts both ways; incomplete and lost sort last on DPS; Status groups Best, Complete, Flagged, Incomplete, Died, Lost | |
 | W5 | Click a run | The detail: header (character, spec, ilvl, zone and subzone, target, date, build, version), score block with meter DPS muted and the best delta, the full breakdown with %, the timing strip (buzzer, grace, tail band, late-cast ticks, combat end, restart tick), flags with explanations, note, *Share*, *Delete* | A screenshot |
 | W6 | Scroll a long breakdown with the mouse wheel; drag the list's scrollbar with 20+ runs | The detail scrolls; the slider drags and the list follows | |
-| W7 | Make the window narrower than 900 px and click a run | The detail replaces the list with a back control; back returns to the list with the row still selected | A screenshot |
+| W7 | Make the window narrower than 1060 px and click a run | The detail replaces the list with a back control; back returns to the list with the row still selected | A screenshot |
 | W8 | Type a note with a `|` in it and press Enter; reopen the run | The note is saved with `/` in place of `|`; Escape instead cancels the edit; at most 200 characters fit | The stored note |
 | W9 | *Delete* a run holding a best | It asks first; on accept the run goes and the Bests board promotes the next run | The board before and after |
 | W10 | *Bests* tab | One category at a time (no *All*), starting on the first category present in catalog order. Each row: date, character, ilvl, damage, DPS and flag words (*1 late*, *Restarted*, *Reloaded*, *By list*, *Died*). *Clean runs only* drops flagged rows. Note whether starting on the first category reads well, or the newest run's category would be better | A screenshot, and the owner's view on the starting category |
@@ -150,7 +153,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | W14 | Look for the `×` (target count) and `—` (empty damage) glyphs | Both render in the client font, not as boxes | A screenshot |
 | W15 | Open Results beside LootHistory's browser | The same look: the title centered in the title bar; *Runs* / *Bests* tabs in the normal gold font, the idle one gray; Title Case column headers small and gold with the gold sort arrow after the sorted one; compact 20 px rows in the small white font; the detail's Damage / DPS / Meter DPS figures large over small gray captions; 20 px buttons in the small white font (*Add Note*, *Share*, *Delete*), gold under the pointer; footers small and gray | A screenshot beside LootHistory |
 | W16 | Hover the close control | It turns gold (not red) and back to gray on leave | |
-| W17 | Make the window 900 px or wider, click a run, then open each filter dropdown over the detail | The detail beside the list draws whole (its backdrop, KPI figures, breakdown and buttons over nothing of the list), the filter menus open over it, and the resize grip still takes the drag | A screenshot |
+| W17 | Make the window 1060 px or wider (the new default is 1100), check that every Runs column fits beside the detail with the character name readable, click a run, then open each filter dropdown over the detail | The detail beside the list draws whole (its backdrop, KPI figures, breakdown and buttons over nothing of the list), the filter menus open over it, and the resize grip still takes the drag | A screenshot |
 
 ## 7. Share and test mode
 
@@ -243,3 +246,17 @@ detail's timing strip.
 | C24 | `C_ChatInfo.SendChatMessage` to *Say* from a menu click works outside an instance | P2 | The line posts | Any error, and the debug `Share` line |
 | C25 | The whisper popup's edit box is reachable (`GetEditBox`, else `editBox`) | P3 | The box is prefilled and the whisper sends | Whether the box was empty |
 | C26 | `InChatMessagingLockdown` is honored | P4 | Share is refused in lockdown | What happened instead |
+
+## 10. The 2026-10-24 pass: the stuck arm, status, time, scrolling and HUD Appearance
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-AR1 | On the cleave dummies, race 0:30 with DoTs (a Blood DK's Blood Plague, a Warlock's Wither), let the result show, then *Race Again* at once while the DoTs still tick, and pull | The second race starts on the first hit, every time. Repeat five times | The `Race` debug lines from the arm to the pull (*held back*, *adopted as shared*, *replaces the shared session*) |
+| SM-DR-AR2 | After SM-DR-AR1, open the second run's detail | Either clean (a new session), or flagged *Shared session: the damage it held at the arm was taken off*, with a damage total in line with the race (not the two races added together) | The detail's flag text and the two runs' damage |
+| SM-DR-ST1 | Open the HUD result card of a complete run and of an incomplete one | A *Time 0:30 +X.Xs* chip on the complete card (the DoT tail), *Time 0:12 / 0:30* on the incomplete one | A screenshot of each |
+| SM-DR-ST2 | Open the detail of each | The header's third item reads the same time as the table's *Time* cell | A screenshot |
+| SM-DR-AP1 | Open General > HUD Appearance | Five subsections in order: *Elapsed clock*, *Time left clock*, *Live figures* (each the six-row font block: *Font* \| *Font size*, *Font color* \| *Use class color*, *Font flags* \| *Font shadow*), *Spell bars* (*Bar texture* \| *Bar opacity*, *Bar color* \| *Use class color*, then *Row height*) and *Spell text* | A screenshot of the tab |
+| SM-DR-AP2 | With a race running (or test mode), change each clock's face, size, color, flags and shadow; switch *Race clock* to *Time left*, then *Time elapsed* | Each change shows at once; the KPIs and the rows move down for a larger clock and never overlap it; a lone clock draws half again as large in its own block's color | A screenshot |
+| SM-DR-AP3 | Change *Live figures* | The *Damage* and *DPS · Live* figures restyle; at size 32 their boxes grow and the rows move down | A screenshot |
+| SM-DR-AP4 | Change *Spell bars* (texture, opacity, color, *Use class color*, *Row height*) and *Spell text* | The HUD's live rows, the result card's rows and the Results detail's breakdown all follow; *Use class color* paints the bars in your class color with the opacity kept | Screenshots of the HUD and the detail |
+| SM-DR-AP5 | Press General's *Defaults*, then `/reload` | Every HUD Appearance row returns to the shipped look (monospace green and red clocks, flat indigo bars) and survives the reload | The row that did not reset |

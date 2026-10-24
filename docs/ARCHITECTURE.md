@@ -57,7 +57,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -157,7 +157,7 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 
 | Event | Registered | Handler | Why |
 |---|---|---|---|
-| `DAMAGE_METER_CURRENT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnSessionCreated` | the clock starts on the new session, in combat or with the regen edge on the same frame (spec §4.2) |
+| `DAMAGE_METER_CURRENT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnSessionCreated` | the clock starts on the new session, in combat or with the regen edge on the same frame (spec §4.2); the first DamageDone update heard in combat starts it too (`Race.OnMeterUpdate`), for a session the meter made out of combat |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | ARMED, RUNNING, STOPPING | `Race.OnMeterUpdate` | names the run's session; each update is a timeline stamp (tail, restart, quiet) |
 | `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
@@ -257,6 +257,14 @@ each frame's strata, level and toplevel.
   an upper bound, because the real combat edge was missed.
 - **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper
   sets it per run in the meantime.
+- **A pull that carries on the last fight's session is netted, not separated.** When the meter
+  makes no new session for a race (the last fight's DoTs kept its session open), the run is flagged
+  `sharedSession` and what that session held at the arm is taken off the total and each spell. DoT
+  ticks that land between the arm and the pull still count, and a run with no arm-time read (it
+  failed, or the pull carried on an older session than the newest) keeps the whole total, which its
+  flag says.
+- **The HUD's minimum height is set at the default look.** A taller *Row height*, or larger clock or
+  figure fonts, leave fewer spell rows at the minimum height; the window can be made taller.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 

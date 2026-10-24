@@ -57,8 +57,15 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
   combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
   combat, such as a trailing update from the last fight, leaves the race armed, and a DamageDone
-  update heard out of combat is adopted only if the clock starts on its own frame). The start time is
-  `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
+  update heard out of combat is adopted only if the clock starts on its own frame). The clock also
+  starts on the first DamageDone `DAMAGE_METER_COMBAT_SESSION_UPDATED` heard in combat (or on the
+  regen edge's own frame) while armed: the meter can make the run's session out of combat (a DoT
+  left on the dummies, an opener landing a frame before the edge), and then no session event ever
+  pairs with the edge (the owner's report, 2026-10-24: a second race stayed armed). A pull that
+  carries on a session that existed at the arm is adopted and flagged `sharedSession`. What that
+  session held at the arm (read then, out of combat, `race.baseline`) is netted off the total and
+  each spell at the read, and the meter's own rate is dropped. A fresh session heard later replaces
+  the shared one. The start time is `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
   the run is written to SavedVariables as `running`. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
@@ -85,7 +92,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   the last DamageDone update for the session (updates land up to 1.3 s after combat drops). The
   session is read by its ID through `Meter.ReadSession`, never as "current", into plain numbers. A
   run with no captured ID falls back to the newest session created after the arm and is flagged
-  `sessionFromList` (spec §9). A `sealed` read is retried for 10 s; a missing session, a raise or a
+  `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
+  `sealed` read is retried for 10 s; a missing session, a raise or a
   meter reset makes the run `lost` (kept, with no result).
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
@@ -148,7 +156,11 @@ race.
   `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled
   rows (`hudLive`): bars by `SetMinMaxValues(0, maxAmount)` / `SetValue(total)` (the first row's
   total when there is no `maxAmount`), amounts by `Format.Number`, names and icons by `C_Spell`, in
-  Blizzard's order, `live.rows` of them, no %. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
+  Blizzard's order, `live.rows` of them, no %. `live.rows` 0 is every spell: as many as fit the
+  window are drawn, and the mouse wheel moves a plain offset over the rest (MultiMeters' model: the
+  slice is redrawn from the offset, nothing is measured, and the count is the length of the addon's
+  own copy of the list). The rows, the clocks and the figures take their look from General > HUD
+  Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race Again*
@@ -189,7 +201,9 @@ timer or `OnUpdate`.
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. From
-  900 px wide it sits beside the list; below, it replaces the list with a back control.
+  1060 px wide it sits beside the list; below, it replaces the list with a back control. The header's
+  time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
+  against the length (*1:04 / 2:00*).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
   delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →

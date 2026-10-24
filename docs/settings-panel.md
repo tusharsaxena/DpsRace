@@ -73,10 +73,26 @@ shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
 | *Live breakdown* heading | | | |
-| Spell rows shown | `live.rows` | slider 3 to 15 | Spells the running HUD lists, in Blizzard's order |
+| Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*) |
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
 | Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
+
+#### Tab: HUD Appearance
+
+The HUD's look (the owner's call, 2026-10-24), after Race HUD. Every block is composed by the
+library (options-ui-§16: `H.FontGroup`, `H.BarGroup`), so its rows, order and words are the
+canonical ones, and its class color is the player's (`classColorSource = "player"`). Every row's
+reaction is `NS.HudAppearance.Changed()`, which bumps the restyle stamp and redraws both windows.
+The defaults are the look shipped before the tab existed.
+
+| Subsection | Schema prefix | Rows | Styles |
+|---|---|---|---|
+| *Elapsed clock* | `appearance.elapsed.` | the font block (*Font*, *Font size*, *Font color*, *Use class color*, *Font flags*, *Font shadow*); JetBrains Mono 26, green | the running body's elapsed clock. *Font size* is the pair's; a clock shown alone draws half again as large (its tooltip says so, through the composer's `tooltips`) |
+| *Time left clock* | `appearance.left.` | the font block; JetBrains Mono 26, red | the time-left clock, the same way |
+| *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
+| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
+| *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
 
 Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 
