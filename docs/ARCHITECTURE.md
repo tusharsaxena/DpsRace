@@ -238,9 +238,11 @@ each frame's strata, level and toplevel.
 
 - **Lowering *Runs to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
-- **The Results window's filters are the session's.** They start on *Current character* and *Current
-  spec* (the logged-in character's active spec, resolved each time the filter runs) and *all* for the
-  rest, with *Include incomplete* on, at every login; they are view state, not settings.
+- **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
+  and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current
+  character*, *Current spec*, no grouping and newest first; *Reset* deletes the saved view and
+  *Clear* returns to it. They are view state, not settings: no schema row, and the profile reset
+  takes them with the profile.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
   secret values. This is a client limit, not a gap to close.
 - **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and the

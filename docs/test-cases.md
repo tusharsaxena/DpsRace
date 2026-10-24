@@ -324,7 +324,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (34)
+### test_results.lua (35)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: the Status column tags each run; the DPS column shows every run's DPS
@@ -333,6 +333,7 @@ Total.
 - results: the bars take History > Results table's look, over the rows' own stripe
 - results: v/s Max and the Max tag are per target type
 - results: Group by character, class & spec or target, with folding headers
+- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
 - results: Only best keeps the runs holding their board's best
 - results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
@@ -353,7 +354,7 @@ Total.
 - results: Runs opens on the current character and spec, each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
-- results: below 1120px wide the detail replaces the list, with a back control
+- results: below 1180px wide the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
@@ -633,7 +634,7 @@ Total.
 | test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 34 |
+| test_results.lua | 35 |
 | test_schema.lua | 15 |
 | test_settings.lua | 28 |
 | test_slash.lua | 27 |
@@ -652,4 +653,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **510** |
+| **Total** | **511** |

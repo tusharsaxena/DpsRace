@@ -44,6 +44,16 @@ local CHECKS = {
     { key = "onlyBest", label = "Only best", width = 84 },
 }
 local COUNT_W = 70
+-- The view buttons (LootHistory's), right-aligned on the bar's second row, Save first.
+local VIEW_BUTTONS = {
+    { key = "save", label = "Save", act = "SaveView",
+      tip = "Save these filters, the grouping and the sort as this profile's default view of Runs." },
+    { key = "reset", label = "Reset", act = "ResetView",
+      tip = "Delete the saved view and go back to the stock one: your character and spec, newest first." },
+    { key = "clear", label = "Clear", act = "ClearView",
+      tip = "Go back to the saved view (the stock one when none is saved). The saved view is kept." },
+}
+local VIEW_BUTTON_W = 52
 local GAP = 6
 
 -- ── pure: a run's facts, the filter, the options ────────────────────────────────────────────────
@@ -337,7 +347,12 @@ function Runs.Status(run, top)
         key = "complete"
     end
     local tag = Runs.STATUS[key]
-    return key, L[tag.label], tag.color, tag.icon
+    local text = L[tag.label]
+    -- Spec best and Max are per target type: the type follows, "Spec best (cleave)".
+    if key == "best" or key == "max" then
+        text = L["%s (%s)"]:format(text, NS.Dummies.Label(run.target and run.target.category):lower())
+    end
+    return key, text, tag.color, tag.icon
 end
 
 local function categoryOf(run)
@@ -469,7 +484,7 @@ function Runs.Columns()
           end,
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end },
-        { key = "status", label = L["Status"], width = 90, kind = "badge", desc = false,
+        { key = "status", label = L["Status"], width = 150, kind = "badge", desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
               local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
@@ -514,6 +529,20 @@ local function buildBar(view)
         end
     end
     for _, spec in ipairs(CHECKS) do view.checks[spec.key] = checkbox(view, bar, spec) end
+    view.viewButtons = {}
+    for _, spec in ipairs(VIEW_BUTTONS) do
+        local b = NS.HudStates.Button(bar, L[spec.label], function() view[spec.act](view) end)
+        b:SetWidth(VIEW_BUTTON_W)
+        b.tip = L[spec.tip]
+        b:HookScript("OnEnter", function(self)
+            if not GameTooltip then return end
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(self.tip, 1, 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        b:HookScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+        view.viewButtons[spec.key] = b
+    end
     view.count = Tbl.Text(bar, Tbl.FONT.CAPTION, nil, "RIGHT")
     view.count:SetWidth(COUNT_W)
     view.bar = bar
@@ -531,19 +560,87 @@ function Runs.Build(parent, hooks)
     buildBar(view)
     view.listHost = CreateFrame("Frame", nil, frame)
     view.list = Tbl.New(view.listHost, Runs.Columns(), {
-        -- Newest first (the owner's call, 2026-10-24). The sort is view state like the filters, so
-        -- every login and /reload starts here again.
-        sortKey = "date", sortDesc = true,
+        -- Newest first (the owner's call, 2026-10-24): the stock view's sort. A saved view (Save,
+        -- below) replaces it at every login.
+        sortKey = Runs.STOCK_SORT.key, sortDesc = Runs.STOCK_SORT.desc,
         onClick = function(run) if view.hooks.select then view.hooks.select(run) end end,
         onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
         empty = L["No runs match these filters."],
     })
+    view:ApplyView(Runs.SavedView())
     return view
 end
 
--- Lay the bar's controls out from their configured widths: one row when they fit, else the two
--- checkboxes and the count drop to a second row. Answers the bar's height.
-function View:layoutBar(width)
+-- ── saved views (LootHistory's Save / Reset / Clear) ────────────────────────────────────────────
+-- The Runs tab's view (its filters, its grouping and its sort) can be saved as the profile's
+-- default: `profile.views.runs`, named non-setting state (docs/schema.md). Every build applies the
+-- saved view, else the stock one.
+--   Save   stores the current view as the saved one.
+--   Reset  deletes the saved view and applies the stock one.
+--   Clear  returns to the saved view, or the stock one when there is none; the saved view is kept.
+
+Runs.STOCK_SORT = { key = "date", desc = true }
+
+--- The saved view, or nil.
+function Runs.SavedView()
+    local p = NS.db and NS.db.profile
+    local views = p and p.views
+    return type(views) == "table" and type(views.runs) == "table" and views.runs or nil
+end
+
+--- The view now, as a plain copy.
+function View:CaptureView()
+    local filters = {}
+    for k in pairs(Runs.DEFAULTS) do filters[k] = self.filters[k] end
+    return { filters = filters, sortKey = self.list.sortKey, sortDesc = self.list.sortDesc }
+end
+
+--- Apply `v` (CaptureView's shape), or the stock view for nil. A stored key the view no longer
+--- knows is dropped; a missing one takes its default.
+function View:ApplyView(v)
+    v = type(v) == "table" and v or {}
+    local stored = type(v.filters) == "table" and v.filters or {}
+    for k, def in pairs(Runs.DEFAULTS) do
+        local value = stored[k]
+        if value == nil then value = def end
+        self.filters[k] = value
+    end
+    local sortKey = v.sortKey or Runs.STOCK_SORT.key
+    local desc = v.sortDesc
+    if desc == nil then desc = Runs.STOCK_SORT.desc end
+    if self.list.column and self.list:column(sortKey) then
+        self.list.sortKey, self.list.sortDesc = sortKey, desc and true or false
+        self.list:paintHeader()
+    end
+    if self.dropdowns and next(self.dropdowns) then self:Refresh() end
+end
+
+function View:SaveView()
+    local p = NS.db and NS.db.profile
+    if not p then return false end
+    if type(p.views) ~= "table" then p.views = {} end
+    p.views.runs = self:CaptureView()
+    NS.Print(L["Runs view saved as default."])
+    return true
+end
+
+function View:ResetView()
+    local p = NS.db and NS.db.profile
+    if p and type(p.views) == "table" then
+        p.views.runs = nil
+        if next(p.views) == nil then p.views = nil end
+    end
+    self:ApplyView(nil)
+    NS.Print(L["Runs view reset to stock defaults."])
+end
+
+function View:ClearView()
+    self:ApplyView(Runs.SavedView())
+end
+
+-- Lay the bar out in two rows from the configured widths: the dropdowns on the first; the
+-- checkboxes, the count and Save / Reset / Clear (right-aligned) on the second. Answers its height.
+function View:layoutBar()
     local x = GAP + 2
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
@@ -553,20 +650,24 @@ function View:layoutBar(width)
             x = x + spec.width + GAP
         end
     end
-    local need = x + COUNT_W + 2 * GAP
-    for _, spec in ipairs(CHECKS) do need = need + spec.width + GAP end
-    local row2 = need > width
-    local y = row2 and -(FILTER_H - 2) or -6
-    if row2 then x = GAP + 2 end
+    local y = -(FILTER_H - 2)
+    x = GAP + 2
     for _, spec in ipairs(CHECKS) do
         local b = self.checks[spec.key]
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, y)
         x = x + spec.width + GAP
     end
+    local right = -GAP - 2
+    for i = #VIEW_BUTTONS, 1, -1 do
+        local b = self.viewButtons[VIEW_BUTTONS[i].key]
+        b:ClearAllPoints()
+        b:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT", right, y)
+        right = right - VIEW_BUTTON_W - GAP
+    end
     self.count:ClearAllPoints()
-    self.count:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT", -GAP - 2, y - 4)
-    self.barH = row2 and (2 * FILTER_H - 6) or FILTER_H
+    self.count:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT", right, y - 4)
+    self.barH = 2 * FILTER_H - 6
     self.bar:SetHeight(self.barH)
     return self.barH
 end

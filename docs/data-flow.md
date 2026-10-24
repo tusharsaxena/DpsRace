@@ -201,7 +201,7 @@ timer or `OnUpdate`.
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. From
-  1120 px wide it sits beside the list; below, it replaces the list with a back control. The header's
+  1180 px wide it sits beside the list; below, it replaces the list with a back control. The header's
   time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
   against the length (*1:04 / 2:00*).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →

@@ -75,7 +75,7 @@ NS.defaults = {
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
             hud = { width = 300, height = 460 },   -- tall enough for all 8 live rows (screen 04)
-            results = { width = 1160, height = 560 },
+            results = { width = 1220, height = 560 },
         },
     },
     global = {

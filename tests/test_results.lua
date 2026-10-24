@@ -163,13 +163,13 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     local C = i.NS.ResultsTable.COLORS
     local key, text, bestColor, icon = Runs.Status(by.top)
     assertEqual(key, "best", "with no view max given, the board's best")
-    assertEqual(text, "Spec best")
+    assertEqual(text, "Spec best (cleave)", "the target type follows")
     assertEqual(bestColor, C.blue, "Spec best in blue")
     assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
     local maxColor
     key, text, maxColor, icon = Runs.Status(by.top, 150000)
     assertEqual(key, "max", "the view's max outranks Spec best")
-    assertEqual(text, "Max")
+    assertEqual(text, "Max (cleave)")
     assertEqual(icon, "ph:crown")
     assertEqual(maxColor, C.violet, "Max in violet")
     i.R.Show()
@@ -179,7 +179,7 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "slow" then other = row.cells.status end
     end
     assert(badge, "the top run is drawn")
-    assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
+    assertEqual(badge.fs.__text, "Spec best (cleave)", "one spec in the view: its top run is its Spec best, no Max")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
     -- A second spec in the view (the mage's run): now the view-wide top is Max.
@@ -194,7 +194,7 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "top" then badge = row.cells.status end
         if row.run.id == "slow" then other = row.cells.status end
     end
-    assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
+    assertEqual(badge.fs.__text, "Max (cleave)", "two specs in the view: the top run is Max")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
     assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
     assertEqual(other.fs.__text, "Complete")
@@ -309,7 +309,7 @@ test("results: v/s Max and the Max tag are per target type", function()
     assertEqual(cells.cleave2.vsMax.fs.__text, "-50.0%")
     assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
     assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
-    assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
+    assertEqual(cells.boss.status.fs.__text, "Spec best (boss-level)", "one spec per target type: no Max")
 end)
 
 test("results: Group by character, class & spec or target, with folding headers", function()
@@ -354,6 +354,46 @@ test("results: Group by character, class & spec or target, with folding headers"
     assertEqual(shape(), "[Character: Lanfear 2],a,b,[Character: Kaosmage 1],m")
     pane.dropdowns.group.onSelect("none")
     assertEqual(shape(), "a,b,m")
+end)
+
+test("results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on", function()
+    local i = inst()
+    seed(i, { mkRun("a"), mkRun("m", { char = "mage", date = NOW - 2 * HOUR }) })
+    i.R.Show()
+    local pane = runsPane(i)
+    assertEqual(pane.barH, 2 * 32 - 6, "the filter bar is two rows")
+    assertEqual(pane.viewButtons.save.label.__text, "Save")
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    pane:SetFilter("group", "target")
+    pane.list:SetSort("dps")
+    pane.viewButtons.save:__fire("OnClick")
+    local saved = i.NS.db.profile.views.runs
+    assertEqual(saved.filters.char, "all")
+    assertEqual(saved.filters.group, "target")
+    assertEqual(saved.sortKey, "dps")
+    -- Clear returns to the saved view after the filters moved.
+    pane:SetFilter("char", "current")
+    pane:SetFilter("group", "none")
+    pane.viewButtons.clear:__fire("OnClick")
+    assertEqual(pane.filters.char, "all")
+    assertEqual(pane.filters.group, "target")
+    assertEqual(pane.list.sortKey, "dps")
+    -- A rebuilt view (a new login) opens on the saved view.
+    local fresh = i.NS.ResultsRuns.Build(i.mocks.UIParent)
+    assertEqual(fresh.filters.char, "all")
+    assertEqual(fresh.list.sortKey, "dps")
+    -- Reset deletes it and applies the stock view.
+    pane.viewButtons.reset:__fire("OnClick")
+    assertEqual(i.NS.db.profile.views, nil)
+    assertEqual(pane.filters.char, "current")
+    assertEqual(pane.filters.group, "none")
+    assertEqual(pane.list.sortKey, "date")
+    assertTrue(pane.list.sortDesc)
+    -- Clear with nothing saved is the stock view too.
+    pane:SetFilter("hideFlagged", true)
+    pane.viewButtons.clear:__fire("OnClick")
+    assertFalse(pane.filters.hideFlagged)
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()
@@ -874,7 +914,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(minW, 780)
     assertEqual(minH, 420)
-    assertEqual(u.width, 1160)
+    assertEqual(u.width, 1220)
     assertEqual(u.height, 560)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
@@ -904,10 +944,10 @@ test("results: position, size and Master scale persist; Reset position restores 
     i.R.ResetPosition()
     assertEqual(w.point, nil)
     assertEqual(w.width, nil)
-    assertEqual(u.width, 1160)
+    assertEqual(u.width, 1220)
 end)
 
-test("results: below 1120px wide the detail replaces the list, with a back control", function()
+test("results: below 1180px wide the detail replaces the list, with a back control", function()
     local i = inst()
     seed(i, { mkRun("a") })
     i.NS.db.profile.windows.results = { width = 800, height = 500 }
