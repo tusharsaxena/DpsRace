@@ -339,12 +339,12 @@ L["Show Blizzard's live DPS figure beside the damage while the race runs. Your s
 L["History"] = "History"
 L["Storage"] = "Storage"
 L["Runs to keep"] = "Runs to keep"
-L["0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] =
-    "0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."
+L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] =
+    "Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."
 L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d runs (about %d KB of saved variables)."
-L["Danger zone"] = "Danger zone"
-L["Delete all runs\226\128\166"] = "Delete all runs\226\128\166"
-L["Asks for confirmation. Personal bests go with them."] = "Asks for confirmation. Personal bests go with them."
+L["Purge history\226\128\166"] = "Purge history\226\128\166"
+L["Deletes every stored run. Asks for confirmation. Personal bests go with them."] =
+    "Deletes every stored run. Asks for confirmation. Personal bests go with them."
 L["Restore Runs to keep to its addon default. Stored runs are not touched."] =
     "Restore Runs to keep to its addon default. Stored runs are not touched."
 L["Delete every stored run? Your personal bests go with them. This cannot be undone."] =

@@ -360,7 +360,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (24)
+### test_settings.lua (26)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -382,8 +382,10 @@ Total.
 - settings: the show mode's tooltip points at General visibility
 - settings: General's Defaults says it covers the live breakdown, and not the keys
 - settings: History says how many runs are stored
-- settings: Delete all runs asks first, then deletes through Recorder.DeleteAll
-- settings: Delete all runs is refused while a race is armed
+- settings: Purge history… asks first, then deletes through Recorder.DeleteAll
+- settings: Purge history… is refused while a race is armed
+- settings: History ends with Purge history…, after the stored count, under no heading of its own
+- settings: Runs to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Runs to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
@@ -612,7 +614,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 24 |
+| test_settings.lua | 26 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -629,4 +631,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **487** |
+| **Total** | **489** |

@@ -1,6 +1,6 @@
 -- tests/test_settings.lua — the settings pages (spec §6.3): the Race and History pages and the General
 -- page's Race HUD tab (its Display and Live breakdown subsections), their rows' shape (default, enUS label, tooltip), the ranges
--- the spec fixes, what a write reaches, and the History page's Delete all runs act.
+-- the spec fixes, what a write reaches, and the History page's Purge history… act.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -302,7 +302,7 @@ test("settings: General's Defaults says it covers the live breakdown, and not th
         .. "Race HUD's live breakdown. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
 end)
 
--- ── History: stored count, Delete all runs ───────────────────────────────────────────────────────
+-- ── History: stored count, Purge history… ────────────────────────────────────────────────────────
 
 local function seed(NS, n)
     for _ = 1, n do
@@ -322,7 +322,7 @@ test("settings: History says how many runs are stored", function()
     assertTrue(NS.History.StoredLine():find("0 runs", 1, true) ~= nil)
 end)
 
-test("settings: Delete all runs asks first, then deletes through Recorder.DeleteAll", function()
+test("settings: Purge history… asks first, then deletes through Recorder.DeleteAll", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks
     seed(NS, 2)
@@ -338,7 +338,7 @@ test("settings: Delete all runs asks first, then deletes through Recorder.Delete
     assertEqual(changed, 1)
 end)
 
-test("settings: Delete all runs is refused while a race is armed", function()
+test("settings: Purge history… is refused while a race is armed", function()
     local f = RaceClock.new()
     local NS, M = f.NS, f.M
     seed(NS, 1)
@@ -351,6 +351,34 @@ test("settings: Delete all runs is refused while a race is armed", function()
     assertEqual(#M.__printed(), 1)
     M.StaticPopupDialogs.DPSRACE_DELETE_ALL_RUNS.OnAccept()
     assertEqual(#NS.Recorder.All(), 1, "an accept left over from before the arm still deleted")
+end)
+
+test("settings: History ends with Purge history…, after the stored count, under no heading of its own", function()
+    local inst = T.load()
+    local H, M = inst.NS.Helpers, inst.mocks
+    local drawn = {}
+    local realText, realSection, realPair = H.TextRow, H.Section, H.InlineButtonPair
+    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.Section = function(ctx, text, ...) drawn[#drawn + 1] = "section:" .. tostring(text) return realSection(ctx, text, ...) end
+    local button
+    H.InlineButtonPair = function(ctx, a, ...)
+        button = a
+        drawn[#drawn + 1] = "button"
+        return realPair(ctx, a, ...)
+    end
+    M.__subcategories["History"]:__fire("OnShow")
+    for _, d in ipairs(drawn) do assertTrue(d ~= "section:Danger zone", "the builder still draws Danger zone") end
+    assertEqual(drawn[#drawn], "button", "Purge history… is not the tab's last act")
+    assertEqual(drawn[#drawn - 1], "text", "the stored count does not come just before the button")
+    assertEqual(button.text, "Purge history\226\128\166")
+    assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
+end)
+
+test("settings: Runs to keep says it is account-wide, and its label carries no suffix", function()
+    local keep = row(T.NS, "global.history.keep")
+    assertEqual(keep.label, "Runs to keep")
+    assertTrue(keep.tooltip:sub(1, #"Account-wide: shared by every profile. ")
+        == "Account-wide: shared by every profile. ", keep.tooltip)
 end)
 
 test("settings: lowering Runs to keep never deletes on the spot", function()
