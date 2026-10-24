@@ -6,8 +6,8 @@
 -- tooltip and the share line's optional talents link.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue, assertNil =
-    T.test, T.assertEqual, T.assertTrue, T.assertNil
+local test, assertEqual, assertTrue, assertFalse, assertNil =
+    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 
 local F = dofile(T.root .. "/tests/race_clock.lua")(T)
 
@@ -256,4 +256,183 @@ test("loadout: a second combat end in the read's wait replaces the loadout and d
     f:combatEnd()
     assertTrue(run.loadout.gear ~= first)
     assertNil(f.NS.db.global.loadouts.gear[first], "the replaced set outlived the replacement")
+end)
+
+-- ── the detail ──────────────────────────────────────────────────────────────────────────────────
+
+local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+local NOW = os.time()
+local STAFF = "|cnIQ4:|Hitem:777::::::::80:267::::::::|h[Better Staff]|h|r"
+
+local function ui()
+    local i = T.load{ mutate = function(m)
+        Widgets.install(m)
+        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.GetSpecialization = function() return 1 end
+        m.GetSpecializationInfo = function() return 267, "Destruction" end
+        m.StaticPopup_Show = function() end
+        m.__dressed, m.__itemRefs, m.__modClicks = {}, {}, {}
+        m.DressUpItemLink = function(link) m.__dressed[#m.__dressed + 1] = link end
+        m.SetItemRef = function(data, text, button) m.__itemRefs[#m.__itemRefs + 1] = { data, text, button } end
+        m.HandleModifiedItemClick = function(link) m.__modClicks[#m.__modClicks + 1] = link end
+    end }
+    return i, i.NS, i.mocks
+end
+
+local function uiRun(NS, id, dps, loadout, fields)
+    local run = {
+        id = id, schema = 2, status = "complete", addon = "0.1.0", date = NOW - 3600,
+        race = { length = 180, grace = 1.0 },
+        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
+                 level = 80 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        result = { damage = dps * 180, dps = dps, tail = 2 },
+        flags = { lateCasts = {} }, spells = { { id = 29722, dmg = dps * 100 } }, note = "", loadout = loadout,
+    }
+    for k, v in pairs(fields or {}) do run[k] = v end
+    NS.db.global.runs[id] = run
+    NS.Bests.Invalidate()
+    return run
+end
+
+local function pane(i) return assert(i.NS.Results.__ui(), "the window was never built").detail end
+
+local function cellOf(lo, slot)
+    for _, cell in ipairs(lo.cells) do
+        if cell:IsShown() and cell.slot == slot then return cell end
+    end
+end
+
+test("loadout: the detail draws the gear grid in the character frame's order, and the talents line", function()
+    local i, NS, M = ui()
+    uiRun(NS, "r", 100, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    NS.Results.ShowRun("r")
+    local lo = pane(i).lo
+    local cells, rows = NS.ResultsLoadout.Grid(NS.Loadouts.Of(NS.Recorder.Get("r")))
+    assertEqual(#cells, 16, "eight a column; the ranged slot only when filled")
+    assertEqual(rows, 8)
+    assertEqual(cells[1].slot, 1)
+    assertEqual(cells[9].slot, 10, "the right column starts at the hands")
+    assertTrue(lo.grid:IsShown())
+    assertFalse(lo.none:IsShown())
+    local hood = cellOf(lo, 1)
+    assertEqual(hood.name.__text, "Hood of the Test")
+    assertEqual(hood.ilvl.__text, "639")
+    assertEqual(hood.name.__color[1], 0.4, "the quality's color (epic, 4)")
+    assertEqual(cellOf(lo, 2).name.__text, "Empty")
+    assertFalse(cellOf(lo, 1).mark:IsShown(), "a highlight with no compare")
+    assertEqual(lo.talents.__text, "Raid ST \194\183 Diabolist")
+    assertTrue(lo.view:IsEnabled())
+    assertTrue(lo.copy:IsEnabled())
+    assertTrue(lo.dress:IsShown())
+    lo.dress:__fire("OnClick")
+    assertEqual(#M.__dressed, 3, "every equipped item tried on")
+    lo.view:__fire("OnClick")
+    assertEqual(M.__itemRefs[1][1], "talentbuild:267:80:" .. M.__talents.importString)
+    assertTrue(M.__itemRefs[1][2]:find("|Htalentbuild:267:80:", 1, true) ~= nil, "the link's text")
+    local copied
+    NS.ShowCopy = function(text) copied = text return true end
+    lo.copy:__fire("OnClick")
+    assertEqual(copied, M.__talents.importString)
+    assertTrue(pane(i).contentH > 8 * NS.ResultsLoadout.PITCH, "the grid took no room")
+end)
+
+test("loadout: an item's hover is the client's own tooltip; a modified click goes to the client", function()
+    local i, NS, M = ui()
+    uiRun(NS, "r", 100, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    local shown = {}
+    M.GameTooltip = setmetatable({}, { __index = function(_, k)
+        return function(_, a, b)
+            if k == "SetOwner" then shown = { owner = a, anchor = b } end
+            if k == "SetHyperlink" then shown.link = a end
+        end
+    end })
+    NS.Results.ShowRun("r")
+    local hood = cellOf(pane(i).lo, 1)
+    hood:__fire("OnEnter")
+    assertEqual(shown.owner, hood)
+    assertEqual(shown.link, M.__gear[1])
+    hood:__fire("OnClick")
+    assertEqual(M.__modClicks[1], M.__gear[1], "Shift-click never reached the client's handler")
+end)
+
+test("loadout: a run stored before #6 says Not recorded, with nothing to view or copy", function()
+    local i, NS = ui()
+    uiRun(NS, "old", 100, nil, { schema = 1 })
+    NS.Results.ShowRun("old")
+    local lo = pane(i).lo
+    assertTrue(lo.none:IsShown())
+    assertEqual(lo.none.__text, "Not recorded")
+    assertFalse(lo.grid:IsShown())
+    assertFalse(lo.dress:IsShown())
+    assertEqual(lo.talents.__text, "Not recorded")
+    assertFalse(lo.view:IsEnabled())
+    assertFalse(lo.copy:IsEnabled())
+    assertEqual(NS.ResultsTips.Loadout("none", NS.Recorder.Get("old"))[1], "Not recorded")
+end)
+
+test("loadout: View is grayed with a reason once the client's serialization version moved; Copy still works", function()
+    local i, NS, M = ui()
+    uiRun(NS, "r", 100, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    M.__talents.serialVersion = 3
+    NS.Results.ShowRun("r")
+    local lo = pane(i).lo
+    assertFalse(lo.view:IsEnabled())
+    assertTrue(lo.copy:IsEnabled())
+    local ok, why = NS.ResultsLoadout.CanView(lo.talentsData)
+    assertFalse(ok)
+    assertEqual(why, "version")
+    local lines = NS.ResultsTips.Loadout("viewOff", NS.Recorder.Get("r"))
+    assertTrue(lines[2]:find("no longer opens", 1, true) ~= nil)
+    assertFalse(NS.ResultsLoadout.View(lo.talentsData, 80), "a stale string was opened")
+end)
+
+test("loadout: under the compare the changed slots are highlighted and a different loadout is marked", function()
+    local i, NS, M = ui()
+    local mine = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
+    M.__gear[16] = STAFF
+    M.__gear[2] = "|cnIQ4:|Hitem:5::::::::80:267::::::::|h[Neck]|h|r"
+    M.__talents.importString = "C0PBBBB"
+    local theirs = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
+    uiRun(NS, "best", 300, theirs)
+    uiRun(NS, "low", 100, mine)
+    NS.Results.ShowRun("low")
+    local p = pane(i)
+    local lo = p.lo
+    assertFalse(lo.differs:IsShown(), "marked before the compare")
+    p:SetComparing(true)
+    assertTrue(cellOf(lo, 16).mark:IsShown(), "the swapped weapon")
+    assertTrue(cellOf(lo, 2).mark:IsShown(), "a slot only the other run filled")
+    assertFalse(cellOf(lo, 1).mark:IsShown(), "an unchanged slot")
+    assertEqual(lo.changedCount, 2)
+    assertTrue(lo.differs:IsShown())
+    assertEqual(NS.ResultsTips.Loadout("changed", NS.Recorder.Get("low"), NS.Recorder.Get("best"), 16)[1],
+        "Changed: the other run wore Better Staff.")
+    p:SetComparing(false)
+    assertFalse(cellOf(lo, 16).mark:IsShown())
+    assertFalse(lo.differs:IsShown())
+end)
+
+test("loadout: the pure parts: changed slots, the link data, the talents text", function()
+    local NS = fresh()
+    local LO = NS.ResultsLoadout
+    assertNil(LO.ChangedSlots({ [1] = "a" }, nil), "a diff without the other set")
+    local ch = LO.ChangedSlots({ [1] = "a", [2] = "b" }, { [1] = "a", [3] = "c" })
+    assertNil(ch[1])
+    assertTrue(ch[2] and ch[3])
+    assertTrue(LO.TalentsDiffer({ importString = "A" }, { importString = "B" }))
+    assertFalse(LO.TalentsDiffer({ importString = "A" }, { importString = "A" }))
+    assertFalse(LO.TalentsDiffer({ importString = "A" }, {}), "a side with no string differs")
+    assertEqual(LO.LinkData({ specID = 62, importString = "XYZ" }, 90), "talentbuild:62:90:XYZ")
+    assertNil(LO.LinkData({ specID = 62 }, 90))
+    assertEqual(LO.Hyperlink({ specID = 62, importString = "XYZ", name = "A|B[c]" }, 90),
+        "|cffffd100|Htalentbuild:62:90:XYZ|h[ABc]|h|r", "a name's escapes reached the link")
+    assertEqual(LO.TalentsText({ name = "Raid" }), "Raid")
+    assertEqual(LO.TalentsText({ heroName = "Hero" }), "Unnamed loadout \194\183 Hero")
+    assertEqual(LO.ItemName("|cnIQ4:|Hitem:1::|h[Thing]|h|r"), "Thing")
+end)
+
+test("loadout: the copy window opens on the import string", function()
+    local NS = fresh()
+    assertTrue(NS.ShowCopy("ABC", "Talent loadout"), "no copy window on a full install")
 end)

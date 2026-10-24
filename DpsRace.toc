@@ -128,6 +128,8 @@ modules\Results_Detail.lua
 # The detail's compare (#7): captures NS.ResultsDetail at FILE SCOPE (its CompareSpells), so it
 # follows it; the detail builds its parts at CALL time.
 modules\Results_Compare.lua
+# The detail's gear and talents (#6); the detail builds, fills and lays it out at CALL time.
+modules\Results_Loadout.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.

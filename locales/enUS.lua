@@ -608,3 +608,37 @@ L["Your damage so far at each step of the race, captured live and scaled to the 
     "Your damage so far at each step of the race, captured live and scaled to the run's final damage."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
+
+-- The run detail's gear and talents (modules/Results_Loadout.lua, #6) and their tooltips
+L["Gear"] = "Gear"
+L["Talents"] = "Talents"
+L["Not recorded"] = "Not recorded"
+L["Unnamed loadout"] = "Unnamed loadout"
+L["Talent loadout"] = "Talent loadout"
+L["Dressing Room"] = "Dressing Room"
+L["View"] = "View"
+L["Copy"] = "Copy"
+L["Different loadout"] = "Different loadout"
+L["Empty"] = "Empty"
+L["1 item equipped when combat ended."] = "1 item equipped when combat ended."
+L["%d items equipped when combat ended."] = "%d items equipped when combat ended."
+L["Hover an item for its tooltip; Shift-click links it in chat."] =
+    "Hover an item for its tooltip; Shift-click links it in chat."
+L["This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."] =
+    "This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."
+L["Nothing was equipped in this slot."] = "Nothing was equipped in this slot."
+L["Try the run's gear on in the Dressing Room."] = "Try the run's gear on in the Dressing Room."
+L["Hero talents: %s"] = "Hero talents: %s"
+L["The talent loadout the run was raced with."] = "The talent loadout the run was raced with."
+L["Open Blizzard's talent tree, read-only, on the run's loadout."] =
+    "Open Blizzard's talent tree, read-only, on the run's loadout."
+L["This run has no talent string to open."] = "This run has no talent string to open."
+L["The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."] =
+    "The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."
+L["The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."] =
+    "The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."
+L["The talents differ from %s's."] = "The talents differ from %s's."
+L["Copy both strings to see the difference node by node."] = "Copy both strings to see the difference node by node."
+L["Changed: the other run had nothing here."] = "Changed: the other run had nothing here."
+L["Changed: the other run wore %s."] = "Changed: the other run wore %s."
+L["the other run"] = "the other run"

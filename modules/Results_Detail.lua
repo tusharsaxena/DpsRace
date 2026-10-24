@@ -20,6 +20,9 @@ local _, NS = ...
 -- beside a run picked from a Runs row's menu. Its parts and its pure logic are
 -- modules/Results_Compare.lua's; while it is on, its compared breakdown takes the plain one's place.
 --
+-- THE LOADOUT (#6) sits under the timing strip: the run's gear and talents, drawn by
+-- modules/Results_Loadout.lua, which highlights what changed while the compare is on.
+--
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
@@ -443,6 +446,7 @@ function Detail.Build(parent, hooks)
     p.w.chart = NS.HudChart.New(c)
     p.w.chart:SetShown(false)
     buildTiming(p, c)
+    NS.ResultsLoadout.Build(p, c)
     buildFlags(p, c)
     buildButtons(p)
     wireTips(p)
@@ -518,6 +522,7 @@ function Pane:Show(run)
     self:fillHeader(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
+    NS.ResultsLoadout.Fill(self)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
@@ -539,8 +544,8 @@ function Pane:Comparing()
 end
 
 --- The run the detail is compared with and its kind ("picked" | "best" | "runnerUp"): nil while the
---- compare is off, unless `resolved` asks for the toggle's target either way. M3's loadout diff
---- reads the comparison through this.
+--- compare is off, unless `resolved` asks for the toggle's target either way. The loadout's
+--- highlights (modules/Results_Loadout.lua) read the comparison through this.
 --- @param resolved boolean|nil
 --- @return table|nil other, string|nil kind
 function Pane:CompareTarget(resolved)
@@ -552,6 +557,7 @@ end
 function Pane:refreshCompare()
     if not self.run then return end
     NS.ResultsCompare.Fill(self)
+    NS.ResultsLoadout.Fill(self)
     self:Layout(self.width, self.height, self.narrow)
 end
 
@@ -804,6 +810,7 @@ function Pane:Layout(width, height, narrow)
     if not comparing then y = self:layoutSpells(y, cw) end
     y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
+    y = NS.ResultsLoadout.Layout(self, y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y
     self.content:SetHeight(math.max(1, self.contentH))

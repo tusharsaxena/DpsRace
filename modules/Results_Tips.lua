@@ -427,3 +427,89 @@ function Tips.CompareSpell(row, kind)
              sideLine(NS.ResultsCompare.OtherLabel(kind), row.dmgB, row.shareB),
              L["Difference: %s"]:format(sign .. grouped(delta)) }
 end
+
+-- ── the loadout ─────────────────────────────────────────────────────────────────────────────────
+-- The detail's gear and talents (modules/Results_Loadout.lua, #6): each part under itself; an item
+-- is the client's own item tooltip, with `changed`'s line after it while the compare is on.
+
+local function loadoutOf(run)
+    return NS.Loadouts.Of(run)
+end
+
+local function otherWho(other)
+    return other and otherStamp(other) or L["the other run"]
+end
+
+local LOADOUT = {}
+
+function LOADOUT.gear(run)
+    local gear = loadoutOf(run)
+    local n = 0
+    for _ in pairs(gear or {}) do n = n + 1 end
+    return { L["Gear"], n == 1 and L["1 item equipped when combat ended."] or L["%d items equipped when combat ended."]:format(n),
+             dimLine(L["Hover an item for its tooltip; Shift-click links it in chat."]) }
+end
+
+function LOADOUT.none()
+    return { L["Not recorded"],
+             L["This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."] }
+end
+
+function LOADOUT.empty()
+    return { L["Empty"], L["Nothing was equipped in this slot."] }
+end
+
+function LOADOUT.dressUp()
+    return { L["Dressing Room"], L["Try the run's gear on in the Dressing Room."] }
+end
+
+function LOADOUT.talents(run)
+    local _, t = loadoutOf(run)
+    if not t then return LOADOUT.none() end
+    local lines = { t.name or L["Unnamed loadout"] }
+    if t.heroName then lines[#lines + 1] = L["Hero talents: %s"]:format(t.heroName) end
+    lines[#lines + 1] = L["The talent loadout the run was raced with."]
+    return lines
+end
+
+function LOADOUT.view()
+    return { L["View"], L["Open Blizzard's talent tree, read-only, on the run's loadout."] }
+end
+
+function LOADOUT.viewOff(run)
+    local _, t = loadoutOf(run)
+    if not (t and t.importString) then return { L["View"], L["This run has no talent string to open."] } end
+    return { L["View"], L["The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."] }
+end
+
+function LOADOUT.copy()
+    return { L["Copy"], L["The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."] }
+end
+
+function LOADOUT.differs(_, other)
+    return { L["Different loadout"], L["The talents differ from %s's."]:format(otherWho(other)),
+             dimLine(L["Copy both strings to see the difference node by node."]) }
+end
+
+function LOADOUT.changed(_, other, slot)
+    local otherGear = loadoutOf(other)
+    local link = otherGear and otherGear[slot]
+    local name = link and NS.ResultsLoadout.ItemName(link)
+    if not name then return { L["Changed: the other run had nothing here."] } end
+    return { L["Changed: the other run wore %s."]:format(name) }
+end
+
+--- A loadout part's tooltip lines (`key`: gear, none, empty, dressUp, talents, view, viewOff, copy,
+--- differs, changed), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param other table|nil  the run it is compared with
+--- @param extra any  `changed`: the slot
+--- @return table|nil
+function Tips.Loadout(key, run, other, extra)
+    local fn = LOADOUT[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, other, extra)
+    if not ok or type(lines) ~= "table" then return nil end
+    return lines
+end

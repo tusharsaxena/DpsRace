@@ -1,7 +1,8 @@
-local _, NS = ...
--- core/WidgetsSetup.lua — NS.MakeDropdown / NS.CloseMenu / NS.MakeTestStrip from LibKa0s-Widgets-1.0:
--- the Results window's filter-bar dropdowns (modules/Results_Runs.lua, modules/Results_Bests.lua) and
--- the test-mode strip a window lays over data that is not the player's.
+local addonName, NS = ...
+-- core/WidgetsSetup.lua — NS.MakeDropdown / NS.CloseMenu / NS.MakeTestStrip / NS.ShowCopy from
+-- LibKa0s-Widgets-1.0: the Results window's filter-bar dropdowns (modules/Results_Runs.lua,
+-- modules/Results_Bests.lua), the test-mode strip a window lays over data that is not the player's,
+-- and the copy window the run detail's talent loadout opens (modules/Results_Loadout.lua).
 --
 -- A seam, nothing else (library-stack-§7): one file leases the major, so the art the dropdown draws
 -- is resolved once, here. The library is vendored and cannot know which folder it was copied into,
@@ -15,7 +16,8 @@ local _, NS = ...
 --
 -- DEGRADED (the library absent): NS.MakeDropdown answers nil and the filter bar draws no dropdown at
 -- all rather than a dead control that opens no menu; the filters stay at "all". NS.MakeTestStrip
--- answers nil; NS.CloseMenu is a no-op, because there is no menu that could be open.
+-- answers nil; NS.CloseMenu is a no-op, because there is no menu that could be open; NS.ShowCopy
+-- answers false and its caller prints the text instead.
 
 local W = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
 
@@ -49,6 +51,29 @@ NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 function NS.MakeTestStrip(parent, text)
     if not W then return nil end
     return W.TestStrip(parent, { text = text, icon = NS.Icon("info") })
+end
+
+-- The one copy window, its frame built on the first ShowCopy (the library's lazy handle), over the
+-- window that asked for it.
+local copyWindow, copyAnchor
+
+--- Show `text` selected in the copy window (Ctrl+C copies it, Escape closes it), titled `title`, over
+--- `anchor` when it is shown.
+--- @param text string
+--- @param title string
+--- @param anchor table|nil  the window to center it over
+--- @return boolean shown  false on a degraded install
+function NS.ShowCopy(text, title, anchor)
+    if not (W and W.CopyWindow) then return false end
+    copyAnchor = anchor
+    copyWindow = copyWindow or W.CopyWindow({
+        addonName = addonName, name = "DpsRaceCopyWindow", width = 520, height = 150, title = title,
+        anchorTo = function() return copyAnchor end,
+    })
+    if not copyWindow then return false end
+    local f = copyWindow:Show(text)
+    if f and f.title then f.title:SetText(title) end
+    return true
 end
 
 --- Close the shared popup menu behind every dropdown in the process, if one is open. Safe when none

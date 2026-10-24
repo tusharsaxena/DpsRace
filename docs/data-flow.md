@@ -131,6 +131,11 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
   holds the best; a run picked from a Runs row's menu wins while it is stored. Both runs are stored
   records, so `CompareSpells` divides and sorts plain numbers; nothing is stored.
+- **The detail's loadout** (#6): `Loadouts.Of(run)` resolves the run's keys into its stored gear set
+  and talent loadout; `ResultsLoadout.Fill` draws the grid from the links (the item data from
+  `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
+  the other run's the same way and highlights the slots whose link differs, and marks a different
+  import string. *View* hands the `talentbuild` link to the client's `SetItemRef`; nothing is stored.
 - **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
