@@ -90,6 +90,7 @@ local SUITES = {
     "test_layers",
     "test_results",
     "test_compare",
+    "test_loadout",
     "test_schema",
     "test_settings",
     "test_slash",

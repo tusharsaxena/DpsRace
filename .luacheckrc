@@ -47,6 +47,8 @@ files["modules/Recorder.lua"] = {
     read_globals = {
         "time", "UnitExists", "UnitLevel", "UnitRace", "UnitClassification", "GetRealmName",
         "GetAverageItemLevel", "C_Map",
+        -- the loadout (#6): the equipped links and the talent loadout
+        "GetInventoryItemLink", "C_ClassTalents", "C_Traits",
         "GetZoneText", "GetSubZoneText", "GetInstanceInfo", "GetBuildInfo",
     },
 }
