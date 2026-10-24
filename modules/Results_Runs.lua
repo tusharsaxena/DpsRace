@@ -502,11 +502,14 @@ function Runs.Columns()
           sort = function(run) return run.result and run.result.damage end,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
           barStyle = function(run) return Runs.BarStyle("damageBar", run) end,
+          -- Per target type (the owner's call, 2026-10-25), as v/s Max is.
+          barKey = categoryOf,
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, desc = true,
           sort = sortDps, text = dpsText,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
-          barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
+          barStyle = function(run) return Runs.BarStyle("dpsBar", run) end,
+          barKey = categoryOf },
         { key = "vsMax", label = L["v/s Max"], width = 56, desc = true,
           -- Per target type (the owner's call, 2026-10-25): each run against the max of the runs the
           -- filters pass on its own category; the Max tag only where that category spans specs.

@@ -324,7 +324,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (36)
+### test_results.lua (37)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
@@ -332,6 +332,7 @@ Total.
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
+- results: the Damage and DPS bars run 10% to 100% within each target type
 - results: v/s Max and the Max tag are per target type
 - results: Group by character, class & spec or target, with folding headers
 - results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
@@ -635,7 +636,7 @@ Total.
 | test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 36 |
+| test_results.lua | 37 |
 | test_schema.lua | 15 |
 | test_settings.lua | 28 |
 | test_slash.lua | 27 |
@@ -654,4 +655,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **512** |
+| **Total** | **513** |

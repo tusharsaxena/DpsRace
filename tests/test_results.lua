@@ -332,6 +332,28 @@ test("results: the bars take History > Results table's look, over the rows' own 
     assertTrue(rows[2].bg.__vertex[4] > 0, "the second row striped")
 end)
 
+test("results: the Damage and DPS bars run 10% to 100% within each target type", function()
+    local i = inst()
+    seed(i, {
+        mkRun("cBig", { result = { damage = 40000000, dps = 300000 } }),
+        mkRun("cSmall", { result = { damage = 20000000, dps = 150000 }, date = NOW - 2 * HOUR }),
+        mkRun("bBig", { target = { category = "boss", count = 1 }, result = { damage = 12000000, dps = 100000 },
+                        date = NOW - 3 * HOUR }),
+        mkRun("bSmall", { target = { category = "boss", count = 1 }, result = { damage = 6000000, dps = 50000 },
+                          date = NOW - 4 * HOUR }),
+    })
+    i.R.Show()
+    local w = {}
+    for _, row in ipairs(visible(runsPane(i))) do
+        local d = row.cells.damage
+        w[row.run.id] = { bar = d.bar.__width, full = d.barW }
+    end
+    assertEqual(w.cBig.bar, w.cBig.full, "the cleave max fills its cell")
+    assertEqual(w.bBig.bar, w.bBig.full, "the boss-level max fills its cell too, though cleave did more")
+    assertEqual(w.bSmall.bar, math.max(1, math.floor(w.bSmall.full * 0.1 + 0.5)), "each type's min at 10%")
+    assertEqual(w.cSmall.bar, w.bSmall.bar)
+end)
+
 test("results: v/s Max and the Max tag are per target type", function()
     local i = inst()
     seed(i, {

@@ -161,7 +161,7 @@ Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 
 The Runs list's Damage and DPS cells (the owner's call, 2026-10-24, after MultiMeters' bars): a
 fill over the row's own stripe (no track and no border, 2026-10-25), from 10% of the cell (the smallest figure among the runs the filters
-pass) to 100% (the largest), linear between them and full when the view holds one run or one figure,
+pass on the same target type) to 100% (that type's largest), linear between them and full when the view holds one run or one figure,
 and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
 Font. Each class color is the row's character's: the row describes that run
 (`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.

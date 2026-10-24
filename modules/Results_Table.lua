@@ -291,7 +291,8 @@ end
 -- largest value. Plain numbers off stored runs, and the cell's width is the column layout's, never a
 -- measured one.
 local function bindBar(cell, col, run)
-    local share = Tbl.BarShare(col.bar(run), col.barMin, col.barMax)
+    local range = col.barRanges and col.barRanges[col.barKey and col.barKey(run) or true] or {}
+    local share = Tbl.BarShare(col.bar(run), range.min, range.max)
     local on = share > 0
     local style = col.barStyle and col.barStyle(run)
     if style then
@@ -612,20 +613,27 @@ end
 function Table:SetData(list)
     self.data = list or {}
     -- Each bar column's scale: the smallest and the largest value in the whole list (every run the
-    -- filters pass, scrolled into view or not), so the bars compare the runs the view holds.
+    -- filters pass, scrolled into view or not), so the bars compare the runs the view holds. A
+    -- column with `barKey(run)` keeps one range per key (the Runs list: per target type).
     for _, col in ipairs(self.columns) do
         -- A column that reads the whole list (the Runs list's v/s Max) sees it here, before a sort.
         if col.scan then col.scan(self.data) end
         if col.bar then
-            local min, max
+            local ranges = {}
             for _, run in ipairs(self.data) do
                 local v = col.bar(run)
                 if type(v) == "number" then
-                    if min == nil or v < min then min = v end
-                    if max == nil or v > max then max = v end
+                    local key = col.barKey and col.barKey(run) or true
+                    local r = ranges[key]
+                    if not r then
+                        r = { min = v, max = v }
+                        ranges[key] = r
+                    end
+                    if v < r.min then r.min = v end
+                    if v > r.max then r.max = v end
                 end
             end
-            col.barMin, col.barMax = min, max
+            col.barRanges = ranges
         end
     end
     self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
