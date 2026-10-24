@@ -265,7 +265,8 @@ each frame's strata, level and toplevel.
 Frozen and generated stores are named once each and not enumerated: `docs/audits/`,
 `docs/reviews/`, `docs/automated-tests/<run>/`, `docs/perf-analysis/<run>/`,
 `docs/revendor/<date>-v<tag>/`, `docs/superpowers/` and `docs/investigations/` (documentation-§3).
-Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
+Of those, `docs/automated-tests/<run>/`, `docs/revendor/<date>-v<tag>/` and `docs/superpowers/`
+exist today; `docs/superpowers/` holds the spec and the plan.
 
 ### Required (documentation-§3, Tier 1)
 
@@ -319,4 +320,4 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest file is
-`modules/Hud.lua` at 915 lines (layout-§1).
+`modules/Hud.lua` at 916 lines (layout-§1).
