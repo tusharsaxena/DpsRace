@@ -17,7 +17,7 @@ Rows changed for the Keybindings tab's one key button and not yet run by the own
 and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
 
 Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), not yet run: S3, S6,
-W1, W4, W7, W17 and SM-DR-LY1 (rewritten), and section 10 (new).
+R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), and section 10 (new).
 
 ## How to run it
 
@@ -91,7 +91,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| R1 | `/dr hud show` with no target, then target the Golem | Idle body: the five presets and *Custom*, the target card (*No target*, then the name with the *Boss-level* badge and the count stepper), *Arm Race*, and the *Last Result* and *Results* links. Nothing overlaps | A screenshot |
+| R1 | `/dr hud show` with no target, then target the Golem | Idle body: the five presets and *Custom*, the target card (*No target*, then the name with the *Boss-level* badge and the count stepper), *Arm Race*, and one *Results* button across the foot (no *Last Result*). Nothing overlaps | A screenshot |
 | R2 | Target a non-dummy creature | The card warns *Unknown target: recorded as Other: name* | A screenshot |
 | R3 | *Custom*: type `90`, then `1:30`, then `3m`, then `5` | The first three are accepted (1:30, 1:30, 3:00); `5` is refused with the 0:10 to 15:00 line | Each result |
 | R4 | Enter combat on anything, then look at *Arm Race* | Grayed with *Leave combat to arm*; a click prints the same line | A screenshot |
@@ -139,7 +139,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 |---|---|---|---|
 | W1 | Open Results after sections 4 and 5 | *Runs* tab: every resolved run, sorted by DPS, highest first (unranked runs last). The *Time* column reads *2:00 +11.1s* (the tail in gray) or *1:04 / 2:00* for an incomplete run; the DPS column shows every run's DPS, incomplete ones included, and a dash for a lost one; the *Status* column tags each run *Best* (gold), *Complete* (green), *Flagged* (amber), *Incomplete* or *Died* (red) or *Lost* (gray), styled like the *Target* badge; no running or stopping run is listed | A screenshot |
 | W2 | Hover the class and spec icons | The class icon is cropped cleanly (from `CLASS_ICON_TCOORDS`), the spec icon is the spec's own (from `GetSpecializationInfoByID`); each tooltip names it | A screenshot of a bad crop |
-| W3 | Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
+| W3 | Open Results: the character filter reads *Current character* and the spec filter *Current spec*, listing only this character's runs in their active spec (each dropdown also offers *All characters* / *All specs* and every name). Open each filter dropdown and pick a value; tick *Hide flagged*, untick *Include incomplete* | The dropdowns open and filter; the checkboxes (Blizzard's stock art) toggle and filter; the count follows | The filter that did not apply |
 | W4 | Sort by DPS, ilvl, date, Time and Status | Each sorts both ways; incomplete and lost sort last on DPS; Status groups Best, Complete, Flagged, Incomplete, Died, Lost | |
 | W5 | Click a run | The detail: header (character, spec, ilvl, zone and subzone, target, date, build, version), score block with meter DPS muted and the best delta, the full breakdown with %, the timing strip (buzzer, grace, tail band, late-cast ticks, combat end, restart tick), flags with explanations, note, *Share*, *Delete* | A screenshot |
 | W6 | Scroll a long breakdown with the mouse wheel; drag the list's scrollbar with 20+ runs | The detail scrolls; the slider drags and the list follows | |

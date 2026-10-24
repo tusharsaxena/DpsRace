@@ -9,7 +9,10 @@ local _, NS = ...
 -- two runs with no ranked score (incomplete and lost); Hide flagged drops a run with any flag beyond
 -- its status (late casts, a restart, a reload, a session matched by list, a death).
 --
--- The filters are the session's: they are view state, not settings, and start at "all" each login.
+-- The filters are the session's: they are view state, not settings. Each login starts on the
+-- logged-in character and their current spec (the owner's call, 2026-10-24: "current" is a value of
+-- its own, resolved when the filter runs, so a spec swap with the window open follows at the next
+-- redraw); everything else starts at "all".
 -- Filter, Options and the columns are pure over stored run records, so the suites drive them bare.
 
 local Runs = {}
@@ -20,7 +23,7 @@ local Tbl = NS.ResultsTable
 
 Runs.RESOLVED = { complete = true, incomplete = true, lost = true }
 Runs.DEFAULTS = {
-    char = "all", spec = "all", category = "all", length = "all", date = "all",
+    char = "current", spec = "current", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true,
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
@@ -65,10 +68,38 @@ function Runs.Since(range, now)
     return time({ year = t.year, month = t.month, day = t.day, hour = 0, min = 0, sec = 0 })
 end
 
+--- The logged-in character's current spec ID, or nil when the client cannot answer (then "current"
+--- filters nothing).
+function Runs.CurrentSpecID()
+    local Compat, Secrets = NS.Compat, NS.Secrets
+    if not (Compat and Secrets) then return nil end
+    local okIndex, index = pcall(Compat.GetSpecialization)
+    index = okIndex and Secrets.PlainNumber(index) or nil
+    if not index then return nil end
+    local ok, id = pcall(Compat.GetSpecializationInfo, index)
+    return ok and Secrets.PlainNumber(id) or nil
+end
+
+local function charPasses(run, want)
+    if want == "all" then return true end
+    if want == "current" then return NS.Recorder.IsMine(run) end
+    return Runs.CharKey(run) == want
+end
+
+local function specPasses(run, want)
+    if want == "all" then return true end
+    local id = run.char and run.char.specID
+    if want == "current" then
+        local mine = Runs.CurrentSpecID()
+        return mine == nil or id == mine
+    end
+    return id == want
+end
+
 -- One predicate per filter: each answers whether the run passes it.
 local PASS = {
-    function(run, f) return f.char == "all" or Runs.CharKey(run) == f.char end,
-    function(run, f) return f.spec == "all" or (run.char and run.char.specID) == f.spec end,
+    function(run, f) return charPasses(run, f.char) end,
+    function(run, f) return specPasses(run, f.spec) end,
     function(run, f) return f.category == "all" or (run.target and run.target.category or "other") == f.category end,
     function(run, f) return f.length == "all" or (run.race and run.race.length) == f.length end,
     function(run, _, since) return since == nil or (run.date or 0) >= since end,
@@ -155,8 +186,9 @@ local function lengthOptions(runs)
     return list
 end
 
-local function withAll(label, list)
+local function withAll(label, list, current)
     table.insert(list, 1, { value = "all", label = label })
+    if current then table.insert(list, 1, { value = "current", label = current }) end
     return list
 end
 
@@ -168,8 +200,8 @@ function Runs.Options(runs)
         if type(run) == "table" and Runs.RESOLVED[run.status] then resolved[#resolved + 1] = run end
     end
     return {
-        char = withAll(L["All characters"], charOptions(resolved)),
-        spec = withAll(L["All specs"], specOptions(resolved)),
+        char = withAll(L["All characters"], charOptions(resolved), L["Current character"]),
+        spec = withAll(L["All specs"], specOptions(resolved), L["Current spec"]),
         category = withAll(L["All targets"], categoryOptions(resolved)),
         length = withAll(L["Any length"], lengthOptions(resolved)),
         date = {

@@ -21,6 +21,11 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
+        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- the current character and spec.
+        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.GetSpecialization = function() return 1 end
+        m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
     end }
     i.W, i.popups = W, popups
@@ -174,11 +179,20 @@ test("results: filters: character, spec, category, length, date range, hide flag
         mkRun("e", { status = "lost", result = NONE, date = NOW - 5 * HOUR }),
         mkRun("f", { status = "running", date = NOW }),
     }
-    local function ids(f)
+    local function rawIds(f)
         local out = {}
         for n, run in ipairs(Runs.Filter(all, f, NOW)) do out[n] = run.id end
         return table.concat(out, ",")
     end
+    -- Every other case widens the character and spec to all, then narrows by the one filter.
+    local function ids(f)
+        local wide = { char = "all", spec = "all" }
+        for k, v in pairs(f) do wide[k] = v end
+        return rawIds(wide)
+    end
+    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Lanfear), in their current spec")
+    assertEqual(rawIds({ char = "all" }), "a,b,e", "the current spec across characters")
+    assertEqual(rawIds({ spec = "all" }), "a,b,e", "the current character in every spec")
     assertEqual(ids({}), "a,b,c,d,e", "a running run is the race's, never the list's")
     assertEqual(ids({ char = "Lanfear-Frostmourne" }), "a,b,e")
     assertEqual(ids({ spec = 63 }), "c")
@@ -192,9 +206,11 @@ test("results: filters: character, spec, category, length, date range, hide flag
     assertTrue(midnight <= NOW and midnight > NOW - DAY, "today starts at the last midnight")
 
     local options = Runs.Options(all)
-    assertEqual(options.char[1].label, "All characters")
-    assertEqual(#options.char, 4)
-    assertEqual(options.spec[1].label, "All specs")
+    assertEqual(options.char[1].label, "Current character")
+    assertEqual(options.char[2].label, "All characters")
+    assertEqual(#options.char, 5)
+    assertEqual(options.spec[1].label, "Current spec")
+    assertEqual(options.spec[2].label, "All specs")
     assertEqual(options.category[1].label, "All targets")
     assertEqual(options.length[1].label, "Any length")
     assertEqual(options.length[2].label, "0:30")
@@ -204,6 +220,9 @@ test("results: filters: character, spec, category, length, date range, hide flag
     seed(i, all)
     i.R.Show()
     local pane = runsPane(i)
+    assertEqual(pane.count.__text, "3 runs", "the current character and spec")
+    pane.dropdowns.char.onSelect("all")
+    pane.dropdowns.spec.onSelect("all")
     assertEqual(pane.count.__text, "5 runs")
     pane.checks.hideFlagged:__fire("OnClick")
     assertEqual(pane.count.__text, "4 runs")
@@ -224,6 +243,8 @@ test("results: sort by DPS desc default; by ilvl", function()
     })
     i.R.Show()
     local pane = runsPane(i)
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
     assertEqual(visibleIDs(pane), "hi,mid,lo,inc", "an unranked run sorts last")
     local heads = pane.list.heads
     assertEqual(heads[8].label.__color[2], 0.82, "the header is the header gold")
@@ -550,15 +571,22 @@ test("results: list refreshes on RUN_SAVED", function()
     assertEqual(pane.count.__text, "2 runs", "a hidden window came back stale")
 end)
 
-test("results: the HUD's Last result opens the newest run's detail", function()
+test("results: Runs opens on the current character and spec, each a choice of its own", function()
     local i = inst()
-    seed(i, { mkRun("old", { date = NOW - DAY }), mkRun("new", { date = NOW - HOUR }) })
-    i.NS.Hud.Act.lastResult()
-    assertTrue(i.R.IsShown())
-    assertEqual(i.R.Selected(), "new")
-    assertEqual(ui(i).detail.run.id, "new")
-    i.R.ShowRun("nope")
-    assertEqual(i.R.Selected(), nil, "an id no longer stored opens the list alone")
+    seed(i, { mkRun("mine"), mkRun("mage", { char = "mage", date = NOW - 2 * HOUR }) })
+    i.R.Show()
+    local pane = runsPane(i)
+    assertEqual(pane.filters.char, "current")
+    assertEqual(pane.filters.spec, "current")
+    assertEqual(pane:Count(), 1, "only the logged-in character's run")
+    local opts = i.NS.ResultsRuns.Options(i.NS.Recorder.All())
+    assertEqual(opts.char[1].label, "Current character")
+    assertEqual(opts.char[2].value, "all")
+    assertEqual(opts.spec[1].label, "Current spec")
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    assertEqual(pane:Count(), 2)
+    assertEqual(i.NS.Hud.Act.lastResult, nil, "the HUD's Last Result is gone")
 end)
 
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────

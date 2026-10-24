@@ -397,11 +397,11 @@ function Builders.idle(parent)
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
     w.reason:SetPoint("TOPRIGHT", w.arm, "BOTTOMRIGHT", 0, -4)
-    local links = footerButtons(body, {
-        { L["Last Result"], function() act("lastResult") end },
-        { L["Results"], function() act("results") end, width = 72 },
-    })
-    w.lastResult, w.results = links[1], links[2]
+    -- The Results window, across the foot (the owner dropped Last Result, 2026-10-24).
+    w.results = wideButton(body, L["Results"], function() act("results") end)
+    w.results:SetHeight(LINK_HEIGHT)
+    w.results:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+    w.results:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
 
     function body.Layout(self, width)
         local cell = math.floor((width - 2 * 6) / 3)
@@ -431,7 +431,6 @@ function Builders.idle(parent)
         self.w.warn:SetText(v.warning or "")
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
-        setEnabled(self.w.lastResult, v.hasRuns == true)
     end
     return body
 end

@@ -253,9 +253,6 @@ local function idleView(v)
     v.editing = pick.editing
     v.blocker, v.detail = armBlocker()
     v.warning = targetWarning(target)
-    -- Whether there is a last result to open; the sorted list is built only when it is clicked.
-    local runs = NS.db and NS.db.global and NS.db.global.runs
-    v.hasRuns = type(runs) == "table" and next(runs) ~= nil
 end
 
 local function resultView(v)
@@ -887,7 +884,6 @@ end
 function Act.lock() return NS.ToggleLock() end
 function Act.settings() return NS.OpenOptionsPanel() end
 function Act.results() return NS.ToggleResults() end
-function Act.lastResult() openRun(NS.Recorder.All()[1]) end
 function Act.details()
     if previewOn() then return false end
     openRun(NS.Race.Current())

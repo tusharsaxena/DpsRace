@@ -190,7 +190,7 @@ into the store, so sorting, percentages and the timing strip are plain Lua. It h
 timer or `OnUpdate`.
 
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
-  (the HUD's *Details* and *Last result*, a Bests row) or `Results.ShowTab(name)`. `IsShown()` =
+  (the HUD's *Details*, a Bests row) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
   time it shows.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
