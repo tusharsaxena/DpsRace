@@ -118,6 +118,7 @@ L["Elapsed"] = "Elapsed"
 L["Left"] = "Left"
 L["Live order \194\183 % after the race"] = "Live order \194\183 % after the race"
 L["%d rows"] = "%d rows"
+L["%d-%d of %d"] = "%d-%d of %d"
 L["Combat Ended"] = "Combat Ended"
 L["Damage Stopped"] = "Damage Stopped"
 L["In Combat"] = "In Combat"
@@ -339,8 +340,8 @@ L["Restore every Race setting on this profile to its addon default."] =
 -- General page: the Race HUD tab's Live breakdown subsection (settings/General.lua)
 L["Live breakdown"] = "Live breakdown"
 L["Spell rows shown"] = "Spell rows shown"
-L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."] =
-    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."
+L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."] =
+    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."
 L["Live reads per second"] = "Live reads per second"
 L["How often the running HUD reads the meter while damage is landing. 2 to 10."] =
     "How often the running HUD reads the meter while damage is landing. 2 to 10."

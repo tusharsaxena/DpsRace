@@ -481,6 +481,41 @@ local function setClocks(w, v)
     paintText(w.clock, isElapsed and C.green or C.red)
 end
 
+-- The running body's spell rows. live.rows 0 is every spell (the owner's call, 2026-10-24): as many as
+-- fit are drawn and the wheel moves the window over the rest, MultiMeters' model (a plain offset from
+-- a wheel event, the slice drawn from it; no ScrollFrame and nothing measured). The count is the
+-- length of the addon's own copy of the spell list (Meter.ReadLive), a plain number.
+local function liveTotal(body)
+    local live = body.live
+    if type(live) ~= "table" or type(live.spells) ~= "table" then return 0 end
+    return #live.spells
+end
+
+local function liveCap(body, rows)
+    if rows ~= 0 then return rowsFor(body, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, rows) end
+    local total = liveTotal(body)
+    if type(body.height) ~= "number" then return total end
+    return math.min(total, States.RowCapacity(body.height - RUNNING_ROWS_TOP - RUNNING_ROWS_BOTTOM))
+end
+
+local function liveCount(body, rows)
+    local cap = liveCap(body, rows)
+    if rows ~= 0 then return L["%d rows"]:format(cap) end
+    local total, offset = liveTotal(body), body.offset or 0
+    if total == 0 then return L["%d rows"]:format(0) end
+    return L["%d-%d of %d"]:format(offset + 1, offset + cap, total)
+end
+
+local function drawLive(body)
+    local rows, total = body.rowsSetting, liveTotal(body)
+    local cap = liveCap(body, rows)
+    local offset = 0
+    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    body.offset = offset
+    body.w.list:ShowLive(body.live, cap, body.icons ~= false, offset)
+    body.w.count:SetText(liveCount(body, rows))
+end
+
 -- RUNNING: the race clock (hud.clock), live damage and DPS, the live breakdown with no % (screen 04).
 function Builders.running(parent)
     local body = newBody(parent, "running")
@@ -508,6 +543,13 @@ function Builders.running(parent)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
+    w.rows:EnableMouseWheel(true)
+    w.rows:SetScript("OnMouseWheel", function(_, delta)
+        if body.rowsSetting ~= 0 or type(body.live) ~= "table" then return end
+        body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
+        drawLive(body)
+    end)
     w.order = Style.Text(f, FONT.CAPTION)
     w.order:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, BUTTON_HEIGHT + 8)
     w.order:SetText(L["Live order \194\183 % after the race"])
@@ -522,7 +564,10 @@ function Builders.running(parent)
     function body.Update(self, v)
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
-        self.w.count:SetText(L["%d rows"]:format(rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, v.rows)))
+        -- A new race scrolls back to the top.
+        if v.run ~= self.run then self.run, self.offset = v.run, 0 end
+        self.rowsSetting = v.rows
+        self.w.count:SetText(liveCount(self, v.rows))
     end
 
     --- The live figures: opaque values, straight to the formatter and the rows.
@@ -535,7 +580,8 @@ function Builders.running(parent)
         end
         setKpi(self.w.damage, NS.Format.Number(live.total))
         if live.dps == nil then setKpi(self.w.dps, DASH) else setKpi(self.w.dps, NS.Format.Number(live.dps)) end
-        self.w.list:ShowLive(live, rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, rows), icons ~= false)
+        self.live, self.rowsSetting, self.icons = live, rows, icons
+        drawLive(self)
     end
     return body
 end

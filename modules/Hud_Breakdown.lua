@@ -130,13 +130,15 @@ local function setIcon(row, icons, id)
     row.icon:SetTexture(Breakdown.SpellIcon(id))
 end
 
---- Draw the live breakdown: the first `n` spells in the order Blizzard gave them. Every value is
---- opaque and goes only to a widget setter or the formatter.
+--- Draw the live breakdown: `n` spells in the order Blizzard gave them, from the one after `offset`
+--- (a plain row count off the wheel, modules/Hud_States.lua). Every value is opaque and goes only to
+--- a widget setter or the formatter. The bars keep the top spell's scale however far it scrolls.
 --- @param live table|nil  NS.Meter.ReadLive()'s table
 --- @param n number  rows to show
 --- @param icons boolean
+--- @param offset number|nil  spells skipped from the top (default 0)
 --- @return number drawn
-function List:ShowLive(live, n, icons)
+function List:ShowLive(live, n, icons, offset)
     self:Clear()
     if type(live) ~= "table" or type(live.spells) ~= "table" then return 0 end
     local spells = live.spells
@@ -144,8 +146,9 @@ function List:ShowLive(live, n, icons)
     if first == nil then return 0 end
     local max = live.maxAmount
     if max == nil then max = first.total end
+    offset = offset or 0
     for i = 1, n do
-        local s = spells[i]
+        local s = spells[offset + i]
         if s == nil then break end
         local row = self:acquire(i, icons, false)
         if max ~= nil then row.bar:SetMinMaxValues(0, max) end

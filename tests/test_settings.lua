@@ -47,7 +47,7 @@ local STORED = {
     ["state.testMode"]       = { "bool",   false },
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
-    ["live.rows"]            = { "number", 8,       3,    15,    1 },
+    ["live.rows"]            = { "number", 8,       0,    15,    1 },
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
@@ -133,13 +133,13 @@ test("settings: the Race page's rows, ranges and defaults", function()
     assertTrue(hint.min <= 15 and hint.max >= 15)
 end)
 
-test("settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD", function()
+test("settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on General > Race HUD", function()
     local NS = T.NS
     local rows = row(NS, "live.rows")
     assertEqual(rows.page, "general")
     assertEqual(rows.group, "Race HUD")
     assertEqual(rows.subgroup, "Live breakdown")
-    assertEqual(rows.min, 3)
+    assertEqual(rows.min, 0, "0 shows every spell")
     assertEqual(rows.max, 15)
     assertEqual(rows.default, 8)
     local hz = row(NS, "live.hz")
@@ -157,8 +157,10 @@ test("settings: a write out of range is refused and stores nothing", function()
     M.__resetPrinted()
     NS.Slash:OnSlash("set race.grace 9")
     assertEqual(NS.GetSetting("race.grace"), 5, "a slider value is clamped to its range by the CLI")
-    NS.Slash:OnSlash("set live.rows 2")
-    assertEqual(NS.GetSetting("live.rows"), 3)
+    NS.Slash:OnSlash("set live.rows 40")
+    assertEqual(NS.GetSetting("live.rows"), 15)
+    NS.Slash:OnSlash("set live.rows -1")
+    assertEqual(NS.GetSetting("live.rows"), 0, "0 is every spell, the floor")
 end)
 
 test("settings: changing grace does not alter saved runs", function()

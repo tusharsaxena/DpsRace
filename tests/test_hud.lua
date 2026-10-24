@@ -475,6 +475,34 @@ test("hud: the live rows stop above the caption and CANCEL at every window heigh
     end
 end)
 
+test("hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest", function()
+    local f = hud()
+    local h = f.Hud.MIN_HEIGHT
+    f.NS.db.profile.windows.hud.height = h
+    f.NS.db.profile.live.rows = 0
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(20))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    local b = body(f)
+    local cap = fits(h, RUNNING_TOP, RUNNING_BOTTOM)
+    assertEqual(b.w.list:Count(), cap, "as many rows as fit")
+    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap))
+    assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2001)))
+    b.w.rows:__fire("OnMouseWheel", -1)       -- down: one row further
+    assertEqual(b.w.count.__text, ("2-%d of 20"):format(cap + 1))
+    for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", -1) end
+    assertEqual(b.w.count.__text, ("%d-20 of 20"):format(20 - cap + 1), "clamped at the end")
+    for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", 1) end
+    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap), "clamped at the top")
+    -- A set count never scrolls.
+    f.NS.db.profile.live.rows = 3
+    pump(f, 0.5)
+    b.w.rows:__fire("OnMouseWheel", -1)
+    assertEqual(b.w.count.__text, "3 rows")
+end)
+
 test("hud: the default window size shows every default live row", function()
     local f = hud()
     assertEqual(f.NS.defaults.profile.windows.hud.height, 460, "the default matches mockup screen 04")

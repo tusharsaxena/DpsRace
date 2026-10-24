@@ -29,7 +29,7 @@ NS.defaults = {
         -- The live breakdown (spec §6.3; its rows are General > Race HUD > Live breakdown,
         -- settings/General.lua).
         live = {
-            rows    = 8,      -- spells shown, 3-15
+            rows    = 8,      -- spells shown, 1-15; 0 = every spell, wheel-scrolled
             icons   = true,   -- spell icons
             showDps = true,   -- Blizzard's live DPS figure, labeled live
             hz      = 4,      -- live reads per second, 2-10 (spec §10)

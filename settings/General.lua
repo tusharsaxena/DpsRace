@@ -148,8 +148,8 @@ local function redraw() NS.Hud.Refresh() end
 
 NS.RegisterSchemaRows({
     { path = "live.rows", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "number",
-      min = 3, max = 15, step = 1, label = L["Spell rows shown"], default = LIVE.rows,
-      tooltip = L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."],
+      min = 0, max = 15, step = 1, label = L["Spell rows shown"], default = LIVE.rows,
+      tooltip = L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."],
       onChange = redraw },
     { path = "live.icons", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "bool",
       label = L["Show spell icons"], default = LIVE.icons,
