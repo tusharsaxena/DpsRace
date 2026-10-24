@@ -42,16 +42,20 @@ the catalog (spec §4.6).
 |---|---|---|---|
 | S1 | Open *Settings → AddOns* right after login | *Ka0s DPS Race* is there before the panel was ever opened | Whether `/dr` opens it |
 | S2 | Open the landing page, switch pages and come back | The logo, notes line and command list show; the logo is never drawn under the list | A screenshot |
-| S3 | Open General | Two tabs: *Master controls* (rows in the standard's order) and *Race HUD* (show mode) | A screenshot |
-| S4 | Look at the page order | Race, Live breakdown and History sit between General and Profiles, each a tab strip with subsection headings | A screenshot |
+| S3 | Open General | Three tabs: *Master controls* (rows in the standard's order), *Race HUD* (*Display* and *Live breakdown*) and *Keybindings* | A screenshot |
+| S4 | Look at the page order | Race and History sit between General and Profiles, each a one-tab strip with subsection headings; there is no *Live breakdown* page | A screenshot |
 | S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
-| S6 | On Live breakdown, set *Rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
+| S6 | On General > Race HUD, set *Spell rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
 | S7 | On History, type 10000 into *Runs to keep*'s box | Accepted at once, without a stall; nothing is deleted on the spot | How long it froze, if it did |
 | S8 | Press each page's *Defaults* button after changing one row on every page | Only that page's rows go back | Which page's rows moved |
-| S9 | History: *Delete all runs…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
+| S9 | History: *Purge history…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
 | S10 | Open the panel in combat | Refused with a notice; it opens once combat ends | Whether any taint error followed |
 | S11 | *Reset all settings* | It asks first; afterwards the minimap button keeps its state and *Test mode* is unticked | The settings that did not reset |
 | S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
+| SM-DR-LY1 | Open General > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the live breakdown and ends *Key bindings are not changed.* Change a live row, press General's *Defaults*: it goes back | A screenshot of the tab |
+| SM-DR-LY2 | Open Race | One tab, headed *Length*, *Countdown*, *At the buzzer*, *Scoring rules* in that order: *Countdown cue sound* alone on its line, then *Center-screen countdown* \| *Center countdown from (seconds)*; *Buzzer raid warning and sound* \| *Sticky-combat hint after (seconds)* (its tooltip ends *5 to 60 seconds.*); *Late-cast grace (seconds)* \| *Damage-restart gap (seconds)*. No *Scoring rules* tab | A screenshot of the page |
+| SM-DR-LY3 | Open History; hover *Runs to keep* and the last button | *Runs to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
+| SM-DR-LY4 | Before the pass, note every value on General > Race HUD, Race and History (or `/dr list`); after it, compare, then `/reload` and compare again | No setting is lost or changed by the new layout, `/dr list` shows the live rows under *general › Race HUD*, and every value survives the `/reload` | The row that differs |
 
 ## 3. Launcher, key bindings and slash
 
@@ -88,7 +92,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R7a | General → Race HUD → *Race clock*: *Time left*, then *Time elapsed*, then back to *Elapsed and time left*, during a race and in test mode; then drag the HUD to its minimum width (260) | One big red clock, then one big green clock, then the pair; the switch takes effect at once. At 260 px wide the two clocks and their captions do not touch or clip, also at 9:59.9 | A screenshot at the minimum width |
 | R8 | Hear the last 10 s | With the defaults the cue sounds once a second from 10 down to 1, never twice in a second. With *Center-screen countdown* off it sounds at 10, 5, 3, 2 and 1 only. *Countdown cue* off silences it mid-race | Which seconds were silent or doubled |
 | R8a | Watch the last 10 s of a 0:30 race, HUD open, then again with the HUD closed | Gold numbers 10 down to 1 pop in (grow and fade in, with a glow flash) in the middle of the screen above the character, one a second; *10* is two digits, centered; they vanish at the buzzer, and the raid-warning *STOP* still shows. Nothing is clickable through them (the mouse passes through). Nobody else in the group sees a pull timer | A screenshot of *10* and of *1*, and whether a groupmate saw anything |
-| R8b | Race, Race page: *Countdown from (s)* 3, then *Center-screen countdown* off mid-countdown | The numbers start at 3. Switching it off hides the number on screen at once | |
+| R8b | Race, Race page: *Center countdown from (seconds)* 3, then *Center-screen countdown* off mid-countdown | The numbers start at 3. Switching it off hides the number on screen at once | |
 | R8c | Cancel the race with 5 s left; drop combat with 6 s left on another run | The number on screen goes at once, and no further number or cue follows | |
 | R8d | `/reload` with about 6 s left, still attacking | After the loading screen the number of the moment shows at once (silently) and the count carries on to 1 | The numbers seen after the reload |
 | R8e | `/dr test`, watch the sample race's last 10 s; then end test mode during its countdown | The numbers show silently in the sample race and go with its buzzer; ending test mode clears them at once | |

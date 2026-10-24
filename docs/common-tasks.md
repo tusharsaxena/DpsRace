@@ -54,7 +54,7 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
 
 - Add the default to `defaults/Profile.lua` (`profile` or `global`). It is the only place a default
   is written.
-- Add the row to the page file that owns it (`settings/General.lua`, `Race.lua`, `Live.lua` or
+- Add the row to the page file that owns it (`settings/General.lua`, `Race.lua` or
   `History.lua`): `path`, `page`, `group`
   (its tab), `label`, `desc`, `type`, `default` read from `NS.defaults`, and an `onChange` if
   something must react.
