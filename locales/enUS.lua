@@ -599,8 +599,12 @@ L["%s: %s damage"] = "%s: %s damage"
 L["%s: %s damage (%.1f%%)"] = "%s: %s damage (%.1f%%)"
 L["Difference: %s"] = "Difference: %s"
 
--- The damage chart and the pace bar (modules/Hud_Chart.lua, #2, #3)
+-- The damage chart and the pace bar (modules/Hud_Chart.lua, #2, #3) and the detail's chart tooltip
 L["Damage over the race"] = "Damage over the race"
 L["vs best pace"] = "vs best pace"
 L["first race on this board"] = "first race on this board"
 L["Best %s"] = "Best %s"
+L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."] =
+    "Your damage so far at each step of the race, captured live and scaled to the run's final damage."
+L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
+    "Only races run since your last reload or login have it: the live numbers cannot be saved."

@@ -251,6 +251,12 @@ end
 
 DETAIL.tail = CELL.time
 
+function DETAIL.chart()
+    return { L["Damage over the race"],
+        L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."],
+        dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
+end
+
 local LEGEND = {
     "The race, from the start to the buzzer (to the end of combat for an incomplete run).",
     "Damage still landing after the buzzer (DoTs, travel time). It counts.",

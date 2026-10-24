@@ -838,6 +838,8 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    w.chart = NS.HudChart.New(f)
+    w.chart:SetShown(false)
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -860,9 +862,10 @@ function Builders.result(parent)
     w.again:SetPoint("BOTTOMRIGHT", w.details, "BOTTOMLEFT", -6, 0)
     function body.Layout(self, width, height)
         self.w.chips.width = width
-        self.height = height
+        self.width, self.height = width, height
     end
     function body.Update(self, v)
+        Builders.resultChart(self, v.chart)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
@@ -887,12 +890,29 @@ end
 -- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
 
+-- The result card's chart (#2): the run's in-session slices, scaled to its plain final damage, between
+-- the chips and the rows; none for a run without slices, and it steps aside when it would leave fewer
+-- than MIN_ROWS rows.
+function Builders.resultChart(body, view)
+    local w, f = body.w, body.frame
+    local blockH, plotH = chartBlock()
+    local on = view ~= nil and roomForRows(body, RESULT_ROWS_TOP + blockH, RESULT_ROWS_BOTTOM)
+    w.chart:SetShown(on)
+    body.rowsTop = on and (RESULT_ROWS_TOP + blockH) or RESULT_ROWS_TOP
+    w.rows:ClearAllPoints()
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
+    if not on then return end
+    w.chart:Place(f, -RESULT_ROWS_TOP, body.width or 236, plotH)
+    w.chart:Draw(view)
+end
+
 function Builders.resultRows(body)
     local run = body.shownRun
     local spells = type(run) == "table" and type(run.spells) == "table" and run.spells or {}
     local rows = tonumber(body.rowsSetting) or States.RESULT_ROWS
     local total = #spells
-    local top = RESULT_ROWS_TOP
+    local top = body.rowsTop or RESULT_ROWS_TOP
     local cap
     if rows == 0 then
         cap = total

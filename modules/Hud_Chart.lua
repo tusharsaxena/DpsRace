@@ -123,6 +123,16 @@ function Chart.LiveViews(run, elapsed, showChart, showPace)
     return chart, pace
 end
 
+--- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
+--- its slices scaled to its plain final damage.
+--- @param run table
+--- @return table|nil
+function Chart.ResultView(run)
+    local rec = NS.Slices.Drawable(run)
+    if not rec then return nil end
+    return { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+end
+
 -- ── the chart ───────────────────────────────────────────────────────────────────────────────────
 
 local Strip = {}

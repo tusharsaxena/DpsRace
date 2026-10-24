@@ -12,6 +12,10 @@ local _, NS = ...
 --
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
+-- THE DAMAGE CHART (#2) sits under the breakdown, for a run raced since the last /reload or login: the
+-- run's in-session slices (modules/Slices.lua), drawn by modules/Hud_Chart.lua and scaled to its plain
+-- final damage. A run from an earlier session, a lost run or a shared session has no section at all.
+--
 -- THE COMPARE (#7) sits under the score: a toggle that sets the run beside the best on its board, or
 -- beside a run picked from a Runs row's menu. Its parts and its pure logic are
 -- modules/Results_Compare.lua's; while it is on, its compared breakdown takes the plain one's place.
@@ -387,6 +391,8 @@ local function wireTips(p)
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
     hoverOver(p, w.delta, "delta")
+    hoverOver(p, w.chart.title, "chart")
+    hover(p, w.chart.over, "chart")
     hoverOver(p, w.timingLabel, "strip")
     hover(p, w.strip, "strip")
     for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do hoverOver(p, axis, "strip") end
@@ -433,6 +439,8 @@ function Detail.Build(parent, hooks)
     buildHeader(p, c)
     NS.ResultsCompare.Build(p, c)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
+    p.w.chart = NS.HudChart.New(c)
+    p.w.chart:SetShown(false)
     buildTiming(p, c)
     buildFlags(p, c)
     buildButtons(p)
@@ -512,6 +520,7 @@ function Pane:Show(run)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
+    self.chartView = NS.HudChart.ResultView(run)
     self:fillFlags(run)
     self.noteText = type(run.note) == "string" and run.note ~= "" and L["Note: %s"]:format(run.note) or ""
     self.w.note:SetText(self.noteText)
@@ -628,6 +637,19 @@ function Pane:layoutSpells(y, cw)
     local pitch = NS.HudBreakdown.Pitch()
     host:SetSize(cw, math.max(1, n * pitch))
     return y - n * pitch - 8
+end
+
+-- The damage chart, when the run has slices this session; nothing at all when it has none.
+function Pane:layoutChart(y, cw)
+    local view, chart = self.chartView, self.w.chart
+    chart:SetShown(view ~= nil)
+    chart.over:EnableMouse(view ~= nil)
+    if not view then return y end
+    local Chart = NS.HudChart
+    local plotH = Chart.PlotHeight()
+    chart:Place(self.content, y, cw, plotH)
+    chart:Draw(view)
+    return y - Chart.BlockHeight(plotH) - 8
 end
 
 local function placeMark(tex, strip, x, inset)
@@ -778,6 +800,7 @@ function Pane:Layout(width, height, narrow)
     self.w.list.parent:SetShown(not comparing)
     y = NS.ResultsCompare.LayoutCompared(self, y, cw)
     if not comparing then y = self:layoutSpells(y, cw) end
+    y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y

@@ -263,6 +263,8 @@ local function resultView(v)
     if run.status == "complete" then v.delta, v.isNew = NS.Bests.Delta(run) end
     v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function"
     v.icons = setting("live.icons") ~= false
+    -- The race's chart again (#2), when the HUD shows charts and the run has its slices this session.
+    if setting("live.chart") ~= false then v.chart = NS.HudChart.ResultView(run) end
 end
 
 local function runningView(v)

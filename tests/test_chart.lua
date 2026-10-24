@@ -1,6 +1,6 @@
 -- tests/test_chart.lua — the damage chart and the pace bar (#2, #3): the in-session bucket store
--- (modules/Slices.lua), the chart and pace bar widgets (modules/Hud_Chart.lua) and the running HUD
--- drawing them live.
+-- (modules/Slices.lua), the chart and pace bar widgets (modules/Hud_Chart.lua), the running HUD drawing
+-- them live, the HUD result card and the Results detail drawing the chart again after the race.
 --
 -- The live cases run on the race fixture (tests/race_clock.lua) with the widget recorder
 -- (tests/mock_widgets.lua). The meter is secret in combat, every read answering fresh opaque handles,
@@ -295,4 +295,87 @@ test("chart: the overlay sits one band over the plot's columns", function()
     local lay = f.M.__layers
     assertEqual(lay(chart.over).level, lay(chart.plot).level + f.NS.Constants.LAYERS.LEVEL.CHART_OVERLAY)
     assertTrue(lay(chart.cols[1]).level < lay(chart.over).level, "a column over the lines")
+end)
+
+-- ── after the race ──────────────────────────────────────────────────────────────────────────────
+
+-- Run to the result: 30 s with updates, the buzzer, combat over, read.
+local function resolved(f)
+    running(f, 30)
+    pump(f, 29.5)
+    f:to(130)
+    f:advance(1)
+    f:update(25)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(f.Race.State(), "result")
+    return f.Race.Current()
+end
+
+test("chart: the result card draws the race's slices to its plain final damage, and none without them", function()
+    local f = hud()
+    local run = resolved(f)
+    local b = body(f)
+    assertEqual(f.Hud.__ui().current, "result")
+    assertTrue(b.w.chart.shown, "the race's chart on its result card")
+    local rec = f.NS.Slices.Get(run.id)
+    local col = b.w.chart.cols[10]
+    assertEqual(col.__max, run.result.damage, "scaled to the plain final damage")
+    assertTrue(rawequal(col.__value, rec.values[10]), "the very handle captured live")
+    assertEqual(b.rowsTop, 104 + f.NS.HudChart.BlockHeight(80) + 8, "the rows under the chart and its gap")
+    -- A /reload empties the store: the card has no chart, and its rows move back up.
+    f.NS.Slices.Reset()
+    f.Hud.Refresh()
+    assertFalse(b.w.chart.shown)
+    assertEqual(b.rowsTop, 104)
+end)
+
+test("chart: the Results detail shows the chart for a run raced this session only", function()
+    local f = hud()
+    local run = resolved(f)
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    local d = R.__ui().detail
+    assertTrue(d.w.chart.shown, "this session's run has its chart")
+    assertEqual(d.w.chart.cols[1].__max, run.result.damage)
+    local lines = f.NS.ResultsTips.Detail("chart", run)
+    assertEqual(lines[1], "Damage over the race", "the chart has a tooltip")
+    -- An earlier session's run (after a /reload): no section at all.
+    f.NS.Slices.Reset()
+    R.ShowRun(run.id)
+    assertFalse(d.w.chart.shown, "a run from before the reload has no chart")
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart: a lost run has no chart on the card or in the detail", function()
+    local f = hud()
+    running(f, 30)
+    pump(f, 3)
+    local run = f.Race.Current()
+    assertTrue(f.NS.Slices.Get(run.id).filled > 0)
+    f.Race.OnMeterReset()
+    assertEqual(run.status, "lost")
+    assertEqual(f.NS.HudChart.ResultView(run), nil)
+end)
+
+-- ── test mode ───────────────────────────────────────────────────────────────────────────────────
+
+test("chart: test mode draws the sample's chart against a sample best, then on its result card", function()
+    local f = hud()
+    local P = f.NS.Preview
+    assertTrue(P.Start())
+    f:advance(3.2)
+    P.Beat()
+    f:advance(10)
+    P.Beat()
+    local b = body(f)
+    assertEqual(f.Hud.__ui().current, "running")
+    assertTrue(b.w.chart.shown)
+    assertTrue(b.w.pace.bar:IsShown())
+    assertEqual(b.w.chart.note.__text, "vs best pace")
+    assertTrue(type(b.w.chart.cols[5].__value) == "number" and b.w.chart.cols[5].__value > 0, "plain sample numbers")
+    f:advance(40)
+    P.Beat()
+    assertEqual(f.Hud.__ui().current, "result")
+    assertTrue(body(f).w.chart.shown, "the sample's result card has its chart")
 end)
