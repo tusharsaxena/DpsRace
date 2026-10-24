@@ -119,11 +119,8 @@ function Loadouts.Attach(run, snap)
     return true
 end
 
---- Drop every stored loadout no stored run refers to.
---- @return number dropped
-function Loadouts.Sweep()
-    local s, runs = store(), NS.db and NS.db.global and NS.db.global.runs
-    if not s or type(runs) ~= "table" then return 0 end
+-- Every key a stored run refers to, by kind.
+local function usedKeys(runs)
     local used = { gear = {}, talents = {} }
     for _, run in pairs(runs) do
         local ref = type(run) == "table" and run.loadout
@@ -133,6 +130,15 @@ function Loadouts.Sweep()
             end
         end
     end
+    return used
+end
+
+--- Drop every stored loadout no stored run refers to.
+--- @return number dropped
+function Loadouts.Sweep()
+    local s, runs = store(), NS.db and NS.db.global and NS.db.global.runs
+    if not s or type(runs) ~= "table" then return 0 end
+    local used = usedKeys(runs)
     local n = 0
     for _, kind in ipairs(KINDS) do
         for key in pairs(s[kind]) do

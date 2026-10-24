@@ -56,20 +56,20 @@ Mockup: https://claude.ai/artifact/AMWeF6JJ3z9JTLgeBaKGZJ (boards A and B).
 
 ### M3: #6 Equipment and talents
 
-- [ ] M3.1 Capture: `Recorder.SnapshotLoadout()` at arm and again at combat end, keeping the combat-end
+- [x] M3.1 Capture: `Recorder.SnapshotLoadout()` at arm and again at combat end, keeping the combat-end
   one.
-- [ ] M3.2 Storage:
+- [x] M3.2 Storage:
   - Deduped `global.loadouts.gear[hash]` and `global.loadouts.talents[hash]`, with `run.loadout = { gear, talents }`.
   - Run-record format `schema` 1 → 2, plus a migration step.
   - Pruning and every delete drop orphaned loadouts.
-- [ ] M3.3 The detail:
+- [x] M3.3 The detail:
   - **Gear grid:** quality borders, an ilvl overlay, native tooltips, shift-click to link, and *Dressing Room*.
   - **Talents:** the loadout name with *View* (the `talentbuild` link) and *Copy*. *View* is greyed out with a
     tooltip when the serialization version no longer matches.
   - **Under M1's compare:** highlight the gear slots that changed, plus the *different loadout* marker.
-- [ ] M3.4 The Runs table's Spec tooltip names the loadout and notes a gear change since the previous run.
+- [x] M3.4 The Runs table's Spec tooltip names the loadout and notes a gear change since the previous run.
   The *Include talents link* share setting.
-- [ ] M3.5 Tests (capture, dedupe, migration, orphan prune), docs and smoke rows.
+- [x] M3.5 Tests (capture, dedupe, migration, orphan prune), docs and smoke rows.
 
 ### M4: Finish
 

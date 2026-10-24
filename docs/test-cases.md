@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 1, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 2, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -407,6 +407,34 @@ Total.
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
 - compare: the collapsed view draws the compare in the list's place; no number is read off a frame
 
+### test_loadout.lua (25)
+
+- loadout: SnapshotLoadout reads every equipped link but the shirt and the tabard
+- loadout: SnapshotLoadout reads the talents: the saved loadout's name, the hero tree, the string
+- loadout: with no saved loadout the active config's name is used
+- loadout: a client without the APIs, or one that raises, yields absent fields, never an error
+- loadout: a secret value never reaches the snapshot
+- loadout: the hash is djb2 as eight hex digits, and pure
+- loadout: Store keeps each distinct set once; the run holds only the keys
+- loadout: two different sets with one hash are told apart; the same set finds its own key
+- loadout: Of resolves a run's keys; a run without one has neither
+- loadout: Delete, DeleteAll and Prune drop the loadouts no run refers to
+- loadout: a run of a later format keeps the sets it refers to
+- loadout: the format 2 migration leaves old runs as they were, without a loadout
+- loadout: a race keeps the combat-end loadout, not the arm-time one
+- loadout: a run with no combat-end snapshot falls back to the arm-time one
+- loadout: a second combat end in the read's wait replaces the loadout and drops the first
+- loadout: the detail draws the gear grid in the character frame's order, and the talents line
+- loadout: an item's hover is the client's own tooltip; a modified click goes to the client
+- loadout: a run stored before #6 says Not recorded, with nothing to view or copy
+- loadout: View is grayed with a reason once the client's serialization version moved; Copy still works
+- loadout: under the compare the changed slots are highlighted and a different loadout is marked
+- loadout: the pure parts: changed slots, the link data, the talents text
+- loadout: the copy window opens on the import string
+- loadout: the Spec cell's tooltip names the loadout and notes gear changed since the previous run
+- loadout: the share line takes the talents link only with Include talents link on
+- loadout: Include talents link sits under Sharing on the History tab, before Storage
+
 ### test_schema.lua (15)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -682,6 +710,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 42 |
 | test_compare.lua | 12 |
+| test_loadout.lua | 25 |
 | test_schema.lua | 15 |
 | test_settings.lua | 28 |
 | test_slash.lua | 27 |
@@ -700,4 +729,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **550** |
+| **Total** | **575** |

@@ -265,6 +265,14 @@ each frame's strata, level and toplevel.
   `race.lastDamage`, the last update heard before the reload; a restart already heard is already on
   the run. A running run resumed out of combat before its buzzer takes the resume time as its end,
   an upper bound, because the real combat edge was missed.
+- **A run's loadout is what was worn when combat ended** (#6). Gear and talents cannot change in
+  combat, but a weapon can be swapped in it; the record holds the weapon at the combat end. The
+  loadout's name is the player's last saved loadout for the spec, else the active config's (which
+  may be generic); that the first is the one the player sees is a smoke row (SM-DR-LO4).
+- **A stored talent string opens only on a client with its serialization version.** After a patch
+  that changes it, *View* is grayed with a tooltip saying so; *Copy* still hands out the string, and
+  the gear grid is unaffected. Talents are compared only as a *Different loadout* marker, never
+  node by node (the owner's call, 2026-10-25).
 - **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper
   sets it per run in the meantime.
 - **A pull that carries on the last fight's session is netted, not separated.** When the meter

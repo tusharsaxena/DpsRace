@@ -21,8 +21,10 @@ R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new)
 
 Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
 SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7); section 12's SM-DR-CH1 to
-SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); and S3 again (the Race HUD tab's new
-*Chart and pace* subsection).
+SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); section 13's SM-DR-LO1 to SM-DR-LO10
+(new: equipment and talents, #6); S3 again (the Race HUD tab's new *Chart and pace* subsection); and
+SM-DR-LY3 again (History's new *Sharing* subsection and its *Include talents link* above *Runs to
+keep*).
 
 ## How to run it
 
@@ -67,7 +69,7 @@ SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); and S3 again (th
 | S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
 | SM-DR-LY1 | Open HUD > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the Race HUD tab (display and live breakdown) and HUD Appearance. General's Defaults tooltip names Master controls only and ends *Key bindings are not changed.* Change a live row, press the HUD page's *Defaults*: it goes back | A screenshot of the tab |
 | SM-DR-LY2 | Open Race | One tab, headed *Length*, *Countdown*, *At the buzzer*, *Scoring rules* in that order: *Countdown cue sound* alone on its line, then *Center-screen countdown* \| *Center countdown from (seconds)*; *Buzzer raid warning and sound* \| *Sticky-combat hint after (seconds)* (its tooltip ends *5 to 60 seconds.*); *Late-cast grace (seconds)* \| *Damage-restart gap (seconds)*. No *Scoring rules* tab | A screenshot of the page |
-| SM-DR-LY3 | Open History; hover *Runs to keep* and the last button | *Runs to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
+| SM-DR-LY3 | Open History; hover *Runs to keep* and the last button | *Sharing* with *Include talents link*, then *Storage* with *Runs to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
 | SM-DR-LY4 | Before the pass, note every value on HUD > Race HUD, Race and History (or `/dr list`); after it, compare, then `/reload` and compare again | No setting is lost or changed by the new layout, `/dr list` shows the live rows under *hud › Race HUD*, and every value survives the `/reload` | The row that differs |
 
 ## 3. Launcher, key bindings and slash
@@ -302,3 +304,22 @@ chart draws is secret in combat, so a forbidden operation shows as a Lua error a
 | SM-DR-CH8 | Turn test mode on and watch it through to the result card | The running sample shows a chart against a sample best (gold line, diagonal) and a pace bar; the sample result card shows its chart | A screenshot |
 | SM-DR-CH9 | With test mode on, turn *Show damage chart* off, then *Show pace bar* off, during the running sample; let it reach the result card | The sample's chart goes when its setting goes off and its pace bar when its own does, and the sample result card has no chart; turned back on, each returns on the next redraw | A screenshot with both off |
 | SM-DR-CH10 | In the Results window open a run raced this session (the chart shows), then a run from before the last `/reload` or a lost run; hover the *Timing* header where the chart's title was | Over the second run there is no *Damage over the race* tooltip anywhere: the timing header shows its own | A screenshot of the tooltip |
+
+## 13. The 2026-10-25 pass: equipment and talents (#6)
+
+Needs a character with a saved talent loadout, a few runs from before this build (they have no
+loadout), and two runs on one board raced in different gear or talents. Keep `/console scriptErrors 1`
+on, and `/console taintLog 1` for SM-DR-LO4.
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-LO1 | Race once, then open the run in the Results window and scroll under the timing strip; hover a few items, an empty slot and the *Gear* title | *Gear* in gold with *Dressing Room* at its right; two columns in the character frame's order (head, neck, shoulders, back, chest, wrists, main hand, off hand; then hands, waist, legs, feet, both rings, both trinkets), no shirt and no tabard; each item's icon in its quality's color, its item level over the icon and its name beside it; an empty slot says *Empty*. An item's hover is the game's own item tooltip with its enchant, gems and item level; the empty slot and the title show their own tooltips | A screenshot of the grid and of one item tooltip |
+| SM-DR-LO2 | Open a chat edit box and Shift-click an item in the grid; then Ctrl-click one | Shift-click puts the item's link in the edit box, and it posts as a clickable link; Ctrl-click opens it in the Dressing Room | A screenshot, and the Lua error if any |
+| SM-DR-LO3 | Press *Dressing Room* | The Dressing Room opens with every item of the run tried on (weapons included) | A screenshot |
+| SM-DR-LO4 | On the *Talents* line, check the name, then press *View*; close the tree, pull a dummy, and while in combat and after it open your own talents (N) and change nothing | The line names your saved loadout and its hero tree (not a generic name); *View* opens Blizzard's talent tree, read-only, on the run's build. Afterwards there is no *Interface action failed because of an AddOn* message and no ADDON_ACTION_BLOCKED error naming DpsRace in or after combat, and the talent frame works as usual | The taint log (`Logs/taint.log`) and the error, if any |
+| SM-DR-LO5 | Press *Copy*, press Ctrl+C, then paste into the talent frame's *Import* box (or Wowhead's talent calculator) | A copy window opens over the Results window with the import string selected; the pasted string imports the same build. Escape closes the window | A screenshot |
+| SM-DR-LO6 | Open a run raced before this build | *Gear* says *Not recorded* with no grid and no *Dressing Room*; the *Talents* line says *Not recorded* with *View* and *Copy* grayed; hovering *Not recorded* says why | A screenshot |
+| SM-DR-LO7 | Open a run whose board's best was raced in other gear or talents and tick *Compare vs best*; untick it | Ticked: every slot whose item differs is tinted amber, and its item tooltip ends with what the best wore there; an amber *Different loadout* line shows under the talents when the builds differ. Unticked: no tint and no line | A screenshot of each state |
+| SM-DR-LO8 | In the Runs tab hover the class icon of a run raced after a gear change, then of the next run in the same gear, then of a run from before this build | The first names the talent loadout and says *Gear changed since the previous run* in amber; the second names the loadout without the note; the old one says *Gear and talents: not recorded* | A screenshot of each |
+| SM-DR-LO9 | On History, tick *Include talents link* under *Sharing*; share a run to Say and to a party member's whisper; untick it and share again | Ticked: the line ends with a gold *[Destruction: <loadout>]* link (or the link follows as a second message when the line is long), and clicking it, yours or a party member's, opens the read-only talent tree. Unticked: exactly the one line as before | The chat lines, and any refusal or error |
+| SM-DR-LO10 | Arm a race, change a piece of gear before the first hit, then race it and open the run | The grid shows the gear you raced in (the one you changed to), not the gear at arm | A screenshot |
