@@ -43,7 +43,6 @@ local CHECKS = {
     { key = "includeIncomplete", label = "Include incomplete", width = 128 },
     { key = "onlyBest", label = "Only best", width = 84 },
 }
-local COUNT_W = 70
 -- The view buttons (LootHistory's), right-aligned on the bar's second row, Save first.
 local VIEW_BUTTONS = {
     { key = "save", label = "Save", act = "SaveView",
@@ -543,8 +542,6 @@ local function buildBar(view)
         b:HookScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
         view.viewButtons[spec.key] = b
     end
-    view.count = Tbl.Text(bar, Tbl.FONT.CAPTION, nil, "RIGHT")
-    view.count:SetWidth(COUNT_W)
     view.bar = bar
 end
 
@@ -639,7 +636,8 @@ function View:ClearView()
 end
 
 -- Lay the bar out in two rows from the configured widths: the dropdowns on the first; the
--- checkboxes, the count and Save / Reset / Clear (right-aligned) on the second. Answers its height.
+-- checkboxes and Save / Reset / Clear on the second, the buttons right-aligned under the last
+-- dropdown (Group). The run count is the window footer's (hooks.count). Answers its height.
 function View:layoutBar()
     local x = GAP + 2
     for _, spec in ipairs(DROPDOWNS) do
@@ -651,6 +649,7 @@ function View:layoutBar()
         end
     end
     local y = -(FILTER_H - 2)
+    local groupRight = x - GAP   -- the last dropdown's right edge, from the bar's left
     x = GAP + 2
     for _, spec in ipairs(CHECKS) do
         local b = self.checks[spec.key]
@@ -658,15 +657,13 @@ function View:layoutBar()
         b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, y)
         x = x + spec.width + GAP
     end
-    local right = -GAP - 2
+    local right = groupRight
     for i = #VIEW_BUTTONS, 1, -1 do
         local b = self.viewButtons[VIEW_BUTTONS[i].key]
         b:ClearAllPoints()
-        b:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT", right, y)
+        b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", right, y)
         right = right - VIEW_BUTTON_W - GAP
     end
-    self.count:ClearAllPoints()
-    self.count:SetPoint("TOPRIGHT", self.bar, "TOPRIGHT", right, y - 4)
     self.barH = 2 * FILTER_H - 6
     self.bar:SetHeight(self.barH)
     return self.barH
@@ -704,7 +701,8 @@ function View:Refresh()
     self:paintFilters(Runs.Options(all))
     self.filtered = Runs.Filter(all, self.filters)
     local n = #self.filtered
-    self.count:SetText(n == 1 and L["1 run"] or L["%d runs"]:format(n))
+    self.countText = n == 1 and L["1 run"] or L["%d runs"]:format(n)
+    if self.hooks.count then self.hooks.count(self.countText) end
     self.list.selected = self.hooks.selected and self.hooks.selected() or nil
     self.list:SetData(self.filtered)
     self.list:SetGroup(Runs.GROUPS[self.filters.group or "none"])

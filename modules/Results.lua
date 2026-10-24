@@ -37,6 +37,8 @@ Results.TABS = { "runs", "bests" }
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
 local Style = NS.Style
 local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
+-- The footer's hint; on the Runs tab the run count goes before it.
+local HINT = L["Click a row for details \194\183 double-click to share"]
 local C = NS.ResultsTable.COLORS
 
 local ui                 -- the built window
@@ -111,6 +113,8 @@ local function buildTab(name)
     if name == "runs" then
         pane = NS.ResultsRuns.Build(ui.body, {
             select = selectRun, share = share, selected = function() return selected end,
+            -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
+            count = function(text) ui.runsCount = text end,
         })
     else
         pane = NS.ResultsBests.Build(ui.body, {
@@ -180,7 +184,7 @@ local function buildFooter(f)
     line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
     ui.footLeft = Style.Text(f, Style.FONT.CAPTION)
     ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    ui.footLeft:SetText(L["Click a row for details \194\183 double-click to share"])
+    ui.footLeft:SetText(HINT)
     ui.footRight = Style.Text(f, Style.FONT.CAPTION, nil, "RIGHT")
     ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
 end
@@ -295,6 +299,9 @@ local function paintTabs()
 end
 
 local function footer()
+    -- The Runs tab's count before its hint; the Bests tab shows the hint alone.
+    local count = tab == "runs" and ui.runsCount
+    ui.footLeft:SetText(count and (count .. " \194\183 " .. HINT) or HINT)
     -- GetSetting answers the shipped default itself (settings/Schema.lua); no second literal here.
     local keep = tonumber(NS.GetSetting("global.history.keep"))
     ui.footRight:SetText(keep and keep > 0 and L["Runs to keep: %d"]:format(keep) or L["Runs to keep: 0 (never prune)"])
