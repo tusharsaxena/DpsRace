@@ -1,5 +1,5 @@
--- tests/test_settings.lua — the settings pages (spec §6.3): the Race and History pages and the General
--- page's Race HUD tab (its Display and Live breakdown subsections), their rows' shape (default, enUS label, tooltip), the ranges
+-- tests/test_settings.lua — the settings pages (spec §6.3): the Race, HUD and History pages (the HUD
+-- page's Race HUD tab: its Display and Live breakdown subsections), their rows' shape (default, enUS label, tooltip), the ranges
 -- the spec fixes, what a write reaches, and the History page's Purge history… act.
 
 local T = _G.DPSRACE_TEST
@@ -26,7 +26,7 @@ test("settings: every schema row has default, enUS label and desc", function()
         assertTrue(#desc > 0, name .. " desc is empty")
         -- The composed Master rows carry the library's own words; every row this addon writes is
         -- listed in the enUS table, label and tooltip both.
-        if r.group ~= NS.Helpers.MASTER_GROUP then
+        if r.group ~= NS.Helpers.MASTER_GROUP and not r.composed then
             assertTrue(hasOwnKey(NS, r.label), name .. " label is not in locales/enUS.lua: " .. r.label)
             assertTrue(hasOwnKey(NS, desc), name .. " tooltip is not in locales/enUS.lua")
         end
@@ -47,7 +47,7 @@ local STORED = {
     ["state.testMode"]       = { "bool",   false },
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
-    ["live.rows"]            = { "number", 8,       3,    15,    1 },
+    ["live.rows"]            = { "number", 8,       0,    15,    1 },
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
@@ -60,6 +60,51 @@ local STORED = {
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
+    ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
+    ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
+    ["appearance.elapsed.fontColor"] = { "color", "table" },
+    ["appearance.elapsed.useClassColorFont"] = { "bool", false },
+    ["appearance.elapsed.fontFlags"] = { "string", "" },
+    ["appearance.elapsed.fontShadow"] = { "bool", false },
+    ["appearance.left.font"] = { "string", "JetBrains Mono" },
+    ["appearance.left.fontSize"] = { "number", 26, 6, 32, 1 },
+    ["appearance.left.fontColor"] = { "color", "table" },
+    ["appearance.left.useClassColorFont"] = { "bool", false },
+    ["appearance.left.fontFlags"] = { "string", "" },
+    ["appearance.left.fontShadow"] = { "bool", false },
+    ["appearance.figures.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.figures.fontSize"] = { "number", 20, 6, 32, 1 },
+    ["appearance.figures.fontColor"] = { "color", "table" },
+    ["appearance.figures.useClassColorFont"] = { "bool", false },
+    ["appearance.figures.fontFlags"] = { "string", "" },
+    ["appearance.figures.fontShadow"] = { "bool", true },
+    ["appearance.spellText.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.spellText.fontSize"] = { "number", 10, 6, 32, 1 },
+    ["appearance.spellText.fontColor"] = { "color", "table" },
+    ["appearance.spellText.useClassColorFont"] = { "bool", false },
+    ["appearance.spellText.fontFlags"] = { "string", "" },
+    ["appearance.spellText.fontShadow"] = { "bool", true },
+    ["appearance.bars.barTexture"] = { "string", "Solid" },
+    ["appearance.bars.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["appearance.bars.barColor"] = { "color", "table" },
+    ["appearance.bars.useClassColorBar"] = { "bool", false },
+    ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
+    -- History > Results table: composed blocks.
+    ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.damageBar.barColor"] = { "color", "table" },
+    ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.dpsBar.barColor"] = { "color", "table" },
+    ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.barText.font"] = { "string", "Friz Quadrata TT" },
+    ["resultsTable.barText.fontSize"] = { "number", 10, 6, 32, 1 },
+    ["resultsTable.barText.fontColor"] = { "color", "table" },
+    ["resultsTable.barText.useClassColorFont"] = { "bool", false },
+    ["resultsTable.barText.fontFlags"] = { "string", "" },
+    ["resultsTable.barText.fontShadow"] = { "bool", true },
 }
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
@@ -70,7 +115,11 @@ test("settings: the stored paths, types, defaults and ranges are exactly the pin
         assertTrue(pin ~= nil, "a stored path appeared: " .. tostring(r.path))
         seen = seen + 1
         assertEqual(r.type, pin[1], r.path .. " type")
-        assertEqual(r.default, pin[2], r.path .. " default")
+        if pin[2] == "table" then
+            assertEqual(type(r.default), "table", r.path .. " default")
+        else
+            assertEqual(r.default, pin[2], r.path .. " default")
+        end
         assertEqual(r.min, pin[3], r.path .. " min")
         assertEqual(r.max, pin[4], r.path .. " max")
         assertEqual(r.step, pin[5], r.path .. " step")
@@ -82,7 +131,7 @@ end)
 
 test("settings: every row sits on a page the panel draws, and every page has a group", function()
     local NS = T.NS
-    local pages = { general = true, race = true, history = true }
+    local pages = { general = true, race = true, hud = true, history = true }
     for _, r in ipairs(NS.Schema) do
         assertTrue(pages[r.page] == true, tostring(r.path) .. " on page " .. tostring(r.page))
         assertEqual(type(r.group), "string", tostring(r.path))
@@ -133,13 +182,13 @@ test("settings: the Race page's rows, ranges and defaults", function()
     assertTrue(hint.min <= 15 and hint.max >= 15)
 end)
 
-test("settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD", function()
+test("settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD", function()
     local NS = T.NS
     local rows = row(NS, "live.rows")
-    assertEqual(rows.page, "general")
+    assertEqual(rows.page, "hud")
     assertEqual(rows.group, "Race HUD")
     assertEqual(rows.subgroup, "Live breakdown")
-    assertEqual(rows.min, 3)
+    assertEqual(rows.min, 0, "0 shows every spell")
     assertEqual(rows.max, 15)
     assertEqual(rows.default, 8)
     local hz = row(NS, "live.hz")
@@ -157,8 +206,10 @@ test("settings: a write out of range is refused and stores nothing", function()
     M.__resetPrinted()
     NS.Slash:OnSlash("set race.grace 9")
     assertEqual(NS.GetSetting("race.grace"), 5, "a slider value is clamped to its range by the CLI")
-    NS.Slash:OnSlash("set live.rows 2")
-    assertEqual(NS.GetSetting("live.rows"), 3)
+    NS.Slash:OnSlash("set live.rows 40")
+    assertEqual(NS.GetSetting("live.rows"), 15)
+    NS.Slash:OnSlash("set live.rows -1")
+    assertEqual(NS.GetSetting("live.rows"), 0, "0 is every spell, the floor")
 end)
 
 test("settings: changing grace does not alter saved runs", function()
@@ -192,11 +243,12 @@ test("settings: a live breakdown change redraws the HUD", function()
     end
 end)
 
-test("settings: the HUD's show mode is a General tab of its own; `always` opens the HUD", function()
+test("settings: the HUD's show mode is on the HUD page's Race HUD tab; `always` opens the HUD", function()
     local inst = T.load()
     local NS = inst.NS
     local mode = row(NS, "hud.showMode")
-    assertEqual(mode.page, "general")
+    assertEqual(mode.page, "hud")
+    assertEqual(mode.group, "Race HUD")
     assertTrue(mode.group ~= NS.Helpers.MASTER_GROUP, "the canonical tab is not extended by hand")
     assertEqual(mode.default, "onArm")
     assertFalse(NS.Hud.IsShown())
@@ -209,7 +261,7 @@ test("settings: the race clock is a Race HUD row: both, left or elapsed, default
     local inst = T.load()
     local NS = inst.NS
     local clock = row(NS, "hud.clock")
-    assertEqual(clock.page, "general")
+    assertEqual(clock.page, "hud")
     assertEqual(clock.group, row(NS, "hud.showMode").group, "beside the show mode, on the Race HUD tab")
     assertEqual(clock.default, "both")
     assertEqual(NS.GetSetting("hud.clock"), "both")
@@ -226,15 +278,15 @@ test("settings: the race clock is a Race HUD row: both, left or elapsed, default
     assertEqual(NS.db.profile.hud.clock, "left")
 end)
 
-test("settings: the General, Race and History pages register and render quietly", function()
+test("settings: the General, Race, HUD and History pages register and render quietly", function()
     local inst = T.load()
     local M = inst.mocks
-    for _, name in ipairs({ "General", "Race", "History", "Profiles" }) do
+    for _, name in ipairs({ "General", "Race", "HUD", "History", "Profiles" }) do
         assertTrue(M.__subcategories[name] ~= nil, name .. " is not registered")
     end
-    assertTrue(M.__subcategories["Live breakdown"] == nil, "the Live breakdown page folded into General")
+    assertTrue(M.__subcategories["Live breakdown"] == nil, "the Live breakdown page folded into the HUD page")
     M.__resetPrinted()
-    for _, name in ipairs({ "General", "Race", "History" }) do
+    for _, name in ipairs({ "General", "Race", "HUD", "History" }) do
         M.__subcategories[name]:__fire("OnShow")
     end
     assertEqual(#M.__printed(), 0, "a render printed: " .. tostring(M.__printed()[1]))
@@ -244,7 +296,26 @@ test("settings: the pages register in the panel's order, General first and Profi
     local inst = T.load()
     local order = {}
     for _, ctx in ipairs(inst.NS.Helpers.__pages()) do order[#order + 1] = ctx.pageKey or ctx.key end
-    assertEqual(table.concat(order, ","), "general,race,history,profiles")
+    assertEqual(table.concat(order, ","), "general,race,hud,history,profiles", "HUD just above History")
+end)
+
+-- A page's schema tabs, in drawn (registration) order.
+local function tabsOf(NS, page)
+    local seen, out = {}, {}
+    for _, r in ipairs(NS.SchemaForPage(page)) do
+        if not seen[r.group] then
+            seen[r.group] = true
+            out[#out + 1] = r.group
+        end
+    end
+    return table.concat(out, "|")
+end
+
+test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone", function()
+    local NS = T.NS
+    assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
+    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
+    assertEqual(#NS.SchemaForPage("hud"), 6 + 4 * 6 + 4 + 1, "the Race HUD tab's six rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -258,9 +329,9 @@ local function tabRows(NS, page, group)
     return table.concat(out, "\n")
 end
 
-test("settings: General > Race HUD draws Display, then Live breakdown, in the pinned order", function()
+test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order", function()
     local NS = T.NS
-    assertEqual(tabRows(NS, "general", "Race HUD"), table.concat({
+    assertEqual(tabRows(NS, "hud", "Race HUD"), table.concat({
         "hud.showMode|Display|Show the race HUD|false",
         "hud.clock|Display|Race clock|false",
         "live.rows|Live breakdown|Spell rows shown|false",
@@ -296,10 +367,17 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults says it covers the live breakdown, and not the keys", function()
+test("settings: General's Defaults names Master controls, and not the keys or the HUD", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
-    assertEqual(tip, "Restore every General setting on this profile to its addon default, including the "
-        .. "Race HUD's live breakdown. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
+    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls. "
+        .. T.NS.Helpers.KEYBINDS_UNCHANGED)
+    assertTrue(tip:find("live breakdown", 1, true) == nil and tip:find("HUD Appearance", 1, true) == nil, tip)
+end)
+
+test("settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance", function()
+    local tip = T.mocks.__subcategories["HUD"].defaultsTooltip
+    assertEqual(tip, "Restore every HUD setting on this profile to its addon default: the Race HUD tab "
+        .. "(display and live breakdown) and HUD Appearance.")
 end)
 
 -- ── History: stored count, Purge history… ────────────────────────────────────────────────────────

@@ -70,16 +70,16 @@ function Bests.Columns()
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "length", label = L["Length"], width = 56, justify = "RIGHT", desc = true,
+        { key = "length", label = L["Length"], width = 56, desc = true,
           sort = function(run) return run.race and run.race.length end,
           text = function(run) return NS.Format.Length(run.race and run.race.length) end },
-        { key = "ilvl", label = L["iLvl"], width = 56, justify = "RIGHT", desc = true,
+        { key = "ilvl", label = L["iLvl"], width = 56, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        { key = "damage", label = L["Damage"], width = 80, justify = "RIGHT", desc = true,
+        { key = "damage", label = L["Damage"], width = 80, desc = true,
           sort = function(run) return run.result and run.result.damage end,
           text = function(run) return NS.Format.Number(run.result and run.result.damage or 0) end },
-        { key = "dps", label = L["DPS"], width = 80, justify = "RIGHT", desc = true,
+        { key = "dps", label = L["DPS"], width = 80, desc = true,
           sort = function(run) return run.result and run.result.dps end,
           text = function(run) return NS.Format.Number(run.result and run.result.dps or 0), C.green end },
         { key = "date", label = L["Date"], width = 64, desc = true,
@@ -131,7 +131,7 @@ function Bests.Build(parent, hooks)
     view.list = Tbl.New(view.listHost, Bests.Columns(), {
         sortKey = "dps", sortDesc = true,
         onClick = function(run) if view.hooks.open then view.hooks.open(run) end end,
-        onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
+        onRightClick = function(run, row) if view.hooks.menu then view.hooks.menu(run, row) end end,
         empty = L["No personal bests yet: finish a race to set one."],
     })
     return view

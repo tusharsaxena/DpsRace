@@ -475,6 +475,34 @@ test("hud: the live rows stop above the caption and CANCEL at every window heigh
     end
 end)
 
+test("hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest", function()
+    local f = hud()
+    local h = f.Hud.MIN_HEIGHT
+    f.NS.db.profile.windows.hud.height = h
+    f.NS.db.profile.live.rows = 0
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(20))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    local b = body(f)
+    local cap = fits(h, RUNNING_TOP, RUNNING_BOTTOM)
+    assertEqual(b.w.list:Count(), cap, "as many rows as fit")
+    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap))
+    assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2001)))
+    b.w.rows:__fire("OnMouseWheel", -1)       -- down: one row further
+    assertEqual(b.w.count.__text, ("2-%d of 20"):format(cap + 1))
+    for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", -1) end
+    assertEqual(b.w.count.__text, ("%d-20 of 20"):format(20 - cap + 1), "clamped at the end")
+    for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", 1) end
+    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap), "clamped at the top")
+    -- A set count never scrolls.
+    f.NS.db.profile.live.rows = 3
+    pump(f, 0.5)
+    b.w.rows:__fire("OnMouseWheel", -1)
+    assertEqual(b.w.count.__text, "3 rows")
+end)
+
 test("hud: the default window size shows every default live row", function()
     local f = hud()
     assertEqual(f.NS.defaults.profile.windows.hud.height, 460, "the default matches mockup screen 04")
@@ -497,10 +525,32 @@ test("hud: the result card's rows stop above its buttons at every window height"
         run.spells = {}
         for i = 1, 8 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
         f.Hud.Refresh()
-        local want = math.min(f.NS.HudStates.RESULT_ROWS, fits(h, RESULT_TOP, RESULT_BOTTOM))
+        local want = math.min(f.NS.db.profile.live.rows, fits(h, RESULT_TOP, RESULT_BOTTOM))
         assertTrue(want >= 3)
         assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
     end
+end)
+
+test("hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls", function()
+    local f = hud()
+    f.NS.db.profile.windows.hud.height = 700
+    f.NS.db.profile.live.rows = 3
+    local run = resolved(f)
+    run.spells = {}
+    for i = 1, 40 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
+    f.Hud.Refresh()
+    local b = body(f)
+    assertEqual(b.w.list:Count(), 3, "the set count")
+    f.NS.db.profile.live.rows = 0
+    f.Hud.Refresh()
+    local cap = fits(700, RESULT_TOP, RESULT_BOTTOM)
+    assertTrue(cap > 5 and cap < 40)
+    assertEqual(b.w.list:Count(), cap, "as many as fit, not the top 5")
+    b.w.rows:__fire("OnMouseWheel", -1)
+    assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2002)), "one row down")
+    for _ = 1, 60 do b.w.rows:__fire("OnMouseWheel", -1) end
+    assertEqual(b.w.list:Count(), cap)
+    assertEqual(T.reveal(b.w.list.rows[cap].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2040)), "clamped at the last spell")
 end)
 
 test("hud: the minimum height holds the idle body's whole stack", function()
@@ -568,7 +618,7 @@ test("hud: result body shows % and the best delta chip", function()
     assertEqual(b.w.dps.value.__text, "51.3K")
     local chips = b.w.chips:Texts()
     assertEqual(chips[1], "New best +25.0%")
-    assertEqual(chips[#chips], ("Tail +%.1fs"):format(run.result.tail))
+    assertEqual(chips[#chips], ("Time 0:30 +%.1fs"):format(run.result.tail))
     local rows = b.w.list.rows
     assertEqual(#rows, 3)
     assertEqual(rows[1].name.__text, "Incinerate")
@@ -627,7 +677,8 @@ test("hud: an incomplete run's chip names when combat ended, or that the player 
     g:advance(3)
     chips = body(g).w.chips:Texts()
     assertEqual(chips[1], "Incomplete: died")
-    assertEqual(#chips, 1, "died is not shown twice")
+    assertEqual(chips[2], "Time 0:12 / 0:30", "the time in combat against the length")
+    assertEqual(#chips, 2, "died is not shown twice")
 end)
 
 test("hud: Race again re-arms the same length; Details and Share reach their modules", function()
@@ -644,6 +695,15 @@ test("hud: Race again re-arms the same length; Details and Share reach their mod
     b.w.share:__fire("OnClick")
     assertTrue(shared == run)
     b.w.again:__fire("OnClick")
+    assertEqual(f.Race.State(), "idle", "Race Again opens the Arm Race screen, it does not arm")
+    assertEqual(current(f), "idle")
+    assertTrue(f.Hud.IsShown(), "the window stays open")
+    assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "the run is kept")
+    local idle = body(f).w
+    local picked
+    for _, p in ipairs(idle.presets) do if p.selected then picked = p.length end end
+    assertEqual(picked, 30, "the same length is picked")
+    idle.arm:__fire("OnClick")
     assertEqual(f.Race.State(), "armed")
     assertEqual(f.Race.Current().race.length, 30)
 end)
@@ -1013,8 +1073,9 @@ test("hud: labels take the collection's font objects; the clocks and KPI figures
     assertEqual(w.lengthCap.__text, "Race Length")
     assertEqual(w.targetCap.__text, "Target")
     assertEqual(w.presets[1].label.__fontObject, "GameFontHighlightSmall", "a preset button")
-    assertEqual(w.lastResult.label.__fontObject, "GameFontHighlightSmall", "a link button")
-    assertEqual(w.lastResult.label.__text, "Last Result")
+    assertEqual(w.results.label.__fontObject, "GameFontHighlightSmall", "a link button")
+    assertEqual(w.results.label.__text, "Results")
+    assertEqual(w.lastResult, nil, "no Last Result button")
     assertEqual(w.arm.label.__text, "Arm Race")
     assertEqual(w.card.name.__fontObject, "GameFontHighlight", "the target's name")
     assertEqual(w.card.badgeText.__fontObject, "GameFontHighlightSmall")
@@ -1106,4 +1167,78 @@ test("hud: the minimum size still holds every body after the compact restyle", f
     assertTrue(content >= States.IDLE_ARM_Y + States.ARM_HEIGHT + 4 + 14 + 4 + 20, "idle")
     assertTrue(content >= RUNNING_TOP + 3 * PITCH - 2 + RUNNING_BOTTOM, "running with three rows")
     assertTrue(content >= RESULT_TOP + 3 * PITCH - 2 + RESULT_BOTTOM, "result with three rows")
+end)
+
+-- ── HUD Appearance (HUD > HUD Appearance, modules/Hud_Appearance.lua) ─────────────────────────────
+
+test("hud: the running clocks, figures and spell rows take their HUD Appearance blocks", function()
+    local f = hud()
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(4))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    local w = body(f).w
+    -- The defaults are the shipped look: the monospace clocks at 26, green and red.
+    assertEqual(w.elapsed.__font.size, 26)
+    assertEqual(w.elapsed.__font.path, f.NS.Constants.FONT_MONO)
+    assertEqual(w.elapsed.__color[1], 0.36)
+    assertEqual(w.left.__color[1], 1.0)
+    assertEqual(w.damage.value.__font.size, 20)
+    local row = w.list.rows[1]
+    assertEqual(row.__height, 18)
+    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\buttons\\white8x8", "flat: LSM's Solid")
+    assertEqual(row.bar.__barColor[4], 0.85)
+    assertEqual(row.name.__font.size, 10)
+
+    -- From here the HUD only restyles and draws live values: it measures nothing.
+    for i = #f.W.geomReads, 1, -1 do f.W.geomReads[i] = nil end
+    assertTrue(f.NS.SetByPath("appearance.elapsed.fontSize", 32))
+    assertTrue(f.NS.SetByPath("appearance.elapsed.fontFlags", "OUTLINE"))
+    assertTrue(f.NS.SetByPath("appearance.figures.fontShadow", false))
+    assertTrue(f.NS.SetByPath("appearance.bars.rowHeight", 24))
+    assertTrue(f.NS.SetByPath("appearance.bars.barColor", { r = 0.1, g = 0.2, b = 0.3, a = 1 }))
+    pump(f, 0.5)
+    w = body(f).w
+    assertEqual(w.elapsed.__font.size, 32)
+    assertEqual(w.elapsed.__font.flags, "OUTLINE")
+    assertEqual(w.damage.value.__shadow[1], 0, "the shadow is off")
+    row = w.list.rows[1]
+    assertEqual(row.__height, 24)
+    assertEqual(row.bar.__barColor[1], 0.1)
+    assertEqual(row.bar.__barColor[4], 0.85, "the bar opacity is its own row")
+    -- The stack moved down for the taller clock: the KPIs at 26 + 32, the rows under them.
+    local p = w.damage.frame.__points[1]
+    assertEqual(p[5], -58)
+    assertEqual(body(f).rowsTop, 58 + 46 + 8)
+    assertEqual(#f.W.geomReads, 0, "nothing measured")
+end)
+
+test("hud: a clock shown alone draws half again as large, in its block's color", function()
+    local f = hud()
+    f.NS.db.profile.hud.clock = "elapsed"
+    f.Hud.Show()
+    running(f, 30)
+    pump(f, 0.5)
+    local w = body(f).w
+    assertEqual(w.clock.__font.size, 40)
+    assertEqual(w.clock.__color[1], 0.36, "the elapsed block's green")
+    assertEqual(w.damage.frame.__points[1][5], -52, "the shipped layout at the defaults")
+end)
+
+test("hud: a bar's class color companion takes the player's class, the swatch's opacity kept", function()
+    local f = hud()
+    f.NS.db.profile.appearance.bars.useClassColorBar = true
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(2))
+    f.meter.SetSecret(true)
+    f.NS.HudAppearance.Changed()
+    pump(f, 0.5)
+    local fill = f.NS.HudAppearance.Bar()
+    local _, class = f.M.UnitClass("player")
+    local cr = assert(f.M.RAID_CLASS_COLORS[class], "the mock player has a class color")
+    assertEqual(fill.r, cr.r)
+    assertEqual(fill.a, 0.85)
+    assertEqual(body(f).w.list.rows[1].bar.__barColor[1], cr.r)
 end)

@@ -57,8 +57,15 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
   combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
   combat, such as a trailing update from the last fight, leaves the race armed, and a DamageDone
-  update heard out of combat is adopted only if the clock starts on its own frame). The start time is
-  `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
+  update heard out of combat is adopted only if the clock starts on its own frame). The clock also
+  starts on the first DamageDone `DAMAGE_METER_COMBAT_SESSION_UPDATED` heard in combat (or on the
+  regen edge's own frame) while armed: the meter can make the run's session out of combat (a DoT
+  left on the dummies, an opener landing a frame before the edge), and then no session event ever
+  pairs with the edge (the owner's report, 2026-10-24: a second race stayed armed). A pull that
+  carries on a session that existed at the arm is adopted and flagged `sharedSession`. What that
+  session held at the arm (read then, out of combat, `race.baseline`) is netted off the total and
+  each spell at the read, and the meter's own rate is dropped. A fresh session heard later replaces
+  the shared one. The start time is `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
   the run is written to SavedVariables as `running`. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
@@ -85,7 +92,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   the last DamageDone update for the session (updates land up to 1.3 s after combat drops). The
   session is read by its ID through `Meter.ReadSession`, never as "current", into plain numbers. A
   run with no captured ID falls back to the newest session created after the arm and is flagged
-  `sessionFromList` (spec §9). A `sealed` read is retried for 10 s; a missing session, a raise or a
+  `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
+  `sealed` read is retried for 10 s; a missing session, a raise or a
   meter reset makes the run `lost` (kept, with no result).
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
@@ -148,10 +156,14 @@ race.
   `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled
   rows (`hudLive`): bars by `SetMinMaxValues(0, maxAmount)` / `SetValue(total)` (the first row's
   total when there is no `maxAmount`), amounts by `Format.Number`, names and icons by `C_Spell`, in
-  Blizzard's order, `live.rows` of them, no %. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
+  Blizzard's order, `live.rows` of them, no %. `live.rows` 0 is every spell: as many as fit the
+  window are drawn, and the mouse wheel moves a plain offset over the rest (MultiMeters' model: the
+  slice is redrawn from the offset, nothing is measured, and the count is the length of the addon's
+  own copy of the list). The rows, the clocks and the figures take their look from HUD > HUD
+  Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the tail, the top 5 spells with their share, and *Race Again*
+  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
   (`NS.Share.Prompt`).
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
@@ -178,18 +190,19 @@ into the store, so sorting, percentages and the timing strip are plain Lua. It h
 timer or `OnUpdate`.
 
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
-  (the HUD's *Details* and *Last result*, a Bests row) or `Results.ShowTab(name)`. `IsShown()` =
+  (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
   time it shows.
-- **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
+- **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
-  bar → `ResultsTable` sorts them (DPS descending by default; an unranked run last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a double-click shares it.
+  bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% to 100% within each target type (each type's smallest and largest of the runs passed, `barKey`), sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
-  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. From
-  900 px wide it sits beside the list; below, it replaces the list with a back control.
+  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
+  time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
+  against the length (*1:04 / 2:00*).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
   delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
@@ -204,8 +217,8 @@ timer or `OnUpdate`.
 
 ## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
 
-- **Share**: the HUD's result card, the Results detail and a row's double-click call
-  `Share.Prompt(run)`. A run with no score (lost) prints one line and opens nothing; in combat, or in
+- **Share**: the HUD's result card and the Results detail call `Share.Prompt(run)`; a Results row's
+  right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
   sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s

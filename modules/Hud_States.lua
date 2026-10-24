@@ -354,8 +354,7 @@ end
 --- @return number
 function States.RowCapacity(height)
     local B = NS.HudBreakdown
-    local pitch = B.ROW_HEIGHT + B.ROW_GAP
-    return math.max(0, math.floor((height + B.ROW_GAP) / pitch))
+    return math.max(0, math.floor((height + B.ROW_GAP) / B.Pitch()))
 end
 
 -- `wanted` rows, or fewer: what fits between `top` and `bottom` in the height Layout handed the body.
@@ -398,11 +397,11 @@ function Builders.idle(parent)
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
     w.reason:SetPoint("TOPRIGHT", w.arm, "BOTTOMRIGHT", 0, -4)
-    local links = footerButtons(body, {
-        { L["Last Result"], function() act("lastResult") end },
-        { L["Results"], function() act("results") end, width = 72 },
-    })
-    w.lastResult, w.results = links[1], links[2]
+    -- The Results window, across the foot (the owner dropped Last Result, 2026-10-24).
+    w.results = wideButton(body, L["Results"], function() act("results") end)
+    w.results:SetHeight(LINK_HEIGHT)
+    w.results:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
+    w.results:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
 
     function body.Layout(self, width)
         local cell = math.floor((width - 2 * 6) / 3)
@@ -432,7 +431,6 @@ function Builders.idle(parent)
         self.w.warn:SetText(v.warning or "")
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
-        setEnabled(self.w.lastResult, v.hasRuns == true)
     end
     return body
 end
@@ -476,9 +474,95 @@ local function setClocks(w, v)
         w.left:SetText(NS.Format.Clock(left))
         return
     end
-    local isElapsed = mode == "elapsed"
-    w.clock:SetText(NS.Format.Clock(isElapsed and elapsed or left))
-    paintText(w.clock, isElapsed and C.green or C.red)
+    -- Its color is its font block's (styleRunning), like the pair's.
+    w.clock:SetText(NS.Format.Clock(mode == "elapsed" and elapsed or left))
+end
+
+-- THE RUNNING BODY'S LOOK (HUD > HUD Appearance, modules/Hud_Appearance.lua): the elapsed and the
+-- time-left clocks each in their own font block, the live figures in theirs. The stack below them is
+-- laid out from the configured sizes, never from a measured one: the KPI pair sits under the clocks'
+-- block, and the spell rows under the KPIs. At the defaults this is the shipped layout (KPIs at 52).
+-- A clock shown alone ("left" or "elapsed") draws half again as large as the pair (26 -> 40).
+local SINGLE_SCALE = BIG / CLOCK_PAIR
+
+-- The KPIs' top for the clock mode and the blocks' sizes.
+local function kpiTop(both, elapsedSize, leftSize, singleSize)
+    if both then return 26 + math.max(elapsedSize, leftSize) end
+    return 12 + math.floor(singleSize * SINGLE_SCALE + 0.5)
+end
+
+local function placeKpi(k, f, y, h, left)
+    k.frame:ClearAllPoints()
+    k.frame:SetHeight(h)
+    if left then
+        k.frame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, y)
+        k.frame:SetPoint("TOPRIGHT", f, "TOP", -4, y)
+    else
+        k.frame:SetPoint("TOPLEFT", f, "TOP", 4, y)
+        k.frame:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, y)
+    end
+end
+
+--- Restyle the running body for the clock mode, once per HUD Appearance change or mode change.
+local function styleRunning(body, mode)
+    local A = NS.HudAppearance
+    if not A then return end
+    local both = mode ~= "left" and mode ~= "elapsed"
+    local key = A.stamp .. ":" .. tostring(mode)
+    if body.styled == key then return end
+    body.styled = key
+    local w, f = body.w, body.frame
+    local ef, lf, ff = A.Font("elapsed"), A.Font("left"), A.Font("figures")
+    local single = mode == "elapsed" and ef or lf
+    A.ApplyFont(w.elapsed, ef)
+    A.ApplyFont(w.left, lf)
+    A.ApplyFont(w.clock, single, SINGLE_SCALE)
+    A.ApplyFont(w.damage.value, ff)
+    A.ApplyFont(w.dps.value, ff)
+    local top = kpiTop(both, ef.size, lf.size, single.size)
+    local kpiH = math.max(KPI_HEIGHT, ff.size + 26)
+    placeKpi(w.damage, f, -top, kpiH, true)
+    placeKpi(w.dps, f, -top, kpiH, false)
+    body.rowsTop = top + kpiH + GAP
+    w.rows:ClearAllPoints()
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
+end
+
+-- The running body's spell rows. live.rows 0 is every spell (the owner's call, 2026-10-24): as many as
+-- fit are drawn and the wheel moves the window over the rest, MultiMeters' model (a plain offset from
+-- a wheel event, the slice drawn from it; no ScrollFrame and nothing measured). The count is the
+-- length of the addon's own copy of the spell list (Meter.ReadLive), a plain number.
+local function liveTotal(body)
+    local live = body.live
+    if type(live) ~= "table" or type(live.spells) ~= "table" then return 0 end
+    return #live.spells
+end
+
+local function liveCap(body, rows)
+    local top = body.rowsTop or RUNNING_ROWS_TOP
+    if rows ~= 0 then return rowsFor(body, top, RUNNING_ROWS_BOTTOM, rows) end
+    local total = liveTotal(body)
+    if type(body.height) ~= "number" then return total end
+    return math.min(total, States.RowCapacity(body.height - top - RUNNING_ROWS_BOTTOM))
+end
+
+local function liveCount(body, rows)
+    local cap = liveCap(body, rows)
+    if rows ~= 0 then return L["%d rows"]:format(cap) end
+    local total, offset = liveTotal(body), body.offset or 0
+    if total == 0 then return L["%d rows"]:format(0) end
+    return L["%d-%d of %d"]:format(offset + 1, offset + cap, total)
+end
+
+local function drawLive(body)
+    local rows, total = body.rowsSetting, liveTotal(body)
+    local cap = liveCap(body, rows)
+    local offset = 0
+    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    body.offset = offset
+    body.w.list:ShowLive(body.live, cap, body.icons ~= false, offset)
+    body.w.count:SetText(liveCount(body, rows))
 end
 
 -- RUNNING: the race clock (hud.clock), live damage and DPS, the live breakdown with no % (screen 04).
@@ -508,6 +592,13 @@ function Builders.running(parent)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
+    w.rows:EnableMouseWheel(true)
+    w.rows:SetScript("OnMouseWheel", function(_, delta)
+        if body.rowsSetting ~= 0 or type(body.live) ~= "table" then return end
+        body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
+        drawLive(body)
+    end)
     w.order = Style.Text(f, FONT.CAPTION)
     w.order:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, BUTTON_HEIGHT + 8)
     w.order:SetText(L["Live order \194\183 % after the race"])
@@ -520,9 +611,13 @@ function Builders.running(parent)
     function body.Layout(self, _, height) self.height = height end
 
     function body.Update(self, v)
+        styleRunning(self, v.clockMode)
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
-        self.w.count:SetText(L["%d rows"]:format(rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, v.rows)))
+        -- A new race scrolls back to the top.
+        if v.run ~= self.run then self.run, self.offset = v.run, 0 end
+        self.rowsSetting = v.rows
+        self.w.count:SetText(liveCount(self, v.rows))
     end
 
     --- The live figures: opaque values, straight to the formatter and the rows.
@@ -535,7 +630,8 @@ function Builders.running(parent)
         end
         setKpi(self.w.damage, NS.Format.Number(live.total))
         if live.dps == nil then setKpi(self.w.dps, DASH) else setKpi(self.w.dps, NS.Format.Number(live.dps)) end
-        self.w.list:ShowLive(live, rowsFor(self, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, rows), icons ~= false)
+        self.live, self.rowsSetting, self.icons = live, rows, icons
+        drawLive(self)
     end
     return body
 end
@@ -638,6 +734,7 @@ local FLAG_CHIP = {
     restarted = function(run) return L["Restarted +%.1fs"]:format(run.flags.restartedAt) end,
     reloaded = function() return L["Reloaded"] end,
     sessionFromList = function() return L["Session by list"] end,
+    sharedSession = function() return L["Shared session"] end,
     incomplete = function(run)
         if run.flags.died then return L["Incomplete: died"] end
         local at = run.result and run.result.endedAt
@@ -660,8 +757,11 @@ function States.ResultChips(v)
         local short = FLAG_CHIP[flag.key]
         if short and not skip then list[#list + 1] = { text = short(run), color = C.amber, tip = flag.text } end
     end
-    local tail = run.result and run.result.tail
-    if type(tail) == "number" then list[#list + 1] = { text = L["Tail +%.1fs"]:format(tail), color = C.info } end
+    -- The run's time: the length and the DoT tail, or the time in combat before the buzzer.
+    if run.status ~= "lost" and type(run.result) == "table" then
+        list[#list + 1] = { text = L["Time %s"]:format(NS.Format.RunTime(run)), color = C.info,
+                            tip = L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."] }
+    end
     return list
 end
 
@@ -678,6 +778,13 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
+    w.rows:EnableMouseWheel(true)
+    w.rows:SetScript("OnMouseWheel", function(_, delta)
+        if body.rowsSetting ~= 0 or not body.shownRun then return end
+        body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
+        body:DrawRows()
+    end)
     local links = footerButtons(body, {
         { L["Race Again"], function() act("raceAgain") end, "primary" },
         { L["Details"], function() act("details") end, width = 72 },
@@ -703,18 +810,42 @@ function Builders.result(parent)
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
         self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
-        local n = rowsFor(self, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, States.RESULT_ROWS)
-        if lost then self.w.list:Clear() else self.w.list:ShowResult(run, n, v.icons ~= false) end
+        if v.run ~= self.shownRun then self.offset = 0 end
+        self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
+        if lost then self.w.list:Clear() else self:DrawRows() end
         setEnabled(self.w.share, v.canShare == true)
         -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
         setEnabled(self.w.again, v.preview ~= true)
         setEnabled(self.w.details, v.preview ~= true)
     end
+    function body.DrawRows(self) Builders.resultRows(self) end
     return body
 end
 
--- The result card's spell rows (spec §6.1: the top 5 with %).
+-- The result card's spell rows follow *Spell rows shown* (live.rows), as the live list does: that many
+-- from the top, or with 0 every spell, as many as fit and the wheel over the rest (the owner's call,
+-- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
+
+function Builders.resultRows(body)
+    local run = body.shownRun
+    local spells = type(run) == "table" and type(run.spells) == "table" and run.spells or {}
+    local rows = tonumber(body.rowsSetting) or States.RESULT_ROWS
+    local total = #spells
+    local cap
+    if rows == 0 then
+        cap = total
+        if type(body.height) == "number" then
+            cap = math.min(total, States.RowCapacity(body.height - RESULT_ROWS_TOP - RESULT_ROWS_BOTTOM))
+        end
+    else
+        cap = rowsFor(body, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, rows)
+    end
+    local offset = 0
+    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    body.offset = offset
+    body.w.list:ShowResult(run, cap, body.icons ~= false, offset)
+end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
 --- the running and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.

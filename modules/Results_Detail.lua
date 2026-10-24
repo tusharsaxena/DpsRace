@@ -11,6 +11,10 @@ local _, NS = ...
 -- suites check the strip's geometry without drawing it; the pane draws exactly what they answer.
 --
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
+--
+-- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
+-- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
+-- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
 
 local Detail = {}
 NS.ResultsDetail = Detail
@@ -28,12 +32,16 @@ Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this,
 local PADX = 12
 local BUTTON_H = 20
 local KPI_H = 46
-local ROW_PITCH = NS.HudBreakdown.ROW_HEIGHT + NS.HudBreakdown.ROW_GAP
 local STRIP_H = 34
 local LINE_H = 14
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
 local CYAN = { 0.3, 0.85, 1.0 }
+local VIOLET = { 0.78, 0.5, 1.0 }
+-- Every line on the strip (grace, late cast, combat end, restart) is one shape: the combat-end line's
+-- width, the grace line's height (inset from the strip's top and bottom).
+local LINE_W = 2
+local LINE_INSET = 4
 local RACE = { 0.53, 0.53, 0.93 }
 
 -- ── pure: the note ──────────────────────────────────────────────────────────────────────────────
@@ -158,6 +166,10 @@ local EXPLAIN = {
         return L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."]
             .. " " .. L[STILL_COUNTS]
     end,
+    sharedSession = function(_, text)
+        return text .. ". " .. L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
+            .. " " .. L[STILL_COUNTS]
+    end,
     died = function(_, text) return text .. "." end,
     incomplete = function(_, text) return text .. ". " .. L["It does not count toward bests."] end,
     lost = function(_, text) return text .. ". " .. L["There is no score."] end,
@@ -194,7 +206,7 @@ function Detail.Meta(run)
     local first = { char.realm or "?", L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) }
     if place ~= "" then first[#first + 1] = place end
     local badge = Tbl.Badge(target)
-    local second = { target.name or L["Unknown target"], badge, NS.Format.Length(run.race and run.race.length) }
+    local second = { target.name or L["Unknown target"], badge, NS.Format.RunTime(run) }
     local third = { Tbl.Date(run.date, "%d %b %Y %H:%M") }
     if run.build then third[#third + 1] = L["build %s"]:format(tostring(run.build)) end
     if run.addon then third[#third + 1] = "v" .. tostring(run.addon) end
@@ -206,6 +218,34 @@ end
 
 local Pane = {}
 Pane.__index = Pane
+
+-- The legend's labels, in the order its items are built (Results_Tips names each by this index).
+Detail.LEGEND = { L["Race"], L["Tail (damage still landing)"], L["Grace"], L["Late cast"], L["Combat ended"],
+                  L["Restart"] }
+-- Its two rows, by index: the bars' colors, then the lines'.
+Detail.LEGEND_ROWS = { { 1, 2 }, { 3, 4, 5, 6 } }
+
+-- ── hovers ──────────────────────────────────────────────────────────────────────────────────────
+
+local function showTip(p, owner, key, index)
+    local lines = NS.ResultsTips.Detail(key, p.run, index)
+    if lines then Tbl.BelowTip(owner, lines) end
+end
+
+-- `frame`'s hover: the tooltip for `key` under it. Hooked, so a button keeps its own hover look.
+local function hover(p, frame, key, index)
+    frame:EnableMouse(true)
+    frame:HookScript("OnEnter", function(self) showTip(p, self, type(key) == "function" and key() or key, index) end)
+    frame:HookScript("OnLeave", Tbl.HideTip)
+    return frame
+end
+
+-- A hover frame laid over `region` (a text or a texture, which take no mouse of their own).
+local function hoverOver(p, region, key, index)
+    local f = CreateFrame("Frame", nil, p.content)
+    f:SetAllPoints(region)
+    return hover(p, f, key, index)
+end
 
 local function kpi(parent, label, color)
     local f = Tbl.Panel(parent)
@@ -238,10 +278,10 @@ local function buildHeader(p, c)
     w.delta = Tbl.Text(c, FONT.TEXT, C.green)
 end
 
-local function legendItem(c, color, label, dashed)
+local function legendItem(c, color, label)
     local item = { swatch = c:CreateTexture(nil, "ARTWORK"), fs = Tbl.Text(c, FONT.CAPTION) }
     item.swatch:SetSize(9, 9)
-    item.swatch:SetColorTexture(color[1], color[2], color[3], dashed and 0.35 or 0.8)
+    item.swatch:SetColorTexture(color[1], color[2], color[3], 0.8)
     item.fs:SetText(label)
     item.text = label
     return item
@@ -250,7 +290,7 @@ end
 local function stripMark(parent, color, width)
     local t = parent:CreateTexture(nil, "OVERLAY")
     t:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
-    t:SetWidth(width or 2)
+    t:SetWidth(width or LINE_W)
     return t
 end
 
@@ -262,20 +302,26 @@ local function buildTiming(p, c)
     w.strip:SetHeight(STRIP_H)
     w.segA = Tbl.Panel(w.strip, { 0.07, 0.07, 0.1, 1 }, { 1, 1, 1, 0.08 })
     w.segB = Tbl.Panel(w.strip, { 0.07, 0.07, 0.1, 1 }, { 1, 1, 1, 0.08 })
-    w.raceFill = stripMark(w.strip, { RACE[1], RACE[2], RACE[3], 0.5 })
-    w.tail = stripMark(w.strip, { C.amber[1], C.amber[2], C.amber[3], 0.45 })
-    w.grace = stripMark(w.strip, { C.green[1], C.green[2], C.green[3], 0.8 }, 1)
-    w.combatEnd = stripMark(w.strip, CYAN)
-    w.restart = stripMark(w.strip, C.amber)
+    -- The marks' own frame, above the segments: a child frame draws over its parent's textures
+    -- whatever their layer, so marks made on the strip itself sat hidden under the opaque segments.
+    w.marks = CreateFrame("Frame", nil, w.strip)
+    w.marks:SetAllPoints(w.strip)
+    w.marks:SetFrameLevel(w.strip:GetFrameLevel() + 2)
+    local m = w.marks
+    w.raceFill = stripMark(m, { RACE[1], RACE[2], RACE[3], 0.5 })
+    w.tail = stripMark(m, { C.amber[1], C.amber[2], C.amber[3], 0.45 })
+    w.grace = stripMark(m, { C.green[1], C.green[2], C.green[3], 0.8 })
+    w.combatEnd = stripMark(m, CYAN)
+    w.restart = stripMark(m, VIOLET)
     w.ticks = NS.Pool.New()
     w.axisLeft = Tbl.Text(c, FONT.CAPTION)
     w.axisMid, w.axisRight = Tbl.Text(c, FONT.CAPTION, nil, "CENTER"), Tbl.Text(c, FONT.CAPTION, nil, "RIGHT")
     w.axisRace = Tbl.Text(c, FONT.CAPTION)
     w.tailLine = Tbl.Text(c, FONT.TEXT, C.text)
+    local LG = Detail.LEGEND
     w.legend = {
-        legendItem(c, RACE, L["Race"]), legendItem(c, C.amber, L["Tail (damage still landing)"]),
-        legendItem(c, C.green, L["Grace"], true), legendItem(c, RED, L["Late cast"]),
-        legendItem(c, CYAN, L["Combat ended"]),
+        legendItem(c, RACE, LG[1]), legendItem(c, C.amber, LG[2]), legendItem(c, C.green, LG[3]),
+        legendItem(c, RED, LG[4]), legendItem(c, CYAN, LG[5]), legendItem(c, VIOLET, LG[6]),
     }
 end
 
@@ -325,6 +371,42 @@ local function buildButtons(p)
     w.delete:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PADX, 8)
 end
 
+-- Every element's hover but the spell rows' (the breakdown's own `tip` hook).
+local function wireTips(p)
+    local w = p.w
+    hoverOver(p, w.class, "class")
+    hoverOver(p, w.spec, "class")
+    hoverOver(p, w.name, "name")
+    hoverOver(p, w.specName, "class")
+    for i, key in ipairs({ "realm", "target", "stamp" }) do hoverOver(p, w.meta[i], key) end
+    hover(p, w.damage.frame, "damage")
+    hover(p, w.dps.frame, "dps")
+    hover(p, w.meterDps.frame, "meterDps")
+    hoverOver(p, w.delta, "delta")
+    hoverOver(p, w.timingLabel, "strip")
+    hover(p, w.strip, "strip")
+    for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do hoverOver(p, axis, "strip") end
+    hoverOver(p, w.tailLine, "tail")
+    for i, item in ipairs(w.legend) do
+        hoverOver(p, item.swatch, "legend", i)
+        hoverOver(p, item.fs, "legend", i)
+    end
+    hover(p, w.flags, "flags")
+    -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
+    w.noteHover = hoverOver(p, w.note, "note")
+    hover(p, w.noteBox, "noteBox")
+    hover(p, w.back, "back")
+    hover(p, w.addNote, "addNote")
+    hover(p, w.share, function() return w.share:IsEnabled() and "share" or "shareOff" end)
+    hover(p, w.delete, "delete")
+end
+
+-- A spell row's hover: the client's spell tooltip, then its damage, share and place, beside the window.
+local function spellTip(p, row, spell, rank)
+    local count = p.run and #(p.run.spells or {}) or nil
+    Tbl.SpellTip(Tbl.WindowOf(p.frame), row, spell.id, NS.ResultsTips.Spell(spell, p.run or {}, rank, count))
+end
+
 --- The detail pane in `parent`.
 --- @param parent table
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare() }
@@ -344,10 +426,11 @@ function Detail.Build(parent, hooks)
     p.w.empty:SetText(L["Select a run to see its detail."])
     local c = p.content
     buildHeader(p, c)
-    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c))
+    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
     buildTiming(p, c)
     buildFlags(p, c)
     buildButtons(p)
+    wireTips(p)
     return p
 end
 
@@ -438,6 +521,9 @@ function Pane:openNote()
     self.editing = true
     self.w.noteBox:SetText(self.run.note or "")
     self:Layout(self.width, self.height, self.narrow)
+    -- The box sits last in the content, under the spells and timing: scroll down to it.
+    self.scroll = math.huge
+    self:Scroll(0)
     self.w.noteBox:SetFocus()
 end
 
@@ -494,8 +580,9 @@ function Pane:layoutSpells(y, cw)
     local n = self.w.list:Count()
     host:ClearAllPoints()
     host:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-    host:SetSize(cw, math.max(1, n * ROW_PITCH))
-    return y - n * ROW_PITCH - 8
+    local pitch = NS.HudBreakdown.Pitch()
+    host:SetSize(cw, math.max(1, n * pitch))
+    return y - n * pitch - 8
 end
 
 local function placeMark(tex, strip, x, inset)
@@ -518,12 +605,12 @@ function Pane:layoutStripMarks(pos)
     w.raceFill:SetWidth(math.max(1, pos.raceFill))
     placeMark(w.tail, w.strip, pos.tailW > 0 and pos.tailX or nil, 10)
     w.tail:SetWidth(math.max(1, pos.tailW))
-    placeMark(w.grace, w.strip, pos.grace, 4)
-    placeMark(w.combatEnd, w.strip, pos.combatEnd or pos.endInRace, 0)
-    placeMark(w.restart, w.strip, pos.restart, 6)
+    placeMark(w.grace, w.strip, pos.grace, LINE_INSET)
+    placeMark(w.combatEnd, w.strip, pos.combatEnd or pos.endInRace, LINE_INSET)
+    placeMark(w.restart, w.strip, pos.restart, LINE_INSET)
     NS.Pool.ReleaseAll(w.ticks)
     for _, x in ipairs(pos.late) do
-        placeMark(NS.Pool.Acquire(w.ticks, function() return stripMark(w.strip, RED) end), w.strip, x, 2)
+        placeMark(NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end), w.strip, x, LINE_INSET)
     end
 end
 
@@ -539,16 +626,23 @@ local function tailText(run)
     return s
 end
 
+-- The legend in its rows (Detail.LEGEND_ROWS), the bars' colors over the lines'; a row too long for
+-- `cw` wraps onto the next line rather than run off the pane.
 function Pane:layoutLegend(y, cw)
-    local x, row = 0, 0
-    for _, item in ipairs(self.w.legend) do
-        local w = 14 + #item.text * 5.5
-        if x > 0 and x + w > cw then x, row = 0, row + 1 end
-        item.swatch:ClearAllPoints()
-        item.swatch:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y - row * LINE_H - 2)
-        item.fs:ClearAllPoints()
-        item.fs:SetPoint("LEFT", item.swatch, "RIGHT", 4, 0)
-        x = x + w + 10
+    local row = 0
+    for r, indices in ipairs(Detail.LEGEND_ROWS) do
+        if r > 1 then row = row + 1 end
+        local x = 0
+        for _, i in ipairs(indices) do
+            local item = self.w.legend[i]
+            local w = 14 + #item.text * 5.5
+            if x > 0 and x + w > cw then x, row = 0, row + 1 end
+            item.swatch:ClearAllPoints()
+            item.swatch:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y - row * LINE_H - 2)
+            item.fs:ClearAllPoints()
+            item.fs:SetPoint("LEFT", item.swatch, "RIGHT", 4, 0)
+            x = x + w + 10
+        end
     end
     return y - (row + 1) * LINE_H
 end
@@ -611,6 +705,7 @@ function Pane:layoutFlags(y, cw)
     local note = self.noteText or ""
     w.noteBox:SetShown(self.editing == true)
     w.note:SetShown(not self.editing and note ~= "")
+    w.noteHover:SetShown(not self.editing and note ~= "")
     local target = self.editing and w.noteBox or w.note
     target:ClearAllPoints()
     target:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
@@ -644,6 +739,6 @@ end
 --- One mouse-wheel notch (`delta` > 0 scrolls up), clamped to the content.
 function Pane:Scroll(delta)
     local top = math.max(0, (self.contentH or 0) - (self.viewH or 0))
-    self.scroll = math.max(0, math.min(top, (self.scroll or 0) - (delta or 0) * 3 * ROW_PITCH))
+    self.scroll = math.max(0, math.min(top, (self.scroll or 0) - (delta or 0) * 3 * NS.HudBreakdown.Pitch()))
     self.scrollFrame:SetVerticalScroll(self.scroll)
 end

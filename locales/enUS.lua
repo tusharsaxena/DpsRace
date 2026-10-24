@@ -12,6 +12,7 @@ NS.L = L
 -- Identity and chrome
 L["Ka0s DPS Race"] = "Ka0s DPS Race"
 L["General"] = "General"
+L["HUD"] = "HUD"
 L["Profiles"] = "Profiles"
 L["Slash Commands"] = "Slash Commands"
 
@@ -35,8 +36,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."] =
-    "Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."
+L["Restore every General setting on this profile to its addon default: Master controls."] =
+    "Restore every General setting on this profile to its addon default: Master controls."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -79,6 +80,9 @@ L["%d late casts (%s)"] = "%d late casts (%s)"
 L["Damage restarted at +%.1fs"] = "Damage restarted at +%.1fs"
 L["Reloaded mid-run: casts after the buzzer not tracked"] = "Reloaded mid-run: casts after the buzzer not tracked"
 L["Session matched by list"] = "Session matched by list"
+L["Shared session: the damage it held at the arm was taken off"] = "Shared session: the damage it held at the arm was taken off"
+L["Shared session: the total may include the fight before the arm"] =
+    "Shared session: the total may include the fight before the arm"
 L["Died during the run"] = "Died during the run"
 L["Incomplete: combat ended before the buzzer"] = "Incomplete: combat ended before the buzzer"
 L["Lost: the session could not be read"] = "Lost: the session could not be read"
@@ -105,7 +109,6 @@ L["Race Length"] = "Race Length"
 L["Custom"] = "Custom"
 L["Target"] = "Target"
 L["Arm Race"] = "Arm Race"
-L["Last Result"] = "Last Result"
 L["First hit starts the clock"] = "First hit starts the clock"
 L["Pre-cast and pre-pot as you would on a pull. The clock starts when damage lands, not when you press the button."] =
     "Pre-cast and pre-pot as you would on a pull. The clock starts when damage lands, not when you press the button."
@@ -115,6 +118,7 @@ L["Elapsed"] = "Elapsed"
 L["Left"] = "Left"
 L["Live order \194\183 % after the race"] = "Live order \194\183 % after the race"
 L["%d rows"] = "%d rows"
+L["%d-%d of %d"] = "%d-%d of %d"
 L["Combat Ended"] = "Combat Ended"
 L["Damage Stopped"] = "Damage Stopped"
 L["In Combat"] = "In Combat"
@@ -136,6 +140,7 @@ L["%d late casts"] = "%d late casts"
 L["Restarted +%.1fs"] = "Restarted +%.1fs"
 L["Reloaded"] = "Reloaded"
 L["Session by list"] = "Session by list"
+L["Shared session"] = "Shared session"
 L["Incomplete: died"] = "Incomplete: died"
 L["Incomplete (combat ended at %s)"] = "Incomplete (combat ended at %s)"
 L["Lost"] = "Lost"
@@ -143,7 +148,6 @@ L["Died"] = "Died"
 L["New best +%.1f%%"] = "New best +%.1f%%"
 L["New best"] = "New best"
 L["%+.1f%% vs best"] = "%+.1f%% vs best"
-L["Tail +%.1fs"] = "Tail +%.1fs"
 L["DPS"] = "DPS"
 L["Race Again"] = "Race Again"
 L["Details"] = "Details"
@@ -173,8 +177,8 @@ L["Invisibility"] = "Invisibility"
 L["DPS Race \226\128\148 Results"] = "DPS Race \226\128\148 Results"
 L["Runs"] = "Runs"
 L["Bests"] = "Bests"
-L["Click a row for details \194\183 double-click to share"] =
-    "Click a row for details \194\183 double-click to share"
+L["Click a row for details \194\183 right-click for options"] =
+    "Click a row for details \194\183 right-click for options"
 L["Runs to keep: %d"] = "Runs to keep: %d"
 L["Runs to keep: 0 (never prune)"] = "Runs to keep: 0 (never prune)"
 L["Delete this run? This cannot be undone, and a personal best it holds goes with it."] =
@@ -188,6 +192,8 @@ L["Restarted"] = "Restarted"
 L["By list"] = "By list"
 L["Unknown spec"] = "Unknown spec"
 L["All characters"] = "All characters"
+L["Current character"] = "Current character"
+L["Current spec"] = "Current spec"
 L["All specs"] = "All specs"
 L["All targets"] = "All targets"
 L["Any length"] = "Any length"
@@ -210,6 +216,8 @@ L["%s (grace %.1fs)."] = "%s (grace %.1fs)."
 L["%s, after the quiet gap."] = "%s, after the quiet gap."
 L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."] =
     "Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."
+L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."] =
+    "The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."
 L["It does not count toward bests."] = "It does not count toward bests."
 L["There is no score."] = "There is no score."
 L["ilvl %s"] = "ilvl %s"
@@ -243,6 +251,29 @@ L["Best per spec \195\151 category \195\151 race length, all characters"] =
 L["No personal bests yet: finish a race to set one."] = "No personal bests yet: finish a race to set one."
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
+L["Only best"] = "Only best"
+L["Save"] = "Save"
+L["Reset"] = "Reset"
+L["Clear"] = "Clear"
+L["%s (%s)"] = "%s (%s)"
+L["Runs view saved as default."] = "Runs view saved as default."
+L["Runs view reset to stock defaults."] = "Runs view reset to stock defaults."
+L["Save these filters, the grouping and the sort as this profile's default view of Runs."] = "Save these filters, the grouping and the sort as this profile's default view of Runs."
+L["Delete the saved view and go back to the stock one: your character and spec, newest first."] = "Delete the saved view and go back to the stock one: your character and spec, newest first."
+L["Go back to the saved view (the stock one when none is saved). The saved view is kept."] = "Go back to the saved view (the stock one when none is saved). The saved view is kept."
+L["Group: None"] = "Group: None"
+L["Group: Character"] = "Group: Character"
+L["Group: Class & spec"] = "Group: Class & spec"
+L["Group: Target"] = "Group: Target"
+L["Character: %s"] = "Character: %s"
+L["Class & spec: %s"] = "Class & spec: %s"
+L["Target: %s"] = "Target: %s"
+L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
+    "Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."
+L["Results table"] = "Results table"
+L["Damage bar"] = "Damage bar"
+L["DPS bar"] = "DPS bar"
+L["Bar text"] = "Bar text"
 L["The run still counts and the flag shows on the board."] =
     "The run still counts and the flag shows on the board."
 
@@ -274,7 +305,7 @@ L["creature %d"] = "creature %d"
 L["not a creature"] = "not a creature"
 L["Target: %s \194\183 %s \194\183 category %s"] = "Target: %s \194\183 %s \194\183 category %s"
 
--- General page: the Race HUD tab (settings/General.lua): Display, then Live breakdown
+-- HUD page: the Race HUD tab (settings/Hud.lua): Display, then Live breakdown
 L["Race HUD"] = "Race HUD"
 L["Display"] = "Display"
 L["Show the race HUD"] = "Show the race HUD"
@@ -291,6 +322,20 @@ L["What the HUD's clock shows while the race runs: the time elapsed in green, th
 
 -- Race page (settings/Race.lua): Length, Countdown, At the buzzer, Scoring rules
 L["Length"] = "Length"
+L["Time"] = "Time"
+L["Status"] = "Status"
+L["Max"] = "Max"
+L["Spec best"] = "Spec best"
+L["%+.1f%%"] = "%+.1f%%"
+L["%.1f%%"] = "%.1f%%"
+L["v/s Max"] = "v/s Max"
+L["Complete"] = "Complete"
+L["Flagged"] = "Flagged"
+L["Incomplete"] = "Incomplete"
+L["%s / %s"] = "%s / %s"
+L["Time %s"] = "Time %s"
+L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."] =
+    "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."
 L["Countdown"] = "Countdown"
 L["At the buzzer"] = "At the buzzer"
 L["Scoring rules"] = "Scoring rules"
@@ -320,13 +365,26 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
+L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."] =
+    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."
 
--- General page: the Race HUD tab's Live breakdown subsection (settings/General.lua)
+-- HUD page: the Race HUD tab's Live breakdown subsection (settings/Hud.lua)
 L["Live breakdown"] = "Live breakdown"
 L["Spell rows shown"] = "Spell rows shown"
-L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."] =
-    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."
+L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."] =
+    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."
 L["Live reads per second"] = "Live reads per second"
+L["HUD Appearance"] = "HUD Appearance"
+L["Elapsed clock"] = "Elapsed clock"
+L["Time left clock"] = "Time left clock"
+L["Live figures"] = "Live figures"
+L["Spell bars"] = "Spell bars"
+L["Spell text"] = "Spell text"
+L["Row height"] = "Row height"
+L["Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."] =
+    "Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."
+L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."] =
+    "The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."
 L["How often the running HUD reads the meter while damage is landing. 2 to 10."] =
     "How often the running HUD reads the meter while damage is landing. 2 to 10."
 L["Show spell icons"] = "Show spell icons"
@@ -345,8 +403,6 @@ L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d run
 L["Purge history\226\128\166"] = "Purge history\226\128\166"
 L["Deletes every stored run. Asks for confirmation. Personal bests go with them."] =
     "Deletes every stored run. Asks for confirmation. Personal bests go with them."
-L["Restore Runs to keep to its addon default. Stored runs are not touched."] =
-    "Restore Runs to keep to its addon default. Stored runs are not touched."
 L["Delete every stored run? Your personal bests go with them. This cannot be undone."] =
     "Delete every stored run? Your personal bests go with them. This cannot be undone."
 L["Finish or cancel the race first."] = "Finish or cancel the race first."
@@ -380,3 +436,108 @@ L["Test mode ended: a race was armed."] = "Test mode ended: a race was armed."
 L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbers. Combat or Arm ends it"
 L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"
+
+-- The Results window's tooltips (modules/Results_Tips.lua, modules/Results_Runs.lua)
+L["Role: %s"] = "Role: %s"
+L["Class color"] = "Class color"
+L["Level %d"] = "Level %d"
+L["Item level %s"] = "Item level %s"
+L["%s overall, counting bags"] = "%s overall, counting bags"
+L["Equipped, read when the race was armed."] = "Equipped, read when the race was armed."
+L["1 target (your pick)"] = "1 target (your pick)"
+L["%d targets (your pick)"] = "%d targets (your pick)"
+L["Race length %s"] = "Race length %s"
+L["Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."] =
+    "Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."
+L["Combat ended %.1fs after the buzzer."] = "Combat ended %.1fs after the buzzer."
+L["The session could not be read: there is no score."] =
+    "The session could not be read: there is no score."
+L["%s damage"] = "%s damage"
+L["Everything the meter's session held, read after combat (%ds)."] =
+    "Everything the meter's session held, read after combat (%ds)."
+L["Damage over the time in combat (%s). Incomplete runs never rank."] =
+    "Damage over the time in combat (%s). Incomplete runs never rank."
+L["Damage over the race length (%s), your clock."] = "Damage over the race length (%s), your clock."
+L["Blizzard's meter said %s (over its whole session, idle time included)."] =
+    "Blizzard's meter said %s (over its whole session, idle time included)."
+L["Clean run"] = "Clean run"
+L["No flags: nothing happened that the result should mention."] =
+    "No flags: nothing happened that the result should mention."
+L["1 flag"] = "1 flag"
+L["%d flags"] = "%d flags"
+L["Flags inform; they never void a run."] = "Flags inform; they never void a run."
+L["Click to fold or unfold the group."] = "Click to fold or unfold the group."
+L["When the race started. Click to sort."] = "When the race started. Click to sort."
+L["The character's class and spec."] = "The character's class and spec."
+L["Who raced. Hover a name for the realm, race and where."] =
+    "Who raced. Hover a name for the realm, race and where."
+L["Equipped item level when the race was armed."] = "Equipped item level when the race was armed."
+L["The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."] =
+    "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."
+L["The race length the best was set at."] = "The race length the best was set at."
+L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."] =
+    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."
+L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."] =
+    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."
+L["How far this run's DPS is from the highest complete run in view on the same target type."] =
+    "How far this run's DPS is from the highest complete run in view on the same target type."
+L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
+    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."
+L["What happened on the run that its result should mention: late casts, a restart, a reload."] =
+    "What happened on the run that its result should mention: late casts, a restart, a reload."
+L["A lost run has no DPS to compare."] = "A lost run has no DPS to compare."
+L["No complete run on this target type in view to compare with."] =
+    "No complete run on this target type in view to compare with."
+L["%+.1f%% vs the max"] = "%+.1f%% vs the max"
+L["The max for %s in this view: %s DPS."] = "The max for %s in this view: %s DPS."
+L["This run is the max for %s in view."] = "This run is the max for %s in view."
+L["An incomplete run is compared, but never sets the max."] =
+    "An incomplete run is compared, but never sets the max."
+L["The top DPS on its target type among the runs in view, which hold more than one spec."] =
+    "The top DPS on its target type among the runs in view, which hold more than one spec."
+L["The best run for its spec, target type and race length."] =
+    "The best run for its spec, target type and race length."
+L["A complete run that holds no best."] = "A complete run that holds no best."
+L["A complete run that carries a flag."] = "A complete run that carries a flag."
+L["Combat ended before the buzzer. It never counts toward bests."] =
+    "Combat ended before the buzzer. It never counts toward bests."
+L["You died before the buzzer. It never counts toward bests."] =
+    "You died before the buzzer. It never counts toward bests."
+L["The meter's session could not be read after combat. There is no score."] =
+    "The meter's session could not be read after combat. There is no score."
+L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
+L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"
+
+-- The run detail's tooltips (modules/Results_Tips.lua, Tips.Detail and Tips.Spell)
+L["#%d of %d spells"] = "#%d of %d spells"
+L["%.1f%% of the run's damage"] = "%.1f%% of the run's damage"
+L["A line of your own kept with the run: what you tried, what went wrong."] =
+    "A line of your own kept with the run: what you tried, what went wrong."
+L["Against the best DPS before this run for the same spec, target type and race length."] =
+    "Against the best DPS before this run for the same spec, target type and race length."
+L["Back to the list; the run stays selected."] = "Back to the list; the run stays selected."
+L["Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."] =
+    "Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."
+L["Edit Note changes it; an empty note removes it."] = "Edit Note changes it; an empty note removes it."
+L["Enter saves, Escape cancels. Up to %d characters."] = "Enter saves, Escape cancels. Up to %d characters."
+L["Left: the race, from the start to the buzzer. Right: the seconds after the buzzer, with the grace window, the damage still landing, any late casts and the end of combat."] =
+    "Left: the race, from the start to the buzzer. Right: the seconds after the buzzer, with the grace window, the damage still landing, any late casts and the end of combat."
+L["Note"] = "Note"
+L["Sharing is unavailable: the Share module did not load."] = "Sharing is unavailable: the Share module did not load."
+L["Post the run's summary to chat: say, party, raid, guild or a whisper."] =
+    "Post the run's summary to chat: say, party, raid, guild or a whisper."
+L["Remove this run from history, after a confirmation. A best it holds goes with it."] =
+    "Remove this run from history, after a confirmation. A best it holds goes with it."
+L["The first complete run of its kind."] = "The first complete run of its kind."
+L["The race, from the start to the buzzer (to the end of combat for an incomplete run)."] =
+    "The race, from the start to the buzzer (to the end of combat for an incomplete run)."
+L["Damage still landing after the buzzer (DoTs, travel time). It counts."] =
+    "Damage still landing after the buzzer (DoTs, travel time). It counts."
+L["Casts started this long after the buzzer carry no flag: the Race page's Late-cast grace, frozen into each run."] =
+    "Casts started this long after the buzzer carry no flag: the Race page's Late-cast grace, frozen into each run."
+L["A cast started after the grace window. The run counts, with a flag."] =
+    "A cast started after the grace window. The run counts, with a flag."
+L["When combat ended."] = "When combat ended."
+L["Restart"] = "Restart"
+L["Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."] =
+    "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."

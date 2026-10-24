@@ -192,7 +192,7 @@ end
 
 -- The page keys a row may name: the four sub-pages, in their panel order (settings/General.lua first,
 -- settings/Profiles.lua last).
-local VALID_PAGES = { general = true, race = true, history = true, profiles = true }
+local VALID_PAGES = { general = true, race = true, hud = true, history = true, profiles = true }
 
 -- The Minimap row declares no stored `shown`: it answers no root here, and its stored key
 -- (`global.minimap.hide`) is checked against the defaults by the suite instead (architecture-§5).

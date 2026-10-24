@@ -106,74 +106,15 @@ for _, row in ipairs(masterRows) do
 end
 NS.RegisterSchemaRows(masterRows)
 
--- ── Race HUD ────────────────────────────────────────────────────────────────────────────────────
--- Its own tab after Master controls (spec §6.3 General), holding every HUD setting: Display (show
--- the HUD on arm only or always, and its clock), then Live breakdown (what the running HUD lists and
--- how often it reads the meter; the Live breakdown page folded in here, item 020). The HUD's scale
--- and lock are the Master rows above: the HUD is the addon's positionable display.
-local SHOW_MODES = { onArm = true, always = true }
-local CLOCK_MODES = { both = true, left = true, elapsed = true }
-
-NS.RegisterSchemaRows({
-    { path = "hud.showMode", page = PAGE, group = L["Race HUD"], subgroup = L["Display"], type = "string",
-      label = L["Show the race HUD"], default = NS.defaults.profile.hud.showMode,
-      values = {
-          { value = "onArm", text = L["When a race is armed"] },
-          { value = "always", text = L["Always"] },
-      },
-      validate = function(v) return SHOW_MODES[v] == true end,
-      tooltip = L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."],
-      -- "always" opens it now; back to "onArm" leaves an open window open, as a player-opened one is.
-      onChange = function(v)
-          if v == "always" then NS.Hud.Show() end
-      end },
-    -- The running body's clock (spec §6.1); read on every redraw, so a redraw is the whole reaction.
-    { path = "hud.clock", page = PAGE, group = L["Race HUD"], subgroup = L["Display"], type = "string",
-      label = L["Race clock"], default = NS.defaults.profile.hud.clock,
-      values = {
-          { value = "both", text = L["Elapsed and time left"] },
-          { value = "left", text = L["Time left"] },
-          { value = "elapsed", text = L["Time elapsed"] },
-      },
-      validate = function(v) return CLOCK_MODES[v] == true end,
-      tooltip = L["What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."],
-      onChange = function() NS.Hud.Refresh() end },
-})
-
--- The live breakdown: each row is read when the HUD draws or reads, so a redraw is the whole
--- reaction: the next live read takes the new rate, and the rows and figures follow at once. Line 1 is
--- what the spell rows show, line 2 the live figure and how often it refreshes.
-local LIVE = NS.defaults.profile.live
-local function redraw() NS.Hud.Refresh() end
-
-NS.RegisterSchemaRows({
-    { path = "live.rows", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "number",
-      min = 3, max = 15, step = 1, label = L["Spell rows shown"], default = LIVE.rows,
-      tooltip = L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 3 to 15."],
-      onChange = redraw },
-    { path = "live.icons", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "bool",
-      label = L["Show spell icons"], default = LIVE.icons,
-      tooltip = L["Draw each spell's icon on the HUD's rows."],
-      onChange = redraw },
-    { path = "live.showDps", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "bool",
-      label = L["Show live DPS"], default = LIVE.showDps,
-      tooltip = L["Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."],
-      onChange = redraw, startsLine = true },
-    { path = "live.hz", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "number",
-      min = 2, max = 10, step = 1, label = L["Live reads per second"], default = LIVE.hz,
-      tooltip = L["How often the running HUD reads the meter while damage is landing. 2 to 10."],
-      onChange = redraw },
-})
-
 -- ── The page ────────────────────────────────────────────────────────────────────────────────────
 local function build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
     local ctx = H.CreatePanel("DpsRaceGeneralPanel", L["General"], {
         pageKey         = PAGE,
         defaultsButton  = true,
-        -- A page reset (options-ui-§13), so it covers the Race HUD tab's live breakdown too. Defaults
-        -- never reaches a key: the game keeps them, not the profile (options-ui-§20).
-        defaultsTooltip = L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."]
+        -- A page reset (options-ui-§13). Defaults never reaches a key: the game keeps them, not the
+        -- profile (options-ui-§20).
+        defaultsTooltip = L["Restore every General setting on this profile to its addon default: Master controls."]
             .. " " .. H.KEYBINDS_UNCHANGED,
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end

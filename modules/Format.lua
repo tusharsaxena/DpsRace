@@ -125,6 +125,38 @@ function Format.Length(seconds)
     return ("%d:%02d"):format(math.floor(whole / 60), whole % 60)
 end
 
+--- A run's time (the owner's call, 2026-10-24): the race length and the DoT tail after the buzzer
+--- ("2:00 +11.1s"), or, for a run that ended before its buzzer, the time in combat against the length
+--- ("1:04 / 2:00"). `tailColor` (an "aarrggbb" hex) draws the tail in its own color. Plain numbers only,
+--- off the stored run.
+--- @param run table
+--- @param tailColor string|nil
+--- @return string
+function Format.RunTime(run, tailColor)
+    local race = type(run) == "table" and type(run.race) == "table" and run.race or {}
+    local result = type(run) == "table" and type(run.result) == "table" and run.result or {}
+    local length = Format.Length(race.length)
+    if run.status == "incomplete" and type(result.endedAt) == "number" then
+        return L["%s / %s"]:format(Format.Length(result.endedAt), length)
+    end
+    local tail = result.tail
+    if type(tail) ~= "number" or tail < 0.05 then return length end
+    local suffix = L["+%.1fs"]:format(tail)
+    if tailColor then suffix = "|c" .. tailColor .. suffix .. "|r" end
+    return length .. " " .. suffix
+end
+
+--- The seconds RunTime describes, for sorting: the length plus the tail, or the time in combat.
+--- @param run table
+--- @return number
+function Format.RunSeconds(run)
+    local race = type(run) == "table" and type(run.race) == "table" and run.race or {}
+    local result = type(run) == "table" and type(run.result) == "table" and run.result or {}
+    if run.status == "incomplete" and type(result.endedAt) == "number" then return result.endedAt end
+    local length = type(race.length) == "number" and race.length or 0
+    return length + (type(result.tail) == "number" and result.tail or 0)
+end
+
 --- A percentage, one decimal ("27.6%"). Plain numbers only.
 --- @param x number
 --- @return string

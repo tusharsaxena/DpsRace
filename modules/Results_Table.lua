@@ -41,8 +41,16 @@ local C = {
     gold  = Style.GOLD,
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
+    red   = { 1.0, 0.32, 0.32 },
+    blue  = { 0.40, 0.66, 1.0 },
+    -- The Status tags' own hues (the owner's call, 2026-10-25: each status a distinct color).
+    violet = { 0.74, 0.47, 1.0 },
+    orange = { 1.0, 0.58, 0.16 },
+    pink   = { 1.0, 0.42, 0.72 },
+    slate  = { 0.55, 0.58, 0.64 },
 }
 Tbl.COLORS = C
+local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -170,39 +178,109 @@ function Tbl.Ilvl(v)
     return ("%.1f"):format(v)
 end
 
-local function showTip(owner, lines)
-    if not GameTooltip or not lines or #lines == 0 then return end
-    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
-    GameTooltip:SetText(lines[1], 1, 1, 1, 1, true)
-    for i = 2, #lines do GameTooltip:AddLine(lines[i], 1, 0.82, 0, true) end
-    GameTooltip:Show()
+-- ── tooltips ────────────────────────────────────────────────────────────────────────────────────
+-- ONE HOVER PER ROW, NOT A SPOT PER CELL: the row follows the cursor across its cells (its OnUpdate,
+-- only while hovered) and shows the tooltip of the cell under it (NS.ResultsTips). The tooltip sits
+-- beside the WINDOW at the row's height, on its right (LootHistory's), or on its left when the
+-- screen has no room for it there. Nothing here holds a meter value, so the geometry read is free.
+
+-- The top-level window a table sits in (the frame whose parent is UIParent).
+local function windowOf(frame)
+    local w = frame
+    while w and w.GetParent do
+        local p = w:GetParent()
+        if p == nil or p == UIParent then return w end
+        w = p
+    end
+    return frame
+end
+
+Tbl.WindowOf = windowOf
+
+-- Lines from `first` on, each a string (light gray) or { text, r, g, b }.
+local function addLines(tip, lines, first)
+    for i = first, #lines do
+        local l = lines[i]
+        if type(l) == "table" then tip:AddLine(l[1], l[2] or 1, l[3] or 1, l[4] or 1, true)
+        else tip:AddLine(l, 0.9, 0.9, 0.9, true) end
+    end
+end
+
+-- The shown tooltip beside `window`, level with `row`: its right, or its left without the room.
+local function placeSide(tip, window, row)
+    local dy = 0
+    if row and row.GetTop and window.GetTop then dy = (row:GetTop() or 0) - (window:GetTop() or 0) end
+    local scale = window:GetEffectiveScale() or 1
+    local right = (window:GetRight() or 0) * scale
+    local room = (UIParent and UIParent:GetRight() or 0) * (UIParent and UIParent:GetEffectiveScale() or 1)
+    local width = (tip:GetWidth() or 0) * (tip:GetEffectiveScale() or 1)
+    tip:ClearAllPoints()
+    if right + width + 4 <= room then
+        tip:SetPoint("TOPLEFT", window, "TOPRIGHT", 4, dy)
+    else
+        tip:SetPoint("TOPRIGHT", window, "TOPLEFT", -4, dy)
+    end
+end
+
+--- Show `lines` ({ title, line, ... }; a line is a string or { text, r, g, b }) beside `window`,
+--- level with `row`.
+function Tbl.SideTip(window, row, lines)
+    local tip = GameTooltip
+    if not tip or type(lines) ~= "table" or not lines[1] then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    addLines(tip, lines, 2)
+    tip:Show()
+    placeSide(tip, window, row)
+end
+
+--- The client's own tooltip for spell `id`, then `lines` (each a string or { text, r, g, b }), placed
+--- as SideTip places its. A spell the client cannot show gets its name instead.
+function Tbl.SpellTip(window, row, id, lines)
+    local tip = GameTooltip
+    if not tip then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
+    local shown = type(id) == "number" and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
+    if shown and tip.NumLines then shown = (tip:NumLines() or 0) > 0 end
+    if not shown then tip:SetText(NS.HudBreakdown.SpellName(id), 1, 1, 1, 1, true) end
+    if type(lines) == "table" and lines[1] then
+        tip:AddLine(" ")
+        addLines(tip, lines, 1)
+    end
+    tip:Show()
+    placeSide(tip, window, row)
+end
+
+--- `lines` (a title, then strings or { text, r, g, b }) under `owner`, the column headers' way.
+function Tbl.BelowTip(owner, lines)
+    local tip = GameTooltip
+    if not tip or type(lines) ~= "table" or not lines[1] then return end
+    tip:SetOwner(owner, "ANCHOR_BOTTOM")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    addLines(tip, lines, 2)
+    tip:Show()
 end
 
 local function hideTip()
     if GameTooltip then GameTooltip:Hide() end
 end
-
---- A mouse-sensitive spot that shows its own `tip` (an array of lines) on hover; the caller anchors it.
---- On a list row the spot passes a click on to the row (`spot.row`), so the icons still select it.
-function Tbl.TipSpot(parent)
-    local spot = CreateFrame("Frame", nil, parent)
-    spot:EnableMouse(true)
-    spot:SetScript("OnEnter", function(self) showTip(self, self.tip) end)
-    spot:SetScript("OnLeave", hideTip)
-    spot:SetScript("OnMouseUp", function(self)
-        local row = self.row
-        local click = row and row:GetScript("OnClick")
-        if click then click(row) end
-    end)
-    return spot
-end
+Tbl.HideTip = hideTip
 
 -- ── cells ───────────────────────────────────────────────────────────────────────────────────────
 
 local Cells = {}
 
+-- A text cell; a column with `bar` also draws a fill under its text, as long as its value's place
+-- between the smallest and the largest in the list (Table:SetData, Tbl.BarShare), over the row's own
+-- stripe (no track and no border: the owner's call, 2026-10-25). Its look is the column's
+-- `barStyle(run)`: { texture, r, g, b, a, font = a resolved font }.
 function Cells.text(row, col)
-    return { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
+    local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
+    if col.bar then
+        cell.bar = row:CreateTexture(nil, "BORDER", nil, 2)
+        cell.bar:SetTexture(WHITE)
+    end
+    return cell
 end
 
 -- The class and spec icons, each with a hover naming it, and (on the bests board) the spec's name.
@@ -210,30 +288,25 @@ function Cells.icons(row, col)
     local cell = { class = row:CreateTexture(nil, "ARTWORK"), spec = row:CreateTexture(nil, "ARTWORK") }
     cell.class:SetSize(Tbl.ICON, Tbl.ICON)
     cell.spec:SetSize(Tbl.ICON, Tbl.ICON)
-    cell.classSpot, cell.specSpot = Tbl.TipSpot(row), Tbl.TipSpot(row)
-    cell.classSpot.row, cell.specSpot.row = row, row
-    cell.classSpot:SetAllPoints(cell.class)
-    cell.specSpot:SetAllPoints(cell.spec)
     if col.withName then cell.fs = Tbl.Text(row, FONT.TEXT, C.text) end
     return cell
 end
 
+-- A tag in a 1px box; a column whose text also answers an icon name draws that icon before the word.
+-- A tag: its icon (where the column names one) before its word, both in the tag's color, on no box
+-- of its own (the owner's call, 2026-10-25).
 function Cells.badge(row)
-    local cell = { box = Tbl.Panel(row) }
+    local cell = { box = CreateFrame("Frame", nil, row) }
     cell.box:SetHeight(16)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
+    cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
+    cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 0, 0)
+    cell.icon:Hide()
     return cell
 end
 
-function Cells.flag(row)
-    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TEXT, C.amber, "CENTER") }
-    cell.icon:SetSize(12, 12)
-    cell.icon:SetVertexColor(C.amber[1], C.amber[2], C.amber[3])
-    cell.spot = Tbl.TipSpot(row)
-    cell.spot.row = row
-    return cell
-end
 
 local function paint(fs, color)
     color = color or C.text
@@ -242,20 +315,49 @@ end
 
 local Bind = {}
 
+Tbl.BAR_FLOOR = 0.10        -- the share of the cell the smallest value in the list draws at
+
+--- A bar's share of its cell: linear from the list's smallest value (Tbl.BAR_FLOOR) to its largest
+--- (1). One value, or every value equal, draws full; a value that is not a number draws nothing (0).
+--- @return number share  0, or BAR_FLOOR..1
+function Tbl.BarShare(v, min, max)
+    if type(v) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then return 0 end
+    if max <= min then return 1 end
+    local t = math.max(0, math.min(1, (v - min) / (max - min)))
+    return Tbl.BAR_FLOOR + (1 - Tbl.BAR_FLOOR) * t
+end
+
+-- The bar's width: the cell's, times the run's share (Tbl.BarShare) between the list's smallest and
+-- largest value. Plain numbers off stored runs, and the cell's width is the column layout's, never a
+-- measured one.
+local function bindBar(cell, col, run)
+    local range = col.barRanges and col.barRanges[col.barKey and col.barKey(run) or true] or {}
+    local share = Tbl.BarShare(col.bar(run), range.min, range.max)
+    local on = share > 0
+    local style = col.barStyle and col.barStyle(run)
+    if style then
+        cell.bar:SetTexture(style.texture or WHITE)
+        cell.bar:SetVertexColor(style.r, style.g, style.b, style.a)
+        -- A dash (no figure) keeps the column's muted color; a figure takes the bar text's.
+        if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
+    end
+    cell.bar:SetShown(on)
+    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.barW or 0) * share + 0.5))) end
+end
+
 function Bind.text(cell, col, run)
     local s, color = col.text(run)
     cell.fs:SetText(s or "")
     paint(cell.fs, color)
+    if cell.bar then bindBar(cell, col, run) end
 end
 
 function Bind.icons(cell, col, run)
     local char = run.char or {}
     local specName, specIcon = Tbl.SpecInfo(char.specID, char.spec)
     Tbl.SetClassIcon(cell.class, char.class)
-    cell.classSpot.tip = { Tbl.ClassName(char.class) }
     cell.spec:SetTexture(specIcon)
     cell.spec:SetShown(specIcon ~= nil)
-    cell.specSpot.tip = { specName or L["Unknown spec"] }
     if cell.fs then
         cell.fs:SetText(specName or "")
         paint(cell.fs, Tbl.ClassColor(char.class))
@@ -265,31 +367,25 @@ function Bind.icons(cell, col, run)
 end
 
 function Bind.badge(cell, col, run)
-    local s, color = col.text(run)
+    local s, color, icon = col.text(run)
     s = s or ""
     color = color or C.amber
     cell.fs:SetText(s)
     paint(cell.fs, color)
     cell.box:SetShown(s ~= "")
-    cell.box:SetWidth(math.floor(#s * 6 + 14))
-    if cell.box.SetBackdropBorderColor then
-        cell.box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
-        cell.box:SetBackdropColor(color[1], color[2], color[3], 0.08)
+    -- The icon, tinted the tag's color, sits before the word; the word shifts right to make room.
+    local path = icon and NS.Icon(icon)
+    local extra = path and (BADGE_ICON + 2) or 0
+    cell.icon:SetShown(path ~= nil)
+    if path then
+        cell.icon:SetTexture(path)
+        cell.icon:SetVertexColor(color[1], color[2], color[3])
     end
+    cell.fs:ClearAllPoints()
+    cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
+    cell.box:SetWidth(math.floor(#s * 6 + 4 + extra))
 end
 
-function Bind.flag(cell, _, run)
-    local texts = Tbl.FlagTexts(run)
-    local on = #texts > 0
-    local path = NS.Icon("flag")
-    cell.icon:SetShown(on and path ~= nil)
-    cell.glyph:SetShown(on and path == nil)
-    if path then cell.icon:SetTexture(path) end
-    cell.glyph:SetText(on and "!" or "")
-    cell.spot:SetShown(on)
-    cell.spot.tip = texts
-    cell.texts = texts
-end
 
 -- Place one cell in its column, from the column's x and width alone.
 local function placeCell(row, cell, col, x, w)
@@ -307,17 +403,20 @@ local function placeCell(row, cell, col, x, w)
     elseif kind == "badge" then
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
-    elseif kind == "flag" then
-        cell.icon:ClearAllPoints()
-        cell.icon:SetPoint("LEFT", row, "LEFT", x + 2, 0)
-        cell.glyph:ClearAllPoints()
-        cell.glyph:SetPoint("LEFT", row, "LEFT", x + 2, 0)
-        cell.spot:ClearAllPoints()
-        cell.spot:SetAllPoints(cell.icon)
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.fs:SetWidth(math.max(10, w))
+        if cell.bar then
+            -- The track spans the cell and a little of the gap each side; the text sits inside it.
+            cell.w, cell.barW = w, w + 4
+            cell.fs:ClearAllPoints()
+            cell.fs:SetPoint("LEFT", row, "LEFT", x + 2, 0)
+            cell.fs:SetWidth(math.max(10, w - 2))
+            cell.bar:ClearAllPoints()
+            cell.bar:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
+            cell.bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
+        end
     end
 end
 
@@ -359,6 +458,16 @@ local function newHeader(t, i, col)
     if col.sort then
         b:SetScript("OnClick", function() t:SetSort(col.key) end)
     end
+    -- The header's tooltip (LootHistory's): the column's name in gold, then what it shows.
+    b:SetScript("OnEnter", function(self)
+        local about = NS.ResultsTips and NS.ResultsTips.About(col)
+        if not (GameTooltip and about) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(col.label ~= "" and col.label or about.title or "", C.gold[1], C.gold[2], C.gold[3])
+        GameTooltip:AddLine(about.text, 0.9, 0.9, 0.9, true)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", hideTip)
     t.heads[i] = b
     return b
 end
@@ -379,17 +488,39 @@ end
 local function newRow(t)
     local row = CreateFrame("Button", nil, t.body)
     row:SetHeight(Tbl.ROW_H)
-    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp") end
+    if row.RegisterForClicks then row:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
     rowBackground(row)
     row.cells = {}
     for i, col in ipairs(t.columns) do
         row.cells[col.key] = Cells[col.kind or "text"](row, col)
         row.cells[i] = row.cells[col.key]
     end
-    row:SetScript("OnClick", function(self) if self.run and t.onClick then t.onClick(self.run) end end)
-    row:SetScript("OnDoubleClick", function(self) if self.run and t.onDoubleClick then t.onDoubleClick(self.run) end end)
+    -- A group header (LootHistory's): its chevron, label and count across the row; a click folds it.
+    row.groupLabel = Tbl.Text(row, FONT.HEADER, C.gold)
+    row.groupLabel:SetPoint("LEFT", row, "LEFT", Tbl.PAD, 0)
+    row.groupLabel:Hide()
+    -- Left: select (a header folds its group). Right: the row's menu (LootHistory's).
+    row:SetScript("OnClick", function(self, button)
+        if self.group then return t:ToggleCollapse(self.group.key) end
+        if not self.run then return end
+        if button == "RightButton" then
+            if t.onRightClick then t.onRightClick(self.run, self) end
+            return
+        end
+        if t.onClick then t.onClick(self.run) end
+    end)
     row:EnableMouseWheel(true)
     row:SetScript("OnMouseWheel", function(_, delta) t:Scroll(delta) end)
+    row:SetScript("OnEnter", function(self)
+        self.tipCol = nil
+        self:SetScript("OnUpdate", function(r) t:HoverCell(r) end)
+        t:HoverCell(self)
+    end)
+    row:SetScript("OnLeave", function(self)
+        self:SetScript("OnUpdate", nil)
+        self.tipCol = nil
+        hideTip()
+    end)
     return row
 end
 
@@ -414,9 +545,11 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge"|"flag", width | flex+min,
----                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run) }
---- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text }
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge", width | flex+min, tip = fn(run) -> lines, about = header text,
+---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
+---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
+--- @param opts table  { sortKey, sortDesc, onClick(run), onRightClick(run, row), empty = text,
+---                      stripe = false for uniform rows (default: every other row faintly tinted) }
 function Tbl.New(parent, columns, opts)
     opts = opts or {}
     local frame = CreateFrame("Frame", nil, parent)
@@ -425,7 +558,7 @@ function Tbl.New(parent, columns, opts)
         frame = frame, columns = columns, heads = {}, pool = NS.Pool.New(), shown = {},
         data = {}, rows = {}, offset = 0, width = 600, height = 300,
         sortKey = opts.sortKey, sortDesc = opts.sortDesc ~= false,
-        onClick = opts.onClick, onDoubleClick = opts.onDoubleClick,
+        onClick = opts.onClick, onRightClick = opts.onRightClick, stripe = opts.stripe ~= false,
     }, Table)
     t.header = CreateFrame("Frame", nil, frame)
     t.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
@@ -497,6 +630,12 @@ end
 function Table:SetSort(key, desc)
     local col = self:column(key)
     if not (col and col.sort) then return end
+    -- The grouped column's header orders the groups, as in LootHistory.
+    if self.grouping and self.grouping.column == key and desc == nil then
+        self.groupDesc = not self.groupDesc
+        self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+        return self:Bind()
+    end
     if desc ~= nil then
         self.sortDesc = desc and true or false
     elseif key == self.sortKey then
@@ -506,15 +645,127 @@ function Table:SetSort(key, desc)
     end
     self.sortKey = key
     self:paintHeader()
-    self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)
+    self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
     self:Bind()
 end
 
 --- Replace the list (any order) and redraw it sorted, keeping the scroll where it can.
 function Table:SetData(list)
     self.data = list or {}
-    self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)
+    -- Each bar column's scale: the smallest and the largest value in the whole list (every run the
+    -- filters pass, scrolled into view or not), so the bars compare the runs the view holds. A
+    -- column with `barKey(run)` keeps one range per key (the Runs list: per target type).
+    for _, col in ipairs(self.columns) do
+        -- A column that reads the whole list (the Runs list's v/s Max) sees it here, before a sort.
+        if col.scan then col.scan(self.data) end
+        if col.bar then
+            local ranges = {}
+            for _, run in ipairs(self.data) do
+                local v = col.bar(run)
+                if type(v) == "number" then
+                    local key = col.barKey and col.barKey(run) or true
+                    local r = ranges[key]
+                    if not r then
+                        r = { min = v, max = v }
+                        ranges[key] = r
+                    end
+                    if v < r.min then r.min = v end
+                    if v > r.max then r.max = v end
+                end
+            end
+            col.barRanges = ranges
+        end
+    end
+    self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
     self:Bind()
+end
+
+-- ── grouping (LootHistory's BrowserTableGroup) ─────────────────────────────────────────────────
+-- With a grouping set, the sorted runs are partitioned into groups in first-seen order, the groups
+-- ordered by their own rank (ascending; a click on the grouped column's header flips it), and each
+-- group is preceded by a header entry { group = { key, label, count, collapsed } }. A collapsed group
+-- emits only its header. The row sort still holds inside each group.
+
+--- Group by `spec` ({ of = fn(run) -> key, label, rank; column = the column key it corresponds to,
+--- or nil }), or nil for a flat list. Redraws.
+function Table:SetGroup(spec)
+    if spec ~= self.grouping then self.groupDesc = false end
+    self.grouping = spec
+    self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+    self:Bind()
+end
+
+--- Fold or unfold the group with `key`.
+function Table:ToggleCollapse(key)
+    self.collapsed = self.collapsed or {}
+    self.collapsed[key] = (not self.collapsed[key]) or nil
+    self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+    self:Bind()
+end
+
+function Table:group(sorted)
+    local spec = self.grouping
+    if not spec then return sorted end
+    self.collapsed = self.collapsed or {}
+    local order, byKey = {}, {}
+    for _, run in ipairs(sorted) do
+        local key, label, rank = spec.of(run)
+        key = tostring(key)
+        local g = byKey[key]
+        if not g then
+            g = { key = key, label = label or key, rank = rank or label or key, runs = {} }
+            byKey[key] = g
+            order[#order + 1] = g
+        end
+        g.runs[#g.runs + 1] = run
+    end
+    local desc = self.groupDesc
+    table.sort(order, function(a, b)
+        if a.rank ~= b.rank then
+            if desc then return a.rank > b.rank end
+            return a.rank < b.rank
+        end
+        return a.key < b.key
+    end)
+    local out = {}
+    for _, g in ipairs(order) do
+        local collapsed = self.collapsed[g.key] == true
+        out[#out + 1] = { group = { key = g.key, label = g.label, count = #g.runs, collapsed = collapsed } }
+        if not collapsed then
+            for _, run in ipairs(g.runs) do out[#out + 1] = run end
+        end
+    end
+    return out
+end
+
+--- The column under the cursor on `row`, or nil.
+function Table:columnAt(row)
+    if not (self.place and GetCursorPosition and row.GetLeft) then return nil end
+    local cx = GetCursorPosition() / (row:GetEffectiveScale() or 1)
+    local x = cx - (row:GetLeft() or 0)
+    for c, spot in ipairs(self.place) do
+        if x >= spot.x - Tbl.PAD / 2 and x < spot.x + spot.w + Tbl.PAD / 2 then return c end
+    end
+    return nil
+end
+
+--- The tooltip lines for `entry` (a run or a group header) in column `c`, or nil.
+function Table:TipLines(entry, c)
+    local Tips = NS.ResultsTips
+    if not (Tips and entry) then return nil end
+    if entry.group then return Tips.Group(entry.group) end
+    local col = self.columns[c]
+    return col and Tips.Cell(col, entry)
+end
+
+--- Show the tooltip of the cell under the cursor on `row`, when it changed column.
+function Table:HoverCell(row)
+    local entry = row.group and { group = row.group } or row.run
+    local c = row.group and 0 or self:columnAt(row)
+    if c == row.tipCol then return end
+    row.tipCol = c
+    local lines = c and self:TipLines(entry, c)
+    if lines then Tbl.SideTip(windowOf(self.frame), row, lines) else hideTip() end
 end
 
 function Table:visibleCount()
@@ -541,7 +792,7 @@ end
 --- Bring the run with `id` into view, if it is in the list.
 function Table:Reveal(id)
     for i, run in ipairs(self.rows) do
-        if run.id == id then
+        if run.group == nil and run.id == id then
             local first, count = self.offset + 1, self:visibleCount()
             if i < first then self:ScrollTo(i - 1) elseif i >= first + count then self:ScrollTo(i - count) end
             return true
@@ -569,10 +820,37 @@ function Table:placeRow(row, i)
     end
 end
 
+-- Every drawn part of a row's cells, shown or hidden at once (a header row draws none of them; a run
+-- row shows them all and each Bind hides what it does not draw).
+local function showCells(row, on)
+    for _, cell in ipairs(row.cells) do
+        for _, part in pairs(cell) do
+            if type(part) == "table" and part.SetShown then part:SetShown(on) end
+        end
+    end
+end
+
+-- The disclosure marks: the catalog's chevrons, tinted the header gold (an inline texture ignores
+-- its FontString's color), Blizzard's minus and plus beneath them.
+local CHEVRON_OPEN = Style.IconMarkup("chevron-down", "Interface\\Buttons\\UI-MinusButton-Up", Style.GOLD)
+local CHEVRON_SHUT = Style.IconMarkup("chevron-right", "Interface\\Buttons\\UI-PlusButton-Up", Style.GOLD)
+
+local function bindHeader(row, g)
+    row.run, row.group = nil, g
+    row.sel:Hide()
+    showCells(row, false)
+    row.groupLabel:SetText(("%s  %s  |cff808080(%d)|r"):format(g.collapsed and CHEVRON_SHUT or CHEVRON_OPEN,
+        g.label, g.count))
+    row.groupLabel:Show()
+end
+
 function Table:bindRow(row, run, index)
-    row.run, row.index = run, index
-    local alt = index % 2 == 0
+    local alt = self.stripe and index % 2 == 0
     row.bg:SetVertexColor(1, 1, 1, alt and 0.025 or 0)
+    if run.group then return bindHeader(row, run.group) end
+    row.run, row.index, row.group = run, index, nil
+    row.groupLabel:Hide()
+    showCells(row, true)
     row.sel:SetShown(self.selected ~= nil and run.id == self.selected)
     for c, col in ipairs(self.columns) do Bind[col.kind or "text"](row.cells[c], col, run) end
 end
@@ -589,7 +867,7 @@ end
 --- Redraw the visible slice from the pool.
 function Table:Bind()
     self.offset = math.max(0, math.min(self.offset, self:maxOffset()))
-    NS.Pool.ReleaseAll(self.pool, function(row) row.run = nil end)
+    NS.Pool.ReleaseAll(self.pool, function(row) row.run, row.group = nil, nil end)
     self.shown = {}
     local count = math.min(self:visibleCount(), #self.rows - self.offset)
     for i = 1, count do

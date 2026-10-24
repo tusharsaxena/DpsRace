@@ -67,7 +67,9 @@ files["core/Compat.lua"] = {
 -- AbbreviateNumbers beneath it; spell names and icons come through C_Spell; the shell plays the cue and
 -- the buzzer's raid warning, names the drop-combat spells the player knows and draws tooltips.
 files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
-files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
+files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell", "GameTooltip" } }
+-- A stored run's character's class color (the Results table's bars), and the fallback faces.
+files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
 -- The shared look: a title-bar control draws its tooltip.
 files["modules/Style.lua"] = { read_globals = { "GameTooltip" } }
@@ -84,13 +86,14 @@ files["modules/Hud.lua"] = {
 -- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
 local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
-    "GetSpecializationInfoByID",
+    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent", "MenuUtil",
 }
 files["modules/Results.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.

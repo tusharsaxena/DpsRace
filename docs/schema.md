@@ -34,14 +34,17 @@ row's `default` reads from it.
 | `race.finalCountdown` | `10` | *Center countdown from (seconds)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
 | `race.buzzer` | `true` | *Buzzer raid warning and sound*, Race page | The raid-warning STOP and its sound at the buzzer (spec §4.4) |
 | `race.hintDelay` | `15` | *Sticky-combat hint after (seconds)*, Race page (5-60) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
-| `live.rows` | `8` | *Spell rows shown*, General page, Race HUD tab | Spells in the live breakdown, 3-15 |
-| `live.icons` | `true` | *Show spell icons*, General page, Race HUD tab | Spell icons on the HUD's rows |
-| `live.showDps` | `true` | *Show live DPS*, General page, Race HUD tab | Blizzard's live DPS figure, labeled *live* |
-| `live.hz` | `4` | *Live reads per second*, General page, Race HUD tab | Live reads per second, 2-10 (spec §10) |
-| `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
-| `hud.clock` | `"both"` | *Race clock*, General page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
+| `live.rows` | `8` | *Spell rows shown*, HUD page, Race HUD tab | Spells in the live breakdown, 0-15; 0 is every spell, wheel-scrolled |
+| `live.icons` | `true` | *Show spell icons*, HUD page, Race HUD tab | Spell icons on the HUD's rows |
+| `live.showDps` | `true` | *Show live DPS*, HUD page, Race HUD tab | Blizzard's live DPS figure, labeled *live* |
+| `live.hz` | `4` | *Live reads per second*, HUD page, Race HUD tab | Live reads per second, 2-10 (spec §10) |
+| `hud.showMode` | `"onArm"` | *Show the race HUD*, HUD page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
+| `hud.clock` | `"both"` | *Race clock*, HUD page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
 | `windows.hud.width` / `.height` | `300` / `460` | none (geometry) | The HUD's size, tall enough for the default 8 live rows (mockup screen 04); the minimum is 260x296 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
-| `windows.results.width` / `.height` | `1040` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 760x420 is in `modules/Results.lua`. Its scale is the Master controls' `scale` |
+| `windows.results.view`, `.expanded`, `.collapsed` | `"expanded"`; `{ width = 1220, height = 560 }`; `{ width = 900, height = 560 }` | none (geometry; the title bar's view toggle) | The Results window's view and each view's own size (the owner's call, 2026-10-25). Each view's minimum (expanded 1180, collapsed 800; 420 high) is `Results.VIEWS` in `modules/Results.lua`. Only the toggle switches views; a resize never does. Its scale is the Master controls' `scale` |
+| `appearance.elapsed.*` / `.left.*` / `.figures.*` / `.spellText.*` | `font`, `fontSize`, `fontColor`, `useClassColorFont`, `fontFlags`, `fontShadow` (see `defaults/Profile.lua`) | the composed font blocks, HUD page, HUD Appearance tab | The running clocks, the live figures and the spell rows' text (`modules/Hud_Appearance.lua`) |
+| `resultsTable.damageBar.*` / `.dpsBar.*` / `.barText.*` | the bar blocks (both the spell breakdown's indigo at 85%), the font block | the composed groups, History page, Results table tab | The Runs list's Damage and DPS bars and their text; each class color is the run's character's |
+| `appearance.bars.*` | `barTexture` `"Solid"`, `barAlpha` `0.85`, `barColor`, `useClassColorBar` `false`, `rowHeight` `18` | the composed bar block and *Row height*, HUD page, HUD Appearance tab | The spell rows' fill and height, on the HUD and in the Results window's breakdown |
 
 Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.lastLength` is state, below.
 
@@ -90,7 +93,7 @@ plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 | `char`, `where` | the player and place snapshots | `Recorder.NewRun` (at arm) |
 | `target` | `npcID`, `name`, `category`, `count`, `level`, `classification` | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
 | `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
-| `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList` | `Race` |
+| `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
 | `spells` | `{ id, dmg, dps }`, highest first | `Race`, from `Meter.ReadSession` |
 | `note` | trimmed, control characters as spaces, `\|` as `/`, at most 200 UTF-8 characters (`ResultsDetail.ClampNote`) | `Recorder.SetNote` |
 
@@ -113,7 +116,8 @@ and a closed list of writers.
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |
 | `profile.windows.hud` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Hud.lua` | the HUD's drag stop (position) and resize grip (size); `Hud.ResetPosition` clears them (the Master controls' *Reset position*) |
 | `profile.race.lastLength` | `modules/Hud.lua` | `Hud.Act.pickLength` / `customLength`, and `/dr arm <length>` through `Hud.Act.pickLength`: the last race length picked, offered next (spec §4.1). No default: absent means `race.defaultLength`. Cleared (with the HUD's session pick) when `race.defaultLength` changes, through `Hud.ForgetLength`, so a new default takes effect |
-| `profile.windows.results` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Results.lua` | the window's title-bar drag stop (position) and resize grip (size); `Results.ResetPosition` clears them (the Master controls' *Reset position*) |
+| `profile.views.runs` (`filters`, `sortKey`, `sortDesc`) | `modules/Results_Runs.lua` | the Runs tab's *Save* (`View:SaveView`, the view now) and *Reset* (`View:ResetView`, deletes it); read by every build of the tab (`Runs.SavedView`) and by *Clear*. Absent means the stock view (`Runs.DEFAULTS`, newest first) |
+| `profile.windows.results` (`point`, `relativePoint`, `x`, `y`, `view`, `expanded`, `collapsed`) | `modules/Results.lua` | the window's title-bar drag stop (position), its view toggle (`Results.SetView`) and the resize grip (the shown view's size); `Results.ResetPosition` clears the position and both sizes and keeps the view (the Master controls' *Reset position*) |
 
 The Results window's filters, sort, selected run and tab are session-only view state and are not
 stored.

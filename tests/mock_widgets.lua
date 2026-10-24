@@ -15,6 +15,8 @@
 --   __texCoord / __font / __strata / __mouse   a region's texcoords, font, strata and mouse flag
 --   __fontObject   the Blizzard font object a font string was made with or handed (SetFontObject)
 --   __vertex       a texture's last SetVertexColor, { r, g, b, a }
+--   __shadow / __barTexture / __barColor / __height   a font string's shadow offset, a status bar's
+--                  fill texture and color, a frame's last SetHeight
 --   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
 --                         SetTexture answer false for that path (a texture the client cannot load)
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
@@ -110,6 +112,14 @@ return function(T)
             rawset(o, "EnableMouse", function(self, on) self.__mouse = on and true or false; return self end)
             rawset(o, "CreateAnimationGroup", function(self) return W.NewAnimationGroup(self) end)
             rawset(o, "SetTextColor", function(self, r, g, b, a) self.__color = { r, g, b, a }; return self end)
+            rawset(o, "SetShadowOffset", function(self, x, y) self.__shadow = { x, y }; return self end)
+            rawset(o, "SetStatusBarTexture", function(self, p) self.__barTexture = p; return self end)
+            rawset(o, "SetStatusBarColor", function(self, r, g, b, a) self.__barColor = { r, g, b, a }; return self end)
+            rawset(o, "SetHeight", function(self, h) self.__height = h; return self end)
+            rawset(o, "SetWidth", function(self, w) self.__width = w; return self end)
+            rawset(o, "SetShown", function(self, on) self.__shown = on and true or false
+                if on then self:Show() else self:Hide() end
+                return self end)
             rawset(o, "SetScale", function(self, s) self.__scale = s; return self end)
             rawset(o, "SetFontObject", function(self, font) self.__fontObject = font; return self end)
             rawset(o, "SetPoint", function(self, ...)

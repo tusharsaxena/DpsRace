@@ -10,17 +10,19 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*); the Keybindings tab: the three key bindings |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
-| History | Runs to keep (0 = never prune), the stored count, *Purge history…* |
+| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*); the HUD Appearance tab: the clocks', figures' and spell rows' look |
+| History | Runs to keep (0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
 The pages register in that order (the order the panel lists them): General first, Profiles last.
-Race and History are each built by `NS.RegisterTabbedPage` (`settings/OptionsSetup.lua`), with a
-page-wide **Defaults** button that restores that page's rows on the current profile. The live breakdown
-had a page of its own until the settings layout pass (item 020) folded it into General > Race HUD: its
-`live.*` paths did not move, but General's Defaults now restores them, and `/dr list` lists them under
-`general › Race HUD`.
+Race, HUD and History are each built by `NS.RegisterTabbedPage` (`settings/OptionsSetup.lua`), with
+a page-wide **Defaults** button that restores that page's rows on the current profile. The live
+breakdown had a page of its own until the settings layout pass (item 020) folded it into a Race HUD
+tab on General; on 2026-10-25 that tab and HUD Appearance moved to the HUD page. No `live.*`,
+`hud.*` or `appearance.*` path moved: the HUD page's Defaults restores them, and `/dr list` lists
+them under `hud › Race HUD` and `hud › HUD Appearance`.
 
 ## The tree (page → tab → row)
 
@@ -35,12 +37,12 @@ the 300 px logo `media/logos/dpsrace.logo.tga`, the notes, and a *Slash Commands
 
 ### General
 
-The header **Defaults** button restores every General row on the current profile, the Race HUD
-tab's live breakdown included, except the minimap row (launcher-§3). It never touches a key binding:
-its tooltip reads *Restore every General setting on this profile to its addon default, including the
-Race HUD's live breakdown. Key bindings are not changed.* (`O.KEYBINDS_UNCHANGED`, options-ui-§20).
+The header **Defaults** button restores every General row on the current profile, except the
+minimap row (launcher-§3). It never touches a key binding: its tooltip reads *Restore every General
+setting on this profile to its addon default: Master controls. Key bindings are not changed.*
+(`O.KEYBINDS_UNCHANGED`, options-ui-§20).
 
-Tabs, in order: *Master controls*, *Race HUD*, *Keybindings*.
+Tabs, in order: *Master controls*, *Keybindings*.
 
 #### Tab: Master controls
 
@@ -61,24 +63,6 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 
 The *Test mode* row is the composer's, with `default = false` stamped by `settings/General.lua`, so
 *Reset all settings* ends test mode (options-ui-§15); the composer emits the row without one.
-
-#### Tab: Race HUD
-
-Every HUD setting, in two subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
-shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
-
-| Row | Schema path | Control | Behavior |
-|---|---|---|---|
-| *Display* heading | | | |
-| Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
-| Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
-| *Live breakdown* heading | | | |
-| Spell rows shown | `live.rows` | slider 3 to 15 | Spells the running HUD lists, in Blizzard's order |
-| Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
-| Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
-| Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
-
-Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 
 #### Tab: Keybindings
 
@@ -118,6 +102,50 @@ after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 | Late-cast grace (seconds) | `race.grace` | slider 0 to 5, step 0.1 | Copied onto each new run; a saved run keeps its own (spec §5.2). The tooltip says *Applies to new runs* |
 | Damage-restart gap (seconds) | `race.restartGap` | slider 3 to 15 | Copied onto each new run, as grace is (spec §5.3) |
 
+### HUD
+
+A page of its own since 2026-10-25 (the owner's call: the two HUD tabs off General), built by
+`NS.RegisterTabbedPage` in `settings/Hud.lua` and listed just above History. Its rows, paths and
+defaults are the ones the two tabs had on General. The header **Defaults** button restores both
+tabs on the current profile; its tooltip reads *Restore every HUD setting on this profile to its
+addon default: the Race HUD tab (display and live breakdown) and HUD Appearance.*
+
+Tabs, in order: *Race HUD*, *HUD Appearance*.
+
+#### Tab: Race HUD
+
+Every HUD setting, in two subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
+shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Display* heading | | | |
+| Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
+| Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
+| *Live breakdown* heading | | | |
+| Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*). The HUD result card follows it too, with the same wheel scroll |
+| Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
+| Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
+| Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
+
+#### Tab: HUD Appearance
+
+The HUD's look (the owner's call, 2026-10-24), after Race HUD on the HUD page. Every block is composed by the
+library (options-ui-§16: `H.FontGroup`, `H.BarGroup`), so its rows, order and words are the
+canonical ones, and its class color is the player's (`classColorSource = "player"`). Every row's
+reaction is `NS.HudAppearance.Changed()`, which bumps the restyle stamp and redraws both windows.
+The defaults are the look shipped before the tab existed.
+
+| Subsection | Schema prefix | Rows | Styles |
+|---|---|---|---|
+| *Elapsed clock* | `appearance.elapsed.` | the font block (*Font*, *Font size*, *Font color*, *Use class color*, *Font flags*, *Font shadow*); JetBrains Mono 26, green | the running body's elapsed clock. *Font size* is the pair's; a clock shown alone draws half again as large (its tooltip says so, through the composer's `tooltips`) |
+| *Time left clock* | `appearance.left.` | the font block; JetBrains Mono 26, red | the time-left clock, the same way |
+| *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
+| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
+| *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
+
+Every live breakdown row's reaction is `NS.Hud.Refresh()`.
+
 ### History
 
 #### Tab: History
@@ -129,7 +157,26 @@ after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 | *Stored now* | — | text | `NS.History.StoredLine()`: the stored count and its size at about 1.5 KB a run; repainted on `RUN_SAVED` / `RUNS_CHANGED` |
 | Purge history… | — | button | The tab's last act, under no heading of its own (options-ui-§7, §21). `NS.History.ConfirmDeleteAll()`: asks first (`DPSRACE_DELETE_ALL_RUNS`), then `Recorder.DeleteAll()`, which fires `RUNS_CHANGED`. Refused while a race is armed, running or waiting for its result |
 
-The page's Defaults button restores *Runs to keep* only; it never touches a stored run.
+#### Tab: Results table
+
+The Runs list's Damage and DPS cells (the owner's call, 2026-10-24, after MultiMeters' bars): a
+fill over the row's own stripe (no track and no border, 2026-10-25), from 10% of the cell (the smallest figure among the runs the filters
+pass on the same target type) to 100% (that type's largest), linear between them and full when the view holds one run or one figure,
+and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
+Font. Each class color is the row's character's: the row describes that run
+(`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.
+Every row's reaction is `NS.Results.Refresh()`.
+
+| Subsection | Schema prefix | Rows | Default |
+|---|---|---|---|
+| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*) | solid, 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
+| *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
+| *Bar text* | `resultsTable.barText.` | the font block | Friz Quadrata 10, white, shadowed; a dash keeps the column's muted gray |
+
+The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
+own.
+
+The page's Defaults button restores *Runs to keep* and the Results table tab's rows; it never touches a stored run.
 
 ### Profiles
 

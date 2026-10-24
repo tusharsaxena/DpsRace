@@ -253,9 +253,6 @@ local function idleView(v)
     v.editing = pick.editing
     v.blocker, v.detail = armBlocker()
     v.warning = targetWarning(target)
-    -- Whether there is a last result to open; the sorted list is built only when it is clicked.
-    local runs = NS.db and NS.db.global and NS.db.global.runs
-    v.hasRuns = type(runs) == "table" and next(runs) ~= nil
 end
 
 local function resultView(v)
@@ -887,17 +884,25 @@ end
 function Act.lock() return NS.ToggleLock() end
 function Act.settings() return NS.OpenOptionsPanel() end
 function Act.results() return NS.ToggleResults() end
-function Act.lastResult() openRun(NS.Recorder.All()[1]) end
 function Act.details()
     if previewOn() then return false end
     openRun(NS.Race.Current())
 end
 
+--- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
+--- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
+--- the idle body is set to the same length and target count, so Arm Race repeats the race.
 function Act.raceAgain()
     if previewOn() then return false end
     local run = NS.Race.Current()
     local length = run and run.race and run.race.length or currentLength()
-    return arm(length, run and run.target and run.target.count)
+    local count = run and run.target and run.target.count
+    -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
+    autoShown = false
+    if NS.Race.State() == S().RESULT then NS.Race.Cancel() end
+    pick.count = count
+    Act.pickLength(length)
+    return true
 end
 
 function Act.share()

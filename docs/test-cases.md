@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (47)
+### test_race.lua (52)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -156,6 +156,11 @@ Total.
 - race: a DamageDone update for a stray session heard out of combat is never adopted at the start
 - race: the target is re-read at the combat that starts the clock, not an earlier one
 - race: a session event with the regen edge on an earlier frame does not start the clock
+- race: a session made out of combat starts the clock on its first update in combat
+- race: an update on the regen edge's frame, heard before the edge, starts the clock
+- race: a pull that continues a session from before the arm is adopted, flagged and netted
+- race: a fresh session heard after a shared start replaces the shared one
+- race: an update in combat for another session never starts a stray combat's clock out of combat
 - race: a buzzer heard out of combat with the regen edge missed is still read
 - race: an empowered cast held across the buzzer is never late
 - race: buzzer at start+length moves to stopping and emits RACE_BUZZER
@@ -210,7 +215,7 @@ Total.
 - resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
 - resume: a run with no session ID never adopts a session from before its arm
 
-### test_format.lua (7)
+### test_format.lua (8)
 
 - format: Number abbreviates through the client's formatter, secret or plain
 - format: Number never does Lua arithmetic on a secret when no formatter exists
@@ -219,8 +224,9 @@ Total.
 - format: Pct and Seconds take plain numbers
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
+- format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (58)
+### test_hud.lua (63)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -244,8 +250,10 @@ Total.
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
 - hud: the live rows stop above the caption and CANCEL at every window height
+- hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
 - hud: the default window size shows every default live row
 - hud: the result card's rows stop above its buttons at every window height
+- hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
 - hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width
 - hud: Discard run on the waiting body throws the attempt away
@@ -280,6 +288,9 @@ Total.
 - hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)
 - hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
 - hud: the minimum size still holds every body after the compact restyle
+- hud: the running clocks, figures and spell rows take their HUD Appearance blocks
+- hud: a clock shown alone draws half again as large, in its block's color
+- hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
 ### test_countdown.lua (20)
 
@@ -313,28 +324,39 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (26)
+### test_results.lua (37)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
-- results: incomplete and lost runs say so in the DPS column
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status
+- results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
+- results: the Status column tags each run; the DPS column shows every run's DPS
+- results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
+- results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
+- results: the bars take History > Results table's look, over the rows' own stripe
+- results: the Damage and DPS bars run 10% to 100% within each target type
+- results: v/s Max and the Max tag are per target type
+- results: Group by character, class & spec or target, with folding headers
+- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
+- results: Only best keeps the runs holding their board's best
+- results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
-- results: sort by DPS desc default; by ilvl
+- results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
 - results: detail renders breakdown sorted with percentages
 - results: timing strip positions buzzer, grace, tail, late casts, combat end
 - results: the detail lists every spell of the run, not a capped top few
+- results: the detail's spell rows follow HUD Appearance's row height
 - results: detail flags name late-cast spells and the session matched by list
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
 - results: saving a note never prunes the store
-- results: Share is grayed without a Share module; a double-click shares
+- results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: bests tab groups by spec x category x length with clean-only toggle
 - results: the Bests board shows one category at a time, so a spec and length is one row
 - results: list refreshes on RUN_SAVED
-- results: the HUD's Last result opens the newest run's detail
+- results: Runs opens on the current character and spec, each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
-- results: below 900px wide the detail replaces the list, with a back control
+- results: collapsed, the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
@@ -360,7 +382,7 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (26)
+### test_settings.lua (28)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -368,19 +390,21 @@ Total.
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
-- settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD
+- settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
 - settings: a write out of range is refused and stores nothing
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
-- settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
+- settings: the HUD's show mode is on the HUD page's Race HUD tab; `always` opens the HUD
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
-- settings: the General, Race and History pages register and render quietly
+- settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: General > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone
+- settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is a one-tab page along the race's timeline, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults says it covers the live breakdown, and not the keys
+- settings: General's Defaults names Master controls, and not the keys or the HUD
+- settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
@@ -511,7 +535,7 @@ Total.
 - parity: the Widgets seam answers on both arms, nil being a real answer
 - parity: the Media seam answers on both arms, nil being a real answer
 - parity: the Env seam answers the TOC's version on both arms
-- parity: the hollow composers cost the library-absent load exactly the Master-controls rows
+- parity: the hollow composers cost the library-absent load exactly the composed rows
 
 ### test_perf_harness.lua (4)
 
@@ -606,15 +630,15 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 47 |
+| test_race.lua | 52 |
 | test_race_resume.lua | 16 |
-| test_format.lua | 7 |
-| test_hud.lua | 58 |
+| test_format.lua | 8 |
+| test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 26 |
+| test_results.lua | 37 |
 | test_schema.lua | 15 |
-| test_settings.lua | 26 |
+| test_settings.lua | 28 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -631,4 +655,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **489** |
+| **Total** | **513** |
