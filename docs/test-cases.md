@@ -330,7 +330,7 @@ Total.
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Best, Flagged or Complete for a complete run
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
-- results: sort by DPS desc default; by ilvl
+- results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
 - results: detail renders breakdown sorted with percentages
 - results: timing strip positions buzzer, grace, tail, late casts, combat end

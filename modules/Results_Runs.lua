@@ -369,7 +369,9 @@ function Runs.Build(parent, hooks)
     buildBar(view)
     view.listHost = CreateFrame("Frame", nil, frame)
     view.list = Tbl.New(view.listHost, Runs.Columns(), {
-        sortKey = "dps", sortDesc = true,
+        -- Newest first (the owner's call, 2026-10-24). The sort is view state like the filters, so
+        -- every login and /reload starts here again.
+        sortKey = "date", sortDesc = true,
         onClick = function(run) if view.hooks.select then view.hooks.select(run) end end,
         onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
         empty = L["No runs match these filters."],

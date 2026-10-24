@@ -233,20 +233,26 @@ test("results: filters: character, spec, category, length, date range, hide flag
     assertEqual(visibleIDs(pane), "c")
 end)
 
-test("results: sort by DPS desc default; by ilvl", function()
+test("results: sort by date desc default; by DPS; by ilvl", function()
     local i = inst()
     seed(i, {
-        mkRun("lo", { result = { damage = 1, dps = 100000 }, char = "lan" }),
-        mkRun("hi", { result = { damage = 1, dps = 200000 }, char = "mage" }),
-        mkRun("mid", { result = { damage = 1, dps = 150000 }, char = "druid" }),
-        mkRun("inc", { status = "incomplete", result = { damage = 1, dps = 999999, endedAt = 9 } }),
+        mkRun("lo", { result = { damage = 1, dps = 100000 }, char = "lan", date = NOW - 4 * HOUR }),
+        mkRun("hi", { result = { damage = 1, dps = 200000 }, char = "mage", date = NOW - 3 * HOUR }),
+        mkRun("mid", { result = { damage = 1, dps = 150000 }, char = "druid", date = NOW - 1 * HOUR }),
+        mkRun("inc", { status = "incomplete", result = { damage = 1, dps = 999999, endedAt = 9 },
+                       date = NOW - 2 * HOUR }),
     })
     i.R.Show()
     local pane = runsPane(i)
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
-    assertEqual(visibleIDs(pane), "hi,mid,lo,inc", "an unranked run sorts last")
+    assertEqual(pane.list.sortKey, "date")
+    assertTrue(pane.list.sortDesc)
+    assertEqual(visibleIDs(pane), "mid,inc,hi,lo", "newest first by default")
     local heads = pane.list.heads
+    assertTrue(heads[1].label.__text:find("sort-down", 1, true) ~= nil, "the Date header carries the mark")
+    heads[8]:__fire("OnClick")
+    assertEqual(visibleIDs(pane), "hi,mid,lo,inc", "by DPS: an unranked run sorts last")
     assertEqual(heads[8].label.__color[2], 0.82, "the header is the header gold")
     assertTrue(heads[8].label.__text:find("sort-down", 1, true) ~= nil, "the sorted header carries the direction mark")
     assertEqual(heads[7].label.__text, "Damage", "an unsorted header carries no mark")
