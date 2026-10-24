@@ -19,14 +19,24 @@ NS.HudBreakdown = Breakdown
 local L = NS.L
 
 -- Compact rows, as LootHistory's list draws them (18px, GameFontHighlightSmall): modules/Style.lua.
+-- That is the default; the height, the bar's fill and the text are the player's, General > HUD
+-- Appearance > Spell bars and Spell text (modules/Hud_Appearance.lua), read from config at call time.
 Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2
-local ICON_SIZE = 16
 local PCT_WIDTH = 44
-local BAR_TEXTURE = "Interface\\Buttons\\WHITE8x8"
-local BAR_COLOR = { 0.29, 0.29, 0.45, 0.85 }
 local TRACK_COLOR = { 1, 1, 1, 0.04 }
 local FONT = NS.Style.FONT
+
+--- The configured row height, and the pitch from one row's top to the next (both config, never a
+--- measured size).
+function Breakdown.RowHeight()
+    local A = NS.HudAppearance
+    return A and A.RowHeight() or Breakdown.ROW_HEIGHT
+end
+
+function Breakdown.Pitch()
+    return Breakdown.RowHeight() + Breakdown.ROW_GAP
+end
 
 --- A spell's name through C_Spell (a secret ID is accepted; the name may come back secret, which
 --- only SetText ever sees). Never stored: names resolve per locale and per patch (spec §7).
@@ -53,13 +63,9 @@ end
 
 local function newRow(parent)
     local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(Breakdown.ROW_HEIGHT)
     local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetPoint("LEFT", row, "LEFT", 0, 0)
     local bar = CreateFrame("StatusBar", nil, row)
-    bar:SetStatusBarTexture(BAR_TEXTURE)
-    bar:SetStatusBarColor(BAR_COLOR[1], BAR_COLOR[2], BAR_COLOR[3], BAR_COLOR[4])
     local track = bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(bar)
     track:SetColorTexture(TRACK_COLOR[1], TRACK_COLOR[2], TRACK_COLOR[3], TRACK_COLOR[4])
@@ -70,6 +76,25 @@ local function newRow(parent)
     return row
 end
 
+-- The row's configured look (HUD Appearance), applied once per Changed(): its height, the icon's size
+-- (the row's, less a pixel each side), the bar's fill and the spell text. The share keeps its caption
+-- gray: it is a caption, not the spell's text.
+local function restyle(row)
+    local A = NS.HudAppearance
+    if not A or row.stamp == A.stamp then return end
+    row.stamp, row.mode = A.stamp, nil
+    local h = Breakdown.RowHeight()
+    row:SetHeight(h)
+    row.iconSize = math.max(8, h - 2)
+    row.icon:SetSize(row.iconSize, row.iconSize)
+    local fill = A.Bar()
+    row.bar:SetStatusBarTexture(fill.texture)
+    row.bar:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
+    local text = A.Font("spellText")
+    A.ApplyFont(row.name, text)
+    A.ApplyFont(row.amount, text)
+end
+
 -- The row's anchors for its mode: with or without the icon, with or without the % column. Set only
 -- when the mode changes; every anchor is relative to the row's own children, never a measured size.
 local function setMode(row, icons, pct)
@@ -78,7 +103,7 @@ local function setMode(row, icons, pct)
     row.mode = mode
     local bar, name, amount, share = row.bar, row.name, row.amount, row.pct
     bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", row, "TOPLEFT", icons and (ICON_SIZE + 3) or 0, 0)
+    bar:SetPoint("TOPLEFT", row, "TOPLEFT", icons and ((row.iconSize or 16) + 3) or 0, 0)
     bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     share:ClearAllPoints()
     share:SetPoint("RIGHT", bar, "RIGHT", -6, 0)
@@ -116,7 +141,8 @@ end
 function List:acquire(i, icons, pct)
     local parent = self.parent
     local row = NS.Pool.Acquire(self.pool, function() return newRow(parent) end)
-    local y = -(i - 1) * (Breakdown.ROW_HEIGHT + Breakdown.ROW_GAP)
+    restyle(row)
+    local y = -(i - 1) * Breakdown.Pitch()
     row:ClearAllPoints()
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     row:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)

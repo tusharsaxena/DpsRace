@@ -35,8 +35,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."] =
-    "Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."
+L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown and HUD Appearance."] =
+    "Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown and HUD Appearance."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -343,6 +343,17 @@ L["Spell rows shown"] = "Spell rows shown"
 L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."] =
     "How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."
 L["Live reads per second"] = "Live reads per second"
+L["HUD Appearance"] = "HUD Appearance"
+L["Elapsed clock"] = "Elapsed clock"
+L["Time left clock"] = "Time left clock"
+L["Live figures"] = "Live figures"
+L["Spell bars"] = "Spell bars"
+L["Spell text"] = "Spell text"
+L["Row height"] = "Row height"
+L["Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."] =
+    "Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."
+L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."] =
+    "The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."
 L["How often the running HUD reads the meter while damage is landing. 2 to 10."] =
     "How often the running HUD reads the meter while damage is landing. 2 to 10."
 L["Show spell icons"] = "Show spell icons"

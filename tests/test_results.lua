@@ -354,6 +354,19 @@ test("results: the detail lists every spell of the run, not a capped top few", f
     assertEqual(#ui(i).detail.w.list.rows, 45, "the ability breakdown is the full list (spec §6.2)")
 end)
 
+test("results: the detail's spell rows follow HUD Appearance's row height", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    assertTrue(i.NS.SetByPath("appearance.bars.rowHeight", 24))
+    i.R.ShowRun("a")
+    local list = ui(i).detail.w.list
+    local second = list.rows[2]
+    local y
+    for _, p in ipairs(second.__points or {}) do if p[1] == "TOPLEFT" then y = p[5] end end
+    if y ~= nil then assertEqual(y, -26, "the second row one pitch down (24 + the 2 px gap)") end
+    assertEqual(i.NS.HudBreakdown.Pitch(), 26)
+end)
+
 test("results: detail flags name late-cast spells and the session matched by list", function()
     local i = inst()
     seed(i, { mkRun("a", {

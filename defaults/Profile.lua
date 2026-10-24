@@ -38,6 +38,27 @@ NS.defaults = {
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
         -- on General's Race HUD tab.
         hud = { showMode = "onArm", clock = "both" },
+        -- The HUD's look (the owner's call, 2026-10-24; General > HUD Appearance, settings/General.lua,
+        -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
+        -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
+        -- the clocks in the debug console's monospace face, the figures and the spell rows in Blizzard's
+        -- GameFontNormalHuge and GameFontHighlightSmall, the bars flat in the window's indigo.
+        appearance = {
+            -- The running clock pair. `fontSize` is the pair's; a clock shown alone draws half again
+            -- as large (modules/Hud_States.lua).
+            elapsed = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 0.36, g = 0.86, b = 0.46, a = 1 },
+                        useClassColorFont = false, fontFlags = "", fontShadow = false },
+            left    = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 1.0, g = 0.32, b = 0.32, a = 1 },
+                        useClassColorFont = false, fontFlags = "", fontShadow = false },
+            -- The running body's Damage and DPS live figures.
+            figures = { font = "Friz Quadrata TT", fontSize = 20, fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
+                        useClassColorFont = false, fontFlags = "", fontShadow = true },
+            -- The spell rows: the HUD's live and result lists and the Results window's breakdown.
+            bars = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
+                     useClassColorBar = false, rowHeight = 18 },
+            spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
+                          useClassColorFont = false, fontFlags = "", fontShadow = true },
+        },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {

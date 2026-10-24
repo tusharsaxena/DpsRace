@@ -354,8 +354,7 @@ end
 --- @return number
 function States.RowCapacity(height)
     local B = NS.HudBreakdown
-    local pitch = B.ROW_HEIGHT + B.ROW_GAP
-    return math.max(0, math.floor((height + B.ROW_GAP) / pitch))
+    return math.max(0, math.floor((height + B.ROW_GAP) / B.Pitch()))
 end
 
 -- `wanted` rows, or fewer: what fits between `top` and `bottom` in the height Layout handed the body.
@@ -476,9 +475,59 @@ local function setClocks(w, v)
         w.left:SetText(NS.Format.Clock(left))
         return
     end
-    local isElapsed = mode == "elapsed"
-    w.clock:SetText(NS.Format.Clock(isElapsed and elapsed or left))
-    paintText(w.clock, isElapsed and C.green or C.red)
+    -- Its color is its font block's (styleRunning), like the pair's.
+    w.clock:SetText(NS.Format.Clock(mode == "elapsed" and elapsed or left))
+end
+
+-- THE RUNNING BODY'S LOOK (General > HUD Appearance, modules/Hud_Appearance.lua): the elapsed and the
+-- time-left clocks each in their own font block, the live figures in theirs. The stack below them is
+-- laid out from the configured sizes, never from a measured one: the KPI pair sits under the clocks'
+-- block, and the spell rows under the KPIs. At the defaults this is the shipped layout (KPIs at 52).
+-- A clock shown alone ("left" or "elapsed") draws half again as large as the pair (26 -> 40).
+local SINGLE_SCALE = BIG / CLOCK_PAIR
+
+-- The KPIs' top for the clock mode and the blocks' sizes.
+local function kpiTop(both, elapsedSize, leftSize, singleSize)
+    if both then return 26 + math.max(elapsedSize, leftSize) end
+    return 12 + math.floor(singleSize * SINGLE_SCALE + 0.5)
+end
+
+local function placeKpi(k, f, y, h, left)
+    k.frame:ClearAllPoints()
+    k.frame:SetHeight(h)
+    if left then
+        k.frame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, y)
+        k.frame:SetPoint("TOPRIGHT", f, "TOP", -4, y)
+    else
+        k.frame:SetPoint("TOPLEFT", f, "TOP", 4, y)
+        k.frame:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, y)
+    end
+end
+
+--- Restyle the running body for the clock mode, once per HUD Appearance change or mode change.
+local function styleRunning(body, mode)
+    local A = NS.HudAppearance
+    if not A then return end
+    local both = mode ~= "left" and mode ~= "elapsed"
+    local key = A.stamp .. ":" .. tostring(mode)
+    if body.styled == key then return end
+    body.styled = key
+    local w, f = body.w, body.frame
+    local ef, lf, ff = A.Font("elapsed"), A.Font("left"), A.Font("figures")
+    local single = mode == "elapsed" and ef or lf
+    A.ApplyFont(w.elapsed, ef)
+    A.ApplyFont(w.left, lf)
+    A.ApplyFont(w.clock, single, SINGLE_SCALE)
+    A.ApplyFont(w.damage.value, ff)
+    A.ApplyFont(w.dps.value, ff)
+    local top = kpiTop(both, ef.size, lf.size, single.size)
+    local kpiH = math.max(KPI_HEIGHT, ff.size + 26)
+    placeKpi(w.damage, f, -top, kpiH, true)
+    placeKpi(w.dps, f, -top, kpiH, false)
+    body.rowsTop = top + kpiH + GAP
+    w.rows:ClearAllPoints()
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
 end
 
 -- The running body's spell rows. live.rows 0 is every spell (the owner's call, 2026-10-24): as many as
@@ -492,10 +541,11 @@ local function liveTotal(body)
 end
 
 local function liveCap(body, rows)
-    if rows ~= 0 then return rowsFor(body, RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, rows) end
+    local top = body.rowsTop or RUNNING_ROWS_TOP
+    if rows ~= 0 then return rowsFor(body, top, RUNNING_ROWS_BOTTOM, rows) end
     local total = liveTotal(body)
     if type(body.height) ~= "number" then return total end
-    return math.min(total, States.RowCapacity(body.height - RUNNING_ROWS_TOP - RUNNING_ROWS_BOTTOM))
+    return math.min(total, States.RowCapacity(body.height - top - RUNNING_ROWS_BOTTOM))
 end
 
 local function liveCount(body, rows)
@@ -562,6 +612,7 @@ function Builders.running(parent)
     function body.Layout(self, _, height) self.height = height end
 
     function body.Update(self, v)
+        styleRunning(self, v.clockMode)
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.

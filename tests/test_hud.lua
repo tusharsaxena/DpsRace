@@ -1136,3 +1136,77 @@ test("hud: the minimum size still holds every body after the compact restyle", f
     assertTrue(content >= RUNNING_TOP + 3 * PITCH - 2 + RUNNING_BOTTOM, "running with three rows")
     assertTrue(content >= RESULT_TOP + 3 * PITCH - 2 + RESULT_BOTTOM, "result with three rows")
 end)
+
+-- ── HUD Appearance (General > HUD Appearance, modules/Hud_Appearance.lua) ─────────────────────────
+
+test("hud: the running clocks, figures and spell rows take their HUD Appearance blocks", function()
+    local f = hud()
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(4))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    local w = body(f).w
+    -- The defaults are the shipped look: the monospace clocks at 26, green and red.
+    assertEqual(w.elapsed.__font.size, 26)
+    assertEqual(w.elapsed.__font.path, f.NS.Constants.FONT_MONO)
+    assertEqual(w.elapsed.__color[1], 0.36)
+    assertEqual(w.left.__color[1], 1.0)
+    assertEqual(w.damage.value.__font.size, 20)
+    local row = w.list.rows[1]
+    assertEqual(row.__height, 18)
+    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\buttons\\white8x8", "flat: LSM's Solid")
+    assertEqual(row.bar.__barColor[4], 0.85)
+    assertEqual(row.name.__font.size, 10)
+
+    -- From here the HUD only restyles and draws live values: it measures nothing.
+    for i = #f.W.geomReads, 1, -1 do f.W.geomReads[i] = nil end
+    assertTrue(f.NS.SetByPath("appearance.elapsed.fontSize", 32))
+    assertTrue(f.NS.SetByPath("appearance.elapsed.fontFlags", "OUTLINE"))
+    assertTrue(f.NS.SetByPath("appearance.figures.fontShadow", false))
+    assertTrue(f.NS.SetByPath("appearance.bars.rowHeight", 24))
+    assertTrue(f.NS.SetByPath("appearance.bars.barColor", { r = 0.1, g = 0.2, b = 0.3, a = 1 }))
+    pump(f, 0.5)
+    w = body(f).w
+    assertEqual(w.elapsed.__font.size, 32)
+    assertEqual(w.elapsed.__font.flags, "OUTLINE")
+    assertEqual(w.damage.value.__shadow[1], 0, "the shadow is off")
+    row = w.list.rows[1]
+    assertEqual(row.__height, 24)
+    assertEqual(row.bar.__barColor[1], 0.1)
+    assertEqual(row.bar.__barColor[4], 0.85, "the bar opacity is its own row")
+    -- The stack moved down for the taller clock: the KPIs at 26 + 32, the rows under them.
+    local p = w.damage.frame.__points[1]
+    assertEqual(p[5], -58)
+    assertEqual(body(f).rowsTop, 58 + 46 + 8)
+    assertEqual(#f.W.geomReads, 0, "nothing measured")
+end)
+
+test("hud: a clock shown alone draws half again as large, in its block's color", function()
+    local f = hud()
+    f.NS.db.profile.hud.clock = "elapsed"
+    f.Hud.Show()
+    running(f, 30)
+    pump(f, 0.5)
+    local w = body(f).w
+    assertEqual(w.clock.__font.size, 40)
+    assertEqual(w.clock.__color[1], 0.36, "the elapsed block's green")
+    assertEqual(w.damage.frame.__points[1][5], -52, "the shipped layout at the defaults")
+end)
+
+test("hud: a bar's class color companion takes the player's class, the swatch's opacity kept", function()
+    local f = hud()
+    f.NS.db.profile.appearance.bars.useClassColorBar = true
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(2))
+    f.meter.SetSecret(true)
+    f.NS.HudAppearance.Changed()
+    pump(f, 0.5)
+    local fill = f.NS.HudAppearance.Bar()
+    local _, class = f.M.UnitClass("player")
+    local cr = assert(f.M.RAID_CLASS_COLORS[class], "the mock player has a class color")
+    assertEqual(fill.r, cr.r)
+    assertEqual(fill.a, 0.85)
+    assertEqual(body(f).w.list.rows[1].bar.__barColor[1], cr.r)
+end)

@@ -26,7 +26,7 @@ test("settings: every schema row has default, enUS label and desc", function()
         assertTrue(#desc > 0, name .. " desc is empty")
         -- The composed Master rows carry the library's own words; every row this addon writes is
         -- listed in the enUS table, label and tooltip both.
-        if r.group ~= NS.Helpers.MASTER_GROUP then
+        if r.group ~= NS.Helpers.MASTER_GROUP and not r.composed then
             assertTrue(hasOwnKey(NS, r.label), name .. " label is not in locales/enUS.lua: " .. r.label)
             assertTrue(hasOwnKey(NS, desc), name .. " tooltip is not in locales/enUS.lua")
         end
@@ -60,6 +60,36 @@ local STORED = {
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    -- General > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
+    ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
+    ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
+    ["appearance.elapsed.fontColor"] = { "color", "table" },
+    ["appearance.elapsed.useClassColorFont"] = { "bool", false },
+    ["appearance.elapsed.fontFlags"] = { "string", "" },
+    ["appearance.elapsed.fontShadow"] = { "bool", false },
+    ["appearance.left.font"] = { "string", "JetBrains Mono" },
+    ["appearance.left.fontSize"] = { "number", 26, 6, 32, 1 },
+    ["appearance.left.fontColor"] = { "color", "table" },
+    ["appearance.left.useClassColorFont"] = { "bool", false },
+    ["appearance.left.fontFlags"] = { "string", "" },
+    ["appearance.left.fontShadow"] = { "bool", false },
+    ["appearance.figures.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.figures.fontSize"] = { "number", 20, 6, 32, 1 },
+    ["appearance.figures.fontColor"] = { "color", "table" },
+    ["appearance.figures.useClassColorFont"] = { "bool", false },
+    ["appearance.figures.fontFlags"] = { "string", "" },
+    ["appearance.figures.fontShadow"] = { "bool", true },
+    ["appearance.spellText.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.spellText.fontSize"] = { "number", 10, 6, 32, 1 },
+    ["appearance.spellText.fontColor"] = { "color", "table" },
+    ["appearance.spellText.useClassColorFont"] = { "bool", false },
+    ["appearance.spellText.fontFlags"] = { "string", "" },
+    ["appearance.spellText.fontShadow"] = { "bool", true },
+    ["appearance.bars.barTexture"] = { "string", "Solid" },
+    ["appearance.bars.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["appearance.bars.barColor"] = { "color", "table" },
+    ["appearance.bars.useClassColorBar"] = { "bool", false },
+    ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
 }
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
@@ -70,7 +100,11 @@ test("settings: the stored paths, types, defaults and ranges are exactly the pin
         assertTrue(pin ~= nil, "a stored path appeared: " .. tostring(r.path))
         seen = seen + 1
         assertEqual(r.type, pin[1], r.path .. " type")
-        assertEqual(r.default, pin[2], r.path .. " default")
+        if pin[2] == "table" then
+            assertEqual(type(r.default), "table", r.path .. " default")
+        else
+            assertEqual(r.default, pin[2], r.path .. " default")
+        end
         assertEqual(r.min, pin[3], r.path .. " min")
         assertEqual(r.max, pin[4], r.path .. " max")
         assertEqual(r.step, pin[5], r.path .. " step")
@@ -298,10 +332,10 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults says it covers the live breakdown, and not the keys", function()
+test("settings: General's Defaults says it covers the live breakdown and HUD Appearance, and not the keys", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
     assertEqual(tip, "Restore every General setting on this profile to its addon default, including the "
-        .. "Race HUD's live breakdown. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
+        .. "Race HUD's live breakdown and HUD Appearance. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
 end)
 
 -- ── History: stored count, Purge history… ────────────────────────────────────────────────────────

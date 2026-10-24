@@ -28,7 +28,6 @@ Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this,
 local PADX = 12
 local BUTTON_H = 20
 local KPI_H = 46
-local ROW_PITCH = NS.HudBreakdown.ROW_HEIGHT + NS.HudBreakdown.ROW_GAP
 local STRIP_H = 34
 local LINE_H = 14
 local DASH = "\226\128\148"
@@ -498,8 +497,9 @@ function Pane:layoutSpells(y, cw)
     local n = self.w.list:Count()
     host:ClearAllPoints()
     host:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-    host:SetSize(cw, math.max(1, n * ROW_PITCH))
-    return y - n * ROW_PITCH - 8
+    local pitch = NS.HudBreakdown.Pitch()
+    host:SetSize(cw, math.max(1, n * pitch))
+    return y - n * pitch - 8
 end
 
 local function placeMark(tex, strip, x, inset)
@@ -648,6 +648,6 @@ end
 --- One mouse-wheel notch (`delta` > 0 scrolls up), clamped to the content.
 function Pane:Scroll(delta)
     local top = math.max(0, (self.contentH or 0) - (self.viewH or 0))
-    self.scroll = math.max(0, math.min(top, (self.scroll or 0) - (delta or 0) * 3 * ROW_PITCH))
+    self.scroll = math.max(0, math.min(top, (self.scroll or 0) - (delta or 0) * 3 * NS.HudBreakdown.Pitch()))
     self.scrollFrame:SetVerticalScroll(self.scroll)
 end

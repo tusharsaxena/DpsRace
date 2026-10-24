@@ -165,6 +165,50 @@ NS.RegisterSchemaRows({
       onChange = redraw },
 })
 
+-- ── HUD Appearance ──────────────────────────────────────────────────────────────────────────────
+-- The HUD's look (the owner's call, 2026-10-24): its own tab after Race HUD, one subsection per styled
+-- part, each a COMPOSED group (options-ui-§16: the canonical rows, the canonical words, never a
+-- hand-written copy). The two clocks are two font blocks, because each has its own color; the spell
+-- rows are a bar block with the row height appended after it, and a font block for their text. The
+-- bars and the text style the Results window's breakdown too. Every row's reaction is the one
+-- restyle (modules/Hud_Appearance.lua), read at CALL time.
+local APPEARANCE = L["HUD Appearance"]
+local AD = NS.defaults.profile.appearance
+local function restyle() NS.HudAppearance.Changed() end
+local PLAYER_CLASS = { source = "player" }
+
+local function fontBlock(block, subgroup, order, tooltips)
+    return H.FontGroup({
+        prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, subgroup = subgroup,
+        order = order, classColor = PLAYER_CLASS, defaults = AD[block], tooltips = tooltips,
+    })
+end
+
+local CLOCK_SIZE_TIP = { fontSize = L["Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."] }
+local appearanceRows = {}
+local function append(rows)
+    for _, r in ipairs(rows) do appearanceRows[#appearanceRows + 1] = r end
+end
+append(fontBlock("elapsed", L["Elapsed clock"], 100, CLOCK_SIZE_TIP))
+append(fontBlock("left", L["Time left clock"], 200, CLOCK_SIZE_TIP))
+append(fontBlock("figures", L["Live figures"], 300))
+append(H.BarGroup({
+    prefix = "appearance.bars.", page = PAGE, group = APPEARANCE, subgroup = L["Spell bars"], order = 400,
+    classColor = PLAYER_CLASS, defaults = AD.bars,
+    extra = { {
+        path = "appearance.bars.rowHeight", type = "number", min = 12, max = 30, step = 1,
+        label = L["Row height"], default = AD.bars.rowHeight, startsLine = true,
+        tooltip = L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."],
+    } },
+}))
+append(fontBlock("spellText", L["Spell text"], 500))
+for _, r in ipairs(appearanceRows) do
+    r.onChange = restyle
+    -- The library's words, not this addon's (options-ui-§21), except the appended row height.
+    if r.path ~= "appearance.bars.rowHeight" then r.composed = true end
+end
+NS.RegisterSchemaRows(appearanceRows)
+
 -- ── The page ────────────────────────────────────────────────────────────────────────────────────
 local function build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
@@ -173,7 +217,7 @@ local function build(mainCategory)
         defaultsButton  = true,
         -- A page reset (options-ui-§13), so it covers the Race HUD tab's live breakdown too. Defaults
         -- never reaches a key: the game keeps them, not the profile (options-ui-§20).
-        defaultsTooltip = L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown."]
+        defaultsTooltip = L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown and HUD Appearance."]
             .. " " .. H.KEYBINDS_UNCHANGED,
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end

@@ -1,0 +1,113 @@
+local _, NS = ...
+-- modules/Hud_Appearance.lua — the HUD's configured look (General > HUD Appearance, settings/General.lua):
+-- the two running clocks, the live Damage and DPS figures, and the spell rows' bars and text, which
+-- the Results window's breakdown shares. Each block is a composed group (options-ui-§16) stored under
+-- `appearance.<block>.`; this file turns a block into what a widget setter takes.
+--
+-- MEDIA BY NAME. A face or a bar texture is stored by its LibSharedMedia name, so a profile travels
+-- between installs. It resolves at call time, and a name LSM does not know (a media addon removed)
+-- falls back to the shipped default's path, never to nothing: SetFont on a bad path draws no text.
+--
+-- COLORS through LibKa0s-Core's one resolver (options-ui-§17): the swatch, or the player's class
+-- color while the companion is on, the swatch's alpha kept either way. Every surface here is the
+-- player's own, so the class is always the player's.
+--
+-- RESTYLING IS STAMPED. Changed() bumps Appearance.stamp; a row or a body compares its own stamp and
+-- restyles once, not on every 4 Hz redraw. Nothing here reads a meter value or a frame's geometry.
+
+local Appearance = {}
+NS.HudAppearance = Appearance
+
+local D = NS.defaults.profile.appearance
+
+-- The faces and textures that stand in for a name LSM cannot answer.
+local FALLBACK_FONT = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
+
+Appearance.stamp = 0
+
+local function setting(path)
+    return NS.GetSetting and NS.GetSetting(path)
+end
+
+local function lsm()
+    return LibStub and LibStub("LibSharedMedia-3.0", true)
+end
+
+-- The path LSM holds for `name`, else nil.
+local function fetch(kind, name)
+    local media = lsm()
+    if not media or type(name) ~= "string" then return nil end
+    local ok, path = pcall(media.Fetch, media, kind, name, true)
+    if ok and type(path) == "string" then return path end
+    return nil
+end
+
+local function color(stored, useClass)
+    local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
+    if core and core.ResolveColor then return core.ResolveColor(stored, useClass) end
+    stored = type(stored) == "table" and stored or {}
+    return stored.r or 1, stored.g or 1, stored.b or 1, stored.a or 1
+end
+
+--- One font block, resolved: its path, size, flags, shadow and color.
+--- @param block string  "elapsed" | "left" | "figures" | "spellText"
+--- @return table { path, size, flags, shadow, r, g, b, a }
+function Appearance.Font(block)
+    local p, def = "appearance." .. block .. ".", D[block]
+    local name = setting(p .. "font")
+    local path = fetch("font", name) or fetch("font", def.font)
+    if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
+    local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true)
+    local flags = setting(p .. "fontFlags")
+    return {
+        path = path or FALLBACK_FONT,
+        size = tonumber(setting(p .. "fontSize")) or def.fontSize,
+        flags = type(flags) == "string" and flags or "",
+        shadow = setting(p .. "fontShadow") == true,
+        r = r, g = g, b = b, a = a,
+    }
+end
+
+--- Draw `fs` in a resolved font block. `scale` multiplies its size (a clock shown alone); `keepColor`
+--- leaves the FontString's color as its caller set it.
+--- @param fs table  a FontString
+--- @param font table  Appearance.Font's
+--- @param scale number|nil
+--- @param keepColor boolean|nil
+function Appearance.ApplyFont(fs, font, scale, keepColor)
+    local size = math.floor(font.size * (scale or 1) + 0.5)
+    -- The client answers false for a path it cannot load (an older one answers nothing at all).
+    if fs:SetFont(font.path, size, font.flags) == false then fs:SetFont(FALLBACK_FONT, size, font.flags) end
+    if fs.SetShadowOffset then
+        fs:SetShadowOffset(font.shadow and 1 or 0, font.shadow and -1 or 0)
+        if fs.SetShadowColor then fs:SetShadowColor(0, 0, 0, font.shadow and 1 or 0) end
+    end
+    if not keepColor then fs:SetTextColor(font.r, font.g, font.b, font.a) end
+end
+
+--- The spell bars' fill: its texture path, color and opacity.
+--- @return table { texture, r, g, b, a }
+function Appearance.Bar()
+    local p = "appearance.bars."
+    local r, g, b = color(setting(p .. "barColor"), setting(p .. "useClassColorBar") == true)
+    local alpha = tonumber(setting(p .. "barAlpha")) or D.bars.barAlpha
+    return {
+        texture = fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
+        r = r, g = g, b = b, a = alpha,
+    }
+end
+
+--- The spell rows' height in pixels (the breakdown's pitch adds its gap).
+--- @return number
+function Appearance.RowHeight()
+    return tonumber(setting("appearance.bars.rowHeight")) or D.bars.rowHeight
+end
+
+--- A HUD Appearance row changed: every styled surface restyles on its next draw, and both windows
+--- redraw now.
+function Appearance.Changed()
+    Appearance.stamp = Appearance.stamp + 1
+    if NS.Hud and NS.Hud.Refresh then NS.Hud.Refresh() end
+    if NS.Results and NS.Results.Refresh then NS.Results.Refresh() end
+end
