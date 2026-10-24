@@ -324,7 +324,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (37)
+### test_results.lua (42)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
@@ -348,6 +348,11 @@ Total.
 - results: detail flags name late-cast spells and the session matched by list
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
+- results: opening the note scrolls its box into view
+- results: every detail element has a tooltip; spells show the client's spell tooltip beside the window
+- results: the timing strip's marks draw above its two segments
+- results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines
+- results: the live HUD's spell rows take no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: bests tab groups by spec x category x length with clean-only toggle
@@ -363,6 +368,16 @@ Total.
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
+
+### test_compare.lua (7)
+
+- compare: CompareSpells matches by id, with each side's damage, share and the difference
+- compare: a spell on one side only has nil damage and share on the other
+- compare: rows sort by the run's damage, then the other's, then the id
+- compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
+- compare: the figures and their % difference; none against a zero or missing figure
+- compare: the default is the best on the run's board; for the best itself, the runner-up
+- compare: a picked run wins while it is stored and not the run itself
 
 ### test_schema.lua (15)
 
@@ -636,7 +651,8 @@ Total.
 | test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 37 |
+| test_results.lua | 42 |
+| test_compare.lua | 7 |
 | test_schema.lua | 15 |
 | test_settings.lua | 28 |
 | test_slash.lua | 27 |
@@ -655,4 +671,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **513** |
+| **Total** | **525** |

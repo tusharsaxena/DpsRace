@@ -541,3 +541,46 @@ L["When combat ended."] = "When combat ended."
 L["Restart"] = "Restart"
 L["Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."] =
     "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."
+
+-- The run detail's compare (modules/Results_Compare.lua, its tooltips in modules/Results_Tips.lua, the
+-- row menu's pick in modules/Results.lua)
+L["Compare With This Run"] = "Compare With This Run"
+L["Compare vs best"] = "Compare vs best"
+L["Compare vs runner-up"] = "Compare vs runner-up"
+L["Compare vs %s"] = "Compare vs %s"
+L["Clear Pick"] = "Clear Pick"
+L["Different board: the spec, target type or race length differ."] =
+    "Different board: the spec, target type or race length differ."
+L["This run"] = "This run"
+L["Best"] = "Best"
+L["Runner-up"] = "Runner-up"
+L["Picked"] = "Picked"
+L["Difference"] = "Difference"
+L["Spell"] = "Spell"
+L["Compare"] = "Compare"
+L["Sets this run beside %s: damage, DPS and every spell."] =
+    "Sets this run beside %s: damage, DPS and every spell."
+L["No other complete run on this run's board (same spec, target type and race length) to compare with."] =
+    "No other complete run on this run's board (same spec, target type and race length) to compare with."
+L["Pick another run from a row's right-click menu: Compare With This Run."] =
+    "Pick another run from a row's right-click menu: Compare With This Run."
+L["Compare with the best on this run's board again."] = "Compare with the best on this run's board again."
+L["Different board"] = "Different board"
+L["The picked run differs in spec, target type or race length, so the figures are not like for like."] =
+    "The picked run differs in spec, target type or race length, so the figures are not like for like."
+L["This run: %s"] = "This run: %s"
+L["Picked: %s"] = "Picked: %s"
+L["This run against %s"] = "This run against %s"
+L["Damage: %s against %s (%s)"] = "Damage: %s against %s (%s)"
+L["DPS: %s against %s (%s)"] = "DPS: %s against %s (%s)"
+L["Difference: this run against the other, as a share of the other's figure."] =
+    "Difference: this run against the other, as a share of the other's figure."
+L["the run you picked"] = "the run you picked"
+L["the runner-up on its board (this run holds the best)"] =
+    "the runner-up on its board (this run holds the best)"
+L["the best on its board (same spec, target type and race length)"] =
+    "the best on its board (same spec, target type and race length)"
+L["%s: not cast"] = "%s: not cast"
+L["%s: %s damage"] = "%s: %s damage"
+L["%s: %s damage (%.1f%%)"] = "%s: %s damage (%.1f%%)"
+L["Difference: %s"] = "Difference: %s"

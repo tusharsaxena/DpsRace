@@ -116,6 +116,9 @@ modules\Results_Table.lua
 modules\Results_Tips.lua
 modules\Results_Runs.lua
 modules\Results_Detail.lua
+# The detail's compare (#7): captures NS.ResultsDetail at FILE SCOPE (its CompareSpells), so it
+# follows it; the detail builds its parts at CALL time.
+modules\Results_Compare.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
