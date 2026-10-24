@@ -198,7 +198,7 @@ function Detail.Meta(run)
     local first = { char.realm or "?", L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) }
     if place ~= "" then first[#first + 1] = place end
     local badge = Tbl.Badge(target)
-    local second = { target.name or L["Unknown target"], badge, NS.Format.Length(run.race and run.race.length) }
+    local second = { target.name or L["Unknown target"], badge, NS.Format.RunTime(run) }
     local third = { Tbl.Date(run.date, "%d %b %Y %H:%M") }
     if run.build then third[#third + 1] = L["build %s"]:format(tostring(run.build)) end
     if run.addon then third[#third + 1] = "v" .. tostring(run.addon) end

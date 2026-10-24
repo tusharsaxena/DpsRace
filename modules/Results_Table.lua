@@ -41,6 +41,7 @@ local C = {
     gold  = Style.GOLD,
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
+    red   = { 1.0, 0.32, 0.32 },
 }
 Tbl.COLORS = C
 

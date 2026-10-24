@@ -27,8 +27,9 @@ local L = NS.L
 
 Results.WIDTH = NS.defaults.profile.windows.results.width
 Results.HEIGHT = NS.defaults.profile.windows.results.height
-Results.MIN_WIDTH, Results.MIN_HEIGHT = 760, 420
-Results.NARROW = 900            -- below this width the detail replaces the list
+Results.MIN_WIDTH, Results.MIN_HEIGHT = 780, 420
+Results.NARROW = 1060           -- below this width the detail replaces the list (the Runs list needs
+                                -- about 700 px for its ten columns, beside a 360 px detail)
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
 Results.TABS = { "runs", "bests" }

@@ -25,7 +25,7 @@ in the same commit, so a fresh session resumes at the first open box.
   edge) can no longer leave the race armed. A pull that continues a session from before the arm is
   adopted and flagged `sharedSession`. The pre-arm total read at arm time is subtracted, and a fresh
   session heard later replaces the shared one.
-- [ ] S2 Status column, DPS for every run, the Time cell (table, detail, HUD result card), and the
+- [x] S2 Status column, DPS for every run, the Time cell (table, detail, HUD result card), and the
   Results minimum widths.
 - [ ] S3 `live.rows` 0 = all, and the running body's wheel scroll.
 - [ ] S4 HUD Appearance: clock font, figures font, spell bars (texture, opacity, color, class color,

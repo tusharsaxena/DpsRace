@@ -183,11 +183,11 @@ end
 
 local C = Tbl.COLORS
 
+-- Every run's DPS, an incomplete one's included (its damage over its time in combat); the Status
+-- column says which runs rank.
 local function dpsText(run)
     local result = run.result or {}
-    if run.status == "lost" then return L["lost"], C.dim end
-    if run.status == "incomplete" then return L["incomplete"], C.dim end
-    if type(result.dps) ~= "number" then return DASH, C.dim end
+    if run.status == "lost" or type(result.dps) ~= "number" then return DASH, C.dim end
     return NS.Format.Number(result.dps), C.text
 end
 
@@ -197,13 +197,58 @@ local function damageText(run)
     return NS.Format.Number(damage), C.text
 end
 
-local function rankedDps(run)
+-- Only a complete run's DPS ranks: an incomplete run's is shown, but sorts after every ranked run.
+local function sortDps(run)
     if run.status ~= "complete" then return nil end
     return run.result and run.result.dps
 end
 
+-- The Status tags (the owner's call, 2026-10-24), in the badge colors: one per resolved status, and
+-- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
+Runs.STATUS = {
+    best       = { label = "Best", color = C.gold },
+    complete   = { label = "Complete", color = C.green },
+    flagged    = { label = "Flagged", color = C.amber },
+    incomplete = { label = "Incomplete", color = C.red },
+    died       = { label = "Died", color = C.red },
+    lost       = { label = "Lost", color = C.dim },
+}
+local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
+
+-- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
+local function holdsBest(run)
+    local Bests = NS.Bests
+    if not (Bests and Bests.Board) then return false end
+    local held = Bests.Board()[Bests.Key(run)]
+    return held ~= nil and held.id == run.id
+end
+
+--- A run's status tag: its key, its label and its color.
+--- @param run table
+--- @return string key, string text, table color
+function Runs.Status(run)
+    local key
+    if run.status == "lost" then
+        key = "lost"
+    elseif run.status == "incomplete" then
+        key = (type(run.flags) == "table" and run.flags.died) and "died" or "incomplete"
+    elseif holdsBest(run) then
+        key = "best"
+    elseif Runs.IsFlagged(run) then
+        key = "flagged"
+    else
+        key = "complete"
+    end
+    local tag = Runs.STATUS[key]
+    return key, L[tag.label], tag.color
+end
+
+-- The tail in the caption gray, after the length (NS.Format.RunTime).
+local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
+    math.floor(C.dim[3] * 255 + 0.5))
+
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- length, damage, DPS, flags.
+--- time (the length and the tail), damage, DPS, status, flags.
 function Runs.Columns()
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
@@ -222,14 +267,20 @@ function Runs.Columns()
         { key = "target", label = L["Target"], width = 84, kind = "badge", desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
-        { key = "length", label = L["Length"], width = 46, justify = "RIGHT", desc = true,
-          sort = function(run) return run.race and run.race.length end,
-          text = function(run) return NS.Format.Length(run.race and run.race.length) end },
+        { key = "time", label = L["Time"], width = 76, justify = "RIGHT", desc = true,
+          sort = NS.Format.RunSeconds,
+          text = function(run) return NS.Format.RunTime(run, TAIL_HEX), C.text end },
         { key = "damage", label = L["Damage"], width = 60, justify = "RIGHT", desc = true,
           sort = function(run) return run.result and run.result.damage end,
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, justify = "RIGHT", desc = true,
-          sort = rankedDps, text = dpsText },
+          sort = sortDps, text = dpsText },
+        { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
+          sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
+          text = function(run)
+              local _, text, color = Runs.Status(run)
+              return text, color
+          end },
         { key = "flag", label = "", width = 14, kind = "flag" },
     }
 end

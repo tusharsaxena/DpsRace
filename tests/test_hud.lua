@@ -568,7 +568,7 @@ test("hud: result body shows % and the best delta chip", function()
     assertEqual(b.w.dps.value.__text, "51.3K")
     local chips = b.w.chips:Texts()
     assertEqual(chips[1], "New best +25.0%")
-    assertEqual(chips[#chips], ("Tail +%.1fs"):format(run.result.tail))
+    assertEqual(chips[#chips], ("Time 0:30 +%.1fs"):format(run.result.tail))
     local rows = b.w.list.rows
     assertEqual(#rows, 3)
     assertEqual(rows[1].name.__text, "Incinerate")
@@ -627,7 +627,8 @@ test("hud: an incomplete run's chip names when combat ended, or that the player 
     g:advance(3)
     chips = body(g).w.chips:Texts()
     assertEqual(chips[1], "Incomplete: died")
-    assertEqual(#chips, 1, "died is not shown twice")
+    assertEqual(chips[2], "Time 0:12 / 0:30", "the time in combat against the length")
+    assertEqual(#chips, 2, "died is not shown twice")
 end)
 
 test("hud: Race again re-arms the same length; Details and Share reach their modules", function()

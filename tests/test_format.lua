@@ -81,3 +81,20 @@ test("format: ArmRefusal maps every Race.Arm reason to its line", function()
     assertTrue(#F.ArmRefusal("disabled") > 0)
     assertTrue(#F.ArmRefusal("something new") > 0)
 end)
+
+test("format: RunTime is the length and the tail, or the time in combat against the length", function()
+    local F = T.NS.Format
+    local function run(status, result, length)
+        return { status = status, race = { length = length or 120 }, result = result }
+    end
+    assertEqual(F.RunTime(run("complete", { tail = 11.05 })), "2:00 +11.1s")
+    assertEqual(F.RunTime(run("complete", { tail = 0 })), "2:00", "no tail, no suffix")
+    assertEqual(F.RunTime(run("complete", {})), "2:00")
+    assertEqual(F.RunTime(run("incomplete", { endedAt = 63.98 })), "1:04 / 2:00")
+    assertEqual(F.RunTime(run("lost", nil)), "2:00")
+    assertEqual(F.RunTime(run("complete", { tail = 6.29 }), "ff9e9ead"), "2:00 |cff9e9ead+6.3s|r",
+        "the tail in its own color when one is given")
+    T.assertTrue(math.abs(F.RunSeconds(run("complete", { tail = 11.05 })) - 131.05) < 1e-9)
+    assertEqual(F.RunSeconds(run("incomplete", { endedAt = 63.98 })), 63.98)
+    assertEqual(F.RunSeconds(run("lost", nil)), 120)
+end)

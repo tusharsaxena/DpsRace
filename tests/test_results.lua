@@ -97,7 +97,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Length|Damage|DPS|")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Status|")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -109,27 +109,55 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
     assertEqual(c.target.fs.__text, "Cleave \195\1515")
-    assertEqual(c.length.fs.__text, "3:00")
+    assertEqual(c.time.fs.__text, "3:00 |cff9e9ead+9.2s|r", "the length, then the tail in the caption gray")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
     assertTrue(c.flag.icon:IsShown(), "the flag mark")
     assertTrue(c.flag.texts[1]:find("Incinerate", 1, true) ~= nil, "the flag tooltip names the spell")
 end)
 
-test("results: incomplete and lost runs say so in the DPS column", function()
+test("results: the Status column tags each run; the DPS column shows every run's DPS", function()
     local i = inst()
     seed(i, {
         mkRun("inc", { status = "incomplete", result = { damage = 900000, dps = 10000, endedAt = 90 } }),
         mkRun("lost", { status = "lost", result = NONE, date = NOW - 2 * HOUR }),
+        mkRun("dead", { status = "incomplete", result = { damage = 500, dps = 50, endedAt = 10 },
+                        flags = { lateCasts = {}, died = true }, date = NOW - 3 * HOUR }),
     })
     i.R.Show()
     local rows = visible(runsPane(i))
-    assertEqual(#rows, 2)
-    assertEqual(rows[1].cells.dps.fs.__text, "incomplete")
+    assertEqual(#rows, 3)
+    local byId = {}
+    for _, row in ipairs(rows) do byId[row.run.id] = row end
+    rows = { byId.inc, byId.lost, byId.dead }
+    assertEqual(rows[1].cells.dps.fs.__text, "10.0K", "an incomplete run's DPS is shown")
     assertEqual(rows[1].cells.damage.fs.__text, "900.0K")
-    assertEqual(rows[2].cells.dps.fs.__text, "lost")
+    assertEqual(rows[1].cells.status.fs.__text, "Incomplete")
+    assertEqual(rows[1].cells.time.fs.__text, "1:30 / 3:00")
+    assertEqual(rows[2].cells.dps.fs.__text, "\226\128\148")
+    assertEqual(rows[2].cells.status.fs.__text, "Lost")
     assertEqual(rows[2].cells.damage.fs.__text, "\226\128\148")
+    assertEqual(rows[3].cells.status.fs.__text, "Died")
     assertFalse(rows[1].cells.flag.icon:IsShown(), "a status is not a flag")
+end)
+
+test("results: Status is Best, Flagged or Complete for a complete run", function()
+    local i = inst()
+    local Runs = i.NS.ResultsRuns
+    seed(i, {
+        mkRun("top", { result = { damage = 27000000, dps = 150000 } }),
+        mkRun("slow", { result = { damage = 20000000, dps = 100000 }, date = NOW - 2 * HOUR }),
+        mkRun("late", { result = { damage = 10000000, dps = 50000 }, date = NOW - 3 * HOUR,
+                        flags = { lateCasts = { { t = 1.4, spellID = 29722 } } } }),
+    })
+    local by = {}
+    for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
+    local key, text = Runs.Status(by.top)
+    assertEqual(key, "best")
+    assertEqual(text, "Best")
+    assertEqual((Runs.Status(by.slow)), "complete")
+    assertEqual((Runs.Status(by.late)), "flagged")
+    assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
 end)
 
 test("results: filters: character, spec, category, length, date range, hide flagged, include incomplete", function()
@@ -256,7 +284,7 @@ test("results: detail renders breakdown sorted with percentages", function()
     assertEqual(d.w.meterDps.value.__text, "5", "Blizzard's figure, muted")
     assertEqual(d.w.name.__text, "Lanfear")
     assertEqual(d.w.meta[1].__text, "Frostmourne \194\183 ilvl 313.2 \194\183 Silvermoon City, Falconwing Square")
-    assertEqual(d.w.meta[2].__text, "Cleave Training Dummy \194\183 Cleave \195\1515 \194\183 3:00")
+    assertEqual(d.w.meta[2].__text, "Cleave Training Dummy \194\183 Cleave \195\1515 \194\183 3:00 +2.0s")
     assertTrue(d.w.meta[3].__text:find("build 120105", 1, true) ~= nil)
     assertTrue(d.w.meta[3].__text:find("v0.1.0", 1, true) ~= nil)
 end)
@@ -531,9 +559,9 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(found, "not in UISpecialFrames")
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
-    assertEqual(minW, 760)
+    assertEqual(minW, 780)
     assertEqual(minH, 420)
-    assertEqual(u.width, 1040)
+    assertEqual(u.width, 1100)
     assertEqual(u.height, 560)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
@@ -563,10 +591,10 @@ test("results: position, size and Master scale persist; Reset position restores 
     i.R.ResetPosition()
     assertEqual(w.point, nil)
     assertEqual(w.width, nil)
-    assertEqual(u.width, 1040)
+    assertEqual(u.width, 1100)
 end)
 
-test("results: below 900px wide the detail replaces the list, with a back control", function()
+test("results: below 1060px wide the detail replaces the list, with a back control", function()
     local i = inst()
     seed(i, { mkRun("a") })
     i.NS.db.profile.windows.results = { width = 800, height = 500 }

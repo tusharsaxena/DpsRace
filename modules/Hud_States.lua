@@ -661,8 +661,11 @@ function States.ResultChips(v)
         local short = FLAG_CHIP[flag.key]
         if short and not skip then list[#list + 1] = { text = short(run), color = C.amber, tip = flag.text } end
     end
-    local tail = run.result and run.result.tail
-    if type(tail) == "number" then list[#list + 1] = { text = L["Tail +%.1fs"]:format(tail), color = C.info } end
+    -- The run's time: the length and the DoT tail, or the time in combat before the buzzer.
+    if run.status ~= "lost" and type(run.result) == "table" then
+        list[#list + 1] = { text = L["Time %s"]:format(NS.Format.RunTime(run)), color = C.info,
+                            tip = L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."] }
+    end
     return list
 end
 
