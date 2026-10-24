@@ -356,7 +356,10 @@ local function pctOf(pct) return pct and L["%+.1f%%"]:format(pct) or DASH end
 
 local COMPARE = {}
 
-function COMPARE.toggle(_, other, kind)
+function COMPARE.toggle(run, other, kind)
+    if not NS.ResultsCompare.Usable(run) then
+        return { L["Compare"], L["This run has no score to compare (it was lost)."] }
+    end
     if not other then
         return { L["Compare"], L["No other complete run on this run's board (same spec, target type and race length) to compare with."] }
     end

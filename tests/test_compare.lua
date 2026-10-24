@@ -269,6 +269,13 @@ test("compare: the row menu's pick, the different-board note and Clear Pick", fu
     i.NS.Recorder.Delete("other")
     assertEqual(d:CompareTarget().id, "best")
     assertFalse(i.R.CompareWith("lost"), "a lost run picked")
+    -- The picked run opened itself: the toggle falls back to the board, Clear Pick still shows.
+    i.R.CompareWith("best")
+    i.R.ShowRun("best")
+    assertTrue(d.cmp.clear:IsShown(), "no way to clear the pick from the picked run")
+    d.cmp.clear:__fire("OnClick")
+    assertEqual(i.R.Pick(), nil)
+    assertFalse(d.cmp.clear:IsShown())
 end)
 
 test("compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips", function()
@@ -285,6 +292,9 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     assertEqual(Tips.Compare("score", low, best, "best")[2], "Damage: 18,000 against 54,000 (-66.7%)")
     assertTrue(Tips.Compare("toggle", low, nil)[2]:find("No other complete run", 1, true) ~= nil,
         "the disabled toggle says why")
+    local lost = mkRun("lostTip", 1, { status = "lost", result = false })
+    assertEqual(Tips.Compare("toggle", lost, nil)[2], "This run has no score to compare (it was lost).",
+        "a lost run's toggle names the real reason")
     local row = i.Cmp.Spells(low, best)[1]
     local lines = Tips.CompareSpell(row, "best")
     assertEqual(lines[1][1], "This run: 10,000 damage (55.6%)")

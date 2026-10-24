@@ -560,6 +560,7 @@ L["Spell"] = "Spell"
 L["Compare"] = "Compare"
 L["Sets this run beside %s: damage, DPS and every spell."] =
     "Sets this run beside %s: damage, DPS and every spell."
+L["This run has no score to compare (it was lost)."] = "This run has no score to compare (it was lost)."
 L["No other complete run on this run's board (same spec, target type and race length) to compare with."] =
     "No other complete run on this run's board (same spec, target type and race length) to compare with."
 L["Pick another run from a row's right-click menu: Compare With This Run."] =

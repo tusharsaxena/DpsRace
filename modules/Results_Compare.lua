@@ -308,8 +308,11 @@ function Compare.LayoutBar(p, y, cw)
     local x = p.cmp
     place(x.toggle, p.content, 0, y)
     local picked = x.kind == "picked"
-    x.clear:SetShown(picked)
-    if picked then place(x.clear, p.content, cw - Compare.CLEAR_W, y - 1) end
+    -- Clear Pick follows the pick itself: open on the picked run, the toggle falls back to the
+    -- board, but the pick still steers every other run and must stay clearable.
+    local hasPick = p.pickID ~= nil and NS.Recorder.Get(p.pickID) ~= nil
+    x.clear:SetShown(hasPick)
+    if hasPick then place(x.clear, p.content, cw - Compare.CLEAR_W, y - 1) end
     y = y - Compare.BAR_H
     local differs = p:Comparing() and picked and not Compare.SameBoard(p.run, x.other)
     x.boards:SetShown(differs)
