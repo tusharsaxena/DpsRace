@@ -16,6 +16,7 @@ local DASH = "\226\128\148"
 
 local function Tbl() return NS.ResultsTable end
 local function C() return NS.ResultsTable.COLORS end
+local function Detail() return NS.ResultsDetail end
 
 -- A whole number with thousands separators: "36,812,345".
 local function grouped(n)
@@ -190,4 +191,147 @@ function Tips.About(col)
     local text = col.about or ABOUT[col.key]
     if not text then return nil end
     return { title = col.label, text = L[text] }
+end
+
+-- ── the run detail ──────────────────────────────────────────────────────────────────────────────
+-- The detail pane's hovers (modules/Results_Detail.lua), the same lines as the tables' where the two
+-- show the same thing. The spells are the client's own spell tooltip with Tips.Spell's lines after
+-- it, beside the window; everything else is under the element it names (Results_Table's BelowTip).
+
+local function dimLine(text) return { text, 0.62, 0.62, 0.68 } end
+
+local function joined(...)
+    local out = {}
+    for _, lines in ipairs({ ... }) do
+        for _, l in ipairs(lines) do out[#out + 1] = l end
+    end
+    return out
+end
+
+local DETAIL = {}
+
+DETAIL.class = CELL.icons
+DETAIL.name = CELL.char
+DETAIL.realm = CELL.ilvl
+DETAIL.stamp = CELL.date
+DETAIL.damage = CELL.damage
+DETAIL.dps = CELL.dps
+
+function DETAIL.target(run)
+    local time = CELL.time(run)
+    time[1] = dimLine(time[1])
+    return joined(CELL.target(run), time)
+end
+
+function DETAIL.meterDps(run)
+    local r = result(run)
+    local lines = { L["Meter DPS"] }
+    if type(r.meterDps) == "number" then lines[#lines + 1] = L["%s DPS"]:format(grouped(r.meterDps)) end
+    lines[#lines + 1] = L["Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."]
+    return lines
+end
+
+function DETAIL.delta(run)
+    if run.status ~= "complete" then return nil end
+    local pct, isNew = NS.Bests.Delta(run)
+    if not pct and not isNew then return nil end
+    local lines = { isNew and L["New best"] or L["%+.1f%% vs best"]:format(pct) }
+    lines[#lines + 1] = L["Against the best DPS before this run for the same spec, target type and race length."]
+    if isNew and not pct then lines[#lines + 1] = L["The first complete run of its kind."] end
+    return lines
+end
+
+function DETAIL.strip(run)
+    local time = CELL.time(run)
+    time[1] = dimLine(time[1])
+    return joined({ L["Timing"],
+        L["Left: the race, from the start to the buzzer. Right: the seconds after the buzzer, with the grace window, the damage still landing, any late casts and the end of combat."] },
+        time)
+end
+
+DETAIL.tail = CELL.time
+
+local LEGEND = {
+    "The race, from the start to the buzzer (to the end of combat for an incomplete run).",
+    "Damage still landing after the buzzer (DoTs, travel time). It counts.",
+    "Casts started this long after the buzzer carry no flag: the Race page's Late-cast grace, frozen into each run.",
+    "A cast started after the grace window. The run counts, with a flag.",
+    "When combat ended.",
+    "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag.",
+}
+
+function DETAIL.flags(run)
+    local lines = Detail().FlagLines(run)
+    if #lines == 0 then return nil end
+    local out = { #lines == 1 and L["1 flag"] or L["%d flags"]:format(#lines) }
+    for _, line in ipairs(lines) do out[#out + 1] = line.full end
+    out[#out + 1] = dimLine(L["Flags inform; they never void a run."])
+    return out
+end
+
+function DETAIL.note(run)
+    if type(run.note) ~= "string" or run.note == "" then return nil end
+    return { L["Note"], run.note, dimLine(L["Edit Note changes it; an empty note removes it."]) }
+end
+
+function DETAIL.noteBox()
+    return { L["Note"], L["Enter saves, Escape cancels. Up to %d characters."]:format(Detail().NOTE_MAX) }
+end
+
+function DETAIL.addNote(run)
+    local has = type(run.note) == "string" and run.note ~= ""
+    return { has and L["Edit Note"] or L["Add Note"], L["A line of your own kept with the run: what you tried, what went wrong."] }
+end
+
+function DETAIL.share()
+    return { L["Share"], L["Post the run's summary to chat: say, party, raid, guild or a whisper."] }
+end
+
+function DETAIL.shareOff()
+    return { L["Share"], L["Sharing is unavailable: the Share module did not load."] }
+end
+
+function DETAIL.delete()
+    return { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] }
+end
+
+function DETAIL.back()
+    return { L["Back"], L["Back to the list; the run stays selected."] }
+end
+
+--- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`), or nil.
+--- @param key string
+--- @param run table
+--- @param index number|nil
+--- @return table|nil
+function Tips.Detail(key, run, index)
+    if type(run) ~= "table" then return nil end
+    if key == "legend" then
+        local text = LEGEND[index]
+        return text and { Detail().LEGEND[index], L[text] } or nil
+    end
+    local fn = DETAIL[key]
+    if not fn then return nil end
+    local ok, lines = pcall(fn, run)
+    if not ok or type(lines) ~= "table" then return nil end
+    local out = {}
+    for i = 1, 8 do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
+    return out
+end
+
+--- What follows the client's spell tooltip on a breakdown row: the exact damage, its share of the
+--- run's, and its place in the list.
+--- @param spell table  { id, dmg }
+--- @param run table
+--- @param rank number|nil
+--- @param count number|nil
+--- @return table
+function Tips.Spell(spell, run, rank, count)
+    local dmg, damage = spell.dmg or 0, result(run).damage
+    local lines = { { L["%s damage"]:format(grouped(dmg)), 1, 0.82, 0 } }
+    if type(damage) == "number" and damage > 0 then
+        lines[#lines + 1] = L["%.1f%% of the run's damage"]:format(dmg / damage * 100)
+    end
+    if rank and count then lines[#lines + 1] = dimLine(L["#%d of %d spells"]:format(rank, count)) end
+    return lines
 end

@@ -12,6 +12,10 @@ local _, NS = ...
 -- NO GEOMETRY IS READ BACK. A frame handed a secret through SetValue/SetText has secret geometry
 -- (MultiMeters' measured layout rule), so a row is placed from its index and the config constants
 -- below, and nothing here ever asks a row, a bar or a label for its size or position.
+--
+-- HOVER IS OPT-IN AND RESULT-ONLY. A list built with a `tip` hook (the Results detail's) takes the
+-- mouse on its rows and hands the hook a READ RESULT's plain spell record; the live HUD passes none,
+-- so its rows stay click-through and a live (secret) spell ID never reaches a tooltip.
 
 local Breakdown = {}
 NS.HudBreakdown = Breakdown
@@ -122,9 +126,19 @@ List.__index = List
 
 --- A list of spell rows drawn into `parent`, top down.
 --- @param parent table
+--- @param tip function|nil  tip(row, spell, rank): a result row's hover (none: rows take no mouse)
 --- @return table list
-function Breakdown.New(parent)
-    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {} }, List)
+function Breakdown.New(parent, tip)
+    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip }, List)
+end
+
+-- A row's hover, wired once per pooled row of a list with a `tip` hook.
+local function wireTip(list, row)
+    if row.tipWired then return end
+    row.tipWired = true
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self) if self.spell then list.tip(self, self.spell, self.rank) end end)
+    row:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
 end
 
 --- Release every row.
@@ -147,6 +161,8 @@ function List:acquire(i, icons, pct)
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     row:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
     setMode(row, icons, pct)
+    row.spell, row.rank = nil, nil
+    if self.tip then wireTip(self, row) end
     self.rows[i] = row
     return row
 end
@@ -214,7 +230,9 @@ function List:ShowResult(run, n, icons, offset)
     local top = spells[1].dmg or 0
     offset = offset or 0
     for i = 1, math.min(n, #spells - offset) do
-        fillResult(self:acquire(i, icons, true), spells[offset + i], top, damage, icons)
+        local row = self:acquire(i, icons, true)
+        fillResult(row, spells[offset + i], top, damage, icons)
+        row.spell, row.rank = spells[offset + i], offset + i
     end
     return #self.rows
 end

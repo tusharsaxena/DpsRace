@@ -67,7 +67,7 @@ files["core/Compat.lua"] = {
 -- AbbreviateNumbers beneath it; spell names and icons come through C_Spell; the shell plays the cue and
 -- the buzzer's raid warning, names the drop-combat spells the player knows and draws tooltips.
 files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
-files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
+files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell", "GameTooltip" } }
 -- A stored run's character's class color (the Results table's bars), and the fallback faces.
 files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }

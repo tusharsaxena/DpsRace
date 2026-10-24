@@ -190,12 +190,12 @@ into the store, so sorting, percentages and the timing strip are plain Lua. It h
 timer or `OnUpdate`.
 
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
-  (the HUD's *Details*, a Bests row) or `Results.ShowTab(name)`. `IsShown()` =
+  (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
   time it shows.
-- **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
+- **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
-  bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% (the smallest of the runs passed) to 100% (the largest), sorts them (newest first by default, reset at every login and `/reload`; on DPS an unranked run sorts last; a tie to the newer
+  bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% to 100% within each target type (each type's smallest and largest of the runs passed, `barKey`), sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
   run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
@@ -217,8 +217,8 @@ timer or `OnUpdate`.
 
 ## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
 
-- **Share**: the HUD's result card, the Results detail and a row's right-click menu (its Share submenu) call
-  `Share.Prompt(run)`. A run with no score (lost) prints one line and opens nothing; in combat, or in
+- **Share**: the HUD's result card and the Results detail call `Share.Prompt(run)`; a Results row's
+  right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
   sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s

@@ -831,6 +831,116 @@ test("results: note limited to 200 chars", function()
     assertEqual(d.w.note.__text, "Note: " .. string.rep("x", 200))
 end)
 
+test("results: opening the note scrolls its box into view", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    d:Layout(340, 140, false)               -- shorter than the run's detail: the box starts below the view
+    assertTrue(d.contentH > d.viewH, "the detail fits the pane; the case under test never arises")
+    assertEqual(d.scroll, 0)
+    d.w.addNote:__fire("OnClick")
+    assertEqual(d.scroll, d.contentH - d.viewH, "the note box was left below the visible area")
+end)
+
+-- A stand-in GameTooltip that records what it was asked to show.
+local function recordingTip(env)
+    local tip = { lines = {} }
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints" }) do tip[m] = function() end end
+    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines, tip.spell = owner, anchor, {}, nil end
+    function tip.SetText(_, text) tip.lines[1] = text end
+    function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
+    function tip.SetSpellByID(_, id) tip.spell = id end
+    function tip.NumLines() return tip.spell and 4 or #tip.lines end
+    function tip.GetWidth() return 300 end
+    function tip.GetEffectiveScale() return 1 end
+    function tip.SetPoint(_, point, _, rel) tip.placed = { point, rel } end
+    env.GameTooltip = tip
+    return tip
+end
+
+test("results: every detail element has a tooltip; spells show the client's spell tooltip beside the window", function()
+    local i = inst()
+    seed(i, { mkRun("a", { note = "pulled with pots", flags = { lateCasts = { { t = 1.4, spellID = 29722 } } } }) })
+    i.R.ShowRun("a")
+    local d, Tips = ui(i).detail, i.NS.ResultsTips
+    local run = i.NS.Recorder.Get("a")
+    for _, key in ipairs({ "class", "name", "realm", "target", "stamp", "damage", "dps", "meterDps", "strip",
+                           "tail", "flags", "note", "noteBox", "addNote", "share", "shareOff", "delete", "back" }) do
+        local lines = Tips.Detail(key, run)
+        assertTrue(type(lines) == "table" and type(lines[1]) == "string", key .. " has a tooltip")
+    end
+    for n = 1, #i.NS.ResultsDetail.LEGEND do
+        assertEqual(Tips.Detail("legend", run, n)[1], i.NS.ResultsDetail.LEGEND[n])
+    end
+
+    local tip = recordingTip(i.mocks)
+    i.mocks.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
+    local window = i.NS.ResultsTable.WindowOf(d.frame)
+    window.GetRight = function() return 1200 end
+    window.GetTop = function() return 800 end
+    window.GetEffectiveScale = function() return 1 end
+    d.w.list.rows[1].GetTop = function() return 700 end
+    -- A spell row: the client's spell tooltip, then the exact damage, its share and its place.
+    local row = d.w.list.rows[1]
+    row:__fire("OnEnter")
+    assertEqual(tip.spell, 29722, "the row did not show its spell's tooltip")
+    assertEqual(tip.anchor, "ANCHOR_NONE")
+    assertEqual(tip.placed[1], "TOPLEFT", "the spell tooltip sits beside the window")
+    assertTrue(tip.lines[2] == "7,330,000 damage", "the exact damage follows the spell")
+    assertEqual(tip.lines[4], "#1 of 2 spells")
+    -- Anything else: under itself.
+    d.w.dps.frame:__fire("OnEnter")
+    assertEqual(tip.anchor, "ANCHOR_BOTTOM")
+    assertEqual(tip.owner, d.w.dps.frame)
+    assertEqual(tip.lines[1], "147,556 DPS")
+    d.w.delete:__fire("OnEnter")
+    assertEqual(tip.lines[1], "Delete")
+    -- The note's hover frame steps aside while the box is open, so it never takes the box's clicks.
+    assertTrue(d.w.noteHover:IsShown())
+    d.w.addNote:__fire("OnClick")
+    assertFalse(d.w.noteHover:IsShown(), "the note's hover frame covers the open note box")
+end)
+
+test("results: the timing strip's marks draw above its two segments", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.ShowRun("a")
+    local w = ui(i).detail.w
+    -- A child frame draws over its parent's own textures, so marks made on the strip sat under the
+    -- opaque segments: they need a frame of their own, above both.
+    assertTrue(w.marks ~= nil, "the marks have no frame of their own")
+    assertEqual(w.marks:GetParent(), w.strip)
+    assertTrue(w.marks:GetFrameLevel() > w.segA:GetFrameLevel(), "the marks sit under the race segment")
+    assertTrue(w.marks:GetFrameLevel() > w.segB:GetFrameLevel(), "the marks sit under the after-buzzer segment")
+end)
+
+test("results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines", function()
+    local i = inst()
+    local Detail = i.NS.ResultsDetail
+    local named, rows = {}, {}
+    for r, indices in ipairs(Detail.LEGEND_ROWS) do
+        local labels = {}
+        for _, n in ipairs(indices) do
+            assertEqual(named[n], nil, "a legend entry sits in two rows")
+            named[n] = true
+            labels[#labels + 1] = Detail.LEGEND[n]
+        end
+        rows[r] = table.concat(labels, "|")
+    end
+    assertEqual(#rows, 2)
+    assertEqual(rows[1], "Race|Tail (damage still landing)")
+    assertEqual(rows[2], "Grace|Late cast|Combat ended|Restart")
+    for n = 1, #Detail.LEGEND do assertTrue(named[n], Detail.LEGEND[n] .. " is in no row") end
+end)
+
+test("results: the live HUD's spell rows take no mouse", function()
+    local i = inst()
+    local list = i.NS.HudBreakdown.New(i.mocks.CreateFrame("Frame"))
+    list:ShowResult({ spells = { { id = 29722, dmg = 10 } }, result = { damage = 10 } }, 1, true)
+    assertEqual(list.rows[1].tipWired, nil, "a list without a tip hook wired a hover")
+end)
+
 test("results: saving a note never prunes the store", function()
     local i = inst()
     local runs = {}

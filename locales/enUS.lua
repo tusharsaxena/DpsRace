@@ -507,3 +507,37 @@ L["The meter's session could not be read after combat. There is no score."] =
     "The meter's session could not be read after combat. There is no score."
 L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
 L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"
+
+-- The run detail's tooltips (modules/Results_Tips.lua, Tips.Detail and Tips.Spell)
+L["#%d of %d spells"] = "#%d of %d spells"
+L["%.1f%% of the run's damage"] = "%.1f%% of the run's damage"
+L["A line of your own kept with the run: what you tried, what went wrong."] =
+    "A line of your own kept with the run: what you tried, what went wrong."
+L["Against the best DPS before this run for the same spec, target type and race length."] =
+    "Against the best DPS before this run for the same spec, target type and race length."
+L["Back to the list; the run stays selected."] = "Back to the list; the run stays selected."
+L["Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."] =
+    "Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."
+L["Edit Note changes it; an empty note removes it."] = "Edit Note changes it; an empty note removes it."
+L["Enter saves, Escape cancels. Up to %d characters."] = "Enter saves, Escape cancels. Up to %d characters."
+L["Left: the race, from the start to the buzzer. Right: the seconds after the buzzer, with the grace window, the damage still landing, any late casts and the end of combat."] =
+    "Left: the race, from the start to the buzzer. Right: the seconds after the buzzer, with the grace window, the damage still landing, any late casts and the end of combat."
+L["Note"] = "Note"
+L["Sharing is unavailable: the Share module did not load."] = "Sharing is unavailable: the Share module did not load."
+L["Post the run's summary to chat: say, party, raid, guild or a whisper."] =
+    "Post the run's summary to chat: say, party, raid, guild or a whisper."
+L["Remove this run from history, after a confirmation. A best it holds goes with it."] =
+    "Remove this run from history, after a confirmation. A best it holds goes with it."
+L["The first complete run of its kind."] = "The first complete run of its kind."
+L["The race, from the start to the buzzer (to the end of combat for an incomplete run)."] =
+    "The race, from the start to the buzzer (to the end of combat for an incomplete run)."
+L["Damage still landing after the buzzer (DoTs, travel time). It counts."] =
+    "Damage still landing after the buzzer (DoTs, travel time). It counts."
+L["Casts started this long after the buzzer carry no flag: the Race page's Late-cast grace, frozen into each run."] =
+    "Casts started this long after the buzzer carry no flag: the Race page's Late-cast grace, frozen into each run."
+L["A cast started after the grace window. The run counts, with a flag."] =
+    "A cast started after the grace window. The run counts, with a flag."
+L["When combat ended."] = "When combat ended."
+L["Restart"] = "Restart"
+L["Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."] =
+    "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."

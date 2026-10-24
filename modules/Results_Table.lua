@@ -195,19 +195,19 @@ local function windowOf(frame)
     return frame
 end
 
---- Show `lines` ({ title, line, ... }; a line is a string or { text, r, g, b }) beside `window`,
---- level with `row`.
-function Tbl.SideTip(window, row, lines)
-    local tip = GameTooltip
-    if not tip or type(lines) ~= "table" or not lines[1] then return end
-    tip:SetOwner(window, "ANCHOR_NONE")
-    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
-    for i = 2, #lines do
+Tbl.WindowOf = windowOf
+
+-- Lines from `first` on, each a string (light gray) or { text, r, g, b }.
+local function addLines(tip, lines, first)
+    for i = first, #lines do
         local l = lines[i]
         if type(l) == "table" then tip:AddLine(l[1], l[2] or 1, l[3] or 1, l[4] or 1, true)
         else tip:AddLine(l, 0.9, 0.9, 0.9, true) end
     end
-    tip:Show()
+end
+
+-- The shown tooltip beside `window`, level with `row`: its right, or its left without the room.
+local function placeSide(tip, window, row)
     local dy = 0
     if row and row.GetTop and window.GetTop then dy = (row:GetTop() or 0) - (window:GetTop() or 0) end
     local scale = window:GetEffectiveScale() or 1
@@ -222,9 +222,49 @@ function Tbl.SideTip(window, row, lines)
     end
 end
 
+--- Show `lines` ({ title, line, ... }; a line is a string or { text, r, g, b }) beside `window`,
+--- level with `row`.
+function Tbl.SideTip(window, row, lines)
+    local tip = GameTooltip
+    if not tip or type(lines) ~= "table" or not lines[1] then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    addLines(tip, lines, 2)
+    tip:Show()
+    placeSide(tip, window, row)
+end
+
+--- The client's own tooltip for spell `id`, then `lines` (each a string or { text, r, g, b }), placed
+--- as SideTip places its. A spell the client cannot show gets its name instead.
+function Tbl.SpellTip(window, row, id, lines)
+    local tip = GameTooltip
+    if not tip then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
+    local shown = type(id) == "number" and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
+    if shown and tip.NumLines then shown = (tip:NumLines() or 0) > 0 end
+    if not shown then tip:SetText(NS.HudBreakdown.SpellName(id), 1, 1, 1, 1, true) end
+    if type(lines) == "table" and lines[1] then
+        tip:AddLine(" ")
+        addLines(tip, lines, 1)
+    end
+    tip:Show()
+    placeSide(tip, window, row)
+end
+
+--- `lines` (a title, then strings or { text, r, g, b }) under `owner`, the column headers' way.
+function Tbl.BelowTip(owner, lines)
+    local tip = GameTooltip
+    if not tip or type(lines) ~= "table" or not lines[1] then return end
+    tip:SetOwner(owner, "ANCHOR_BOTTOM")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    addLines(tip, lines, 2)
+    tip:Show()
+end
+
 local function hideTip()
     if GameTooltip then GameTooltip:Hide() end
 end
+Tbl.HideTip = hideTip
 
 -- ── cells ───────────────────────────────────────────────────────────────────────────────────────
 

@@ -277,7 +277,7 @@ Frozen and generated stores are named once each and not enumerated: `docs/audits
 `docs/reviews/`, `docs/automated-tests/<run>/`, `docs/perf-analysis/<run>/`,
 `docs/revendor/<date>-v<tag>/`, `docs/superpowers/` and `docs/investigations/` (documentation-§3).
 Of those, `docs/automated-tests/<run>/`, `docs/revendor/<date>-v<tag>/` and `docs/superpowers/`
-exist today; `docs/superpowers/` holds the spec and the plan.
+exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Required (documentation-§3, Tier 1)
 
