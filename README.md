@@ -74,4 +74,4 @@ Please raise them on GitHub rather than in comments:
 
 ## Credits
 
-The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL Open Font License 1.1. The window controls and the debug console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT). Only the icons this addon draws are included, each set with its license file beside it.
+The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL Open Font License 1.1. The window controls and the debug console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT), and the Results window's *Best* tag draws a trophy from [Phosphor](https://github.com/phosphor-icons/core) (MIT). Only the icons this addon draws are included, each set with its license file beside it.

@@ -160,9 +160,20 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     })
     local by = {}
     for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
-    local key, text = Runs.Status(by.top)
+    local key, text, bestColor, icon = Runs.Status(by.top)
     assertEqual(key, "best")
     assertEqual(text, "Best")
+    assertEqual(bestColor, i.NS.ResultsTable.COLORS.blue, "Best in blue")
+    assertEqual(icon, "ph:trophy", "Best draws the trophy")
+    i.R.Show()
+    local badge
+    for _, row in ipairs(visible(runsPane(i))) do
+        if row.run.id == "top" then badge = row.cells.status end
+    end
+    assert(badge, "the best run is drawn")
+    assertTrue(badge.icon:IsShown(), "the trophy shows in the badge")
+    assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
+    assertEqual(badge.fs.__color[3], i.NS.ResultsTable.COLORS.blue[3])
     assertEqual((Runs.Status(by.slow)), "complete")
     local lateKey, _, lateColor = Runs.Status(by.late)
     assertEqual(lateKey, "flagged")

@@ -42,8 +42,10 @@ local C = {
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
     red   = { 1.0, 0.32, 0.32 },
+    blue  = { 0.40, 0.66, 1.0 },
 }
 Tbl.COLORS = C
+local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -229,11 +231,16 @@ function Cells.icons(row, col)
     return cell
 end
 
+-- A tag in a 1px box; a column whose text also answers an icon name draws that icon before the word.
 function Cells.badge(row)
     local cell = { box = Tbl.Panel(row) }
     cell.box:SetHeight(16)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
+    cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
+    cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 4, 0)
+    cell.icon:Hide()
     return cell
 end
 
@@ -296,13 +303,23 @@ function Bind.icons(cell, col, run)
 end
 
 function Bind.badge(cell, col, run)
-    local s, color = col.text(run)
+    local s, color, icon = col.text(run)
     s = s or ""
     color = color or C.amber
     cell.fs:SetText(s)
     paint(cell.fs, color)
     cell.box:SetShown(s ~= "")
-    cell.box:SetWidth(math.floor(#s * 6 + 14))
+    -- The icon, tinted the tag's color, sits before the word; the word shifts right to make room.
+    local path = icon and NS.Icon(icon)
+    local extra = path and (BADGE_ICON + 2) or 0
+    cell.icon:SetShown(path ~= nil)
+    if path then
+        cell.icon:SetTexture(path)
+        cell.icon:SetVertexColor(color[1], color[2], color[3])
+    end
+    cell.fs:ClearAllPoints()
+    cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
+    cell.box:SetWidth(math.floor(#s * 6 + 14 + extra))
     if cell.box.SetBackdropBorderColor then
         cell.box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
         cell.box:SetBackdropColor(color[1], color[2], color[3], 0.08)

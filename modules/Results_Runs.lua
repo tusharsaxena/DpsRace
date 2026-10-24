@@ -240,8 +240,9 @@ end
 
 -- The Status tags (the owner's call, 2026-10-24), in the badge colors: one per resolved status, and
 -- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
+-- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
 Runs.STATUS = {
-    best       = { label = "Best", color = C.gold },
+    best       = { label = "Best", color = C.blue, icon = "ph:trophy" },
     complete   = { label = "Complete", color = C.green },
     flagged    = { label = "Flagged", color = C.red },
     incomplete = { label = "Incomplete", color = C.red },
@@ -258,9 +259,9 @@ function Runs.HoldsBest(run)
     return held ~= nil and held.id == run.id
 end
 
---- A run's status tag: its key, its label and its color.
+--- A run's status tag: its key, its label, its color and its icon name (nil for most tags).
 --- @param run table
---- @return string key, string text, table color
+--- @return string key, string text, table color, string|nil icon
 function Runs.Status(run)
     local key
     if run.status == "lost" then
@@ -275,7 +276,7 @@ function Runs.Status(run)
         key = "complete"
     end
     local tag = Runs.STATUS[key]
-    return key, L[tag.label], tag.color
+    return key, L[tag.label], tag.color, tag.icon
 end
 
 --- How far a run's DPS sits from the best on its board now (the all-runs board: spec x category x
@@ -363,8 +364,8 @@ function Runs.Columns()
         { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)
-              local _, text, color = Runs.Status(run)
-              return text, color
+              local _, text, color, icon = Runs.Status(run)
+              return text, color, icon
           end },
         { key = "flag", label = "", width = 14, kind = "flag" },
     }
