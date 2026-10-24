@@ -330,6 +330,9 @@ end
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare() }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
+    -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
+    -- before any child is built so every child is born in it.
+    frame:SetFrameLevel(parent:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.DETAIL)
     local p = setmetatable({ frame = frame, hooks = hooks or {}, w = {}, scroll = 0, width = 340, height = 400 }, Pane)
     p.scrollFrame = CreateFrame("ScrollFrame", nil, frame)
     p.content = CreateFrame("Frame", nil, p.scrollFrame)

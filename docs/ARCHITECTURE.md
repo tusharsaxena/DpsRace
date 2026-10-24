@@ -192,6 +192,17 @@ and `settings/History.lua` hold only their bus receivers.
 
 The pipeline from event to screen: [data-flow.md](data-flow.md).
 
+## Frame layering
+
+Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
+`core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
+copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
+Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with one level band, `LEVEL.DETAIL`, that
+lifts the Results detail pane over the Runs pane it sits inside. The StaticPopups, the debug console,
+the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
+each frame's strata, level and toplevel.
+
 ## Taint Notes
 
 - The addon creates no secure frame and calls no protected API. The three key-binding buttons

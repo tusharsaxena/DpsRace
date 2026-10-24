@@ -205,7 +205,7 @@ local function ensureWindow()
     local f = CreateFrame("Frame", Results.FRAME_NAME, UIParent, "BackdropTemplate")
     ui = { frame = f, tabs = {}, panes = {} }
     f:Hide()
-    f:SetFrameStrata("HIGH")
+    f:SetFrameStrata(NS.Constants.LAYERS.STRATA.WINDOW)
     f:SetClampedToScreen(true)
     f:SetMovable(true)
     f:EnableMouse(true)

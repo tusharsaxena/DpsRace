@@ -92,6 +92,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R8c | Cancel the race with 5 s left; drop combat with 6 s left on another run | The number on screen goes at once, and no further number or cue follows | |
 | R8d | `/reload` with about 6 s left, still attacking | After the loading screen the number of the moment shows at once (silently) and the count carries on to 1 | The numbers seen after the reload |
 | R8e | `/dr test`, watch the sample race's last 10 s; then end test mode during its countdown | The numbers show silently in the sample race and go with its buzzer; ending test mode clears them at once | |
+| R8f | With about 8 s left on a race, open a Results filter dropdown so the menu crosses the center-screen numbers | The menu draws over the numbers, and they still draw over any open confirmation popup or the debug console | A screenshot |
 | R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *Damage Stopped +x.xs* climbing while DoTs tick, the late-cast count, *In Combat +y.ys* | A screenshot |
 | R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *Discard Run*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
 | R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
@@ -139,6 +140,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | W14 | Look for the `×` (target count) and `—` (empty damage) glyphs | Both render in the client font, not as boxes | A screenshot |
 | W15 | Open Results beside LootHistory's browser | The same look: the title centered in the title bar; *Runs* / *Bests* tabs in the normal gold font, the idle one gray; Title Case column headers small and gold with the gold sort arrow after the sorted one; compact 20 px rows in the small white font; the detail's Damage / DPS / Meter DPS figures large over small gray captions; 20 px buttons in the small white font (*Add Note*, *Share*, *Delete*), gold under the pointer; footers small and gray | A screenshot beside LootHistory |
 | W16 | Hover the close control | It turns gold (not red) and back to gray on leave | |
+| W17 | Make the window 900 px or wider, click a run, then open each filter dropdown over the detail | The detail beside the list draws whole (its backdrop, KPI figures, breakdown and buttons over nothing of the list), the filter menus open over it, and the resize grip still takes the drag | A screenshot |
 
 ## 7. Share and test mode
 
@@ -166,6 +168,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | H4 | Alt-Z with the HUD shown on a result card | The card is still there when the UI comes back (a hidden parent is not a close) | |
 | H5 | Open the HUD and LootHistory's browser side by side and walk every HUD body (test mode) | The same look: the title *DPS Race* centered in a 30 px title bar in the header gold; section labels (*Race Length*, *Target*) small and gold; buttons, presets, spell rows, chips and the target card's text in the small white font; footers and KPI captions small and gray; Title Case labels and buttons, no ALL-CAPS word but *STOP*; the race clocks, *STOP* and the Damage / DPS figures still large | A screenshot beside LootHistory |
 | H6 | Hover each title-bar control in turn (Results, settings, lock, close), sliding straight from one to the next, then off the bar | The control under the pointer turns gold, the rest stay gray, all at full alpha; sliding from one to the next never leaves both gold or neither; off the bar all four are gray again; each still shows its tooltip (the close control has none). The close control is gold, not red | Which control stayed gold or never turned |
+| H7 | Drag the HUD partly under another addon's MEDIUM window (or Blizzard's character frame), then click the HUD | The click brings the HUD in front of it; the Results window, the Settings panel and confirmation popups still draw over the HUD | Which frame stayed in front |
 | D1 | `/dr disable` | Every right-click menu entry but *Enabled* is grayed; `/dr help`, `config`, `list` and `diagnostics` still answer; the feature verbs print the one disabled line | |
 | D2 | Press each key binding while disabled | The one disabled line, nothing else | |
 | D3 | `/dr enable` | Everything comes back without a `/reload`; a race armed before the disable is gone, a stored running run resumes like a reload | |

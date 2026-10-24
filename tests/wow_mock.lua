@@ -10,6 +10,9 @@ local base = dofile(root .. "/tests/_kit/mock_base.lua")
 -- The kit's binding model (kit revision 42): the installer keeps no state of its own, so it is read
 -- once and run on every fresh mock.
 local installBindings = dofile(root .. "/tests/_kit/mock_bindings.lua")
+-- The kit's frame-layer recorder (kit revision 42), on every mock: the addon sets levels relative to a
+-- parent (core/Constants.lua LAYERS), and the base alone answers GetFrameLevel with the frame itself.
+local installLayers = dofile(root .. "/tests/_kit/mock_layers.lua")
 
 local function build()
     local M = base()
@@ -27,6 +30,7 @@ local function build()
         end
         return f
     end
+    installLayers(M)
 
     -- TOC metadata, read through LibKa0s-Env-1.0 (core/EnvSetup.lua).
     M.__toc = {

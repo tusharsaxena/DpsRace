@@ -67,7 +67,7 @@ test("countdown: its own frame, center of UIParent, above everything, never taki
     running(f, 30)
     f:to(120)
     local u = assert(f.C.__ui())
-    assertEqual(u.frame.__strata, "FULLSCREEN_DIALOG")
+    assertEqual(u.frame.__strata, "FULLSCREEN")
     assertEqual(u.frame.__mouse, false)
     assertTrue(u.frame ~= f.Hud and u.frame ~= (f.NS.Hud.__ui() or {}).frame, "not the HUD's frame")
 end)

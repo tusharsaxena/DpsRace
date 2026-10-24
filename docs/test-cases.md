@@ -304,6 +304,15 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
+### test_layers.lua (6)
+
+- layers: one table names the addon's tiers by the standard's keys
+- layers: no strata string and no bare level number at a call site
+- layers: the Race HUD is MEDIUM, toplevel and clamped
+- layers: the Results window is HIGH, toplevel and clamped
+- layers: the detail pane sits one band over the list pane, never by creation order
+- layers: the countdown is FULLSCREEN, below every menu
+
 ### test_results.lua (26)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
@@ -594,6 +603,7 @@ Total.
 | test_format.lua | 7 |
 | test_hud.lua | 58 |
 | test_countdown.lua | 20 |
+| test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
 | test_settings.lua | 18 |
@@ -613,4 +623,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **475** |
+| **Total** | **481** |
