@@ -103,7 +103,8 @@ modules\Style.lua
 modules\Hud_Appearance.lua
 modules\Hud_Breakdown.lua
 # The damage chart and the pace bar (#2, #3). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua)
-# and captures NS.Style at FILE SCOPE; modules\Hud_States.lua and modules\Results_Detail.lua build it at
+# and captures NS.Style at FILE SCOPE, and modules\Hud.lua reads its PACE_H at FILE SCOPE (through
+# NS.HudStates.MinContentHeight()); modules\Hud_States.lua and modules\Results_Detail.lua build it at
 # CALL time.
 modules\Hud_Chart.lua
 modules\Hud_States.lua

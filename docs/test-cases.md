@@ -251,7 +251,7 @@ Total.
 - hud: the sticky-combat hint asks for the player's spells once per race
 - hud: the live rows stop above the caption and CANCEL at every window height
 - hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
-- hud: the default window size shows every default live row
+- hud: the default window size shows every default live row under the chart and the pace bar
 - hud: the result card's rows stop above its buttons at every window height
 - hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
@@ -291,6 +291,26 @@ Total.
 - hud: the running clocks, figures and spell rows take their HUD Appearance blocks
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
+
+### test_chart.lua (17)
+
+- chart: the bucket count is the length in whole seconds, at most 60
+- chart: a capture copies the handle into each bucket it is the first read at or after
+- chart: a shared session's buckets stay empty, and the store never inspects a value
+- chart: Drawable answers only a scored run with slices this session
+- chart: the pace is the best's damage spread evenly over its length
+- chart: each column holds exactly the handle read at its boundary, and none fills early
+- chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar
+- chart: with a best the scale is its damage x 1.15 (A), with its level, its pace and the pace bar
+- chart: hidden, with the pace bar, while the run is on a shared session
+- chart: Show damage chart and Show pace bar turn each off
+- chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last
+- chart: the chart steps aside at the minimum height; the rows keep their three
+- chart: the overlay sits one band over the plot's columns
+- chart: the result card draws the race's slices to its plain final damage, and none without them
+- chart: the Results detail shows the chart for a run raced this session only
+- chart: a lost run has no chart on the card or in the detail
+- chart: test mode draws the sample's chart against a sample best, then on its result card
 
 ### test_countdown.lua (20)
 
@@ -654,6 +674,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
+| test_chart.lua | 17 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 42 |
@@ -676,4 +697,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **530** |
+| **Total** | **547** |

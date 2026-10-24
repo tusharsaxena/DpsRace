@@ -57,7 +57,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -167,7 +167,9 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 `modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
 countdown text is one `OnUpdate` on the window, attached only while the race is RUNNING (20 Hz) or
-STOPPING (4 Hz: no clock, and combat may hold for minutes), and that is all.
+STOPPING (4 Hz: no clock, and combat may hold for minutes), and one `C_Timer` at the damage chart's
+next bucket boundary while the window is shown and the race RUNNING (at most 60 a race, so a quiet
+stretch still fills its bucket; one more read at the buzzer fills the last), and that is all.
 `Hud.Suspend()` drops all of it at the stand-down.
 
 `modules/Countdown.lua` registers no game event: the race's final seconds are one `C_Timer` per
@@ -198,8 +200,9 @@ Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 `core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
 Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
-mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with one level band, `LEVEL.DETAIL`, that
-lifts the Results detail pane over the Runs pane it sits inside. The StaticPopups, the debug console,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
+which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
+which lifts the damage chart's best line and pace diagonal over its columns. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
 each frame's strata, level and toplevel.
 
@@ -222,7 +225,11 @@ each frame's strata, level and toplevel.
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
   (`modules/Format.lua`, the one instance) and `C_Spell`'s name and icon lookups; the one question it
-  asks of one is `== nil`. The HUD window is a plain non-secure frame, so it opens and redraws in
+  asks of one is `== nil`. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
+  the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
+  total go to `SetValue`, and a scale with no best is the live total itself through
+  `SetMinMaxValues`; the pace bar's range, the best's line and the diagonal are plain numbers from
+  the stored best and `GetTime()`. The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
@@ -268,6 +275,15 @@ each frame's strata, level and toplevel.
   flag says.
 - **The HUD's minimum height is set at the default look.** A taller *Row height*, or larger clock or
   figure fonts, leave fewer spell rows at the minimum height; the window can be made taller.
+- **The damage chart is this session's only** (#2). Its buckets hold the live totals read in
+  combat, which stay secret, and the client writes a secret to SavedVariables as `nil` (the reload
+  probe, 2026-10-25). So a run raced before the last `/reload` or login shows no chart on the
+  result card or in the Results detail, and a race run with the HUD closed captured none. A bucket
+  is filled by the HUD's first read at or after its boundary; one noticed more than a second late
+  stays empty.
+- **The chart and the pace bar compare by eye only** (#3). A secret cannot be compared, so neither
+  says ahead or behind, and the pace is the best's *average* (its damage spread evenly over its
+  length): the best has no stored curve, so an opener-heavy best looks easy early on.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 

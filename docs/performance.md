@@ -13,7 +13,7 @@ test when capture is off.
 |---|---|---|
 | `combatEvent` | `NS:OnCombatChanged` in `core/DpsRace.lua` (`PLAYER_REGEN_DISABLED`, and `PLAYER_REGEN_ENABLED` when visibility needs it) | It runs on every combat edge |
 | `raceEvent` | the event handler in `modules/Watchers.lua`: every meter, combat, death and cast event while a race is armed, running or stopping | `DAMAGE_METER_COMBAT_SESSION_UPDATED` and the cast events fire throughout a run |
-| `hudLive` | one live read and redraw in `modules/Hud.lua` (`Meter.ReadLive`, the KPIs and the pooled spell rows) | throttled to `live.hz` (4 Hz by default), coalesced from `DAMAGE_METER_COMBAT_SESSION_UPDATED`, only while the HUD is on screen and the race RUNNING, never from `OnUpdate` |
+| `hudLive` | one live read and redraw in `modules/Hud.lua` (`Meter.ReadLive`, the KPIs, the pooled spell rows, the damage chart's columns and the pace bar; the read's total copied into the chart's bucket, `modules/Slices.lua`) | throttled to `live.hz` (4 Hz by default), coalesced from `DAMAGE_METER_COMBAT_SESSION_UPDATED`, plus one `C_Timer` read at each chart bucket boundary (at most 60 a race), only while the HUD is on screen and the race RUNNING, never from `OnUpdate`; one more read at the buzzer |
 | `hudTick` | the HUD window's `OnUpdate` pass in `modules/Hud.lua`: the countdown text, the stop figures, the Stop!/Waiting phase | 20 Hz while RUNNING, 4 Hz while STOPPING; attached only while the window is shown and the race in one of them |
 
 The HUD's other work is not a hot path: its own AceEvent target (target and regen edges while shown)

@@ -41,17 +41,17 @@ Mockup: https://claude.ai/artifact/AMWeF6JJ3z9JTLgeBaKGZJ (boards A and B).
 
 ### M2: #2 the live damage chart and #3 the pace bar
 
-- [ ] M2.1 Slice capture: the race keeps one opaque live total per bucket (at most 60), in memory only,
+- [x] M2.1 Slice capture: the race keeps one opaque live total per bucket (at most 60), in memory only,
   keyed by run id. This is the in-session store.
-- [ ] M2.2 `modules/Hud_Chart.lua`: pooled vertical StatusBars in the running body.
+- [x] M2.2 `modules/Hud_Chart.lua`: pooled vertical StatusBars in the running body.
   - Scale (A): the best's final damage × 1.15, plain, with the best line and the pace diagonal.
   - Scale (B): the current live total, secret.
   - Hidden on a shared session.
   - Settings: *Show damage chart* and *Show pace bar*.
-- [ ] M2.3 The #3 live pace bar: `SetMinMaxValues(0, 2 × pace)`, `SetValue(live.total)`, and a center tick.
-- [ ] M2.4 After the race: the HUD result card and the Results detail draw the in-session slices, scaled
+- [x] M2.3 The #3 live pace bar: `SetMinMaxValues(0, 2 × pace)`, `SetValue(live.total)`, and a center tick.
+- [x] M2.4 After the race: the HUD result card and the Results detail draw the in-session slices, scaled
   to the run's plain final damage. There is no section for runs without slices.
-- [ ] M2.5 Tests (the handle identity per column, no fill before its boundary, hidden on a shared
+- [x] M2.5 Tests (the handle identity per column, no fill before its boundary, hidden on a shared
   session, pace math), docs and smoke rows.
 
 ### M3: #6 Equipment and talents

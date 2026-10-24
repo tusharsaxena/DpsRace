@@ -20,7 +20,9 @@ Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), 
 R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new), and W5 again for its timing strip (its marks drew under the segments; every line mark is now one size, Restart is violet, and the legend is two rows: Race and Tail, then Grace, Late cast, Combat ended and Restart).
 
 Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
-SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7).
+SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7); section 12's SM-DR-CH1 to
+SM-DR-CH8 (new: the damage chart and the pace bar, #2 and #3); and S3 again (the Race HUD tab's new
+*Chart and pace* subsection).
 
 ## How to run it
 
@@ -53,7 +55,7 @@ SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7).
 |---|---|---|---|
 | S1 | Open *Settings → AddOns* right after login | *Ka0s DPS Race* is there before the panel was ever opened | Whether `/dr` opens it |
 | S2 | Open the landing page, switch pages and come back | The logo, notes line and command list show; the logo is never drawn under the list | A screenshot |
-| S3 | Open General, then HUD | General has two tabs: *Master controls* (rows in the standard's order) and *Keybindings*. HUD has two: *Race HUD* (*Display* and *Live breakdown*) and *HUD Appearance* | A screenshot |
+| S3 | Open General, then HUD | General has two tabs: *Master controls* (rows in the standard's order) and *Keybindings*. HUD has two: *Race HUD* (*Display*, *Live breakdown* and *Chart and pace*) and *HUD Appearance* (its last block *Damage chart*) | A screenshot |
 | S4 | Look at the page order | General, Race, HUD, History, Profiles: Race and History each a one-tab strip with subsection headings, HUD just above History; there is no *Live breakdown* page | A screenshot |
 | S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
 | S6 | On HUD > Race HUD, set *Spell rows shown* to 3, then 15, then 0, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*); at 0 as many as fit, the caption reads *1-N of M*, and the mouse wheel scrolls the list a row a notch, stopping at either end. Let the race finish: the result card lists the same way (3 rows, as many as fit, then every spell with the wheel at 0), not a fixed top 5 | A screenshot |
@@ -281,3 +283,20 @@ complete run on another board (another length or target type).
 | SM-DR-CP2 | Open the best itself, then a run alone on its board, then a lost run | The best's toggle reads *Compare vs runner-up* and compares with the next run on its board; the lone run's toggle is grayed and its tooltip says there is nothing to compare with; a lost run's toggle is grayed and its tooltip says the run has no score (it was lost) | A screenshot |
 | SM-DR-CP3 | With a run open, right-click another row and pick *Compare With This Run*; then pick a run on another board; then open the picked run itself; then press *Clear Pick* | The toggle turns on and reads *Compare vs* the picked run's date, the second column is headed *Picked*; for the run on another board an amber line says the boards differ; *Clear Pick* goes back to *Compare vs best* and hides itself. The menu entry is grayed on the run already open and on a lost run. Opening the picked run itself compares it with its board, and *Clear Pick* still shows and clears the pick. After a `/reload` there is no pick and the toggle is off | A screenshot of the pick, and the chat or Lua error if any |
 | SM-DR-CP4 | Hover the toggle, *Clear Pick*, the amber note, the score table and a compared spell row, in the expanded view and then the collapsed one | Each shows its tooltip under itself, titled in gold; a compared row shows the client's spell tooltip beside the window, then each side's exact damage and share and the difference; in the collapsed view the compare draws in the list's place, as wide as the window | A screenshot of each view |
+
+## 12. The 2026-10-25 pass: the damage chart and the pace bar (#2, #3)
+
+Needs a spec with no complete run yet on one board (say 0:30 on a single-target dummy) and, for the
+best-scaled rows, a complete run on that board. Keep `/console scriptErrors 1` on: every value the
+chart draws is secret in combat, so a forbidden operation shows as a Lua error at once.
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-CH1 | With no best on the board, arm 0:30 and race it; take a screenshot at about 0:15 left | Board B: under the KPIs, *Damage over the race* in gold with *first race on this board* at its right, a dark plot with one column a second rising from the left, the newest column always full (the scale is your damage so far), and *0:00 / 0:15 / 0:30* under it. No gold line, no diagonal, no pace bar. The spell rows sit under the chart and stop above the caption | A screenshot, and the Lua error if any |
+| SM-DR-CH2 | Race the same board again (it now has a best); screenshot at about 0:15 left | Board A: the header's right reads *vs best pace*; a gold dashed line near the top with *Best <damage>* at its right; a dashed diagonal from the bottom-left corner to the gold line at the right edge; the columns climb against it and stop short of the top (the scale is the best x 1.15); a column past the best clamps at the top | A screenshot |
+| SM-DR-CH3 | In the same race, watch the pace bar under the KPIs | *vs best pace* at its left, a bar with a white tick at its middle; the fill sits near the tick while you keep the best's average pace, and moves smoothly as the clock runs. It never says ahead or behind and never changes color | A short clip or two screenshots |
+| SM-DR-CH4 | Pull a dummy, stop, and arm again while its DoTs still tick (so the race carries the last fight's session), then race it | The run is flagged *Shared session*; while it runs there is no chart and no pace bar, and its result card has no chart either | A screenshot of the running HUD |
+| SM-DR-CH5 | Let a race finish | The result card shows the same chart between its chips and the spell rows, every column to scale against the run's final damage (the last column full or nearly so); turning *Show damage chart* off removes it | A screenshot |
+| SM-DR-CH6 | Open that run in the Results window (*Details*), then `/reload` and open it again | Before the reload the detail shows *Damage over the race* under the breakdown, with the same columns, and its tooltip says only this session's runs have it; after the reload the section is gone and the timing strip moves up | A screenshot of each |
+| SM-DR-CH7 | On HUD > Race HUD turn *Show damage chart* and *Show pace bar* off and on during a race; on HUD Appearance change *Damage chart*'s color, texture and *Chart height* | Each takes effect on the next redraw; the chart's columns and the pace bar take the color and texture; a taller chart leaves fewer spell rows, and at the HUD's minimum height the chart steps aside so three rows still show | A screenshot |
+| SM-DR-CH8 | Turn test mode on and watch it through to the result card | The running sample shows a chart against a sample best (gold line, diagonal) and a pace bar; the sample result card shows its chart | A screenshot |
