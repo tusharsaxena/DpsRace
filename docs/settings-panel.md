@@ -148,8 +148,9 @@ after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 #### Tab: Results table
 
 The Runs list's Damage and DPS cells (the owner's call, 2026-10-24, after MultiMeters' bars): a
-track across the cell, a fill as long as the run's share of the largest figure the filters pass, and
-the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
+track across the cell, a fill from 10% of the cell (the smallest figure among the runs the filters
+pass) to 100% (the largest), linear between them and full when the view holds one run or one figure,
+and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
 Font, Background. Each class color is the row's character's: the row describes that run
 (`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.
 Every row's reaction is `NS.Results.Refresh()`.

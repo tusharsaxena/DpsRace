@@ -205,7 +205,7 @@ end
 local Cells = {}
 
 -- A text cell; a column with `bar` also draws a track across the cell and a fill over it, as long as
--- its value against the largest in the list (Table:SetData), MultiMeters' bar cell. Its look is the
+-- its value's place between the smallest and the largest in the list (Table:SetData, Tbl.BarShare). Its look is the
 -- column's `barStyle(run)`: { texture, r, g, b, a, track = { r, g, b, a }, font = a resolved font }.
 function Cells.text(row, col)
     local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
@@ -261,11 +261,24 @@ end
 
 local Bind = {}
 
--- The bar's width: the cell's, times the run's share of the list's largest value. Plain numbers off
--- stored runs, and the cell's width is the column layout's, never a measured one.
+Tbl.BAR_FLOOR = 0.10        -- the share of the cell the smallest value in the list draws at
+
+--- A bar's share of its cell: linear from the list's smallest value (Tbl.BAR_FLOOR) to its largest
+--- (1). One value, or every value equal, draws full; a value that is not a number draws nothing (0).
+--- @return number share  0, or BAR_FLOOR..1
+function Tbl.BarShare(v, min, max)
+    if type(v) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then return 0 end
+    if max <= min then return 1 end
+    local t = math.max(0, math.min(1, (v - min) / (max - min)))
+    return Tbl.BAR_FLOOR + (1 - Tbl.BAR_FLOOR) * t
+end
+
+-- The bar's width: the cell's, times the run's share (Tbl.BarShare) between the list's smallest and
+-- largest value. Plain numbers off stored runs, and the cell's width is the column layout's, never a
+-- measured one.
 local function bindBar(cell, col, run)
-    local v, max = col.bar(run), col.barMax
-    local on = type(v) == "number" and v > 0 and type(max) == "number" and max > 0
+    local share = Tbl.BarShare(col.bar(run), col.barMin, col.barMax)
+    local on = share > 0
     local style = col.barStyle and col.barStyle(run)
     if style then
         cell.bar:SetTexture(style.texture or WHITE)
@@ -276,7 +289,7 @@ local function bindBar(cell, col, run)
         if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
     end
     cell.bar:SetShown(on)
-    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.barW or 0) * math.min(1, v / max) + 0.5))) end
+    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.barW or 0) * share + 0.5))) end
 end
 
 function Bind.text(cell, col, run)
@@ -574,16 +587,19 @@ end
 --- Replace the list (any order) and redraw it sorted, keeping the scroll where it can.
 function Table:SetData(list)
     self.data = list or {}
-    -- Each bar column's scale: the largest value in the whole list (every run the filters pass,
-    -- scrolled into view or not), so the bars compare the runs the view holds.
+    -- Each bar column's scale: the smallest and the largest value in the whole list (every run the
+    -- filters pass, scrolled into view or not), so the bars compare the runs the view holds.
     for _, col in ipairs(self.columns) do
         if col.bar then
-            local max
+            local min, max
             for _, run in ipairs(self.data) do
                 local v = col.bar(run)
-                if type(v) == "number" and (max == nil or v > max) then max = v end
+                if type(v) == "number" then
+                    if min == nil or v < min then min = v end
+                    if max == nil or v > max then max = v end
+                end
             end
-            col.barMax = max
+            col.barMin, col.barMax = min, max
         end
     end
     self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)

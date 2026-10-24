@@ -181,7 +181,7 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
 end)
 
-test("results: Damage and DPS carry bars scaled to the largest run the filters pass", function()
+test("results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)", function()
     local i = inst()
     seed(i, {
         mkRun("big", { result = { damage = 40000000, dps = 200000 } }),
@@ -201,17 +201,28 @@ test("results: Damage and DPS carry bars scaled to the largest run the filters p
         end
         return out
     end
+    local function at(share, cellW) return math.floor(cellW * share + 0.5) end
     local w = widths()
     assertEqual(w.big.damage, w.big.w, "the largest run the view holds fills its cell")
-    assertEqual(w.half.damage, math.floor(w.half.w / 2 + 0.5))
-    assertEqual(w.half.dps, math.floor(w.half.dw / 2 + 0.5))
+    assertEqual(w.half.damage, at(0.1, w.half.w), "the smallest draws at 10%")
+    assertEqual(w.half.dps, at(0.1, w.half.dw))
     assertEqual(w.lost.damage, 0, "a lost run has no bar")
-    -- All characters: the mage's run is now the largest, and every bar rescales to it.
+    -- All characters: the mage's run is now the largest, and every bar rescales between the two ends.
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
     w = widths()
     assertEqual(w.mage.damage, w.mage.w)
-    assertEqual(w.big.damage, math.floor(w.big.w / 2 + 0.5))
+    assertEqual(w.half.damage, at(0.1, w.half.w))
+    assertEqual(w.big.damage, at(0.1 + 0.9 * (20 / 60), w.big.w), "linear between the smallest and the largest")
+    -- One run in the view, or every value equal, draws full; no value draws nothing.
+    local Tbl = i.NS.ResultsTable
+    assertEqual(Tbl.BarShare(5, 5, 5), 1)
+    assertEqual(Tbl.BarShare(7, 7, 7), 1)
+    assertEqual(Tbl.BarShare(nil, 1, 9), 0)
+    pane:SetFilter("char", "current")
+    pane:SetFilter("onlyBest", true)
+    w = widths()
+    assertEqual(w.big.damage, w.big.w, "the only run in the view fills its cell")
 end)
 
 test("results: the bars take History > Results table's look; the track can take the run's class", function()
