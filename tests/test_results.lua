@@ -178,10 +178,25 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "top" then badge = row.cells.status end
         if row.run.id == "slow" then other = row.cells.status end
     end
-    assert(badge, "the max run is drawn")
-    assertEqual(badge.fs.__text, "Max", "the view holds the top run: Max")
+    assert(badge, "the top run is drawn")
+    assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
+    assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
+    -- A second spec in the view (the mage's run): now the view-wide top is Max.
+    seed(i, {
+        mkRun("top", { result = { damage = 27000000, dps = 150000 } }),
+        mkRun("slow", { result = { damage = 20000000, dps = 100000 }, date = NOW - 2 * HOUR }),
+        mkRun("mage", { char = "mage", result = { damage = 1, dps = 90000 }, date = NOW - 4 * HOUR }),
+    })
+    runsPane(i):SetFilter("char", "all")
+    runsPane(i):SetFilter("spec", "all")
+    for _, row in ipairs(visible(runsPane(i))) do
+        if row.run.id == "top" then badge = row.cells.status end
+        if row.run.id == "slow" then other = row.cells.status end
+    end
+    assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
+    assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
     assertEqual(other.fs.__text, "Complete")
     assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
     assertEqual((Runs.Status(by.slow)), "complete")

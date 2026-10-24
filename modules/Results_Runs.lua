@@ -243,7 +243,8 @@ end
 -- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
 -- Each tag is its icon before its word, both in the tag's own hue, and every hue is distinct (the
 -- owner's call, 2026-10-25). Max is the view's: the complete run with the highest DPS the filters
--- pass. Spec best is the board's (spec x dummy type x length).
+-- pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best is the
+-- board's (spec x dummy type x length).
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -291,6 +292,21 @@ function Runs.Status(run, top)
     end
     local tag = Runs.STATUS[key]
     return key, L[tag.label], tag.color, tag.icon
+end
+
+--- Whether the complete runs in `runs` span more than one spec: only then is a view-wide Max worth a
+--- tag of its own (the owner's call, 2026-10-25). Within one spec the top run is already its Spec best.
+--- @param runs table  run records
+--- @return boolean
+function Runs.ManySpecs(runs)
+    local first
+    for _, run in ipairs(runs or {}) do
+        local spec = run.status == "complete" and run.char and run.char.specID
+        if spec ~= nil and spec ~= false then
+            if first == nil then first = spec elseif spec ~= first then return true end
+        end
+    end
+    return false
 end
 
 --- The max DPS the v/s Max column measures against: the highest among the complete runs in `runs`
@@ -381,13 +397,17 @@ function Runs.Columns()
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
           barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
         { key = "vsMax", label = L["v/s Max"], width = 56, desc = true,
-          scan = function(list) view.top = Runs.MaxDps(list) end,
+          scan = function(list)
+              view.top = Runs.MaxDps(list)
+              -- The Max tag only where the view spans specs; v/s Max measures against the top regardless.
+              view.maxTag = Runs.ManySpecs(list) and view.top or nil
+          end,
           sort = function(run) return Runs.VsMax(run, view.top) end,
           text = function(run) return vsMaxText(run, view.top) end },
         { key = "status", label = L["Status"], width = 90, kind = "badge", desc = false,
-          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.top))] end,
+          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run, view.top)
+              local _, text, color, icon = Runs.Status(run, view.maxTag)
               return text, color, icon
           end },
         { key = "flag", label = "", width = 14, kind = "flag" },
