@@ -34,3 +34,33 @@
   `ka0s-bounded luacheck .`: 0 warnings / 0 errors in 81 files. Largest authored `.lua` file:
   `tests/test_hud.lua`, 1109 lines (cap 1500). `tests/run.lua --list` leaves `docs/test-cases.md`
   unchanged.
+
+## Re-vendor after the tag moved (M3)
+
+- **Tag moved (LK-95, local, not pushed):** v1.77.0 was commit
+  `78240f7b2d69df27b74fc9280cbfbf7b95dd4f1f` (tag object `7380d3662be0568acf9a0d224a6aef8ac6df93ce`)
+  and is now commit `afae2f75cb7ff61c57156d9a3d8a6b2b9f4c5e10` (tag object
+  `b2b8ee25c5f9fa26db146254bf786b366dec986b`). `git -C ../LibKa0s rev-parse v1.77.0^{}` prints the new
+  commit.
+- **Per-file minors that moved:** OptionsCompose 8 -> 11 (minor 9 Master controls notes, the preview
+  lock and *Master opacity*; minor 10 tooltips beside labels on the group composers; minor 11
+  `O.ResetAllTooltip`). Every other file in `libs/LibKa0s/` is byte-identical between the two
+  commits (`git -C ../LibKa0s diff --stat 78240f7 afae2f7 -- LibKa0s testkit` names only
+  `LibKa0s/OptionsCompose.lua`). Kit revision unchanged at 42; `tests/_kit/` took no change.
+- **Copy:** `libs/LibKa0s/` and `tests/_kit/` copied whole from `git -C ../LibKa0s archive v1.77.0
+  LibKa0s testkit tools`. Both content diffs (`diff -r --strip-trailing-cr`) empty before the prune.
+  The provenance line stays `v1.77.0` (it records no sha or kit revision), and the `LibKa0s icons:`
+  line is kept unchanged.
+- **Icons:** `lua <scratch>/tools/prune-icons.lua .`: "17 icon(s) declared; kept 18 file(s), removed
+  5822", every removed file a catalog arrival of the copy; no tracked icon removed.
+- **Contract blocker:** `test_surface_parity` failed after the copy ("the degraded stub diverges from
+  the live surface in 1 place(s) — ResetAllTooltip is missing (live: function)"). Resolved in the
+  same commit: `settings/OptionsSetup.lua`'s Options degradation stub gains `ResetAllTooltip`,
+  inert (returns "").
+- **Adopted here:** nothing. DR-LY adopts the layout surfaces.
+- **Standards half:** nothing. The addon's three-place standards reference is URL-only and names no
+  version, so the v2.88.0 close (WS-95) leaves no drift.
+- **Gates:** `ka0s-bounded lua tests/run.lua` after the copy: 480 passed, 1 failed (the parity blocker
+  above), 1 skipped; after the stub fix: 481 passed, 0 failed, 1 skipped, 482 total.
+  `ka0s-bounded luacheck .`: 0 warnings / 0 errors in 83 files. Largest authored `.lua` file:
+  `tests/test_hud.lua`, 1109 lines (cap 1500).

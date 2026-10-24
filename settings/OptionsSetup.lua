@@ -116,6 +116,7 @@ if not lib then
     Helpers.UnnamedCandidates = function() return nil end
     Helpers.ID_NAME_HINT      = {}
     Helpers.StrataTooltip     = function() return "" end
+    Helpers.ResetAllTooltip   = function() return "" end
     Helpers.KEYBINDS_UNCHANGED = "Key bindings are not changed."
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
