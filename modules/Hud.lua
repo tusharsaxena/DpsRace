@@ -889,11 +889,20 @@ function Act.details()
     openRun(NS.Race.Current())
 end
 
+--- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
+--- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
+--- the idle body is set to the same length and target count, so Arm Race repeats the race.
 function Act.raceAgain()
     if previewOn() then return false end
     local run = NS.Race.Current()
     local length = run and run.race and run.race.length or currentLength()
-    return arm(length, run and run.target and run.target.count)
+    local count = run and run.target and run.target.count
+    -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
+    autoShown = false
+    if NS.Race.State() == S().RESULT then NS.Race.Cancel() end
+    pick.count = count
+    Act.pickLength(length)
+    return true
 end
 
 function Act.share()

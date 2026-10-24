@@ -695,6 +695,15 @@ test("hud: Race again re-arms the same length; Details and Share reach their mod
     b.w.share:__fire("OnClick")
     assertTrue(shared == run)
     b.w.again:__fire("OnClick")
+    assertEqual(f.Race.State(), "idle", "Race Again opens the Arm Race screen, it does not arm")
+    assertEqual(current(f), "idle")
+    assertTrue(f.Hud.IsShown(), "the window stays open")
+    assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "the run is kept")
+    local idle = body(f).w
+    local picked
+    for _, p in ipairs(idle.presets) do if p.selected then picked = p.length end end
+    assertEqual(picked, 30, "the same length is picked")
+    idle.arm:__fire("OnClick")
     assertEqual(f.Race.State(), "armed")
     assertEqual(f.Race.Current().race.length, 30)
 end)

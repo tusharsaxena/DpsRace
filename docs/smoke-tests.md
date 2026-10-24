@@ -110,7 +110,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *Discard Run*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
 | R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
 | R12 | Read the result card | Damage, DPS (damage ÷ 30.0 exactly; check with the detail), the best delta (*New best* on a first run), the flag chips, the top five spells with %, *Race Again*, *Details*, *Share*; the chat prints the score line once | A screenshot and the score line |
-| R13 | *Race Again* | Re-arms 0:30 against the same target | The armed length |
+| R13 | *Race Again* | The window stays open on the *Arm Race* screen with 0:30 picked and the same target count; nothing is armed until *Arm Race* is pressed, which arms 0:30 | The screen it went to |
 | R14 | Stop attacking at about 0:12 left and drop combat | The run becomes incomplete: the card says *Incomplete (combat ended at m:ss)* and its DPS is damage ÷ the time fought; it never appears on the Bests board | A screenshot |
 | R15 | Let the Dungeoneer's dummy kill you mid-race | *Incomplete: died* on the card | A screenshot |
 | R16 | Cancel while armed, and while running | Nothing is stored (the Results count does not move); the HUD returns to idle | The count before and after |
@@ -251,7 +251,7 @@ detail's timing strip.
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| SM-DR-AR1 | On the cleave dummies, race 0:30 with DoTs (a Blood DK's Blood Plague, a Warlock's Wither), let the result show, then *Race Again* at once while the DoTs still tick, and pull | The second race starts on the first hit, every time. Repeat five times | The `Race` debug lines from the arm to the pull (*held back*, *adopted as shared*, *replaces the shared session*) |
+| SM-DR-AR1 | On the cleave dummies, race 0:30 with DoTs (a Blood DK's Blood Plague, a Warlock's Wither), let the result show, then *Race Again* and *Arm Race* at once while the DoTs still tick, and pull | The second race starts on the first hit, every time. Repeat five times | The `Race` debug lines from the arm to the pull (*held back*, *adopted as shared*, *replaces the shared session*) |
 | SM-DR-AR2 | After SM-DR-AR1, open the second run's detail | Either clean (a new session), or flagged *Shared session: the damage it held at the arm was taken off*, with a damage total in line with the race (not the two races added together) | The detail's flag text and the two runs' damage |
 | SM-DR-ST1 | Open the HUD result card of a complete run and of an incomplete one | A *Time 0:30 +X.Xs* chip on the complete card (the DoT tail), *Time 0:12 / 0:30* on the incomplete one | A screenshot of each |
 | SM-DR-ST2 | Open the detail of each | The header's third item reads the same time as the table's *Time* cell | A screenshot |
