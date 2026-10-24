@@ -37,7 +37,7 @@ in the spec, sections 1, 2 and 13
 | Use target health as a start signal | Other players hitting a shared dummy fire it before your first hit (spec §2). |
 | "Time to deal X damage", or a goal bar | A threshold crossing is a comparison on a secret value, and the meter keeps no timeline. Dropped 2026-10-23. |
 | PvP burst races (duels, events, leaderboards) | Parked until the duel probe runs ([issue #1](https://github.com/tusharsaxena/DpsRace/issues/1)). |
-| Share runs between players, or compare two runs side by side | Phase 2. The run record already stores what both would need. |
+| Share runs between players | Phase 2. The run record already stores what it would need. Comparing two of your own runs side by side shipped in the Results detail (#7). |
 | Classic or any non-Retail client | Retail only: one `## Interface:` line (toc-file-§3). |
 | *Show results* or *Arm last race* on the launcher's menu | The menu is `LibKa0s-Launcher-1.0`'s fixed set (launcher-§2). Both are on the HUD, a slash verb and a key binding (spec §6.4). |
 | Settings for the Results window's filters | The filters are view state: each login starts at *All* (spec §6.2). |

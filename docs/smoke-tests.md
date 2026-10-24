@@ -19,6 +19,9 @@ and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
 Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), not yet run: S3, S6,
 R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new), and W5 again for its timing strip (its marks drew under the segments; every line mark is now one size, Restart is violet, and the legend is two rows: Race and Tail, then Grace, Late cast, Combat ended and Restart).
 
+Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
+SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -266,3 +269,15 @@ detail's timing strip.
 | SM-DR-AP4 | Change *Spell bars* (texture, opacity, color, *Use class color*, *Row height*) and *Spell text* | The HUD's live rows, the result card's rows and the Results detail's breakdown all follow; *Use class color* paints the bars in your class color with the opacity kept | Screenshots of the HUD and the detail |
 | SM-DR-AP5 | Press the HUD page's *Defaults*, then `/reload` | Every HUD Appearance row returns to the shipped look (monospace green and red clocks, flat indigo bars) and survives the reload | The row that did not reset |
 | SM-DR-RT1 | Open History > Results table; change each bar's texture, opacity and color, and the bar text; tick *Use class color* on one bar | A *Damage bar*, *DPS bar* and *Bar text* subsection, and no *Background*; every change shows in the open Runs list at once; the class colors are each run's character's (an alt's runs in the alt's color); History's *Defaults* puts it all back | A screenshot of the list |
+
+## 11. The 2026-10-25 pass: compare in the Results detail (#7)
+
+Needs at least three complete runs of one spec, target type and length (one of them the best), and one
+complete run on another board (another length or target type).
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-CP1 | Open a run that is not the best on its board; tick *Compare vs best* under the score; untick it | Ticked: a score table (*This run*, *Best*, *Difference* over *Damage* and *DPS*, the difference green when ahead and red when behind) and, in the plain breakdown's place, every spell of both runs: its name, *This run* and *Best* (the damage, then its share in gray; a dash for a spell one side never cast) and the *Difference* in green or red, sorted by this run's damage. Unticked: the plain breakdown is back. The layout stays inside the pane, nothing overlaps, and the wheel scrolls it | A screenshot of each state |
+| SM-DR-CP2 | Open the best itself, then a run alone on its board | The best's toggle reads *Compare vs runner-up* and compares with the next run on its board; the lone run's toggle is grayed and its tooltip says there is nothing to compare with | A screenshot |
+| SM-DR-CP3 | With a run open, right-click another row and pick *Compare With This Run*; then pick a run on another board; then press *Clear Pick* | The toggle turns on and reads *Compare vs* the picked run's date, the second column is headed *Picked*; for the run on another board an amber line says the boards differ; *Clear Pick* goes back to *Compare vs best* and hides itself. The menu entry is grayed on the run already open and on a lost run. After a `/reload` there is no pick and the toggle is off | A screenshot of the pick, and the chat or Lua error if any |
+| SM-DR-CP4 | Hover the toggle, *Clear Pick*, the amber note, the score table and a compared spell row, in the expanded view and then the collapsed one | Each shows its tooltip under itself, titled in gold; a compared row shows the client's spell tooltip beside the window, then each side's exact damage and share and the difference; in the collapsed view the compare draws in the list's place, as wide as the window | A screenshot of each view |

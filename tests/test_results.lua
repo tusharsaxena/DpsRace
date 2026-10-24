@@ -979,7 +979,7 @@ test("results: Share is grayed without a Share module; a row's right-click menu 
     assert(menu, "no row menu")
     local labels = {}
     for n, e in ipairs(menu.entries) do labels[n] = e.text end
-    assertEqual(table.concat(labels, "|"), "Add Note|Share|\124cffff5555Delete\124r")
+    assertEqual(table.concat(labels, "|"), "Add Note|Share|Compare With This Run|\124cffff5555Delete\124r")
     local shareEntry = menu:Find("Share")
     local channels = {}
     for n, e in ipairs(shareEntry.children) do channels[n] = e.text end

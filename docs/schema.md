@@ -65,6 +65,7 @@ Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.
 | Debug logging flag | `NS.State.debug` (`core/State.lua`) | debug-logging-§5 |
 | Test mode | `NS.Preview` (`modules/Preview.lua`), through the `state.testMode` row (`default = false`, so *Reset all settings* ends it) | preview-mode: on until turned off, ended by combat, by arming a real race and by closing the HUD; its sample run is never stored |
 | Debug console shown | the console itself, through the `state.debugConsole` row | a window toggle, not a setting |
+| The detail's compare: the toggle and the picked run | the detail pane (`comparing`, `pickID`, `modules/Results_Detail.lua`), set by its toggle, the row menu's *Compare With This Run* (`Results.CompareWith`) and *Clear Pick* (`Results.ClearPick`) | view state (#7): the comparison is worked out from the stored runs each time; a pick whose run is deleted falls back to the board's best |
 
 ## Migrations
 

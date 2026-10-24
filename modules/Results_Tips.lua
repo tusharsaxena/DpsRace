@@ -335,3 +335,86 @@ function Tips.Spell(spell, run, rank, count)
     if rank and count then lines[#lines + 1] = dimLine(L["#%d of %d spells"]:format(rank, count)) end
     return lines
 end
+
+-- ── the compare ─────────────────────────────────────────────────────────────────────────────────
+-- The detail's compare (modules/Results_Compare.lua): the toggle, Clear Pick, the different-board
+-- note and the score table under themselves; a compared spell row after the client's spell tooltip.
+
+local function otherName(kind)
+    if kind == "picked" then return L["the run you picked"] end
+    if kind == "runnerUp" then return L["the runner-up on its board (this run holds the best)"] end
+    return L["the best on its board (same spec, target type and race length)"]
+end
+
+-- Who and when the other run was: "Lanfear · 25 Oct 14:02".
+local function otherStamp(other)
+    local char = type(other.char) == "table" and other.char or {}
+    return ("%s \194\183 %s"):format(tostring(char.name or "?"), Tbl().Date(other.date, "%d %b %Y %H:%M"))
+end
+
+local function pctOf(pct) return pct and L["%+.1f%%"]:format(pct) or DASH end
+
+local COMPARE = {}
+
+function COMPARE.toggle(_, other, kind)
+    if not other then
+        return { L["Compare"], L["No other complete run on this run's board (same spec, target type and race length) to compare with."] }
+    end
+    return { L["Compare"], L["Sets this run beside %s: damage, DPS and every spell."]:format(otherName(kind)),
+             dimLine(otherStamp(other)),
+             dimLine(L["Pick another run from a row's right-click menu: Compare With This Run."]) }
+end
+
+function COMPARE.clear()
+    return { L["Clear Pick"], L["Compare with the best on this run's board again."] }
+end
+
+function COMPARE.boards(run, other)
+    if not other then return nil end
+    return { L["Different board"],
+             L["The picked run differs in spec, target type or race length, so the figures are not like for like."],
+             dimLine(L["This run: %s"]:format(CELL.time(run)[1])), dimLine(L["Picked: %s"]:format(CELL.time(other)[1])) }
+end
+
+function COMPARE.score(run, other, kind)
+    if not other then return nil end
+    local k = NS.ResultsCompare.Kpis(run, other)
+    return { L["This run against %s"]:format(otherName(kind)),
+             L["Damage: %s against %s (%s)"]:format(grouped(k.damageA), grouped(k.damageB), pctOf(k.damagePct)),
+             L["DPS: %s against %s (%s)"]:format(grouped(k.dpsA), grouped(k.dpsB), pctOf(k.dpsPct)),
+             dimLine(otherStamp(other)),
+             dimLine(L["Difference: this run against the other, as a share of the other's figure."]) }
+end
+
+--- A compare part's tooltip lines (`key`: toggle, clear, boards, score), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param other table|nil  the run it is compared with
+--- @param kind string|nil  "picked" | "best" | "runnerUp"
+--- @return table|nil
+function Tips.Compare(key, run, other, kind)
+    local fn = COMPARE[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, other, kind)
+    if not ok or type(lines) ~= "table" then return nil end
+    return lines
+end
+
+local function sideLine(label, dmg, pct)
+    if not dmg then return L["%s: not cast"]:format(label) end
+    if not pct then return L["%s: %s damage"]:format(label, grouped(dmg)) end
+    return L["%s: %s damage (%.1f%%)"]:format(label, grouped(dmg), pct)
+end
+
+--- What follows the client's spell tooltip on a compared row: each side's exact damage and share,
+--- and the difference.
+--- @param row table  one of ResultsCompare.Spells' rows
+--- @param kind string|nil
+--- @return table
+function Tips.CompareSpell(row, kind)
+    local delta = row.delta or 0
+    local sign = delta > 0 and "+" or ""
+    return { { sideLine(L["This run"], row.dmgA, row.shareA), 1, 0.82, 0 },
+             sideLine(NS.ResultsCompare.OtherLabel(kind), row.dmgB, row.shareB),
+             L["Difference: %s"]:format(sign .. grouped(delta)) }
+end

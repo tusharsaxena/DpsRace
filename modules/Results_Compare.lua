@@ -6,8 +6,6 @@ local _, NS = ...
 -- and the difference, in place of the plain breakdown. modules/Results_Detail.lua builds and places
 -- these parts through the functions here; the shell (modules/Results.lua) owns the pick.
 --
--- THIS FILE, SO FAR, is the pure half: the parts land with the toggle (plan step M1.2).
---
 -- PLAIN NUMBERS ONLY. Both runs are stored records (every figure went through NS.Secrets on its way
 -- in), so they may be divided, compared and sorted. Spells, Kpis, Default and Target are pure over
 -- the store, so the suites check them without drawing.
@@ -24,6 +22,8 @@ NS.ResultsCompare = Compare
 local Detail = NS.ResultsDetail
 local L = NS.L
 local Tbl = NS.ResultsTable
+local C = Tbl.COLORS
+local FONT = NS.Style.FONT
 
 Compare.VALUE_W = 80        -- each figure column, in the score table and the compared breakdown
 Compare.ROW_H = 15          -- one line of the score table
@@ -172,6 +172,10 @@ end
 
 -- ── text ────────────────────────────────────────────────────────────────────────────────────────
 
+local function figure(v) return v and NS.Format.Number(v) or DASH end
+
+local function pctText(pct) return pct and L["%+.1f%%"]:format(pct) or DASH end
+
 --- A spell figure: its damage, then its share in the caption gray; a dash for a side without it.
 function Compare.SpellFigure(dmg, pct)
     if not dmg then return DASH end
@@ -183,4 +187,234 @@ end
 function Compare.DeltaText(delta)
     if type(delta) ~= "number" or delta == 0 then return "0" end
     return (delta > 0 and "+" or "-") .. NS.Format.Number(math.abs(delta))
+end
+
+local function paint(fs, value)
+    local c = (value == nil or value == 0) and C.dim or (value > 0 and C.green or C.red)
+    fs:SetTextColor(c[1], c[2], c[3])
+end
+
+-- ── the parts ───────────────────────────────────────────────────────────────────────────────────
+
+-- `frame`'s hover: the compare tooltip for `key` under it (NS.ResultsTips.Compare).
+local function hover(p, frame, key)
+    frame:EnableMouse(true)
+    frame:HookScript("OnEnter", function(self)
+        local other, kind = p:CompareTarget(true)
+        local lines = NS.ResultsTips.Compare(key, p.run, other, kind)
+        if lines then Tbl.BelowTip(self, lines) end
+    end)
+    frame:HookScript("OnLeave", Tbl.HideTip)
+    return frame
+end
+
+local function buildBar(p, c, x)
+    x.toggle = CreateFrame("CheckButton", nil, c, "UICheckButtonTemplate")
+    x.toggle:SetSize(20, 20)
+    x.toggle.label = Tbl.Text(x.toggle, FONT.TEXT)
+    x.toggle.label:SetPoint("LEFT", x.toggle, "RIGHT", 1, 0)
+    x.toggle:SetScript("OnClick", function() p:SetComparing(not p.comparing) end)
+    hover(p, x.toggle, "toggle")
+    x.clear = NS.HudStates.Button(c, L["Clear Pick"], function() if p.hooks.clearPick then p.hooks.clearPick() end end)
+    x.clear:SetSize(Compare.CLEAR_W, 18)
+    hover(p, x.clear, "clear")
+    x.boards = Tbl.Text(c, FONT.TEXT, C.amber)
+    x.boards:SetText(L["Different board: the spec, target type or race length differ."])
+    x.boardsHover = CreateFrame("Frame", nil, c)
+    x.boardsHover:SetAllPoints(x.boards)
+    hover(p, x.boardsHover, "boards")
+end
+
+local function buildScore(p, c, x)
+    x.score = Tbl.Panel(c)
+    hover(p, x.score, "score")
+    local f = x.score
+    x.head = { Tbl.Text(f, FONT.HEADER), Tbl.Text(f, FONT.HEADER, nil, "RIGHT"), Tbl.Text(f, FONT.HEADER, nil, "RIGHT"),
+               Tbl.Text(f, FONT.HEADER, nil, "RIGHT") }
+    x.head[2]:SetText(L["This run"])
+    x.head[4]:SetText(L["Difference"])
+    x.lines = {}
+    for i, label in ipairs({ L["Damage"], L["DPS"] }) do
+        local line = { Tbl.Text(f, FONT.CAPTION), Tbl.Text(f, FONT.TEXT, C.text, "RIGHT"),
+                       Tbl.Text(f, FONT.TEXT, C.dim, "RIGHT"), Tbl.Text(f, FONT.TEXT, C.dim, "RIGHT") }
+        line[1]:SetText(label)
+        x.lines[i] = line
+    end
+end
+
+local function buildSpells(_, c, x)
+    x.spellHost = CreateFrame("Frame", nil, c)
+    x.spellHead = { Tbl.Text(x.spellHost, FONT.HEADER), Tbl.Text(x.spellHost, FONT.HEADER, nil, "RIGHT"),
+                    Tbl.Text(x.spellHost, FONT.HEADER, nil, "RIGHT"), Tbl.Text(x.spellHost, FONT.HEADER, nil, "RIGHT") }
+    x.spellHead[1]:SetText(L["Spell"])
+    x.spellHead[2]:SetText(L["This run"])
+    x.spellHead[4]:SetText(L["Difference"])
+    x.rows = NS.Pool.New()
+end
+
+--- Build the compare's parts into the pane `p` (its content `c`), as `p.cmp`.
+function Compare.Build(p, c)
+    local x = {}
+    p.cmp = x
+    buildBar(p, c, x)
+    buildScore(p, c, x)
+    buildSpells(p, c, x)
+    return x
+end
+
+--- Resolve the other run for `p.run` and paint the toggle: its label, enabled only with an other
+--- run, checked while comparing; Clear Pick only while a pick is in use.
+function Compare.Fill(p)
+    local x = p.cmp
+    local other, kind = Compare.Target(p.run, p.pickID)
+    x.other, x.kind = other, kind
+    x.data = other and Compare.Spells(p.run, other) or nil
+    x.toggle.label:SetText(Compare.ToggleLabel(kind, other))
+    local on = other ~= nil
+    x.toggle:SetEnabled(on)
+    local tc = on and C.text or C.dim
+    x.toggle.label:SetTextColor(tc[1], tc[2], tc[3])
+    x.toggle:SetChecked(p:Comparing())
+    x.head[3]:SetText(Compare.OtherLabel(kind))
+    x.spellHead[3]:SetText(Compare.OtherLabel(kind))
+    local k = other and Compare.Kpis(p.run, other) or {}
+    local values = { { k.damageA, k.damageB, k.damagePct }, { k.dpsA, k.dpsB, k.dpsPct } }
+    for i, line in ipairs(x.lines) do
+        local v = values[i]
+        line[2]:SetText(figure(v[1]))
+        line[3]:SetText(figure(v[2]))
+        line[4]:SetText(pctText(v[3]))
+        paint(line[4], v[3])
+    end
+end
+
+-- ── layout ──────────────────────────────────────────────────────────────────────────────────────
+
+-- The figure columns' left edges across `width`, right to left: the difference last.
+local function columns(width, inset)
+    local vw = Compare.VALUE_W
+    local diff = width - inset - vw
+    return { diff - 2 * vw, diff - vw, diff }
+end
+
+local function place(fs, parent, x, y, width)
+    fs:ClearAllPoints()
+    fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    if width then fs:SetWidth(width) end
+end
+
+--- The toggle's line (and the different-board note) at `y` across `cw`; answers the y beneath.
+function Compare.LayoutBar(p, y, cw)
+    local x = p.cmp
+    place(x.toggle, p.content, 0, y)
+    local picked = x.kind == "picked"
+    x.clear:SetShown(picked)
+    if picked then place(x.clear, p.content, cw - Compare.CLEAR_W, y - 1) end
+    y = y - Compare.BAR_H
+    local differs = p:Comparing() and picked and not Compare.SameBoard(p.run, x.other)
+    x.boards:SetShown(differs)
+    x.boardsHover:SetShown(differs)
+    if differs then
+        place(x.boards, p.content, 0, y, cw)
+        y = y - Compare.ROW_H - 2
+    end
+    return y - 2
+end
+
+local function layoutScore(p, y, cw)
+    local x, rowH = p.cmp, Compare.ROW_H
+    local h = 3 * rowH + 10
+    place(x.score, p.content, 0, y)
+    x.score:SetSize(cw, h)
+    local cols, vw = columns(cw, 8), Compare.VALUE_W
+    for line = 0, 2 do
+        local set = line == 0 and x.head or x.lines[line]
+        local ly = -5 - line * rowH
+        place(set[1], x.score, 8, ly, cols[1] - 12)
+        for j = 2, 4 do place(set[j], x.score, cols[j - 1], ly, vw) end
+    end
+    return y - h - 6
+end
+
+local function newRow(host)
+    local row = CreateFrame("Frame", nil, host)
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.texts = { Tbl.Text(row, FONT.TEXT, C.text), Tbl.Text(row, FONT.TEXT, C.text, "RIGHT"),
+                  Tbl.Text(row, FONT.TEXT, C.dim, "RIGHT"), Tbl.Text(row, FONT.TEXT, C.dim, "RIGHT") }
+    row:EnableMouse(true)
+    row:SetScript("OnEnter", function(self)
+        if not self.data then return end
+        local _, kind = Compare.TargetOf(self.pane)
+        Tbl.SpellTip(Tbl.WindowOf(self.pane.frame), self, self.data.id, NS.ResultsTips.CompareSpell(self.data, kind))
+    end)
+    row:SetScript("OnLeave", Tbl.HideTip)
+    return row
+end
+
+local function fillRow(row, data, cw, rowH)
+    local cols, vw, icon = columns(cw, 0), Compare.VALUE_W, rowH - 2
+    row:SetSize(cw, rowH)
+    row.icon:SetSize(icon, icon)
+    row.icon:ClearAllPoints()
+    row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
+    row.icon:SetTexture(NS.HudBreakdown.SpellIcon(data.id))
+    local t = row.texts
+    for j, fs in ipairs(t) do
+        fs:ClearAllPoints()
+        if j == 1 then
+            fs:SetPoint("LEFT", row, "LEFT", icon + 4, 0)
+            fs:SetWidth(math.max(20, cols[1] - icon - 8))
+        else
+            fs:SetPoint("LEFT", row, "LEFT", cols[j - 1], 0)
+            fs:SetWidth(vw)
+        end
+    end
+    t[1]:SetText(NS.HudBreakdown.SpellName(data.id))
+    t[2]:SetText(Compare.SpellFigure(data.dmgA, data.shareA))
+    t[3]:SetText(Compare.SpellFigure(data.dmgB, data.shareB))
+    t[4]:SetText(Compare.DeltaText(data.delta))
+    paint(t[4], data.delta)
+    row.data = data
+end
+
+local function layoutSpells(p, y, cw)
+    local x = p.cmp
+    local data = x.data or {}
+    local rowH, pitch = NS.HudBreakdown.RowHeight(), NS.HudBreakdown.Pitch()
+    local host = x.spellHost
+    place(host, p.content, 0, y)
+    host:SetSize(cw, Compare.ROW_H + math.max(1, #data * pitch))
+    local cols, vw = columns(cw, 0), Compare.VALUE_W
+    place(x.spellHead[1], host, 0, 0, cols[1] - 4)
+    for j = 2, 4 do place(x.spellHead[j], host, cols[j - 1], 0, vw) end
+    NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
+    for i, d in ipairs(data) do
+        local row = NS.Pool.Acquire(x.rows, function() return newRow(host) end)
+        row.pane = p
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -Compare.ROW_H - (i - 1) * pitch)
+        fillRow(row, d, cw, rowH)
+    end
+    return y - Compare.ROW_H - #data * pitch - 8
+end
+
+--- While comparing: the score table and the compared breakdown at `y`; answers the y beneath.
+--- Not comparing: both hidden, `y` unchanged.
+function Compare.LayoutCompared(p, y, cw)
+    local x, on = p.cmp, p:Comparing()
+    x.score:SetShown(on)
+    x.spellHost:SetShown(on)
+    if not on then
+        NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
+        return y
+    end
+    y = layoutScore(p, y, cw)
+    return layoutSpells(p, y, cw)
+end
+
+--- The pane's other run and its kind (nil when there is none).
+function Compare.TargetOf(p)
+    local x = p and p.cmp
+    if not x then return nil end
+    return x.other, x.kind
 end

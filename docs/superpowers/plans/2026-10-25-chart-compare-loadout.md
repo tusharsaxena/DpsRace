@@ -36,7 +36,7 @@ Mockup: https://claude.ai/artifact/AMWeF6JJ3z9JTLgeBaKGZJ (boards A and B).
 ### M1: #7 Compare in the Results detail
 
 - [x] M1.1 `ResultsDetail.CompareSpells(run, other)` (pure) and its headless tests.
-- [ ] M1.2 The detail's *vs best* / *vs picked* toggle: a second KPI column and a compared breakdown.
+- [x] M1.2 The detail's *vs best* / *vs picked* toggle: a second KPI column and a compared breakdown.
   The Runs row menu gets *Compare with…*, a session-only pick. Locale strings and the smoke rows.
 
 ### M2: #2 the live damage chart and #3 the pace bar

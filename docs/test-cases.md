@@ -369,7 +369,7 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_compare.lua (7)
+### test_compare.lua (12)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
@@ -378,6 +378,11 @@ Total.
 - compare: the figures and their % difference; none against a zero or missing figure
 - compare: the default is the best on the run's board; for the best itself, the runner-up
 - compare: a picked run wins while it is stored and not the run itself
+- compare: the toggle sets the run beside the best: the score table and the compared breakdown
+- compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
+- compare: the row menu's pick, the different-board note and Clear Pick
+- compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
+- compare: the collapsed view draws the compare in the list's place; no number is read off a frame
 
 ### test_schema.lua (15)
 
@@ -652,7 +657,7 @@ Total.
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 42 |
-| test_compare.lua | 7 |
+| test_compare.lua | 12 |
 | test_schema.lua | 15 |
 | test_settings.lua | 28 |
 | test_slash.lua | 27 |
@@ -671,4 +676,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **525** |
+| **Total** | **530** |

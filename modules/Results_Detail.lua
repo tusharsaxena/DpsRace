@@ -12,6 +12,10 @@ local _, NS = ...
 --
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
+-- THE COMPARE (#7) sits under the score: a toggle that sets the run beside the best on its board, or
+-- beside a run picked from a Runs row's menu. Its parts and its pure logic are
+-- modules/Results_Compare.lua's; while it is on, its compared breakdown takes the plain one's place.
+--
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
@@ -409,7 +413,8 @@ end
 
 --- The detail pane in `parent`.
 --- @param parent table
---- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare() }
+--- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
+---                       clearPick() }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
@@ -426,6 +431,7 @@ function Detail.Build(parent, hooks)
     p.w.empty:SetText(L["Select a run to see its detail."])
     local c = p.content
     buildHeader(p, c)
+    NS.ResultsCompare.Build(p, c)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
     buildTiming(p, c)
     buildFlags(p, c)
@@ -502,6 +508,7 @@ function Pane:Show(run)
     if not has then return end
     self:fillHeader(run)
     self:fillScore(run)
+    NS.ResultsCompare.Fill(self)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
@@ -512,6 +519,44 @@ function Pane:Show(run)
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
     self.scroll = 0
     self:Layout(self.width, self.height, self.narrow)
+end
+
+-- ── the compare ─────────────────────────────────────────────────────────────────────────────────
+
+--- Whether the detail shows the compare now: the toggle on, and a run to compare with.
+function Pane:Comparing()
+    return self.comparing == true and self.cmp ~= nil and self.cmp.other ~= nil
+end
+
+--- The run the detail is compared with and its kind ("picked" | "best" | "runnerUp"): nil while the
+--- compare is off, unless `resolved` asks for the toggle's target either way. M3's loadout diff
+--- reads the comparison through this.
+--- @param resolved boolean|nil
+--- @return table|nil other, string|nil kind
+function Pane:CompareTarget(resolved)
+    if not (resolved or self:Comparing()) then return nil end
+    return NS.ResultsCompare.TargetOf(self)
+end
+
+-- Repaint the compare's parts and lay the pane out again, the scroll kept.
+function Pane:refreshCompare()
+    if not self.run then return end
+    NS.ResultsCompare.Fill(self)
+    self:Layout(self.width, self.height, self.narrow)
+end
+
+--- The toggle: compare on or off (view state for the session, never stored).
+function Pane:SetComparing(on)
+    self.comparing = on and true or false
+    self:refreshCompare()
+end
+
+--- Compare with run `id` (the row menu's pick) from now on, the toggle turned on; nil clears the
+--- pick, back to the best on the board.
+function Pane:SetPick(id)
+    self.pickID = id
+    if id ~= nil then self.comparing = true end
+    self:refreshCompare()
 end
 
 -- ── the note ────────────────────────────────────────────────────────────────────────────────────
@@ -728,7 +773,11 @@ function Pane:Layout(width, height, narrow)
     self.content:SetWidth(cw)
     if not self.run then return end
     local y = self:layoutHeader(0, cw)
-    y = self:layoutSpells(y, cw)
+    y = NS.ResultsCompare.LayoutBar(self, y, cw)
+    local comparing = self:Comparing()
+    self.w.list.parent:SetShown(not comparing)
+    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
+    if not comparing then y = self:layoutSpells(y, cw) end
     y = self:layoutTiming(y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y

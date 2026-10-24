@@ -122,6 +122,10 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
   `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
   with the best on its board before it.
+- **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
+  `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
+  holds the best; a run picked from a Runs row's menu wins while it is stored. Both runs are stored
+  records, so `CompareSpells` divides and sorts plain numbers; nothing is stored.
 - **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
@@ -196,7 +200,7 @@ timer or `OnUpdate`.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% to 100% within each target type (each type's smallest and largest of the runs passed, `barKey`), sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, Delete behind its confirmation).
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
