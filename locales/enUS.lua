@@ -252,6 +252,13 @@ L["No personal bests yet: finish a race to set one."] = "No personal bests yet: 
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
 L["Only best"] = "Only best"
+L["Group: None"] = "Group: None"
+L["Group: Character"] = "Group: Character"
+L["Group: Class & spec"] = "Group: Class & spec"
+L["Group: Target"] = "Group: Target"
+L["Character: %s"] = "Character: %s"
+L["Class & spec: %s"] = "Class & spec: %s"
+L["Target: %s"] = "Target: %s"
 L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
     "Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."
 L["Results table"] = "Results table"

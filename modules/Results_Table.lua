@@ -457,7 +457,14 @@ local function newRow(t)
         row.cells[col.key] = Cells[col.kind or "text"](row, col)
         row.cells[i] = row.cells[col.key]
     end
-    row:SetScript("OnClick", function(self) if self.run and t.onClick then t.onClick(self.run) end end)
+    -- A group header (LootHistory's): its chevron, label and count across the row; a click folds it.
+    row.groupLabel = Tbl.Text(row, FONT.HEADER, C.gold)
+    row.groupLabel:SetPoint("LEFT", row, "LEFT", Tbl.PAD, 0)
+    row.groupLabel:Hide()
+    row:SetScript("OnClick", function(self)
+        if self.group then return t:ToggleCollapse(self.group.key) end
+        if self.run and t.onClick then t.onClick(self.run) end
+    end)
     row:SetScript("OnDoubleClick", function(self) if self.run and t.onDoubleClick then t.onDoubleClick(self.run) end end)
     row:EnableMouseWheel(true)
     row:SetScript("OnMouseWheel", function(_, delta) t:Scroll(delta) end)
@@ -570,6 +577,12 @@ end
 function Table:SetSort(key, desc)
     local col = self:column(key)
     if not (col and col.sort) then return end
+    -- The grouped column's header orders the groups, as in LootHistory.
+    if self.grouping and self.grouping.column == key and desc == nil then
+        self.groupDesc = not self.groupDesc
+        self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+        return self:Bind()
+    end
     if desc ~= nil then
         self.sortDesc = desc and true or false
     elseif key == self.sortKey then
@@ -579,7 +592,7 @@ function Table:SetSort(key, desc)
     end
     self.sortKey = key
     self:paintHeader()
-    self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)
+    self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
     self:Bind()
 end
 
@@ -603,8 +616,66 @@ function Table:SetData(list)
             col.barMin, col.barMax = min, max
         end
     end
-    self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)
+    self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
     self:Bind()
+end
+
+-- ── grouping (LootHistory's BrowserTableGroup) ─────────────────────────────────────────────────
+-- With a grouping set, the sorted runs are partitioned into groups in first-seen order, the groups
+-- ordered by their own rank (ascending; a click on the grouped column's header flips it), and each
+-- group is preceded by a header entry { group = { key, label, count, collapsed } }. A collapsed group
+-- emits only its header. The row sort still holds inside each group.
+
+--- Group by `spec` ({ of = fn(run) -> key, label, rank; column = the column key it corresponds to,
+--- or nil }), or nil for a flat list. Redraws.
+function Table:SetGroup(spec)
+    if spec ~= self.grouping then self.groupDesc = false end
+    self.grouping = spec
+    self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+    self:Bind()
+end
+
+--- Fold or unfold the group with `key`.
+function Table:ToggleCollapse(key)
+    self.collapsed = self.collapsed or {}
+    self.collapsed[key] = (not self.collapsed[key]) or nil
+    self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
+    self:Bind()
+end
+
+function Table:group(sorted)
+    local spec = self.grouping
+    if not spec then return sorted end
+    self.collapsed = self.collapsed or {}
+    local order, byKey = {}, {}
+    for _, run in ipairs(sorted) do
+        local key, label, rank = spec.of(run)
+        key = tostring(key)
+        local g = byKey[key]
+        if not g then
+            g = { key = key, label = label or key, rank = rank or label or key, runs = {} }
+            byKey[key] = g
+            order[#order + 1] = g
+        end
+        g.runs[#g.runs + 1] = run
+    end
+    local desc = self.groupDesc
+    table.sort(order, function(a, b)
+        if a.rank ~= b.rank then
+            if desc then return a.rank > b.rank end
+            return a.rank < b.rank
+        end
+        return a.key < b.key
+    end)
+    local out = {}
+    for _, g in ipairs(order) do
+        local collapsed = self.collapsed[g.key] == true
+        out[#out + 1] = { group = { key = g.key, label = g.label, count = #g.runs, collapsed = collapsed } }
+        if not collapsed then
+            for _, run in ipairs(g.runs) do out[#out + 1] = run end
+        end
+    end
+    return out
 end
 
 function Table:visibleCount()
@@ -631,7 +702,7 @@ end
 --- Bring the run with `id` into view, if it is in the list.
 function Table:Reveal(id)
     for i, run in ipairs(self.rows) do
-        if run.id == id then
+        if run.group == nil and run.id == id then
             local first, count = self.offset + 1, self:visibleCount()
             if i < first then self:ScrollTo(i - 1) elseif i >= first + count then self:ScrollTo(i - count) end
             return true
@@ -659,10 +730,37 @@ function Table:placeRow(row, i)
     end
 end
 
+-- Every drawn part of a row's cells, shown or hidden at once (a header row draws none of them; a run
+-- row shows them all and each Bind hides what it does not draw).
+local function showCells(row, on)
+    for _, cell in ipairs(row.cells) do
+        for _, part in pairs(cell) do
+            if type(part) == "table" and part.SetShown then part:SetShown(on) end
+        end
+    end
+end
+
+-- The disclosure marks: the catalog's chevrons, tinted the header gold (an inline texture ignores
+-- its FontString's color), Blizzard's minus and plus beneath them.
+local CHEVRON_OPEN = Style.IconMarkup("chevron-down", "Interface\\Buttons\\UI-MinusButton-Up", Style.GOLD)
+local CHEVRON_SHUT = Style.IconMarkup("chevron-right", "Interface\\Buttons\\UI-PlusButton-Up", Style.GOLD)
+
+local function bindHeader(row, g)
+    row.run, row.group = nil, g
+    row.sel:Hide()
+    showCells(row, false)
+    row.groupLabel:SetText(("%s  %s  |cff808080(%d)|r"):format(g.collapsed and CHEVRON_SHUT or CHEVRON_OPEN,
+        g.label, g.count))
+    row.groupLabel:Show()
+end
+
 function Table:bindRow(row, run, index)
-    row.run, row.index = run, index
     local alt = self.stripe and index % 2 == 0
     row.bg:SetVertexColor(1, 1, 1, alt and 0.025 or 0)
+    if run.group then return bindHeader(row, run.group) end
+    row.run, row.index, row.group = run, index, nil
+    row.groupLabel:Hide()
+    showCells(row, true)
     row.sel:SetShown(self.selected ~= nil and run.id == self.selected)
     for c, col in ipairs(self.columns) do Bind[col.kind or "text"](row.cells[c], col, run) end
 end
@@ -679,7 +777,7 @@ end
 --- Redraw the visible slice from the pool.
 function Table:Bind()
     self.offset = math.max(0, math.min(self.offset, self:maxOffset()))
-    NS.Pool.ReleaseAll(self.pool, function(row) row.run = nil end)
+    NS.Pool.ReleaseAll(self.pool, function(row) row.run, row.group = nil, nil end)
     self.shown = {}
     local count = math.min(self:visibleCount(), #self.rows - self.offset)
     for i = 1, count do

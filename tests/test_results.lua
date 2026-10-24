@@ -292,6 +292,70 @@ test("results: the bars take History > Results table's look, over the rows' own 
     assertTrue(rows[2].bg.__vertex[4] > 0, "the second row striped")
 end)
 
+test("results: v/s Max and the Max tag are per target type", function()
+    local i = inst()
+    seed(i, {
+        mkRun("cleave", { result = { damage = 1, dps = 300000 } }),
+        mkRun("cleave2", { result = { damage = 1, dps = 150000 }, date = NOW - 2 * HOUR }),
+        mkRun("boss", { target = { category = "boss", count = 1 }, result = { damage = 1, dps = 100000 },
+                        date = NOW - 3 * HOUR }),
+        mkRun("boss2", { target = { category = "boss", count = 1 }, result = { damage = 1, dps = 50000 },
+                         date = NOW - 4 * HOUR }),
+    })
+    i.R.Show()
+    local cells = {}
+    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells end
+    assertEqual(cells.cleave.vsMax.fs.__text, "0.0%")
+    assertEqual(cells.cleave2.vsMax.fs.__text, "-50.0%")
+    assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
+    assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
+    assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
+end)
+
+test("results: Group by character, class & spec or target, with folding headers", function()
+    local i = inst()
+    local Runs = i.NS.ResultsRuns
+    seed(i, {
+        mkRun("a", { result = { damage = 1, dps = 300000 } }),
+        mkRun("b", { target = { category = "boss", count = 1 }, result = { damage = 1, dps = 100000 },
+                     date = NOW - 2 * HOUR }),
+        mkRun("m", { char = "mage", result = { damage = 1, dps = 200000 }, date = NOW - 3 * HOUR }),
+    })
+    i.R.Show()
+    local pane = runsPane(i)
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    assertEqual(pane.filters.group, "none", "flat by default")
+    local opts = Runs.Options(i.NS.Recorder.All()).group
+    assertEqual(opts[1].label, "Group: None")
+    assertEqual(#opts, 4)
+    local function shape()
+        local out = {}
+        for _, row in ipairs(visible(pane)) do
+            out[#out + 1] = row.group and ("[" .. row.group.label:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+                .. " " .. row.group.count .. "]") or row.run.id
+        end
+        return table.concat(out, ",")
+    end
+    pane.dropdowns.group.onSelect("target")
+    assertEqual(shape(), "[Target: Cleave 2],a,m,[Target: Boss-level 1],b", "the catalog's order, newest first inside")
+    pane.dropdowns.group.onSelect("char")
+    assertEqual(shape(), "[Character: Kaosmage 1],m,[Character: Lanfear 2],a,b")
+    pane.dropdowns.group.onSelect("classSpec")
+    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],m,[Class & spec: Warlock \194\183 Destruction 2],a,b")
+    -- A header click folds its group; another unfolds it.
+    visible(pane)[1]:__fire("OnClick")
+    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],[Class & spec: Warlock \194\183 Destruction 2],a,b")
+    visible(pane)[1]:__fire("OnClick")
+    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],m,[Class & spec: Warlock \194\183 Destruction 2],a,b")
+    -- The grouped column's header flips the groups' order.
+    pane.dropdowns.group.onSelect("char")
+    pane.list.heads[3]:__fire("OnClick")
+    assertEqual(shape(), "[Character: Lanfear 2],a,b,[Character: Kaosmage 1],m")
+    pane.dropdowns.group.onSelect("none")
+    assertEqual(shape(), "a,b,m")
+end)
+
 test("results: Only best keeps the runs holding their board's best", function()
     local i = inst()
     seed(i, {

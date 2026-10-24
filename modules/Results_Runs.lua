@@ -25,6 +25,9 @@ Runs.RESOLVED = { complete = true, incomplete = true, lost = true }
 Runs.DEFAULTS = {
     char = "current", spec = "current", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
+    -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
+    -- reads no predicate for it.
+    group = "none",
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
@@ -33,7 +36,7 @@ local DASH = "\226\128\148"
 local FILTER_H = 32         -- one row of the filter bar
 local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths
     { key = "char", width = 110 }, { key = "spec", width = 96 }, { key = "category", width = 96 },
-    { key = "length", width = 88 }, { key = "date", width = 100 },
+    { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 136 },
 }
 local CHECKS = {
     { key = "hideFlagged", label = "Hide flagged", width = 100 },
@@ -195,8 +198,46 @@ local function withAll(label, list, current)
     return list
 end
 
---- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry.
---- @return table { char, spec, category, length, date }
+-- ── grouping (LootHistory's Group by) ──────────────────────────────────────────────────────────
+-- One entry per mode: `of(run)` answers the group's key, its header label ("Character: Lânfear")
+-- and its rank (the groups' order); `column` is the column whose header flips that order.
+local function charGroup(run)
+    local char = run.char or {}
+    local c = Tbl.ClassColor(char.class)
+    local name = ("|cff%02x%02x%02x%s|r"):format(math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5),
+        math.floor(c[3] * 255 + 0.5), tostring(char.name or "?"))
+    return Runs.CharKey(run), L["Character: %s"]:format(name), tostring(char.name or "?"):lower()
+end
+
+local function classSpecGroup(run)
+    local char = run.char or {}
+    local class, spec = Tbl.ClassName(char.class), Tbl.SpecInfo(char.specID, char.spec)
+    local label = spec and ("%s \194\183 %s"):format(class, spec) or class
+    return tostring(char.class) .. "|" .. tostring(char.specID), L["Class & spec: %s"]:format(label), label:lower()
+end
+
+local CATEGORY_RANK = {}
+for i, key in ipairs(NS.Dummies.CATEGORIES) do CATEGORY_RANK[key] = i end
+
+local function targetGroup(run)
+    local category = run.target and run.target.category or "other"
+    return category, L["Target: %s"]:format(NS.Dummies.Label(category)), CATEGORY_RANK[category] or 99
+end
+
+Runs.GROUPS = {
+    none = nil,
+    char = { of = charGroup, column = "char" },
+    classSpec = { of = classSpecGroup },
+    target = { of = targetGroup, column = "target" },
+}
+Runs.GROUP_ORDER = { "none", "char", "classSpec", "target" }
+local GROUP_LABELS = {
+    none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
+}
+
+--- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and
+--- the Group by dropdown's modes.
+--- @return table { char, spec, category, length, date, group }
 function Runs.Options(runs)
     local resolved = {}
     for _, run in ipairs(runs or {}) do
@@ -211,6 +252,11 @@ function Runs.Options(runs)
             { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },
             { value = "7d", label = L["Last 7 days"] }, { value = "30d", label = L["Last 30 days"] },
         },
+        group = (function()
+            local out = {}
+            for i, mode in ipairs(Runs.GROUP_ORDER) do out[i] = { value = mode, label = L[GROUP_LABELS[mode]] } end
+            return out
+        end)(),
     }
 end
 
@@ -294,6 +340,21 @@ function Runs.Status(run, top)
     return key, L[tag.label], tag.color, tag.icon
 end
 
+local function categoryOf(run)
+    return run.target and run.target.category or "other"
+end
+
+--- `runs` split by target category: { [category] = { run, ... } }.
+function Runs.ByCategory(runs)
+    local out = {}
+    for _, run in ipairs(runs or {}) do
+        local key = categoryOf(run)
+        out[key] = out[key] or {}
+        out[key][#out[key] + 1] = run
+    end
+    return out
+end
+
 --- Whether the complete runs in `runs` span more than one spec: only then is a view-wide Max worth a
 --- tag of its own (the owner's call, 2026-10-25). Within one spec the top run is already its Spec best.
 --- @param runs table  run records
@@ -366,7 +427,7 @@ local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), mat
 --- time (the length and the tail), damage, DPS, v/s max, status, flags. The v/s Max column reads
 --- its max off the whole list the table is handed (its `scan`, every run the filters pass).
 function Runs.Columns()
-    local view = {}
+    local view = { top = {}, maxTag = {} }
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
           sort = function(run) return run.date end,
@@ -397,17 +458,21 @@ function Runs.Columns()
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
           barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
         { key = "vsMax", label = L["v/s Max"], width = 56, desc = true,
+          -- Per target type (the owner's call, 2026-10-25): each run against the max of the runs the
+          -- filters pass on its own category; the Max tag only where that category spans specs.
           scan = function(list)
-              view.top = Runs.MaxDps(list)
-              -- The Max tag only where the view spans specs; v/s Max measures against the top regardless.
-              view.maxTag = Runs.ManySpecs(list) and view.top or nil
+              view.top, view.maxTag = {}, {}
+              for category, runs in pairs(Runs.ByCategory(list)) do
+                  view.top[category] = Runs.MaxDps(runs)
+                  view.maxTag[category] = Runs.ManySpecs(runs) and view.top[category] or nil
+              end
           end,
-          sort = function(run) return Runs.VsMax(run, view.top) end,
-          text = function(run) return vsMaxText(run, view.top) end },
+          sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
+          text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end },
         { key = "status", label = L["Status"], width = 90, kind = "badge", desc = false,
-          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag))] end,
+          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run, view.maxTag)
+              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
               return text, color, icon
           end },
         { key = "flag", label = "", width = 14, kind = "flag" },
@@ -541,6 +606,7 @@ function View:Refresh()
     self.count:SetText(n == 1 and L["1 run"] or L["%d runs"]:format(n))
     self.list.selected = self.hooks.selected and self.hooks.selected() or nil
     self.list:SetData(self.filtered)
+    self.list:SetGroup(Runs.GROUPS[self.filters.group or "none"])
 end
 
 --- Set one filter and redraw.
