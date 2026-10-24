@@ -262,7 +262,7 @@ detail's timing strip.
 | SM-DR-AP5 | Press the HUD page's *Defaults*, then `/reload` | Every HUD Appearance row returns to the shipped look (monospace green and red clocks, flat indigo bars) and survives the reload | The row that did not reset |
 | SM-DR-RT1 | Open History > Results table; change each bar's texture, opacity and color, the bar text and the background; tick *Use class color* on the background and on one bar | A *Damage bar*, *DPS bar*, *Bar text* and *Background* subsection; every change shows in the open Runs list at once; the class colors are each run's character's (an alt's runs in the alt's color), with the background's opacity kept; History's *Defaults* puts it all back | A screenshot of the list |
 
-## 11. Target probe v2 (debug only): which nameplate signal tells your dummies apart?
+## 11. Target probe (debug only): can the addon count and name what you hit?
 
 Run with `/dr debug on`. Each probe run writes its lines to the debug console under the `Probe` tag;
 after the result, open `/dr debug`, **Copy**, and paste everything from *start: probing nameplates*
@@ -271,7 +271,8 @@ until the result shows.
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| SM-DR-PR1 | Race 0:30 on the Cleave group, hitting all 5 dummies with AoE the whole race | The *units followed by GUID* list shows each dummy with its name and level. The 5 you hit have a *combatAt*, health *drops* and *unitCombat* hits; the ones you did not hit have none, or clearly fewer | The whole Probe block |
-| SM-DR-PR2 | The same group, hitting only 3 with single-target abilities | 3 units stand apart from the rest on *combatAt*, *drops* or *unitCombat* | The whole Probe block, and which 3 you hit |
-| SM-DR-PR3 | One single-target dummy, with other players hitting dummies nearby if you can | Your dummy stands apart; note whether the other players' dummies also show *combatAt* or hits | The whole Probe block |
-| SM-DR-PR4 | In any run, read the *kinds* lines | Whether `health` is plain (`number`) or `secret` mid-combat, and the *UNIT_COMBAT on plates* line's kinds | The kinds lines |
+| SM-DR-PR1 | Race 0:30 on the Cleave group, hitting all 5 dummies with AoE the whole race | The report's *max at once* is 5 and *tagged plates over the race* is 5; each tagged plate has a name and a level | The whole Probe block |
+| SM-DR-PR2 | Race 0:30 on the same group, hitting only 3 (single-target abilities, tab-targeting 3 of them) | *max at once* is 3 | The whole Probe block |
+| SM-DR-PR3 | Race 0:30 on one single-target dummy with other players' dummies nearby | *max at once* is 1 | The whole Probe block |
+| SM-DR-PR4 | In any of the three, read the *kinds* lines | Record, for each of `threat`, `name`, `level` and `guid`, whether it was `secret` or plain during combat | The kinds lines |
+| SM-DR-PR5 | In any of the three, read the *meter EnemyDamageTaken* lines | Record how many rows the 5-dummy race gives (the earlier probe saw 1 merged row) and whether each row has a name and a GUID | The meter lines |
