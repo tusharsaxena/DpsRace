@@ -43,22 +43,37 @@ local function fetch(kind, name)
     return nil
 end
 
-local function color(stored, useClass)
+-- A swatch through its class-color companion. With `class` (a class token: a stored run's character)
+-- the class is that one, the surface describing that character; without it, the player's, through
+-- LibKa0s-Core's resolver. An unresolvable class falls through to the swatch; its alpha always holds.
+local function color(stored, useClass, class)
     local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
+    if class ~= nil then
+        local s = type(stored) == "table" and stored or {}
+        local a = s.a or 1
+        local c = useClass and type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class]
+        if type(c) == "table" and type(c.r) == "number" then return c.r, c.g, c.b, a end
+        return s.r or 1, s.g or 1, s.b or 1, a
+    end
     if core and core.ResolveColor then return core.ResolveColor(stored, useClass) end
     stored = type(stored) == "table" and stored or {}
     return stored.r or 1, stored.g or 1, stored.b or 1, stored.a or 1
 end
+Appearance.Color = color
 
 --- One font block, resolved: its path, size, flags, shadow and color.
 --- @param block string  "elapsed" | "left" | "figures" | "spellText"
 --- @return table { path, size, flags, shadow, r, g, b, a }
 function Appearance.Font(block)
-    local p, def = "appearance." .. block .. ".", D[block]
+    return Appearance.FontAt("appearance." .. block .. ".", D[block])
+end
+
+--- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's.
+function Appearance.FontAt(p, def, class)
     local name = setting(p .. "font")
     local path = fetch("font", name) or fetch("font", def.font)
     if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
-    local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true)
+    local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true, class)
     local flags = setting(p .. "fontFlags")
     return {
         path = path or FALLBACK_FONT,
@@ -89,9 +104,13 @@ end
 --- The spell bars' fill: its texture path, color and opacity.
 --- @return table { texture, r, g, b, a }
 function Appearance.Bar()
-    local p = "appearance.bars."
-    local r, g, b = color(setting(p .. "barColor"), setting(p .. "useClassColorBar") == true)
-    local alpha = tonumber(setting(p .. "barAlpha")) or D.bars.barAlpha
+    return Appearance.BarAt("appearance.bars.", D.bars)
+end
+
+--- A bar block stored at `p`, `def` its defaults; `class` as color's.
+function Appearance.BarAt(p, def, class)
+    local r, g, b = color(setting(p .. "barColor"), setting(p .. "useClassColorBar") == true, class)
+    local alpha = tonumber(setting(p .. "barAlpha")) or def.barAlpha
     return {
         texture = fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,

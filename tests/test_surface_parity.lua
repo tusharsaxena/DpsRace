@@ -153,16 +153,19 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- General > HUD Appearance: four font blocks of six, the bar block's four and its row height
     -- (an `extra`, so it goes with the block).
     local APPEARANCE_ROWS = 4 * 6 + 4 + 1
+    -- History > Results table: two bar blocks of four, a font block of six, a background pair.
+    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 2
     -- The rows the pages declare by hand (General's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them.
     local PAGE_ROWS = 15
-    local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS
+    local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")
     assertEqual(#l.NS.Schema - #d.NS.Schema, COMPOSED, "the gap is not the rows the hollow composers drop")
     for _, row in ipairs(d.NS.Schema) do
         assertTrue(row.group ~= "Master controls", row.path .. " survived the hollow composer")
         assertTrue(row.group ~= "HUD Appearance", row.path .. " survived the hollow composer")
+        assertTrue(row.group ~= "Results table", row.path .. " survived the hollow composer")
     end
     -- The look still has its defaults with no rows: the HUD reads them through NS.GetSetting.
     assertEqual(d.NS.HudAppearance.Font("elapsed").size, 26)

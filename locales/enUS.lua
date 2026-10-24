@@ -251,6 +251,13 @@ L["No personal bests yet: finish a race to set one."] = "No personal bests yet: 
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
 L["Only best"] = "Only best"
+L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
+    "Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."
+L["Results table"] = "Results table"
+L["Damage bar"] = "Damage bar"
+L["DPS bar"] = "DPS bar"
+L["Bar text"] = "Bar text"
+L["Background"] = "Background"
 L["The run still counts and the flag shows on the board."] =
     "The run still counts and the flag shows on the board."
 
@@ -377,8 +384,6 @@ L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d run
 L["Purge history\226\128\166"] = "Purge history\226\128\166"
 L["Deletes every stored run. Asks for confirmation. Personal bests go with them."] =
     "Deletes every stored run. Asks for confirmation. Personal bests go with them."
-L["Restore Runs to keep to its addon default. Stored runs are not touched."] =
-    "Restore Runs to keep to its addon default. Stored runs are not touched."
 L["Delete every stored run? Your personal bests go with them. This cannot be undone."] =
     "Delete every stored run? Your personal bests go with them. This cannot be undone."
 L["Finish or cancel the race first."] = "Finish or cancel the race first."

@@ -42,10 +42,6 @@ local C = {
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
     red   = { 1.0, 0.32, 0.32 },
-    -- The Damage and DPS cells' bars: the breakdown's indigo, and the DPS figure's green, faint
-    -- under the number.
-    bar    = { 0.29, 0.29, 0.45, 0.55 },
-    barDps = { 0.36, 0.86, 0.46, 0.22 },
 }
 Tbl.COLORS = C
 
@@ -206,15 +202,16 @@ end
 
 local Cells = {}
 
--- A text cell; a column with `bar` also draws a fill behind its text, as long as its value against
--- the largest in the list (Table:SetData).
+-- A text cell; a column with `bar` also draws a track across the cell and a fill over it, as long as
+-- its value against the largest in the list (Table:SetData), MultiMeters' bar cell. Its look is the
+-- column's `barStyle(run)`: { texture, r, g, b, a, track = { r, g, b, a }, font = a resolved font }.
 function Cells.text(row, col)
     local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
     if col.bar then
-        cell.bar = row:CreateTexture(nil, "BORDER")
+        cell.track = row:CreateTexture(nil, "BORDER", nil, 1)
+        cell.track:SetTexture(WHITE)
+        cell.bar = row:CreateTexture(nil, "BORDER", nil, 2)
         cell.bar:SetTexture(WHITE)
-        local c = col.barColor or C.bar
-        cell.bar:SetVertexColor(c[1], c[2], c[3], c[4] or 0.5)
     end
     return cell
 end
@@ -261,8 +258,17 @@ local Bind = {}
 local function bindBar(cell, col, run)
     local v, max = col.bar(run), col.barMax
     local on = type(v) == "number" and v > 0 and type(max) == "number" and max > 0
+    local style = col.barStyle and col.barStyle(run)
+    if style then
+        cell.bar:SetTexture(style.texture or WHITE)
+        cell.bar:SetVertexColor(style.r, style.g, style.b, style.a)
+        local t = style.track
+        if t then cell.track:SetVertexColor(t[1], t[2], t[3], t[4]) end
+        -- A dash (no figure) keeps the column's muted color; a figure takes the bar text's.
+        if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
+    end
     cell.bar:SetShown(on)
-    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.w or 0) * math.min(1, v / max) + 0.5))) end
+    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.barW or 0) * math.min(1, v / max) + 0.5))) end
 end
 
 function Bind.text(cell, col, run)
@@ -343,10 +349,17 @@ local function placeCell(row, cell, col, x, w)
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.fs:SetWidth(math.max(10, w))
         if cell.bar then
-            cell.w = w
-            cell.bar:ClearAllPoints()
-            cell.bar:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -2)
-            cell.bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 2)
+            -- The track spans the cell and a little of the gap each side; the text sits inside it.
+            cell.w, cell.barW = w, w + 4
+            cell.fs:ClearAllPoints()
+            cell.fs:SetPoint("LEFT", row, "LEFT", x + 2, 0)
+            cell.fs:SetWidth(math.max(10, w - 2))
+            for _, tex in ipairs({ cell.track, cell.bar }) do
+                tex:ClearAllPoints()
+                tex:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
+                tex:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
+            end
+            cell.track:SetWidth(cell.barW)
         end
     end
 end

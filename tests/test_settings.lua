@@ -90,6 +90,23 @@ local STORED = {
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
+    -- History > Results table: composed blocks.
+    ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.damageBar.barAlpha"] = { "number", 1, 0, 1, 0.05 },
+    ["resultsTable.damageBar.barColor"] = { "color", "table" },
+    ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.dpsBar.barAlpha"] = { "number", 1, 0, 1, 0.05 },
+    ["resultsTable.dpsBar.barColor"] = { "color", "table" },
+    ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.barText.font"] = { "string", "Friz Quadrata TT" },
+    ["resultsTable.barText.fontSize"] = { "number", 10, 6, 32, 1 },
+    ["resultsTable.barText.fontColor"] = { "color", "table" },
+    ["resultsTable.barText.useClassColorFont"] = { "bool", false },
+    ["resultsTable.barText.fontFlags"] = { "string", "" },
+    ["resultsTable.barText.fontShadow"] = { "bool", true },
+    ["resultsTable.barBg.bgColor"] = { "color", "table" },
+    ["resultsTable.barBg.useClassColorBg"] = { "bool", false },
 }
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()

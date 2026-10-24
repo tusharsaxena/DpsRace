@@ -72,6 +72,32 @@ NS.RegisterSchemaRows({
       tooltip = L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] },
 })
 
+-- ── Results table ── the Runs list's Damage and DPS bars (the owner's call, 2026-10-24, after
+-- MultiMeters' bars): each a composed bar block, their text a font block, the track behind them a
+-- background color pair (options-ui-§16, §17), in the styled-tab order Fill, Font, Background. Each
+-- class color is the row's character's: the row describes that run (classColorSource "unit").
+local RESULTS_TABLE = L["Results table"]
+local RD = NS.defaults.profile.resultsTable
+local ROW_CLASS = { source = "unit" }
+local function redraw() NS.Results.Refresh() end
+local tableRows = {}
+local function append(rows) for _, r in ipairs(rows) do tableRows[#tableRows + 1] = r end end
+local Hp = NS.Helpers
+append(Hp.BarGroup({ prefix = "resultsTable.damageBar.", page = PAGE, group = RESULTS_TABLE,
+    subgroup = L["Damage bar"], order = 100, classColor = ROW_CLASS, defaults = RD.damageBar }))
+append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESULTS_TABLE,
+    subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar }))
+append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
+    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText }))
+append(Hp.ColorPair({ prefix = "resultsTable.barBg.", page = PAGE, group = RESULTS_TABLE,
+    subgroup = L["Background"], order = 400, classColor = ROW_CLASS, defaults = RD.barBg,
+    key = "bgColor", companionKey = "useClassColorBg", label = "Background color" }))
+for _, r in ipairs(tableRows) do
+    r.onChange = redraw
+    r.composed = true
+end
+NS.RegisterSchemaRows(tableRows)
+
 -- After the group's rows: the stored count, then Purge history… as the tab's last act. No heading
 -- over it: a heading is declared by a row, never drawn by a builder over an act (options-ui-§7, §21).
 local function afterHistory(ctx)
@@ -88,7 +114,7 @@ NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["History"],
     panelName       = "DpsRaceHistoryPanel",
-    defaultsTooltip = L["Restore Runs to keep to its addon default. Stored runs are not touched."],
+    defaultsTooltip = L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."],
     afterGroup      = { [GROUP] = afterHistory },
 })
 

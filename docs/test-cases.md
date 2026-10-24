@@ -324,12 +324,13 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (31)
+### test_results.lua (32)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Best, Flagged or Complete for a complete run
 - results: Damage and DPS carry bars scaled to the largest run the filters pass
+- results: the bars take History > Results table's look; the track can take the run's class
 - results: Only best keeps the runs holding their board's best
 - results: vs Best is each run's distance from its board's best
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
@@ -628,7 +629,7 @@ Total.
 | test_hud.lua | 63 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 31 |
+| test_results.lua | 32 |
 | test_schema.lua | 15 |
 | test_settings.lua | 26 |
 | test_slash.lua | 27 |
@@ -647,4 +648,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **505** |
+| **Total** | **506** |

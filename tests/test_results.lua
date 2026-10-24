@@ -179,9 +179,9 @@ test("results: Damage and DPS carry bars scaled to the largest run the filters p
         local out = {}
         for _, row in ipairs(visible(pane)) do
             local d = row.cells.damage
-            out[row.run.id] = { damage = d.bar.__shown ~= false and d.bar.__width or 0, w = d.w,
+            out[row.run.id] = { damage = d.bar.__shown ~= false and d.bar.__width or 0, w = d.barW,
                                 dps = row.cells.dps.bar.__shown ~= false and row.cells.dps.bar.__width or 0,
-                                dw = row.cells.dps.w }
+                                dw = row.cells.dps.barW }
         end
         return out
     end
@@ -196,6 +196,27 @@ test("results: Damage and DPS carry bars scaled to the largest run the filters p
     w = widths()
     assertEqual(w.mage.damage, w.mage.w)
     assertEqual(w.big.damage, math.floor(w.big.w / 2 + 0.5))
+end)
+
+test("results: the bars take History > Results table's look; the track can take the run's class", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.Show()
+    local cells = visible(runsPane(i))[1].cells
+    local D = i.NS.defaults.profile.resultsTable
+    assertEqual(cells.damage.bar.__vertex[1], D.damageBar.barColor.r, "the bright blue fill")
+    assertEqual(cells.dps.bar.__vertex[2], D.dpsBar.barColor.g, "the bright green fill")
+    assertEqual(cells.damage.track.__vertex[1], D.barBg.bgColor.r, "the dark track")
+    assertEqual(cells.damage.fs.__justifyH, "LEFT", "left-aligned")
+    assertTrue(i.NS.SetByPath("resultsTable.barBg.useClassColorBg", true))
+    assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))
+    cells = visible(runsPane(i))[1].cells
+    local warlock = i.mocks.RAID_CLASS_COLORS.WARLOCK
+    assertEqual(cells.damage.track.__vertex[1], warlock.r, "the run's character's class, Lanfear's warlock")
+    assertEqual(cells.damage.track.__vertex[4], D.barBg.bgColor.a, "the swatch's alpha kept")
+    assertEqual(cells.damage.bar.__vertex[1], warlock.r)
+    assertEqual(cells.dps.bar.__vertex[1], D.dpsBar.barColor.r, "each bar its own companion")
+    for _, head in ipairs(runsPane(i).list.heads) do assertEqual(head.label.__justifyH, "LEFT") end
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()

@@ -303,6 +303,24 @@ local function vsBestText(run)
     return L["%+.1f%%"]:format(pct), color
 end
 
+--- The look of one bar column's cell for `run` (History > Results table): its fill, the track behind
+--- it and its text, every class color the run's character's.
+--- @param block string  "damageBar" | "dpsBar"
+--- @return table|nil  Results_Table's barStyle shape; nil without the appearance module
+function Runs.BarStyle(block, run)
+    local A = NS.HudAppearance
+    if not A then return nil end
+    local D = NS.defaults.profile.resultsTable
+    local class = run.char and run.char.class or false
+    local p = "resultsTable."
+    local fill = A.BarAt(p .. block .. ".", D[block], class)
+    local get = NS.GetSetting
+    local r, g, b, a = A.Color(get(p .. "barBg.bgColor"), get(p .. "barBg.useClassColorBg") == true, class)
+    fill.track = { r, g, b, a }
+    fill.font = A.FontAt(p .. "barText.", D.barText, class)
+    return fill
+end
+
 -- The tail in the caption gray, after the length (NS.Format.RunTime).
 local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
     math.floor(C.dim[3] * 255 + 0.5))
@@ -321,25 +339,25 @@ function Runs.Columns()
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "ilvl", label = L["iLvl"], width = 40, justify = "RIGHT", desc = true,
+        { key = "ilvl", label = L["iLvl"], width = 40, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
         { key = "target", label = L["Target"], width = 84, kind = "badge", desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
-        { key = "time", label = L["Time"], width = 76, justify = "RIGHT", desc = true,
+        { key = "time", label = L["Time"], width = 76, desc = true,
           sort = NS.Format.RunSeconds,
           text = function(run) return NS.Format.RunTime(run, TAIL_HEX), C.text end },
-        { key = "damage", label = L["Damage"], width = 60, justify = "RIGHT", desc = true,
+        { key = "damage", label = L["Damage"], width = 60, desc = true,
           sort = function(run) return run.result and run.result.damage end,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
-          barColor = C.bar,
+          barStyle = function(run) return Runs.BarStyle("damageBar", run) end,
           text = damageText },
-        { key = "dps", label = L["DPS"], width = 62, justify = "RIGHT", desc = true,
+        { key = "dps", label = L["DPS"], width = 62, desc = true,
           sort = sortDps, text = dpsText,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
-          barColor = C.barDps },
-        { key = "vsBest", label = L["vs Best"], width = 56, justify = "RIGHT", desc = true,
+          barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
+        { key = "vsBest", label = L["vs Best"], width = 56, desc = true,
           sort = function(run) return run.status == "complete" and Runs.VsBest(run) or nil end,
           text = vsBestText },
         { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
