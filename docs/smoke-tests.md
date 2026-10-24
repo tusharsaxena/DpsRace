@@ -11,6 +11,11 @@ the catalog (spec §4.6).
 |---|---|---|
 | 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, center countdown, restyle, title-bar hover) |
 
+### Pending sign-off
+
+Rows changed for the Keybindings tab's one key button and not yet run by the owner: SM-DR-KB2
+and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -42,16 +47,20 @@ the catalog (spec §4.6).
 |---|---|---|---|
 | S1 | Open *Settings → AddOns* right after login | *Ka0s DPS Race* is there before the panel was ever opened | Whether `/dr` opens it |
 | S2 | Open the landing page, switch pages and come back | The logo, notes line and command list show; the logo is never drawn under the list | A screenshot |
-| S3 | Open General | Two tabs: *Master controls* (rows in the standard's order) and *Race HUD* (show mode) | A screenshot |
-| S4 | Look at the page order | Race, Live breakdown and History sit between General and Profiles, each a tab strip with subsection headings | A screenshot |
+| S3 | Open General | Three tabs: *Master controls* (rows in the standard's order), *Race HUD* (*Display* and *Live breakdown*) and *Keybindings* | A screenshot |
+| S4 | Look at the page order | Race and History sit between General and Profiles, each a one-tab strip with subsection headings; there is no *Live breakdown* page | A screenshot |
 | S5 | On Race, drag the grace slider; hover it | It steps by 0.1 from 0 to 5; the tooltip says it applies to new runs; the length dropdown offers 0:30 to 5:00 | The values it stops at |
-| S6 | On Live breakdown, set *Rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
+| S6 | On General > Race HUD, set *Spell rows shown* to 3, then 15, with the HUD running a race | The live list shows 3 rows, then as many as fit (never under *Cancel*) | A screenshot |
 | S7 | On History, type 10000 into *Runs to keep*'s box | Accepted at once, without a stall; nothing is deleted on the spot | How long it froze, if it did |
 | S8 | Press each page's *Defaults* button after changing one row on every page | Only that page's rows go back | Which page's rows moved |
-| S9 | History: *Delete all runs…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
+| S9 | History: *Purge history…* with a race armed, then with none | Armed: one refusal line, nothing deleted. Idle: it asks first, and on accept the stored count reads 0 and the Results window empties | The chat lines |
 | S10 | Open the panel in combat | Refused with a notice; it opens once combat ends | Whether any taint error followed |
 | S11 | *Reset all settings* | It asks first; afterwards the minimap button keeps its state and *Test mode* is unticked | The settings that did not reset |
 | S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
+| SM-DR-LY1 | Open General > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the live breakdown and ends *Key bindings are not changed.* Change a live row, press General's *Defaults*: it goes back | A screenshot of the tab |
+| SM-DR-LY2 | Open Race | One tab, headed *Length*, *Countdown*, *At the buzzer*, *Scoring rules* in that order: *Countdown cue sound* alone on its line, then *Center-screen countdown* \| *Center countdown from (seconds)*; *Buzzer raid warning and sound* \| *Sticky-combat hint after (seconds)* (its tooltip ends *5 to 60 seconds.*); *Late-cast grace (seconds)* \| *Damage-restart gap (seconds)*. No *Scoring rules* tab | A screenshot of the page |
+| SM-DR-LY3 | Open History; hover *Runs to keep* and the last button | *Runs to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
+| SM-DR-LY4 | Before the pass, note every value on General > Race HUD, Race and History (or `/dr list`); after it, compare, then `/reload` and compare again | No setting is lost or changed by the new layout, `/dr list` shows the live rows under *general › Race HUD*, and every value survives the `/reload` | The row that differs |
 
 ## 3. Launcher, key bindings and slash
 
@@ -60,13 +69,17 @@ the catalog (spec §4.6).
 | K1 | Look at the minimap button; hover it | The logo shows; the tooltip has the version and status, also while disabled | A screenshot |
 | K2 | Left-click, then right-click the button | Left opens settings; right shows exactly *Enabled*, *Locked*, *Test mode* and *Show window* (spec §6.4: no Results or Arm entry) | The menu as drawn |
 | K3 | Turn *Minimap button* off, then on | It hides, then comes back in the same place | Where it came back |
-| K4 | *Key Bindings → AddOns → Ka0s DPS Race* | *Toggle race HUD*, *Toggle results window* and *Arm / cancel race* are listed, none bound | The list as shown |
+| K4 | *Options → Keybindings → Ka0s DPS Race* | *Toggle race HUD*, *Toggle results window* and *Arm or cancel race* are listed, none bound | The list as shown |
 | K5 | Bind all three; press each | The HUD toggles; the Results window toggles; the arm key arms the HUD's length, a second press cancels | Which key did what |
 | K6 | Press the arm key while a result is pending (section 4, R8) | It discards nothing and prints one line pointing at `/dr cancel` | The line |
 | K7 | `/dr arm 1:30`, `/dr cancel`, `/dr arm 0`, `/dr arm 3m`, `/dr cancel` | 1:30 arms with the *Armed* line; cancel cancels; `0` prints the length line; `3m` arms 3:00 | Each line |
 | K8 | `/dr hud show`, `hide`, `toggle`, bare `/dr hud`; `/dr results`, `/dr results bests`; `/dr lock`, `/dr unlock` | Each acts and echoes once; `/dpsrace` answers the same as `/dr` | The verb that misbehaved |
 | K9 | Target each catalog dummy and `/dr target` | Its name, creature ID and category print (243167/243168 Dungeoneer, 243208 Cleave, 243205 Boss-level, 243211 PvP); an uncataloged target prints *Other* | The line for each |
 | K10 | Arm with `/dr arm 30` with the HUD's *Test mode* box ticked in settings | Test mode ends with one line and the settings checkbox unticks | Whether the box stayed ticked |
+| SM-DR-KB1 | *Options → Keybindings*, scroll to the addons' sections | A section titled *Ka0s DPS Race* holds *Toggle race HUD*, *Toggle results window* and *Arm or cancel race*, in that order; no blank spacer row above or among them; nothing of DPS Race is left under *AddOns* | A screenshot of the section |
+| SM-DR-KB2 | Bind a key with the key button in *General > Keybindings* in this addon's settings, then look in *Options → Keybindings*; bind a second key there, then reopen the tab and hover the button. Repeat with *Character Specific Keybindings* ticked | Each key shows in the other surface, in both account and character-specific modes; the button reads *<first key> +1* and its tooltip names both keys; the tab's set line names the set in force | Which surface missed which key, and the mode |
+| SM-DR-KB3 | Press the bound *Toggle race HUD* key; on the tab, click a key button and press Escape; right-click a bound key button; enter combat and click a key button | The key toggles the HUD; Escape cancels the capture and the Settings window stays open; the right-click clears the first key (a second moves up); in combat the button refuses with *Key bindings can be changed after combat.* and binds nothing | The outcome line and any error |
+| SM-DR-RV3 | Open *General > Keybindings*; bind *Toggle race HUD* there and press the key; then press the row's *Clear* | Each action shows one key button and *Clear*, no second key slot; the key bound there toggles the HUD; *Clear* removes every key of the action | A screenshot of the tab |
 
 ## 4. The race on a real dummy
 
@@ -85,10 +98,11 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | R7a | General → Race HUD → *Race clock*: *Time left*, then *Time elapsed*, then back to *Elapsed and time left*, during a race and in test mode; then drag the HUD to its minimum width (260) | One big red clock, then one big green clock, then the pair; the switch takes effect at once. At 260 px wide the two clocks and their captions do not touch or clip, also at 9:59.9 | A screenshot at the minimum width |
 | R8 | Hear the last 10 s | With the defaults the cue sounds once a second from 10 down to 1, never twice in a second. With *Center-screen countdown* off it sounds at 10, 5, 3, 2 and 1 only. *Countdown cue* off silences it mid-race | Which seconds were silent or doubled |
 | R8a | Watch the last 10 s of a 0:30 race, HUD open, then again with the HUD closed | Gold numbers 10 down to 1 pop in (grow and fade in, with a glow flash) in the middle of the screen above the character, one a second; *10* is two digits, centered; they vanish at the buzzer, and the raid-warning *STOP* still shows. Nothing is clickable through them (the mouse passes through). Nobody else in the group sees a pull timer | A screenshot of *10* and of *1*, and whether a groupmate saw anything |
-| R8b | Race, Race page: *Countdown from (s)* 3, then *Center-screen countdown* off mid-countdown | The numbers start at 3. Switching it off hides the number on screen at once | |
+| R8b | Race, Race page: *Center countdown from (seconds)* 3, then *Center-screen countdown* off mid-countdown | The numbers start at 3. Switching it off hides the number on screen at once | |
 | R8c | Cancel the race with 5 s left; drop combat with 6 s left on another run | The number on screen goes at once, and no further number or cue follows | |
 | R8d | `/reload` with about 6 s left, still attacking | After the loading screen the number of the moment shows at once (silently) and the count carries on to 1 | The numbers seen after the reload |
 | R8e | `/dr test`, watch the sample race's last 10 s; then end test mode during its countdown | The numbers show silently in the sample race and go with its buzzer; ending test mode clears them at once | |
+| R8f | With about 8 s left on a race, open a Results filter dropdown so the menu crosses the center-screen numbers | The menu draws over the numbers, and they still draw over any open confirmation popup or the debug console | A screenshot |
 | R9 | Stop on the buzzer | A raid-warning **STOP** with a sound; the HUD switches to *Stop!*: *Damage Stopped +x.xs* climbing while DoTs tick, the late-cast count, *In Combat +y.ys* | A screenshot |
 | R10 | Stay idle in combat on the Dungeoneer's dummy for 20 s after the buzzer | The body moves to *Waiting for combat to end* with the elapsed time and *Discard Run*; after 15 s the hint appears naming only drop-combat abilities this character has (Feign Death, Vanish, Shadowmeld, Invisibility) | The hint's text and the class |
 | R11 | Close the HUD while waiting, walk out of range | The result card opens by itself about 2.5 s after combat drops | How long it took |
@@ -136,6 +150,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | W14 | Look for the `×` (target count) and `—` (empty damage) glyphs | Both render in the client font, not as boxes | A screenshot |
 | W15 | Open Results beside LootHistory's browser | The same look: the title centered in the title bar; *Runs* / *Bests* tabs in the normal gold font, the idle one gray; Title Case column headers small and gold with the gold sort arrow after the sorted one; compact 20 px rows in the small white font; the detail's Damage / DPS / Meter DPS figures large over small gray captions; 20 px buttons in the small white font (*Add Note*, *Share*, *Delete*), gold under the pointer; footers small and gray | A screenshot beside LootHistory |
 | W16 | Hover the close control | It turns gold (not red) and back to gray on leave | |
+| W17 | Make the window 900 px or wider, click a run, then open each filter dropdown over the detail | The detail beside the list draws whole (its backdrop, KPI figures, breakdown and buttons over nothing of the list), the filter menus open over it, and the resize grip still takes the drag | A screenshot |
 
 ## 7. Share and test mode
 
@@ -163,6 +178,7 @@ Use a 0:30 race on the Reinforced Golem (243205) unless a row says otherwise. Th
 | H4 | Alt-Z with the HUD shown on a result card | The card is still there when the UI comes back (a hidden parent is not a close) | |
 | H5 | Open the HUD and LootHistory's browser side by side and walk every HUD body (test mode) | The same look: the title *DPS Race* centered in a 30 px title bar in the header gold; section labels (*Race Length*, *Target*) small and gold; buttons, presets, spell rows, chips and the target card's text in the small white font; footers and KPI captions small and gray; Title Case labels and buttons, no ALL-CAPS word but *STOP*; the race clocks, *STOP* and the Damage / DPS figures still large | A screenshot beside LootHistory |
 | H6 | Hover each title-bar control in turn (Results, settings, lock, close), sliding straight from one to the next, then off the bar | The control under the pointer turns gold, the rest stay gray, all at full alpha; sliding from one to the next never leaves both gold or neither; off the bar all four are gray again; each still shows its tooltip (the close control has none). The close control is gold, not red | Which control stayed gold or never turned |
+| H7 | Drag the HUD partly under another addon's MEDIUM window (or Blizzard's character frame), then click the HUD | The click brings the HUD in front of it; the Results window, the Settings panel and confirmation popups still draw over the HUD | Which frame stayed in front |
 | D1 | `/dr disable` | Every right-click menu entry but *Enabled* is grayed; `/dr help`, `config`, `list` and `diagnostics` still answer; the feature verbs print the one disabled line | |
 | D2 | Press each key binding while disabled | The one disabled line, nothing else | |
 | D3 | `/dr enable` | Everything comes back without a `/reload`; a race armed before the disable is gone, a stored running run resumes like a reload | |

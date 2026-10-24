@@ -341,11 +341,11 @@ test("slash: feature verbs answer the enable line while disabled", function()
     assertEqual(NS.db.profile.locked, false)
 end)
 
-test("slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept", function()
+test("slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept", function()
     local f = RaceClock.new()
     local NS = f.NS
     local key = assert(f.M._G.DpsRaceArmToggle, "no DpsRaceArmToggle button")
-    assertEqual(type(f.M._G["BINDING_NAME_CLICK DpsRaceArmToggle:LeftButton"]), "string", "no label")
+    assertEqual(f.M._G["BINDING_NAME_CLICK DpsRaceArmToggle:LeftButton"], "Arm or cancel race", "its label")
     key:__fire("OnClick", "LeftButton", true)
     assertEqual(NS.Race.State(), "armed")
     key:__fire("OnClick", "LeftButton", true)

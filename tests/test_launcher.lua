@@ -1,5 +1,6 @@
 -- tests/test_launcher.lua — the launcher descriptor (one LDB object, registered twice), its menu
--- toggles onto the shared handlers, and the two Show-window key bindings (launcher-§1/§2/§6).
+-- toggles onto the shared handlers, and the two Show-window key bindings (launcher-§1/§2/§6); the
+-- tab that sets them is tests/test_keybinds.lua's.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -75,6 +76,8 @@ test("bindings: both Show-window buttons exist, plain and hidden, with their lab
         assertFalse(b:IsShown(), name .. " is hidden")
         assertEqual(type(env["BINDING_NAME_CLICK " .. name .. ":LeftButton"]), "string", name .. " label")
     end
+    assertEqual(env["BINDING_NAME_CLICK DpsRaceToggleHud:LeftButton"], "Toggle race HUD")
+    assertEqual(env["BINDING_NAME_CLICK DpsRaceToggleResults:LeftButton"], "Toggle results window")
     assertEqual(env.BINDING_HEADER_DPSRACE, "Ka0s DPS Race")
 end)
 
@@ -87,7 +90,7 @@ test("bindings: a key press runs the same toggle the menu does", function()
     assertTrue(inst.NS.Results.IsShown())
 end)
 
-test("bindings: Bindings.xml names exactly the three buttons, with no default key", function()
+test("bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key", function()
     local f = assert(io.open(T.root .. "/Bindings.xml", "r"))
     local body = f:read("*a")
     f:close()
@@ -96,7 +99,8 @@ test("bindings: Bindings.xml names exactly the three buttons, with no default ke
     assertTrue(body:find('CLICK DpsRaceArmToggle:LeftButton', 1, true) ~= nil)
     local _, bindings = body:gsub("<Binding ", "")
     assertEqual(bindings, 3)
+    local _, own = body:gsub('category="BINDING_HEADER_DPSRACE"', "")
+    assertEqual(own, 3, "every binding in the addon's own category (launcher-§6)")
     assertEqual(body:find("default=", 1, true), nil)
-    local _, headers = body:gsub('header="', "")
-    assertEqual(headers, 1, "header on the first binding only")
+    assertEqual(body:find("header=", 1, true), nil, "the category is the heading; a header draws a blank row")
 end)

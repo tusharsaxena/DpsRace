@@ -7,6 +7,12 @@
 
 local root = ... or "."
 local base = dofile(root .. "/tests/_kit/mock_base.lua")
+-- The kit's binding model (kit revision 42): the installer keeps no state of its own, so it is read
+-- once and run on every fresh mock.
+local installBindings = dofile(root .. "/tests/_kit/mock_bindings.lua")
+-- The kit's frame-layer recorder (kit revision 42), on every mock: the addon sets levels relative to a
+-- parent (core/Constants.lua LAYERS), and the base alone answers GetFrameLevel with the frame itself.
+local installLayers = dofile(root .. "/tests/_kit/mock_layers.lua")
 
 local function build()
     local M = base()
@@ -24,6 +30,7 @@ local function build()
         end
         return f
     end
+    installLayers(M)
 
     -- TOC metadata, read through LibKa0s-Env-1.0 (core/EnvSetup.lua).
     M.__toc = {
@@ -221,6 +228,18 @@ local function build()
     M.UnitName = function(unit) return unitField(unit or "player", "name", M.__context.name) end
     M.UnitLevel = function(unit) return unitField(unit or "player", "level", M.__context.level) end
     M.UnitClassification = function(unit) return unitField(unit, "classification", "normal") end
+
+    -- The client's key-binding API, from the kit (the Keybindings tab, options-ui-§20). Its
+    -- GetBindingName reads M and the real _G, but this addon's BINDING_NAME_ globals are rawset into
+    -- the instance's environment (M._G, made after build), so the name is read there first, as the
+    -- client reads its one global table.
+    M.GetBindingName = function(command)
+        local env = rawget(M, "_G")
+        local v = type(env) == "table" and rawget(env, "BINDING_NAME_" .. tostring(command)) or nil
+        if v ~= nil then return v end
+        return command
+    end
+    installBindings(M)
 
     return M
 end

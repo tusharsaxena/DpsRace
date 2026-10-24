@@ -26,18 +26,18 @@ row's `default` reads from it.
 | `visibility` | `"always"` | *General visibility* | `always`, `inCombat`, `outOfCombat` or `never` |
 | `scale` | `1.0` | *Master scale* | The scale of both windows: the HUD (`modules/Hud.lua`) and the Results window (`modules/Results.lua`) |
 | `locked` | `false` | *Lock frame* | The HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
-| `race.grace` | `1.0` | *Late-cast grace (s)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
-| `race.restartGap` | `6` | *Damage-restart gap (s)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
+| `race.grace` | `1.0` | *Late-cast grace (seconds)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
+| `race.restartGap` | `6` | *Damage-restart gap (seconds)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
 | `race.defaultLength` | `180` | *Default race length*, Race page | The HUD's race length until the player picks one (spec §4.1) |
-| `race.countdownCue` | `true` | *Countdown cue*, Race page | The cue sound at 10, 5, 3, 2 and 1 s left, and with each center-screen number, once a second at most (spec §4.3) |
+| `race.countdownCue` | `true` | *Countdown cue sound*, Race page | The cue sound at 10, 5, 3, 2 and 1 s left, and with each center-screen number, once a second at most (spec §4.3) |
 | `race.centerCountdown` | `true` | *Center-screen countdown*, Race page | The large numbers in the middle of the screen for the race's last seconds (spec §4.3, `modules/Countdown.lua`) |
-| `race.finalCountdown` | `10` | *Countdown from (s)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
+| `race.finalCountdown` | `10` | *Center countdown from (seconds)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
 | `race.buzzer` | `true` | *Buzzer raid warning and sound*, Race page | The raid-warning STOP and its sound at the buzzer (spec §4.4) |
-| `race.hintDelay` | `15` | *Sticky-combat hint after (s)*, Race page (5-60) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
-| `live.rows` | `8` | *Rows shown*, Live breakdown page | Spells in the live breakdown, 3-15 |
-| `live.icons` | `true` | *Show spell icons*, Live breakdown page | Spell icons on the HUD's rows |
-| `live.showDps` | `true` | *Show live DPS*, Live breakdown page | Blizzard's live DPS figure, labeled *live* |
-| `live.hz` | `4` | *Live reads per second*, Live breakdown page | Live reads per second, 2-10 (spec §10) |
+| `race.hintDelay` | `15` | *Sticky-combat hint after (seconds)*, Race page (5-60) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
+| `live.rows` | `8` | *Spell rows shown*, General page, Race HUD tab | Spells in the live breakdown, 3-15 |
+| `live.icons` | `true` | *Show spell icons*, General page, Race HUD tab | Spell icons on the HUD's rows |
+| `live.showDps` | `true` | *Show live DPS*, General page, Race HUD tab | Blizzard's live DPS figure, labeled *live* |
+| `live.hz` | `4` | *Live reads per second*, General page, Race HUD tab | Live reads per second, 2-10 (spec §10) |
 | `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
 | `hud.clock` | `"both"` | *Race clock*, General page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
 | `windows.hud.width` / `.height` | `300` / `460` | none (geometry) | The HUD's size, tall enough for the default 8 live rows (mockup screen 04); the minimum is 260x296 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
@@ -107,7 +107,7 @@ and a closed list of writers.
 
 | Storage key | Owner | Writers |
 |---|---|---|
-| `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Delete all runs…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
+| `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Purge history…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |

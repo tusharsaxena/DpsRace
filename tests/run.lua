@@ -23,7 +23,7 @@ do
         "Widgets.lua", "DebugLog.lua", "DebugLogDiagnostics.lua", "DebugLogGates.lua",
         "Slash.lua", "SlashParse.lua", "Launcher.lua",
         "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsTabs.lua",
-        "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua",
+        "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
         "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua",
     }
     local present = {}
@@ -86,6 +86,7 @@ local SUITES = {
     "test_format",
     "test_hud",
     "test_countdown",
+    "test_layers",
     "test_results",
     "test_schema",
     "test_settings",
@@ -93,6 +94,7 @@ local SUITES = {
     "test_share",
     "test_preview",
     "test_launcher",
+    "test_keybinds",
     "test_disabled",
     "test_surface_parity",
     "test_perf_harness",

@@ -1,6 +1,6 @@
 local _, NS = ...
 -- settings/History.lua — the History page (spec §6.3): Runs to keep (0 = never prune), how many runs
--- are stored, and Delete all runs (asks first).
+-- are stored, and Purge history… last (asks first; options-ui-§21's History family).
 
 local L = NS.L
 local PAGE = "history"
@@ -44,7 +44,7 @@ function History.DeleteAll()
     return n
 end
 
---- The page's Delete all runs button: asks first, through the one popup.
+--- The page's Purge history… button: asks first, through the one popup.
 function History.ConfirmDeleteAll()
     if raceBusy() then
         NS.Print(L["Finish or cancel the race first."])
@@ -69,18 +69,17 @@ StaticPopupDialogs[POPUP] = {
 NS.RegisterSchemaRows({
     { path = "global.history.keep", page = PAGE, group = GROUP, subgroup = L["Storage"], type = "number",
       min = 0, max = 10000, step = 1, label = L["Runs to keep"], default = NS.defaults.global.history.keep,
-      tooltip = L["0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] },
+      tooltip = L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] },
 })
 
--- After the group's rows: the stored count, then the danger zone (a heading of its own, since the tab
--- now mixes a slider with an act: options-ui-§13).
+-- After the group's rows: the stored count, then Purge history… as the tab's last act. No heading
+-- over it: a heading is declared by a row, never drawn by a builder over an act (options-ui-§7, §21).
 local function afterHistory(ctx)
     local H = NS.Helpers
     H.TextRow(ctx, History.StoredLine())
-    H.Section(ctx, L["Danger zone"])
     H.InlineButtonPair(ctx, {
-        text    = L["Delete all runs\226\128\166"],
-        tooltip = L["Asks for confirmation. Personal bests go with them."],
+        text    = L["Purge history\226\128\166"],
+        tooltip = L["Deletes every stored run. Asks for confirmation. Personal bests go with them."],
         onClick = function() History.ConfirmDeleteAll() end,
     })
 end

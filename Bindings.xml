@@ -1,13 +1,16 @@
 <Bindings>
 	<!-- The Show window keys (launcher-§6): each clicks a plain, hidden button core/LauncherSetup.lua
 	     creates at load, whose OnClick is the SAME handler the launcher menu runs (NS.ToggleHud,
-	     NS.ToggleResults), so a press while stood down refuses exactly as the verb does. Both labels
-	     are set there. No default key: the player picks one under Key Bindings, AddOns. The button
-	     names are permanent; renaming one unbinds every player's key. Not listed in the TOC: the
-	     client reads this file by name. -->
-	<Binding name="CLICK DpsRaceToggleHud:LeftButton" header="DPSRACE" category="ADDONS"/>
-	<Binding name="CLICK DpsRaceToggleResults:LeftButton" category="ADDONS"/>
+	     NS.ToggleResults), so a press while stood down refuses exactly as the verb does. Every label,
+	     the category's title (the brand) included, and NS.BINDINGS (this file's order) are set there.
+	     Every Binding names the addon's own category and none carries a header, so Options ->
+	     Keybindings shows a "Ka0s DPS Race" section with no blank row. No default key: the player
+	     picks one there or on the General page's Keybindings tab. The button names are permanent;
+	     renaming one unbinds every player's key. Not listed in the TOC: the client reads this file
+	     by name. -->
+	<Binding name="CLICK DpsRaceToggleHud:LeftButton" category="BINDING_HEADER_DPSRACE"/>
+	<Binding name="CLICK DpsRaceToggleResults:LeftButton" category="BINDING_HEADER_DPSRACE"/>
 	<!-- Arm / cancel race (spec §6.4): the same shape, on its own named button; its click runs NS.ToggleArm,
 	     the handler `/dr arm` and `/dr cancel` share. -->
-	<Binding name="CLICK DpsRaceArmToggle:LeftButton" category="ADDONS"/>
+	<Binding name="CLICK DpsRaceArmToggle:LeftButton" category="BINDING_HEADER_DPSRACE"/>
 </Bindings>

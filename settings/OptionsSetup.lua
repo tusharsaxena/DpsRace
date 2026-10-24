@@ -56,7 +56,7 @@ local descriptor = {
     debug         = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
 }
 
---- One schema page (Race, Live breakdown, History): its panel, its page-wide Defaults button, and every
+--- One schema page (Race, History): its panel, its page-wide Defaults button, and every
 --- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
 --- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
 --- the stub's no-op.
@@ -108,13 +108,16 @@ if not lib then
         "RefreshScalars", "RefreshPanel", "RestoreDefaults", "PatchAlwaysShowScrollbar",
         "RegisterOptionsPage", "CreateOptionsPanel", "OpenOptionsPanel", "SetChromeHeight", "TabStrip",
         "PageBanner", "RenderTabbedSchema", "SelectTab", "ChoiceGrid", "IdInput", "IdList", "NavRail",
-        "Drawer", "Relayout",
+        "Drawer", "Relayout", "KeybindingsTab", "KeybindRows",
     }) do
         Helpers[name] = function() end
     end
     Helpers.ResolveId         = function() return nil end
     Helpers.UnnamedCandidates = function() return nil end
     Helpers.ID_NAME_HINT      = {}
+    Helpers.StrataTooltip     = function() return "" end
+    Helpers.ResetAllTooltip   = function() return "" end
+    Helpers.KEYBINDS_UNCHANGED = "Key bindings are not changed."
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel

@@ -21,7 +21,7 @@ drift from what the client loads (testing-§9).
 | `locales/enUS.lua` | `NS.L`, the canonical locale | **load-bearing**: `core/LauncherSetup.lua` and every `settings/` file read `NS.L` at file scope |
 | `core/Namespace.lua` | `NS.PREFIX`, `NS.name`, `NS.BRAND`, `NS.SLASH`/`SLASH_LONG`, the version fallback | **load-bearing**: everything below reads these |
 | `core/MediaSetup.lua` | `NS.Icon`, `NS.MediaFont`; the one `RegisterLSM` call (`LibKa0s-Media-1.0`) | **load-bearing**: `core/Constants.lua` resolves `FONT_MONO` from it |
-| `core/Constants.lua` | `FONT_MONO`, `LOGO_128`, `LOGO` | conventional |
+| `core/Constants.lua` | `FONT_MONO`, `LOGO_128`, `LOGO`, `LAYERS` (the one frame-layering table: strata by tier key, level bands) | conventional |
 | `core/State.lua` | session-only state (`NS.State.debug`) | conventional |
 | `core/EnvSetup.lua` | `NS.Meta`, `NS.Version` (`LibKa0s-Env-1.0`) | **load-bearing**: resolves `NS.version` at file scope; `core/PerfSetup.lua` calls `NS.Version()` |
 | `core/CoreSetup.lua` | `NS.Print`, `SafeToString`, the `SafeRegister*` family, `ApplySkin`, `MakeResizable`, the one `NS.MakeCloseButton` wrapper (`LibKa0s-Core-1.0`) | **load-bearing**: before anything that prints; publishes `NS.LIBKA0S_MISSING` |
@@ -33,7 +33,7 @@ drift from what the client loads (testing-§9).
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
 | `core/PerfSetup.lua` | `NS.Perf` (`LibKa0s-Perf-1.0`) and its declared buckets | **load-bearing**: before any module holding `NS.Perf` as an upvalue |
 | `core/DebugLogSetup.lua` | `NS.DebugLog`, the gated sink `NS.Debug` and its gates (`LibKa0s-DebugLog-1.0`) | **load-bearing**: needs `FONT_MONO`, the flag and the printer; before any `NS.Debug` call |
-| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the three key-binding buttons (the two Show-window keys and *Arm / cancel race*) | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
+| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the three key-binding buttons (the two Show-window keys and *Arm or cancel race*), their labels and `NS.BINDINGS` | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
 | `core/DpsRace.lua` | AceAddon registration, `OnInitialize`/`OnEnable`, the game events, the shared handlers the launcher, the key bindings and the verbs run (`ToggleHud`, `ToggleResults`, `ToggleLock`, `ToggleTestMode`, `ToggleArm`, `SetHudShown`, `ShowResults`) | **load-bearing**: reclaims `NS.Print` from AceConsole's embed |
 | `core/Database.lua` | AceDB, the profile callbacks, the migration runner | conventional (reached at call time) |
 | `defaults/Profile.lua` | the AceDB defaults tree | the defaults group |
@@ -56,20 +56,19 @@ drift from what the client loads (testing-§9).
 | `modules/Results_Bests.lua` | `NS.ResultsBests`: the Bests tab over `NS.Bests.Board` (spec and category filters, *Clean runs only*); pure `Rows`, `Options`, `Columns` | after `modules/Results_Table.lua` |
 | `modules/Results.lua` | `NS.Results`: the Results window (skin, close, Escape, resize, Master scale, stored position), the lazily built tabs, wide or narrow placement of the detail, the footer, the delete confirmation; `Show`/`Hide`/`Toggle`/`IsShown`/`ShowRun`/`ShowTab`/`Back`/`Selected`/`Tab`/`Mode`/`ConfirmDelete`/`DeleteRun`/`SetNote`/`ResetPosition`/`Refresh`/`Suspend`/`Resume`/`Diagnose` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) and reads `NS.defaults` for its size |
 | `modules/Share.lua` | `NS.Share`: `Line(run)` (the one-line share, mockup screen 12; nil for a run with no score), `Prompt(run, owner?)` (the channel menu: say, party, raid, guild, whisper, the ones the player is not in grayed; refused in combat), `Send`, `CHANNELS`, and the race's own chat lines `ArmedLine` / `ResultLine`, printed on `RACE_STATE_CHANGED` (armed) and `RACE_RESULT` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) |
-| `modules/Countdown.lua` | `NS.Countdown`: the race's final seconds. One `C_Timer` per mark from `Race.TimeLeft()`: the countdown cue (one sound per second at most) and the center-screen numbers on its own `FULLSCREEN_DIALOG` frame (Blizzard's BigGold digit art by texcoord, an outlined font fallback, a pop animation); `Shown`/`Refresh`/`Preview`/`EndPreview`/`Suspend`/`Resume`/`Diagnose` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`); after `modules/Hud.lua` |
+| `modules/Countdown.lua` | `NS.Countdown`: the race's final seconds. One `C_Timer` per mark from `Race.TimeLeft()`: the countdown cue (one sound per second at most) and the center-screen numbers on its own `FULLSCREEN` frame (`LAYERS.STRATA.SCREEN_ALERT`) (Blizzard's BigGold digit art by texcoord, an outlined font fallback, a pop animation); `Shown`/`Refresh`/`Preview`/`EndPreview`/`Suspend`/`Resume`/`Diagnose` | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`); after `modules/Hud.lua` |
 | `modules/Preview.lua` | `NS.Preview`: test mode. `Start` (refused in combat and during a race) / `Stop(reason?)` / `IsActive` / `Suspend` / `Diagnose`, the scripted 30s race (`SCRIPT`, `LENGTH`, `TICK`) drawn through `NS.Hud.Render`; ends on arming a real race | **load-bearing**: builds its bus receiver at file scope (`core/Bus.lua`) |
 | `modules/Diagnostics.lua` | the sections of `/dr diagnostics` | conventional |
 | `settings/Schema.lua` | `NS.Schema`, the write seam `NS.SetByPath`, `NS.GetSetting`, page filter, validation (`LibKa0s-Schema-1.0`) | **load-bearing**: `settings/General.lua` calls `NS.RegisterSchemaRows` at file scope |
 | `settings/Slash.lua` | `NS.COMMANDS` and the `LibKa0s-Slash-1.0` descriptor | conventional |
-| `settings/OptionsSetup.lua` | `NS.Helpers`, the `LibKa0s-Options-1.0` instance; `NS.RegisterTabbedPage(spec)`, the one builder of the Race, Live breakdown and History pages, and `NS.pageCtx` | **load-bearing**: every page file captures `NS.Helpers` at file scope and the three pages call `NS.RegisterTabbedPage` at file scope |
-| `settings/General.lua` | the General page (Master controls, then the Race HUD tab: `hud.showMode`) and the landing spec `NS.LANDING` | **load-bearing**: registers first; page order is registration order |
-| `settings/Race.lua` | the Race page: default race length, countdown cue, buzzer, the center countdown and where it starts, and the scoring rules (grace, restart gap, hint delay) | after `settings/General.lua` (page order); reads `NS.HudStates.PRESETS` and `NS.Format` at file scope |
-| `settings/Live.lua` | the Live breakdown page: rows shown, live reads per second, spell icons, live DPS | after `settings/Race.lua` (page order) |
-| `settings/History.lua` | the History page: Runs to keep, the stored count, *Delete all runs…* (`NS.History`: `StoredLine`, `ConfirmDeleteAll`, `DeleteAll`) | after `settings/Live.lua` (page order); builds its bus receiver at file scope |
+| `settings/OptionsSetup.lua` | `NS.Helpers`, the `LibKa0s-Options-1.0` instance; `NS.RegisterTabbedPage(spec)`, the one builder of the Race and History pages, and `NS.pageCtx` | **load-bearing**: every page file captures `NS.Helpers` at file scope and the two pages call `NS.RegisterTabbedPage` at file scope |
+| `settings/General.lua` | the General page (Master controls, then the Race HUD tab: `hud.showMode`, `hud.clock` and the live breakdown's `live.*` rows, then Keybindings) and the landing spec `NS.LANDING` | **load-bearing**: registers first; page order is registration order |
+| `settings/Race.lua` | the Race page, one tab: default race length, the countdown (cue, the center countdown and where it starts), the buzzer and the sticky-combat hint's delay, and the scoring rules (grace, restart gap) | after `settings/General.lua` (page order); reads `NS.HudStates.PRESETS` and `NS.Format` at file scope |
+| `settings/History.lua` | the History page: Runs to keep, the stored count, *Purge history…* (`NS.History`: `StoredLine`, `ConfirmDeleteAll`, `DeleteAll`) | after `settings/Race.lua` (page order); builds its bus receiver at file scope |
 | `settings/Profiles.lua` | the Profiles page (AceDBOptions) | registers last |
 
 Not listed in the TOC: `Bindings.xml` (the client reads it by name; three `CLICK` bindings: the two
-Show-window keys and *Arm / cancel race*).
+Show-window keys and *Arm or cancel race*, each in the `BINDING_HEADER_DPSRACE` category).
 
 ## Not shipped
 

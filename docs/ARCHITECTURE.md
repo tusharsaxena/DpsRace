@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.76.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.77.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -58,7 +58,7 @@ annotated (toc-file-§5).
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
 | `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
-| `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, Live breakdown, History, Profiles |
+| `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
 Every file, its one-line job and why the TOC orders it as it does: [module-map.md](module-map.md).
@@ -130,8 +130,11 @@ disabled line while the addon is disabled; under the `perf` hold alone each answ
 The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
 
 The launcher (`core/LauncherSetup.lua`) and the three key bindings (`Bindings.xml`: *Toggle race
-HUD*, *Toggle results window*, *Arm / cancel race*) call the same handlers as the verbs, in
-`core/DpsRace.lua`. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
+HUD*, *Toggle results window*, *Arm or cancel race*, all in the addon's own category
+`BINDING_HEADER_DPSRACE` with no header, launcher-§6) call the same handlers as the verbs, in
+`core/DpsRace.lua`. `NS.BINDINGS` (`core/LauncherSetup.lua`) declares them once, in `Bindings.xml`'s
+order; the General page's last tab, *Keybindings*, is the library's `O.KeybindingsTab` drawn from
+it (options-ui-§20), so a key set there or in Options -> Keybindings shows in both. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
 (launcher-§2: Enabled, Locked, Test mode, Show window), so the Results window is reached from the
 HUD's title bar, `/dr results` or its key (spec §6.4).
 
@@ -188,6 +191,17 @@ the script reaches the result card, when test mode ends and at the stand-down. `
 and `settings/History.lua` hold only their bus receivers.
 
 The pipeline from event to screen: [data-flow.md](data-flow.md).
+
+## Frame layering
+
+Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
+`core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
+copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
+Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with one level band, `LEVEL.DETAIL`, that
+lifts the Results detail pane over the Runs pane it sits inside. The StaticPopups, the debug console,
+the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
+each frame's strata, level and toplevel.
 
 ## Taint Notes
 
@@ -251,7 +265,8 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 Frozen and generated stores are named once each and not enumerated: `docs/audits/`,
 `docs/reviews/`, `docs/automated-tests/<run>/`, `docs/perf-analysis/<run>/`,
 `docs/revendor/<date>-v<tag>/`, `docs/superpowers/` and `docs/investigations/` (documentation-§3).
-Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
+Of those, `docs/automated-tests/<run>/`, `docs/revendor/<date>-v<tag>/` and `docs/superpowers/`
+exist today; `docs/superpowers/` holds the spec and the plan.
 
 ### Required (documentation-§3, Tier 1)
 
@@ -305,4 +320,4 @@ Of those, only `docs/superpowers/` exists today; it holds the spec and the plan.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest file is
-`modules/Hud.lua` at 915 lines (layout-§1).
+`modules/Hud.lua` at 916 lines (layout-§1).

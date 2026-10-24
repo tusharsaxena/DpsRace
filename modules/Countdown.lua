@@ -15,8 +15,10 @@ local _, NS = ...
 -- A RESUME mid-window (a /reload, a stand-up, a setting changed mid-race) shows the number of the
 -- moment at once, silently, and counts on from the next mark.
 --
--- THE FRAME is its own, parented to UIParent, FULLSCREEN_DIALOG strata, mouse-disabled, built at the
--- first number it shows. The digits are Blizzard's own art, the BigGold set the client's TimerTracker
+-- THE FRAME is its own, parented to UIParent, FULLSCREEN strata (LAYERS.STRATA.SCREEN_ALERT in
+-- core/Constants.lua: over every dialog, and below every menu, which sits at FULLSCREEN_DIALOG, so a
+-- dropdown opened in the last ten seconds is never covered), mouse-disabled, built at the first
+-- number it shows. The digits are Blizzard's own art, the BigGold set the client's TimerTracker
 -- draws from (TIMER_NUMBERS_SETS.BigGold in Blizzard_FrameXML/Timer.lua: 256x170 cells on a 1024x512
 -- sheet, four to a row, with a matching Glow sheet), cut by texcoord on this file's own textures and
 -- placed by its half-width table as Blizzard places them. Nothing of Blizzard's is called: no pull
@@ -164,7 +166,7 @@ end
 local function ensure()
     if ui then return ui end
     local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("FULLSCREEN_DIALOG")
+    f:SetFrameStrata(NS.Constants.LAYERS.STRATA.SCREEN_ALERT)
     f:EnableMouse(false)
     f:SetSize(DIGIT_W * 2, DIGIT_H)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, Countdown.OFFSET_Y)

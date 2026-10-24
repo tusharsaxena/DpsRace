@@ -1,6 +1,6 @@
--- tests/test_settings.lua — the settings pages (spec §6.3): the Race, Live breakdown and History pages
--- and the General page's Race HUD tab, their rows' shape (default, enUS label, tooltip), the ranges
--- the spec fixes, what a write reaches, and the History page's Delete all runs act.
+-- tests/test_settings.lua — the settings pages (spec §6.3): the Race and History pages and the General
+-- page's Race HUD tab (its Display and Live breakdown subsections), their rows' shape (default, enUS label, tooltip), the ranges
+-- the spec fixes, what a write reaches, and the History page's Purge history… act.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -33,9 +33,56 @@ test("settings: every schema row has default, enUS label and desc", function()
     end
 end)
 
+-- The stored-setting guard (settings layout, item 020): a layout pass moves, regroups and relabels
+-- rows only. Every stored path, its type, default and range is pinned here, so a key that moves, a
+-- default that drifts or a row that appears or goes fails this test, not a player's profile.
+local STORED = {
+    -- path                     type      default  min   max    step
+    ["enabled"]              = { "bool",   true },
+    ["visibility"]           = { "string", "always" },
+    ["scale"]                = { "number", 1,       0.5,  2,     0.05 },
+    ["locked"]               = { "bool",   false },
+    ["state.debugConsole"]   = { "bool",   nil },
+    ["global.minimap.shown"] = { "bool",   true },
+    ["state.testMode"]       = { "bool",   false },
+    ["hud.showMode"]         = { "string", "onArm" },
+    ["hud.clock"]            = { "string", "both" },
+    ["live.rows"]            = { "number", 8,       3,    15,    1 },
+    ["live.icons"]           = { "bool",   true },
+    ["live.showDps"]         = { "bool",   true },
+    ["live.hz"]              = { "number", 4,       2,    10,    1 },
+    ["race.defaultLength"]   = { "number", 180 },
+    ["race.countdownCue"]    = { "bool",   true },
+    ["race.centerCountdown"] = { "bool",   true },
+    ["race.finalCountdown"]  = { "number", 10,      3,    10,    1 },
+    ["race.buzzer"]          = { "bool",   true },
+    ["race.hintDelay"]       = { "number", 15,      5,    60,    1 },
+    ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
+    ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
+    ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+}
+
+test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
+    local NS = T.NS
+    local seen = 0
+    for _, r in ipairs(NS.Schema) do
+        local pin = STORED[r.path]
+        assertTrue(pin ~= nil, "a stored path appeared: " .. tostring(r.path))
+        seen = seen + 1
+        assertEqual(r.type, pin[1], r.path .. " type")
+        assertEqual(r.default, pin[2], r.path .. " default")
+        assertEqual(r.min, pin[3], r.path .. " min")
+        assertEqual(r.max, pin[4], r.path .. " max")
+        assertEqual(r.step, pin[5], r.path .. " step")
+    end
+    local pinned = 0
+    for _ in pairs(STORED) do pinned = pinned + 1 end
+    assertEqual(seen, pinned, "a stored path went, or one is declared twice")
+end)
+
 test("settings: every row sits on a page the panel draws, and every page has a group", function()
     local NS = T.NS
-    local pages = { general = true, race = true, live = true, history = true }
+    local pages = { general = true, race = true, history = true }
     for _, r in ipairs(NS.Schema) do
         assertTrue(pages[r.page] == true, tostring(r.path) .. " on page " .. tostring(r.page))
         assertEqual(type(r.group), "string", tostring(r.path))
@@ -86,10 +133,12 @@ test("settings: the Race page's rows, ranges and defaults", function()
     assertTrue(hint.min <= 15 and hint.max >= 15)
 end)
 
-test("settings: the Live breakdown page's rows 3..15 and reads 2..10 per second", function()
+test("settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD", function()
     local NS = T.NS
     local rows = row(NS, "live.rows")
-    assertEqual(rows.page, "live")
+    assertEqual(rows.page, "general")
+    assertEqual(rows.group, "Race HUD")
+    assertEqual(rows.subgroup, "Live breakdown")
     assertEqual(rows.min, 3)
     assertEqual(rows.max, 15)
     assertEqual(rows.default, 8)
@@ -177,14 +226,15 @@ test("settings: the race clock is a Race HUD row: both, left or elapsed, default
     assertEqual(NS.db.profile.hud.clock, "left")
 end)
 
-test("settings: the Race, Live breakdown and History pages register and render quietly", function()
+test("settings: the General, Race and History pages register and render quietly", function()
     local inst = T.load()
     local M = inst.mocks
-    for _, name in ipairs({ "General", "Race", "Live breakdown", "History", "Profiles" }) do
+    for _, name in ipairs({ "General", "Race", "History", "Profiles" }) do
         assertTrue(M.__subcategories[name] ~= nil, name .. " is not registered")
     end
+    assertTrue(M.__subcategories["Live breakdown"] == nil, "the Live breakdown page folded into General")
     M.__resetPrinted()
-    for _, name in ipairs({ "Race", "Live breakdown", "History" }) do
+    for _, name in ipairs({ "General", "Race", "History" }) do
         M.__subcategories[name]:__fire("OnShow")
     end
     assertEqual(#M.__printed(), 0, "a render printed: " .. tostring(M.__printed()[1]))
@@ -194,10 +244,65 @@ test("settings: the pages register in the panel's order, General first and Profi
     local inst = T.load()
     local order = {}
     for _, ctx in ipairs(inst.NS.Helpers.__pages()) do order[#order + 1] = ctx.pageKey or ctx.key end
-    assertEqual(table.concat(order, ","), "general,race,live,history,profiles")
+    assertEqual(table.concat(order, ","), "general,race,history,profiles")
 end)
 
--- ── History: stored count, Delete all runs ───────────────────────────────────────────────────────
+-- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
+local function tabRows(NS, page, group)
+    local out = {}
+    for _, r in ipairs(NS.SchemaForPage(page)) do
+        if r.group == group then
+            out[#out + 1] = table.concat({ r.path, tostring(r.subgroup), r.label, tostring(r.startsLine == true) }, "|")
+        end
+    end
+    return table.concat(out, "\n")
+end
+
+test("settings: General > Race HUD draws Display, then Live breakdown, in the pinned order", function()
+    local NS = T.NS
+    assertEqual(tabRows(NS, "general", "Race HUD"), table.concat({
+        "hud.showMode|Display|Show the race HUD|false",
+        "hud.clock|Display|Race clock|false",
+        "live.rows|Live breakdown|Spell rows shown|false",
+        "live.icons|Live breakdown|Show spell icons|false",
+        "live.showDps|Live breakdown|Show live DPS|true",
+        "live.hz|Live breakdown|Live reads per second|false",
+    }, "\n"))
+end)
+
+test("settings: Race is a one-tab page along the race's timeline, in the pinned order", function()
+    local NS = T.NS
+    for _, r in ipairs(NS.SchemaForPage("race")) do assertEqual(r.group, "Race", r.path .. " tab") end
+    assertEqual(tabRows(NS, "race", "Race"), table.concat({
+        "race.defaultLength|Length|Default race length|false",
+        "race.countdownCue|Countdown|Countdown cue sound|true",
+        "race.centerCountdown|Countdown|Center-screen countdown|true",
+        "race.finalCountdown|Countdown|Center countdown from (seconds)|false",
+        "race.buzzer|At the buzzer|Buzzer raid warning and sound|false",
+        "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
+        "race.grace|Scoring rules|Late-cast grace (seconds)|false",
+        "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
+    }, "\n"))
+end)
+
+test("settings: the sticky-combat hint's tooltip states its range", function()
+    local tip = row(T.NS, "race.hintDelay").tooltip
+    assertTrue(tip:sub(-#"5 to 60 seconds.") == "5 to 60 seconds.", tip)
+end)
+
+test("settings: the show mode's tooltip points at General visibility", function()
+    local tip = row(T.NS, "hud.showMode").tooltip
+    assertTrue(tip:find("General visibility on Master controls still applies: while it hides the addon, "
+        .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
+end)
+
+test("settings: General's Defaults says it covers the live breakdown, and not the keys", function()
+    local tip = T.mocks.__subcategories["General"].defaultsTooltip
+    assertEqual(tip, "Restore every General setting on this profile to its addon default, including the "
+        .. "Race HUD's live breakdown. " .. T.NS.Helpers.KEYBINDS_UNCHANGED)
+end)
+
+-- ── History: stored count, Purge history… ────────────────────────────────────────────────────────
 
 local function seed(NS, n)
     for _ = 1, n do
@@ -217,7 +322,7 @@ test("settings: History says how many runs are stored", function()
     assertTrue(NS.History.StoredLine():find("0 runs", 1, true) ~= nil)
 end)
 
-test("settings: Delete all runs asks first, then deletes through Recorder.DeleteAll", function()
+test("settings: Purge history… asks first, then deletes through Recorder.DeleteAll", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks
     seed(NS, 2)
@@ -233,7 +338,7 @@ test("settings: Delete all runs asks first, then deletes through Recorder.Delete
     assertEqual(changed, 1)
 end)
 
-test("settings: Delete all runs is refused while a race is armed", function()
+test("settings: Purge history… is refused while a race is armed", function()
     local f = RaceClock.new()
     local NS, M = f.NS, f.M
     seed(NS, 1)
@@ -246,6 +351,34 @@ test("settings: Delete all runs is refused while a race is armed", function()
     assertEqual(#M.__printed(), 1)
     M.StaticPopupDialogs.DPSRACE_DELETE_ALL_RUNS.OnAccept()
     assertEqual(#NS.Recorder.All(), 1, "an accept left over from before the arm still deleted")
+end)
+
+test("settings: History ends with Purge history…, after the stored count, under no heading of its own", function()
+    local inst = T.load()
+    local H, M = inst.NS.Helpers, inst.mocks
+    local drawn = {}
+    local realText, realSection, realPair = H.TextRow, H.Section, H.InlineButtonPair
+    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.Section = function(ctx, text, ...) drawn[#drawn + 1] = "section:" .. tostring(text) return realSection(ctx, text, ...) end
+    local button
+    H.InlineButtonPair = function(ctx, a, ...)
+        button = a
+        drawn[#drawn + 1] = "button"
+        return realPair(ctx, a, ...)
+    end
+    M.__subcategories["History"]:__fire("OnShow")
+    for _, d in ipairs(drawn) do assertTrue(d ~= "section:Danger zone", "the builder still draws Danger zone") end
+    assertEqual(drawn[#drawn], "button", "Purge history… is not the tab's last act")
+    assertEqual(drawn[#drawn - 1], "text", "the stored count does not come just before the button")
+    assertEqual(button.text, "Purge history\226\128\166")
+    assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
+end)
+
+test("settings: Runs to keep says it is account-wide, and its label carries no suffix", function()
+    local keep = row(T.NS, "global.history.keep")
+    assertEqual(keep.label, "Runs to keep")
+    assertTrue(keep.tooltip:sub(1, #"Account-wide: shared by every profile. ")
+        == "Account-wide: shared by every profile. ", keep.tooltip)
 end)
 
 test("settings: lowering Runs to keep never deletes on the spot", function()

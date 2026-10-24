@@ -304,6 +304,15 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
+### test_layers.lua (6)
+
+- layers: one table names the addon's tiers by the standard's keys
+- layers: no strata string and no bare level number at a call site
+- layers: the Race HUD is MEDIUM, toplevel and clamped
+- layers: the Results window is HIGH, toplevel and clamped
+- layers: the detail pane sits one band over the list pane, never by creation order
+- layers: the countdown is FULLSCREEN, below every menu
+
 ### test_results.lua (26)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
@@ -351,24 +360,32 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (18)
+### test_settings.lua (26)
 
 - settings: every schema row has default, enUS label and desc
+- settings: the stored paths, types, defaults and ranges are exactly the pinned set
 - settings: every row sits on a page the panel draws, and every page has a group
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
-- settings: the Live breakdown page's rows 3..15 and reads 2..10 per second
+- settings: the live breakdown's rows 3..15 and reads 2..10 per second, on General > Race HUD
 - settings: a write out of range is refused and stores nothing
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
 - settings: the HUD's show mode is a General tab of its own; `always` opens the HUD
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
-- settings: the Race, Live breakdown and History pages register and render quietly
+- settings: the General, Race and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
+- settings: General > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: Race is a one-tab page along the race's timeline, in the pinned order
+- settings: the sticky-combat hint's tooltip states its range
+- settings: the show mode's tooltip points at General visibility
+- settings: General's Defaults says it covers the live breakdown, and not the keys
 - settings: History says how many runs are stored
-- settings: Delete all runs asks first, then deletes through Recorder.DeleteAll
-- settings: Delete all runs is refused while a race is armed
+- settings: Purge history… asks first, then deletes through Recorder.DeleteAll
+- settings: Purge history… is refused while a race is armed
+- settings: History ends with Purge history…, after the stored count, under no heading of its own
+- settings: Runs to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Runs to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
@@ -400,7 +417,7 @@ Total.
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
-- slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept
+- slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
 
 ### test_share.lua (13)
 
@@ -446,7 +463,17 @@ Total.
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
-- bindings: Bindings.xml names exactly the three buttons, with no default key
+- bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
+
+### test_keybinds.lua (7)
+
+- keybinds: NS.BINDINGS is Bindings.xml's order, Show window first, each with a tooltip
+- keybinds: Bindings.xml is the addon's own category, no header, no default, labeled
+- keybinds: the General page ends in the Keybindings tab, after Master controls
+- keybinds: the tab's rows are NS.BINDINGS in order, labeled as the client labels them
+- keybinds: a key bound in the tab is the client's key; one set on the client's page shows
+- keybinds: in combat the tab binds nothing
+- keybinds: the General Defaults tooltip says it leaves key bindings alone
 
 ### test_disabled.lua (17)
 
@@ -584,13 +611,15 @@ Total.
 | test_format.lua | 7 |
 | test_hud.lua | 58 |
 | test_countdown.lua | 20 |
+| test_layers.lua | 6 |
 | test_results.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 18 |
+| test_settings.lua | 26 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
 | test_launcher.lua | 8 |
+| test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
 | test_surface_parity.lua | 15 |
 | test_perf_harness.lua | 4 |
@@ -602,4 +631,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **468** |
+| **Total** | **489** |
