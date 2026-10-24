@@ -105,8 +105,6 @@ local STORED = {
     ["resultsTable.barText.useClassColorFont"] = { "bool", false },
     ["resultsTable.barText.fontFlags"] = { "string", "" },
     ["resultsTable.barText.fontShadow"] = { "bool", true },
-    ["resultsTable.barBg.bgColor"] = { "color", "table" },
-    ["resultsTable.barBg.useClassColorBg"] = { "bool", false },
 }
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()

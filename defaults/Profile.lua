@@ -60,9 +60,9 @@ NS.defaults = {
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
-        -- and DPS cells' bars, the track behind them and their text. Composed groups (options-ui-§16);
-        -- each class color is the run's own character's (the row describes that character). The look is
-        -- the spell breakdown's (appearance.bars): its indigo fill on both bars, its faint track.
+        -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
+        -- each class color is the run's own character's (the row describes that character). The fill is
+        -- the spell breakdown's (appearance.bars): its indigo on both bars.
         resultsTable = {
             damageBar = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
                           useClassColorBar = false },
@@ -70,7 +70,6 @@ NS.defaults = {
                           useClassColorBar = false },
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
-            barBg     = { bgColor = { r = 1, g = 1, b = 1, a = 0.04 }, useClassColorBg = false },
         },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.

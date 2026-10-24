@@ -153,8 +153,8 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- HUD > HUD Appearance: four font blocks of six, the bar block's four and its row height
     -- (an `extra`, so it goes with the block).
     local APPEARANCE_ROWS = 4 * 6 + 4 + 1
-    -- History > Results table: two bar blocks of four, a font block of six, a background pair.
-    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 2
+    -- History > Results table: two bar blocks of four and a font block of six.
+    local RESULTS_TABLE_ROWS = 2 * 4 + 6
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them.
     local PAGE_ROWS = 15

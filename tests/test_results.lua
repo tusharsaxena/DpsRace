@@ -149,7 +149,7 @@ test("results: the Status column tags each run; the DPS column shows every run's
     assertFalse(rows[1].cells.flag.icon:IsShown(), "a status is not a flag")
 end)
 
-test("results: Status is Best, Flagged or Complete for a complete run", function()
+test("results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     seed(i, {
@@ -160,25 +160,45 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     })
     local by = {}
     for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
+    local C = i.NS.ResultsTable.COLORS
     local key, text, bestColor, icon = Runs.Status(by.top)
-    assertEqual(key, "best")
-    assertEqual(text, "Best")
-    assertEqual(bestColor, i.NS.ResultsTable.COLORS.blue, "Best in blue")
-    assertEqual(icon, "ph:trophy", "Best draws the trophy")
+    assertEqual(key, "best", "with no view max given, the board's best")
+    assertEqual(text, "Spec best")
+    assertEqual(bestColor, C.blue, "Spec best in blue")
+    assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
+    local maxColor
+    key, text, maxColor, icon = Runs.Status(by.top, 150000)
+    assertEqual(key, "max", "the view's max outranks Spec best")
+    assertEqual(text, "Max")
+    assertEqual(icon, "ph:crown")
+    assertEqual(maxColor, C.violet, "Max in violet")
     i.R.Show()
-    local badge
+    local badge, other
     for _, row in ipairs(visible(runsPane(i))) do
         if row.run.id == "top" then badge = row.cells.status end
+        if row.run.id == "slow" then other = row.cells.status end
     end
-    assert(badge, "the best run is drawn")
-    assertTrue(badge.icon:IsShown(), "the trophy shows in the badge")
-    assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
-    assertEqual(badge.fs.__color[3], i.NS.ResultsTable.COLORS.blue[3])
+    assert(badge, "the max run is drawn")
+    assertEqual(badge.fs.__text, "Max", "the view holds the top run: Max")
+    assertTrue(badge.icon:IsShown(), "the icon shows before the word")
+    assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
+    assertEqual(other.fs.__text, "Complete")
+    assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
     assertEqual((Runs.Status(by.slow)), "complete")
-    local lateKey, _, lateColor = Runs.Status(by.late)
+    local lateKey, _, lateColor, lateIcon = Runs.Status(by.late)
     assertEqual(lateKey, "flagged")
-    assertEqual(lateColor, i.NS.ResultsTable.COLORS.red, "Flagged in red")
+    assertEqual(lateColor, C.red, "Flagged in red")
+    assertEqual(lateIcon, "ph:flag")
     assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
+    -- Every tag has an icon the addon ships and a hue no other tag has.
+    local seen = {}
+    for k, tag in pairs(Runs.STATUS) do
+        assertTrue(i.NS.Icon(tag.icon) ~= nil, k .. "'s icon is declared and shipped")
+        local hue = table.concat(tag.color, ",")
+        assertEqual(seen[hue], nil, k .. " shares its color with " .. tostring(seen[hue]))
+        seen[hue] = k
+    end
+    assertEqual(Runs.STATUS.incomplete.color, C.orange, "Incomplete in orange")
 end)
 
 test("results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)", function()
@@ -225,7 +245,7 @@ test("results: Damage and DPS carry bars from 10% (the smallest run the filters 
     assertEqual(w.big.damage, w.big.w, "the only run in the view fills its cell")
 end)
 
-test("results: the bars take History > Results table's look; the track can take the run's class", function()
+test("results: the bars take History > Results table's look, over the rows' own stripe", function()
     local i = inst()
     seed(i, { mkRun("a") })
     i.R.Show()
@@ -238,27 +258,23 @@ test("results: the bars take History > Results table's look; the track can take 
     assertEqual(cells.damage.bar.__vertex[1], 0.29, "the indigo fill")
     assertEqual(cells.dps.bar.__vertex[3], 0.45)
     assertEqual(cells.dps.bar.__vertex[4], 0.85, "at the breakdown's opacity")
-    assertEqual(cells.damage.track.__vertex[1], 1, "the faint track")
-    assertEqual(cells.damage.track.__vertex[4], 0.04)
-    assertEqual(#cells.damage.edges, 4, "a 1px border around the track")
-    assertEqual(cells.damage.edges[1].__height, 1)
-    assertEqual(i.NS.ResultsTable.BAR_EDGE[4], 0.10, "the border in the HUD's panel edge, fixed")
+    assertEqual(cells.damage.track, nil, "no track behind the bar")
+    assertEqual(cells.damage.edges, nil, "and no border")
     assertEqual(cells.damage.fs.__color[1], 1, "the text stays white")
     assertEqual(cells.damage.fs.__justifyH, "LEFT", "left-aligned")
-    assertTrue(i.NS.SetByPath("resultsTable.barBg.useClassColorBg", true))
     assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))
     cells = visible(runsPane(i))[1].cells
     local warlock = i.mocks.RAID_CLASS_COLORS.WARLOCK
-    assertEqual(cells.damage.track.__vertex[1], warlock.r, "the run's character's class, Lanfear's warlock")
-    assertEqual(cells.damage.track.__vertex[4], D.barBg.bgColor.a, "the swatch's alpha kept")
-    assertEqual(cells.damage.bar.__vertex[1], warlock.r)
+    assertEqual(cells.damage.bar.__vertex[1], warlock.r, "the run's character's class, Lanfear's warlock")
     assertEqual(cells.dps.bar.__vertex[1], D.dpsBar.barColor.r, "each bar its own companion")
     for _, head in ipairs(runsPane(i).list.heads) do assertEqual(head.label.__justifyH, "LEFT") end
-    -- Uniform rows: no alternating stripe in the Runs list.
+    -- The alternating stripe is back: every other row faintly tinted.
     seed(i, { mkRun("a"), mkRun("b", { date = NOW - 2 * HOUR }) })
     runsPane(i):Refresh()
-    assertEqual(#visible(runsPane(i)), 2)
-    for _, row in ipairs(visible(runsPane(i))) do assertEqual(row.bg.__vertex[4], 0, "no stripe") end
+    local rows = visible(runsPane(i))
+    assertEqual(#rows, 2)
+    assertEqual(rows[1].bg.__vertex[4], 0)
+    assertTrue(rows[2].bg.__vertex[4] > 0, "the second row striped")
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()

@@ -328,9 +328,9 @@ Total.
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag
 - results: the Status column tags each run; the DPS column shows every run's DPS
-- results: Status is Best, Flagged or Complete for a complete run
+- results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
-- results: the bars take History > Results table's look; the track can take the run's class
+- results: the bars take History > Results table's look, over the rows' own stripe
 - results: Only best keeps the runs holding their board's best
 - results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete

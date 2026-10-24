@@ -43,11 +43,14 @@ local C = {
     green = { 0.36, 0.86, 0.46 },
     red   = { 1.0, 0.32, 0.32 },
     blue  = { 0.40, 0.66, 1.0 },
+    -- The Status tags' own hues (the owner's call, 2026-10-25: each status a distinct color).
+    violet = { 0.74, 0.47, 1.0 },
+    orange = { 1.0, 0.58, 0.16 },
+    pink   = { 1.0, 0.42, 0.72 },
+    slate  = { 0.55, 0.58, 0.64 },
 }
 Tbl.COLORS = C
 local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
-Tbl.BAR_EDGE = { 1, 1, 1, 0.10 }    -- a bar cell's 1px border (the HUD's PANEL_EDGE), fixed
-local BAR_EDGE = Tbl.BAR_EDGE
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -206,23 +209,15 @@ end
 
 local Cells = {}
 
--- A text cell; a column with `bar` also draws a track across the cell and a fill over it, as long as
--- its value's place between the smallest and the largest in the list (Table:SetData, Tbl.BarShare). Its look is the
--- column's `barStyle(run)`: { texture, r, g, b, a, track = { r, g, b, a }, font = a resolved font }.
--- The track's 1px edge is drawn in a fixed color, the HUD's panel edge, with no setting of its own.
+-- A text cell; a column with `bar` also draws a fill under its text, as long as its value's place
+-- between the smallest and the largest in the list (Table:SetData, Tbl.BarShare), over the row's own
+-- stripe (no track and no border: the owner's call, 2026-10-25). Its look is the column's
+-- `barStyle(run)`: { texture, r, g, b, a, font = a resolved font }.
 function Cells.text(row, col)
     local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
     if col.bar then
-        cell.track = row:CreateTexture(nil, "BORDER", nil, 1)
-        cell.track:SetTexture(WHITE)
         cell.bar = row:CreateTexture(nil, "BORDER", nil, 2)
         cell.bar:SetTexture(WHITE)
-        cell.edges = {}
-        for i = 1, 4 do
-            local e = row:CreateTexture(nil, "BORDER", nil, 3)
-            e:SetColorTexture(BAR_EDGE[1], BAR_EDGE[2], BAR_EDGE[3], BAR_EDGE[4])
-            cell.edges[i] = e
-        end
     end
     return cell
 end
@@ -241,14 +236,16 @@ function Cells.icons(row, col)
 end
 
 -- A tag in a 1px box; a column whose text also answers an icon name draws that icon before the word.
+-- A tag: its icon (where the column names one) before its word, both in the tag's color, on no box
+-- of its own (the owner's call, 2026-10-25).
 function Cells.badge(row)
-    local cell = { box = Tbl.Panel(row) }
+    local cell = { box = CreateFrame("Frame", nil, row) }
     cell.box:SetHeight(16)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
     cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
     cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
-    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 4, 0)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 0, 0)
     cell.icon:Hide()
     return cell
 end
@@ -292,8 +289,6 @@ local function bindBar(cell, col, run)
     if style then
         cell.bar:SetTexture(style.texture or WHITE)
         cell.bar:SetVertexColor(style.r, style.g, style.b, style.a)
-        local t = style.track
-        if t then cell.track:SetVertexColor(t[1], t[2], t[3], t[4]) end
         -- A dash (no figure) keeps the column's muted color; a figure takes the bar text's.
         if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
     end
@@ -340,12 +335,8 @@ function Bind.badge(cell, col, run)
         cell.icon:SetVertexColor(color[1], color[2], color[3])
     end
     cell.fs:ClearAllPoints()
-    cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
-    cell.box:SetWidth(math.floor(#s * 6 + 14 + extra))
-    if cell.box.SetBackdropBorderColor then
-        cell.box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
-        cell.box:SetBackdropColor(color[1], color[2], color[3], 0.08)
-    end
+    cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
+    cell.box:SetWidth(math.floor(#s * 6 + 4 + extra))
 end
 
 function Bind.flag(cell, _, run)
@@ -394,27 +385,9 @@ local function placeCell(row, cell, col, x, w)
             cell.fs:ClearAllPoints()
             cell.fs:SetPoint("LEFT", row, "LEFT", x + 2, 0)
             cell.fs:SetWidth(math.max(10, w - 2))
-            for _, tex in ipairs({ cell.track, cell.bar }) do
-                tex:ClearAllPoints()
-                tex:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
-                tex:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
-            end
-            cell.track:SetWidth(cell.barW)
-            -- The 1px border on the track's own bounds: top, bottom, left, right.
-            local top, bottom, left, right = cell.edges[1], cell.edges[2], cell.edges[3], cell.edges[4]
-            for _, e in ipairs(cell.edges) do e:ClearAllPoints() end
-            top:SetPoint("TOPLEFT", cell.track, "TOPLEFT", 0, 0)
-            top:SetPoint("TOPRIGHT", cell.track, "TOPRIGHT", 0, 0)
-            top:SetHeight(1)
-            bottom:SetPoint("BOTTOMLEFT", cell.track, "BOTTOMLEFT", 0, 0)
-            bottom:SetPoint("BOTTOMRIGHT", cell.track, "BOTTOMRIGHT", 0, 0)
-            bottom:SetHeight(1)
-            left:SetPoint("TOPLEFT", cell.track, "TOPLEFT", 0, 0)
-            left:SetPoint("BOTTOMLEFT", cell.track, "BOTTOMLEFT", 0, 0)
-            left:SetWidth(1)
-            right:SetPoint("TOPRIGHT", cell.track, "TOPRIGHT", 0, 0)
-            right:SetPoint("BOTTOMRIGHT", cell.track, "BOTTOMRIGHT", 0, 0)
-            right:SetWidth(1)
+            cell.bar:ClearAllPoints()
+            cell.bar:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
+            cell.bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
         end
     end
 end

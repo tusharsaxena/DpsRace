@@ -241,15 +241,19 @@ end
 -- The Status tags (the owner's call, 2026-10-24), in the badge colors: one per resolved status, and
 -- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
 -- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
+-- Each tag is its icon before its word, both in the tag's own hue, and every hue is distinct (the
+-- owner's call, 2026-10-25). Max is the view's: the complete run with the highest DPS the filters
+-- pass. Spec best is the board's (spec x dummy type x length).
 Runs.STATUS = {
-    best       = { label = "Best", color = C.blue, icon = "ph:trophy" },
-    complete   = { label = "Complete", color = C.green },
-    flagged    = { label = "Flagged", color = C.red },
-    incomplete = { label = "Incomplete", color = C.red },
-    died       = { label = "Died", color = C.red },
-    lost       = { label = "Lost", color = C.dim },
+    max        = { label = "Max", color = C.violet, icon = "ph:crown" },
+    best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
+    complete   = { label = "Complete", color = C.green, icon = "ph:check" },
+    flagged    = { label = "Flagged", color = C.red, icon = "ph:flag" },
+    incomplete = { label = "Incomplete", color = C.orange, icon = "ph:x" },
+    died       = { label = "Died", color = C.pink, icon = "ph:skull" },
+    lost       = { label = "Lost", color = C.slate, icon = "ph:ghost" },
 }
-local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
+local STATUS_ORDER = { max = 0, best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
 
 -- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
 function Runs.HoldsBest(run)
@@ -259,15 +263,25 @@ function Runs.HoldsBest(run)
     return held ~= nil and held.id == run.id
 end
 
---- A run's status tag: its key, its label, its color and its icon name (nil for most tags).
+-- A run's DPS as the v/s Max column and the Max tag read it: nil for a lost run or one with no DPS.
+local function runDps(run)
+    local dps = run.status ~= "lost" and run.result and run.result.dps
+    return type(dps) == "number" and dps or nil
+end
+
+--- A run's status tag: its key, its label, its color and its icon name. `top` is the view's max DPS
+--- (Runs.MaxDps over the runs the filters pass): the complete run holding it is Max, over Spec best.
 --- @param run table
+--- @param top number|nil
 --- @return string key, string text, table color, string|nil icon
-function Runs.Status(run)
+function Runs.Status(run, top)
     local key
     if run.status == "lost" then
         key = "lost"
     elseif run.status == "incomplete" then
         key = (type(run.flags) == "table" and run.flags.died) and "died" or "incomplete"
+    elseif type(top) == "number" and runDps(run) == top then
+        key = "max"
     elseif Runs.HoldsBest(run) then
         key = "best"
     elseif Runs.IsFlagged(run) then
@@ -277,12 +291,6 @@ function Runs.Status(run)
     end
     local tag = Runs.STATUS[key]
     return key, L[tag.label], tag.color, tag.icon
-end
-
--- A run's DPS as the v/s Max column reads it: nil for a lost run or one with no DPS.
-local function runDps(run)
-    local dps = run.status ~= "lost" and run.result and run.result.dps
-    return type(dps) == "number" and dps or nil
 end
 
 --- The max DPS the v/s Max column measures against: the highest among the complete runs in `runs`
@@ -319,8 +327,8 @@ local function vsMaxText(run, top)
     return L["%+.1f%%"]:format(pct), color
 end
 
---- The look of one bar column's cell for `run` (History > Results table): its fill, the track behind
---- it and its text, every class color the run's character's.
+--- The look of one bar column's cell for `run` (History > Results table): its fill and its text,
+--- every class color the run's character's.
 --- @param block string  "damageBar" | "dpsBar"
 --- @return table|nil  Results_Table's barStyle shape; nil without the appearance module
 function Runs.BarStyle(block, run)
@@ -330,9 +338,6 @@ function Runs.BarStyle(block, run)
     local class = run.char and run.char.class or false
     local p = "resultsTable."
     local fill = A.BarAt(p .. block .. ".", D[block], class)
-    local get = NS.GetSetting
-    local r, g, b, a = A.Color(get(p .. "barBg.bgColor"), get(p .. "barBg.useClassColorBg") == true, class)
-    fill.track = { r, g, b, a }
     fill.font = A.FontAt(p .. "barText.", D.barText, class)
     return fill
 end
@@ -379,10 +384,10 @@ function Runs.Columns()
           scan = function(list) view.top = Runs.MaxDps(list) end,
           sort = function(run) return Runs.VsMax(run, view.top) end,
           text = function(run) return vsMaxText(run, view.top) end },
-        { key = "status", label = L["Status"], width = 80, kind = "badge", desc = false,
-          sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
+        { key = "status", label = L["Status"], width = 90, kind = "badge", desc = false,
+          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.top))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run)
+              local _, text, color, icon = Runs.Status(run, view.top)
               return text, color, icon
           end },
         { key = "flag", label = "", width = 14, kind = "flag" },
@@ -444,8 +449,6 @@ function Runs.Build(parent, hooks)
         -- Newest first (the owner's call, 2026-10-24). The sort is view state like the filters, so
         -- every login and /reload starts here again.
         sortKey = "date", sortDesc = true,
-        -- Uniform rows: the bar cells' tracks carry the row (the owner's call, 2026-10-25).
-        stripe = false,
         onClick = function(run) if view.hooks.select then view.hooks.select(run) end end,
         onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
         empty = L["No runs match these filters."],

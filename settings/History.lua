@@ -73,9 +73,9 @@ NS.RegisterSchemaRows({
 })
 
 -- ── Results table ── the Runs list's Damage and DPS bars (the owner's call, 2026-10-24, after
--- MultiMeters' bars): each a composed bar block, their text a font block, the track behind them a
--- background color pair (options-ui-§16, §17), in the styled-tab order Fill, Font, Background. Each
--- class color is the row's character's: the row describes that run (classColorSource "unit").
+-- MultiMeters' bars): each a composed bar block and their text a font block (options-ui-§16, §17), in
+-- the styled-tab order Fill, Font. The cells draw no background of their own (2026-10-25). Each class
+-- color is the row's character's: the row describes that run (classColorSource "unit").
 local RESULTS_TABLE = L["Results table"]
 local RD = NS.defaults.profile.resultsTable
 local ROW_CLASS = { source = "unit" }
@@ -89,9 +89,6 @@ append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESUL
     subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar }))
 append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
     subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText }))
-append(Hp.ColorPair({ prefix = "resultsTable.barBg.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["Background"], order = 400, classColor = ROW_CLASS, defaults = RD.barBg,
-    key = "bgColor", companionKey = "useClassColorBg", label = "Background color" }))
 for _, r in ipairs(tableRows) do
     r.onChange = redraw
     r.composed = true

@@ -13,7 +13,7 @@ built on first show (options-ui-§1, §5).
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*); the HUD Appearance tab: the clocks', figures' and spell rows' look |
-| History | Runs to keep (0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars, their text and the track behind them |
+| History | Runs to keep (0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
 The pages register in that order (the order the panel lists them): General first, Profiles last.
@@ -160,10 +160,10 @@ Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 #### Tab: Results table
 
 The Runs list's Damage and DPS cells (the owner's call, 2026-10-24, after MultiMeters' bars): a
-track across the cell, a fill from 10% of the cell (the smallest figure among the runs the filters
+fill over the row's own stripe (no track and no border, 2026-10-25), from 10% of the cell (the smallest figure among the runs the filters
 pass) to 100% (the largest), linear between them and full when the view holds one run or one figure,
 and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
-Font, Background. Each class color is the row's character's: the row describes that run
+Font. Each class color is the row's character's: the row describes that run
 (`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.
 Every row's reaction is `NS.Results.Refresh()`.
 
@@ -172,10 +172,9 @@ Every row's reaction is `NS.Results.Refresh()`.
 | *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*) | solid, 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
 | *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
 | *Bar text* | `resultsTable.barText.` | the font block | Friz Quadrata 10, white, shadowed; a dash keeps the column's muted gray |
-| *Background* | `resultsTable.barBg.` | *Background color* \| *Use class color* | white at 4% (the breakdown's faint track), class color off |
 
-Each bar cell's track also carries a 1px border in a fixed color, the HUD's panel edge (white at
-10%), with no setting of its own; the Runs list's rows are uniform (no alternating stripe).
+The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
+own.
 
 The page's Defaults button restores *Runs to keep* and the Results table tab's rows; it never touches a stored run.
 
