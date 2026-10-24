@@ -125,7 +125,7 @@ function NS.ShowResults(tab)
     return true
 end
 
---- The Arm / cancel key (spec §6.4): idle or on a result card, arm the HUD's length (the last one
+--- The Arm or cancel key (spec §6.4): idle or on a result card, arm the HUD's length (the last one
 --- raced); armed or running, cancel. A run waiting for its result is never discarded by a key press:
 --- that is the HUD's Discard run or `/dr cancel`, both of which the player reads first.
 function NS.ToggleArm()

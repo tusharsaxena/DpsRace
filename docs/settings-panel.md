@@ -10,7 +10,7 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows, and what its running clock shows |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Race HUD tab: when the HUD shows, and what its running clock shows; the Keybindings tab: the three key bindings |
 | Race | The default race length, the countdown cue, the buzzer and the center-screen countdown; the scoring rules (late-cast grace, damage-restart gap) and the sticky-combat hint's delay |
 | Live breakdown | The running HUD's rows shown, live reads per second, spell icons and live DPS |
 | History | Runs to keep (0 = never prune), the stored count, *Delete all runs…* |
@@ -34,7 +34,10 @@ the 300 px logo `media/logos/dpsrace.logo.tga`, the notes, and a *Slash Commands
 ### General
 
 The header **Defaults** button restores every General row on the current profile, except the
-minimap row (launcher-§3).
+minimap row (launcher-§3). It never touches a key binding, and its tooltip ends *Key bindings are
+not changed.* (`O.KEYBINDS_UNCHANGED`, options-ui-§20).
+
+Tabs, in order: *Master controls*, *Race HUD*, *Keybindings*.
 
 #### Tab: Master controls
 
@@ -62,6 +65,17 @@ The *Test mode* row is the composer's, with `default = false` stamped by `settin
 |---|---|---|---|
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
+
+#### Tab: Keybindings
+
+The General page's last tab (options-ui-§20), a host tab drawn by the library's `O.KeybindingsTab`
+from `NS.BINDINGS` (`core/LauncherSetup.lua`); the addon draws none of its rows. Under the library's
+fixed intro, one row per binding in `Bindings.xml`'s order: *Toggle race HUD*, *Toggle results
+window*, *Arm or cancel race*, each labeled with its `BINDING_NAME_` text, with **Key 1**, **Key 2**
+and **Clear**. Below them, the set line (*Saved for: all characters* or *this character only*) and
+the outcome line. Keys are the game's, saved to the binding set in force (account or character),
+never to the profile; a key set here shows in Options -> Keybindings -> Ka0s DPS Race and the other
+way round. In combat nothing is bound or cleared.
 
 ### Race
 
@@ -126,9 +140,9 @@ button. See [profiles.md](profiles.md).
 |---|---|
 | Minimap button / broker row | One LibDataBroker launcher (`core/LauncherSetup.lua`, launcher-§1). Left-click always opens this panel; right-click opens the options menu. The tooltip is the library's status tooltip |
 | Options menu entries | **Enabled** (`/dr enable` / `disable`), **Locked** (`NS.ToggleLock`, the *Lock frame* row), **Test mode** (`NS.ToggleTestMode`, the *Test mode* row), **Show window** (`NS.ToggleHud`, the race HUD). While disabled, only *Enabled* stays clickable; the rest are grayed and write nothing (launcher-§2) |
-| Key binding: *Toggle race HUD* | `CLICK DpsRaceToggleHud:LeftButton`, under **Key Bindings → AddOns → Ka0s DPS Race**. Presses the same `NS.ToggleHud` the *Show window* entry runs (launcher-§6) |
+| Key binding: *Toggle race HUD* | `CLICK DpsRaceToggleHud:LeftButton`, category `BINDING_HEADER_DPSRACE`: set in **Options → Keybindings → Ka0s DPS Race**, or in **General > Keybindings** in this addon's settings. Presses the same `NS.ToggleHud` the *Show window* entry runs (launcher-§6) |
 | Key binding: *Toggle results window* | `CLICK DpsRaceToggleResults:LeftButton`, same category. Runs `NS.ToggleResults` |
-| Key binding: *Arm / cancel race* | `CLICK DpsRaceArmToggle:LeftButton`, same category. Runs `NS.ToggleArm`: arms the HUD's length, or cancels an armed or running race; never discards a pending result (spec §6.4) |
+| Key binding: *Arm or cancel race* | `CLICK DpsRaceArmToggle:LeftButton`, same category. Runs `NS.ToggleArm`: arms the HUD's length, or cancels an armed or running race; never discards a pending result (spec §6.4) |
 
 No binding has a default key. Each refuses with the one disabled line while the addon is off,
 and with the capture line under a perf run, exactly as the verbs do (slash-commands-§7). The button

@@ -1,7 +1,7 @@
 local addonName, NS = ...
 -- core/LauncherSetup.lua — the ONE LibDataBroker launcher, registered twice (minimap button and broker
--- row) through LibKa0s-Launcher-1.0, the two Show-window key-binding buttons (launcher-§6) and the
--- Arm / cancel key's button (spec §6.4).
+-- row) through LibKa0s-Launcher-1.0, the two Show-window key-binding buttons (launcher-§6), the
+-- Arm or cancel key's button (spec §6.4), and NS.BINDINGS, the table all three are declared in.
 
 local Launcher = LibStub and LibStub("LibKa0s-Launcher-1.0", true)
 local L = NS.L
@@ -17,7 +17,7 @@ end
 -- ARE PERMANENT: the client stores the player's key against them, so a rename unbinds every key.
 NS.TOGGLE_HUD_BUTTON     = "DpsRaceToggleHud"
 NS.TOGGLE_RESULTS_BUTTON = "DpsRaceToggleResults"
--- The Arm / cancel key (spec §6.4), built the same way: a CLICK binding on a plain named button whose
+-- The Arm or cancel key (spec §6.4), built the same way: a CLICK binding on a plain named button whose
 -- click runs NS.ToggleArm, the handler the slash verbs share.
 NS.ARM_TOGGLE_BUTTON     = "DpsRaceArmToggle"
 do
@@ -36,11 +36,25 @@ do
     arm:SetScript("OnClick", function() NS.ToggleArm() end)
     arm:Hide()
 end
--- The labels' global names hold a space and a colon, so no identifier can spell them: rawset.
+-- The ONE bindings table (launcher-§6), in Bindings.xml's order with the Show window key first: the
+-- General page's Keybindings tab draws its rows from it (options-ui-§20) and the suite checks
+-- Bindings.xml against it. Each command is the CLICK binding on the button above.
+local function clickCommand(button) return "CLICK " .. button .. ":LeftButton" end
+NS.BINDINGS = {
+    { command = clickCommand(NS.TOGGLE_HUD_BUTTON),
+      tooltip = L["Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."] },
+    { command = clickCommand(NS.TOGGLE_RESULTS_BUTTON),
+      tooltip = L["Shows or hides the Results window, with its run history and personal bests."] },
+    { command = clickCommand(NS.ARM_TOGGLE_BUTTON),
+      tooltip = L["Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."] },
+}
+-- The category's title is the brand, and it is assigned here at file scope, because the client reads
+-- it when it registers the bindings (launcher-§6). The labels' global names hold a space and a
+-- colon, so no identifier can spell them: rawset.
 rawset(_G, "BINDING_HEADER_DPSRACE", L["Ka0s DPS Race"])
-rawset(_G, "BINDING_NAME_CLICK " .. NS.TOGGLE_HUD_BUTTON .. ":LeftButton", L["Toggle race HUD"])
-rawset(_G, "BINDING_NAME_CLICK " .. NS.TOGGLE_RESULTS_BUTTON .. ":LeftButton", L["Toggle results window"])
-rawset(_G, "BINDING_NAME_CLICK " .. NS.ARM_TOGGLE_BUTTON .. ":LeftButton", L["Arm / cancel race"])
+rawset(_G, "BINDING_NAME_" .. NS.BINDINGS[1].command, L["Toggle race HUD"])
+rawset(_G, "BINDING_NAME_" .. NS.BINDINGS[2].command, L["Toggle results window"])
+rawset(_G, "BINDING_NAME_" .. NS.BINDINGS[3].command, L["Arm or cancel race"])
 
 if not Launcher then
     -- Degrade, never error: no button and no broker row, said once, and the Minimap button row still

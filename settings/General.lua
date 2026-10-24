@@ -1,6 +1,6 @@
 local _, NS = ...
--- settings/General.lua — the General page (its first tab is `Master controls`, options-ui-§15) and
--- the landing page's spec, NS.LANDING (options-ui-§5).
+-- settings/General.lua — the General page (its first tab is `Master controls`, options-ui-§15, and
+-- its last `Keybindings`, options-ui-§20) and the landing page's spec, NS.LANDING (options-ui-§5).
 
 local L = NS.L
 local H = NS.Helpers
@@ -144,13 +144,18 @@ local function build(mainCategory)
     local ctx = H.CreatePanel("DpsRaceGeneralPanel", L["General"], {
         pageKey         = PAGE,
         defaultsButton  = true,
-        defaultsTooltip = L["Restore every General setting on this profile to its addon default."],
+        -- Defaults never reaches a key: the game keeps them, not the profile (options-ui-§20).
+        defaultsTooltip = L["Restore every General setting on this profile to its addon default."]
+            .. " " .. H.KEYBINDS_UNCHANGED,
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
-    -- Every page renders through the tabbed renderer, a one-tab page included (options-ui-§13).
+    -- Every page renders through the tabbed renderer, a one-tab page included (options-ui-§13). The
+    -- Keybindings tab is a host tab the library draws from NS.BINDINGS; with no `before` it is the
+    -- strip's last, after every schema tab (options-ui-§20).
+    local tabs = { H.KeybindingsTab({ bindings = NS.BINDINGS }) }
     H.SetRenderer(ctx, function(c)
         H.ClearScroll(c)
-        H.RenderTabbedSchema(c, PAGE, { [H.MASTER_GROUP] = masterTail })
+        H.RenderTabbedSchema(c, PAGE, { [H.MASTER_GROUP] = masterTail }, nil, { tabs = tabs })
     end)
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["General"])
 end

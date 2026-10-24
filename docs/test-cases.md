@@ -400,7 +400,7 @@ Total.
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
-- slash: the Arm / cancel key arms the last length, then cancels; a pending result is kept
+- slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
 
 ### test_share.lua (13)
 
@@ -446,7 +446,17 @@ Total.
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
-- bindings: Bindings.xml names exactly the three buttons, with no default key
+- bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
+
+### test_keybinds.lua (7)
+
+- keybinds: NS.BINDINGS is Bindings.xml's order, Show window first, each with a tooltip
+- keybinds: Bindings.xml is the addon's own category, no header, no default, labeled
+- keybinds: the General page ends in the Keybindings tab, after Master controls
+- keybinds: the tab's rows are NS.BINDINGS in order, labeled as the client labels them
+- keybinds: a key bound in the tab is the client's key; one set on the client's page shows
+- keybinds: in combat the tab binds nothing
+- keybinds: the General Defaults tooltip says it leaves key bindings alone
 
 ### test_disabled.lua (17)
 
@@ -591,6 +601,7 @@ Total.
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
 | test_launcher.lua | 8 |
+| test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
 | test_surface_parity.lua | 15 |
 | test_perf_harness.lua | 4 |
@@ -602,4 +613,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **468** |
+| **Total** | **475** |

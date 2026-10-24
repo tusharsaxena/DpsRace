@@ -33,7 +33,7 @@ drift from what the client loads (testing-§9).
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
 | `core/PerfSetup.lua` | `NS.Perf` (`LibKa0s-Perf-1.0`) and its declared buckets | **load-bearing**: before any module holding `NS.Perf` as an upvalue |
 | `core/DebugLogSetup.lua` | `NS.DebugLog`, the gated sink `NS.Debug` and its gates (`LibKa0s-DebugLog-1.0`) | **load-bearing**: needs `FONT_MONO`, the flag and the printer; before any `NS.Debug` call |
-| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the three key-binding buttons (the two Show-window keys and *Arm / cancel race*) | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
+| `core/LauncherSetup.lua` | the LDB launcher, registered with LibDBIcon (`LibKa0s-Launcher-1.0`); the three key-binding buttons (the two Show-window keys and *Arm or cancel race*), their labels and `NS.BINDINGS` | **load-bearing**: reads `LOGO_128` and `NS.L` at file scope |
 | `core/DpsRace.lua` | AceAddon registration, `OnInitialize`/`OnEnable`, the game events, the shared handlers the launcher, the key bindings and the verbs run (`ToggleHud`, `ToggleResults`, `ToggleLock`, `ToggleTestMode`, `ToggleArm`, `SetHudShown`, `ShowResults`) | **load-bearing**: reclaims `NS.Print` from AceConsole's embed |
 | `core/Database.lua` | AceDB, the profile callbacks, the migration runner | conventional (reached at call time) |
 | `defaults/Profile.lua` | the AceDB defaults tree | the defaults group |
@@ -69,7 +69,7 @@ drift from what the client loads (testing-§9).
 | `settings/Profiles.lua` | the Profiles page (AceDBOptions) | registers last |
 
 Not listed in the TOC: `Bindings.xml` (the client reads it by name; three `CLICK` bindings: the two
-Show-window keys and *Arm / cancel race*).
+Show-window keys and *Arm or cancel race*, each in the `BINDING_HEADER_DPSRACE` category).
 
 ## Not shipped
 

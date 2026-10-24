@@ -130,8 +130,11 @@ disabled line while the addon is disabled; under the `perf` hold alone each answ
 The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
 
 The launcher (`core/LauncherSetup.lua`) and the three key bindings (`Bindings.xml`: *Toggle race
-HUD*, *Toggle results window*, *Arm / cancel race*) call the same handlers as the verbs, in
-`core/DpsRace.lua`. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
+HUD*, *Toggle results window*, *Arm or cancel race*, all in the addon's own category
+`BINDING_HEADER_DPSRACE` with no header, launcher-§6) call the same handlers as the verbs, in
+`core/DpsRace.lua`. `NS.BINDINGS` (`core/LauncherSetup.lua`) declares them once, in `Bindings.xml`'s
+order; the General page's last tab, *Keybindings*, is the library's `O.KeybindingsTab` drawn from
+it (options-ui-§20), so a key set there or in Options -> Keybindings shows in both. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
 (launcher-§2: Enabled, Locked, Test mode, Show window), so the Results window is reached from the
 HUD's title bar, `/dr results` or its key (spec §6.4).
 

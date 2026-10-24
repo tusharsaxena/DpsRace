@@ -60,13 +60,16 @@ the catalog (spec §4.6).
 | K1 | Look at the minimap button; hover it | The logo shows; the tooltip has the version and status, also while disabled | A screenshot |
 | K2 | Left-click, then right-click the button | Left opens settings; right shows exactly *Enabled*, *Locked*, *Test mode* and *Show window* (spec §6.4: no Results or Arm entry) | The menu as drawn |
 | K3 | Turn *Minimap button* off, then on | It hides, then comes back in the same place | Where it came back |
-| K4 | *Key Bindings → AddOns → Ka0s DPS Race* | *Toggle race HUD*, *Toggle results window* and *Arm / cancel race* are listed, none bound | The list as shown |
+| K4 | *Options → Keybindings → Ka0s DPS Race* | *Toggle race HUD*, *Toggle results window* and *Arm or cancel race* are listed, none bound | The list as shown |
 | K5 | Bind all three; press each | The HUD toggles; the Results window toggles; the arm key arms the HUD's length, a second press cancels | Which key did what |
 | K6 | Press the arm key while a result is pending (section 4, R8) | It discards nothing and prints one line pointing at `/dr cancel` | The line |
 | K7 | `/dr arm 1:30`, `/dr cancel`, `/dr arm 0`, `/dr arm 3m`, `/dr cancel` | 1:30 arms with the *Armed* line; cancel cancels; `0` prints the length line; `3m` arms 3:00 | Each line |
 | K8 | `/dr hud show`, `hide`, `toggle`, bare `/dr hud`; `/dr results`, `/dr results bests`; `/dr lock`, `/dr unlock` | Each acts and echoes once; `/dpsrace` answers the same as `/dr` | The verb that misbehaved |
 | K9 | Target each catalog dummy and `/dr target` | Its name, creature ID and category print (243167/243168 Dungeoneer, 243208 Cleave, 243205 Boss-level, 243211 PvP); an uncataloged target prints *Other* | The line for each |
 | K10 | Arm with `/dr arm 30` with the HUD's *Test mode* box ticked in settings | Test mode ends with one line and the settings checkbox unticks | Whether the box stayed ticked |
+| SM-DR-KB1 | *Options → Keybindings*, scroll to the addons' sections | A section titled *Ka0s DPS Race* holds *Toggle race HUD*, *Toggle results window* and *Arm or cancel race*, in that order; no blank spacer row above or among them; nothing of DPS Race is left under *AddOns* | A screenshot of the section |
+| SM-DR-KB2 | Bind a key in *General > Keybindings* in this addon's settings, then look in *Options → Keybindings*; bind another there, then reopen the tab. Repeat with *Character Specific Keybindings* ticked | Each key shows in the other surface, in both account and character-specific modes, and the tab's set line names the set in force | Which surface missed which key, and the mode |
+| SM-DR-KB3 | Press the bound *Toggle race HUD* key; on the tab, click a slot and press Escape; enter combat and click a slot | The key toggles the HUD; Escape cancels the capture and the Settings window stays open; in combat the slot refuses with *Key bindings can be changed after combat.* and binds nothing | The outcome line and any error |
 
 ## 4. The race on a real dummy
 

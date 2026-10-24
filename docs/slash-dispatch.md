@@ -69,7 +69,7 @@ copy.
 | `test` | `NS.ToggleTestMode` | Writes `state.testMode` through the seam, so the Master controls' checkbox follows |
 | `lock` / `unlock` | `doLock` | Writes the `locked` row through the seam and echoes it in the `set` shape (slash-commands-§8); degraded, written through with the HUD's `SetLocked` as the reaction |
 
-## The Arm / cancel key
+## The Arm or cancel key
 
 `CLICK DpsRaceArmToggle:LeftButton` (`Bindings.xml`) clicks a plain hidden button whose `OnClick` runs
 `NS.ToggleArm()` (`core/DpsRace.lua`): idle or on a result card it arms the HUD's length

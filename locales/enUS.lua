@@ -18,6 +18,12 @@ L["Slash Commands"] = "Slash Commands"
 -- Key bindings (launcher-§6)
 L["Toggle race HUD"] = "Toggle race HUD"
 L["Toggle results window"] = "Toggle results window"
+L["Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."] =
+    "Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."
+L["Shows or hides the Results window, with its run history and personal bests."] =
+    "Shows or hides the Results window, with its run history and personal bests."
+L["Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."] =
+    "Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."
 
 -- Shared refusals (slash-commands-§1, slash-commands-§7)
 L["%s is unavailable: the LibKa0s library did not load."] = "%s is unavailable: the LibKa0s library did not load."
@@ -240,8 +246,8 @@ L["Include incomplete"] = "Include incomplete"
 L["The run still counts and the flag shows on the board."] =
     "The run still counts and the flag shows on the board."
 
--- Key bindings: the Arm / cancel key (core/LauncherSetup.lua, core/DpsRace.lua)
-L["Arm / cancel race"] = "Arm / cancel race"
+-- Key bindings: the Arm or cancel key (core/LauncherSetup.lua, core/DpsRace.lua)
+L["Arm or cancel race"] = "Arm or cancel race"
 L["A run is waiting for its result: /dr cancel discards it."] =
     "A run is waiting for its result: /dr cancel discards it."
 
