@@ -505,3 +505,5 @@ L["You died before the buzzer. It never counts toward bests."] =
     "You died before the buzzer. It never counts toward bests."
 L["The meter's session could not be read after combat. There is no score."] =
     "The meter's session could not be read after combat. There is no score."
+L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
+L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"

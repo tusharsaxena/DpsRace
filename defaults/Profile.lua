@@ -75,7 +75,11 @@ NS.defaults = {
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
             hud = { width = 300, height = 460 },   -- tall enough for all 8 live rows (screen 04)
-            results = { width = 1220, height = 560 },
+            -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
+            -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
+            -- the title bar's toggle switches them.
+            results = { view = "expanded", expanded = { width = 1220, height = 560 },
+                        collapsed = { width = 900, height = 560 } },
         },
     },
     global = {

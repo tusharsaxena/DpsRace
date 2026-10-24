@@ -672,10 +672,11 @@ function View:ClearView()
     self:ApplyView(Runs.SavedView())
 end
 
--- Lay the bar out in two rows from the configured widths: the dropdowns on the first; the
--- checkboxes and Save / Reset / Clear on the second, the buttons right-aligned under the last
--- dropdown (Group). The run count is the window footer's (hooks.count). Answers its height.
-function View:layoutBar()
+-- Lay the bar out from the configured widths. Two rows (the collapsed view): the dropdowns on the
+-- first; the checkboxes and Save / Reset / Clear on the second, the buttons right-aligned under the
+-- last dropdown (Group). One row (the expanded view, `oneRow`): the dropdowns, the checkboxes, then
+-- the buttons. The run count is the window footer's (hooks.count). Answers its height.
+function View:layoutBar(oneRow)
     local x = GAP + 2
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
@@ -685,9 +686,9 @@ function View:layoutBar()
             x = x + spec.width + GAP
         end
     end
-    local y = -(FILTER_H - 2)
+    local y = oneRow and -6 or -(FILTER_H - 2)
     local groupRight = x - GAP   -- the last dropdown's right edge, from the bar's left
-    x = GAP + 2
+    if not oneRow then x = GAP + 2 end
     for _, spec in ipairs(CHECKS) do
         local b = self.checks[spec.key]
         b:ClearAllPoints()
@@ -695,20 +696,22 @@ function View:layoutBar()
         x = x + spec.width + GAP
     end
     local right = groupRight
+    if oneRow then right = x + #VIEW_BUTTONS * (VIEW_BUTTON_W + GAP) - GAP end
     for i = #VIEW_BUTTONS, 1, -1 do
         local b = self.viewButtons[VIEW_BUTTONS[i].key]
         b:ClearAllPoints()
         b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", right, y)
         right = right - VIEW_BUTTON_W - GAP
     end
-    self.barH = 2 * FILTER_H - 6
+    self.barH = oneRow and FILTER_H or (2 * FILTER_H - 6)
     self.bar:SetHeight(self.barH)
     return self.barH
 end
 
---- Lay the tab out: the bar across `width`, the list `listWidth` wide beneath it.
-function View:Layout(width, height, listWidth)
-    local barH = self:layoutBar(width)
+--- Lay the tab out: the bar across `width` (one row when `oneRow`, the expanded view), the list
+--- `listWidth` wide beneath it.
+function View:Layout(width, height, listWidth, oneRow)
+    local barH = self:layoutBar(oneRow)
     self.listHost:ClearAllPoints()
     self.listHost:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -barH)
     self.listHost:SetSize(listWidth or width, math.max(1, height - barH))

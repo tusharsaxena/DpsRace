@@ -355,7 +355,7 @@ Total.
 - results: Runs opens on the current character and spec, each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
-- results: below 1180px wide the detail replaces the list, with a back control
+- results: collapsed, the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control

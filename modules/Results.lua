@@ -7,13 +7,16 @@ local _, NS = ...
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
 -- through NS.MakeCloseButton, in UISpecialFrames, clamped, movable by its title bar and resizable
--- (1040x560 by default, 760x420 at least), with its position and size in db.profile.windows.results.
+-- in two views, each with its own size and minimum, with its position, view and sizes in
+-- db.profile.windows.results.
 -- Master scale acts on it as on the HUD; Lock frame does not (it is the HUD's, the positionable
 -- display), and neither does General visibility: this is a browser the player opens on purpose.
 -- Built on first show; each tab is built the first time it is shown.
 --
--- WIDE OR NARROW. From 900px wide the detail sits beside the list (screen 08); below it the detail
--- replaces the list, with a back control (spec §6.2).
+-- EXPANDED OR COLLAPSED (the owner's call, 2026-10-25). Expanded, the default, sets the detail beside
+-- the list (screen 08); collapsed shows the list alone, and a click puts the detail in its place, with
+-- a back control (spec §6.2). Only the title bar's toggle switches them, never the width; each view
+-- keeps its own size and minimum (Results.VIEWS), and the filter bar takes one row or two.
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
 -- tab (a hidden one redraws in full on its next show), SETTINGS_CHANGED redraws the footer. No game
@@ -25,11 +28,14 @@ NS.Results = Results
 
 local L = NS.L
 
-Results.WIDTH = NS.defaults.profile.windows.results.width
-Results.HEIGHT = NS.defaults.profile.windows.results.height
-Results.MIN_WIDTH, Results.MIN_HEIGHT = 780, 420
-Results.NARROW = 1180           -- below this width the detail replaces the list (the Runs list needs
-                                -- about 820 px for its eleven columns, beside a 360 px detail)
+local DW = NS.defaults.profile.windows.results
+-- Each view's minimum: collapsed holds the Runs list's columns (about 780 px) and its two-row filter
+-- bar; expanded adds the 360 px detail and lays the filter bar in one row (about 1170 px).
+Results.VIEWS = {
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1180 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 800 },
+}
+Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
 Results.TABS = { "runs", "bests" }
@@ -61,10 +67,18 @@ local function store()
     return p.windows.results
 end
 
-local function storedSize()
+--- The view shown: "expanded" (the default) or "collapsed".
+function Results.View()
     local w = store() or {}
-    return math.max(Results.MIN_WIDTH, tonumber(w.width) or Results.WIDTH),
-        math.max(Results.MIN_HEIGHT, tonumber(w.height) or Results.HEIGHT)
+    return w.view == "collapsed" and "collapsed" or "expanded"
+end
+
+local function storedSize()
+    local spec = Results.VIEWS[Results.View()]
+    local w = (store() or {})[Results.View()]
+    w = type(w) == "table" and w or {}
+    return math.max(spec.minWidth, tonumber(w.width) or spec.width),
+        math.max(Results.MIN_HEIGHT, tonumber(w.height) or spec.height)
 end
 
 local function savePosition()
@@ -79,8 +93,10 @@ end
 local function saveSize(width, height)
     local w = store()
     if not w then return end
-    if type(width) == "number" then w.width = math.floor(width + 0.5) end
-    if type(height) == "number" then w.height = math.floor(height + 0.5) end
+    local view = Results.View()
+    if type(w[view]) ~= "table" then w[view] = {} end
+    if type(width) == "number" then w[view].width = math.floor(width + 0.5) end
+    if type(height) == "number" then w[view].height = math.floor(height + 0.5) end
 end
 
 -- ── the parts ───────────────────────────────────────────────────────────────────────────────────
@@ -156,9 +172,15 @@ local function buildChrome(f)
     ui.controls = Style.NewStrip()
     ui.close = Style.AddToStrip(ui.controls, NS.MakeCloseButton(f, function() Results.Hide() end))
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
+    -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
+    -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
+    -- away), collapsed chevron-right (open it).
+    ui.viewToggle = Style.AddToStrip(ui.controls, Style.ControlButton(f, "chevron-left", "<", "",
+        function() Results.ToggleView() end))
+    ui.viewToggle:SetPoint("RIGHT", f, "TOPRIGHT", -6 - Style.CONTROL_PITCH, -HEADER_H / 2)
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28, -HEADER_H)
+    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28 - Style.CONTROL_PITCH, -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() f:StartMoving() end)
@@ -192,9 +214,26 @@ end
 local onHide
 
 local function onResized(width, height)
-    if type(width) == "number" then ui.width = math.max(Results.MIN_WIDTH, width) end
+    if type(width) == "number" then ui.width = math.max(Results.VIEWS[Results.View()].minWidth, width) end
     if type(height) == "number" then ui.height = math.max(Results.MIN_HEIGHT, height) end
     layout()
+end
+
+-- The toggle's icon and tooltip for the view shown.
+local function paintToggle()
+    local b = ui and ui.viewToggle
+    if not b then return end
+    local expanded = Results.View() == "expanded"
+    Style.SetControlIcon(b, expanded and "chevron-left" or "chevron-right", expanded and "<" or ">")
+    b.tip = expanded and L["Collapse: the list alone (a click opens a run in its place)"]
+        or L["Expand: the run's detail beside the list"]
+    Style.PaintStrip(ui.controls)
+end
+
+-- The resize grip's minimum for the view shown.
+local function applyBounds()
+    local f = ui.frame
+    if f.SetResizeBounds then f:SetResizeBounds(Results.VIEWS[Results.View()].minWidth, Results.MIN_HEIGHT) end
 end
 
 local function applyPlacement()
@@ -203,6 +242,8 @@ local function applyPlacement()
     f:ClearAllPoints()
     f:SetPoint(w.point or "CENTER", UIParent, w.relativePoint or "CENTER", w.x or 0, w.y or 0)
     f:SetSize(ui.width, ui.height)
+    applyBounds()
+    paintToggle()
 end
 
 local function ensureWindow()
@@ -232,7 +273,7 @@ local function ensureWindow()
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Results.FRAME_NAME) end
     NS.MakeResizable(f, {
-        minWidth = Results.MIN_WIDTH, minHeight = Results.MIN_HEIGHT,
+        minWidth = Results.VIEWS[Results.View()].minWidth, minHeight = Results.MIN_HEIGHT,
         onResize = onResized, onResizeStop = saveSize,
     })
     applyPlacement()
@@ -242,10 +283,40 @@ end
 
 -- ── layout and drawing ──────────────────────────────────────────────────────────────────────────
 
---- "wide" (the detail beside the list) or "narrow" (the detail in its place), for the width now.
+--- "wide" (the detail beside the list: the expanded view) or "narrow" (the detail in its place:
+--- the collapsed view). The view decides, never the width.
 function Results.Mode()
-    local width = ui and ui.width or storedSize()
-    return width >= Results.NARROW and "wide" or "narrow"
+    return Results.View() == "expanded" and "wide" or "narrow"
+end
+
+--- Switch to `view` ("expanded" | "collapsed"): its own size and minimum, the window's top-left
+--- corner kept where it is, and the detail closed (a collapsed view opens on the list).
+function Results.SetView(view)
+    if view ~= "expanded" and view ~= "collapsed" then return false end
+    local w = store()
+    if not w or Results.View() == view then return false end
+    w.view = view
+    detailOpen = false
+    if ui then
+        local f = ui.frame
+        local left, top = f:GetLeft(), f:GetTop()
+        ui.width, ui.height = storedSize()
+        applyBounds()
+        f:SetSize(ui.width, ui.height)
+        if type(left) == "number" and type(top) == "number" then
+            f:ClearAllPoints()
+            f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+            savePosition()
+        end
+        paintToggle()
+        layout()
+    end
+    return true
+end
+
+--- The title bar's toggle.
+function Results.ToggleView()
+    return Results.SetView(Results.View() == "expanded" and "collapsed" or "expanded")
 end
 
 local function bodySize()
@@ -258,7 +329,7 @@ local function layoutRuns(pane, width, height)
     if mode == "wide" then
         local dw = math.min(Results.DETAIL_WIDTH, math.floor(width * 0.38))
         pane.frame:Show()
-        pane:Layout(width, height, width - dw)
+        pane:Layout(width, height, width - dw, true)
         local barH = pane:BarHeight()
         detail.frame:SetPoint("TOPRIGHT", ui.body, "TOPRIGHT", 0, -barH)
         detail.frame:SetSize(dw, height - barH)
@@ -413,7 +484,7 @@ end
 --- Back to the default place and size (the Master controls' Reset position).
 function Results.ResetPosition()
     local w = store()
-    if w then w.point, w.relativePoint, w.x, w.y, w.width, w.height = nil, nil, nil, nil, nil, nil end
+    if w then w.point, w.relativePoint, w.x, w.y, w.expanded, w.collapsed = nil, nil, nil, nil, nil, nil end
     if ui then
         applyPlacement()
         layout()
