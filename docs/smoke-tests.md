@@ -11,6 +11,11 @@ the catalog (spec §4.6).
 |---|---|---|
 | 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, center countdown, restyle, title-bar hover) |
 
+### Pending sign-off
+
+Rows changed for the Keybindings tab's one key button and not yet run by the owner: SM-DR-KB2
+and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -72,8 +77,9 @@ the catalog (spec §4.6).
 | K9 | Target each catalog dummy and `/dr target` | Its name, creature ID and category print (243167/243168 Dungeoneer, 243208 Cleave, 243205 Boss-level, 243211 PvP); an uncataloged target prints *Other* | The line for each |
 | K10 | Arm with `/dr arm 30` with the HUD's *Test mode* box ticked in settings | Test mode ends with one line and the settings checkbox unticks | Whether the box stayed ticked |
 | SM-DR-KB1 | *Options → Keybindings*, scroll to the addons' sections | A section titled *Ka0s DPS Race* holds *Toggle race HUD*, *Toggle results window* and *Arm or cancel race*, in that order; no blank spacer row above or among them; nothing of DPS Race is left under *AddOns* | A screenshot of the section |
-| SM-DR-KB2 | Bind a key in *General > Keybindings* in this addon's settings, then look in *Options → Keybindings*; bind another there, then reopen the tab. Repeat with *Character Specific Keybindings* ticked | Each key shows in the other surface, in both account and character-specific modes, and the tab's set line names the set in force | Which surface missed which key, and the mode |
-| SM-DR-KB3 | Press the bound *Toggle race HUD* key; on the tab, click a slot and press Escape; enter combat and click a slot | The key toggles the HUD; Escape cancels the capture and the Settings window stays open; in combat the slot refuses with *Key bindings can be changed after combat.* and binds nothing | The outcome line and any error |
+| SM-DR-KB2 | Bind a key with the key button in *General > Keybindings* in this addon's settings, then look in *Options → Keybindings*; bind a second key there, then reopen the tab and hover the button. Repeat with *Character Specific Keybindings* ticked | Each key shows in the other surface, in both account and character-specific modes; the button reads *<first key> +1* and its tooltip names both keys; the tab's set line names the set in force | Which surface missed which key, and the mode |
+| SM-DR-KB3 | Press the bound *Toggle race HUD* key; on the tab, click a key button and press Escape; right-click a bound key button; enter combat and click a key button | The key toggles the HUD; Escape cancels the capture and the Settings window stays open; the right-click clears the first key (a second moves up); in combat the button refuses with *Key bindings can be changed after combat.* and binds nothing | The outcome line and any error |
+| SM-DR-RV3 | Open *General > Keybindings*; bind *Toggle race HUD* there and press the key; then press the row's *Clear* | Each action shows one key button and *Clear*, no second key slot; the key bound there toggles the HUD; *Clear* removes every key of the action | A screenshot of the tab |
 
 ## 4. The race on a real dummy
 

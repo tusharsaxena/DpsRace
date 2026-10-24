@@ -64,3 +64,31 @@
   above), 1 skipped; after the stub fix: 481 passed, 0 failed, 1 skipped, 482 total.
   `ka0s-bounded luacheck .`: 0 warnings / 0 errors in 83 files. Largest authored `.lua` file:
   `tests/test_hud.lua`, 1109 lines (cap 1500).
+
+## Re-vendor after the tag moved again (one key button)
+
+- **Tag moved (LK-96, local, not pushed):** v1.77.0 was commit
+  `afae2f75cb7ff61c57156d9a3d8a6b2b9f4c5e10` (tag object `b2b8ee25c5f9fa26db146254bf786b366dec986b`)
+  and is now commit `2f2b2e22b4c9219cd8a4101d7e894681c7aea16e` (tag object
+  `e9b126d961c2970e5b14d0566480f7c1d8b5e5e8`), the owner's one-key-button follow-up to 015.
+- **Per-file minors that moved:** OptionsKeybinds 3 -> 4 (one key button and Clear per row: the
+  button binds and right-click clears slot 1, reads "<first key> +N" when the action holds more, and
+  its tooltip names every key; the second slot widget and the KEY1 / KEY2 words are gone, KEY,
+  KEY_MORE, KEYS_ALL and KEYS_OTHER are new). Every other file in `libs/LibKa0s/` is byte-identical
+  (`git -C ../LibKa0s diff --stat afae2f7 2f2b2e2 -- LibKa0s testkit tools` names
+  `LibKa0s/OptionsKeybinds.lua`, `testkit/README.md` and `testkit/bindings_xml.lua`). Kit revision
+  unchanged at 42; `tests/_kit/bindings_xml.lua`'s `Kit.keybindThroughTab` now drives slot 2 on a
+  one-button row as the client's page sets it.
+- **Copy:** `libs/LibKa0s/` and `tests/_kit/` copied whole from `git -C ../LibKa0s archive v1.77.0
+  LibKa0s testkit tools`. Both content diffs (`diff -r --strip-trailing-cr`) empty before the prune.
+  The provenance line stays `v1.77.0`, and the `LibKa0s icons:` line is kept unchanged.
+- **Icons:** `lua <scratch>/tools/prune-icons.lua .` removed every catalog arrival of the copy and
+  kept the 17 declared icons (18 files); no tracked icon removed.
+- **Contract blocker:** none. `test_surface_parity` stayed green after the copy (minor 4 adds no
+  public Options member), so the degradation stub is unchanged.
+- **Docs:** `docs/settings-panel.md`'s Keybindings tab and the smoke rows SM-DR-KB2 and SM-DR-KB3
+  describe the one key button and Clear; SM-DR-RV3 is new; all three are listed under *Pending
+  sign-off*. The addon's tests drove slot 1 only, so none changed.
+- **Gates:** `ka0s-bounded lua tests/run.lua`: 489 passed, 0 failed, 1 skipped, 490 total (README
+  badge and `docs/test-cases.md` unchanged at 489). `ka0s-bounded luacheck .`: 0 warnings / 0 errors
+  in 82 files. Largest authored `.lua` file: `tests/test_hud.lua`, 1109 lines (cap 1500).

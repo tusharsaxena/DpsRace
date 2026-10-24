@@ -85,8 +85,11 @@ Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 The General page's last tab (options-ui-§20), a host tab drawn by the library's `O.KeybindingsTab`
 from `NS.BINDINGS` (`core/LauncherSetup.lua`); the addon draws none of its rows. Under the library's
 fixed intro, one row per binding in `Bindings.xml`'s order: *Toggle race HUD*, *Toggle results
-window*, *Arm or cancel race*, each labeled with its `BINDING_NAME_` text, with **Key 1**, **Key 2**
-and **Clear**. Below them, the set line (*Saved for: all characters* or *this character only*) and
+window*, *Arm or cancel race*, each labeled with its `BINDING_NAME_` text, with one key button and
+**Clear**. The button binds the action's first key and reads it; when the game's page holds a second
+key it reads *<key> +1*, and its tooltip names both keys and says where the other was set. A
+right-click on the button clears the first key (a second moves up); **Clear** removes every key.
+Below them, the set line (*Saved for: all characters* or *this character only*) and
 the outcome line. Keys are the game's, saved to the binding set in force (account or character),
 never to the profile; a key set here shows in Options -> Keybindings -> Ka0s DPS Race and the other
 way round. In combat nothing is bound or cleared.
