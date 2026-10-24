@@ -855,3 +855,82 @@ test("race: the diagnostics state section names the race state, run, session and
     for _, l in ipairs(lines) do if l == want then found = true end end
     assertTrue(found, "no race line; got: " .. table.concat(lines, " | "))
 end)
+
+-- ── the target probe (modules/TargetProbe.lua, debug only) ──────────────────────────────────────
+
+--- A race fixture with three enemy plates: the player on nameplate1's and nameplate2's threat
+--- tables (a secret answer, as in combat), nameplate3 untouched.
+local function probed()
+    local f = F.new({ mutate = function(m)
+        local plates = { nameplate1 = 243208, nameplate2 = 243208, nameplate3 = 243209 }
+        m.UnitExists = function(u) return plates[u] ~= nil or u == "player" end
+        m.UnitCanAttack = function(_, u) return plates[u] ~= nil end
+        m.UnitThreatSituation = function(_, u)
+            if u == "nameplate1" or u == "nameplate2" then return T.secret(3) end
+            return nil
+        end
+        local priorGUID, priorName = m.UnitGUID, m.UnitName
+        m.UnitGUID = function(u)
+            if plates[u] then return ("Creature-0-3770-2552-1234-%d-0000%s"):format(plates[u], u:sub(-1)) end
+            return priorGUID(u)
+        end
+        m.UnitName = function(u)
+            if plates[u] then return "Cleave Training Dummy" end
+            return priorName(u)
+        end
+        m.UnitLevel = function() return 90 end
+    end })
+    local lines = {}
+    local prior = f.NS.Debug
+    f.NS.Debug = function(tag, fmt, ...)
+        if tag == "Probe" then lines[#lines + 1] = fmt:format(...) end
+        if prior then prior(tag, fmt, ...) end
+    end
+    return f, lines
+end
+
+local function has(lines, needle)
+    for _, l in ipairs(lines) do if l:find(needle, 1, true) then return true end end
+    return false
+end
+
+test("probe: off without debug logging; nothing is sampled", function()
+    local f, lines = probed()
+    f.NS.State.debug = false
+    assertTrue(f:arm(30))
+    f:start(25)
+    f:advance(2)
+    assertFalse(f.NS.TargetProbe.Active())
+    assertEqual(#lines, 0)
+end)
+
+test("probe: counts the plates with a threat answer, secret or not, and reports them after the result", function()
+    local f, lines = probed()
+    f.NS.State.debug = true
+    assertTrue(f:arm(30))
+    f:start(25)
+    assertTrue(f.NS.TargetProbe.Active())
+    f:advance(2)
+    assertTrue(has(lines, "new max: 2 tagged of 3 plates"), table.concat(lines, "\n"))
+    assertTrue(has(lines, "threat=secret"), "the kind of each answer is reported")
+    f:to(130)
+    f:combatEnd()
+    f:to(134)
+    assertEqual(f.Race.State(), "result")
+    assertFalse(f.NS.TargetProbe.Active(), "the report ends the probe")
+    assertTrue(has(lines, "tagged plates over the race: 2 (max at once 2)"))
+    assertTrue(has(lines, "nameplate1: name=Cleave Training Dummy level=90 npcID=243208 category=cleave"))
+    assertTrue(has(lines, "meter EnemyDamageTaken for session 25"))
+    assertNil(F.findSecret(f.Race.Current()), "the probe put nothing on the run")
+end)
+
+test("probe: a canceled race drops the probe", function()
+    local f, lines = probed()
+    f.NS.State.debug = true
+    assertTrue(f:arm(30))
+    f:start(25)
+    f.Race.Cancel()
+    assertFalse(f.NS.TargetProbe.Active())
+    assertTrue(has(lines, "race canceled"))
+    assertEqual(f.clock.live(), 0, "no ticker left behind")
+end)

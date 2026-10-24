@@ -17,7 +17,7 @@ Rows changed for the Keybindings tab's one key button and not yet run by the own
 and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
 
 Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), not yet run: S3, S6,
-R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), and section 10 (new).
+R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), and sections 10 and 11 (new; 11 is the target probe).
 
 ## How to run it
 
@@ -261,3 +261,18 @@ detail's timing strip.
 | SM-DR-AP4 | Change *Spell bars* (texture, opacity, color, *Use class color*, *Row height*) and *Spell text* | The HUD's live rows, the result card's rows and the Results detail's breakdown all follow; *Use class color* paints the bars in your class color with the opacity kept | Screenshots of the HUD and the detail |
 | SM-DR-AP5 | Press General's *Defaults*, then `/reload` | Every HUD Appearance row returns to the shipped look (monospace green and red clocks, flat indigo bars) and survives the reload | The row that did not reset |
 | SM-DR-RT1 | Open History > Results table; change each bar's texture, opacity and color, the bar text and the background; tick *Use class color* on the background and on one bar | A *Damage bar*, *DPS bar*, *Bar text* and *Background* subsection; every change shows in the open Runs list at once; the class colors are each run's character's (an alt's runs in the alt's color), with the background's opacity kept; History's *Defaults* puts it all back | A screenshot of the list |
+
+## 11. Target probe (debug only): can the addon count and name what you hit?
+
+Run with `/dr debug on`. Each probe run writes its lines to the debug console under the `Probe` tag;
+after the result, open `/dr debug`, **Copy**, and paste everything from *start: probing nameplates*
+to *end of report*. Nameplates must be on (enemy nameplates, `V`), and stay in range of the dummies
+until the result shows.
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-PR1 | Race 0:30 on the Cleave group, hitting all 5 dummies with AoE the whole race | The report's *max at once* is 5 and *tagged plates over the race* is 5; each tagged plate has a name and a level | The whole Probe block |
+| SM-DR-PR2 | Race 0:30 on the same group, hitting only 3 (single-target abilities, tab-targeting 3 of them) | *max at once* is 3 | The whole Probe block |
+| SM-DR-PR3 | Race 0:30 on one single-target dummy with other players' dummies nearby | *max at once* is 1 | The whole Probe block |
+| SM-DR-PR4 | In any of the three, read the *kinds* lines | Record, for each of `threat`, `name`, `level` and `guid`, whether it was `secret` or plain during combat | The kinds lines |
+| SM-DR-PR5 | In any of the three, read the *meter EnemyDamageTaken* lines | Record how many rows the 5-dummy race gives (the earlier probe saw 1 merged row) and whether each row has a name and a GUID | The meter lines |

@@ -70,6 +70,10 @@ files["modules/Format.lua"] = { read_globals = { "AbbreviateNumbers" } }
 files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell" } }
 -- A stored run's character's class color (the Results table's bars), and the fallback faces.
 files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
+-- The target probe (debug only): the enemy nameplates it asks about.
+files["modules/TargetProbe.lua"] = {
+    read_globals = { "UnitExists", "UnitCanAttack", "UnitThreatSituation", "UnitLevel" },
+}
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
 -- The shared look: a title-bar control draws its tooltip.
 files["modules/Style.lua"] = { read_globals = { "GameTooltip" } }
