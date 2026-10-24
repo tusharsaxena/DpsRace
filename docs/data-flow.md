@@ -99,7 +99,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
   `sealed` read is retried for 10 s; a missing session, a raise or a
   meter reset makes the run `lost` (kept, with no result). A run resolved with no combat-end
-  loadout takes the arm-time one.
+  loadout takes the arm-time one; a run resumed after a /reload or a stand-down has neither, and
+  takes a fresh snapshot when it resolves out of combat.
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
   the run the moment its update arrives, so a `/reload` after it keeps it); the run is saved

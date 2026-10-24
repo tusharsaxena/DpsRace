@@ -21,7 +21,7 @@ R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new)
 
 Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
 SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7); section 12's SM-DR-CH1 to
-SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); section 13's SM-DR-LO1 to SM-DR-LO10
+SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); section 13's SM-DR-LO1 to SM-DR-LO11
 (new: equipment and talents, #6); S3 again (the Race HUD tab's new *Chart and pace* subsection); and
 SM-DR-LY3 again (History's new *Sharing* subsection and its *Include talents link* above *Runs to
 keep*).
@@ -323,3 +323,4 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 | SM-DR-LO8 | In the Runs tab hover the class icon of a run raced after a gear change, then of the next run in the same gear, then of a run from before this build | The first names the talent loadout and says *Gear changed since the previous run* in amber; the second names the loadout without the note; the old one says *Gear and talents: not recorded* | A screenshot of each |
 | SM-DR-LO9 | On History, tick *Include talents link* under *Sharing*; share a run to Say and to a party member's whisper; untick it and share again | Ticked: the line ends with a gold *[Destruction: <loadout>]* link (or the link follows as a second message when the line is long), and clicking it, yours or a party member's, opens the read-only talent tree. Unticked: exactly the one line as before | The chat lines, and any refusal or error |
 | SM-DR-LO10 | Arm a race, change a piece of gear before the first hit, then race it and open the run | The grid shows the gear you raced in (the one you changed to), not the gear at arm | A screenshot |
+| SM-DR-LO11 | Arm a race, hit a dummy, then `/reload` mid-race and step away so combat ends during the loading screen; open the run once it is read | The run is read straight after the reload, and its *Gear* grid and *Talents* line show what you raced in, not *Not recorded* | A screenshot |

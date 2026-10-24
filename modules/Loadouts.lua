@@ -28,7 +28,9 @@ end
 function Loadouts.Hash(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
-    return ("%08x"):format(h)
+    -- Two 16-bit halves: %x converts through a C long, 32 bits on 64-bit Windows, so a value of
+    -- 2^31 or more would not format as itself.
+    return ("%04x%04x"):format(math.floor(h / 65536), h % 65536)
 end
 
 local function sortedSlots(gear)

@@ -99,6 +99,7 @@ test("loadout: the hash is djb2 as eight hex digits, and pure", function()
     local H = NS.Loadouts.Hash
     assertEqual(H(""), "00001505", "djb2's seed, 5381")
     assertEqual(H("a"), "0002b606", "5381 * 33 + 97")
+    assertEqual(H("abcdef"), "f148cb7a", "a hash of 2^31 or more formats as itself")
     assertEqual(H("abc"), H("abc"))
     assertTrue(H("abc") ~= H("acb"))
     assertEqual(#H(("x"):rep(5000)), 8, "a long string stays inside 32 bits")
@@ -256,6 +257,25 @@ test("loadout: a second combat end in the read's wait replaces the loadout and d
     f:combatEnd()
     assertTrue(run.loadout.gear ~= first)
     assertNil(f.NS.db.global.loadouts.gear[first], "the replaced set outlived the replacement")
+end)
+
+test("loadout: a run resumed after a /reload whose combat ended unheard still takes a loadout", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    local run = f.Race.Current()
+    f:start(25)
+    f:to(110)
+    f.M.__inCombat = false                 -- combat drops during the reload
+    local g = F.new{ enable = false }
+    g.M.__now = 110
+    g.M.__inCombat = false
+    g.meter.SetSession(25, F.SESSION)
+    g.NS.db.global.runs[run.id] = run
+    g:enable()
+    assertEqual(g.Race.State(), "result", "read at once, no regen edge heard")
+    assertEqual(run.status, "incomplete")
+    assertTrue(run.loadout ~= nil, "the run was saved without a loadout")
+    assertEqual(g.NS.Loadouts.Of(run)[1], g.M.__gear[1])
 end)
 
 -- ── the detail ──────────────────────────────────────────────────────────────────────────────────
@@ -486,12 +506,21 @@ test("loadout: the share line takes the talents link only with Include talents l
     assertEqual(msgs[1], line .. " " .. NS.Share.TalentsLink(run))
     assertTrue(msgs[1]:find("|Htalentbuild:267:80:" .. M.__talents.importString .. "|h[Destruction: Raid ST]|h", 1, true) ~= nil)
     -- Too long for one message: the link follows as a second.
-    M.__talents.importString = ("A"):rep(220)
+    M.__talents.importString = ("A"):rep(180)
     local long = uiRun(NS, "long", 147600, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    assertTrue(#NS.Share.TalentsLink(long) <= NS.Share.MAX_CHAT, "the link alone must fit a message")
     msgs = NS.Share.Messages(long)
     assertEqual(#msgs, 2)
     assertEqual(msgs[1], NS.Share.Line(long))
     assertTrue(msgs[2]:find("|Htalentbuild:", 1, true) == 11, "the second message is not the link")
+    -- A link too long for a message of its own is dropped, never sent cut.
+    M.__talents.importString = ("A"):rep(260)
+    local huge = uiRun(NS, "huge", 147600, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    assertTrue(#NS.Share.TalentsLink(huge) > NS.Share.MAX_CHAT)
+    msgs = NS.Share.Messages(huge)
+    assertEqual(#msgs, 1)
+    assertEqual(msgs[1], NS.Share.Line(huge))
+    msgs = NS.Share.Messages(long)
     -- A run with no loadout shares the line alone.
     local old = uiRun(NS, "old", 100, nil, { schema = 1 })
     assertEqual(#NS.Share.Messages(old), 1)

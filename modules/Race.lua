@@ -123,9 +123,13 @@ local function finish()
     NS.SendBus(NS.MSG.RACE_RESULT, cur.run)
 end
 
---- The run's loadout (#6): the combat-end snapshot when one was taken, else the arm-time one.
+--- The run's loadout (#6): the combat-end snapshot when one was taken, else the arm-time one. A run
+--- resumed after a /reload or a stand-down has neither when its combat ended unheard: out of combat,
+--- a fresh snapshot is what raced, as at the regen edge.
 local function keepLoadout(run)
-    if run.loadout == nil and cur.armLoadout then NS.Loadouts.Attach(run, cur.armLoadout) end
+    if run.loadout ~= nil then return end
+    if cur.armLoadout then return NS.Loadouts.Attach(run, cur.armLoadout) end
+    if not UnitAffectingCombat("player") then NS.Loadouts.Attach(run, NS.Recorder.SnapshotLoadout()) end
 end
 
 local function lose(why)

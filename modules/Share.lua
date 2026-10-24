@@ -93,7 +93,8 @@ local function includeTalents()
 end
 
 --- What a share sends, in order: the line, with the talents link after it when *Include talents
---- link* is on and the run has one (in the same message when both fit in one, else a second).
+--- link* is on and the run has one (in the same message when both fit in one, else a second; a link
+--- too long for a message of its own is left out).
 --- @param run table
 --- @return table|nil messages  nil for a run with no line
 function Share.Messages(run)
@@ -101,6 +102,11 @@ function Share.Messages(run)
     if not line then return nil end
     local link = includeTalents() and Share.TalentsLink(run) or nil
     if not link then return { line } end
+    -- A link past a chat message's length would be cut mid-escape: share the line alone.
+    if #link > Share.MAX_CHAT then
+        if NS.Debug then NS.Debug("Share", "talents link of %d bytes dropped", #link) end
+        return { line }
+    end
     if #line + 1 + #link <= Share.MAX_CHAT then return { line .. " " .. link } end
     return { line, link }
 end
