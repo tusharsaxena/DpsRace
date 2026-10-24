@@ -12,6 +12,7 @@ NS.L = L
 -- Identity and chrome
 L["Ka0s DPS Race"] = "Ka0s DPS Race"
 L["General"] = "General"
+L["HUD"] = "HUD"
 L["Profiles"] = "Profiles"
 L["Slash Commands"] = "Slash Commands"
 
@@ -35,8 +36,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown and HUD Appearance."] =
-    "Restore every General setting on this profile to its addon default, including the Race HUD's live breakdown and HUD Appearance."
+L["Restore every General setting on this profile to its addon default: Master controls."] =
+    "Restore every General setting on this profile to its addon default: Master controls."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -289,7 +290,7 @@ L["creature %d"] = "creature %d"
 L["not a creature"] = "not a creature"
 L["Target: %s \194\183 %s \194\183 category %s"] = "Target: %s \194\183 %s \194\183 category %s"
 
--- General page: the Race HUD tab (settings/General.lua): Display, then Live breakdown
+-- HUD page: the Race HUD tab (settings/Hud.lua): Display, then Live breakdown
 L["Race HUD"] = "Race HUD"
 L["Display"] = "Display"
 L["Show the race HUD"] = "Show the race HUD"
@@ -348,8 +349,10 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
+L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."] =
+    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."
 
--- General page: the Race HUD tab's Live breakdown subsection (settings/General.lua)
+-- HUD page: the Race HUD tab's Live breakdown subsection (settings/Hud.lua)
 L["Live breakdown"] = "Live breakdown"
 L["Spell rows shown"] = "Spell rows shown"
 L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."] =

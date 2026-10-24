@@ -150,12 +150,12 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- declares outside a composer (options-ui-§1: pin both counts and the delta)
     local l, d = pair()
     local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
-    -- General > HUD Appearance: four font blocks of six, the bar block's four and its row height
+    -- HUD > HUD Appearance: four font blocks of six, the bar block's four and its row height
     -- (an `extra`, so it goes with the block).
     local APPEARANCE_ROWS = 4 * 6 + 4 + 1
     -- History > Results table: two bar blocks of four, a font block of six, a background pair.
     local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 2
-    -- The rows the pages declare by hand (General's Race HUD tab, Race, History): a
+    -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them.
     local PAGE_ROWS = 15
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS

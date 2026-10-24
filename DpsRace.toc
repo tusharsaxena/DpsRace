@@ -134,14 +134,15 @@ modules\TargetProbe.lua
 settings\Schema.lua
 settings\Slash.lua
 # LOAD-BEARING: publishes NS.Helpers, which every page file below captures at FILE SCOPE, and
-# NS.RegisterTabbedPage, which settings\Race.lua and History.lua call at FILE SCOPE.
+# NS.RegisterTabbedPage, which settings\Race.lua, Hud.lua and History.lua call at FILE SCOPE.
 settings\OptionsSetup.lua
 # LOAD-BEARING: General registers FIRST and Profiles LAST -- the page order IS the registration order.
-# General also holds the Race HUD tab's live breakdown rows (the Live breakdown page folded in).
 settings\General.lua
-# The Race and History pages (T9), in the panel's order. History builds its bus receiver
-# (RUNS_CHANGED / RUN_SAVED) at FILE SCOPE through core\Bus.lua; Race reads NS.HudStates.PRESETS and
-# NS.Format at FILE SCOPE (modules\Hud_States.lua, modules\Format.lua above).
+# The Race, HUD and History pages (T9), in the panel's order (General, Race, HUD, History, Profiles).
+# History builds its bus receiver (RUNS_CHANGED / RUN_SAVED) at FILE SCOPE through core\Bus.lua; Race
+# reads NS.HudStates.PRESETS and NS.Format at FILE SCOPE (modules\Hud_States.lua, modules\Format.lua
+# above); HUD reads NS.defaults at FILE SCOPE.
 settings\Race.lua
+settings\Hud.lua
 settings\History.lua
 settings\Profiles.lua

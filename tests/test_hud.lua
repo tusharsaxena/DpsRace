@@ -1169,7 +1169,7 @@ test("hud: the minimum size still holds every body after the compact restyle", f
     assertTrue(content >= RESULT_TOP + 3 * PITCH - 2 + RESULT_BOTTOM, "result with three rows")
 end)
 
--- ── HUD Appearance (General > HUD Appearance, modules/Hud_Appearance.lua) ─────────────────────────
+-- ── HUD Appearance (HUD > HUD Appearance, modules/Hud_Appearance.lua) ─────────────────────────────
 
 test("hud: the running clocks, figures and spell rows take their HUD Appearance blocks", function()
     local f = hud()

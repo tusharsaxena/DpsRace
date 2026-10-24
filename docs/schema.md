@@ -34,17 +34,17 @@ row's `default` reads from it.
 | `race.finalCountdown` | `10` | *Center countdown from (seconds)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
 | `race.buzzer` | `true` | *Buzzer raid warning and sound*, Race page | The raid-warning STOP and its sound at the buzzer (spec §4.4) |
 | `race.hintDelay` | `15` | *Sticky-combat hint after (seconds)*, Race page (5-60) | Seconds in combat after the buzzer before the HUD's drop-combat hint (spec §4.4) |
-| `live.rows` | `8` | *Spell rows shown*, General page, Race HUD tab | Spells in the live breakdown, 0-15; 0 is every spell, wheel-scrolled |
-| `live.icons` | `true` | *Show spell icons*, General page, Race HUD tab | Spell icons on the HUD's rows |
-| `live.showDps` | `true` | *Show live DPS*, General page, Race HUD tab | Blizzard's live DPS figure, labeled *live* |
-| `live.hz` | `4` | *Live reads per second*, General page, Race HUD tab | Live reads per second, 2-10 (spec §10) |
-| `hud.showMode` | `"onArm"` | *Show the race HUD*, General page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
-| `hud.clock` | `"both"` | *Race clock*, General page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
+| `live.rows` | `8` | *Spell rows shown*, HUD page, Race HUD tab | Spells in the live breakdown, 0-15; 0 is every spell, wheel-scrolled |
+| `live.icons` | `true` | *Show spell icons*, HUD page, Race HUD tab | Spell icons on the HUD's rows |
+| `live.showDps` | `true` | *Show live DPS*, HUD page, Race HUD tab | Blizzard's live DPS figure, labeled *live* |
+| `live.hz` | `4` | *Live reads per second*, HUD page, Race HUD tab | Live reads per second, 2-10 (spec §10) |
+| `hud.showMode` | `"onArm"` | *Show the race HUD*, HUD page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
+| `hud.clock` | `"both"` | *Race clock*, HUD page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
 | `windows.hud.width` / `.height` | `300` / `460` | none (geometry) | The HUD's size, tall enough for the default 8 live rows (mockup screen 04); the minimum is 260x296 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
 | `windows.results.width` / `.height` | `1160` / `560` | none (geometry) | The Results window's size (spec §6.2); the minimum 780x420 and the side-by-side threshold (1120) are in `modules/Results.lua`. Its scale is the Master controls' `scale` |
-| `appearance.elapsed.*` / `.left.*` / `.figures.*` / `.spellText.*` | `font`, `fontSize`, `fontColor`, `useClassColorFont`, `fontFlags`, `fontShadow` (see `defaults/Profile.lua`) | the composed font blocks, General page, HUD Appearance tab | The running clocks, the live figures and the spell rows' text (`modules/Hud_Appearance.lua`) |
+| `appearance.elapsed.*` / `.left.*` / `.figures.*` / `.spellText.*` | `font`, `fontSize`, `fontColor`, `useClassColorFont`, `fontFlags`, `fontShadow` (see `defaults/Profile.lua`) | the composed font blocks, HUD page, HUD Appearance tab | The running clocks, the live figures and the spell rows' text (`modules/Hud_Appearance.lua`) |
 | `resultsTable.damageBar.*` / `.dpsBar.*` / `.barText.*` / `.barBg.*` | the bar blocks (both the spell breakdown's indigo at 85%), the font block, `bgColor` (white at 4%) + `useClassColorBg` (`false`) | the composed groups, History page, Results table tab | The Runs list's Damage and DPS bars, their text and their track; each class color is the run's character's |
-| `appearance.bars.*` | `barTexture` `"Solid"`, `barAlpha` `0.85`, `barColor`, `useClassColorBar` `false`, `rowHeight` `18` | the composed bar block and *Row height*, General page, HUD Appearance tab | The spell rows' fill and height, on the HUD and in the Results window's breakdown |
+| `appearance.bars.*` | `barTexture` `"Solid"`, `barAlpha` `0.85`, `barColor`, `useClassColorBar` `false`, `rowHeight` `18` | the composed bar block and *Row height*, HUD page, HUD Appearance tab | The spell rows' fill and height, on the HUD and in the Results window's breakdown |
 
 Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.lastLength` is state, below.
 

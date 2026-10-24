@@ -159,7 +159,7 @@ race.
   Blizzard's order, `live.rows` of them, no %. `live.rows` 0 is every spell: as many as fit the
   window are drawn, and the mouse wheel moves a plain offset over the rest (MultiMeters' model: the
   slice is redrawn from the offset, nothing is measured, and the count is the length of the addon's
-  own copy of the list). The rows, the clocks and the figures take their look from General > HUD
+  own copy of the list). The rows, the clocks and the figures take their look from HUD > HUD
   Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
