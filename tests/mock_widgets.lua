@@ -116,6 +116,10 @@ return function(T)
             rawset(o, "SetStatusBarTexture", function(self, p) self.__barTexture = p; return self end)
             rawset(o, "SetStatusBarColor", function(self, r, g, b, a) self.__barColor = { r, g, b, a }; return self end)
             rawset(o, "SetHeight", function(self, h) self.__height = h; return self end)
+            rawset(o, "SetWidth", function(self, w) self.__width = w; return self end)
+            rawset(o, "SetShown", function(self, on) self.__shown = on and true or false
+                if on then self:Show() else self:Hide() end
+                return self end)
             rawset(o, "SetScale", function(self, s) self.__scale = s; return self end)
             rawset(o, "SetFontObject", function(self, font) self.__fontObject = font; return self end)
             rawset(o, "SetPoint", function(self, ...)

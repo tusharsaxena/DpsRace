@@ -24,7 +24,7 @@ local Tbl = NS.ResultsTable
 Runs.RESOLVED = { complete = true, incomplete = true, lost = true }
 Runs.DEFAULTS = {
     char = "current", spec = "current", category = "all", length = "all", date = "all",
-    hideFlagged = false, includeIncomplete = true,
+    hideFlagged = false, includeIncomplete = true, onlyBest = false,
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
@@ -38,6 +38,7 @@ local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their wid
 local CHECKS = {
     { key = "hideFlagged", label = "Hide flagged", width = 100 },
     { key = "includeIncomplete", label = "Include incomplete", width = 128 },
+    { key = "onlyBest", label = "Only best", width = 84 },
 }
 local COUNT_W = 70
 local GAP = 6
@@ -105,6 +106,8 @@ local PASS = {
     function(run, _, since) return since == nil or (run.date or 0) >= since end,
     function(run, f) return f.includeIncomplete or run.status == "complete" end,
     function(run, f) return not (f.hideFlagged and Runs.IsFlagged(run)) end,
+    -- Only best: the runs holding their board's best now (the Status column's Best).
+    function(run, f) return not f.onlyBest or Runs.HoldsBest(run) end,
 }
 
 --- The runs that pass every filter, in the order given.
@@ -248,7 +251,7 @@ Runs.STATUS = {
 local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
 
 -- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
-local function holdsBest(run)
+function Runs.HoldsBest(run)
     local Bests = NS.Bests
     if not (Bests and Bests.Board) then return false end
     local held = Bests.Board()[Bests.Key(run)]
@@ -264,7 +267,7 @@ function Runs.Status(run)
         key = "lost"
     elseif run.status == "incomplete" then
         key = (type(run.flags) == "table" and run.flags.died) and "died" or "incomplete"
-    elseif holdsBest(run) then
+    elseif Runs.HoldsBest(run) then
         key = "best"
     elseif Runs.IsFlagged(run) then
         key = "flagged"
@@ -329,9 +332,13 @@ function Runs.Columns()
           text = function(run) return NS.Format.RunTime(run, TAIL_HEX), C.text end },
         { key = "damage", label = L["Damage"], width = 60, justify = "RIGHT", desc = true,
           sort = function(run) return run.result and run.result.damage end,
+          bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
+          barColor = C.bar,
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, justify = "RIGHT", desc = true,
-          sort = sortDps, text = dpsText },
+          sort = sortDps, text = dpsText,
+          bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
+          barColor = C.barDps },
         { key = "vsBest", label = L["vs Best"], width = 56, justify = "RIGHT", desc = true,
           sort = function(run) return run.status == "complete" and Runs.VsBest(run) or nil end,
           text = vsBestText },
@@ -419,7 +426,8 @@ function View:layoutBar(width)
             x = x + spec.width + GAP
         end
     end
-    local need = x + CHECKS[1].width + CHECKS[2].width + COUNT_W + 2 * GAP
+    local need = x + COUNT_W + 2 * GAP
+    for _, spec in ipairs(CHECKS) do need = need + spec.width + GAP end
     local row2 = need > width
     local y = row2 and -(FILTER_H - 2) or -6
     if row2 then x = GAP + 2 end

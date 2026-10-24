@@ -42,6 +42,10 @@ local C = {
     amber = { 1.0, 0.72, 0.29 },
     green = { 0.36, 0.86, 0.46 },
     red   = { 1.0, 0.32, 0.32 },
+    -- The Damage and DPS cells' bars: the breakdown's indigo, and the DPS figure's green, faint
+    -- under the number.
+    bar    = { 0.29, 0.29, 0.45, 0.55 },
+    barDps = { 0.36, 0.86, 0.46, 0.22 },
 }
 Tbl.COLORS = C
 
@@ -202,8 +206,17 @@ end
 
 local Cells = {}
 
+-- A text cell; a column with `bar` also draws a fill behind its text, as long as its value against
+-- the largest in the list (Table:SetData).
 function Cells.text(row, col)
-    return { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
+    local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
+    if col.bar then
+        cell.bar = row:CreateTexture(nil, "BORDER")
+        cell.bar:SetTexture(WHITE)
+        local c = col.barColor or C.bar
+        cell.bar:SetVertexColor(c[1], c[2], c[3], c[4] or 0.5)
+    end
+    return cell
 end
 
 -- The class and spec icons, each with a hover naming it, and (on the bests board) the spec's name.
@@ -243,10 +256,20 @@ end
 
 local Bind = {}
 
+-- The bar's width: the cell's, times the run's share of the list's largest value. Plain numbers off
+-- stored runs, and the cell's width is the column layout's, never a measured one.
+local function bindBar(cell, col, run)
+    local v, max = col.bar(run), col.barMax
+    local on = type(v) == "number" and v > 0 and type(max) == "number" and max > 0
+    cell.bar:SetShown(on)
+    if on then cell.bar:SetWidth(math.max(1, math.floor((cell.w or 0) * math.min(1, v / max) + 0.5))) end
+end
+
 function Bind.text(cell, col, run)
     local s, color = col.text(run)
     cell.fs:SetText(s or "")
     paint(cell.fs, color)
+    if cell.bar then bindBar(cell, col, run) end
 end
 
 function Bind.icons(cell, col, run)
@@ -319,6 +342,12 @@ local function placeCell(row, cell, col, x, w)
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.fs:SetWidth(math.max(10, w))
+        if cell.bar then
+            cell.w = w
+            cell.bar:ClearAllPoints()
+            cell.bar:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -2)
+            cell.bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 2)
+        end
     end
 end
 
@@ -514,6 +543,18 @@ end
 --- Replace the list (any order) and redraw it sorted, keeping the scroll where it can.
 function Table:SetData(list)
     self.data = list or {}
+    -- Each bar column's scale: the largest value in the whole list (every run the filters pass,
+    -- scrolled into view or not), so the bars compare the runs the view holds.
+    for _, col in ipairs(self.columns) do
+        if col.bar then
+            local max
+            for _, run in ipairs(self.data) do
+                local v = col.bar(run)
+                if type(v) == "number" and (max == nil or v > max) then max = v end
+            end
+            col.barMax = max
+        end
+    end
     self.rows = Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc)
     self:Bind()
 end

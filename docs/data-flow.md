@@ -195,7 +195,7 @@ timer or `OnUpdate`.
   time it shows.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the five dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
-  bar → `ResultsTable` sorts them (newest first by default, reset at every login and `/reload`; on DPS an unranked run sorts last; a tie to the newer
+  bar (*Only best* keeps the runs holding their board's best) → `ResultsTable` scales the Damage and DPS bars to the largest of the runs passed, sorts them (newest first by default, reset at every login and `/reload`; on DPS an unranked run sorts last; a tie to the newer
   run) and binds the visible slice to pooled rows. A click selects a run; a double-click shares it.
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip

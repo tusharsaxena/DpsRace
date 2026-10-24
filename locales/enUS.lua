@@ -250,6 +250,7 @@ L["Best per spec \195\151 category \195\151 race length, all characters"] =
 L["No personal bests yet: finish a race to set one."] = "No personal bests yet: finish a race to set one."
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
+L["Only best"] = "Only best"
 L["The run still counts and the flag shows on the board."] =
     "The run still counts and the flag shows on the board."
 

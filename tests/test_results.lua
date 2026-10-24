@@ -165,6 +165,56 @@ test("results: Status is Best, Flagged or Complete for a complete run", function
     assertEqual((Runs.Status({ status = "lost", flags = {} })), "lost")
 end)
 
+test("results: Damage and DPS carry bars scaled to the largest run the filters pass", function()
+    local i = inst()
+    seed(i, {
+        mkRun("big", { result = { damage = 40000000, dps = 200000 } }),
+        mkRun("half", { result = { damage = 20000000, dps = 100000 }, date = NOW - 2 * HOUR }),
+        mkRun("mage", { char = "mage", result = { damage = 80000000, dps = 400000 }, date = NOW - 3 * HOUR }),
+        mkRun("lost", { status = "lost", result = NONE, date = NOW - 4 * HOUR }),
+    })
+    i.R.Show()
+    local pane = runsPane(i)
+    local function widths()
+        local out = {}
+        for _, row in ipairs(visible(pane)) do
+            local d = row.cells.damage
+            out[row.run.id] = { damage = d.bar.__shown ~= false and d.bar.__width or 0, w = d.w,
+                                dps = row.cells.dps.bar.__shown ~= false and row.cells.dps.bar.__width or 0,
+                                dw = row.cells.dps.w }
+        end
+        return out
+    end
+    local w = widths()
+    assertEqual(w.big.damage, w.big.w, "the largest run the view holds fills its cell")
+    assertEqual(w.half.damage, math.floor(w.half.w / 2 + 0.5))
+    assertEqual(w.half.dps, math.floor(w.half.dw / 2 + 0.5))
+    assertEqual(w.lost.damage, 0, "a lost run has no bar")
+    -- All characters: the mage's run is now the largest, and every bar rescales to it.
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    w = widths()
+    assertEqual(w.mage.damage, w.mage.w)
+    assertEqual(w.big.damage, math.floor(w.big.w / 2 + 0.5))
+end)
+
+test("results: Only best keeps the runs holding their board's best", function()
+    local i = inst()
+    seed(i, {
+        mkRun("top", { result = { damage = 27000000, dps = 150000 } }),
+        mkRun("slow", { result = { damage = 20000000, dps = 120000 }, date = NOW - 2 * HOUR }),
+        mkRun("short", { race = { length = 30, grace = 1 }, result = { damage = 1500000, dps = 50000 },
+                         date = NOW - 3 * HOUR }),
+    })
+    i.R.Show()
+    local pane = runsPane(i)
+    assertEqual(pane:Count(), 3)
+    pane.checks.onlyBest:__fire("OnClick")
+    assertTrue(pane.filters.onlyBest)
+    assertEqual(visibleIDs(pane), "top,short", "one best per board")
+    assertEqual(pane.checks.onlyBest.label.__text, "Only best")
+end)
+
 test("results: vs Best is each run's distance from its board's best", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
