@@ -292,7 +292,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (17)
+### test_chart.lua (20)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -302,6 +302,7 @@ Total.
 - chart: each column holds exactly the handle read at its boundary, and none fills early
 - chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar
 - chart: with a best the scale is its damage x 1.15 (A), with its level, its pace and the pace bar
+- chart: the tick reuses the live views and rebuilds the chart's only when what decides it changes
 - chart: hidden, with the pace bar, while the run is on a shared session
 - chart: Show damage chart and Show pace bar turn each off
 - chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last
@@ -309,8 +310,10 @@ Total.
 - chart: the overlay sits one band over the plot's columns
 - chart: the result card draws the race's slices to its plain final damage, and none without them
 - chart: the Results detail shows the chart for a run raced this session only
+- chart: the detail's title hover goes with its chart, so it never covers the section under it
 - chart: a lost run has no chart on the card or in the detail
 - chart: test mode draws the sample's chart against a sample best, then on its result card
+- chart: test mode honors Show damage chart and Show pace bar
 
 ### test_countdown.lua (20)
 
@@ -674,7 +677,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
-| test_chart.lua | 17 |
+| test_chart.lua | 20 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 42 |
@@ -697,4 +700,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **547** |
+| **Total** | **550** |

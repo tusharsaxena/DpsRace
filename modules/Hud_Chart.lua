@@ -104,22 +104,50 @@ end
 --- @param showPace boolean  live.paceBar
 --- @return table|nil chart  { count, values, length, max, best, note }  (max nil: scale B, the live total)
 --- @return table|nil pace  { max }
+-- THE LIVE VIEWS ARE CACHED (the 20 Hz tick, performance-§3): the chart's view and the best behind it
+-- are rebuilt only when what decides them changes. The best is looked up again only when the run or
+-- the bests board changed (Bests.Board hands out a new table after every invalidation); the pace
+-- table is one table, its max refilled each pass.
+local live = { pace = {} }
+
+local function liveBest(run)
+    local board = NS.Bests and NS.Bests.Board() or nil
+    if live.bestRun ~= run or live.board ~= board or live.bestLength ~= run.race.length then
+        live.bestRun, live.board, live.bestLength = run, board, run.race.length
+        live.best = Chart.BestOf(run)
+    end
+    return live.best
+end
+
+local function liveChart(run, best)
+    local length = run.race.length
+    local rec = NS.Slices.Get(run.id)
+    local values = rec and rec.values or nil
+    if live.chartRun == run and live.chartBest == best and live.chartLength == length
+        and live.values == values and live.chart then
+        return live.chart
+    end
+    live.chartRun, live.chartBest, live.chartLength, live.values = run, best, length, values
+    local chart = { count = NS.Slices.Count(length), values = values or {}, length = length,
+                    note = L["first race on this board"] }
+    if best then
+        chart.best = best.result.damage
+        chart.max = chart.best * Chart.HEADROOM
+        chart.note = L["vs best pace"]
+    end
+    live.chart = chart
+    return chart
+end
+
 function Chart.LiveViews(run, elapsed, showChart, showPace)
     if type(run) ~= "table" or type(run.race) ~= "table" or shared(run) then return nil, nil end
-    local best = Chart.BestOf(run)
+    local best = liveBest(run)
     local chart, pace
-    if showChart then
-        local length = run.race.length
-        local rec = NS.Slices.Get(run.id)
-        chart = { count = NS.Slices.Count(length), values = rec and rec.values or {}, length = length,
-                  note = L["first race on this board"] }
-        if best then
-            chart.best = best.result.damage
-            chart.max = chart.best * Chart.HEADROOM
-            chart.note = L["vs best pace"]
-        end
+    if showChart then chart = liveChart(run, best) end
+    if showPace and best then
+        pace = live.pace
+        pace.max = Chart.PaceMax(best, elapsed)
     end
-    if showPace and best then pace = { max = Chart.PaceMax(best, elapsed) } end
     return chart, pace
 end
 

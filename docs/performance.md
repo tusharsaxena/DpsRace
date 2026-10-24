@@ -14,7 +14,7 @@ test when capture is off.
 | `combatEvent` | `NS:OnCombatChanged` in `core/DpsRace.lua` (`PLAYER_REGEN_DISABLED`, and `PLAYER_REGEN_ENABLED` when visibility needs it) | It runs on every combat edge |
 | `raceEvent` | the event handler in `modules/Watchers.lua`: every meter, combat, death and cast event while a race is armed, running or stopping | `DAMAGE_METER_COMBAT_SESSION_UPDATED` and the cast events fire throughout a run |
 | `hudLive` | one live read and redraw in `modules/Hud.lua` (`Meter.ReadLive`, the KPIs, the pooled spell rows, the damage chart's columns and the pace bar; the read's total copied into the chart's bucket, `modules/Slices.lua`) | throttled to `live.hz` (4 Hz by default), coalesced from `DAMAGE_METER_COMBAT_SESSION_UPDATED`, plus one `C_Timer` read at each chart bucket boundary (at most 60 a race), only while the HUD is on screen and the race RUNNING, never from `OnUpdate`; one more read at the buzzer |
-| `hudTick` | the HUD window's `OnUpdate` pass in `modules/Hud.lua`: the countdown text, the stop figures, the Stop!/Waiting phase | 20 Hz while RUNNING, 4 Hz while STOPPING; attached only while the window is shown and the race in one of them |
+| `hudTick` | the HUD window's `OnUpdate` pass in `modules/Hud.lua`: the countdown text, the stop figures, the Stop!/Waiting phase, and the running body's chart and pace views (`HudChart.LiveViews`: the chart's view and the best behind it cached per race and rebuilt only when the run, the bests board, the length or the run's slices change; the pace max refilled into one reused table; the stack placed again only when a compared input changed) | 20 Hz while RUNNING, 4 Hz while STOPPING; attached only while the window is shown and the race in one of them |
 
 The HUD's other work is not a hot path: its own AceEvent target (target and regen edges while shown)
 redraws on an edge. The final seconds (`modules/Countdown.lua`) are at most ten one-shot `C_Timer`s armed when the race runs, each a sound and a texcoord change; no `OnUpdate`.
@@ -61,7 +61,7 @@ bracketed paths with capture off and on:
 | Scenario pair | Path | What it pins |
 |---|---|---|
 | `raceEvent` | a DamageDone update for the run's session, through `modules/Watchers.lua`'s AceEvent target | the timeline stamp allocates next to nothing |
-| `hudTick` | `Hud.Tick()`, the HUD's `OnUpdate` pass while RUNNING | the countdown redraw's per-frame cost |
+| `hudTick` | `Hud.Tick()`, the HUD's `OnUpdate` pass while RUNNING | the countdown redraw's per-frame cost, the cached chart and pace views included (800 bytes, as before the chart) |
 | `hudLive` | `Hud.ReadLive()`, one live read and breakdown redraw from secret values | the throttled read's cost |
 | `combatEvent` | `NS:OnCombatChanged`, the addon object's regen handler | one HUD refresh |
 

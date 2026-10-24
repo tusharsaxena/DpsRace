@@ -538,6 +538,21 @@ local function chartBlock()
     return NS.HudChart.BlockHeight(plotH) + GAP, plotH
 end
 
+-- Whether the stack's inputs changed since it was last placed, noting them when they did: compared
+-- field by field into one reused table, so the 20 Hz tick builds no key.
+local function restack(body, top, paceH, chart, plotH)
+    local last = body.placed
+    if last and last.top == top and last.paceH == paceH and last.chart == chart and last.plotH == plotH
+        and last.width == body.width and last.height == body.height then
+        return false
+    end
+    last = last or {}
+    last.top, last.paceH, last.chart, last.plotH = top, paceH, chart, plotH
+    last.width, last.height = body.width, body.height
+    body.placed = last
+    return true
+end
+
 -- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, each only when its view
 -- is given (modules/Hud_Chart.lua LiveViews); the chart steps aside when it would leave fewer than
 -- MIN_ROWS rows. Placed again only when what decides the stack changed: every input is config.
@@ -551,9 +566,7 @@ local function placeExtras(body, v)
     w.pace:SetShown(v.pace ~= nil)
     w.chart:SetShown(chart)
     body.chartView = chart and v.chart or nil
-    local key = table.concat({ top, paceH, tostring(chart), plotH, tostring(body.width), tostring(body.height) }, "|")
-    if body.placed == key then return end
-    body.placed = key
+    if not restack(body, top, paceH, chart, plotH) then return end
     local y, width = top, body.width or 236
     if v.pace then w.pace:Place(f, -y, width) end
     y = y + paceH

@@ -230,6 +230,29 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its level, its
     assertTrue(pace.tick:IsShown(), "the on-pace tick")
 end)
 
+test("chart: the tick reuses the live views and rebuilds the chart's only when what decides it changes", function()
+    local f = hud()
+    running(f, 30)
+    local run = f.Race.Current()
+    local Chart = f.NS.HudChart
+    local c1, p1 = Chart.LiveViews(run, 1, true, true)
+    assertEqual(p1, nil, "no best: no pace bar")
+    assertEqual(c1.max, nil, "scale B")
+    assertTrue(rawequal(Chart.LiveViews(run, 2, true, true), c1), "the same view from tick to tick")
+    -- A best saved mid-race drops the bests board: the next pass scales to it.
+    seedBest(f, 3000000, 30)
+    local c2, p2 = Chart.LiveViews(run, 3, true, true)
+    assertFalse(rawequal(c2, c1), "rebuilt for the new best")
+    assertEqual(c2.max, 3000000 * Chart.HEADROOM)
+    local _, p3 = Chart.LiveViews(run, 6, true, true)
+    assertTrue(rawequal(p3, p2), "one pace table")
+    assertEqual(p3.max, 2 * 3000000 * 6 / 30, "its max refilled each pass")
+    -- The first bucket's capture gives the run its slices: the view follows them.
+    pump(f, 1.5)
+    local c4 = Chart.LiveViews(run, 7, true, true)
+    assertTrue(rawequal(c4.values, f.NS.Slices.Get(run.id).values), "the run's own buckets")
+end)
+
 test("chart: hidden, with the pace bar, while the run is on a shared session", function()
     local f = hud()
     seedBest(f, 3000000, 30)
@@ -347,6 +370,20 @@ test("chart: the Results detail shows the chart for a run raced this session onl
     assertEqual(#f.W.SecretGeometryReads(), 0)
 end)
 
+test("chart: the detail's title hover goes with its chart, so it never covers the section under it", function()
+    local f = hud()
+    local run = resolved(f)
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    local d = R.__ui().detail
+    assertTrue(d.w.chartTitleHover:IsShown(), "the title's hover while the chart shows")
+    -- A run with no slices: the title keeps its old anchors, so its hover must hide with it.
+    f.NS.Slices.Reset()
+    R.ShowRun(run.id)
+    assertFalse(d.w.chart.shown)
+    assertFalse(d.w.chartTitleHover:IsShown(), "no stray chart tooltip over the timing header")
+end)
+
 test("chart: a lost run has no chart on the card or in the detail", function()
     local f = hud()
     running(f, 30)
@@ -356,6 +393,12 @@ test("chart: a lost run has no chart on the card or in the detail", function()
     f.Race.OnMeterReset()
     assertEqual(run.status, "lost")
     assertEqual(f.NS.HudChart.ResultView(run), nil)
+    f.Hud.Refresh()
+    assertEqual(f.Hud.__ui().current, "result", "the lost run's card")
+    assertFalse(body(f).w.chart.shown, "no chart on the lost run's card")
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    assertFalse(R.__ui().detail.w.chart.shown, "no chart in the lost run's detail")
 end)
 
 -- ── test mode ───────────────────────────────────────────────────────────────────────────────────
@@ -378,4 +421,27 @@ test("chart: test mode draws the sample's chart against a sample best, then on i
     P.Beat()
     assertEqual(f.Hud.__ui().current, "result")
     assertTrue(body(f).w.chart.shown, "the sample's result card has its chart")
+end)
+
+test("chart: test mode honors Show damage chart and Show pace bar", function()
+    local f = hud()
+    local P = f.NS.Preview
+    assertTrue(P.Start())
+    f:advance(3.2)
+    P.Beat()
+    f:advance(10)
+    P.Beat()
+    local b = body(f)
+    assertTrue(b.w.chart.shown)
+    assertTrue(f.NS.SetByPath("live.chart", false))
+    f.Hud.Refresh()
+    assertFalse(b.w.chart.shown, "the sample's chart goes with the setting")
+    assertTrue(b.w.pace.bar:IsShown(), "the pace bar is its own setting")
+    assertTrue(f.NS.SetByPath("live.paceBar", false))
+    f.Hud.Refresh()
+    assertFalse(b.w.pace.bar:IsShown(), "the sample's pace bar goes with the setting")
+    f:advance(40)
+    P.Beat()
+    assertEqual(f.Hud.__ui().current, "result")
+    assertFalse(body(f).w.chart.shown, "nor on the sample's result card")
 end)

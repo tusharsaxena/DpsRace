@@ -25,6 +25,10 @@
 -- every value it hands out is a fresh wrapper), combatEvent 2785 (one full HUD Refresh), the
 -- stood-down input 0. A ceiling sits a little above the measured figure; raise one only by
 -- re-measuring and saying why: a rise is the finding.
+-- Re-measured 2026-10-25 with the damage chart and the pace bar (#2, #3): hudTick 800, the same as
+-- before them, since the running body's chart and pace views are cached per race (modules/Hud_Chart.lua
+-- LiveViews) and its stack compared field by field; combatEvent 3376, also unchanged by them. hudLive
+-- 7264 and combatEvent 3376 already stood over their ceilings before that work: still the finding.
 
 local root = (arg and arg[0] and arg[0]:match("^(.*)/tests/perf%.lua$")) or "."
 package.path = root .. "/tests/?.lua;" .. package.path

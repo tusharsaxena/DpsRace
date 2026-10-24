@@ -308,6 +308,9 @@ local function previewView()
     local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
     commonView(v)
     for k, x in pairs(preview.extra or {}) do v[k] = x end
+    -- The sample honors the chart and pace settings, as a real race's views do (#2, #3).
+    if setting("live.chart") == false then v.chart = nil end
+    if setting("live.paceBar") == false then v.pace = nil end
     v.key = BODY_OF[preview.key] or preview.key
     if v.key == "stopping" then v.key = "stop" end
     if v.key == "idle" then idleView(v) end

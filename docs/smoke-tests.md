@@ -21,7 +21,7 @@ R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new)
 
 Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
 SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7); section 12's SM-DR-CH1 to
-SM-DR-CH8 (new: the damage chart and the pace bar, #2 and #3); and S3 again (the Race HUD tab's new
+SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); and S3 again (the Race HUD tab's new
 *Chart and pace* subsection).
 
 ## How to run it
@@ -300,3 +300,5 @@ chart draws is secret in combat, so a forbidden operation shows as a Lua error a
 | SM-DR-CH6 | Open that run in the Results window (*Details*), then `/reload` and open it again | Before the reload the detail shows *Damage over the race* under the breakdown, with the same columns, and its tooltip says only this session's runs have it; after the reload the section is gone and the timing strip moves up | A screenshot of each |
 | SM-DR-CH7 | On HUD > Race HUD turn *Show damage chart* and *Show pace bar* off and on during a race; on HUD Appearance change *Damage chart*'s color, texture and *Chart height* | Each takes effect on the next redraw; the chart's columns and the pace bar take the color and texture; a taller chart leaves fewer spell rows, and at the HUD's minimum height the chart steps aside so three rows still show | A screenshot |
 | SM-DR-CH8 | Turn test mode on and watch it through to the result card | The running sample shows a chart against a sample best (gold line, diagonal) and a pace bar; the sample result card shows its chart | A screenshot |
+| SM-DR-CH9 | With test mode on, turn *Show damage chart* off, then *Show pace bar* off, during the running sample; let it reach the result card | The sample's chart goes when its setting goes off and its pace bar when its own does, and the sample result card has no chart; turned back on, each returns on the next redraw | A screenshot with both off |
+| SM-DR-CH10 | In the Results window open a run raced this session (the chart shows), then a run from before the last `/reload` or a lost run; hover the *Timing* header where the chart's title was | Over the second run there is no *Damage over the race* tooltip anywhere: the timing header shows its own | A screenshot of the tooltip |

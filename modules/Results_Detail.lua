@@ -391,7 +391,8 @@ local function wireTips(p)
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
     hoverOver(p, w.delta, "delta")
-    hoverOver(p, w.chart.title, "chart")
+    -- Kept: the title keeps its anchors while hidden, so its hover follows the chart's visibility.
+    w.chartTitleHover = hoverOver(p, w.chart.title, "chart")
     hover(p, w.chart.over, "chart")
     hoverOver(p, w.timingLabel, "strip")
     hover(p, w.strip, "strip")
@@ -644,6 +645,7 @@ function Pane:layoutChart(y, cw)
     local view, chart = self.chartView, self.w.chart
     chart:SetShown(view ~= nil)
     chart.over:EnableMouse(view ~= nil)
+    self.w.chartTitleHover:SetShown(view ~= nil)
     if not view then return y end
     local Chart = NS.HudChart
     local plotH = Chart.PlotHeight()
