@@ -46,6 +46,8 @@ local C = {
 }
 Tbl.COLORS = C
 local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
+Tbl.BAR_EDGE = { 1, 1, 1, 0.10 }    -- a bar cell's 1px border (the HUD's PANEL_EDGE), fixed
+local BAR_EDGE = Tbl.BAR_EDGE
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -207,6 +209,7 @@ local Cells = {}
 -- A text cell; a column with `bar` also draws a track across the cell and a fill over it, as long as
 -- its value's place between the smallest and the largest in the list (Table:SetData, Tbl.BarShare). Its look is the
 -- column's `barStyle(run)`: { texture, r, g, b, a, track = { r, g, b, a }, font = a resolved font }.
+-- The track's 1px edge is drawn in a fixed color, the HUD's panel edge, with no setting of its own.
 function Cells.text(row, col)
     local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
     if col.bar then
@@ -214,6 +217,12 @@ function Cells.text(row, col)
         cell.track:SetTexture(WHITE)
         cell.bar = row:CreateTexture(nil, "BORDER", nil, 2)
         cell.bar:SetTexture(WHITE)
+        cell.edges = {}
+        for i = 1, 4 do
+            local e = row:CreateTexture(nil, "BORDER", nil, 3)
+            e:SetColorTexture(BAR_EDGE[1], BAR_EDGE[2], BAR_EDGE[3], BAR_EDGE[4])
+            cell.edges[i] = e
+        end
     end
     return cell
 end
@@ -391,6 +400,21 @@ local function placeCell(row, cell, col, x, w)
                 tex:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
             end
             cell.track:SetWidth(cell.barW)
+            -- The 1px border on the track's own bounds: top, bottom, left, right.
+            local top, bottom, left, right = cell.edges[1], cell.edges[2], cell.edges[3], cell.edges[4]
+            for _, e in ipairs(cell.edges) do e:ClearAllPoints() end
+            top:SetPoint("TOPLEFT", cell.track, "TOPLEFT", 0, 0)
+            top:SetPoint("TOPRIGHT", cell.track, "TOPRIGHT", 0, 0)
+            top:SetHeight(1)
+            bottom:SetPoint("BOTTOMLEFT", cell.track, "BOTTOMLEFT", 0, 0)
+            bottom:SetPoint("BOTTOMRIGHT", cell.track, "BOTTOMRIGHT", 0, 0)
+            bottom:SetHeight(1)
+            left:SetPoint("TOPLEFT", cell.track, "TOPLEFT", 0, 0)
+            left:SetPoint("BOTTOMLEFT", cell.track, "BOTTOMLEFT", 0, 0)
+            left:SetWidth(1)
+            right:SetPoint("TOPRIGHT", cell.track, "TOPRIGHT", 0, 0)
+            right:SetPoint("BOTTOMRIGHT", cell.track, "BOTTOMRIGHT", 0, 0)
+            right:SetWidth(1)
         end
     end
 end
@@ -490,7 +514,8 @@ end
 --- @param parent table
 --- @param columns table  { key, label, kind = "text"|"icons"|"badge"|"flag", width | flex+min,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run) }
---- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text }
+--- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text,
+---                      stripe = false for uniform rows (default: every other row faintly tinted) }
 function Tbl.New(parent, columns, opts)
     opts = opts or {}
     local frame = CreateFrame("Frame", nil, parent)
@@ -499,7 +524,7 @@ function Tbl.New(parent, columns, opts)
         frame = frame, columns = columns, heads = {}, pool = NS.Pool.New(), shown = {},
         data = {}, rows = {}, offset = 0, width = 600, height = 300,
         sortKey = opts.sortKey, sortDesc = opts.sortDesc ~= false,
-        onClick = opts.onClick, onDoubleClick = opts.onDoubleClick,
+        onClick = opts.onClick, onDoubleClick = opts.onDoubleClick, stripe = opts.stripe ~= false,
     }, Table)
     t.header = CreateFrame("Frame", nil, frame)
     t.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
@@ -660,7 +685,7 @@ end
 
 function Table:bindRow(row, run, index)
     row.run, row.index = run, index
-    local alt = index % 2 == 0
+    local alt = self.stripe and index % 2 == 0
     row.bg:SetVertexColor(1, 1, 1, alt and 0.025 or 0)
     row.sel:SetShown(self.selected ~= nil and run.id == self.selected)
     for c, col in ipairs(self.columns) do Bind[col.kind or "text"](row.cells[c], col, run) end

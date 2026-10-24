@@ -92,11 +92,11 @@ local STORED = {
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.damageBar.barAlpha"] = { "number", 1, 0, 1, 0.05 },
+    ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
     ["resultsTable.damageBar.barColor"] = { "color", "table" },
     ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.dpsBar.barAlpha"] = { "number", 1, 0, 1, 0.05 },
+    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
     ["resultsTable.dpsBar.barColor"] = { "color", "table" },
     ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.barText.font"] = { "string", "Friz Quadrata TT" },

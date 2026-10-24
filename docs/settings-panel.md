@@ -157,10 +157,13 @@ Every row's reaction is `NS.Results.Refresh()`.
 
 | Subsection | Schema prefix | Rows | Default |
 |---|---|---|---|
-| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*) | solid, opaque, bright blue |
-| *DPS bar* | `resultsTable.dpsBar.` | the bar block | solid, opaque, bright green |
+| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*) | solid, 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
+| *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
 | *Bar text* | `resultsTable.barText.` | the font block | Friz Quadrata 10, white, shadowed; a dash keeps the column's muted gray |
-| *Background* | `resultsTable.barBg.` | *Background color* \| *Use class color* | near-black at 85%, class color off |
+| *Background* | `resultsTable.barBg.` | *Background color* \| *Use class color* | white at 4% (the breakdown's faint track), class color off |
+
+Each bar cell's track also carries a 1px border in a fixed color, the HUD's panel edge (white at
+10%), with no setting of its own; the Runs list's rows are uniform (no alternating stripe).
 
 The page's Defaults button restores *Runs to keep* and the Results table tab's rows; it never touches a stored run.
 

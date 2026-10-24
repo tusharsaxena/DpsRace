@@ -231,9 +231,19 @@ test("results: the bars take History > Results table's look; the track can take 
     i.R.Show()
     local cells = visible(runsPane(i))[1].cells
     local D = i.NS.defaults.profile.resultsTable
-    assertEqual(cells.damage.bar.__vertex[1], D.damageBar.barColor.r, "the bright blue fill")
-    assertEqual(cells.dps.bar.__vertex[2], D.dpsBar.barColor.g, "the bright green fill")
-    assertEqual(cells.damage.track.__vertex[1], D.barBg.bgColor.r, "the dark track")
+    local indigo = i.NS.defaults.profile.appearance.bars.barColor
+    assertEqual(D.damageBar.barColor.r, indigo.r, "the breakdown's indigo fill")
+    assertEqual(D.dpsBar.barColor.b, indigo.b, "the same fill on both bars")
+    assertEqual(D.damageBar.barAlpha, 0.85)
+    assertEqual(cells.damage.bar.__vertex[1], 0.29, "the indigo fill")
+    assertEqual(cells.dps.bar.__vertex[3], 0.45)
+    assertEqual(cells.dps.bar.__vertex[4], 0.85, "at the breakdown's opacity")
+    assertEqual(cells.damage.track.__vertex[1], 1, "the faint track")
+    assertEqual(cells.damage.track.__vertex[4], 0.04)
+    assertEqual(#cells.damage.edges, 4, "a 1px border around the track")
+    assertEqual(cells.damage.edges[1].__height, 1)
+    assertEqual(i.NS.ResultsTable.BAR_EDGE[4], 0.10, "the border in the HUD's panel edge, fixed")
+    assertEqual(cells.damage.fs.__color[1], 1, "the text stays white")
     assertEqual(cells.damage.fs.__justifyH, "LEFT", "left-aligned")
     assertTrue(i.NS.SetByPath("resultsTable.barBg.useClassColorBg", true))
     assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))
@@ -244,6 +254,11 @@ test("results: the bars take History > Results table's look; the track can take 
     assertEqual(cells.damage.bar.__vertex[1], warlock.r)
     assertEqual(cells.dps.bar.__vertex[1], D.dpsBar.barColor.r, "each bar its own companion")
     for _, head in ipairs(runsPane(i).list.heads) do assertEqual(head.label.__justifyH, "LEFT") end
+    -- Uniform rows: no alternating stripe in the Runs list.
+    seed(i, { mkRun("a"), mkRun("b", { date = NOW - 2 * HOUR }) })
+    runsPane(i):Refresh()
+    assertEqual(#visible(runsPane(i)), 2)
+    for _, row in ipairs(visible(runsPane(i))) do assertEqual(row.bg.__vertex[4], 0, "no stripe") end
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()

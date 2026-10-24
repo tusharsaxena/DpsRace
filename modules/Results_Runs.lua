@@ -426,6 +426,8 @@ function Runs.Build(parent, hooks)
         -- Newest first (the owner's call, 2026-10-24). The sort is view state like the filters, so
         -- every login and /reload starts here again.
         sortKey = "date", sortDesc = true,
+        -- Uniform rows: the bar cells' tracks carry the row (the owner's call, 2026-10-25).
+        stripe = false,
         onClick = function(run) if view.hooks.select then view.hooks.select(run) end end,
         onDoubleClick = function(run) if view.hooks.share then view.hooks.share(run) end end,
         empty = L["No runs match these filters."],
