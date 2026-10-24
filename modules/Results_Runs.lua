@@ -433,12 +433,48 @@ function Runs.BarStyle(block, run)
     return fill
 end
 
+--- The v/s Max cell's tooltip.
+function Runs.VsMaxTip(run, top)
+    local pct = Runs.VsMax(run, top)
+    local type_ = NS.Dummies.Label(categoryOf(run)):lower()
+    if pct == nil then
+        return { DASH, run.status == "lost" and L["A lost run has no DPS to compare."]
+            or L["No complete run on this target type in view to compare with."] }
+    end
+    local lines = { L["%+.1f%% vs the max"]:format(pct),
+                    L["The max for %s in this view: %s DPS."]:format(type_, NS.ResultsTips.Grouped(top)) }
+    if pct == 0 and run.status == "complete" then lines[1] = L["This run is the max for %s in view."]:format(type_) end
+    if run.status ~= "complete" then lines[#lines + 1] = L["An incomplete run is compared, but never sets the max."] end
+    return lines
+end
+
+local STATUS_ABOUT = {
+    max = "The top DPS on its target type among the runs in view, which hold more than one spec.",
+    best = "The best run for its spec, target type and race length.",
+    complete = "A complete run that holds no best.",
+    flagged = "A complete run that carries a flag.",
+    incomplete = "Combat ended before the buzzer. It never counts toward bests.",
+    died = "You died before the buzzer. It never counts toward bests.",
+    lost = "The meter's session could not be read after combat. There is no score.",
+}
+
+--- The Status cell's tooltip: the tag, what it means, then every flag the run carries (what the
+--- flag column's mark used to say).
+function Runs.StatusTip(run, top)
+    local key, text, color = Runs.Status(run, top)
+    local lines = { { text, color[1], color[2], color[3] }, L[STATUS_ABOUT[key]] }
+    for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
+    -- lines[1] is the title: SideTip draws it from a string.
+    lines[1] = text
+    return lines
+end
+
 -- The tail in the caption gray, after the length (NS.Format.RunTime).
 local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
     math.floor(C.dim[3] * 255 + 0.5))
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length and the tail), damage, DPS, v/s max, status, flags. The v/s Max column reads
+--- time (the length and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
 --- its max off the whole list the table is handed (its `scan`, every run the filters pass).
 function Runs.Columns()
     local view = { top = {}, maxTag = {} }
@@ -482,14 +518,15 @@ function Runs.Columns()
               end
           end,
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
-          text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end },
+          text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
+          tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
         { key = "status", label = L["Status"], width = 150, kind = "badge", desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
               local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
               return text, color, icon
-          end },
-        { key = "flag", label = "", width = 14, kind = "flag" },
+          end,
+          tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
     }
 end
 

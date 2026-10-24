@@ -178,31 +178,52 @@ function Tbl.Ilvl(v)
     return ("%.1f"):format(v)
 end
 
-local function showTip(owner, lines)
-    if not GameTooltip or not lines or #lines == 0 then return end
-    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
-    GameTooltip:SetText(lines[1], 1, 1, 1, 1, true)
-    for i = 2, #lines do GameTooltip:AddLine(lines[i], 1, 0.82, 0, true) end
-    GameTooltip:Show()
+-- ── tooltips ────────────────────────────────────────────────────────────────────────────────────
+-- ONE HOVER PER ROW, NOT A SPOT PER CELL: the row follows the cursor across its cells (its OnUpdate,
+-- only while hovered) and shows the tooltip of the cell under it (NS.ResultsTips). The tooltip sits
+-- beside the WINDOW at the row's height, on its right (LootHistory's), or on its left when the
+-- screen has no room for it there. Nothing here holds a meter value, so the geometry read is free.
+
+-- The top-level window a table sits in (the frame whose parent is UIParent).
+local function windowOf(frame)
+    local w = frame
+    while w and w.GetParent do
+        local p = w:GetParent()
+        if p == nil or p == UIParent then return w end
+        w = p
+    end
+    return frame
+end
+
+--- Show `lines` ({ title, line, ... }; a line is a string or { text, r, g, b }) beside `window`,
+--- level with `row`.
+function Tbl.SideTip(window, row, lines)
+    local tip = GameTooltip
+    if not tip or type(lines) ~= "table" or not lines[1] then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    for i = 2, #lines do
+        local l = lines[i]
+        if type(l) == "table" then tip:AddLine(l[1], l[2] or 1, l[3] or 1, l[4] or 1, true)
+        else tip:AddLine(l, 0.9, 0.9, 0.9, true) end
+    end
+    tip:Show()
+    local dy = 0
+    if row and row.GetTop and window.GetTop then dy = (row:GetTop() or 0) - (window:GetTop() or 0) end
+    local scale = window:GetEffectiveScale() or 1
+    local right = (window:GetRight() or 0) * scale
+    local room = (UIParent and UIParent:GetRight() or 0) * (UIParent and UIParent:GetEffectiveScale() or 1)
+    local width = (tip:GetWidth() or 0) * (tip:GetEffectiveScale() or 1)
+    tip:ClearAllPoints()
+    if right + width + 4 <= room then
+        tip:SetPoint("TOPLEFT", window, "TOPRIGHT", 4, dy)
+    else
+        tip:SetPoint("TOPRIGHT", window, "TOPLEFT", -4, dy)
+    end
 end
 
 local function hideTip()
     if GameTooltip then GameTooltip:Hide() end
-end
-
---- A mouse-sensitive spot that shows its own `tip` (an array of lines) on hover; the caller anchors it.
---- On a list row the spot passes a click on to the row (`spot.row`), so the icons still select it.
-function Tbl.TipSpot(parent)
-    local spot = CreateFrame("Frame", nil, parent)
-    spot:EnableMouse(true)
-    spot:SetScript("OnEnter", function(self) showTip(self, self.tip) end)
-    spot:SetScript("OnLeave", hideTip)
-    spot:SetScript("OnMouseUp", function(self)
-        local row = self.row
-        local click = row and row:GetScript("OnClick")
-        if click then click(row) end
-    end)
-    return spot
 end
 
 -- ── cells ───────────────────────────────────────────────────────────────────────────────────────
@@ -227,10 +248,6 @@ function Cells.icons(row, col)
     local cell = { class = row:CreateTexture(nil, "ARTWORK"), spec = row:CreateTexture(nil, "ARTWORK") }
     cell.class:SetSize(Tbl.ICON, Tbl.ICON)
     cell.spec:SetSize(Tbl.ICON, Tbl.ICON)
-    cell.classSpot, cell.specSpot = Tbl.TipSpot(row), Tbl.TipSpot(row)
-    cell.classSpot.row, cell.specSpot.row = row, row
-    cell.classSpot:SetAllPoints(cell.class)
-    cell.specSpot:SetAllPoints(cell.spec)
     if col.withName then cell.fs = Tbl.Text(row, FONT.TEXT, C.text) end
     return cell
 end
@@ -250,15 +267,6 @@ function Cells.badge(row)
     return cell
 end
 
--- The flag mark, in the Flagged tag's red.
-function Cells.flag(row)
-    local cell = { icon = row:CreateTexture(nil, "ARTWORK"), glyph = Tbl.Text(row, FONT.TEXT, C.red, "CENTER") }
-    cell.icon:SetSize(12, 12)
-    cell.icon:SetVertexColor(C.red[1], C.red[2], C.red[3])
-    cell.spot = Tbl.TipSpot(row)
-    cell.spot.row = row
-    return cell
-end
 
 local function paint(fs, color)
     color = color or C.text
@@ -307,10 +315,8 @@ function Bind.icons(cell, col, run)
     local char = run.char or {}
     local specName, specIcon = Tbl.SpecInfo(char.specID, char.spec)
     Tbl.SetClassIcon(cell.class, char.class)
-    cell.classSpot.tip = { Tbl.ClassName(char.class) }
     cell.spec:SetTexture(specIcon)
     cell.spec:SetShown(specIcon ~= nil)
-    cell.specSpot.tip = { specName or L["Unknown spec"] }
     if cell.fs then
         cell.fs:SetText(specName or "")
         paint(cell.fs, Tbl.ClassColor(char.class))
@@ -339,18 +345,6 @@ function Bind.badge(cell, col, run)
     cell.box:SetWidth(math.floor(#s * 6 + 4 + extra))
 end
 
-function Bind.flag(cell, _, run)
-    local texts = Tbl.FlagTexts(run)
-    local on = #texts > 0
-    local path = NS.Icon("flag")
-    cell.icon:SetShown(on and path ~= nil)
-    cell.glyph:SetShown(on and path == nil)
-    if path then cell.icon:SetTexture(path) end
-    cell.glyph:SetText(on and "!" or "")
-    cell.spot:SetShown(on)
-    cell.spot.tip = texts
-    cell.texts = texts
-end
 
 -- Place one cell in its column, from the column's x and width alone.
 local function placeCell(row, cell, col, x, w)
@@ -368,13 +362,6 @@ local function placeCell(row, cell, col, x, w)
     elseif kind == "badge" then
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
-    elseif kind == "flag" then
-        cell.icon:ClearAllPoints()
-        cell.icon:SetPoint("LEFT", row, "LEFT", x + 2, 0)
-        cell.glyph:ClearAllPoints()
-        cell.glyph:SetPoint("LEFT", row, "LEFT", x + 2, 0)
-        cell.spot:ClearAllPoints()
-        cell.spot:SetAllPoints(cell.icon)
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -430,6 +417,16 @@ local function newHeader(t, i, col)
     if col.sort then
         b:SetScript("OnClick", function() t:SetSort(col.key) end)
     end
+    -- The header's tooltip (LootHistory's): the column's name in gold, then what it shows.
+    b:SetScript("OnEnter", function(self)
+        local about = NS.ResultsTips and NS.ResultsTips.About(col)
+        if not (GameTooltip and about) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(col.label ~= "" and col.label or about.title or "", C.gold[1], C.gold[2], C.gold[3])
+        GameTooltip:AddLine(about.text, 0.9, 0.9, 0.9, true)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", hideTip)
     t.heads[i] = b
     return b
 end
@@ -468,6 +465,16 @@ local function newRow(t)
     row:SetScript("OnDoubleClick", function(self) if self.run and t.onDoubleClick then t.onDoubleClick(self.run) end end)
     row:EnableMouseWheel(true)
     row:SetScript("OnMouseWheel", function(_, delta) t:Scroll(delta) end)
+    row:SetScript("OnEnter", function(self)
+        self.tipCol = nil
+        self:SetScript("OnUpdate", function(r) t:HoverCell(r) end)
+        t:HoverCell(self)
+    end)
+    row:SetScript("OnLeave", function(self)
+        self:SetScript("OnUpdate", nil)
+        self.tipCol = nil
+        hideTip()
+    end)
     return row
 end
 
@@ -492,7 +499,7 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge"|"flag", width | flex+min,
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge", width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
 --- @param opts table  { sortKey, sortDesc, onClick(run), onDoubleClick(run), empty = text,
@@ -676,6 +683,36 @@ function Table:group(sorted)
         end
     end
     return out
+end
+
+--- The column under the cursor on `row`, or nil.
+function Table:columnAt(row)
+    if not (self.place and GetCursorPosition and row.GetLeft) then return nil end
+    local cx = GetCursorPosition() / (row:GetEffectiveScale() or 1)
+    local x = cx - (row:GetLeft() or 0)
+    for c, spot in ipairs(self.place) do
+        if x >= spot.x - Tbl.PAD / 2 and x < spot.x + spot.w + Tbl.PAD / 2 then return c end
+    end
+    return nil
+end
+
+--- The tooltip lines for `entry` (a run or a group header) in column `c`, or nil.
+function Table:TipLines(entry, c)
+    local Tips = NS.ResultsTips
+    if not (Tips and entry) then return nil end
+    if entry.group then return Tips.Group(entry.group) end
+    local col = self.columns[c]
+    return col and Tips.Cell(col, entry)
+end
+
+--- Show the tooltip of the cell under the cursor on `row`, when it changed column.
+function Table:HoverCell(row)
+    local entry = row.group and { group = row.group } or row.run
+    local c = row.group and 0 or self:columnAt(row)
+    if c == row.tipCol then return end
+    row.tipCol = c
+    local lines = c and self:TipLines(entry, c)
+    if lines then Tbl.SideTip(windowOf(self.frame), row, lines) else hideTip() end
 end
 
 function Table:visibleCount()

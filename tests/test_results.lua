@@ -94,7 +94,7 @@ end
 
 -- ── the run list ────────────────────────────────────────────────────────────────────────────────
 
-test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, length, damage, DPS, flag", function()
+test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status", function()
     local i = inst()
     local run = mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false } })
     seed(i, { run })
@@ -102,14 +102,14 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status|")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status", "no flag column: the Status cell carries the flags")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
     assertEqual(c.icons.class.__texture, CLASS_ATLAS, "the class icon")
-    assertEqual(c.icons.classSpot.tip[1], "Warlock", "the class icon's tooltip")
     assertEqual(c.icons.spec.__texture, 136186, "the spec icon")
-    assertEqual(c.icons.specSpot.tip[1], "Destruction", "the spec icon's tooltip")
+    local tip = pane.list:TipLines(run, 2)
+    assertEqual(tip[1], "Destruction Warlock", "the icons' tooltip names the spec and the class")
     assertEqual(c.char.fs.__text, "Lanfear")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
@@ -117,11 +117,52 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.time.fs.__text, "3:00 |cff9e9ead+9.2s|r", "the length, then the tail in the caption gray")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
-    assertTrue(c.flag.icon:IsShown(), "the flag mark")
-    local red = i.NS.ResultsTable.COLORS.red
-    assertEqual(c.flag.icon.__vertex[1], red[1], "the flag mark in the Flagged red")
-    assertEqual(c.flag.icon.__vertex[2], red[2])
-    assertTrue(c.flag.texts[1]:find("Incinerate", 1, true) ~= nil, "the flag tooltip names the spell")
+    assertEqual(c.status.fs.__text, "Spec best (cleave)", "a best outranks its flag in the tag")
+    local status = pane.list:TipLines(run, 10)
+    assertEqual(status[1], "Spec best (cleave)")
+    local named = false
+    for _, l in ipairs(status) do
+        if type(l) == "table" and l[1]:find("Incinerate", 1, true) then named = true end
+    end
+    assertTrue(named, "the Status tooltip carries the flag, naming the spell")
+end)
+
+test("results: every cell and header has a tooltip; it sits right of the window, or left when there is no room", function()
+    local i = inst()
+    local run = mkRun("a", { result = { damage = 36812345, dps = 306769, meterDps = 194700, tail = 9.1,
+                                        combatEnd = 11.0, sessionDuration = 131 } })
+    seed(i, { run })
+    i.R.Show()
+    local list = runsPane(i).list
+    for c, col in ipairs(list.columns) do
+        local lines = list:TipLines(run, c)
+        assertTrue(type(lines) == "table" and type(lines[1]) == "string", col.key .. " has a cell tooltip")
+        assertTrue(i.NS.ResultsTips.About(col) ~= nil, col.key .. " has a header tooltip")
+    end
+    assertEqual(list:TipLines(run, 7)[1], "36,812,345 damage", "the exact damage")
+    assertEqual(list:TipLines(run, 8)[1], "306,769 DPS")
+    -- Placement: a stand-in tooltip, window and row with scripted geometry.
+    local placed
+    local tip = {}
+    for _, m in ipairs({ "AddLine", "Show", "ClearAllPoints" }) do tip[m] = function() end end
+    function tip.SetOwner() end
+    function tip.SetText() end
+    function tip.GetWidth() return 300 end
+    function tip.GetEffectiveScale() return 1 end
+    function tip.SetPoint(_, point, _, rel, x) placed = { point, rel, x } end
+    local env = i.mocks
+    env.GameTooltip = tip
+    env.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
+    local window = { GetRight = function() return 1200 end, GetTop = function() return 800 end,
+                     GetEffectiveScale = function() return 1 end }
+    local row = { GetTop = function() return 700 end }
+    i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
+    assertEqual(placed[1], "TOPLEFT", "room on the right: the tooltip's left edge on the window's right")
+    assertEqual(placed[2], "TOPRIGHT")
+    window.GetRight = function() return 1800 end
+    i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
+    assertEqual(placed[1], "TOPRIGHT", "no room: on the window's left")
+    assertEqual(placed[2], "TOPLEFT")
 end)
 
 test("results: the Status column tags each run; the DPS column shows every run's DPS", function()
@@ -146,7 +187,6 @@ test("results: the Status column tags each run; the DPS column shows every run's
     assertEqual(rows[2].cells.status.fs.__text, "Lost")
     assertEqual(rows[2].cells.damage.fs.__text, "\226\128\148")
     assertEqual(rows[3].cells.status.fs.__text, "Died")
-    assertFalse(rows[1].cells.flag.icon:IsShown(), "a status is not a flag")
 end)
 
 test("results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon", function()
@@ -978,8 +1018,8 @@ test("results: below 1180px wide the detail replaces the list, with a back contr
     j.R.Refresh()
     local rowB = visible(runsPane(j))[1]
     assertEqual(rowB.run.id, "b")
-    rowB.cells.icons.classSpot:__fire("OnMouseUp")
-    assertEqual(j.R.Selected(), "b", "a click on the class icon did not select its row")
+    rowB:__fire("OnClick")
+    assertEqual(j.R.Selected(), "b", "a click on the row selects it")
 end)
 
 test("results: hidden with its parent is not closed by the player", function()
@@ -1061,7 +1101,6 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     end
     local cells = assert(visible(pane)[1], "no row drawn").cells
     assertEqual(cells.char.fs.__fontObject, "GameFontHighlightSmall", "a cell")
-    assertEqual(cells.flag.glyph.__fontObject, "GameFontHighlightSmall", "the flag glyph is cell text")
     assertEqual(cells.target.fs.__fontObject, "GameFontHighlightSmall", "the badge")
     for _, b in pairs(runsPane(i).checks) do assertEqual(b.label.__fontObject, "GameFontHighlightSmall") end
     assertEqual(ui(i).footLeft.__fontObject, "GameFontDisableSmall", "the footer, where the run count is")

@@ -86,13 +86,14 @@ files["modules/Hud.lua"] = {
 -- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
 local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
-    "GetSpecializationInfoByID",
+    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent",
 }
 files["modules/Results.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.

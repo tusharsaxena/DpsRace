@@ -436,3 +436,72 @@ L["Test mode ended: a race was armed."] = "Test mode ended: a race was armed."
 L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbers. Combat or Arm ends it"
 L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"
+
+-- The Results window's tooltips (modules/Results_Tips.lua, modules/Results_Runs.lua)
+L["Role: %s"] = "Role: %s"
+L["Class color"] = "Class color"
+L["Level %d"] = "Level %d"
+L["Item level %s"] = "Item level %s"
+L["%s overall, counting bags"] = "%s overall, counting bags"
+L["Equipped, read when the race was armed."] = "Equipped, read when the race was armed."
+L["1 target (your pick)"] = "1 target (your pick)"
+L["%d targets (your pick)"] = "%d targets (your pick)"
+L["Race length %s"] = "Race length %s"
+L["Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."] =
+    "Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."
+L["Combat ended %.1fs after the buzzer."] = "Combat ended %.1fs after the buzzer."
+L["The session could not be read: there is no score."] =
+    "The session could not be read: there is no score."
+L["%s damage"] = "%s damage"
+L["Everything the meter's session held, read after combat (%ds)."] =
+    "Everything the meter's session held, read after combat (%ds)."
+L["Damage over the time in combat (%s). Incomplete runs never rank."] =
+    "Damage over the time in combat (%s). Incomplete runs never rank."
+L["Damage over the race length (%s), your clock."] = "Damage over the race length (%s), your clock."
+L["Blizzard's meter said %s (over its whole session, idle time included)."] =
+    "Blizzard's meter said %s (over its whole session, idle time included)."
+L["Clean run"] = "Clean run"
+L["No flags: nothing happened that the result should mention."] =
+    "No flags: nothing happened that the result should mention."
+L["1 flag"] = "1 flag"
+L["%d flags"] = "%d flags"
+L["Flags inform; they never void a run."] = "Flags inform; they never void a run."
+L["Click to fold or unfold the group."] = "Click to fold or unfold the group."
+L["When the race started. Click to sort."] = "When the race started. Click to sort."
+L["The character's class and spec."] = "The character's class and spec."
+L["Who raced. Hover a name for the realm, race and where."] =
+    "Who raced. Hover a name for the realm, race and where."
+L["Equipped item level when the race was armed."] = "Equipped item level when the race was armed."
+L["The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."] =
+    "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."
+L["The race length the best was set at."] = "The race length the best was set at."
+L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."] =
+    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."
+L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."] =
+    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."
+L["How far this run's DPS is from the highest complete run in view on the same target type."] =
+    "How far this run's DPS is from the highest complete run in view on the same target type."
+L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
+    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."
+L["What happened on the run that its result should mention: late casts, a restart, a reload."] =
+    "What happened on the run that its result should mention: late casts, a restart, a reload."
+L["A lost run has no DPS to compare."] = "A lost run has no DPS to compare."
+L["No complete run on this target type in view to compare with."] =
+    "No complete run on this target type in view to compare with."
+L["%+.1f%% vs the max"] = "%+.1f%% vs the max"
+L["The max for %s in this view: %s DPS."] = "The max for %s in this view: %s DPS."
+L["This run is the max for %s in view."] = "This run is the max for %s in view."
+L["An incomplete run is compared, but never sets the max."] =
+    "An incomplete run is compared, but never sets the max."
+L["The top DPS on its target type among the runs in view, which hold more than one spec."] =
+    "The top DPS on its target type among the runs in view, which hold more than one spec."
+L["The best run for its spec, target type and race length."] =
+    "The best run for its spec, target type and race length."
+L["A complete run that holds no best."] = "A complete run that holds no best."
+L["A complete run that carries a flag."] = "A complete run that carries a flag."
+L["Combat ended before the buzzer. It never counts toward bests."] =
+    "Combat ended before the buzzer. It never counts toward bests."
+L["You died before the buzzer. It never counts toward bests."] =
+    "You died before the buzzer. It never counts toward bests."
+L["The meter's session could not be read after combat. There is no score."] =
+    "The meter's session could not be read after combat. There is no score."

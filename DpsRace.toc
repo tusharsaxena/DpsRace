@@ -112,6 +112,8 @@ modules\Countdown.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE, so each follows the files it captures (the row pitch is read at CALL time).
 modules\Results_Table.lua
+# What the tables say on hover (every cell, every header); reached at CALL time.
+modules\Results_Tips.lua
 modules\Results_Runs.lua
 modules\Results_Detail.lua
 modules\Results_Bests.lua
