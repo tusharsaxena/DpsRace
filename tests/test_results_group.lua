@@ -88,12 +88,13 @@ test("results: Group by character, class & spec or target, with folding headers"
     local pane = runsPane(i)
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
-    assertEqual(pane.filters.group, "specTargetLength", "a new profile groups by spec, target and time")
+    assertEqual(pane.filters.group, "full", "a new profile groups by Full")
     pane:SetFilter("group", "none")
     local opts = Runs.Options(i.NS.Recorder.All()).group
     assertEqual(opts[1].label, "Group: None")
-    assertEqual(#opts, 7)
-    assertEqual(opts[7].label, "Group: Spec + target + time")
+    assertEqual(opts[2].label, "Group: Full")
+    assertEqual(#opts, 8)
+    assertEqual(opts[8].label, "Group: Spec + target + time")
     local function shape()
         local out = {}
         for _, row in ipairs(visible(pane)) do
@@ -138,10 +139,10 @@ test("results: Group by time, and by target type and time, shortest first", func
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
     local opts = Runs.Options(i.NS.Recorder.All()).group
-    assertEqual(opts[5].value, "length")
-    assertEqual(opts[5].label, "Group: Time")
-    assertEqual(opts[6].value, "targetLength")
-    assertEqual(opts[6].label, "Group: Target + time")
+    assertEqual(opts[6].value, "length")
+    assertEqual(opts[6].label, "Group: Time")
+    assertEqual(opts[7].value, "targetLength")
+    assertEqual(opts[7].label, "Group: Target + time")
     local function shape()
         local out = {}
         for _, row in ipairs(visible(pane)) do
@@ -224,7 +225,7 @@ test("results: Save, Reset and Clear the Runs view, and a saved view is what the
     pane.viewButtons.reset:__fire("OnClick")
     assertEqual(i.NS.db.profile.views, nil)
     assertEqual(pane.filters.char, "current")
-    assertEqual(pane.filters.group, "specTargetLength", "the stock view groups by spec, target and time")
+    assertEqual(pane.filters.group, "full", "the stock view groups by Full")
     assertEqual(pane.list.sortKey, "date")
     assertTrue(pane.list.sortDesc)
     -- Clear with nothing saved is the stock view too.
@@ -282,6 +283,7 @@ test("results: Group by spec + target + time, one group per board, the spec in i
     local pane = runsPane(i)
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
+    pane:SetFilter("group", "specTargetLength")
     local Tbl = i.NS.ResultsTable
     local headers = {}
     for _, row in ipairs(visible(pane)) do
@@ -294,4 +296,31 @@ test("results: Group by spec + target + time, one group per board, the spec in i
         "classes in name order (Mage before Warlock), the spec in its class color")
     assertEqual(headers[2].count, 1)
     assertEqual(headers[3].count, 2, "the two Destruction 2:00 cleave runs share one board")
+end)
+
+test("results: Group by Full: character, class, spec, target and time, in that order", function()
+    local i = inst()
+    seed(i, {
+        mkRun("a", { race = { length = 120, grace = 1 } }),
+        mkRun("b", { race = { length = 60, grace = 1 }, date = NOW - HOUR }),
+        mkRun("c", { race = { length = 120, grace = 1 }, date = NOW - 2 * HOUR }),
+        mkRun("m", { char = "mage", race = { length = 60, grace = 1 }, date = NOW - 3 * HOUR }),
+    })
+    i.R.Show()
+    local pane = runsPane(i)
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    pane:SetFilter("group", "full")
+    local Tbl = i.NS.ResultsTable
+    local headers = {}
+    for _, row in ipairs(visible(pane)) do
+        if row.group then headers[#headers + 1] = row.group end
+    end
+    assertEqual(#headers, 3)
+    local hex = function(c) return "|c" .. Tbl.Hex(c) end
+    local mage = hex(Tbl.ClassColor("MAGE"))
+    assertEqual(headers[1].label, "Full: " .. mage .. "Kaosmage|r \194\183 " .. mage .. "Mage|r \194\183 "
+        .. mage .. "Fire|r \194\183 " .. hex(Tbl.CATEGORY_COLORS.cleave) .. "Cleave|r \194\183 "
+        .. hex(Tbl.LengthColor(60)) .. "1:00|r", "character, class, spec, target, time; Kaosmage before Lanfear")
+    assertEqual(headers[3].count, 2, "Lanfear's two 2:00 cleave runs share one group")
 end)

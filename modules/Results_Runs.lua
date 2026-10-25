@@ -26,9 +26,9 @@ Runs.DEFAULTS = {
     char = "current", spec = "current", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
     -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
-    -- reads no predicate for it. A new profile groups by spec, target and time: the board a best is
-    -- held on (the owner's call, 2026-10-25).
-    group = "specTargetLength",
+    -- reads no predicate for it. A new profile groups by Full: character, class, spec, target and
+    -- time (the owner's call, 2026-10-25).
+    group = "full",
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
@@ -293,6 +293,26 @@ local function specTargetLengthGroup(run)
     return key, label, rank
 end
 
+-- Full (the owner's call, 2026-10-25): one group per character, class, spec, target type and length,
+-- in that order. The character and the class and spec in the class color, the type and the time in
+-- theirs; ordered by character name, class, spec, the catalog's order, then shortest first.
+local function fullGroup(run)
+    local char = run.char or {}
+    local class = Tbl.ClassName(char.class)
+    local spec = Tbl.SpecInfo(char.specID, char.spec) or class
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local key = ("%s|%s|%s|%s|%s"):format(Runs.CharKey(run), tostring(char.class), tostring(char.specID),
+        category, tostring(length))
+    local color = Tbl.ClassColor(char.class)
+    local label = L["Full: %s"]:format(("%s \194\183 %s \194\183 %s \194\183 %s \194\183 %s"):format(
+        Runs.Colored(tostring(char.name or "?"), color), Runs.Colored(tostring(class), color),
+        Runs.Colored(tostring(spec), color), categoryText(category), lengthText(length)))
+    local rank = ("%s|%s|%s|%03d|%07d"):format(Runs.CharKey(run):lower(), tostring(class):lower(),
+        tostring(spec):lower(), CATEGORY_RANK[category] or 99, length or NO_LENGTH_RANK)
+    return key, label, rank
+end
+
 Runs.GROUPS = {
     none = nil,
     char = { of = charGroup, column = "char" },
@@ -301,11 +321,13 @@ Runs.GROUPS = {
     length = { of = timeGroup, column = "time" },
     targetLength = { of = targetLengthGroup, column = "target" },
     specTargetLength = { of = specTargetLengthGroup },
+    full = { of = fullGroup, column = "char" },
 }
-Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength", "specTargetLength" }
+Runs.GROUP_ORDER = { "none", "full", "char", "classSpec", "target", "length", "targetLength", "specTargetLength" }
 local GROUP_LABELS = {
     none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
     length = "Group: Time", targetLength = "Group: Target + time", specTargetLength = "Group: Spec + target + time",
+    full = "Group: Full",
 }
 
 --- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and
