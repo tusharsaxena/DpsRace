@@ -17,8 +17,9 @@ local _, NS = ...
 -- (m the *Pace bar range*, 1.5 by default: +-50%; plain, from GetTime()); its value is the live total,
 -- and its tick, fixed in the middle of the bar, marks "on pace". A value outside the range is the
 -- StatusBar's to clamp (empty or full): we never compare it. It says nothing more: no ahead or behind,
--- no color chosen from the value, because comparing a secret is not allowed. The HUD result card draws it again after the race, the
--- run's plain final damage against the best before it at the buzzer (Chart.ResultPace).
+-- no color chosen from the value, because comparing a secret is not allowed. The HUD result card
+-- draws it again after the race, the run's plain final damage against the best before it at the
+-- buzzer (Chart.ResultPace).
 --
 -- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
 -- detail's heading role, with the view's note at its right. On the HUD the pace bar sits between the

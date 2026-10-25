@@ -195,7 +195,7 @@ race.
   On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
   `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
   `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three
-  spell rows. Nothing is computed from a value. After the race the result card draws the pace bar
+  spell rows (only the plot steps aside: the *Damage profile* heading stays over the pace bar). Nothing is computed from a value. After the race the result card draws the pace bar
   again (`HudChart.ResultPace`), all plain: `SetMinMaxValues(PaceBounds(prev, run.race.length))` and
   `SetValue(run.result.damage)`, where `prev` is `Bests.Before(run)`, the best on the board raced
   before the run (what the delta chip names, so the previous best when the run just became the best).
