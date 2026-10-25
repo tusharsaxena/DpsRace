@@ -174,12 +174,21 @@ test("results: Group by duration, and by target type and duration, shortest firs
     assertEqual(shape():sub(1, 24), "[Duration: 1:00 1],c1,[D", "the duration mode's 1:00 is not folded")
     pane.dropdowns.group.onSelect("targetLength")
     assertEqual(visible(pane)[2].group ~= nil, true, "the pair's fold is still there")
-    -- A run with no length groups last, as 0:00.
+    -- A run with no length groups last, as a dash (never "0:00"), in either mode.
     seed(i, { mkRun("x", { race = NONE, date = NOW - 6 * HOUR }) })
     pane.dropdowns.group.onSelect("length")
     local rows = visible(pane)
     assertEqual(rows[#rows - 1].group.key, "length:nil")
+    assertEqual((rows[#rows - 1].group.label:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")),
+        "Duration: \226\128\148", "a run with no length is labeled 0:00")
     assertEqual(rows[#rows].run.id, "x")
+    pane.dropdowns.group.onSelect("targetLength")
+    local header
+    for _, row in ipairs(visible(pane)) do
+        if row.group and row.group.key == "cleave|nil" then header = row.group end
+    end
+    assertEqual((header.label:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")),
+        "Target: Cleave \194\183 \226\128\148", "the pair's no-length header is labeled 0:00")
 end)
 
 test("results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on", function()

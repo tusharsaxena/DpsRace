@@ -243,8 +243,10 @@ local function lengthOf(run)
     return type(length) == "number" and length or nil
 end
 
+-- A run with no length reads as a dash, not "0:00": it groups after the longest length.
 local function lengthText(length)
-    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.LengthColor(length)), NS.Format.Length(length))
+    local text = length == nil and DASH or NS.Format.Length(length)
+    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.LengthColor(length)), text)
 end
 
 local function durationGroup(run)
@@ -786,36 +788,53 @@ function View:ClearView()
     self:ApplyView(Runs.SavedView())
 end
 
--- Lay the bar out from the configured widths. Two rows (the collapsed view): the dropdowns on the
--- first; the checkboxes and Save / Reset / Clear on the second, the buttons right-aligned under the
--- last dropdown (Group). One row (the expanded view, `oneRow`): the dropdowns, the checkboxes, then
--- the buttons. The run count is the window footer's (hooks.count). Answers its height.
-function View:layoutBar(oneRow)
+-- Plan the bar from the configured widths, pure (no frame is read). Two rows (the collapsed view):
+-- the dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
+-- right-aligned under the last dropdown (Group). One row (the expanded view, `oneRow`): the
+-- dropdowns, the checkboxes, then the buttons. Answers each control's left x (a button's right x),
+-- the second row's y, and the bar's right edge, all from the bar's left.
+function Runs.BarPlan(oneRow)
+    local plan = { dropdowns = {}, checks = {}, buttons = {}, y = oneRow and -6 or -(FILTER_H - 2) }
     local x = GAP + 2
+    for _, spec in ipairs(DROPDOWNS) do
+        plan.dropdowns[spec.key] = x
+        x = x + spec.width + GAP
+    end
+    local groupRight = x - GAP   -- the last dropdown's right edge
+    if not oneRow then x = GAP + 2 end
+    for _, spec in ipairs(CHECKS) do
+        plan.checks[spec.key] = x
+        x = x + spec.width + GAP
+    end
+    local right = oneRow and x + #VIEW_BUTTONS * (VIEW_BUTTON_W + GAP) - GAP or groupRight
+    plan.right = math.max(right, groupRight, x - GAP)
+    for i = #VIEW_BUTTONS, 1, -1 do
+        plan.buttons[VIEW_BUTTONS[i].key] = right
+        right = right - VIEW_BUTTON_W - GAP
+    end
+    return plan
+end
+
+-- Lay the bar out by Runs.BarPlan. The run count is the window footer's (hooks.count). Answers its
+-- height.
+function View:layoutBar(oneRow)
+    local plan = Runs.BarPlan(oneRow)
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
         if dd then
             dd:ClearAllPoints()
-            dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, -6)
-            x = x + spec.width + GAP
+            dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.dropdowns[spec.key], -6)
         end
     end
-    local y = oneRow and -6 or -(FILTER_H - 2)
-    local groupRight = x - GAP   -- the last dropdown's right edge, from the bar's left
-    if not oneRow then x = GAP + 2 end
     for _, spec in ipairs(CHECKS) do
         local b = self.checks[spec.key]
         b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, y)
-        x = x + spec.width + GAP
+        b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.checks[spec.key], plan.y)
     end
-    local right = groupRight
-    if oneRow then right = x + #VIEW_BUTTONS * (VIEW_BUTTON_W + GAP) - GAP end
-    for i = #VIEW_BUTTONS, 1, -1 do
-        local b = self.viewButtons[VIEW_BUTTONS[i].key]
+    for _, spec in ipairs(VIEW_BUTTONS) do
+        local b = self.viewButtons[spec.key]
         b:ClearAllPoints()
-        b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", right, y)
-        right = right - VIEW_BUTTON_W - GAP
+        b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", plan.buttons[spec.key], plan.y)
     end
     self.barH = oneRow and FILTER_H or (2 * FILTER_H - 6)
     self.bar:SetHeight(self.barH)

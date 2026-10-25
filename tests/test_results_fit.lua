@@ -60,3 +60,17 @@ test("results: the Bests Flags chips are plain, and a two-flag best fits its col
     assertEqual(s, "1 late \194\183 Reloaded")
     assertTrue(NS.ResultsTable.BadgeWidth(s, col.boxed) <= col.width, "a two-flag chip runs past the Flags column")
 end)
+
+test("results: the Runs filter bar fits inside both views' minimum width", function()
+    local NS = inst().NS
+    local Runs, R = NS.ResultsRuns, NS.Results
+    -- The bar spans the window body (the window less its 1 px border each side), planned from the
+    -- configured widths, never from a frame read.
+    for view, oneRow in pairs({ expanded = true, collapsed = false }) do
+        local body = R.VIEWS[view].minWidth - 2
+        local plan = Runs.BarPlan(oneRow)
+        assertTrue(plan.right <= body, view .. ": the filter bar runs past the window edge")
+        assertTrue(plan.buttons.clear <= plan.right and plan.buttons.save < plan.buttons.clear,
+            view .. ": the view buttons are out of order")
+    end
+end)
