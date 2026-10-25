@@ -444,8 +444,11 @@ end)
 -- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
 -- The 30px title bar + 10, the 20px footer + 8; 18px rows on a 20px pitch; 20px buttons.
 local CHROME, PITCH = 40 + 28, 20
-local RUNNING_TOP, RUNNING_BOTTOM = 106, 42
-local RESULT_TOP, RESULT_BOTTOM = 104, 28
+-- The rows' top: the KPIs (and the chips), then the Spell breakdown heading (Round C): its 22px line
+-- and the 6px that, with the GAP above, makes the shared 14px of clear space.
+local BREAKDOWN = 6 + 22
+local RUNNING_TOP, RUNNING_BOTTOM = 106 + BREAKDOWN, 42
+local RESULT_TOP, RESULT_BOTTOM = 104 + BREAKDOWN, 28
 
 local function fits(height, top, bottom)
     return math.floor((height - CHROME - top - bottom + 2) / PITCH)
@@ -507,7 +510,8 @@ end)
 
 test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 520, "screen 04's rows plus the chart and pace bar (#2, #3)")
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 560,
+        "screen 04's rows plus the headings, the chart and the pace bar (#2, #3, Round C)")
     assertEqual(f.NS.db.profile.live.rows, 8)
     -- A best on the board, so the pace bar shows too: the tallest default stack.
     local best = f.NS.Recorder.NewRun(30)
@@ -515,7 +519,7 @@ test("hud: the default window size shows every default live row under the chart 
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 520)
+    assertEqual(f.Hud.Diagnose().height, 560)
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
@@ -523,7 +527,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x520")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x560")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
@@ -571,7 +575,7 @@ test("hud: the minimum height holds the idle body's whole stack", function()
     assertEqual(States.IDLE_ARM_Y, 162)
     assertEqual(States.ARM_HEIGHT, 24)
     assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 162 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
-    assertEqual(f.Hud.MIN_HEIGHT, 296, "the minimum height, re-derived for the compact rows and buttons")
+    assertEqual(f.Hud.MIN_HEIGHT, 354, "the minimum height, re-derived for the headings (Round C)")
     assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
     f.NS.db.profile.windows.hud.height = 200
     f.Hud.Show()
@@ -1223,7 +1227,8 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(p[5], -58)
     assertEqual(body(f).kpiBottom, 58 + 46 + 8)
     -- The chart sits between the KPIs and the rows, at its configured height (no best: no pace bar).
-    assertEqual(body(f).rowsTop, 58 + 46 + 8 + f.NS.HudChart.BlockHeight(80) + 8)
+    -- Damage profile (6 + 22), the 80px plot, its 2 + 12 time labels and 8, then Spell breakdown.
+    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
 end)
 

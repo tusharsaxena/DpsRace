@@ -404,12 +404,13 @@ test("chart: the result card draws the race's slices to its plain final damage, 
     local col = b.w.chart.cols[10]
     assertEqual(col.__max, run.result.damage, "scaled to the plain final damage")
     assertTrue(rawequal(col.__value, rec.values[10]), "the very handle captured live")
-    assertEqual(b.rowsTop, 104 + f.NS.HudChart.BlockHeight(80) + 8, "the rows under the chart and its gap")
+    local BREAKDOWN = f.NS.HudStates.BREAKDOWN_H
+    assertEqual(b.rowsTop, 104 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the rows under the chart and its heading")
     -- A /reload empties the store: the card has no chart, and its rows move back up.
     f.NS.Slices.Reset()
     f.Hud.Refresh()
     assertFalse(b.w.chart.shown)
-    assertEqual(b.rowsTop, 104)
+    assertEqual(b.rowsTop, 104 + BREAKDOWN)
 end)
 
 test("chart: the Results detail shows the chart for a run raced this session only", function()
@@ -421,7 +422,7 @@ test("chart: the Results detail shows the chart for a run raced this session onl
     assertTrue(d.w.chart.shown, "this session's run has its chart")
     assertEqual(d.w.chart.cols[1].__max, run.result.damage)
     local lines = f.NS.ResultsTips.Detail("chart", run)
-    assertEqual(lines[1], "Damage over the race", "the chart has a tooltip")
+    assertEqual(lines[1], "Damage profile", "the chart has a tooltip")
     -- An earlier session's run (after a /reload): no section at all.
     f.NS.Slices.Reset()
     R.ShowRun(run.id)

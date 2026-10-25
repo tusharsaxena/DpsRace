@@ -95,8 +95,9 @@ NS.defaults = {
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
-            -- Tall enough for all 8 live rows under the pace bar and the damage chart (screen 04, #2).
-            hud = { width = 300, height = 520 },
+            -- Tall enough for all 8 live rows under the Damage profile heading (the pace bar and the
+            -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C).
+            hud = { width = 300, height = 560 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.

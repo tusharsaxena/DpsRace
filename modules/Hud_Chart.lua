@@ -19,6 +19,11 @@ local _, NS = ...
 -- because comparing a secret is not allowed. The HUD result card draws it again after the race, the
 -- run's plain final damage against the best before it at the buzzer (Chart.ResultPace).
 --
+-- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
+-- detail's heading role, with the view's note at its right. On the HUD the pace bar sits between the
+-- heading and the plot (Place's `midH`), and the heading stays with the pace bar alone when the plot is
+-- off or steps aside (SetParts).
+--
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
 -- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
 -- columns touch (the column gap defaults to 0) and read as one area over the plot's own backdrop:
@@ -34,7 +39,7 @@ local Style = NS.Style
 local FONT = Style.FONT
 
 Chart.HEADROOM = 1.15   -- scale A: the best's final damage plus room to pass it
-Chart.HEAD_H = 14       -- the header line over the plot
+Chart.HEAD_H = Style.SECTION_H   -- the heading's line over the plot (FONT.SECTION)
 Chart.AXIS_H = 12       -- the time labels under it
 Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
@@ -90,13 +95,14 @@ function Chart.ColumnEdges(inner, count, gap)
     return xs, widths
 end
 
---- The chart block's whole height for a plot `plotH` tall: header, plot, gap, time labels. `headH`
---- is the header line's height when the chart was built with a larger title (Chart.New).
+--- The chart block's whole height for a plot `plotH` tall: heading, `midH` (the HUD's pace bar line
+--- between the heading and the plot), plot, gap, time labels.
 --- @param plotH number
 --- @param headH number|nil  default HEAD_H
+--- @param midH number|nil  default 0
 --- @return number
-function Chart.BlockHeight(plotH, headH)
-    return (headH or Chart.HEAD_H) + plotH + Chart.GAP + Chart.AXIS_H
+function Chart.BlockHeight(plotH, headH, midH)
+    return (headH or Chart.HEAD_H) + (midH or 0) + plotH + Chart.GAP + Chart.AXIS_H
 end
 
 local function shared(run)
@@ -263,17 +269,17 @@ local function restylePlot(s)
     s.plot:SetBackdropColor(bg.r, bg.g, bg.b, bg.a)
 end
 
---- A chart built into `parent`: its header, plot and time labels, placed by Place(). `titleFont`
---- (a Style.FONT value) sets the title's font and `headH` its line's height: the Results detail
---- passes its larger section header; the HUD keeps FONT.HEADER on HEAD_H.
+--- A chart built into `parent`: its heading, plot and time labels, placed by Place(). `titleFont`
+--- (a Style.FONT value) sets the title's font and `headH` its line's height; both default to the
+--- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share.
 --- @param parent table
 --- @param titleFont string|nil
 --- @param headH number|nil
 --- @return table chart
 function Chart.New(parent, titleFont, headH)
     local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H }, Strip)
-    s.title = Style.Text(parent, titleFont or FONT.HEADER)
-    s.title:SetText(L["Damage over the race"])
+    s.title = Style.Text(parent, titleFont or FONT.SECTION)
+    s.title:SetText(L["Damage profile"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
     local plot = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     if plot.SetBackdrop then
@@ -292,31 +298,47 @@ function Chart.New(parent, titleFont, headH)
     return s
 end
 
-local REGIONS = { "title", "note", "plot" }
+--- Show or hide the heading (its title and note) and the plot (with its time labels) apart: the HUD
+--- keeps the heading over the pace bar when the plot is off or steps aside.
+--- @param head boolean
+--- @param plot boolean
+function Strip:SetParts(head, plot)
+    head, plot = head and true or false, plot and true or false
+    self.title:SetShown(head)
+    self.note:SetShown(head)
+    self.plot:SetShown(plot)
+    for _, fs in ipairs(self.axis) do fs:SetShown(plot) end
+    self.shown = plot
+end
 
 --- Show or hide every part.
 function Strip:SetShown(on)
-    on = on and true or false
-    for _, key in ipairs(REGIONS) do self[key]:SetShown(on) end
-    for _, fs in ipairs(self.axis) do fs:SetShown(on) end
-    self.shown = on
+    self:SetParts(on, on)
 end
 
---- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall.
+--- The note at the heading's right, for a heading shown without its plot (Draw sets it otherwise).
+function Strip:SetNote(text)
+    self.note:SetText(text or "")
+end
+
+--- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall and
+--- `midH` (default 0) under the heading's line.
 --- @param anchor table
 --- @param y number
 --- @param width number
 --- @param plotH number
-function Strip:Place(anchor, y, width, plotH)
+--- @param midH number|nil
+function Strip:Place(anchor, y, width, plotH, midH)
     self.width, self.plotH = width, plotH
     self.title:ClearAllPoints()
     self.title:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.note:ClearAllPoints()
     self.note:SetPoint("TOPRIGHT", anchor, "TOPLEFT", width, y)
+    local py = y - self.headH - (midH or 0)
     self.plot:ClearAllPoints()
-    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - self.headH)
+    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, py)
     self.plot:SetSize(width, plotH)
-    local ay = y - self.headH - plotH - Chart.GAP
+    local ay = py - plotH - Chart.GAP
     local points = { { "TOPLEFT", 0 }, { "TOP", width / 2 }, { "TOPRIGHT", width } }
     for i, fs in ipairs(self.axis) do
         fs:ClearAllPoints()

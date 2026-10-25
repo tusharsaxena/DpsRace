@@ -64,6 +64,16 @@ local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
 -- The fewest spell rows any window size may leave a body (the minimum height is set from it).
 local MIN_ROWS = 3
+-- THE HEADINGS (Round C, 2026-10-25): *Damage profile* over the pace bar and the plot, and *Spell
+-- breakdown* over the rows, in the Results detail's heading role (FONT.SECTION on SECTION_H). The
+-- clear space above each is the shared SECTION_GAP, less the GAP the block above already leaves.
+local SECTION_H = Style.SECTION_H
+local HEAD_GAP = Style.SECTION_GAP - GAP
+-- The pace bar's line under the profile heading, its gap to the plot included.
+local PACE_GAP = 4
+-- The Spell breakdown heading's whole height, the space above it included.
+local BREAKDOWN_H = HEAD_GAP + SECTION_H
+States.HEAD_GAP, States.PACE_GAP, States.BREAKDOWN_H = HEAD_GAP, PACE_GAP, BREAKDOWN_H
 -- The preset race lengths (spec §4.1), then Custom.
 States.PRESETS = { 30, 60, 120, 180, 300 }
 local DASH = "\226\128\148"   -- an em dash: "no figure"
@@ -532,10 +542,43 @@ local function roomForRows(body, top, bottom)
     return States.RowCapacity(body.height - top - bottom) >= MIN_ROWS
 end
 
--- The chart's block (header, plot, time labels and the gap under it) at the configured plot height.
-local function chartBlock()
-    local plotH = NS.HudChart.PlotHeight()
-    return NS.HudChart.BlockHeight(plotH) + GAP, plotH
+-- The pace bar's line under the profile heading, or 0 without one.
+local function paceLine(pace)
+    return pace and (NS.HudChart.PACE_H + PACE_GAP) or 0
+end
+
+--- The Damage profile block's height: the space above its heading, the heading, the pace bar's line,
+--- the plot and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
+--- @param pace boolean
+--- @param chart boolean
+--- @param plotH number
+--- @return number
+function States.ProfileHeight(pace, chart, plotH)
+    if not (pace or chart) then return 0 end
+    local Chart = NS.HudChart
+    local h = HEAD_GAP + SECTION_H + paceLine(pace)
+    if chart then h = h + plotH + Chart.GAP + Chart.AXIS_H end
+    return h + GAP
+end
+local profileH = States.ProfileHeight
+
+-- Place the stack under `top` (Round C): the Damage profile heading, the pace bar directly under it,
+-- the plot and its time labels, then the Spell breakdown heading and the rows. Every offset is config.
+-- Answers the rows' top.
+local function placeStack(body, top, pace, chart, plotH)
+    local w, f, width = body.w, body.frame, body.width or 236
+    local head = pace or chart
+    w.chart:SetParts(head, chart)
+    if not chart then w.chart:SetNote("") end
+    if head then
+        local y = top + HEAD_GAP
+        w.chart:Place(f, -y, width, plotH, paceLine(pace))
+        if pace then w.pace:Place(f, -(y + SECTION_H), width) end
+    end
+    local y = top + profileH(pace, chart, plotH) + HEAD_GAP
+    w.spellsTitle:ClearAllPoints()
+    w.spellsTitle:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -y)
+    return y + SECTION_H
 end
 
 -- Whether the stack's inputs changed since it was last placed, noting them when they did: compared
@@ -553,27 +596,21 @@ local function restack(body, top, paceH, chart, plotH)
     return true
 end
 
--- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, each only when its view
--- is given (modules/Hud_Chart.lua LiveViews); the chart steps aside when it would leave fewer than
--- MIN_ROWS rows. Placed again only when what decides the stack changed: every input is config.
+-- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, under the Damage
+-- profile heading, each only when its view is given (modules/Hud_Chart.lua LiveViews); the plot steps
+-- aside when it would leave fewer than MIN_ROWS rows, the heading staying with the pace bar. Placed
+-- again only when what decides the stack changed: every input is config.
 local function placeExtras(body, v)
     local w, f = body.w, body.frame
-    local Chart = NS.HudChart
     local top = body.kpiBottom or RUNNING_ROWS_TOP
-    local paceH = v.pace and (Chart.PACE_H + GAP) or 0
-    local blockH, plotH = chartBlock()
-    local chart = v.chart ~= nil and roomForRows(body, top + paceH + blockH, RUNNING_ROWS_BOTTOM)
-    w.pace:SetShown(v.pace ~= nil)
-    w.chart:SetShown(chart)
+    local pace = v.pace ~= nil
+    local plotH = NS.HudChart.PlotHeight()
+    local chart = v.chart ~= nil
+        and roomForRows(body, top + profileH(pace, true, plotH) + BREAKDOWN_H, RUNNING_ROWS_BOTTOM)
+    w.pace:SetShown(pace)
     body.chartView = chart and v.chart or nil
-    if not restack(body, top, paceH, chart, plotH) then return end
-    local y, width = top, body.width or 236
-    if v.pace then w.pace:Place(f, -y, width) end
-    y = y + paceH
-    if chart then
-        w.chart:Place(f, -y, width, plotH)
-        y = y + blockH
-    end
+    if not restack(body, top, paceLine(pace), chart, plotH) then return end
+    local y = placeStack(body, top, pace, chart, plotH)
     body.rowsTop = y
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -y)
@@ -661,6 +698,8 @@ function Builders.running(parent)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
     w.chart:SetShown(false)
+    w.spellsTitle = Style.Text(f, FONT.SECTION)
+    w.spellsTitle:SetText(L["Spell breakdown"])
     -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -855,6 +894,8 @@ function Builders.result(parent)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
     w.chart:SetShown(false)
+    w.spellsTitle = Style.Text(f, FONT.SECTION)
+    w.spellsTitle:SetText(L["Spell breakdown"])
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -888,6 +929,7 @@ function Builders.result(parent)
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
         self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
+        self.w.spellsTitle:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
         self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
         if lost then self.w.list:Clear() else self:DrawRows() end
@@ -905,32 +947,28 @@ end
 -- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
 
--- The result card's pace bar (#3) and chart (#2), between the chips and the rows. The pace bar is the
--- run's plain final damage against the best before it (modules/Hud_Chart.lua ResultPace), the running
--- bar's widget, range and tick; it never steps aside, so MinContentHeight carries it. The chart is
--- the run's in-session slices, scaled to its plain final damage; none for a run without slices, and
--- it steps aside when it would leave fewer than MIN_ROWS rows. Every value here is plain (a stored run).
+-- The result card's pace bar (#3) and chart (#2), between the chips and the rows, under the Damage
+-- profile heading as on the running body, then the Spell breakdown heading. The pace bar is the run's
+-- plain final damage against the best before it (modules/Hud_Chart.lua ResultPace), the running bar's
+-- widget, range and tick; it never steps aside, so MinContentHeight carries it. The chart is the run's
+-- in-session slices, scaled to its plain final damage; none for a run without slices, and it steps
+-- aside when it would leave fewer than MIN_ROWS rows. Every value here is plain (a stored run).
 function Builders.resultExtras(body, v)
     local w, f = body.w, body.frame
-    local width = body.width or 236
-    local top = RESULT_ROWS_TOP
-    w.pace:SetShown(v.pace ~= nil)
-    if v.pace then
-        w.pace:Place(f, -top, width)
+    local pace = v.pace ~= nil
+    local plotH = NS.HudChart.PlotHeight()
+    local on = v.chart ~= nil
+        and roomForRows(body, RESULT_ROWS_TOP + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
+    w.pace:SetShown(pace)
+    body.rowsTop = placeStack(body, RESULT_ROWS_TOP, pace, on, plotH)
+    if pace then
         w.pace:SetMax(v.pace.max)
         w.pace:SetValue(v.pace.value)
-        top = top + NS.HudChart.PACE_H + GAP
     end
-    local blockH, plotH = chartBlock()
-    local on = v.chart ~= nil and roomForRows(body, top + blockH, RESULT_ROWS_BOTTOM)
-    w.chart:SetShown(on)
-    body.rowsTop = on and (top + blockH) or top
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
-    if not on then return end
-    w.chart:Place(f, -top, width, plotH)
-    w.chart:Draw(v.chart)
+    if on then w.chart:Draw(v.chart) end
 end
 
 function Builders.resultRows(body)
@@ -955,16 +993,18 @@ function Builders.resultRows(body)
 end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
---- the running and result bodies (each with its pace bar) with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- the running and result bodies (each with its pace bar under the Damage profile heading, then the
+--- Spell breakdown heading) with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
 --- @return number
 function States.MinContentHeight()
     local B = NS.HudBreakdown
     local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
     local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
-    -- The pace bar never steps aside (the chart does), so the running and result minimums carry it.
-    local paceH = NS.HudChart.PACE_H + GAP
-    local running = RUNNING_ROWS_TOP + paceH + rows + RUNNING_ROWS_BOTTOM
-    local result = RESULT_ROWS_TOP + paceH + rows + RESULT_ROWS_BOTTOM
+    -- The pace bar never steps aside (the plot does), so the running and result minimums carry it
+    -- with its heading.
+    local stack = profileH(true, false, 0) + BREAKDOWN_H + rows
+    local running = RUNNING_ROWS_TOP + stack + RUNNING_ROWS_BOTTOM
+    local result = RESULT_ROWS_TOP + stack + RESULT_ROWS_BOTTOM
     return math.max(idle, running, result)
 end
 

@@ -274,7 +274,7 @@ function DETAIL.breakdown()
 end
 
 function DETAIL.chart()
-    return { L["Damage over the race"],
+    return { L["Damage profile"],
         L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
 end

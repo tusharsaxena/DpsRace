@@ -112,7 +112,7 @@ Decisions:
   - The chart draws the gray average-pace diagonal for the best. The post-race plot's max covers both the run's damage and the best's.
 
 - [x] C1.1 Results detail: larger section headings and space above each section.
-- [ ] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
+- [x] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
 - [ ] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
 - [ ] C1.4 Stop! screen: *Stop now* and *Cancel*.
 - [ ] C1.5 Result card: *Delete* with a confirm, equal-width buttons, the best-pace diagonal on the post-race chart.

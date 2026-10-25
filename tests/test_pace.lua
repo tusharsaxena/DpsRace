@@ -127,6 +127,7 @@ local function resolved(f)
 end
 
 local RESULT_ROWS_TOP = 104   -- the KPIs, the gap and two chip lines (modules/Hud_States.lua)
+local BREAKDOWN = 6 + 22      -- the Spell breakdown heading and the space above it (Round C)
 
 test("pace: Bests.Before is the best on the run's board raced before it, whatever the run scored", function()
     local B = T.NS.Bests
@@ -164,9 +165,9 @@ test("pace: the result card sets the plain final damage against the best's pace 
     assertEqual(pace.bar.__value, run.result.damage, "the plain final damage")
     assertEqual(type(pace.bar.__value), "number")
     assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 1.5 + 0.5), "the same tick")
-    -- Between the chips and the chart: the chart and the rows move down by the bar's line.
+    -- Under the Damage profile heading, above the plot: the plot and the rows move down by its line.
     assertTrue(b.w.chart.shown)
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + 12 + 8 + f.NS.HudChart.BlockHeight(80) + 8)
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 2 + 12 + 8) + BREAKDOWN)
     -- The range follows the setting.
     assertTrue(f.NS.SetByPath("live.paceRange", 2))
     assertEqual(pace.bar.__max, 2 * 1e12)
@@ -192,7 +193,7 @@ test("pace: no pace bar on the result card with no earlier best, and the rows mo
     resolved(f)
     local b = body(f)
     assertFalse(b.w.pace.bar:IsShown(), "the first run on its board")
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + f.NS.HudChart.BlockHeight(80) + 8, "the chart right under the chips")
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the plot right under its heading")
 end)
 
 test("pace: Show pace bar off, a shared session and a lost run hide the result card's bar", function()
@@ -226,7 +227,9 @@ test("pace: at the minimum height the result card keeps its pace bar and three r
     local b = body(f)
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar never steps aside")
     assertFalse(b.w.chart.shown, "no room for the chart and three rows")
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + 12 + 8)
+    assertTrue(b.w.chart.title:IsShown(), "the Damage profile heading stays over the pace bar")
+    assertFalse(b.w.chart.plot:IsShown())
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 8) + BREAKDOWN)
     assertTrue(b.w.list:Count() >= 3)
 end)
 
@@ -246,3 +249,59 @@ test("pace: the sim's result card shows the pace bar against the sample best, an
     f.Hud.Refresh()
     assertFalse(pace.bar:IsShown(), "gone with Show pace bar")
 end)
+
+-- ── the stack (Round C) ─────────────────────────────────────────────────────────────────────────
+
+-- `region`'s y offset (its first anchor's), down from the body's top.
+local function y(region) return region.__points[1][5] end
+
+-- Damage profile with its note, the pace bar directly under it, the plot, the time labels, then Spell
+-- breakdown over the rows: every heading FONT.SECTION with the shared clear space above it.
+local function assertStack(f, b, top)
+    local w, F = b.w, f.NS.Style.FONT
+    local title = w.chart.title
+    assertEqual(title.__text, "Damage profile")
+    assertEqual(title.__fontObject, F.SECTION, "the Results detail's heading role")
+    assertEqual(w.spellsTitle.__text, "Spell breakdown")
+    assertEqual(w.spellsTitle.__fontObject, F.SECTION)
+    assertTrue(w.spellsTitle:IsShown())
+    assertEqual(y(title), -(top + 6), "14px of clear space over the heading, the GAP above included")
+    assertEqual(y(w.chart.note), y(title), "the note on the heading's line")
+    assertEqual(y(w.pace.label), y(title) - 22, "the pace bar directly under the heading")
+    assertEqual(y(w.chart.plot), y(w.pace.label) - 12 - 4, "the plot under the pace bar")
+    assertEqual(y(w.chart.axis[1]), y(w.chart.plot) - 80 - 2, "the time labels under the plot")
+    assertEqual(y(w.spellsTitle), y(w.chart.axis[1]) - 12 - 8 - 6, "Spell breakdown under the time labels")
+    assertEqual(-b.rowsTop, y(w.spellsTitle) - 22, "the rows under their heading")
+end
+
+test("pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    running(f, 30)
+    pump(f, 2)
+    local b = body(f)
+    assertTrue(b.w.chart.shown and b.w.pace.bar:IsShown())
+    assertStack(f, b, b.kpiBottom)
+    assertEqual(b.w.chart.note.__text, "vs best pace")
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off", function()
+    local f = hud()
+    seedBest(f, 1e12, 30)
+    resolved(f)
+    local b = body(f)
+    assertTrue(b.w.chart.shown and b.w.pace.bar:IsShown())
+    assertStack(f, b, RESULT_ROWS_TOP)
+    assertTrue(f.NS.SetByPath("live.chart", false))
+    f.Hud.Refresh()
+    assertTrue(b.w.chart.title:IsShown(), "the heading stays with the pace bar")
+    assertFalse(b.w.chart.plot:IsShown())
+    assertEqual(b.w.chart.note.__text, "", "no plot, no note")
+    assertEqual(y(b.w.spellsTitle), y(b.w.pace.label) - 12 - 4 - 8 - 6, "Spell breakdown under the bar")
+    assertTrue(f.NS.SetByPath("live.paceBar", false))
+    f.Hud.Refresh()
+    assertFalse(b.w.chart.title:IsShown(), "nothing to head")
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + BREAKDOWN, "Spell breakdown right under the chips")
+end)
+
