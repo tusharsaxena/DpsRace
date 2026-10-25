@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (52)
+### test_race.lua (57)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -193,6 +193,11 @@ Total.
 - race: no new session at all is lost
 - race: cancel in armed/running stores nothing; cancel in stopping discards
 - race: cancel on a result dismisses it and keeps the run; race again arms
+- race: stop now acts only while stopping
+- race: stop now out of combat reads at once through the normal path, the quiet waived
+- race: stop now in combat reads nothing until the regen edge, then reads without the quiet
+- race: stop now on a still-sealed read retries on the poll, as any read does
+- race: stop now on a run that ended before the buzzer reads it as incomplete
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
 
@@ -226,7 +231,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (63)
+### test_hud.lua (66)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -255,8 +260,11 @@ Total.
 - hud: the result card's rows stop above its buttons at every window height
 - hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
-- hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width
-- hud: Discard run on the waiting body throws the attempt away
+- hud: the equal buttons' width is whole pixels from the body's width and the gap
+- hud: Cancel on the waiting body throws the attempt away
+- hud: the Stop! and waiting bodies carry Stop Now and Cancel, the same width, with tooltips
+- hud: Stop Now out of combat takes the result at once, without the quiet
+- hud: Stop Now in combat reads at the combat end and says so
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
@@ -605,7 +613,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (10)
+### test_sim.lua (11)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -617,6 +625,7 @@ Total.
 - sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
 - sim: closing the HUD, Reset all settings and the stand-down end a running script
 - sim: switching to test mode stops the script; a sim restarts in place
+- sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim
 
 ### test_launcher.lua (8)
 
@@ -770,10 +779,10 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 52 |
+| test_race.lua | 57 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 63 |
+| test_hud.lua | 66 |
 | test_chart.lua | 25 |
 | test_pace.lua | 12 |
 | test_countdown.lua | 20 |
@@ -788,7 +797,7 @@ Total.
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
 | test_preview.lua | 22 |
-| test_sim.lua | 10 |
+| test_sim.lua | 11 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -802,4 +811,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **632** |
+| **Total** | **641** |

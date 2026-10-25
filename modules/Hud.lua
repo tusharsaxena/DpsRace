@@ -228,6 +228,7 @@ local function stopView(v)
     v.endedAt = run.result and run.result.endedAt
     v.lateCasts = run.flags and run.flags.lateCasts
     v.grace = run.race and run.race.grace
+    v.stopNow = NS.Race.StopRequested()
     local delay = setting("race.hintDelay")
     if v.key == "waiting" and v.inCombat and (v.sinceBuzzer or 0) >= delay then v.hint = hintText() end
 end
@@ -915,7 +916,7 @@ function Act.stepCount(delta)
     Hud.Refresh()
 end
 
--- In test mode the bodies are the sample's: Cancel and Discard Run end test mode, never the real
+-- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
 -- race the preview may be covering (a result card), and the sample card's Race Again and Details
 -- (drawn disabled) do nothing.
 function Act.cancel()
@@ -923,6 +924,18 @@ function Act.cancel()
     return NS.Race.Cancel()
 end
 Act.discard = Act.cancel
+
+--- Stop Now on the Stop! and waiting screens (Round C): the result as it reads now (Race.StopNow). In
+--- the sim it jumps the script to the result card (modules/Sim.lua SkipToResult).
+function Act.stopNow()
+    if previewOn() then
+        if NS.Sim and NS.Preview.Mode() == "sim" then return NS.Sim.SkipToResult() end
+        return false
+    end
+    local acted = NS.Race.StopNow()
+    Hud.Refresh()
+    return acted
+end
 
 function Act.close()
     -- In the client Hide runs OnHide, which is onHide; called again only if that did not happen.

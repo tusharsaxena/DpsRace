@@ -235,3 +235,31 @@ test("sim: switching to test mode stops the script; a sim restarts in place", fu
     assertEqual(f.Preview.Diagnose().scenario, "died")
     assertEqual(current(f), "armed", "the new sim starts at the top")
 end)
+
+test("sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim", function()
+    for _, key in ipairs({ "stop", "waiting" }) do
+        local f = fixture()
+        sim(f, "newbest")
+        local guard = 0
+        while current(f) ~= key and guard < 600 do
+            f:advance(0.1)
+            guard = guard + 1
+        end
+        assertEqual(current(f), key)
+        ui(f).body[key].w.stopNow:__fire("OnClick")
+        assertEqual(current(f), "result", key .. ": Stop Now did not reach the result card")
+        assertEqual(f.Sim.Diagnose().phase, "result")
+        assertEqual(f.Race.State(), "idle", "the race engine moved")
+        f:advance(f.Sim.RESULT_HOLD + 0.2)
+        assertTrue(f.R.IsShown(), key .. ": the result card's hold still opens the Results window")
+        assertEqual(next(f.NS.db.global.runs), nil, "a sim run reached the store")
+    end
+    local g = fixture()
+    sim(g, "newbest")
+    while current(g) ~= "stop" do g:advance(0.1) end
+    ui(g).body.stop.w.cancel:__fire("OnClick")
+    assertFalse(g.Preview.IsActive(), "Cancel ends the sim")
+    assertEqual(g.Sim.Diagnose().ticking, false)
+    assertFalse(g.Sim.SkipToResult(), "nothing to skip once it ended")
+end)
+

@@ -44,7 +44,7 @@ local state = STATE.IDLE
 -- during the loading screen is unknown, so no restart gap spans it), timeline, inFlight (the cast
 -- begun and not yet finished: its plain spell ID and castGUID, either nil when sealed), buzzer,
 -- ticker, sealedTries, reread, baseline (what the newest earlier session held at the arm: see
--- baselineOf).
+-- baselineOf), stopNow (Race.StopNow was pressed: the read waives the quiet).
 local cur = {}
 
 local function debug(fmt, ...)
@@ -249,9 +249,14 @@ end
 
 --- Ready to read = combat has ended AND no DamageDone update for the session in the last 2.5s. The
 --- quiet counts from the later of the last update and the combat end: updates still land up to 1.3s
---- after combat drops (spec §4.5), so a run quiet since long before the regen edge still waits.
+--- after combat drops (spec §4.5), so a run quiet since long before the regen edge still waits. A
+--- *Stop now* (Race.StopNow) waives the quiet, never the combat end: the read is out of combat only.
 local function checkReady(t)
     if state ~= STATE.STOPPING or not cur.quietFrom then return end
+    if cur.stopNow then
+        debug("stop now: reading without the quiet")
+        return read()
+    end
     local from, last = cur.quietFrom, cur.timeline:LastDamage()
     if last and last > from then from = last end
     if t - from < NS.Scoring.QUIET_BEFORE_READ then return end
@@ -614,6 +619,35 @@ function Race.OnMeterReset()
     elseif state == STATE.RUNNING or state == STATE.STOPPING then
         lose("meter reset")
     end
+end
+
+-- ── stop now ────────────────────────────────────────────────────────────────────────────────────
+
+--- *Stop now* on the Stop! and waiting screens (Round C, 2026-10-25): take the result as it reads now
+--- instead of waiting out the damage tail. It goes through the normal read (read, score, save,
+--- RACE_RESULT), with the 2.5s quiet waived; damage that lands after the read is not counted. Out of
+--- combat the read runs at once (a still-sealed read retries on the poll, as ever); in combat nothing
+--- can be read (every meter value is secret), so the read runs on the regen edge, with no quiet after
+--- it. Nothing here looks at a meter value: the decision is the press, the combat flag and GetTime().
+--- @return boolean acted
+function Race.StopNow()
+    if isDown() or state ~= STATE.STOPPING then return false end
+    cur.stopNow = true
+    local t = GetTime()
+    if not UnitAffectingCombat("player") then
+        cur.quietFrom = cur.quietFrom or t
+        debug("stop now at %.2f: reading", t)
+        checkReady(t)
+    else
+        debug("stop now at %.2f in combat: reading at the combat end", t)
+    end
+    return true
+end
+
+--- Whether *Stop now* was pressed for the run waiting for its read (the HUD says it reads at the
+--- combat end).
+function Race.StopRequested()
+    return state == STATE.STOPPING and cur.stopNow == true
 end
 
 -- ── cancel ──────────────────────────────────────────────────────────────────────────────────────

@@ -50,6 +50,11 @@ local KPI_HEIGHT = 46
 -- Every button is LootHistory's 20px; Arm alone is a little taller, the one action of the idle body.
 local BUTTON_HEIGHT = 20
 local LINK_HEIGHT = 20
+-- A row of equal buttons across the foot (the result card's four, the Stop! and waiting screens'
+-- two): each the same width, worked out from the body's width and this gap (Round C, 2026-10-25).
+-- At the minimum width's 236 px of content four are 56 px wide, room for "Race Again".
+local ROW_GAP = 4
+States.ROW_GAP = ROW_GAP
 local GAP = 8
 -- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
 -- warning line (two lines at the minimum width), then Arm and the refusal line under it.
@@ -132,6 +137,16 @@ local function setHot(b, on)
     paintButton(b)
 end
 
+-- A button's tooltip (b.tip = { title, text }), shown under the pointer, disabled or not.
+local function showTip(b)
+    local tip = b.tip
+    if not (tip and GameTooltip) then return end
+    GameTooltip:SetOwner(b, "ANCHOR_TOP")
+    GameTooltip:SetText(tip[1], 1, 1, 1)
+    if tip[2] then GameTooltip:AddLine(tip[2], nil, nil, nil, true) end
+    GameTooltip:Show()
+end
+
 --- A flat button: a label, a style, and a click that a disabled button never runs. Its label is
 --- GameFontHighlightSmall and turns gold under the pointer (LootHistory's bar button).
 local function button(parent, label, onClick, style)
@@ -145,8 +160,14 @@ local function button(parent, label, onClick, style)
     b:SetScript("OnClick", function(self)
         if self:IsEnabled() then onClick(self) end
     end)
-    b:SetScript("OnEnter", function(self) setHot(self, true) end)
-    b:SetScript("OnLeave", function(self) setHot(self, false) end)
+    b:SetScript("OnEnter", function(self)
+        setHot(self, true)
+        showTip(self)
+    end)
+    b:SetScript("OnLeave", function(self)
+        setHot(self, false)
+        if self.tip and GameTooltip then GameTooltip:Hide() end
+    end)
     paintButton(b)
     return b
 end
@@ -213,7 +234,7 @@ end
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 
 local CHIP_HEIGHT, CHIP_GAP = 18, 5
--- The result card's rows sit under two lines of chips and above its three buttons.
+-- The result card's rows sit under two lines of chips and above its row of buttons.
 local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
 local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
@@ -334,22 +355,40 @@ local function newBody(parent, key)
     return { key = key, frame = f, w = {} }
 end
 
--- A full-width row of `n` buttons at the bottom of the body, spread by anchor.
+--- The equal buttons' width and the first one's left edge for `n` across `width` with ROW_GAP
+--- between two: whole pixels, every button the same width, the odd pixels split either side. Plain
+--- config math on the width Layout handed the body.
+--- @param width number
+--- @param n number
+--- @return number each, number x0
+function States.RowWidths(width, n)
+    local each = math.max(1, math.floor((width - (n - 1) * ROW_GAP) / n))
+    local spare = width - n * each - (n - 1) * ROW_GAP
+    return each, math.max(0, math.floor(spare / 2))
+end
+
+-- Lay `buttons` out across the foot of `f`, all the same width (States.RowWidths).
+local function layoutRow(buttons, f, width)
+    local each, x = States.RowWidths(width, #buttons)
+    for _, b in ipairs(buttons) do
+        b:ClearAllPoints()
+        b:SetSize(each, LINK_HEIGHT)
+        b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", x, 0)
+        x = x + each + ROW_GAP
+    end
+end
+
+-- A row of equal buttons across the foot of the body ({ label, onClick, style, tip }), laid out at
+-- the minimum width until Layout hands the body its own.
 local function footerButtons(body, specs)
     local f, out = body.frame, {}
     for i, spec in ipairs(specs) do
         local b = button(f, spec[1], spec[2], spec[3])
-        b:SetHeight(LINK_HEIGHT)
-        if i == 1 then
-            b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-        elseif i == #specs then
-            b:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
-        else
-            b:SetPoint("BOTTOM", f, "BOTTOM", 0, 0)
-        end
-        b:SetWidth(spec.width or 92)
+        b.tip = spec.tip
         out[i] = b
     end
+    body.footer = out
+    layoutRow(out, f, 236)
     return out
 end
 
@@ -766,6 +805,19 @@ local function setStopFigures(w, v)
     end
 end
 
+-- The Stop! and waiting screens' two buttons (Round C, 2026-10-25), the same width across the foot:
+-- Stop Now takes the result as it reads now (Race.StopNow), Cancel discards the run (Race.Cancel). In
+-- test mode the sim's (modules/Hud.lua Act). Neither is a protected call: both work in combat.
+local function stopButtons(body)
+    local links = footerButtons(body, {
+        { L["Stop Now"], function() act("stopNow") end, "primary",
+          tip = { L["Stop Now"], L["Take the result now instead of waiting out the damage tail. Damage that lands after this is not counted. In combat the result is read the moment combat ends."] } },
+        { L["Cancel"], function() act("cancel") end, "danger",
+          tip = { L["Cancel"], L["Discard this race. Nothing is saved."] } },
+    })
+    body.w.stopNow, body.w.cancel = links[1], links[2]
+end
+
 -- STOP: the buzzer, the tail updating live, late casts so far, the grace (screen 05).
 function Builders.stop(parent)
     local body = newBody(parent, "stop")
@@ -778,13 +830,16 @@ function Builders.stop(parent)
     w.note = text(f, FONT.TEXT, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
     w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
+    stopButtons(body)
     function body.Layout(self, width)
         self.w.chips.width = width
         self.shownKey = nil   -- the chips wrap at the new width on the next redraw
+        layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
         v.unitTail = L["s after buzzer"]
         setStopFigures(self.w, v)
+        setEnabled(self.w.stopNow, v.stopNow ~= true)
         -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
         -- only when what they say (the late casts, the grace) changed.
         local late, grace = v.lateCasts or {}, v.grace or 0
@@ -805,7 +860,7 @@ function Builders.stop(parent)
     return body
 end
 
--- WAITING: combat is holding; the hint, discard, close and keep waiting (screen 06).
+-- WAITING: combat is holding; the hint, Stop Now and Cancel (screen 06; Round C).
 function Builders.waiting(parent)
     local body = newBody(parent, "waiting")
     local f, w = body.frame, body.w
@@ -820,17 +875,19 @@ function Builders.waiting(parent)
     w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", 8, -7)
     w.hintText:SetPoint("BOTTOMRIGHT", w.hint, "BOTTOMRIGHT", -8, 7)
     w.hintText:SetJustifyV("TOP")
-    local links = footerButtons(body, {
-        { L["Discard Run"], function() act("discard") end, "danger" },
-        { L["Close (Keep Waiting)"], function() act("close") end, width = 140 },
-    })
-    w.discard, w.close = links[1], links[2]
+    stopButtons(body)
+    function body.Layout(self, width) layoutRow(self.footer, self.frame, width) end
     function body.Update(self, v)
         local title = L["Waiting for combat to end"]
-        if not v.inCombat then title = L["Reading the result"] end
+        if not v.inCombat then
+            title = L["Reading the result"]
+        elseif v.stopNow then
+            title = L["Reading when combat ends"]
+        end
         self.w.title:SetText(title)
         v.unitTail = L["s"]
         setStopFigures(self.w, v)
+        setEnabled(self.w.stopNow, v.stopNow ~= true)
         self.w.hint:SetShown(v.hint ~= nil)
         self.w.hintText:SetText(v.hint or "")
     end
@@ -905,20 +962,14 @@ function Builders.result(parent)
     end)
     local links = footerButtons(body, {
         { L["Race Again"], function() act("raceAgain") end, "primary" },
-        { L["Details"], function() act("details") end, width = 72 },
-        { L["Share"], function() act("share") end, width = 72 },
+        { L["Details"], function() act("details") end },
+        { L["Share"], function() act("share") end },
     })
     w.again, w.details, w.share = links[1], links[2], links[3]
-    -- Details sits left of Share and Race Again takes what is left, so the three never overlap at
-    -- the minimum width (a centered Details would run into a fixed-width Race Again there).
-    w.details:ClearAllPoints()
-    w.details:SetPoint("BOTTOMRIGHT", w.share, "BOTTOMLEFT", -6, 0)
-    w.again:ClearAllPoints()
-    w.again:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-    w.again:SetPoint("BOTTOMRIGHT", w.details, "BOTTOMLEFT", -6, 0)
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height
+        layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
         Builders.resultExtras(self, v)

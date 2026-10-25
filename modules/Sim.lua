@@ -127,6 +127,21 @@ function Sim.Begin(key, dataset)
     ticker = C_Timer.NewTicker(Sim.TICK, beat)
 end
 
+--- Stop Now on the sim's Stop! or waiting body (Round C, modules/Hud.lua Act.stopNow): the script
+--- jumps to the result card, which then holds and opens the Results window as ever.
+--- @return boolean jumped
+function Sim.SkipToResult()
+    if not script then return false end
+    local step = script[phase]
+    if not step or (step.key ~= "stop" and step.key ~= "waiting") then return false end
+    for i, s in ipairs(script) do
+        if s.key == "result" then phase = i end
+    end
+    phaseAt = GetTime()
+    beat()
+    return true
+end
+
 --- Stop the script where it is (the preview's stop and switch).
 function Sim.Cancel()
     cancelTicker()
