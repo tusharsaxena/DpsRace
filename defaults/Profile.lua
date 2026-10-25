@@ -26,8 +26,8 @@ NS.defaults = {
             -- `lastLength` (no default): the last length picked on the HUD, remembered (§4.1). It is
             -- state the HUD writes, not a setting row.
         },
-        -- The live breakdown (spec §6.3; its rows are General > Race HUD > Live breakdown,
-        -- settings/General.lua).
+        -- The live breakdown (spec §6.3; its rows are HUD > Race HUD > Live breakdown,
+        -- settings/Hud.lua).
         live = {
             rows    = 8,      -- spells shown, 1-15; 0 = every spell, wheel-scrolled
             icons   = true,   -- spell icons
@@ -43,9 +43,9 @@ NS.defaults = {
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
-        -- on General's Race HUD tab.
+        -- on the HUD page's Race HUD tab (settings/Hud.lua).
         hud = { showMode = "onArm", clock = "both" },
-        -- The HUD's look (the owner's call, 2026-10-24; General > HUD Appearance, settings/General.lua,
+        -- The HUD's look (the owner's call, 2026-10-24; HUD > HUD Appearance, settings/Hud.lua,
         -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
         -- the clocks in the debug console's monospace face, the figures and the spell rows in Blizzard's

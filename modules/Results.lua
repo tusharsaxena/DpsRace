@@ -20,8 +20,8 @@ local _, NS = ...
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
 -- tab (a hidden one redraws in full on its next show), SETTINGS_CHANGED redraws the footer. No game
--- event and no OnUpdate; the one timer is the one-frame look after a close-stack close (the talent
--- tree's panel open, below).
+-- event and no OnUpdate; the only timers are the talent tree's (below): the one-frame look after a
+-- close-stack close, and the Results.TREE_POLL ticker while the tree is up.
 -- The receiver is a target of this module's own, so the latch drops it at stand-down.
 
 local Results = { wanted = false }
@@ -509,7 +509,7 @@ function Results.StepAsideForTree()
     awaitTree()
 end
 
---- Whether the window is waiting for the talent tree to close (tests, diagnostics).
+--- Whether the window is waiting for the talent tree to close (the suites).
 function Results.AwaitingTree()
     return treeWait ~= nil
 end
