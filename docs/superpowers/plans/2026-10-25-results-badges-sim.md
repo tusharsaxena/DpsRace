@@ -80,5 +80,10 @@ go-ahead.
 
 ### B6: Finish
 
-- [ ] B6.1 Docs sync (ARCHITECTURE, schema, settings-panel, slash surface, smoke rows and the pending list, the test
+- [x] B6.1 Docs sync (ARCHITECTURE, schema, settings-panel, slash surface, smoke rows and the pending list, the test
   inventory) and a completeness pass.
+  - Done: ARCHITECTURE's overview names this pass, Known Limitations moved to `docs/known-limitations.md` (past
+    ~60 lines; the hub keeps a summary), and the cap census lists the two test files in the on-notice band;
+    README and scope.md follow the pace range, the result card's pace bar, the new groupings and test vs sim.
+    The complexity suite finds no function above CCN 15 that this branch touched.
+  - Open for the owner: the group label (*Target + duration* kept), and the tree over Results (B4.1).
