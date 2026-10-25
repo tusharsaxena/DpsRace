@@ -260,6 +260,17 @@ each frame's strata, level and toplevel.
   `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
   client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item
   tooltips are `GameTooltip:SetHyperlink` on a stored link.
+- **The talent tree's panel open closes the Results window, and the window comes back (B4.1).**
+  Blizzard shows `PlayerSpellsFrame` (the *View* link's click, or the N key) through
+  `ShowUIPanel`; with no other panel up its `centerOrLeft` area resolves to `center`, and
+  `FramePositionDelegate:ShowUIPanel` runs `CloseWindows`, whose `CloseSpecialWindows` hides every
+  `UISpecialFrames` entry, this window and the HUD among them, before the tree shows
+  (`Blizzard_UIParentPanelManager`, `Blizzard_PlayerSpells`). The window stays in `UISpecialFrames`
+  (standalone-windows), is never added to `UIPanelWindows`, sets no `UIPanelLayout-*` attribute and
+  hooks nothing: its `OnHide` answers a close-stack close made while the tree was down with a
+  one-frame `C_Timer.After(0)` look, and shows itself again if the tree is up by then. The one read
+  of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results` pins the four close paths and
+  scans the module for `UIPanelWindows`, `UIPanelLayout`, `ShowUIPanel(` and `hooksecurefunc`.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -319,6 +330,13 @@ each frame's strata, level and toplevel.
 - **The share's talents link may need a second message** (#6). With *Include talents link* on, the
   link follows the score line as its own message when both do not fit in 255 bytes; a link longer
   than 255 bytes on its own is dropped rather than cut.
+- **The talent tree draws under the Results window where the two overlap** (B4.1). The window
+  comes back when the tree's panel open closes it, but it is an on-demand browser at `HIGH`
+  (frame-layering-§1, standalone-windows), and Blizzard's `PlayerSpellsFrame` is a `MEDIUM` UI panel,
+  so the tree cannot draw over it; the player moves or closes the window. Putting the tree on top
+  needs the window at `MEDIUM`, a strata the standard gives windows kept up while playing: that is
+  the owner's call (a deviation row, or a change to the standard), not made here. Escape still
+  closes both at once, and the HUD (in `UISpecialFrames` too) is closed by the tree's open as before.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 

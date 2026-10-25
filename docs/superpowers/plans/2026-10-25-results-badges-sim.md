@@ -57,8 +57,13 @@ go-ahead.
 
 ### B4: The talent view over Results
 
-- [ ] B4.1 Find why the Results window closes when the talent tree opens (UIPanel and UISpecialFrames registration,
+- [x] B4.1 Find why the Results window closes when the talent tree opens (UIPanel and UISpecialFrames registration,
   strata), fix it without taint, and add a smoke row.
+  - Found: `ShowUIPanel(PlayerSpellsFrame)` resolves to the `center` area and runs `CloseWindows`, whose
+    `CloseSpecialWindows` hides every `UISpecialFrames` entry. Fixed: the window comes back one frame later when
+    the tree is up (no hook, still in `UISpecialFrames`).
+  - Open for the owner: the tree (`MEDIUM`) still draws under the window (`HIGH`, the standard's on-demand
+    browser tier) where they overlap; drawing it on top needs a deviation row or a standard change.
 
 ### B5: test vs sim
 

@@ -90,7 +90,9 @@ local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
     "GetSpecializationInfoByID", "GetCursorPosition", "UIParent", "MenuUtil",
 }
-files["modules/Results.lua"] = { read_globals = resultsGlobals }
+-- The window's shell also reads whether Blizzard's talent frame is up (IsShown only): the tree's
+-- panel open closes the window through UISpecialFrames, and the window comes back under it.
+files["modules/Results.lua"] = { read_globals = { "PlayerSpellsFrame", (table.unpack or unpack)(resultsGlobals) } }
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }

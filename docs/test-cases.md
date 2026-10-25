@@ -364,7 +364,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (48)
+### test_results.lua (53)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
@@ -409,6 +409,11 @@ Total.
 - results: position, size and Master scale persist; Reset position restores them
 - results: collapsed, the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
+- results: the talent tree's panel open closes the window, and it comes back under the tree
+- results: Escape with the talent tree up closes both, and the window stays closed
+- results: Escape with no talent tree closes the window for good
+- results: the close control with the talent tree up closes the window alone
+- results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
@@ -747,7 +752,7 @@ Total.
 | test_pace.lua | 10 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 48 |
+| test_results.lua | 53 |
 | test_results_fit.lua | 4 |
 | test_results_group.lua | 3 |
 | test_compare.lua | 12 |
@@ -770,4 +775,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **604** |
+| **Total** | **609** |

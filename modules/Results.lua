@@ -20,7 +20,8 @@ local _, NS = ...
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
 -- tab (a hidden one redraws in full on its next show), SETTINGS_CHANGED redraws the footer. No game
--- event, no timer, no OnUpdate.
+-- event and no OnUpdate; the one timer is the one-frame look after a close-stack close (the talent
+-- tree's panel open, below).
 -- The receiver is a target of this module's own, so the latch drops it at stand-down.
 
 local Results = { wanted = false }
@@ -414,12 +415,34 @@ local function hideWindow()
     NS.CloseMenu()
 end
 
+-- THE TALENT TREE OPENS OVER IT (the owner's call, 2026-10-25). Blizzard shows its talent frame
+-- (`PlayerSpellsFrame`: the talentbuild link the detail's View posts to chat, or the N key) as a
+-- "center" UI panel when no other panel is up, and FramePositionDelegate:ShowUIPanel then runs
+-- CloseWindows, whose CloseSpecialWindows hides every UISpecialFrames entry: this window among
+-- them, just before the tree shows. The frame stays in UISpecialFrames (standalone-windows: Escape
+-- and the close stack), so the close is answered rather than prevented: a close-stack close made
+-- while the tree was down looks again on the next frame, and a tree up by then is what closed it,
+-- so the window comes back. Escape with the tree up closes both (the tree was up at the close), and
+-- the window's own close control never gets here (it hides with `hiding` set). The one read of a
+-- Blizzard frame is IsShown; nothing is hooked, shown or hidden on Blizzard's side.
+local function talentTreeShown()
+    local f = PlayerSpellsFrame
+    return type(f) == "table" and type(f.IsShown) == "function" and f:IsShown() == true
+end
+
+local function reopenUnderTree()
+    if Results.wanted or not talentTreeShown() then return end
+    debug("closed by the talent tree's panel open; reopened")
+    Results.Show()
+end
+
 -- The frame went away by Escape (UISpecialFrames): the player closed it. A frame still shown in its
 -- own right was hidden with its parent (Alt-Z), which is not the player closing it.
 function onHide()
     NS.CloseMenu()
     if hiding or (ui and ui.frame:IsShown()) then return end
     Results.wanted = false
+    if not talentTreeShown() and C_Timer and C_Timer.After then C_Timer.After(0, reopenUnderTree) end
 end
 
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
