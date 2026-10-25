@@ -312,14 +312,15 @@ local FIGURES = {
         return { tail = MockRuns.TAIL, sinceBuzzer = MockRuns.STOP_SECS + t, inCombat = true,
                  hint = L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] }
     end,
-    -- The result card: the delta, the run's chart scaled to its final damage, and the pace bar (its
-    -- final damage against the best before it at the buzzer), as Hud.lua's result view draws them.
+    -- The result card: the delta, the run's chart scaled to its final damage (against the best before
+    -- it, HudChart.WithBest), and the pace bar (its final damage against that best at the buzzer), as
+    -- Hud.lua's result view draws them.
     result = function(s)
         local f = { isNew = s.isNew, delta = s.delta, icons = true }
         if not s.shared then
             local rec = MockRuns.Slices(s.run, s.stopAt)
-            f.chart = rec and { count = rec.count, values = rec.values, length = rec.length,
-                                max = s.run.result.damage, note = "" }
+            f.chart = rec and NS.HudChart.WithBest({ count = rec.count, values = rec.values, length = rec.length,
+                                max = s.run.result.damage, note = "" }, s.run, s.best)
         end
         if s.best then
             local lo, hi = NS.HudChart.PaceBounds(s.best, MockRuns.LENGTH)

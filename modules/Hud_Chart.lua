@@ -12,7 +12,10 @@ local _, NS = ...
 --     owner's call, 2026-10-25).
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
---   * After the race: the run's plain final damage.
+--   * After the race: the run's plain final damage, or with a best before the run (Bests.Before, the
+--     run the result's delta and pace bar name) max(the run's damage, the best's at this run's
+--     length) x HEADROOM, with the best's diagonal drawn as on scale A (Round C, 2026-10-25). Every
+--     value is plain then.
 -- The pace bar runs linearly from pace x (2 - m) to pace x m around the best's average damage by now
 -- (m the *Pace bar range*, 1.5 by default: +-50%; plain, from GetTime()); its value is the live total,
 -- and its tick, fixed in the middle of the bar, marks "on pace". A value outside the range is the
@@ -242,14 +245,35 @@ function Chart.ResultPace(run, showPace)
     return { lo = lo, hi = hi, value = damage }
 end
 
+--- An after-the-race view against the best before the run (Round C, 2026-10-25): with `best` (a run
+--- raced before `run` on its board, with a plain damage and length) the view gets the best's damage at
+--- this run's length (`best`, the diagonal's end) and its max becomes max(the run's damage, that) x
+--- HEADROOM, so the columns and the diagonal share one scale. Without one, or on a shared session, the
+--- view is as given: scaled to the run's own damage, no diagonal. Plain numbers only (a stored run).
+--- @param view table  { count, values, length, max, note }, max the run's plain final damage
+--- @param run table
+--- @param best table|nil
+--- @return table view
+function Chart.WithBest(view, run, best)
+    best = type(run) == "table" and type(run.race) == "table" and drawable(best, run) or nil
+    if not best or shared(run) then return view end
+    local at = Chart.Pace(best, run.race.length)
+    view.best = at
+    view.max = math.max(view.max or 0, at) * Chart.HEADROOM
+    view.note = L["vs best pace"]
+    return view
+end
+
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
---- its slices scaled to its plain final damage.
+--- its slices scaled to its plain final damage, against the best before it when there is one
+--- (Chart.WithBest).
 --- @param run table
 --- @return table|nil
 function Chart.ResultView(run)
     local rec = NS.Slices.Drawable(run)
     if not rec then return nil end
-    return { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    return Chart.WithBest(view, run, NS.Bests and NS.Bests.Before(run) or nil)
 end
 
 -- ── the chart ───────────────────────────────────────────────────────────────────────────────────
@@ -406,16 +430,19 @@ local function showAll(lines, on)
     for _, l in ipairs(lines) do l:SetShown(on) end
 end
 
--- Scale A's overlay: the best's average-pace diagonal, plain geometry, from 0:00 to the best's
--- level at the buzzer.
-function Strip:drawPace(best)
+-- The best's average-pace diagonal, plain geometry, from 0:00 to the best's level at the buzzer:
+-- `best` over `max`, both plain whenever a best is given (scale A: max = best x HEADROOM; after the
+-- race: Chart.WithBest's shared max). Moved only when the geometry or that level changed.
+function Strip:drawPace(best, max)
     local on = best ~= nil
     showAll(self.diag, on)
-    if not on or self.lines == self.geometry then return end
-    self.lines = self.geometry
+    if not on then return end
+    local key = ("%s|%s"):format(tostring(self.geometry), tostring(best / max))
+    if self.lines == key then return end
+    self.lines = key
     local x0, y0 = Chart.INSET, Chart.INSET
     local x1 = (self.width or 0) - Chart.INSET
-    local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) / Chart.HEADROOM
+    local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) * best / max
     dashes(self.diag, self.over, x0, y0, x1, level)
 end
 
@@ -445,7 +472,7 @@ function Strip:Draw(view, max)
         col:Show()
     end
     for i = count + 1, #self.cols do self.cols[i]:Hide() end
-    self:drawPace(view.best)
+    self:drawPace(view.best, view.max)
     self.note:SetText(view.note or "")
     local length = view.length or 0
     self.axis[1]:SetText(NS.Format.Length(0))

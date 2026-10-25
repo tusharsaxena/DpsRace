@@ -263,3 +263,30 @@ test("sim: Stop Now on the Stop! or waiting body jumps the script to the result;
     assertFalse(g.Sim.SkipToResult(), "nothing to skip once it ended")
 end)
 
+test("sim: the sample result card's Delete is grayed and does nothing", function()
+    local f = fixture()
+    local shown = 0
+    f.M.StaticPopup_Show = function() shown = shown + 1 end
+    sim(f, "newbest")
+    while current(f) ~= "result" do f:advance(0.1) end
+    local w = ui(f).body.result.w
+    assertFalse(w.delete:IsEnabled(), "the sample card offers Delete")
+    assertFalse(f.Hud.Act.delete())
+    assertEqual(shown, 0)
+end)
+
+test("sim: the result card draws the best's diagonal with a best before the run, and none on a first race", function()
+    for key, want in pairs({ newbest = true, behind = true, first = false }) do
+        local f = fixture()
+        sim(f, key)
+        while current(f) ~= "result" do f:advance(0.1) end
+        local chart = ui(f).body.result.w.chart
+        assertTrue(chart.shown, key .. ": no chart")
+        for _, l in ipairs(chart.diag) do assertEqual(l:IsShown(), want, key .. ": the diagonal") end
+        if want then
+            local run = f.Sim and ui(f).body.result.shownRun
+            assertTrue(chart.cols[1].__max > run.result.damage, key .. ": the shared max carries the headroom")
+        end
+    end
+end)
+

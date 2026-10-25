@@ -639,8 +639,8 @@ L["Difference: %s"] = "Difference: %s"
 L["Damage profile"] = "Damage profile"
 L["vs best pace"] = "vs best pace"
 L["first race on this board"] = "first race on this board"
-L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."] =
-    "Your damage so far at each step of the race, captured live and scaled to the run's final damage."
+L["Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."] =
+    "Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
 

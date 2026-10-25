@@ -418,6 +418,66 @@ test("chart: the result card draws the race's slices to its plain final damage, 
     assertEqual(b.rowsTop, 104 + BREAKDOWN)
 end)
 
+test("chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15", function()
+    local Chart = T.NS.HudChart
+    local run = { id = "r", race = { length = 30 }, result = { damage = 1000 }, flags = {} }
+    local best = { id = "b", race = { length = 30 }, result = { damage = 2000 } }
+    local v = Chart.WithBest({ max = 1000, note = "" }, run, best)
+    assertEqual(v.best, 2000, "the best's damage at this run's length: the diagonal's end")
+    assertEqual(v.max, 2000 * 1.15, "the best is the larger")
+    assertEqual(v.note, "vs best pace")
+    v = Chart.WithBest({ max = 1000 }, run, { id = "b", race = { length = 30 }, result = { damage = 500 } })
+    assertEqual(v.max, 1000 * 1.15, "the run is the larger")
+    v = Chart.WithBest({ max = 1000 }, run, nil)
+    assertEqual(v.max, 1000, "no best: the run's own damage, no headroom")
+    assertEqual(v.best, nil, "no diagonal")
+    v = Chart.WithBest({ max = 1000 }, run, run)
+    assertEqual(v.best, nil, "never against itself")
+    run.flags.sharedSession = true
+    v = Chart.WithBest({ max = 1000 }, run, best)
+    assertEqual(v.best, nil, "a shared session: no diagonal")
+end)
+
+-- The diagonal's end level for `best` over `max` on `chart`'s plot (the last dash stops short of it).
+local function diagonalTo(chart, best, max)
+    local level = 2 + (chart.plotH - 4) * best / max
+    local _, _, _, y1 = chart.diag[#chart.diag]:GetEndPoint()
+    return y1 < level and y1 > level - (level - 2) / #chart.diag
+end
+
+test("chart: the result card draws the earlier best's diagonal, the columns on the shared max", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    local run = resolved(f)
+    local b = body(f)
+    local chart = b.w.chart
+    assertTrue(chart.shown)
+    local max = 3000000 * 1.15
+    assertEqual(chart.cols[10].__max, max, "the columns use the diagonal's max")
+    for _, l in ipairs(chart.diag) do assertTrue(l:IsShown(), "the best's diagonal") end
+    assertTrue(diagonalTo(chart, 3000000, max), "the diagonal climbs to the best's damage at the buzzer")
+    assertTrue(run.result.damage < 3000000)
+    -- The detail draws the same.
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    local d = R.__ui().detail.w.chart
+    assertEqual(d.cols[1].__max, max)
+    for _, l in ipairs(d.diag) do assertTrue(l:IsShown(), "the detail's diagonal") end
+    assertTrue(diagonalTo(d, 3000000, max))
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart: with no earlier best the result card and the detail draw no diagonal", function()
+    local f = hud()
+    local run = resolved(f)
+    local chart = body(f).w.chart
+    for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "a diagonal with no earlier best") end
+    assertEqual(chart.cols[10].__max, run.result.damage)
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    for _, l in ipairs(R.__ui().detail.w.chart.diag) do assertFalse(l:IsShown()) end
+end)
+
 test("chart: the Results detail shows the chart for a run raced this session only", function()
     local f = hud()
     local run = resolved(f)

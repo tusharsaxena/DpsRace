@@ -846,9 +846,27 @@ local function onState(_, from, to)
     Hud.Refresh()
 end
 
+-- The run on the result card left the store (the card's Delete, or a delete in the Results window):
+-- the card is dismissed (Race.Cancel keeps nothing it could, the run is gone). After the card's own
+-- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length.
+local deleting   -- the run id the card's Delete asked about
+local backToIdle -- defined with the acts below
+
+local function onRunsChanged()
+    if NS.Race.State() ~= S().RESULT then return end
+    local run = NS.Race.Current()
+    if not run or NS.Recorder.Get(run.id) ~= nil then return end
+    local mine = deleting == run.id
+    deleting = nil
+    debug("the result card's run %s was deleted", tostring(run.id))
+    if mine then return backToIdle(run) end
+    NS.Race.Cancel()
+end
+
 do
     local bus = NS.NewBusTarget()
     if bus then
+        bus:RegisterMessage(NS.MSG.RUNS_CHANGED, function() onRunsChanged() end)
         bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, from, to) onState(run, from, to) end)
         bus:RegisterMessage(NS.MSG.RACE_BUZZER, function() buzzer() end)
         bus:RegisterMessage(NS.MSG.RACE_RESULT, function()
@@ -956,9 +974,7 @@ end
 --- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
 --- the idle body is set to the same length and target count, so Arm Race repeats the race.
-function Act.raceAgain()
-    if previewOn() then return false end
-    local run = NS.Race.Current()
+function backToIdle(run)
     local length = run and run.race and run.race.length or currentLength()
     local count = run and run.target and run.target.count
     -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
@@ -967,6 +983,22 @@ function Act.raceAgain()
     pick.count = count
     Act.pickLength(length)
     return true
+end
+
+function Act.raceAgain()
+    if previewOn() then return false end
+    return backToIdle(NS.Race.Current())
+end
+
+--- Delete on the result card (Round C): the Results window's own confirmation (Results.ConfirmDelete,
+--- whose Accept deletes through the source seam and Recorder.Delete); the store's RUNS_CHANGED then
+--- takes the HUD back to the Arm Race screen (onRunsChanged). The sample card has nothing to delete.
+function Act.delete()
+    if previewOn() or NS.Race.State() ~= S().RESULT then return false end
+    local run, R = NS.Race.Current(), NS.Results
+    if not (run and R and type(R.ConfirmDelete) == "function") then return false end
+    deleting = run.id
+    return R.ConfirmDelete(run.id)
 end
 
 function Act.share()

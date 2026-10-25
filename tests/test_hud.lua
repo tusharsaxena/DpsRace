@@ -613,6 +613,29 @@ test("hud: the equal buttons' width is whole pixels from the body's width and th
     assertEqual(each, 116)
 end)
 
+test("hud: the result card's four buttons sit in one row, the same width each, at any width", function()
+    local f = sizedHud()
+    f.Hud.Show()
+    resolved(f)
+    local b = body(f)
+    local w = b.w
+    local order = { w.again, w.details, w.share, w.delete }
+    assertEqual(w.delete.label.__text, "Delete")
+    for _, width in ipairs({ 236, 300 }) do
+        b:Layout(width, 400)
+        local each = f.NS.HudStates.RowWidths(width, 4)
+        local lastX
+        for i, btn in ipairs(order) do
+            assertEqual(btn.__size[1], each, "button " .. i .. " is not the row's width at " .. width)
+            local p = btn.__pts[1]
+            assertEqual(p[1], "BOTTOMLEFT")
+            if lastX then assertEqual(p[4] - lastX, each + 4, "the gap between buttons " .. (i - 1) .. " and " .. i) end
+            lastX = p[4]
+        end
+        assertTrue(lastX + each <= width, "the row overruns the card")
+    end
+end)
+
 test("hud: Cancel on the waiting body throws the attempt away", function()
     local f = hud()
     running(f, 30)
@@ -678,6 +701,45 @@ test("hud: Stop Now in combat reads at the combat end and says so", function()
     assertFalse(body(f).w.stopNow:IsEnabled(), "pressed once is enough")
     f:combatEnd()
     assertEqual(f.Race.State(), "result", "read on the regen edge, no quiet after it")
+end)
+
+test("hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    f.Hud.Show()
+    local run = resolved(f)
+    local b = body(f)
+    assertTrue(b.w.delete:IsEnabled())
+    b.w.delete:__fire("OnClick")
+    assertEqual(#popups, 1)
+    assertEqual(popups[1].which, "DPSRACE_DELETE_RUN", "the Results window's own confirmation")
+    assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "nothing is deleted before the confirmation")
+    assertEqual(current(f), "result")
+    f.M.StaticPopupDialogs.DPSRACE_DELETE_RUN.OnAccept(nil, popups[1].data)
+    assertEqual(f.NS.Recorder.Get(run.id), nil, "deleted from the store")
+    assertEqual(f.Race.State(), "idle")
+    assertEqual(current(f), "idle", "back on the Arm Race screen")
+    assertTrue(f.Hud.IsShown(), "the window stays open")
+    local picked
+    for _, p in ipairs(body(f).w.presets) do if p.selected then picked = p.length end end
+    assertEqual(picked, 30, "the same length is picked")
+end)
+
+test("hud: a result card whose run is deleted in the Results window is dismissed", function()
+    local f = hud()
+    f.Hud.Show()
+    local run = resolved(f)
+    f.NS.Recorder.Delete(run.id)
+    assertEqual(f.Race.State(), "idle")
+    -- Another run deleted leaves the card alone.
+    local g = hud()
+    g.Hud.Show()
+    resolved(g)
+    g.NS.Recorder.Delete("no-such-run")
+    g.NS.SendBus(g.NS.MSG.RUNS_CHANGED)
+    assertEqual(g.Race.State(), "result")
 end)
 
 test("hud: result body shows % and the best delta chip", function()

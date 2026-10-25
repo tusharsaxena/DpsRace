@@ -934,7 +934,7 @@ function States.ResultChips(v)
     return list
 end
 
--- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the three acts (screen 07).
+-- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the four acts (screen 07).
 function Builders.result(parent)
     local body = newBody(parent, "result")
     local f, w = body.frame, body.w
@@ -960,12 +960,16 @@ function Builders.result(parent)
         body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
         body:DrawRows()
     end)
+    -- The four acts in one row, the same width each (Round C): Delete asks first (the Results
+    -- window's own confirmation, modules/Hud.lua Act.delete).
     local links = footerButtons(body, {
         { L["Race Again"], function() act("raceAgain") end, "primary" },
         { L["Details"], function() act("details") end },
         { L["Share"], function() act("share") end },
+        { L["Delete"], function() act("delete") end, "danger",
+          tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
-    w.again, w.details, w.share = links[1], links[2], links[3]
+    w.again, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height
@@ -988,6 +992,7 @@ function Builders.result(parent)
         -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
         setEnabled(self.w.again, v.preview ~= true)
         setEnabled(self.w.details, v.preview ~= true)
+        setEnabled(self.w.delete, v.preview ~= true)
     end
     function body.DrawRows(self) Builders.resultRows(self) end
     return body

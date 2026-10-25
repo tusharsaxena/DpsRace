@@ -231,7 +231,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (66)
+### test_hud.lua (69)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -261,10 +261,13 @@ Total.
 - hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
 - hud: the equal buttons' width is whole pixels from the body's width and the gap
+- hud: the result card's four buttons sit in one row, the same width each, at any width
 - hud: Cancel on the waiting body throws the attempt away
 - hud: the Stop! and waiting bodies carry Stop Now and Cancel, the same width, with tooltips
 - hud: Stop Now out of combat takes the result at once, without the quiet
 - hud: Stop Now in combat reads at the combat end and says so
+- hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race
+- hud: a result card whose run is deleted in the Results window is dismissed
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
@@ -300,7 +303,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (25)
+### test_chart.lua (28)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -320,6 +323,9 @@ Total.
 - chart: the chart steps aside at the minimum height; the rows keep their three
 - chart: the overlay sits one band over the plot's columns
 - chart: the result card draws the race's slices to its plain final damage, and none without them
+- chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15
+- chart: the result card draws the earlier best's diagonal, the columns on the shared max
+- chart: with no earlier best the result card and the detail draw no diagonal
 - chart: the Results detail shows the chart for a run raced this session only
 - chart: the detail's title hover goes with its chart, so it never covers the section under it
 - chart: a lost run has no chart on the card or in the detail
@@ -613,7 +619,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (11)
+### test_sim.lua (13)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -626,6 +632,8 @@ Total.
 - sim: closing the HUD, Reset all settings and the stand-down end a running script
 - sim: switching to test mode stops the script; a sim restarts in place
 - sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim
+- sim: the sample result card's Delete is grayed and does nothing
+- sim: the result card draws the best's diagonal with a best before the run, and none on a first race
 
 ### test_launcher.lua (8)
 
@@ -782,8 +790,8 @@ Total.
 | test_race.lua | 57 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 66 |
-| test_chart.lua | 25 |
+| test_hud.lua | 69 |
+| test_chart.lua | 28 |
 | test_pace.lua | 12 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
@@ -797,7 +805,7 @@ Total.
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
 | test_preview.lua | 22 |
-| test_sim.lua | 11 |
+| test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -811,4 +819,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **641** |
+| **Total** | **649** |
