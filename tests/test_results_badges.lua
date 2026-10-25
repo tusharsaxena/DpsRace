@@ -63,7 +63,16 @@ local function seed(i, runs)
 end
 
 local function ui(i) return assert(i.R.__ui(), "the Results window was never built") end
-local function runsPane(i) return assert(ui(i).panes.runs, "the Runs tab was never built") end
+-- A new profile opens grouped by spec, target and time; these cases read the flat list, so the
+-- pane is ungrouped the first time a case reaches it (the grouping itself is test_results_group's).
+local function runsPane(i)
+    local pane = assert(ui(i).panes.runs, "the Runs tab was never built")
+    if not pane.__flat then
+        pane.__flat = true
+        if pane.filters.group ~= "none" then pane:SetFilter("group", "none") end
+    end
+    return pane
+end
 
 local function cellsById(pane)
     local out = {}
@@ -272,7 +281,7 @@ test("badges: group headers color their value as plain text: class, target type,
     _, label = Runs.GROUPS.targetLength.of(run)
     assertEqual(label, "Target: " .. cleave .. "Cleave|r \194\183 " .. length .. "3:00|r", "both colors")
     _, label = Runs.GROUPS.length.of(run)
-    assertEqual(label, "Duration: " .. length .. "3:00|r")
+    assertEqual(label, "Time: " .. length .. "3:00|r")
     _, label = Runs.GROUPS.char.of(run)
     assertEqual(label, "Character: " .. class .. "Lanfear|r")
     _, label = Runs.GROUPS.classSpec.of(run)

@@ -77,7 +77,16 @@ local function seed(i, runs)
 end
 
 local function ui(i) return assert(i.R.__ui(), "the Results window was never built") end
-local function runsPane(i) return assert(ui(i).panes.runs, "the Runs tab was never built") end
+-- A new profile opens grouped by spec, target and time; these cases read the flat list, so the
+-- pane is ungrouped the first time a case reaches it (the grouping itself is test_results_group's).
+local function runsPane(i)
+    local pane = assert(ui(i).panes.runs, "the Runs tab was never built")
+    if not pane.__flat then
+        pane.__flat = true
+        if pane.filters.group ~= "none" then pane:SetFilter("group", "none") end
+    end
+    return pane
+end
 local function visible(pane) return pane.list:Visible() end
 
 local function visibleIDs(pane)
@@ -1338,7 +1347,7 @@ test("results: the library-absent load still draws the window, with no dropdowns
     assertTrue(u.frame:IsShown())
     assertEqual(u.close, nil)
     assertEqual(next(u.panes.runs.dropdowns), nil, "a dead dropdown was drawn")
-    assertEqual(#u.panes.runs.list:Visible(), 1)
+    assertEqual(#u.panes.runs.list:Visible(), 2, "the run under its spec + target + time header")
     i.R.ShowTab("bests")
     assertEqual(u.panes.bests:Count(), 1)
 end)

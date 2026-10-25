@@ -45,7 +45,7 @@ added the live damage chart and pace bar (#2, #3), the run detail's compare (#7)
 talents stored with each run (#6, run-record format 2).
 The second 2026-10-25 pass ([`superpowers/plans/2026-10-25-results-badges-sim.md`](superpowers/plans/2026-10-25-results-badges-sim.md))
 added the Runs list's boxed Status badges naming their board and the race length colors (Results
-only), Group by *Duration* and *Target + duration*, the *Pace bar range* setting and the result
+only), Group by *Time* and *Target + time*, the *Pace bar range* setting and the result
 card's pace bar, the Results window's return after the talent tree's panel open, and the split of
 `/dr test` (static samples in every view) from `/dr sim` (a whole scripted race), both drawing
 in-memory samples and writing nothing to SavedVariables. Its Round C (the owner's notes after testing

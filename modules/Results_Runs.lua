@@ -26,8 +26,9 @@ Runs.DEFAULTS = {
     char = "current", spec = "current", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
     -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
-    -- reads no predicate for it.
-    group = "none",
+    -- reads no predicate for it. A new profile groups by spec, target and time: the board a best is
+    -- held on (the owner's call, 2026-10-25).
+    group = "specTargetLength",
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
@@ -262,9 +263,9 @@ local function lengthText(length)
     return Runs.Colored(length == nil and DASH or NS.Format.Length(length), Tbl.LengthColor(length))
 end
 
-local function durationGroup(run)
+local function timeGroup(run)
     local length = lengthOf(run)
-    return "length:" .. tostring(length), L["Duration: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
+    return "length:" .. tostring(length), L["Time: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
 end
 
 -- One group per (target type, length) pair: the catalog's order, then shortest first in each type.
@@ -276,18 +277,35 @@ local function targetLengthGroup(run)
         L["Target: %s"]:format(L["%s \194\183 %s"]:format(categoryText(category), lengthText(length))), rank
 end
 
+-- One group per (spec, target type, length): a best's own board (spec x dummy type x length). The
+-- spec in its class color, then the type and the length in theirs; ordered by class and spec name,
+-- then the catalog's order, then shortest first.
+local function specTargetLengthGroup(run)
+    local char = run.char or {}
+    local spec = Tbl.SpecInfo(char.specID, char.spec) or Tbl.ClassName(char.class)
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local key = ("%s|%s|%s|%s"):format(tostring(char.class), tostring(char.specID), category, tostring(length))
+    local label = L["Spec: %s"]:format(("%s \194\183 %s \194\183 %s"):format(
+        Runs.Colored(tostring(spec), Tbl.ClassColor(char.class)), categoryText(category), lengthText(length)))
+    local rank = ("%s|%s|%03d|%07d"):format(tostring(Tbl.ClassName(char.class)):lower(), tostring(spec):lower(),
+        CATEGORY_RANK[category] or 99, length or NO_LENGTH_RANK)
+    return key, label, rank
+end
+
 Runs.GROUPS = {
     none = nil,
     char = { of = charGroup, column = "char" },
     classSpec = { of = classSpecGroup },
     target = { of = targetGroup, column = "target" },
-    length = { of = durationGroup, column = "time" },
+    length = { of = timeGroup, column = "time" },
     targetLength = { of = targetLengthGroup, column = "target" },
+    specTargetLength = { of = specTargetLengthGroup },
 }
-Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength" }
+Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength", "specTargetLength" }
 local GROUP_LABELS = {
     none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
-    length = "Group: Duration", targetLength = "Group: Target + duration",
+    length = "Group: Time", targetLength = "Group: Target + time", specTargetLength = "Group: Spec + target + time",
 }
 
 --- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and

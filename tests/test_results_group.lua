@@ -1,6 +1,6 @@
 -- tests/test_results_group.lua — the Runs list's Group by (modules/Results_Runs.lua, the grouping in
 -- modules/Results_Table.lua) and its saved views: every mode's headers, their order and folding, the
--- duration modes' length-colored labels and stable fold keys, and Save / Reset / Clear. Peeled out of
+-- time modes' length-colored labels and stable fold keys, and Save / Reset / Clear. Peeled out of
 -- tests/test_results.lua (layout-§1's 1500-line cap); the helpers are that suite's.
 
 local T = _G.DPSRACE_TEST
@@ -88,10 +88,12 @@ test("results: Group by character, class & spec or target, with folding headers"
     local pane = runsPane(i)
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")
-    assertEqual(pane.filters.group, "none", "flat by default")
+    assertEqual(pane.filters.group, "specTargetLength", "a new profile groups by spec, target and time")
+    pane:SetFilter("group", "none")
     local opts = Runs.Options(i.NS.Recorder.All()).group
     assertEqual(opts[1].label, "Group: None")
-    assertEqual(#opts, 6)
+    assertEqual(#opts, 7)
+    assertEqual(opts[7].label, "Group: Spec + target + time")
     local function shape()
         local out = {}
         for _, row in ipairs(visible(pane)) do
@@ -119,7 +121,7 @@ test("results: Group by character, class & spec or target, with folding headers"
     assertEqual(shape(), "a,b,m")
 end)
 
-test("results: Group by duration, and by target type and duration, shortest first", function()
+test("results: Group by time, and by target type and time, shortest first", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     local function len(n) return { length = n, grace = 1.0, restartGap = 6, startSource = "meterSession" } end
@@ -137,9 +139,9 @@ test("results: Group by duration, and by target type and duration, shortest firs
     pane:SetFilter("spec", "all")
     local opts = Runs.Options(i.NS.Recorder.All()).group
     assertEqual(opts[5].value, "length")
-    assertEqual(opts[5].label, "Group: Duration")
+    assertEqual(opts[5].label, "Group: Time")
     assertEqual(opts[6].value, "targetLength")
-    assertEqual(opts[6].label, "Group: Target + duration")
+    assertEqual(opts[6].label, "Group: Target + time")
     local function shape()
         local out = {}
         for _, row in ipairs(visible(pane)) do
@@ -149,18 +151,18 @@ test("results: Group by duration, and by target type and duration, shortest firs
         return table.concat(out, ",")
     end
     pane.dropdowns.group.onSelect("length")
-    assertEqual(shape(), "[Duration: 1:00 1],c1,[Duration: 2:00 1],b2,[Duration: 3:00 2],c3,b3,[Duration: 7:00 1],c7",
+    assertEqual(shape(), "[Time: 1:00 1],c1,[Time: 2:00 1],b2,[Time: 3:00 2],c3,b3,[Time: 7:00 1],c7",
         "shortest first, newest first inside")
     -- The time wears its length color: a preset's hue, the neutral gray off the presets.
     local Tbl = i.NS.ResultsTable
     local headers = {}
     for _, row in ipairs(visible(pane)) do if row.group then headers[#headers + 1] = row.group end end
-    assertEqual(headers[1].label, "Duration: |c" .. Tbl.Hex(Tbl.LengthColor(60)) .. "1:00|r")
-    assertEqual(headers[4].label, "Duration: |c" .. Tbl.Hex(Tbl.LENGTH_NEUTRAL) .. "7:00|r")
+    assertEqual(headers[1].label, "Time: |c" .. Tbl.Hex(Tbl.LengthColor(60)) .. "1:00|r")
+    assertEqual(headers[4].label, "Time: |c" .. Tbl.Hex(Tbl.LENGTH_NEUTRAL) .. "7:00|r")
     assertEqual(headers[1].key, "length:60", "the fold key is the mode's and the length's")
     -- The Time header flips the groups' order.
     pane.list:SetSort("time")
-    assertEqual(shape(), "[Duration: 7:00 1],c7,[Duration: 3:00 2],c3,b3,[Duration: 2:00 1],b2,[Duration: 1:00 1],c1")
+    assertEqual(shape(), "[Time: 7:00 1],c7,[Time: 3:00 2],c3,b3,[Time: 2:00 1],b2,[Time: 1:00 1],c1")
     pane.dropdowns.group.onSelect("targetLength")
     assertEqual(shape(), "[Target: Cleave \194\183 1:00 1],c1,[Target: Cleave \194\183 3:00 1],c3,"
         .. "[Target: Cleave \194\183 7:00 1],c7,[Target: Boss-level \194\183 2:00 1],b2,"
@@ -171,7 +173,7 @@ test("results: Group by duration, and by target type and duration, shortest firs
     pane:Refresh()
     assertEqual(shape():sub(1, 34), "[Target: Cleave \194\183 1:00 1],[Target")
     pane.dropdowns.group.onSelect("length")
-    assertEqual(shape():sub(1, 24), "[Duration: 1:00 1],c1,[D", "the duration mode's 1:00 is not folded")
+    assertEqual(shape():sub(1, 24), "[Time: 1:00 1],c1,[Time:", "the time mode's 1:00 is not folded")
     pane.dropdowns.group.onSelect("targetLength")
     assertEqual(visible(pane)[2].group ~= nil, true, "the pair's fold is still there")
     -- A run with no length groups last, as a dash (never "0:00"), in either mode.
@@ -180,7 +182,7 @@ test("results: Group by duration, and by target type and duration, shortest firs
     local rows = visible(pane)
     assertEqual(rows[#rows - 1].group.key, "length:nil")
     assertEqual((rows[#rows - 1].group.label:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")),
-        "Duration: \226\128\148", "a run with no length is labeled 0:00")
+        "Time: \226\128\148", "a run with no length is labeled 0:00")
     assertEqual(rows[#rows].run.id, "x")
     pane.dropdowns.group.onSelect("targetLength")
     local header
@@ -222,14 +224,14 @@ test("results: Save, Reset and Clear the Runs view, and a saved view is what the
     pane.viewButtons.reset:__fire("OnClick")
     assertEqual(i.NS.db.profile.views, nil)
     assertEqual(pane.filters.char, "current")
-    assertEqual(pane.filters.group, "none")
+    assertEqual(pane.filters.group, "specTargetLength", "the stock view groups by spec, target and time")
     assertEqual(pane.list.sortKey, "date")
     assertTrue(pane.list.sortDesc)
     -- Clear with nothing saved is the stock view too.
     pane:SetFilter("hideFlagged", true)
     pane.viewButtons.clear:__fire("OnClick")
     assertFalse(pane.filters.hideFlagged)
-    -- The duration modes save and come back like any other.
+    -- The time modes save and come back like any other.
     pane:SetFilter("group", "targetLength")
     pane.viewButtons.save:__fire("OnClick")
     assertEqual(i.NS.db.profile.views.runs.filters.group, "targetLength")
@@ -266,4 +268,30 @@ test("results: hovering Save, Reset or Clear shows its tooltip without an error"
     b.tip = "a bare title"
     b:__fire("OnEnter")
     assertEqual(shown[#shown], "a bare title", "a bare string tooltip still shows, as the title")
+end)
+
+test("results: Group by spec + target + time, one group per board, the spec in its class color", function()
+    local i = inst()
+    seed(i, {
+        mkRun("a", { race = { length = 120, grace = 1 } }),
+        mkRun("b", { race = { length = 60, grace = 1 }, date = NOW - HOUR }),
+        mkRun("c", { race = { length = 120, grace = 1 }, date = NOW - 2 * HOUR }),
+        mkRun("m", { char = "mage", race = { length = 60, grace = 1 }, date = NOW - 3 * HOUR }),
+    })
+    i.R.Show()
+    local pane = runsPane(i)
+    pane:SetFilter("char", "all")
+    pane:SetFilter("spec", "all")
+    local Tbl = i.NS.ResultsTable
+    local headers = {}
+    for _, row in ipairs(visible(pane)) do
+        if row.group then headers[#headers + 1] = row.group end
+    end
+    assertEqual(#headers, 3, "Destruction cleave 1:00 and 2:00, Fire cleave 1:00")
+    local hex = function(c) return "|c" .. Tbl.Hex(c) end
+    assertEqual(headers[1].label, "Spec: " .. hex(Tbl.ClassColor("MAGE")) .. "Fire|r \194\183 "
+        .. hex(Tbl.CATEGORY_COLORS.cleave) .. "Cleave|r \194\183 " .. hex(Tbl.LengthColor(60)) .. "1:00|r",
+        "classes in name order (Mage before Warlock), the spec in its class color")
+    assertEqual(headers[2].count, 1)
+    assertEqual(headers[3].count, 2, "the two Destruction 2:00 cleave runs share one board")
 end)
