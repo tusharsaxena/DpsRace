@@ -113,7 +113,7 @@ Decisions:
 
 - [x] C1.1 Results detail: larger section headings and space above each section.
 - [x] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
-- [ ] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
+- [x] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
 - [ ] C1.4 Stop! screen: *Stop now* and *Cancel*.
 - [ ] C1.5 Result card: *Delete* with a confirm, equal-width buttons, the best-pace diagonal on the post-race chart.
 - [ ] C1.6 Docs, smoke rows and the test inventory.

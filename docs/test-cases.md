@@ -322,9 +322,9 @@ Total.
 
 ### test_pace.lua (12)
 
-- pace: Pace bar range defaults to 1.5, drives PaceMax and is clamped to 1.1-3.0
-- pace: the tick sits at 1/range of the bar's width, in whole pixels
-- pace: the running bar's tick follows Pace bar range, laid out from the configured width
+- pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
+- pace: the tick sits in the middle of the bar's width, in whole pixels
+- pace: the running bar's tick stays in the middle while its range follows Pace bar range
 - pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
 - pace: the result card sets the plain final damage against the best's pace at the buzzer
 - pace: a run that just became the best is set against the previous best

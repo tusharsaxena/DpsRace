@@ -294,7 +294,10 @@ local FIGURES = {
         local elapsed = math.min(t, s.stopAt)
         local f = { timeLeft = MockRuns.LENGTH - elapsed, elapsed = elapsed, live = liveAt(s, elapsed) }
         if not s.shared then f.chart = runningChart(s, elapsed) end
-        if s.best then f.pace = { max = NS.HudChart.PaceMax(s.best, elapsed) } end
+        if s.best then
+            local lo, hi = NS.HudChart.PaceBounds(s.best, elapsed)
+            f.pace = { lo = lo, hi = hi }
+        end
         return f
     end,
     stop = function(s, t)
@@ -319,7 +322,8 @@ local FIGURES = {
                                 max = s.run.result.damage, note = "" }
         end
         if s.best then
-            f.pace = { max = NS.HudChart.PaceMax(s.best, MockRuns.LENGTH), value = s.run.result.damage }
+            local lo, hi = NS.HudChart.PaceBounds(s.best, MockRuns.LENGTH)
+            f.pace = { lo = lo, hi = hi, value = s.run.result.damage }
         end
         return f
     end,

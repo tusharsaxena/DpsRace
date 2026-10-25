@@ -186,15 +186,17 @@ race.
   stretch, and the RUNNING → STOPPING edge at the buzzer makes one last read for the bucket ending
   there. The running body's view (`HudChart.LiveViews`) carries the buckets and the scale: the
   board's best (`Bests.Board()[Bests.Key(run)]`) x 1.15 with its level and pace diagonal, or with no
-  best the live total itself; and the pace bar's range, `live.paceRange x best.damage x elapsed / best.length`
-  (at least 1), its tick at 1/range of the bar's configured width. Both sit under the *Damage
+  best the live total itself; and the pace bar's ends (`HudChart.PaceBounds`), with
+  `pace = best.damage x elapsed / best.length` and `m = live.paceRange` (1.1-2.0): `lo = pace x (2 - m)`,
+  `hi = max(pace x m, lo + 1)`, its tick fixed in the middle of the bar's configured width (Round C). A
+  live total outside the range is the StatusBar's to clamp, empty or full; nothing compares it. Both sit under the *Damage
   profile* heading, the pace bar directly under it and above the plot, and *Spell breakdown* heads the
   rows (Round C; laid out from config by `HudStates.ProfileHeight` and `BREAKDOWN_H`).
   On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
   `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
   `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three
   spell rows. Nothing is computed from a value. After the race the result card draws the pace bar
-  again (`HudChart.ResultPace`), all plain: `SetMinMaxValues(0, PaceMax(prev, run.race.length))` and
+  again (`HudChart.ResultPace`), all plain: `SetMinMaxValues(PaceBounds(prev, run.race.length))` and
   `SetValue(run.result.damage)`, where `prev` is `Bests.Before(run)`, the best on the board raced
   before the run (what the delta chip names, so the previous best when the run just became the best).
   It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.

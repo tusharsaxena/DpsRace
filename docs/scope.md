@@ -29,7 +29,8 @@ in the spec, sections 1, 2 and 13
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
   the race (at most 60), each the live total the meter showed at its boundary, scaled to the board's
   best x 1.15 with its level and its average-pace diagonal, or with no best to the live total. A pace
-  bar fills against a multiple of the best's average damage by now (*Pace bar range*, 1.5 by default). Both are visual only: no value is ever
+  bar runs either side of the best's average damage by now, its tick in the middle (*Pace bar range*,
+  1.5 by default: ±50%). Both are visual only: no value is ever
   compared. The result card and the Results detail draw the chart again for runs raced this session,
   and the result card shows the pace bar again: the run's final damage against the best before it.
 - **Compare two runs** (#7). The Results detail sets a run beside the best on its board (the

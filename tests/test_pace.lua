@@ -1,5 +1,6 @@
--- tests/test_pace.lua — the pace bar's range and its tick (#3, 2026-10-25): *Pace bar range*
--- (live.paceRange) driving Chart.PaceMax, the on-pace tick at 1/range of the bar's configured width,
+-- tests/test_pace.lua — the pace bar's range and its tick (#3, 2026-10-25; centered in Round C):
+-- *Pace bar range* (live.paceRange) driving Chart.PaceBounds, pace x (2 - m) to pace x m, the
+-- on-pace tick fixed in the middle of the bar's configured width,
 -- and the HUD result card's pace bar (the run's plain final damage against the best before it).
 -- Peeled out of test_chart for layout-§1's cap.
 --
@@ -62,37 +63,47 @@ end
 
 -- ── the range, pure ─────────────────────────────────────────────────────────────────────────────
 
-test("pace: Pace bar range defaults to 1.5, drives PaceMax and is clamped to 1.1-3.0", function()
+test("pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0", function()
     local f = hud()
     local C = f.NS.HudChart
     local best = { race = { length = 30 }, result = { damage = 3000 } }
     assertEqual(f.NS.defaults.profile.live.paceRange, 1.5)
     assertEqual(C.PaceRange(), 1.5)
-    assertEqual(C.PaceMax(best, 10), 1500, "1.5 x the best's 1000 by 0:10")
-    assertTrue(f.NS.SetByPath("live.paceRange", 2.5))
-    assertEqual(C.PaceRange(), 2.5)
-    assertEqual(C.PaceMax(best, 10), 2500, "the setting, read at call time")
-    assertEqual(C.PaceMax(best, 0), 1, "still at least 1 at 0:00")
-    -- A stored value outside the slider (hand-edited SavedVariables) is clamped.
+    local lo, hi = C.PaceBounds(best, 10)
+    assertEqual(lo, 500, "0.5 x the best's 1000 by 0:10")
+    assertEqual(hi, 1500, "1.5 x it: +-50%")
+    assertTrue(f.NS.SetByPath("live.paceRange", 1.2))
+    assertEqual(C.PaceRange(), 1.2)
+    lo, hi = C.PaceBounds(best, 10)
+    assertTrue(math.abs(lo - 800) < 1e-9 and math.abs(hi - 1200) < 1e-9, "the setting, read at call time")
+    assertTrue(f.NS.SetByPath("live.paceRange", 2))
+    lo, hi = C.PaceBounds(best, 10)
+    assertEqual(lo, 0, "2.0: the low end at 0, never below")
+    assertEqual(hi, 2000)
+    lo, hi = C.PaceBounds(best, 0)
+    assertEqual(lo, 0)
+    assertEqual(hi, 1, "still at least lo + 1 at 0:00")
+    -- A stored value outside the slider (one saved at up to 3.0 before Round C, or hand-edited) is
+    -- clamped at read time.
+    f.NS.db.profile.live.paceRange = 3
+    assertEqual(C.PaceRange(), 2.0)
     f.NS.db.profile.live.paceRange = 9
-    assertEqual(C.PaceRange(), 3.0)
+    assertEqual(C.PaceRange(), 2.0)
     f.NS.db.profile.live.paceRange = 0.2
     assertEqual(C.PaceRange(), 1.1)
     f.NS.db.profile.live.paceRange = "x"
     assertEqual(C.PaceRange(), 1.5, "not a number: the default")
 end)
 
-test("pace: the tick sits at 1/range of the bar's width, in whole pixels", function()
+test("pace: the tick sits in the middle of the bar's width, in whole pixels", function()
     local C = T.NS.HudChart
-    assertEqual(C.TickX(198, 1.5), 132)
-    assertEqual(C.TickX(198, 2), 99, "a range of 2: the center")
-    assertEqual(C.TickX(198, 3), 66)
-    assertEqual(C.TickX(100, 1.1), 91, "rounded to a whole pixel")
+    assertEqual(C.TickX(198), 99)
+    assertEqual(C.TickX(199), 100, "rounded to a whole pixel")
 end)
 
 -- ── the running HUD ─────────────────────────────────────────────────────────────────────────────
 
-test("pace: the running bar's tick follows Pace bar range, laid out from the configured width", function()
+test("pace: the running bar's tick stays in the middle while its range follows Pace bar range", function()
     local f = hud()
     seedBest(f, 3000000, 30)
     running(f, 30)
@@ -102,12 +113,14 @@ test("pace: the running bar's tick follows Pace bar range, laid out from the con
     assertTrue(pace.bar:IsShown())
     local barW = b.width - f.NS.HudChart.PACE_LABEL_W
     assertEqual(pace.barW, barW, "the bar's width from the body's configured width")
-    assertEqual(tickX(pace), math.floor(barW / 1.5 + 0.5), "two thirds along at 1.5")
-    assertTrue(f.NS.SetByPath("live.paceRange", 2))
+    assertEqual(tickX(pace), math.floor(barW / 2 + 0.5), "the middle at 1.5")
+    assertTrue(f.NS.SetByPath("live.paceRange", 1.2))
     pump(f, 0.5)
-    assertEqual(tickX(pace), math.floor(barW / 2 + 0.5), "the center at 2")
-    local elapsed = f.Race.Elapsed()
-    assertTrue(math.abs(pace.bar.__max - 2 * 3000000 * elapsed / 30) < 1e-3, "the range follows too")
+    assertEqual(tickX(pace), math.floor(barW / 2 + 0.5), "still the middle at 1.2")
+    local pace10 = 3000000 * f.Race.Elapsed() / 30
+    assertTrue(math.abs(pace.bar.__min - 0.8 * pace10) < 1e-3, "the low end follows")
+    assertTrue(math.abs(pace.bar.__max - 1.2 * pace10) < 1e-3, "the high end follows")
+    assertTrue(T.isSecret(pace.bar.__value), "the live total, straight to the bar: the bar clamps it")
     assertEqual(#f.W.SecretGeometryReads(), 0, "a geometry read on a frame holding a secret")
 end)
 
@@ -161,15 +174,17 @@ test("pace: the result card sets the plain final damage against the best's pace 
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown(), "the pace bar on the result card")
     assertEqual(pace.label.__text, "vs best pace", "the running bar's label")
-    assertEqual(pace.bar.__max, 1.5 * 1e12, "Pace bar range x the best's damage at the run's length")
-    assertEqual(pace.bar.__value, run.result.damage, "the plain final damage")
+    assertEqual(pace.bar.__min, 0.5 * 1e12, "the best's damage at the run's length, less 50%")
+    assertEqual(pace.bar.__max, 1.5 * 1e12, "and plus 50%")
+    assertEqual(pace.bar.__value, run.result.damage, "the plain final damage (below the range: the bar reads empty)")
     assertEqual(type(pace.bar.__value), "number")
-    assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 1.5 + 0.5), "the same tick")
+    assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 2 + 0.5), "the same tick, in the middle")
     -- Under the Damage profile heading, above the plot: the plot and the rows move down by its line.
     assertTrue(b.w.chart.shown)
     assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 2 + 12 + 8) + BREAKDOWN)
     -- The range follows the setting.
     assertTrue(f.NS.SetByPath("live.paceRange", 2))
+    assertEqual(pace.bar.__min, 0)
     assertEqual(pace.bar.__max, 2 * 1e12)
     assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 2 + 0.5))
     assertEqual(#f.W.SecretGeometryReads(), 0)
@@ -184,7 +199,8 @@ test("pace: a run that just became the best is set against the previous best", f
     assertTrue(rawequal(f.NS.Bests.Board()[f.NS.Bests.Key(run)], run), "it holds the board now")
     local pace = body(f).w.pace
     assertTrue(pace.bar:IsShown(), "still drawn, against the best before it")
-    assertEqual(pace.bar.__max, 4500, "1.5 x the previous best's 3000")
+    assertEqual(pace.bar.__min, 1500, "0.5 x the previous best's 3000")
+    assertEqual(pace.bar.__max, 4500, "1.5 x it")
     assertEqual(pace.bar.__value, run.result.damage)
 end)
 

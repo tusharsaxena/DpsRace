@@ -406,8 +406,8 @@ L["Show pace bar"] = "Show pace bar"
 L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
     "Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."
 L["Pace bar range"] = "Pace bar range"
-L["The pace bar's right end, as a multiple of the best's pace so far: at 1.5 a full bar is half again the best's damage by now. The tick marks the best's pace, at 1/range of the bar's width. 1.1 to 3.0."] =
-    "The pace bar's right end, as a multiple of the best's pace so far: at 1.5 a full bar is half again the best's damage by now. The tick marks the best's pace, at 1/range of the bar's width. 1.1 to 3.0."
+L["How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."] =
+    "How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."
 L["Damage chart"] = "Damage chart"
 L["Chart height"] = "Chart height"
 L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."] =

@@ -37,8 +37,8 @@ NS.defaults = {
             -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
             chart   = true,
             paceBar = true,
-            -- The pace bar's right end as a multiple of the best's pace so far, 1.1-3.0 (2 before
-            -- 2026-10-25); its tick marks the best's pace at 1/paceRange of the bar.
+            -- How far either side of the best's pace so far the pace bar reaches, 1.1-2.0: it runs from
+            -- pace x (2 - paceRange) to pace x paceRange, its tick in the middle (Round C; 1.5 = +-50%).
             paceRange = 1.5,
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec

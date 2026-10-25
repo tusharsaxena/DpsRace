@@ -150,9 +150,12 @@ test("chart: the pace is the best's damage spread evenly over its length", funct
     assertEqual(C.Pace(best, 10), 1000)
     assertEqual(C.Pace(best, 45), 3000, "clamped at the buzzer")
     assertEqual(C.Pace(best, -2), 0)
-    assertEqual(C.PaceMax(best, 10), 1500, "Pace bar range 1.5 by default: on pace at two thirds")
-    assertEqual(C.PaceMax(best, 10, 2), 2000, "a range of 2: half-full is on pace")
-    assertEqual(C.PaceMax(best, 0), 1, "a range at 0:00 all the same")
+    local lo, hi = C.PaceBounds(best, 10)
+    assertEqual(lo, 500, "Pace bar range 1.5 by default: half the pace")
+    assertEqual(hi, 1500, "to half again: on pace in the middle")
+    lo, hi = C.PaceBounds(best, 0)
+    assertEqual(lo, 0)
+    assertEqual(hi, 1, "a range at 0:00 all the same")
 end)
 
 test("chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last", function()
@@ -279,12 +282,13 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its pace diago
     local _, _, x1, y1 = lastDash:GetEndPoint()
     assertTrue(math.abs(x1 - (2 + (width - 4) * (1 - 0.4 / #chart.diag))) < 1e-6, "the last dash ends short of the corner")
     assertTrue(y1 < level and y1 > level - (level - 2) / #chart.diag, "the diagonal climbs to the best's level")
-    -- The pace bar: 1.5 x the best's average pace now (plain), the live total (opaque).
+    -- The pace bar: 0.5 to 1.5 x the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())
     assertEqual(pace.label.__text, "vs best pace")
     local elapsed = f.Race.Elapsed()
     assertTrue(math.abs(pace.bar.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
+    assertTrue(math.abs(pace.bar.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")
     assertTrue(rawequal(pace.bar.__value, reads[#reads].total), "the live total, untouched")
     assertTrue(pace.tick:IsShown(), "the on-pace tick")
 end)
@@ -305,7 +309,8 @@ test("chart: the tick reuses the live views and rebuilds the chart's only when w
     assertEqual(c2.max, 3000000 * Chart.HEADROOM)
     local _, p3 = Chart.LiveViews(run, 6, true, true)
     assertTrue(rawequal(p3, p2), "one pace table")
-    assertEqual(p3.max, 1.5 * 3000000 * 6 / 30, "its max refilled each pass")
+    assertEqual(p3.lo, 0.5 * 3000000 * 6 / 30, "its ends refilled each pass")
+    assertEqual(p3.hi, 1.5 * 3000000 * 6 / 30)
     -- The first bucket's capture gives the run its slices: the view follows them.
     pump(f, 1.5)
     local c4 = Chart.LiveViews(run, 7, true, true)

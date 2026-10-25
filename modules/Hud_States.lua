@@ -722,7 +722,7 @@ function Builders.running(parent)
         styleRunning(self, v.clockMode)
         placeExtras(self, v)
         self.paceShown = v.pace ~= nil
-        if v.pace then self.w.pace:SetMax(v.pace.max) end
+        if v.pace then self.w.pace:SetRange(v.pace.lo, v.pace.hi) end
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.
@@ -962,7 +962,7 @@ function Builders.resultExtras(body, v)
     w.pace:SetShown(pace)
     body.rowsTop = placeStack(body, RESULT_ROWS_TOP, pace, on, plotH)
     if pace then
-        w.pace:SetMax(v.pace.max)
+        w.pace:SetRange(v.pace.lo, v.pace.hi)
         w.pace:SetValue(v.pace.value)
     end
     w.rows:ClearAllPoints()

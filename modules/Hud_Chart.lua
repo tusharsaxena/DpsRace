@@ -13,10 +13,11 @@ local _, NS = ...
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
 --   * After the race: the run's plain final damage.
--- The pace bar's range is a multiple of the best's average damage by now (*Pace bar range*, 1.5 by
--- default; plain, from GetTime()); its value is the live total, and its tick, at 1/range of the bar's
--- width, marks "on pace". It says nothing more: no ahead or behind, no color chosen from the value,
--- because comparing a secret is not allowed. The HUD result card draws it again after the race, the
+-- The pace bar runs linearly from pace x (2 - m) to pace x m around the best's average damage by now
+-- (m the *Pace bar range*, 1.5 by default: +-50%; plain, from GetTime()); its value is the live total,
+-- and its tick, fixed in the middle of the bar, marks "on pace". A value outside the range is the
+-- StatusBar's to clamp (empty or full): we never compare it. It says nothing more: no ahead or behind,
+-- no color chosen from the value, because comparing a secret is not allowed. The HUD result card draws it again after the race, the
 -- run's plain final damage against the best before it at the buzzer (Chart.ResultPace).
 --
 -- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
@@ -56,7 +57,7 @@ local TICK = { 1, 1, 1, 0.85 }
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
 
-Chart.PACE_RANGE_MIN, Chart.PACE_RANGE_MAX = 1.1, 3.0   -- settings/Hud.lua's slider bounds
+Chart.PACE_RANGE_MIN, Chart.PACE_RANGE_MAX = 1.1, 2.0   -- settings/Hud.lua's slider bounds (the low end >= 0)
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -137,31 +138,33 @@ function Chart.Pace(best, elapsed)
     return best.result.damage * t / length
 end
 
---- The configured pace bar range (live.paceRange): the bar's right end as a multiple of the best's
---- pace, clamped to the slider's bounds.
+--- The configured pace bar range (live.paceRange): how far either side of the best's pace the bar
+--- reaches, clamped at read time to the slider's bounds (a value stored above 2.0 before Round C reads 2.0).
 --- @return number
 function Chart.PaceRange()
     local v = NS.GetSetting and tonumber(NS.GetSetting("live.paceRange"))
     return math.max(Chart.PACE_RANGE_MIN, math.min(Chart.PACE_RANGE_MAX, v or LIVE.paceRange))
 end
 
---- The pace bar's range: `range` (default the setting) times the pace, so the bar is on pace at
---- 1/range of its width (at least 1, for 0:00).
+--- The pace bar's ends around the best's pace by `elapsed`: lo = pace x (2 - m), hi = pace x m, with m
+--- `range` (default the setting), so the pace sits in the middle; hi is at least lo + 1 (0:00).
 --- @param best table
 --- @param elapsed number
 --- @param range number|nil
---- @return number
-function Chart.PaceMax(best, elapsed, range)
-    return math.max((range or Chart.PaceRange()) * Chart.Pace(best, elapsed), 1)
+--- @return number lo, number hi
+function Chart.PaceBounds(best, elapsed, range)
+    local m = range or Chart.PaceRange()
+    local pace = Chart.Pace(best, elapsed)
+    local lo = pace * (2 - m)
+    return lo, math.max(pace * m, lo + 1)
 end
 
---- The on-pace tick's offset from the bar's left edge, in whole pixels: 1/range of the bar's width.
---- Plain config math on the width Place() was handed, never a measured size.
+--- The on-pace tick's offset from the bar's left edge, in whole pixels: the middle of the bar. Plain
+--- config math on the width Place() was handed, never a measured size.
 --- @param barW number
---- @param range number
 --- @return number
-function Chart.TickX(barW, range)
-    return math.floor(barW / range + 0.5)
+function Chart.TickX(barW)
+    return math.floor(barW / 2 + 0.5)
 end
 
 --- What the running body draws: the chart's view and the pace bar's, each nil when hidden. Both hide
@@ -171,11 +174,11 @@ end
 --- @param showChart boolean  live.chart
 --- @param showPace boolean  live.paceBar
 --- @return table|nil chart  { count, values, length, max, best, note }  (max nil: scale B, the live total)
---- @return table|nil pace  { max }
+--- @return table|nil pace  { lo, hi }
 -- THE LIVE VIEWS ARE CACHED (the 20 Hz tick, performance-§3): the chart's view and the best behind it
 -- are rebuilt only when what decides them changes. The best is looked up again only when the run or
 -- the bests board changed (Bests.Board hands out a new table after every invalidation); the pace
--- table is one table, its max refilled each pass.
+-- table is one table, its ends refilled each pass.
 local live = { pace = {} }
 
 local function liveBest(run)
@@ -214,7 +217,7 @@ function Chart.LiveViews(run, elapsed, showChart, showPace)
     if showChart then chart = liveChart(run, best) end
     if showPace and best then
         pace = live.pace
-        pace.max = Chart.PaceMax(best, elapsed)
+        pace.lo, pace.hi = Chart.PaceBounds(best, elapsed)
     end
     return chart, pace
 end
@@ -222,11 +225,11 @@ end
 --- The HUD result card's pace bar (#3, 2026-10-25), or nil when it hides: the run's plain final damage
 --- against the best before it (Bests.Before, the run the delta chip names, so the previous best when
 --- this run just became the best) at the buzzer, the best's pace taken at the run's length through
---- PaceMax, so the range and the tick are the running bar's. Hidden when Show pace bar is off, on a lost
+--- PaceBounds, so the range and the tick are the running bar's. Hidden when Show pace bar is off, on a lost
 --- run, on a shared session and with no earlier best.
 --- @param run table
 --- @param showPace boolean  live.paceBar
---- @return table|nil pace  { max, value }
+--- @return table|nil pace  { lo, hi, value }
 function Chart.ResultPace(run, showPace)
     if not showPace or type(run) ~= "table" or run.status == "lost" or shared(run) then return nil end
     local damage = type(run.result) == "table" and run.result.damage
@@ -234,7 +237,8 @@ function Chart.ResultPace(run, showPace)
     if type(damage) ~= "number" or type(length) ~= "number" or length <= 0 or not NS.Bests then return nil end
     local best = drawable(NS.Bests.Before(run), run)
     if not best then return nil end
-    return { max = Chart.PaceMax(best, length), value = damage }
+    local lo, hi = Chart.PaceBounds(best, length)
+    return { lo = lo, hi = hi, value = damage }
 end
 
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
@@ -500,19 +504,19 @@ function Pace:Place(anchor, y, width)
     self:PlaceTick()
 end
 
---- The on-pace tick at 1/range of the bar's configured width; moved only when either changed.
+--- The on-pace tick in the middle of the bar's configured width; moved only when the width changed.
 function Pace:PlaceTick()
-    local barW, range = self.barW, Chart.PaceRange()
-    if not barW or (self.tickW == barW and self.tickRange == range) then return end
-    self.tickW, self.tickRange = barW, range
-    local x = Chart.TickX(barW, range)
+    local barW = self.barW
+    if not barW or self.tickW == barW then return end
+    self.tickW = barW
+    local x = Chart.TickX(barW)
     self.tick:ClearAllPoints()
     self.tick:SetPoint("TOP", self.bar, "TOPLEFT", x, 2)
     self.tick:SetPoint("BOTTOM", self.bar, "BOTTOMLEFT", x, -2)
 end
 
---- The range: *Pace bar range* times the best's pace now (plain); the tick follows the setting.
-function Pace:SetMax(max)
+--- The range: pace x (2 - m) to pace x m around the best's pace now (plain, Chart.PaceBounds).
+function Pace:SetRange(lo, hi)
     self:PlaceTick()
     local A = NS.HudAppearance
     if A and self.stamp ~= A.stamp then
@@ -521,10 +525,11 @@ function Pace:SetMax(max)
         self.bar:SetStatusBarTexture(look.texture)
         self.bar:SetStatusBarColor(look.r, look.g, look.b, look.a)
     end
-    self.bar:SetMinMaxValues(0, max)
+    self.bar:SetMinMaxValues(lo, hi)
 end
 
---- The live total (opaque), straight to the bar; none reads empty.
+--- The live total (opaque), straight to the bar: below the range it reads empty, above it full (the
+--- StatusBar clamps; nothing here compares it). None reads empty.
 function Pace:SetValue(total)
     if total == nil then return self.bar:SetValue(0) end
     self.bar:SetValue(total)
