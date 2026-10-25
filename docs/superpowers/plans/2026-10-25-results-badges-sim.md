@@ -87,3 +87,33 @@ go-ahead.
     README and scope.md follow the pace range, the result card's pace bar, the new groupings and test vs sim.
     The complexity suite finds no function above CCN 15 that this branch touched.
   - Open for the owner: the group label (*Target + duration* kept), and the tree over Results (B4.1).
+
+## Round C (the owner, 2026-10-25, after testing the B pass)
+
+Decisions:
+
+- **Results detail headings:**
+  - The section headings get larger again (a step above GameFontNormal), with a matching line height.
+  - Clear space goes above every section heading. The detail read as cramped and dense.
+- **HUD running body and result card:**
+  - "Damage over the race" is renamed "Damage profile" everywhere.
+  - The pace bar sits directly below the chart's heading, above the plot.
+  - A "Spell breakdown" heading goes above the spell rows.
+  - Proper space above each heading. The HUD headings use the same font and size as the Results detail's section headings.
+- **Pace bar:**
+  - The tick sits in the MIDDLE.
+  - The bar runs linearly from pace × (2 − m) to pace × m: empty at or below the low end, full at or above the high end (the StatusBar clamps).
+  - m is the *Pace bar range* setting, default 1.5, meaning ±50%. This supersedes B3.1's tick at 1/m. The bounds and tooltip are adjusted so the low end stays at 0 or above (m ≤ 2).
+- **Stop! / waiting screen:** two buttons.
+  - *Stop now* takes the result immediately instead of waiting out the damage tail.
+  - *Cancel* discards the race and saves nothing.
+- **Result card:**
+  - A *Delete* button with a confirm, beside Race Again, Details and Share. All four buttons are the same width.
+  - The chart draws the gray average-pace diagonal for the best. The post-race plot's max covers both the run's damage and the best's.
+
+- [ ] C1.1 Results detail: larger section headings and space above each section.
+- [ ] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
+- [ ] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
+- [ ] C1.4 Stop! screen: *Stop now* and *Cancel*.
+- [ ] C1.5 Result card: *Delete* with a confirm, equal-width buttons, the best-pace diagonal on the post-race chart.
+- [ ] C1.6 Docs, smoke rows and the test inventory.
