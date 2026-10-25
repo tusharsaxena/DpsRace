@@ -167,24 +167,25 @@ function Loadout.DressUp(gear)
     return n
 end
 
---- Post the loadout's talentbuild link to the player's own chat window, to click there: Blizzard's
---- chat hyperlink handling then opens its talent tree, read-only.
+--- Open the loadout's talent tree, read-only, through SetItemRef with its talentbuild link, and post
+--- the same link to the player's own chat window to open again later.
 ---
---- NEVER OPENS A BLIZZARD FRAME FROM ADDON CODE (the owner's call, 2026-10-25). View used to call
---- SetItemRef itself, which showed PlayerSpellsFrame from this addon's execution: its OnShow wrote
---- the action bars' show-grid state tainted, and a later in-combat slot change ended in
---- ADDON_ACTION_BLOCKED on MultiBarRightButton1:SetShown() (Blizzard_ActionBar UpdateShownButtons).
---- A line in the chat frame is drawn by the chat frame alone; the click on the link is the player's.
+--- THE TAINT RISK IS THE OWNER'S CALL (2026-10-25, reversing the chat-link-only View). SetItemRef
+--- from this button shows PlayerSpellsFrame from this addon's execution; its OnShow writes the
+--- action bars' show-grid state tainted, so a later in-combat slot change can end in
+--- ADDON_ACTION_BLOCKED on MultiBarRightButtonN:SetShown() (Blizzard_ActionBar UpdateShownButtons),
+--- once seen in game. Clicking the posted chat link instead opens the tree without that risk.
 --- @param t table|nil  a stored talent loadout
 --- @param level number|nil  the character's level when it raced
 --- @param who string|nil  names the run in the line ("Lanfear, 25 Oct 14:02")
---- @return boolean posted
+--- @return boolean opened
 function Loadout.View(t, level, who)
     if not Loadout.CanView(t) then return false end
     local link = Loadout.Hyperlink(t, level)
     if not link then return false end
     NS.Print(L["Talents for %s: %s \226\128\148 click the link to view the tree."]:format(who or L["this run"], link))
-    return true
+    if type(SetItemRef) ~= "function" then return false end
+    return (pcall(SetItemRef, Loadout.LinkData(t, level), link, "LeftButton"))
 end
 
 --- The run View names in its chat line: its character and date.
@@ -342,10 +343,10 @@ end
 --- Read `p.run`'s loadout (and, while comparing, the other run's) and paint the parts.
 function Loadout.Fill(p)
     local x = p.lo
-    local gear, talents = NS.Loadouts.Of(p.run)
+    local gear, talents = NS.ResultsSource.LoadoutOf(p.run)
     x.gear, x.talentsData = gear, talents
     local other = p:CompareTarget()
-    local otherGear, otherTalents = NS.Loadouts.Of(other)
+    local otherGear, otherTalents = NS.ResultsSource.LoadoutOf(other)
     local changed = other and Loadout.ChangedSlots(gear, otherGear) or {}
     x.cellList, x.rows = Loadout.Grid(gear)
     x.changedCount = 0
@@ -384,6 +385,7 @@ end
 
 local function layoutTalents(p, x, y, cw)
     local tw = Loadout.TALENT_W
+    y = y - NS.Style.SECTION_GAP
     place(x.talentsTitle, p.content, 0, y)
     y = y - NS.Style.SECTION_H
     place(x.talents, p.content, 0, y - 2)
@@ -401,9 +403,11 @@ local function layoutTalents(p, x, y, cw)
     return y
 end
 
---- The Gear section and the Talents line at `y` across `cw`; answers the y beneath.
+--- The Gear section and the Talents line at `y` across `cw`, each heading SECTION_GAP under the block
+--- above it; answers the y beneath.
 function Loadout.Layout(p, y, cw)
     local x = p.lo
+    y = y - NS.Style.SECTION_GAP
     place(x.title, p.content, 0, y)
     local has = x.gear ~= nil
     x.dress:SetShown(has)

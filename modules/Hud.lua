@@ -4,7 +4,7 @@ local _, NS = ...
 -- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
--- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x460, min 260x296), with its
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x560, min 260x354), with its
 -- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
 -- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
 --
@@ -228,6 +228,7 @@ local function stopView(v)
     v.endedAt = run.result and run.result.endedAt
     v.lateCasts = run.flags and run.flags.lateCasts
     v.grace = run.race and run.race.grace
+    v.stopNow = NS.Race.StopRequested()
     local delay = setting("race.hintDelay")
     if v.key == "waiting" and v.inCombat and (v.sinceBuzzer or 0) >= delay then v.hint = hintText() end
 end
@@ -265,6 +266,8 @@ local function resultView(v)
     v.icons = setting("live.icons") ~= false
     -- The race's chart again (#2), when the HUD shows charts and the run has its slices this session.
     if setting("live.chart") ~= false then v.chart = NS.HudChart.ResultView(run) end
+    -- The pace bar again (#3): the plain final damage against the best before the run.
+    v.pace = NS.HudChart.ResultPace(run, setting("live.paceBar") ~= false)
 end
 
 local function runningView(v)
@@ -843,9 +846,30 @@ local function onState(_, from, to)
     Hud.Refresh()
 end
 
+-- The run on the result card left the store (the card's Delete, or a delete in the Results window):
+-- the card is dismissed (Race.Cancel keeps nothing it could, the run is gone). After the card's own
+-- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length. Any
+-- other change to the store (an earlier best deleted) redraws the card: its delta chip, pace bar and
+-- the best's diagonal name the best before the run, read from the store again.
+local deleting   -- the run id whose delete the card's popup accepted, for the one RUNS_CHANGED it fires
+local backToIdle -- defined with the acts below
+
+local function onRunsChanged()
+    local accepted = deleting
+    deleting = nil
+    if NS.Race.State() ~= S().RESULT then return end
+    local run = NS.Race.Current()
+    if not run then return end
+    if NS.Recorder.Get(run.id) ~= nil then return Hud.Refresh() end
+    debug("the result card's run %s was deleted", tostring(run.id))
+    if accepted == run.id then return backToIdle(run) end
+    NS.Race.Cancel()
+end
+
 do
     local bus = NS.NewBusTarget()
     if bus then
+        bus:RegisterMessage(NS.MSG.RUNS_CHANGED, function() onRunsChanged() end)
         bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, from, to) onState(run, from, to) end)
         bus:RegisterMessage(NS.MSG.RACE_BUZZER, function() buzzer() end)
         bus:RegisterMessage(NS.MSG.RACE_RESULT, function()
@@ -913,7 +937,7 @@ function Act.stepCount(delta)
     Hud.Refresh()
 end
 
--- In test mode the bodies are the sample's: Cancel and Discard Run end test mode, never the real
+-- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
 -- race the preview may be covering (a result card), and the sample card's Race Again and Details
 -- (drawn disabled) do nothing.
 function Act.cancel()
@@ -921,6 +945,18 @@ function Act.cancel()
     return NS.Race.Cancel()
 end
 Act.discard = Act.cancel
+
+--- Stop Now on the Stop! and waiting screens (Round C): the result as it reads now (Race.StopNow). In
+--- the sim it jumps the script to the result card (modules/Sim.lua SkipToResult).
+function Act.stopNow()
+    if previewOn() then
+        if NS.Sim and NS.Preview.Mode() == "sim" then return NS.Sim.SkipToResult() end
+        return false
+    end
+    local acted = NS.Race.StopNow()
+    Hud.Refresh()
+    return acted
+end
 
 function Act.close()
     -- In the client Hide runs OnHide, which is onHide; called again only if that did not happen.
@@ -941,9 +977,7 @@ end
 --- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
 --- the idle body is set to the same length and target count, so Arm Race repeats the race.
-function Act.raceAgain()
-    if previewOn() then return false end
-    local run = NS.Race.Current()
+function backToIdle(run)
     local length = run and run.race and run.race.length or currentLength()
     local count = run and run.target and run.target.count
     -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
@@ -952,6 +986,25 @@ function Act.raceAgain()
     pick.count = count
     Act.pickLength(length)
     return true
+end
+
+function Act.raceAgain()
+    if previewOn() then return false end
+    return backToIdle(NS.Race.Current())
+end
+
+--- Delete on the result card (Round C): the Results window's own confirmation (Results.ConfirmDelete,
+--- whose Accept deletes through the source seam and Recorder.Delete); the store's RUNS_CHANGED then
+--- takes the HUD back to the Arm Race screen (onRunsChanged). The card's mark is set only by that
+--- popup's Accept, so a canceled popup leaves a later delete elsewhere an outside one. The sample
+--- card has nothing to delete.
+local function markDeleting(id) deleting = id end
+
+function Act.delete()
+    if previewOn() or NS.Race.State() ~= S().RESULT then return false end
+    local run, R = NS.Race.Current(), NS.Results
+    if not (run and R and type(R.ConfirmDelete) == "function") then return false end
+    return R.ConfirmDelete(run.id, markDeleting)
 end
 
 function Act.share()

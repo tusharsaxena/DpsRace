@@ -49,9 +49,9 @@ local function loadoutLines(run, lines)
         lines[#lines + 1] = { L["Gear and talents: not recorded"], 0.62, 0.62, 0.68 }
         return
     end
-    local _, talents = NS.Loadouts.Of(run)
+    local _, talents = NS.ResultsSource.LoadoutOf(run)
     if talents then lines[#lines + 1] = L["Talents: %s"]:format(NS.ResultsLoadout.TalentsText(talents)) end
-    local changed = NS.Loadouts.GearChanged(run)
+    local changed = NS.ResultsSource.GearChanged(run)
     if changed then lines[#lines + 1] = { L["Gear changed since the previous run"], C().amber[1], C().amber[2], C().amber[3] } end
 end
 
@@ -193,12 +193,12 @@ local ABOUT = {
     char = "Who raced. Hover a name for the realm, race and where.",
     ilvl = "Equipped item level when the race was armed.",
     target = "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other.",
-    time = "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length.",
-    length = "The race length the best was set at.",
+    time = "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows when combat ended instead. Each preset length has its own color.",
+    length = "The race length the best was set at. Each preset length has its own color.",
     damage = "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest.",
     dps = "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest.",
     vsMax = "How far this run's DPS is from the highest complete run in view on the same target type.",
-    status = "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise.",
+    status = "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
     note = "The note you kept with the run. Click to sort.",
 }
@@ -250,7 +250,7 @@ end
 
 function DETAIL.delta(run)
     if run.status ~= "complete" then return nil end
-    local pct, isNew = NS.Bests.Delta(run)
+    local pct, isNew = NS.ResultsSource.Delta(run)
     if not pct and not isNew then return nil end
     local lines = { isNew and L["New best"] or L["%+.1f%% vs best"]:format(pct) }
     lines[#lines + 1] = L["Against the best DPS before this run for the same spec, target type and race length."]
@@ -274,8 +274,8 @@ function DETAIL.breakdown()
 end
 
 function DETAIL.chart()
-    return { L["Damage over the race"],
-        L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."],
+    return { L["Damage profile"],
+        L["Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
 end
 
@@ -455,7 +455,7 @@ end
 -- is the client's own item tooltip, with `changed`'s line after it while the compare is on.
 
 local function loadoutOf(run)
-    return NS.Loadouts.Of(run)
+    return NS.ResultsSource.LoadoutOf(run)
 end
 
 local function otherWho(other)
@@ -495,8 +495,8 @@ function LOADOUT.talents(run)
 end
 
 function LOADOUT.view()
-    return { L["View"], L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."],
-             dimLine(L["Only you see it: nothing is sent to a channel."]) }
+    return { L["View"], L["Open the run's talent tree, read-only, and post its link to your chat window to open again later."],
+             dimLine(L["Only you see the link: nothing is sent to a channel."]) }
 end
 
 function LOADOUT.viewOff(run)

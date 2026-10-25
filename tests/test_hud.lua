@@ -444,8 +444,11 @@ end)
 -- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
 -- The 30px title bar + 10, the 20px footer + 8; 18px rows on a 20px pitch; 20px buttons.
 local CHROME, PITCH = 40 + 28, 20
-local RUNNING_TOP, RUNNING_BOTTOM = 106, 42
-local RESULT_TOP, RESULT_BOTTOM = 104, 28
+-- The rows' top: the KPIs (and the chips), then the Spell breakdown heading (Round C): its 22px line
+-- and the 6px that, with the GAP above, makes the shared 14px of clear space.
+local BREAKDOWN = 6 + 22
+local RUNNING_TOP, RUNNING_BOTTOM = 106 + BREAKDOWN, 42
+local RESULT_TOP, RESULT_BOTTOM = 104 + BREAKDOWN, 28
 
 local function fits(height, top, bottom)
     return math.floor((height - CHROME - top - bottom + 2) / PITCH)
@@ -507,7 +510,8 @@ end)
 
 test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 520, "screen 04's rows plus the chart and pace bar (#2, #3)")
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 560,
+        "screen 04's rows plus the headings, the chart and the pace bar (#2, #3, Round C)")
     assertEqual(f.NS.db.profile.live.rows, 8)
     -- A best on the board, so the pace bar shows too: the tallest default stack.
     local best = f.NS.Recorder.NewRun(30)
@@ -515,7 +519,7 @@ test("hud: the default window size shows every default live row under the chart 
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 520)
+    assertEqual(f.Hud.Diagnose().height, 560)
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
@@ -523,7 +527,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x520")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x560")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
@@ -571,48 +575,202 @@ test("hud: the minimum height holds the idle body's whole stack", function()
     assertEqual(States.IDLE_ARM_Y, 162)
     assertEqual(States.ARM_HEIGHT, 24)
     assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 162 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
-    assertEqual(f.Hud.MIN_HEIGHT, 296, "the minimum height, re-derived for the compact rows and buttons")
+    assertEqual(f.Hud.MIN_HEIGHT, 354, "the minimum height, re-derived for the headings (Round C)")
     assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
     f.NS.db.profile.windows.hud.height = 200
     f.Hud.Show()
     assertEqual(f.Hud.Diagnose().height, f.Hud.MIN_HEIGHT, "a stored height below the minimum is used as is")
 end)
 
-test("hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width", function()
-    local f = hud{ mutate = function(m)
+-- A HUD whose frames record their SetSize and SetPoint calls (the widget recorder keeps neither size).
+local function sizedHud()
+    return hud{ mutate = function(m)
         local base = m.CreateFrame
         m.CreateFrame = function(...)
             local fr = base(...)
+            rawset(fr, "SetSize", function(self, w, h) self.__size = { w, h } end)
             rawset(fr, "ClearAllPoints", function(self) self.__pts = {} end)
-            rawset(fr, "SetPoint", function(self, point, rel, relPoint)
+            rawset(fr, "SetPoint", function(self, point, rel, relPoint, x, y)
                 self.__pts = self.__pts or {}
-                self.__pts[#self.__pts + 1] = { point, rel, relPoint }
+                self.__pts[#self.__pts + 1] = { point, rel, relPoint, x, y }
             end)
             return fr
         end
     end }
-    resolved(f)
-    local w = body(f).w
-    local function anchoredTo(b, point, rel, relPoint)
-        for _, p in ipairs(b.__pts or {}) do
-            if p[1] == point and p[2] == rel and p[3] == relPoint then return true end
-        end
-        return false
-    end
-    assertTrue(anchoredTo(w.details, "BOTTOMRIGHT", w.share, "BOTTOMLEFT"), "DETAILS is not left of SHARE")
-    assertTrue(anchoredTo(w.again, "BOTTOMRIGHT", w.details, "BOTTOMLEFT"), "RACE AGAIN can run under DETAILS")
+end
+
+test("hud: the equal buttons' width is whole pixels from the body's width and the gap", function()
+    local f = hud()
+    local States = f.NS.HudStates
+    assertEqual(States.ROW_GAP, 4)
+    local each, x0 = States.RowWidths(236, 4)
+    assertEqual(each, 56, "four at the minimum width: room for Race Again")
+    assertEqual(x0, 0)
+    each, x0 = States.RowWidths(239, 4)
+    assertEqual(each, 56)
+    assertEqual(x0, 1, "the odd pixels split either side")
+    each = States.RowWidths(236, 2)
+    assertEqual(each, 116)
 end)
 
-test("hud: Discard run on the waiting body throws the attempt away", function()
+test("hud: the result card's four buttons sit in one row, the same width each, at any width", function()
+    local f = sizedHud()
+    f.Hud.Show()
+    resolved(f)
+    local b = body(f)
+    local w = b.w
+    local order = { w.again, w.details, w.share, w.delete }
+    assertEqual(w.delete.label.__text, "Delete")
+    for _, width in ipairs({ 236, 300 }) do
+        b:Layout(width, 400)
+        local each = f.NS.HudStates.RowWidths(width, 4)
+        local lastX
+        for i, btn in ipairs(order) do
+            assertEqual(btn.__size[1], each, "button " .. i .. " is not the row's width at " .. width)
+            local p = btn.__pts[1]
+            assertEqual(p[1], "BOTTOMLEFT")
+            if lastX then assertEqual(p[4] - lastX, each + 4, "the gap between buttons " .. (i - 1) .. " and " .. i) end
+            lastX = p[4]
+        end
+        assertTrue(lastX + each <= width, "the row overruns the card")
+    end
+end)
+
+test("hud: Cancel on the waiting body throws the attempt away", function()
     local f = hud()
     running(f, 30)
     local id = f.Race.Current().id
     f:to(140)
     tick(f)
     assertEqual(current(f), "waiting")
-    body(f).w.discard:__fire("OnClick")
+    assertEqual(body(f).w.cancel.label.__text, "Cancel")
+    body(f).w.cancel:__fire("OnClick")
     assertEqual(f.Race.State(), "idle")
     assertEqual(f:stored(id), nil)
+end)
+
+test("hud: the Stop! and waiting bodies carry Stop Now and Cancel, the same width, with tooltips", function()
+    local f = sizedHud()
+    f.Hud.Show()
+    running(f, 30)
+    f:to(129.9)
+    f:update(25)
+    f:to(130)
+    assertEqual(current(f), "stop")
+    for _, key in ipairs({ "stop", "waiting" }) do
+        if key == "waiting" then
+            f:advance(3)
+            tick(f)
+        end
+        assertEqual(current(f), key)
+        local b = body(f)
+        b:Layout(236, 300)
+        assertEqual(b.w.stopNow.label.__text, "Stop Now")
+        assertEqual(b.w.cancel.label.__text, "Cancel")
+        assertEqual(b.w.stopNow.__size[1], b.w.cancel.__size[1], key .. ": not the same width")
+        assertEqual(b.w.stopNow.__size[1], 116)
+        assertTrue(b.w.stopNow.tip ~= nil and b.w.cancel.tip ~= nil, key .. ": a button without its tooltip")
+        assertTrue(b.w.stopNow:IsEnabled())
+    end
+end)
+
+test("hud: Stop Now out of combat takes the result at once, without the quiet", function()
+    local f = hud()
+    f.Hud.Show()
+    running(f, 30)
+    f:to(130)
+    f:combatEnd()
+    f:advance(0.5)
+    assertEqual(f.Race.State(), "stopping", "the quiet still counting")
+    body(f).w.stopNow:__fire("OnClick")
+    assertEqual(f.Race.State(), "result")
+    assertEqual(current(f), "result")
+    assertEqual(f.Race.Current().status, "complete")
+end)
+
+test("hud: Stop Now in combat reads at the combat end and says so", function()
+    local f = hud()
+    f.Hud.Show()
+    running(f, 30)
+    f:to(140)
+    tick(f)
+    assertEqual(current(f), "waiting")
+    body(f).w.stopNow:__fire("OnClick")
+    assertEqual(f.Race.State(), "stopping", "nothing can be read in combat")
+    assertEqual(body(f).w.title.__text, "Reading when combat ends")
+    assertFalse(body(f).w.stopNow:IsEnabled(), "pressed once is enough")
+    f:combatEnd()
+    assertEqual(f.Race.State(), "result", "read on the regen edge, no quiet after it")
+end)
+
+test("hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    f.Hud.Show()
+    local run = resolved(f)
+    local b = body(f)
+    assertTrue(b.w.delete:IsEnabled())
+    b.w.delete:__fire("OnClick")
+    assertEqual(#popups, 1)
+    assertEqual(popups[1].which, "DPSRACE_DELETE_RUN", "the Results window's own confirmation")
+    assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "nothing is deleted before the confirmation")
+    assertEqual(current(f), "result")
+    f.M.StaticPopupDialogs.DPSRACE_DELETE_RUN.OnAccept(nil, popups[1].data)
+    assertEqual(f.NS.Recorder.Get(run.id), nil, "deleted from the store")
+    assertEqual(f.Race.State(), "idle")
+    assertEqual(current(f), "idle", "back on the Arm Race screen")
+    assertTrue(f.Hud.IsShown(), "the window stays open")
+    local picked
+    for _, p in ipairs(body(f).w.presets) do if p.selected then picked = p.length end end
+    assertEqual(picked, 30, "the same length is picked")
+end)
+
+test("hud: a result card whose run is deleted in the Results window is dismissed", function()
+    local f = hud()
+    f.Hud.Show()
+    local run = resolved(f)
+    f.NS.Recorder.Delete(run.id)
+    assertEqual(f.Race.State(), "idle")
+    -- Another run deleted leaves the card alone.
+    local g = hud()
+    g.Hud.Show()
+    resolved(g)
+    g.NS.Recorder.Delete("no-such-run")
+    g.NS.SendBus(g.NS.MSG.RUNS_CHANGED)
+    assertEqual(g.Race.State(), "result")
+end)
+
+test("hud: a canceled card Delete leaves a later Results-window delete of that run an outside one", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    -- onArm (the default): the arm opens the window, so the race going back to idle closes it.
+    local run = resolved(f)
+    assertTrue(f.Hud.IsShown())
+    body(f).w.delete:__fire("OnClick")
+    assertEqual(#popups, 1)
+    -- The popup is canceled (its Accept never runs); the run is then deleted in the Results window.
+    f.NS.Results.DeleteRun(run.id)
+    assertEqual(f.NS.Recorder.Get(run.id), nil)
+    assertEqual(f.Race.State(), "idle", "the card is dismissed")
+    assertFalse(f.Hud.IsShown(), "dismissed as any outside delete: the onArm HUD closes with the race")
+end)
+
+test("hud: the card's Delete accepted after the card has gone leaves no mark behind", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    f.Hud.Show()
+    local first = resolved(f)
+    body(f).w.delete:__fire("OnClick")
+    f.Race.Cancel()
+    f.M.StaticPopupDialogs.DPSRACE_DELETE_RUN.OnAccept(nil, popups[1].data)
+    assertEqual(f.NS.Recorder.Get(first.id), nil, "the accepted delete still deletes")
+    assertEqual(f.Race.State(), "idle")
 end)
 
 test("hud: result body shows % and the best delta chip", function()
@@ -1223,7 +1381,8 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(p[5], -58)
     assertEqual(body(f).kpiBottom, 58 + 46 + 8)
     -- The chart sits between the KPIs and the rows, at its configured height (no best: no pace bar).
-    assertEqual(body(f).rowsTop, 58 + 46 + 8 + f.NS.HudChart.BlockHeight(80) + 8)
+    -- Damage profile (6 + 22), the 80px plot, its 2 + 12 time labels and 8, then Spell breakdown.
+    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
 end)
 

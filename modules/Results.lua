@@ -20,7 +20,8 @@ local _, NS = ...
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
 -- tab (a hidden one redraws in full on its next show), SETTINGS_CHANGED redraws the footer. No game
--- event, no timer, no OnUpdate.
+-- event and no OnUpdate; the one timer is the one-frame look after a close-stack close (the talent
+-- tree's panel open, below).
 -- The receiver is a target of this module's own, so the latch drops it at stand-down.
 
 local Results = { wanted = false }
@@ -29,12 +30,13 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 870 px with the Note column:
--- 728 px of fixed columns, the Character column's 60 and the gaps, pads and scrollbar) and its
--- two-row filter bar; expanded adds the 360 px detail and lays the filter bar in one row.
+-- Each view's minimum: collapsed holds the Runs list's columns (about 968 px with the Note column
+-- and the boxed Target, Time and Status chips: 826 px of fixed columns, the Character column's 60
+-- and the gaps, pads and scrollbar) and its two-row filter bar; expanded adds the 360 px detail and
+-- lays the filter bar in one row.
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1240 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 880 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1328 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 968 },
 }
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
@@ -102,12 +104,17 @@ end
 
 -- ── the parts ───────────────────────────────────────────────────────────────────────────────────
 
+-- Every run the window draws comes through modules/Results_Source.lua: the store, or the sample
+-- history while test mode or a sim is on.
+local Source = NS.ResultsSource
+
 local function run(id)
-    return id and NS.Recorder.Get(id) or nil
+    return id and Source.Get(id) or nil
 end
 
+-- A sample run is never shared: its numbers are made up.
 local function canShare()
-    return NS.Share ~= nil and type(NS.Share.Prompt) == "function"
+    return NS.Share ~= nil and type(NS.Share.Prompt) == "function" and not Source.IsMock()
 end
 
 local function share(r)
@@ -134,6 +141,8 @@ local function buildTab(name)
             -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
             count = function(text) ui.runsCount = text end,
         })
+        -- Built while the sample history is shown: it opens on the sample's view.
+        if Source.IsMock() then pane:SampleView(true) end
     else
         pane = NS.ResultsBests.Build(ui.body, {
             open = function(r) Results.ShowRun(r.id) end, share = share,
@@ -324,7 +333,7 @@ function Results.ToggleView()
 end
 
 local function bodySize()
-    return ui.width - 2, ui.height - HEADER_H - TAB_H - FOOTER_H - 2
+    return ui.width - 2, ui.height - HEADER_H - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
 end
 
 local function layoutRuns(pane, width, height)
@@ -404,6 +413,36 @@ local function windowShown()
     return ui ~= nil and ui.frame:IsShown() == true
 end
 
+-- ── the sample marker (test mode, a sim) ────────────────────────────────────────────────────────
+-- While the window shows the sample history it says so, as the HUD does in test mode: the library's
+-- strip under the tab strip, the body moved down by its height. With no Widgets library there is no
+-- strip, and the title carries the word instead; never both.
+
+local function ensureStrip()
+    if ui.stripTried then return ui.strip end
+    ui.stripTried = true
+    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"])
+    if strip then
+        strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1))
+        strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + TAB_H + 1))
+    end
+    ui.strip = strip
+    return strip
+end
+
+local function applySampleMarker()
+    local on = Source.IsMock()
+    local strip = on and ensureStrip() or ui.strip
+    if strip then strip:SetShown(on) end
+    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    if ui.drop ~= drop then
+        ui.drop = drop
+        ui.body:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1 + drop))
+    end
+    local marked = on and not strip
+    ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
+end
+
 local function hideWindow()
     if windowShown() then
         hiding = true
@@ -413,12 +452,41 @@ local function hideWindow()
     NS.CloseMenu()
 end
 
+-- THE TALENT TREE OPENS OVER IT (the owner's call, 2026-10-25). Blizzard shows its talent frame
+-- (`PlayerSpellsFrame`: the talentbuild link the detail's View posts to chat, or the N key) as a
+-- "center" UI panel when no other panel is up, and FramePositionDelegate:ShowUIPanel then runs
+-- CloseWindows, whose CloseSpecialWindows hides every UISpecialFrames entry: this window among
+-- them, just before the tree shows. The frame stays in UISpecialFrames (standalone-windows: Escape
+-- and the close stack), so the close is answered rather than prevented: a close-stack close made
+-- while the tree was down looks again on the next frame, and a tree up by then is what closed it,
+-- so the window comes back. Escape with the tree up closes both (the tree was up at the close), and
+-- the window's own close control never gets here (it hides with `hiding` set). The one read of a
+-- Blizzard frame is IsShown; nothing is hooked, shown or hidden on Blizzard's side.
+local function talentTreeShown()
+    local f = PlayerSpellsFrame
+    return type(f) == "table" and type(f.IsShown) == "function" and f:IsShown() == true
+end
+
+local function reopenUnderTree()
+    if Results.wanted or not talentTreeShown() then return end
+    debug("closed by the talent tree's panel open; reopened")
+    Results.Show()
+end
+
+-- The player closed the window: a preview that opened it no longer owns it (it stays the player's).
+local function closedByPlayer()
+    local P = NS.Preview
+    if P and type(P.ResultsClosed) == "function" then P.ResultsClosed() end
+end
+
 -- The frame went away by Escape (UISpecialFrames): the player closed it. A frame still shown in its
 -- own right was hidden with its parent (Alt-Z), which is not the player closing it.
 function onHide()
     NS.CloseMenu()
     if hiding or (ui and ui.frame:IsShown()) then return end
     Results.wanted = false
+    closedByPlayer()
+    if not talentTreeShown() and C_Timer and C_Timer.After then C_Timer.After(0, reopenUnderTree) end
 end
 
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
@@ -435,6 +503,7 @@ function Results.Refresh()
     local scale = tonumber(NS.GetSetting("scale"))
     if scale then ui.frame:SetScale(scale) end
     if not windowShown() then ui.frame:Show() end
+    applySampleMarker()
     renderTab()
 end
 
@@ -445,6 +514,7 @@ end
 
 function Results.Hide()
     Results.wanted = false
+    closedByPlayer()
     Results.Refresh()
 end
 
@@ -557,29 +627,57 @@ StaticPopupDialogs["DPSRACE_DELETE_RUN"] = {
     timeout      = 0,
     whileDead    = true,
     hideOnEscape = true,
-    OnAccept     = function(_, data) Results.DeleteRun(data) end,
+    OnAccept     = function(_, data)
+        if data.onAccept then data.onAccept(data.id) end
+        Results.DeleteRun(data.id)
+    end,
 }
 
---- Ask before deleting a run (spec §6.2); the popup's Accept deletes it.
-function Results.ConfirmDelete(id)
+--- Ask before deleting a run (spec §6.2); the popup's Accept deletes it. `onAccept(id)`, when given,
+--- runs on that Accept just before the delete, so a caller knows the delete is its own (the HUD
+--- result card's Delete); a Cancel or Escape runs nothing.
+--- @param id string
+--- @param onAccept function|nil
+--- @return boolean asked
+function Results.ConfirmDelete(id, onAccept)
     if not run(id) then return false end
-    StaticPopup_Show("DPSRACE_DELETE_RUN", nil, nil, id)
+    StaticPopup_Show("DPSRACE_DELETE_RUN", nil, nil, { id = id, onAccept = onAccept })
     return true
 end
 
---- Delete a run from the store (Recorder.Delete fires RUNS_CHANGED, which redraws the window).
+--- Delete a run from the store (Recorder.Delete fires RUNS_CHANGED, which redraws the window), or a
+--- sample run from the sample history (the source redraws it).
 function Results.DeleteRun(id)
     if selected == id then selected, detailOpen = nil, false end
-    return NS.Recorder.Delete(id)
+    return Source.Delete(id)
 end
 
 --- Store a run's note (trimmed, at most 200 characters) and answer what was stored.
 function Results.SetNote(id, text)
     local r = run(id)
     if not r then return nil end
-    -- Through Recorder.SetNote, not Save: RUN_SAVED would prune the store for a typed note.
-    NS.Recorder.SetNote(id, NS.ResultsDetail.ClampNote(text))
+    -- Through Recorder.SetNote (the source's, for a stored run), not Save: RUN_SAVED would prune the
+    -- store for a typed note.
+    Source.SetNote(id, NS.ResultsDetail.ClampNote(text))
     return r.note
+end
+
+--- The source changed (modules/Results_Source.lua): `swapped` between the store and the sample
+--- history, which drops the selection and the compare's pick (neither is in the other) and moves the
+--- Runs view to the sample's or back to the player's; else the sample changed (a note, a delete, the
+--- sim's run). A hidden window redraws in full on its next show.
+function Results.OnSourceChanged(swapped)
+    if swapped then
+        selected, detailOpen = nil, false
+        if ui then
+            ui.detail:SetPick(nil)
+            if ui.panes.runs then ui.panes.runs:SampleView(Source.IsMock()) end
+        end
+    end
+    if windowShown() then
+        applySampleMarker()
+        renderTab()
+    end
 end
 
 --- The lifecycle's stand-down: the window hides (it decides not to show while stood down).

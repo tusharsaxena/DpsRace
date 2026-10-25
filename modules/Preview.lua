@@ -1,164 +1,70 @@
 local _, NS = ...
--- modules/Preview.lua — test mode (spec §6.5, preview-mode): a scripted 30s race on the HUD with
--- made-up numbers, Armed, Running, Stop!, Waiting and then Result, so the HUD can be placed and sized
--- without a dummy. It draws through the HUD's own bodies (NS.Hud.Render), the same render path a real
--- race takes; the HUD lays the test-mode strip over it while it is on.
+-- modules/Preview.lua — test mode and the sim's shared shell (spec §6.5, preview-mode; B5, the owner's
+-- call, 2026-10-25). Two modes, one switch:
 --
--- Session-only and on until turned off (the Master controls' Test mode row, `/dr test`, the launcher).
--- It ENDS on combat (core/DpsRace.lua's PLAYER_REGEN_DISABLED), on arming a real race, on its own
--- switch, on Reset all settings (the row's default), on closing the HUD or its sample Cancel
--- (modules/Hud.lua's acts, which never touch the real race), and silently on the stand-down. A start is refused
--- in combat and while a real race is armed, running or waiting for its result. It never touches the
--- race engine and never writes a run: the sample run lives only in this file.
+--   test  `/dr test [armed|running|result]`, the Master controls' Test mode row and the launcher's
+--         entry: STATIC sample data in every view. The HUD holds one body still (the running body
+--         by default: its clock, live figures, chart, pace bar and spells) and the Results window
+--         opens on a made-up run history (modules/MockRuns.lua) so the Runs list, the Bests tab and
+--         the detail (compare, chart, gear and talents) can be seen without a real history.
+--   sim   `/dr sim [scenario]`: a whole sample race played through the HUD's bodies (armed, running,
+--         Stop!, waiting, the result card), then the Results window on the sim's run beside the same
+--         history (modules/Sim.lua holds the scenarios and the script).
+--
+-- Both draw through the windows' own render paths: the HUD's bodies through NS.Hud.Render, the
+-- Results window through its source seam (modules/Results_Source.lua), routed to the sample history
+-- while either is on and back to the store when it ends; each window lays its test-mode strip over
+-- itself meanwhile.
+--
+-- Session-only and on until turned off. It ENDS on combat (core/DpsRace.lua's PLAYER_REGEN_DISABLED),
+-- on arming a real race, on its own switch, on Reset all settings (the row's default), on closing the
+-- HUD or its sample Cancel (modules/Hud.lua's acts, which never touch the real race), and silently on
+-- the stand-down. A start is refused in combat and while a real race is armed, running or waiting for
+-- its result. It never touches the race engine and never writes a run, a note or a view: the sample
+-- lives only in memory.
 
 local Preview = { active = false }
 NS.Preview = Preview
 
 local L = NS.L
 
--- The script: each phase's body and how long it holds. The result card holds until test mode ends.
-Preview.LENGTH = 30
-Preview.SCRIPT = {
-    { key = "armed",   secs = 3 },
-    { key = "running", secs = Preview.LENGTH },
-    { key = "stop",    secs = 3 },
-    { key = "waiting", secs = 4 },
-    { key = "result" },
-}
--- How often the script redraws the clock and the live figures (the HUD's own clock runs at 20 Hz; a
--- preview needs only to look alive).
-Preview.TICK = 0.1
+-- The HUD bodies test mode can hold still, and the one it opens on.
+Preview.STATES = { "armed", "running", "result" }
+Preview.DEFAULT_STATE = "running"
+-- The static running body's moment: this far into the sample race (clear of the final countdown).
+Preview.STILL_AT = 18
 
--- The sample (a Destruction warlock on a single-target dummy): each spell's share of the damage, in
--- the order Blizzard would list it. Names and icons come from C_Spell, as for a real run.
-local SPELLS = {
-    { id = 5740, share = 0.276 },     -- Rain of Fire
-    { id = 116858, share = 0.185 },   -- Chaos Bolt
-    { id = 445468, share = 0.184 },   -- Wither
-    { id = 29722, share = 0.161 },    -- Incinerate
-    { id = 17962, share = 0.104 },    -- Conflagrate
-    { id = 17877, share = 0.052 },    -- Shadowburn
-    { id = 1122, share = 0.038 },     -- Summon Infernal
-}
-local DPS = 147600
-local TAIL = 3.1
-
-local ticker, phase, phaseAt, opened, run
+local mode            -- "test" | "sim" while active
+local state           -- the static body test mode holds
+local queued          -- the next start's { mode, state | scenario }, set by the slash verbs
+local opened          -- the HUD was opened by the preview (closed again at the end)
+local resultsOpened   -- the Results window was opened by the preview (closed again at the end)
+local dataset         -- the sample history the Results window reads meanwhile
+local sample          -- the static HUD's sample race
 
 local function debug(fmt, ...) NS.Debug("Test", fmt, ...) end
 
---- The sample run: the player's own name and spec, a made-up score. Built fresh on every start.
-local function sampleRun()
-    local char = NS.Recorder.SnapshotPlayer()
-    local damage = DPS * Preview.LENGTH
-    local spells = {}
-    for i, s in ipairs(SPELLS) do
-        spells[i] = { id = s.id, dmg = math.floor(damage * s.share), dps = DPS * s.share }
+local function isState(word)
+    for _, s in ipairs(Preview.STATES) do
+        if s == word then return true end
     end
-    return {
-        id = "preview", status = "complete", preview = true,
-        race = { length = Preview.LENGTH, grace = 1.0, restartGap = 6 },
-        char = char,
-        target = { name = L["Training Dummy"], category = "single", count = 1 },
-        result = { damage = damage, dps = DPS, meterDps = DPS * 0.92, tail = TAIL, combatEnd = TAIL + 2 },
-        flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false },
-        spells = spells,
-        note = "",
-    }
+    return false
 end
-
---- The live figures `elapsed` seconds into the race: plain numbers, in the shape Meter.ReadLive answers.
-local function liveAt(elapsed)
-    local total = math.floor(DPS * elapsed)
-    local live = { total = total, dps = DPS, maxAmount = math.floor(total * SPELLS[1].share), spells = {} }
-    for i, s in ipairs(SPELLS) do
-        live.spells[i] = { spellID = s.id, total = math.floor(total * s.share), dps = DPS * s.share }
-    end
-    return live
-end
-
--- The sample's chart and pace bar (#2, #3): its damage at each whole second so far, against a made-up
--- best a little under it, scaled as a race with a best is (plain numbers; a real race's are secret).
--- The result card's is scaled to the sample's final damage.
-local SAMPLE_BEST = { race = { length = Preview.LENGTH }, result = { damage = DPS * Preview.LENGTH * 0.96 } }
-
-local function sampleChart(elapsed, final)
-    local values = {}
-    for i = 1, math.floor(elapsed) do values[i] = DPS * i end
-    local chart = { count = NS.Slices.Count(Preview.LENGTH), values = values, length = Preview.LENGTH }
-    if final then
-        chart.max = DPS * Preview.LENGTH
-        return chart
-    end
-    chart.best = SAMPLE_BEST.result.damage
-    chart.max = chart.best * NS.HudChart.HEADROOM
-    chart.note = L["vs best pace"]
-    return chart
-end
-
--- Each body's figures, `t` seconds into its phase.
-local FIGURES = {
-    armed = function() return {} end,
-    running = function(t)
-        local elapsed = math.min(t, Preview.LENGTH)
-        return { timeLeft = Preview.LENGTH - elapsed, elapsed = elapsed, live = liveAt(elapsed),
-                 chart = sampleChart(elapsed), pace = { max = NS.HudChart.PaceMax(SAMPLE_BEST, elapsed) } }
-    end,
-    stop = function(t)
-        return { tail = math.min(t, TAIL), sinceBuzzer = t, inCombat = true, grace = 1.0,
-                 lateCasts = t >= 1.4 and run.flags.lateCasts or {} }
-    end,
-    waiting = function(t)
-        local since = Preview.SCRIPT[3].secs + t
-        return { tail = TAIL, sinceBuzzer = since, inCombat = true,
-                  hint = L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] }
-    end,
-    result = function() return { isNew = true, delta = 2.4, icons = true, chart = sampleChart(Preview.LENGTH, true) } end,
-}
-
--- The center countdown (modules/Countdown.lua) shows in the sample race's last seconds, silently, and
--- goes with its buzzer and with test mode.
-local function countdown(key, figures)
-    local C = NS.Countdown
-    if not C then return end
-    if key == "running" then C.Preview(figures.timeLeft) else C.EndPreview() end
-end
-
-local function draw(now)
-    local step = Preview.SCRIPT[phase]
-    local figures = FIGURES[step.key](now - phaseAt)
-    NS.Hud.Render(step.key, run, figures)
-    countdown(step.key, figures)
-end
-
-local function cancelTicker()
-    if ticker then ticker:Cancel() end
-    ticker = nil
-end
-
---- One beat of the script: move on when the phase is over, then redraw.
-local function beat()
-    if not Preview.active then return cancelTicker() end
-    local now = GetTime()
-    local step = Preview.SCRIPT[phase]
-    while step.secs and now - phaseAt >= step.secs do
-        phaseAt = phaseAt + step.secs
-        phase = phase + 1
-        step = Preview.SCRIPT[phase]
-    end
-    draw(now)
-    -- The result card holds still: nothing left to redraw.
-    if not step.secs then cancelTicker() end
-end
-Preview.Beat = beat
+Preview.IsState = isState
 
 -- A real race on screen: armed, running or waiting for its result (spec §6.5).
 local function raceOn()
-    local S, state = NS.Race.STATE, NS.Race.State()
-    return state == S.ARMED or state == S.RUNNING or state == S.STOPPING
+    local S, cur = NS.Race.STATE, NS.Race.State()
+    return cur == S.ARMED or cur == S.RUNNING or cur == S.STOPPING
 end
 
 function Preview.IsActive() return Preview.active end
+
+--- The mode on: "test", "sim", or nil when off.
+function Preview.Mode() return Preview.active and mode or nil end
+
+--- The sample history the Results window reads while the preview is on (nil when off).
+function Preview.Dataset() return Preview.active and dataset or nil end
 
 -- The Master controls' Test mode checkbox reads Preview.IsActive() only when a refresher runs: every
 -- start and stop repaints an open panel in place (options-ui-§11, §15), whoever turned it.
@@ -167,46 +73,109 @@ local function repaintPanel()
     if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
 end
 
---- Turn test mode on. Refused (one line) in combat and during a real race; silent while stood down,
---- where the caller's own hold-aware refusal has already spoken.
---- @return boolean started
-function Preview.Start()
-    if NS.IsStoodDown() then return false end
-    if UnitAffectingCombat("player") then
-        NS.Print(L["Test mode is not available in combat."])
-        return false
-    end
-    if raceOn() then
-        NS.Print(L["Test mode is not available during a race."])
-        return false
-    end
-    cancelTicker()
-    Preview.active = true
-    run = sampleRun()
-    phase, phaseAt = 1, GetTime()
-    -- Shown for the preview; closed again at the end only if the player had not opened it.
-    -- Opened as the addon's own (Hud.AutoShow): a race that ends test mode inherits it, and onArm
-    -- closes it with that race; the stand-down drops it (Hud.Suspend).
-    opened = not NS.Hud.wanted
-    if opened then NS.Hud.AutoShow() end
-    draw(phaseAt)
-    ticker = C_Timer.NewTicker(Preview.TICK, beat)
-    repaintPanel()
-    debug("test mode on")
+--- Draw `key`'s body with `run` and `figures` on the HUD (the sim's and the static test's one path).
+--- The center countdown shows in the sim's last seconds, silently, and goes with its buzzer.
+function Preview.Draw(key, run, figures)
+    NS.Hud.Render(key, run, figures)
+    local C = NS.Countdown
+    if not C then return end
+    if key == "running" and mode == "sim" then C.Preview(figures.timeLeft) else C.EndPreview() end
+end
+
+--- The Results window on the sample history, opened if it was not (and closed again at the end).
+--- `id` opens that run's detail.
+function Preview.OpenResults(id)
+    local R = NS.Results
+    if not R then return end
+    if not resultsOpened then resultsOpened = not R.wanted end
+    if id then R.ShowRun(id) else R.Show() end
+end
+
+--- The Results window was closed (Results.Hide or Escape): a later open is the player's own, so the
+--- end of the preview no longer closes it. A sample open after this one asks again.
+function Preview.ResultsClosed()
+    resultsOpened = false
+end
+
+-- ── test mode: the static views ────────────────────────────────────────────────────────────────
+
+-- The static HUD: the sample race beating the history's best on its board (the most a body draws:
+-- the chart against the best's pace, the pace bar and the delta chip).
+local function drawStill()
+    local t = state == "running" and Preview.STILL_AT or 0
+    Preview.Draw(state, sample.run, NS.MockRuns.Figures(sample, state, t))
+end
+
+local function startTest(want)
+    state = isState(want) and want or (isState(state) and state or Preview.DEFAULT_STATE)
+    sample = NS.Sim.Sample("newbest", dataset.runs)
+    drawStill()
+    Preview.OpenResults()
+end
+
+--- Hold `word`'s body still on the HUD (test mode only).
+--- @return boolean switched
+function Preview.SetState(word)
+    if not (Preview.active and mode == "test" and isState(word)) then return false end
+    state = word
+    drawStill()
     return true
 end
 
---- Turn test mode off. `reason` "combat" says so once; "race" (a real race was armed) keeps the HUD
---- open for that race; any other stop is the player's own act and stays quiet.
---- @param reason string|nil
---- @return boolean stopped
-function Preview.Stop(reason)
-    if not Preview.active then return false end
-    Preview.active = false
-    cancelTicker()
-    run = nil
+-- ── the switch ─────────────────────────────────────────────────────────────────────────────────
+
+--- What the next Start runs: { mode = "test", state = word } or { mode = "sim", scenario = key }.
+--- The slash verbs queue it, then turn the Test mode row on through the write seam (or call Start
+--- straight when the preview is already on and the row cannot change).
+function Preview.Queue(opts)
+    queued = type(opts) == "table" and opts or nil
+end
+
+local function refuse(line)
+    NS.Print(line)
+    return false
+end
+
+local function stopSim()
+    if NS.Sim then NS.Sim.Cancel() end
     if NS.Countdown then NS.Countdown.EndPreview() end
-    if reason == "combat" then NS.SayTestModeEnded() end
+end
+
+--- Turn the preview on, or switch an active one to the queued mode in place. Refused (one line) in
+--- combat and during a real race; silent while stood down, where the caller's own hold-aware refusal
+--- has already spoken.
+--- @param opts table|nil  as Queue; nil takes the queued start, else test mode's default
+--- @return boolean started
+function Preview.Start(opts)
+    opts = opts or queued or { mode = "test" }
+    queued = nil
+    if NS.IsStoodDown() then return false end
+    if UnitAffectingCombat("player") then return refuse(L["Test mode is not available in combat."]) end
+    if raceOn() then return refuse(L["Test mode is not available during a race."]) end
+    stopSim()
+    local was = Preview.active
+    Preview.active, mode = true, opts.mode == "sim" and "sim" or "test"
+    if not was then
+        -- Shown for the preview; closed again at the end only if the player had not opened it.
+        -- Opened as the addon's own (Hud.AutoShow): a race that ends test mode inherits it, and onArm
+        -- closes it with that race; the stand-down drops it (Hud.Suspend).
+        opened = not NS.Hud.wanted
+        if opened then NS.Hud.AutoShow() end
+    end
+    dataset = NS.MockRuns.Dataset()
+    NS.ResultsSource.Use(dataset)
+    if mode == "sim" then NS.Sim.Begin(opts.scenario, dataset) else startTest(opts.state) end
+    repaintPanel()
+    debug("%s on (%s)", mode, tostring(mode == "sim" and NS.Sim.Scenario() or state))
+    return true
+end
+
+-- Give the windows back: the store to the Results window, each window closed if the preview opened
+-- it. A race that ended it keeps the HUD for itself.
+local function release(reason)
+    if resultsOpened then NS.Results.Hide() end
+    resultsOpened = false
+    NS.ResultsSource.Restore()
     if opened and reason ~= "race" then
         opened = false
         NS.Hud.Hide()
@@ -214,28 +183,48 @@ function Preview.Stop(reason)
         opened = false
         NS.Hud.Refresh()
     end
+end
+
+--- Turn the preview off. `reason` "combat" says so once; "race" (a real race was armed) keeps the
+--- HUD open for that race; any other stop is the player's own act and stays quiet.
+--- @param reason string|nil
+--- @return boolean stopped
+function Preview.Stop(reason)
+    if not Preview.active then return false end
+    Preview.active = false
+    stopSim()
+    if reason == "combat" then NS.SayTestModeEnded() end
+    local was = mode
+    mode, sample, dataset = nil, nil, nil
+    release(reason)
     repaintPanel()
-    debug("test mode off (%s)", reason or "switch")
+    debug("%s off (%s)", tostring(was), reason or "switch")
     return true
 end
 
---- The stand-down ends test mode silently: the player turned the addon off, not the preview.
+--- The stand-down ends the preview silently: the player turned the addon off, not the preview. A
+--- Results window it opened is dropped (the lifecycle hides it next), so the stand-up does not bring
+--- it back.
 function Preview.Suspend()
     local was = Preview.active
     Preview.active = false
-    cancelTicker()
-    if NS.Countdown then NS.Countdown.EndPreview() end
-    run, opened = nil, false
+    stopSim()
+    if resultsOpened and NS.Results then NS.Results.wanted = false end
+    mode, sample, dataset, opened, resultsOpened = nil, nil, nil, false, false
+    NS.ResultsSource.Restore()
     if was then repaintPanel() end
 end
 
---- What test mode is doing, for the diagnostics report and the suites.
+--- What the preview is doing, for the diagnostics report and the suites.
 function Preview.Diagnose()
-    local step = Preview.active and Preview.SCRIPT[phase]
-    return { active = Preview.active, phase = step and step.key or "none", ticking = ticker ~= nil }
+    local sim = NS.Sim and NS.Sim.Diagnose() or {}
+    local phase = "none"
+    if Preview.active then phase = mode == "sim" and sim.phase or state end
+    return { active = Preview.active, mode = Preview.Mode() or "none", phase = phase,
+             scenario = Preview.active and mode == "sim" and sim.scenario or "none", ticking = sim.ticking == true }
 end
 
--- Arming a real race ends test mode (spec §6.5): the HUD then shows the race.
+-- Arming a real race ends the preview (spec §6.5): the HUD then shows the race.
 do
     local bus = NS.NewBusTarget()
     if bus then

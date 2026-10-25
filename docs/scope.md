@@ -19,13 +19,21 @@ in the spec, sections 1, 2 and 13
   run. Incomplete and lost runs are kept but never count
   toward bests (spec §5.4).
 - **A Race HUD** with one body per state, a **Results window** with history, run detail and personal
-  bests, a one-line chat share, settings, a launcher, three key bindings, slash commands, a test
-  mode and a diagnostics report (spec §6).
+  bests, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
+  diagnostics report (spec §6). The Runs list names each run's status as a boxed badge (*Spec best*
+  and *Max* followed by the board they top), colors each preset race length (the Results window
+  only), and groups by character, class and spec, target, duration, or target and duration.
+- **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
+  Results window; `/dr sim [scenario]` plays a whole sample race (arm, race, result, then Results)
+  through seven scenarios. Both draw in-memory samples and write nothing to SavedVariables.
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
   the race (at most 60), each the live total the meter showed at its boundary, scaled to the board's
   best x 1.15 with its level and its average-pace diagonal, or with no best to the live total. A pace
-  bar fills against twice the best's average damage by now. Both are visual only: no value is ever
-  compared. The result card and the Results detail draw the chart again for runs raced this session.
+  bar runs either side of the best's average damage by now, its tick in the middle (*Pace bar range*,
+  1.5 by default: ±50%). Both are visual only: no value is ever
+  compared. The result card and the Results detail draw the chart again for runs raced this session,
+  and the result card shows the pace bar again: the run's final damage against the best before it.
+  After the race the chart draws that best's average-pace diagonal too, on a scale that covers both.
 - **Compare two runs** (#7). The Results detail sets a run beside the best on its board (the
   runner-up for the best itself) or a run picked from the Runs row menu: damage, DPS, the %
   difference and every spell matched by ID.
@@ -46,6 +54,7 @@ in the spec, sections 1, 2 and 13
 | Cut damage off exactly at the buzzer | Values captured in combat stay secret after it, so the score is the session total and the tail is shown instead (spec §2). |
 | Show percentages or sort the live breakdown | Both are arithmetic on secret values (spec §6.1). Percentages appear on the result. |
 | Count targets automatically | The meter merges identical dummies into one row; the count comes from the catalog or a manual pick (spec §2). |
+| Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the usage line and an unknown word list the scenarios instead (B5.2). |
 | Use target health as a start signal | Other players hitting a shared dummy fire it before your first hit (spec §2). |
 | "Time to deal X damage", or a goal bar | A threshold crossing is a comparison on a secret value, and the meter keeps no timeline. Dropped 2026-10-23. |
 | PvP burst races (duels, events, leaderboards) | Parked until the duel probe runs ([issue #1](https://github.com/tusharsaxena/DpsRace/issues/1)). |
@@ -57,4 +66,4 @@ in the spec, sections 1, 2 and 13
 | Share runs between players | Phase 2. The run record already stores what it would need. Comparing two of your own runs side by side shipped in the Results detail (#7). |
 | Classic or any non-Retail client | Retail only: one `## Interface:` line (toc-file-§3). |
 | *Show results* or *Arm last race* on the launcher's menu | The menu is `LibKa0s-Launcher-1.0`'s fixed set (launcher-§2). Both are on the HUD, a slash verb and a key binding (spec §6.4). |
-| Settings for the Results window's filters | The filters are view state: each login starts at *All* (spec §6.2). |
+| Settings for the Results window's filters | The filters, grouping and sort are view state: the window opens on the view *Save* stored in the profile, else on the current character and spec (spec §6.2). |

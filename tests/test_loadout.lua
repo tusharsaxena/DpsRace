@@ -348,14 +348,16 @@ test("loadout: the detail draws the gear grid in the character frame's order, an
     assertTrue(lo.dress:IsShown())
     lo.dress:__fire("OnClick")
     assertEqual(#M.__dressed, 3, "every equipped item tried on")
-    -- View posts the link to the player's own chat window and opens no Blizzard frame itself (the
-    -- talent frame shown from addon code tainted the action bars: ADDON_ACTION_BLOCKED in combat).
+    -- View opens the tree through SetItemRef with the talentbuild link (the owner's call: the taint
+    -- risk is accepted) and also posts the same link to the player's own chat window.
     local printed = {}
     local realPrint = NS.Print
     NS.Print = function(msg, ...) printed[#printed + 1] = msg; return realPrint(msg, ...) end
     lo.view:__fire("OnClick")
     NS.Print = realPrint
-    assertEqual(#M.__itemRefs, 0, "View called SetItemRef: it must never open a Blizzard frame itself")
+    assertEqual(#M.__itemRefs, 1, "View opens the tree through SetItemRef")
+    assertEqual(M.__itemRefs[1][1], "talentbuild:267:80:" .. M.__talents.importString)
+    assertEqual(M.__itemRefs[1][3], "LeftButton")
     assertEqual(#printed, 1, "View posts one chat line")
     assertTrue(printed[1]:find("|Htalentbuild:267:80:" .. M.__talents.importString .. "|h", 1, true) ~= nil,
         "the line carries the clickable talentbuild link")

@@ -36,7 +36,7 @@ local DASH = "\226\128\148"
 local FILTER_H = 32         -- one row of the filter bar
 local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths
     { key = "char", width = 110 }, { key = "spec", width = 96 }, { key = "category", width = 96 },
-    { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 136 },
+    { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 164 },
 }
 local CHECKS = {
     { key = "hideFlagged", label = "Hide flagged", width = 100 },
@@ -210,11 +210,19 @@ end
 -- ── grouping (LootHistory's Group by) ──────────────────────────────────────────────────────────
 -- One entry per mode: `of(run)` answers the group's key, its header label ("Character: Lânfear")
 -- and its rank (the groups' order); `column` is the column whose header flips that order.
+-- THE HEADER'S VALUE IN ITS OWN COLOR (the owner's call, 2026-10-25): plain colored text, never a
+-- box. A character or a class and spec in the class color, a target type in its category color
+-- (Tbl.CATEGORY_COLORS), a race length in its length color (Tbl.LengthColor). The prefix ("Target:")
+-- stays the header's gold and the count its gray.
+
+--- `text` wrapped in an inline color escape of `color`.
+function Runs.Colored(text, color)
+    return ("|c%s%s|r"):format(Tbl.Hex(color), text)
+end
+
 local function charGroup(run)
     local char = run.char or {}
-    local c = Tbl.ClassColor(char.class)
-    local name = ("|cff%02x%02x%02x%s|r"):format(math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5),
-        math.floor(c[3] * 255 + 0.5), tostring(char.name or "?"))
+    local name = Runs.Colored(tostring(char.name or "?"), Tbl.ClassColor(char.class))
     return Runs.CharKey(run), L["Character: %s"]:format(name), tostring(char.name or "?"):lower()
 end
 
@@ -222,15 +230,50 @@ local function classSpecGroup(run)
     local char = run.char or {}
     local class, spec = Tbl.ClassName(char.class), Tbl.SpecInfo(char.specID, char.spec)
     local label = spec and ("%s \194\183 %s"):format(class, spec) or class
-    return tostring(char.class) .. "|" .. tostring(char.specID), L["Class & spec: %s"]:format(label), label:lower()
+    return tostring(char.class) .. "|" .. tostring(char.specID),
+        L["Class & spec: %s"]:format(Runs.Colored(label, Tbl.ClassColor(char.class))), label:lower()
 end
 
 local CATEGORY_RANK = {}
 for i, key in ipairs(NS.Dummies.CATEGORIES) do CATEGORY_RANK[key] = i end
 
+-- A target type's name in its category color.
+local function categoryText(category)
+    return Runs.Colored(NS.Dummies.Label(category), Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other)
+end
+
 local function targetGroup(run)
     local category = run.target and run.target.category or "other"
-    return category, L["Target: %s"]:format(NS.Dummies.Label(category)), CATEGORY_RANK[category] or 99
+    return category, L["Target: %s"]:format(categoryText(category)), CATEGORY_RANK[category] or 99
+end
+
+-- The race length modes (the owner's call, 2026-10-25): one group per length, shortest first, the
+-- time in its length color (Tbl.LengthColor). A run with no length sorts last. The keys carry their
+-- mode's prefix, so a fold made in one mode never folds a group in another.
+local NO_LENGTH_RANK = 1e6
+
+local function lengthOf(run)
+    local length = run.race and run.race.length
+    return type(length) == "number" and length or nil
+end
+
+-- A run with no length reads as a dash, not "0:00": it groups after the longest length.
+local function lengthText(length)
+    return Runs.Colored(length == nil and DASH or NS.Format.Length(length), Tbl.LengthColor(length))
+end
+
+local function durationGroup(run)
+    local length = lengthOf(run)
+    return "length:" .. tostring(length), L["Duration: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
+end
+
+-- One group per (target type, length) pair: the catalog's order, then shortest first in each type.
+local function targetLengthGroup(run)
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local rank = (CATEGORY_RANK[category] or 99) * (NO_LENGTH_RANK + 1) + (length or NO_LENGTH_RANK)
+    return category .. "|" .. tostring(length),
+        L["Target: %s"]:format(L["%s \194\183 %s"]:format(categoryText(category), lengthText(length))), rank
 end
 
 Runs.GROUPS = {
@@ -238,10 +281,13 @@ Runs.GROUPS = {
     char = { of = charGroup, column = "char" },
     classSpec = { of = classSpecGroup },
     target = { of = targetGroup, column = "target" },
+    length = { of = durationGroup, column = "time" },
+    targetLength = { of = targetLengthGroup, column = "target" },
 }
-Runs.GROUP_ORDER = { "none", "char", "classSpec", "target" }
+Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength" }
 local GROUP_LABELS = {
     none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
+    length = "Group: Duration", targetLength = "Group: Target + duration",
 }
 
 --- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and
@@ -296,10 +342,12 @@ end
 -- The Status tags (the owner's call, 2026-10-24), in the badge colors: one per resolved status, and
 -- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
 -- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
--- Each tag is its icon before its word, both in the tag's own hue, and every hue is distinct (the
--- owner's call, 2026-10-25). Max is the view's: the complete run with the highest DPS the filters
--- pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best is the
--- board's (spec x dummy type x length).
+-- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
+-- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
+-- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
+-- is the board's (spec x dummy type x length). Both name their board after the box in two boxed
+-- chips (Runs.StatusChips), the target type in its category color and the length in its length
+-- color, as the Target and Time columns draw them: a best depends on the target type and the length.
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -315,7 +363,7 @@ local STATUS_ORDER = { max = 0, best = 1, complete = 2, flagged = 3, incomplete 
 function Runs.HoldsBest(run)
     local Bests = NS.Bests
     if not (Bests and Bests.Board) then return false end
-    local held = Bests.Board()[Bests.Key(run)]
+    local held = NS.ResultsSource.Board()[Bests.Key(run)]
     return held ~= nil and held.id == run.id
 end
 
@@ -325,8 +373,9 @@ local function runDps(run)
     return type(dps) == "number" and dps or nil
 end
 
---- A run's status tag: its key, its label, its color and its icon name. `top` is the view's max DPS
---- (Runs.MaxDps over the runs the filters pass): the complete run holding it is Max, over Spec best.
+--- A run's status tag: its key, its label (the word in the box: "Spec best", never its board), its
+--- color and its icon name. `top` is the view's max DPS (Runs.MaxDps over the runs the filters
+--- pass): the complete run holding it is Max, over Spec best.
 --- @param run table
 --- @param top number|nil
 --- @return string key, string text, table color, string|nil icon
@@ -346,12 +395,33 @@ function Runs.Status(run, top)
         key = "complete"
     end
     local tag = Runs.STATUS[key]
-    local text = L[tag.label]
-    -- Spec best and Max are per target type: the type follows, "Spec best (cleave)".
-    if key == "best" or key == "max" then
-        text = L["%s (%s)"]:format(text, NS.Dummies.Label(run.target and run.target.category):lower())
-    end
-    return key, text, tag.color, tag.icon
+    return key, L[tag.label], tag.color, tag.icon
+end
+
+-- The tags that name their board after the box.
+local NAMES_BOARD = { best = true, max = true }
+
+--- The board a Spec best or Max tag names: the target type in lower case and the race length
+--- ("boss-level", "2:00"), and the length's color (Tbl.LengthColor).
+--- @return string target, string time, table color
+function Runs.StatusBoard(run)
+    local length = run.race and run.race.length
+    return NS.Dummies.Label(run.target and run.target.category):lower(), NS.Format.Length(length),
+        Tbl.LengthColor(length)
+end
+
+--- The chips after a tag's box for Spec best and Max: the target type ("Boss-level", as the Target
+--- column names it, without a count: a board is per type) in its category color, then the race
+--- length in its length color; nil for every other tag.
+--- @param run table
+--- @param key string  Runs.Status's key
+--- @return table|nil  { { text, color }, { text, color } }
+function Runs.StatusChips(run, key)
+    if not NAMES_BOARD[key] then return nil end
+    local category = run.target and run.target.category or "other"
+    local label, catColor = Tbl.Badge({ category = category })
+    local time, lengthColor = Tbl.LengthChip(run.race and run.race.length)
+    return { { label, catColor }, { time, lengthColor } }
 end
 
 local function categoryOf(run)
@@ -458,14 +528,18 @@ local STATUS_ABOUT = {
     lost = "The meter's session could not be read after combat. There is no score.",
 }
 
---- The Status cell's tooltip: the tag, what it means, then every flag the run carries (what the
---- flag column's mark used to say).
+--- The Status cell's tooltip: the tag (with its whole board for Spec best and Max: "Spec best:
+--- boss-level · 2:00"), what it means, then every flag the run carries (what the flag column's mark
+--- used to say).
 function Runs.StatusTip(run, top)
-    local key, text, color = Runs.Status(run, top)
-    local lines = { { text, color[1], color[2], color[3] }, L[STATUS_ABOUT[key]] }
-    for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
+    local key, text = Runs.Status(run, top)
     -- lines[1] is the title: SideTip draws it from a string.
-    lines[1] = text
+    local lines = { text, L[STATUS_ABOUT[key]] }
+    if NAMES_BOARD[key] then
+        local target, time = Runs.StatusBoard(run)
+        lines[1] = L["%s: %s \194\183 %s"]:format(text, target, time)
+    end
+    for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
     return lines
 end
 
@@ -473,6 +547,9 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
+Runs.TARGET_W = 98
+Runs.TIME_W = 84
+Runs.STATUS_W = 226
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -512,12 +589,17 @@ function Runs.NoteTip(run)
     return { L["Note"], note }
 end
 
--- The tail in the caption gray, after the length (NS.Format.RunTime).
-local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
-    math.floor(C.dim[3] * 255 + 0.5))
+--- The Time cell: the race length in a chip of its length color (Tbl.LengthChip), then the tail
+--- after the buzzer ("+9.1s") or, for a run that ended early, when combat ended ("at 1:04"), as
+--- plain caption-gray text after the box (Tbl.TimeTail).
+--- @return string text, table color, nil, string|nil trail
+function Runs.TimeCell(run)
+    local text, color = Tbl.LengthChip(run.race and run.race.length)
+    return text, color, nil, Tbl.TimeTail(run)
+end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
+--- time (the length's chip and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
 --- its max off the whole list the table is handed (its `scan`, every run the filters pass).
 function Runs.Columns()
     local view = { top = {}, maxTag = {} }
@@ -535,12 +617,15 @@ function Runs.Columns()
         { key = "ilvl", label = L["iLvl"], width = 40, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        { key = "target", label = L["Target"], width = 84, kind = "badge", desc = false,
+        -- Boxed in the category color; wide enough for "Single target" and any type with a count
+        -- ("Dungeoneer ×20").
+        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
-        { key = "time", label = L["Time"], width = 76, desc = true,
+        -- The length boxed in its color, then the tail: "5:00" then "+15.9s" or "at 4:59".
+        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", boxed = true, trail = true, desc = true,
           sort = NS.Format.RunSeconds,
-          text = function(run) return NS.Format.RunTime(run, TAIL_HEX), C.text end },
+          text = Runs.TimeCell },
         { key = "damage", label = L["Damage"], width = 60, desc = true,
           sort = function(run) return run.result and run.result.damage end,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
@@ -566,11 +651,13 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        { key = "status", label = L["Status"], width = 150, kind = "badge", desc = false,
+        -- Wide enough for the longest board after its box: "Spec best" then [Single target] [10:00].
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, chips = 2,
+          desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
-              return text, color, icon
+              local key, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
+              return text, color, icon, nil, Runs.StatusChips(run, key)
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
@@ -618,14 +705,7 @@ local function buildBar(view)
     for _, spec in ipairs(VIEW_BUTTONS) do
         local b = NS.HudStates.Button(bar, L[spec.label], function() view[spec.act](view) end)
         b:SetWidth(VIEW_BUTTON_W)
-        b.tip = L[spec.tip]
-        b:HookScript("OnEnter", function(self)
-            if not GameTooltip then return end
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(self.tip, 1, 1, 1, 1, true)
-            GameTooltip:Show()
-        end)
-        b:HookScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+        b.tip = { L[spec.label], L[spec.tip] }   -- the shared button's own tooltip shape
         view.viewButtons[spec.key] = b
     end
     view.bar = bar
@@ -698,7 +778,32 @@ function View:ApplyView(v)
     if self.dropdowns and next(self.dropdowns) then self:Refresh() end
 end
 
+-- While the window shows the sample history (test mode, a sim) the view is the sample's: Save and
+-- Reset refuse with one line, so nothing the samples set reaches the profile (modules/Results_Source.lua).
+local function sampleRefusal()
+    if not NS.ResultsSource.IsMock() then return false end
+    NS.Print(L["Not saved: the Results window is showing sample runs."])
+    return true
+end
+
+-- The sample history spans several characters and specs, so it opens on all of them; the view the
+-- player had comes back when the store does (Runs.SampleView, the shell's OnSourceChanged).
+Runs.SAMPLE_VIEW = { filters = { char = "all", spec = "all" } }
+
+--- Enter (`on`) or leave the sample history's view: entering keeps the player's view to restore.
+function View:SampleView(on)
+    if on then
+        if not self.realView then self.realView = self:CaptureView() end
+        self:ApplyView(Runs.SAMPLE_VIEW)
+    elseif self.realView then
+        local real = self.realView
+        self.realView = nil
+        self:ApplyView(real)
+    end
+end
+
 function View:SaveView()
+    if sampleRefusal() then return false end
     local p = NS.db and NS.db.profile
     if not p then return false end
     if type(p.views) ~= "table" then p.views = {} end
@@ -708,6 +813,7 @@ function View:SaveView()
 end
 
 function View:ResetView()
+    if sampleRefusal() then return false end
     local p = NS.db and NS.db.profile
     if p and type(p.views) == "table" then
         p.views.runs = nil
@@ -721,36 +827,53 @@ function View:ClearView()
     self:ApplyView(Runs.SavedView())
 end
 
--- Lay the bar out from the configured widths. Two rows (the collapsed view): the dropdowns on the
--- first; the checkboxes and Save / Reset / Clear on the second, the buttons right-aligned under the
--- last dropdown (Group). One row (the expanded view, `oneRow`): the dropdowns, the checkboxes, then
--- the buttons. The run count is the window footer's (hooks.count). Answers its height.
-function View:layoutBar(oneRow)
+-- Plan the bar from the configured widths, pure (no frame is read). Two rows (the collapsed view):
+-- the dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
+-- right-aligned under the last dropdown (Group). One row (the expanded view, `oneRow`): the
+-- dropdowns, the checkboxes, then the buttons. Answers each control's left x (a button's right x),
+-- the second row's y, and the bar's right edge, all from the bar's left.
+function Runs.BarPlan(oneRow)
+    local plan = { dropdowns = {}, checks = {}, buttons = {}, y = oneRow and -6 or -(FILTER_H - 2) }
     local x = GAP + 2
+    for _, spec in ipairs(DROPDOWNS) do
+        plan.dropdowns[spec.key] = x
+        x = x + spec.width + GAP
+    end
+    local groupRight = x - GAP   -- the last dropdown's right edge
+    if not oneRow then x = GAP + 2 end
+    for _, spec in ipairs(CHECKS) do
+        plan.checks[spec.key] = x
+        x = x + spec.width + GAP
+    end
+    local right = oneRow and x + #VIEW_BUTTONS * (VIEW_BUTTON_W + GAP) - GAP or groupRight
+    plan.right = math.max(right, groupRight, x - GAP)
+    for i = #VIEW_BUTTONS, 1, -1 do
+        plan.buttons[VIEW_BUTTONS[i].key] = right
+        right = right - VIEW_BUTTON_W - GAP
+    end
+    return plan
+end
+
+-- Lay the bar out by Runs.BarPlan. The run count is the window footer's (hooks.count). Answers its
+-- height.
+function View:layoutBar(oneRow)
+    local plan = Runs.BarPlan(oneRow)
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
         if dd then
             dd:ClearAllPoints()
-            dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, -6)
-            x = x + spec.width + GAP
+            dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.dropdowns[spec.key], -6)
         end
     end
-    local y = oneRow and -6 or -(FILTER_H - 2)
-    local groupRight = x - GAP   -- the last dropdown's right edge, from the bar's left
-    if not oneRow then x = GAP + 2 end
     for _, spec in ipairs(CHECKS) do
         local b = self.checks[spec.key]
         b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, y)
-        x = x + spec.width + GAP
+        b:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.checks[spec.key], plan.y)
     end
-    local right = groupRight
-    if oneRow then right = x + #VIEW_BUTTONS * (VIEW_BUTTON_W + GAP) - GAP end
-    for i = #VIEW_BUTTONS, 1, -1 do
-        local b = self.viewButtons[VIEW_BUTTONS[i].key]
+    for _, spec in ipairs(VIEW_BUTTONS) do
+        local b = self.viewButtons[spec.key]
         b:ClearAllPoints()
-        b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", right, y)
-        right = right - VIEW_BUTTON_W - GAP
+        b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", plan.buttons[spec.key], plan.y)
     end
     self.barH = oneRow and FILTER_H or (2 * FILTER_H - 6)
     self.bar:SetHeight(self.barH)
@@ -786,7 +909,7 @@ end
 
 --- Re-read the store and redraw: options, filtered list, count, selection.
 function View:Refresh()
-    local all = NS.Recorder.All()
+    local all = NS.ResultsSource.All()
     self:paintFilters(Runs.Options(all))
     self.filtered = Runs.Filter(all, self.filters)
     local n = #self.filtered

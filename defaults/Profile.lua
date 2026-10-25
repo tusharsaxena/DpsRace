@@ -37,6 +37,9 @@ NS.defaults = {
             -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
             chart   = true,
             paceBar = true,
+            -- How far either side of the best's pace so far the pace bar reaches, 1.1-2.0: it runs from
+            -- pace x (2 - paceRange) to pace x paceRange, its tick in the middle (Round C; 1.5 = +-50%).
+            paceRange = 1.5,
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
@@ -92,13 +95,14 @@ NS.defaults = {
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
-            -- Tall enough for all 8 live rows under the pace bar and the damage chart (screen 04, #2).
-            hud = { width = 300, height = 520 },
+            -- Tall enough for all 8 live rows under the Damage profile heading (the pace bar and the
+            -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C).
+            hud = { width = 300, height = 560 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.
             -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
-            results = { view = "expanded", expanded = { width = 1300, height = 560 },
+            results = { view = "expanded", expanded = { width = 1340, height = 560 },
                         collapsed = { width = 980, height = 560 } },
         },
     },

@@ -70,9 +70,10 @@ function Bests.Columns()
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "length", label = L["Length"], width = 56, desc = true,
+        -- Boxed in its length color, as the Runs list's Time column (Tbl.LengthChip): "10:00" fits.
+        { key = "length", label = L["Length"], width = 56, kind = "badge", boxed = true, desc = true,
           sort = function(run) return run.race and run.race.length end,
-          text = function(run) return NS.Format.Length(run.race and run.race.length) end },
+          text = function(run) return Tbl.LengthChip(run.race and run.race.length) end },
         { key = "ilvl", label = L["iLvl"], width = 56, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
@@ -85,6 +86,8 @@ function Bests.Columns()
         { key = "date", label = L["Date"], width = 64, desc = true,
           sort = function(run) return run.date end,
           text = function(run) return Tbl.Date(run.date, "%d %b") end },
+        -- Plain chips (only the Runs list's Status tags are boxed): a two-flag best, "1 late ·
+        -- Reloaded", fits the column.
         { key = "flags", label = L["Flags"], width = 110, kind = "badge",
           text = function(run) return Tbl.ShortFlags(run), C.amber end },
     }
@@ -152,7 +155,7 @@ local function resolveCategory(chosen, options)
 end
 
 function View:Refresh()
-    local board = NS.Bests.Board({ cleanOnly = self.filters.cleanOnly == true })
+    local board = NS.ResultsSource.Board({ cleanOnly = self.filters.cleanOnly == true })
     local options = Bests.Options(board)
     self.filters.category = resolveCategory(self.filters.category, options.category) or Bests.DEFAULTS.category
     for key, dd in pairs(self.dropdowns) do

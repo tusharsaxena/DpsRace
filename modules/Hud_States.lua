@@ -50,6 +50,11 @@ local KPI_HEIGHT = 46
 -- Every button is LootHistory's 20px; Arm alone is a little taller, the one action of the idle body.
 local BUTTON_HEIGHT = 20
 local LINK_HEIGHT = 20
+-- A row of equal buttons across the foot (the result card's four, the Stop! and waiting screens'
+-- two): each the same width, worked out from the body's width and this gap (Round C, 2026-10-25).
+-- At the minimum width's 236 px of content four are 56 px wide, room for "Race Again".
+local ROW_GAP = 4
+States.ROW_GAP = ROW_GAP
 local GAP = 8
 -- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
 -- warning line (two lines at the minimum width), then Arm and the refusal line under it.
@@ -64,6 +69,16 @@ local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
 -- The fewest spell rows any window size may leave a body (the minimum height is set from it).
 local MIN_ROWS = 3
+-- THE HEADINGS (Round C, 2026-10-25): *Damage profile* over the pace bar and the plot, and *Spell
+-- breakdown* over the rows, in the Results detail's heading role (FONT.SECTION on SECTION_H). The
+-- clear space above each is the shared SECTION_GAP, less the GAP the block above already leaves.
+local SECTION_H = Style.SECTION_H
+local HEAD_GAP = Style.SECTION_GAP - GAP
+-- The pace bar's line under the profile heading, its gap to the plot included.
+local PACE_GAP = 4
+-- The Spell breakdown heading's whole height, the space above it included.
+local BREAKDOWN_H = HEAD_GAP + SECTION_H
+States.HEAD_GAP, States.PACE_GAP, States.BREAKDOWN_H = HEAD_GAP, PACE_GAP, BREAKDOWN_H
 -- The preset race lengths (spec §4.1), then Custom.
 States.PRESETS = { 30, 60, 120, 180, 300 }
 local DASH = "\226\128\148"   -- an em dash: "no figure"
@@ -122,6 +137,17 @@ local function setHot(b, on)
     paintButton(b)
 end
 
+-- A button's tooltip (b.tip = { title, text }), shown under the pointer, disabled or not.
+local function showTip(b)
+    local tip = b.tip
+    if not (tip and GameTooltip) then return end
+    if type(tip) ~= "table" then tip = { tostring(tip) } end
+    GameTooltip:SetOwner(b, "ANCHOR_TOP")
+    GameTooltip:SetText(tip[1], 1, 1, 1)
+    if tip[2] then GameTooltip:AddLine(tip[2], nil, nil, nil, true) end
+    GameTooltip:Show()
+end
+
 --- A flat button: a label, a style, and a click that a disabled button never runs. Its label is
 --- GameFontHighlightSmall and turns gold under the pointer (LootHistory's bar button).
 local function button(parent, label, onClick, style)
@@ -135,8 +161,14 @@ local function button(parent, label, onClick, style)
     b:SetScript("OnClick", function(self)
         if self:IsEnabled() then onClick(self) end
     end)
-    b:SetScript("OnEnter", function(self) setHot(self, true) end)
-    b:SetScript("OnLeave", function(self) setHot(self, false) end)
+    b:SetScript("OnEnter", function(self)
+        setHot(self, true)
+        showTip(self)
+    end)
+    b:SetScript("OnLeave", function(self)
+        setHot(self, false)
+        if self.tip and GameTooltip then GameTooltip:Hide() end
+    end)
     paintButton(b)
     return b
 end
@@ -203,7 +235,7 @@ end
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 
 local CHIP_HEIGHT, CHIP_GAP = 18, 5
--- The result card's rows sit under two lines of chips and above its three buttons.
+-- The result card's rows sit under two lines of chips and above its row of buttons.
 local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
 local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
@@ -324,22 +356,40 @@ local function newBody(parent, key)
     return { key = key, frame = f, w = {} }
 end
 
--- A full-width row of `n` buttons at the bottom of the body, spread by anchor.
+--- The equal buttons' width and the first one's left edge for `n` across `width` with ROW_GAP
+--- between two: whole pixels, every button the same width, the odd pixels split either side. Plain
+--- config math on the width Layout handed the body.
+--- @param width number
+--- @param n number
+--- @return number each, number x0
+function States.RowWidths(width, n)
+    local each = math.max(1, math.floor((width - (n - 1) * ROW_GAP) / n))
+    local spare = width - n * each - (n - 1) * ROW_GAP
+    return each, math.max(0, math.floor(spare / 2))
+end
+
+-- Lay `buttons` out across the foot of `f`, all the same width (States.RowWidths).
+local function layoutRow(buttons, f, width)
+    local each, x = States.RowWidths(width, #buttons)
+    for _, b in ipairs(buttons) do
+        b:ClearAllPoints()
+        b:SetSize(each, LINK_HEIGHT)
+        b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", x, 0)
+        x = x + each + ROW_GAP
+    end
+end
+
+-- A row of equal buttons across the foot of the body ({ label, onClick, style, tip }), laid out at
+-- the minimum width until Layout hands the body its own.
 local function footerButtons(body, specs)
     local f, out = body.frame, {}
     for i, spec in ipairs(specs) do
         local b = button(f, spec[1], spec[2], spec[3])
-        b:SetHeight(LINK_HEIGHT)
-        if i == 1 then
-            b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-        elseif i == #specs then
-            b:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
-        else
-            b:SetPoint("BOTTOM", f, "BOTTOM", 0, 0)
-        end
-        b:SetWidth(spec.width or 92)
+        b.tip = spec.tip
         out[i] = b
     end
+    body.footer = out
+    layoutRow(out, f, 236)
     return out
 end
 
@@ -532,10 +582,43 @@ local function roomForRows(body, top, bottom)
     return States.RowCapacity(body.height - top - bottom) >= MIN_ROWS
 end
 
--- The chart's block (header, plot, time labels and the gap under it) at the configured plot height.
-local function chartBlock()
-    local plotH = NS.HudChart.PlotHeight()
-    return NS.HudChart.BlockHeight(plotH) + GAP, plotH
+-- The pace bar's line under the profile heading, or 0 without one.
+local function paceLine(pace)
+    return pace and (NS.HudChart.PACE_H + PACE_GAP) or 0
+end
+
+--- The Damage profile block's height: the space above its heading, the heading, the pace bar's line,
+--- the plot and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
+--- @param pace boolean
+--- @param chart boolean
+--- @param plotH number
+--- @return number
+function States.ProfileHeight(pace, chart, plotH)
+    if not (pace or chart) then return 0 end
+    local Chart = NS.HudChart
+    local h = HEAD_GAP + SECTION_H + paceLine(pace)
+    if chart then h = h + plotH + Chart.GAP + Chart.AXIS_H end
+    return h + GAP
+end
+local profileH = States.ProfileHeight
+
+-- Place the stack under `top` (Round C): the Damage profile heading, the pace bar directly under it,
+-- the plot and its time labels, then the Spell breakdown heading and the rows. Every offset is config.
+-- Answers the rows' top.
+local function placeStack(body, top, pace, chart, plotH)
+    local w, f, width = body.w, body.frame, body.width or 236
+    local head = pace or chart
+    w.chart:SetParts(head, chart)
+    if not chart then w.chart:SetNote("") end
+    if head then
+        local y = top + HEAD_GAP
+        w.chart:Place(f, -y, width, plotH, paceLine(pace))
+        if pace then w.pace:Place(f, -(y + SECTION_H), width) end
+    end
+    local y = top + profileH(pace, chart, plotH) + HEAD_GAP
+    w.spellsTitle:ClearAllPoints()
+    w.spellsTitle:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -y)
+    return y + SECTION_H
 end
 
 -- Whether the stack's inputs changed since it was last placed, noting them when they did: compared
@@ -553,27 +636,21 @@ local function restack(body, top, paceH, chart, plotH)
     return true
 end
 
--- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, each only when its view
--- is given (modules/Hud_Chart.lua LiveViews); the chart steps aside when it would leave fewer than
--- MIN_ROWS rows. Placed again only when what decides the stack changed: every input is config.
+-- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, under the Damage
+-- profile heading, each only when its view is given (modules/Hud_Chart.lua LiveViews); the plot steps
+-- aside when it would leave fewer than MIN_ROWS rows, the heading staying with the pace bar. Placed
+-- again only when what decides the stack changed: every input is config.
 local function placeExtras(body, v)
     local w, f = body.w, body.frame
-    local Chart = NS.HudChart
     local top = body.kpiBottom or RUNNING_ROWS_TOP
-    local paceH = v.pace and (Chart.PACE_H + GAP) or 0
-    local blockH, plotH = chartBlock()
-    local chart = v.chart ~= nil and roomForRows(body, top + paceH + blockH, RUNNING_ROWS_BOTTOM)
-    w.pace:SetShown(v.pace ~= nil)
-    w.chart:SetShown(chart)
+    local pace = v.pace ~= nil
+    local plotH = NS.HudChart.PlotHeight()
+    local chart = v.chart ~= nil
+        and roomForRows(body, top + profileH(pace, true, plotH) + BREAKDOWN_H, RUNNING_ROWS_BOTTOM)
+    w.pace:SetShown(pace)
     body.chartView = chart and v.chart or nil
-    if not restack(body, top, paceH, chart, plotH) then return end
-    local y, width = top, body.width or 236
-    if v.pace then w.pace:Place(f, -y, width) end
-    y = y + paceH
-    if chart then
-        w.chart:Place(f, -y, width, plotH)
-        y = y + blockH
-    end
+    if not restack(body, top, paceLine(pace), chart, plotH) then return end
+    local y = placeStack(body, top, pace, chart, plotH)
     body.rowsTop = y
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -y)
@@ -661,6 +738,8 @@ function Builders.running(parent)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
     w.chart:SetShown(false)
+    w.spellsTitle = Style.Text(f, FONT.SECTION)
+    w.spellsTitle:SetText(L["Spell breakdown"])
     -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -683,7 +762,7 @@ function Builders.running(parent)
         styleRunning(self, v.clockMode)
         placeExtras(self, v)
         self.paceShown = v.pace ~= nil
-        if v.pace then self.w.pace:SetMax(v.pace.max) end
+        if v.pace then self.w.pace:SetRange(v.pace.lo, v.pace.hi) end
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.
@@ -727,6 +806,19 @@ local function setStopFigures(w, v)
     end
 end
 
+-- The Stop! and waiting screens' two buttons (Round C, 2026-10-25), the same width across the foot:
+-- Stop Now takes the result as it reads now (Race.StopNow), Cancel discards the run (Race.Cancel). In
+-- test mode the sim's (modules/Hud.lua Act). Neither is a protected call: both work in combat.
+local function stopButtons(body)
+    local links = footerButtons(body, {
+        { L["Stop Now"], function() act("stopNow") end, "primary",
+          tip = { L["Stop Now"], L["Take the result now instead of waiting out the damage tail. Out of combat it is read at once; in combat it is read the moment combat ends, and damage up to then counts."] } },
+        { L["Cancel"], function() act("cancel") end, "danger",
+          tip = { L["Cancel"], L["Discard this race. Nothing is saved."] } },
+    })
+    body.w.stopNow, body.w.cancel = links[1], links[2]
+end
+
 -- STOP: the buzzer, the tail updating live, late casts so far, the grace (screen 05).
 function Builders.stop(parent)
     local body = newBody(parent, "stop")
@@ -739,13 +831,16 @@ function Builders.stop(parent)
     w.note = text(f, FONT.TEXT, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
     w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
+    stopButtons(body)
     function body.Layout(self, width)
         self.w.chips.width = width
         self.shownKey = nil   -- the chips wrap at the new width on the next redraw
+        layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
         v.unitTail = L["s after buzzer"]
         setStopFigures(self.w, v)
+        setEnabled(self.w.stopNow, v.stopNow ~= true)
         -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
         -- only when what they say (the late casts, the grace) changed.
         local late, grace = v.lateCasts or {}, v.grace or 0
@@ -766,7 +861,7 @@ function Builders.stop(parent)
     return body
 end
 
--- WAITING: combat is holding; the hint, discard, close and keep waiting (screen 06).
+-- WAITING: combat is holding; the hint, Stop Now and Cancel (screen 06; Round C).
 function Builders.waiting(parent)
     local body = newBody(parent, "waiting")
     local f, w = body.frame, body.w
@@ -781,17 +876,19 @@ function Builders.waiting(parent)
     w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", 8, -7)
     w.hintText:SetPoint("BOTTOMRIGHT", w.hint, "BOTTOMRIGHT", -8, 7)
     w.hintText:SetJustifyV("TOP")
-    local links = footerButtons(body, {
-        { L["Discard Run"], function() act("discard") end, "danger" },
-        { L["Close (Keep Waiting)"], function() act("close") end, width = 140 },
-    })
-    w.discard, w.close = links[1], links[2]
+    stopButtons(body)
+    function body.Layout(self, width) layoutRow(self.footer, self.frame, width) end
     function body.Update(self, v)
         local title = L["Waiting for combat to end"]
-        if not v.inCombat then title = L["Reading the result"] end
+        if not v.inCombat then
+            title = L["Reading the result"]
+        elseif v.stopNow then
+            title = L["Reading when combat ends"]
+        end
         self.w.title:SetText(title)
         v.unitTail = L["s"]
         setStopFigures(self.w, v)
+        setEnabled(self.w.stopNow, v.stopNow ~= true)
         self.w.hint:SetShown(v.hint ~= nil)
         self.w.hintText:SetText(v.hint or "")
     end
@@ -838,7 +935,7 @@ function States.ResultChips(v)
     return list
 end
 
--- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the three acts (screen 07).
+-- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the four acts (screen 07).
 function Builders.result(parent)
     local body = newBody(parent, "result")
     local f, w = body.frame, body.w
@@ -851,8 +948,12 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    w.pace = NS.HudChart.NewPace(f)
+    w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
     w.chart:SetShown(false)
+    w.spellsTitle = Style.Text(f, FONT.SECTION)
+    w.spellsTitle:SetText(L["Spell breakdown"])
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -860,25 +961,25 @@ function Builders.result(parent)
         body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
         body:DrawRows()
     end)
+    -- The four acts in one row, the same width each (Round C): Delete asks first (the Results
+    -- window's own confirmation, modules/Hud.lua Act.delete).
     local links = footerButtons(body, {
         { L["Race Again"], function() act("raceAgain") end, "primary" },
-        { L["Details"], function() act("details") end, width = 72 },
-        { L["Share"], function() act("share") end, width = 72 },
+        { L["Details"], function() act("details") end },
+        { L["Share"], function() act("share") end },
+        { L["Delete"], function() act("delete") end, "danger",
+          tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
-    w.again, w.details, w.share = links[1], links[2], links[3]
-    -- Details sits left of Share and Race Again takes what is left, so the three never overlap at
-    -- the minimum width (a centered Details would run into a fixed-width Race Again there).
-    w.details:ClearAllPoints()
-    w.details:SetPoint("BOTTOMRIGHT", w.share, "BOTTOMLEFT", -6, 0)
-    w.again:ClearAllPoints()
-    w.again:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-    w.again:SetPoint("BOTTOMRIGHT", w.details, "BOTTOMLEFT", -6, 0)
+    w.again, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
+    -- The sample card of test mode has no run to race again, open or delete (modules/Hud.lua Act).
+    w.realOnly = { w.again, w.details, w.delete }
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height
+        layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
-        Builders.resultChart(self, v.chart)
+        Builders.resultExtras(self, v)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
@@ -886,13 +987,12 @@ function Builders.result(parent)
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
         self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
+        self.w.spellsTitle:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
         self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
         if lost then self.w.list:Clear() else self:DrawRows() end
         setEnabled(self.w.share, v.canShare == true)
-        -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
-        setEnabled(self.w.again, v.preview ~= true)
-        setEnabled(self.w.details, v.preview ~= true)
+        for _, b in ipairs(self.w.realOnly) do setEnabled(b, v.preview ~= true) end
     end
     function body.DrawRows(self) Builders.resultRows(self) end
     return body
@@ -903,21 +1003,28 @@ end
 -- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
 
--- The result card's chart (#2): the run's in-session slices, scaled to its plain final damage, between
--- the chips and the rows; none for a run without slices, and it steps aside when it would leave fewer
--- than MIN_ROWS rows.
-function Builders.resultChart(body, view)
+-- The result card's pace bar (#3) and chart (#2), between the chips and the rows, under the Damage
+-- profile heading as on the running body, then the Spell breakdown heading. The pace bar is the run's
+-- plain final damage against the best before it (modules/Hud_Chart.lua ResultPace), the running bar's
+-- widget, range and tick; it never steps aside, so MinContentHeight carries it. The chart is the run's
+-- in-session slices, scaled to its plain final damage; none for a run without slices, and it steps
+-- aside when it would leave fewer than MIN_ROWS rows. Every value here is plain (a stored run).
+function Builders.resultExtras(body, v)
     local w, f = body.w, body.frame
-    local blockH, plotH = chartBlock()
-    local on = view ~= nil and roomForRows(body, RESULT_ROWS_TOP + blockH, RESULT_ROWS_BOTTOM)
-    w.chart:SetShown(on)
-    body.rowsTop = on and (RESULT_ROWS_TOP + blockH) or RESULT_ROWS_TOP
+    local pace = v.pace ~= nil
+    local plotH = NS.HudChart.PlotHeight()
+    local on = v.chart ~= nil
+        and roomForRows(body, RESULT_ROWS_TOP + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
+    w.pace:SetShown(pace)
+    body.rowsTop = placeStack(body, RESULT_ROWS_TOP, pace, on, plotH)
+    if pace then
+        w.pace:SetRange(v.pace.lo, v.pace.hi)
+        w.pace:SetValue(v.pace.value)
+    end
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
-    if not on then return end
-    w.chart:Place(f, -RESULT_ROWS_TOP, body.width or 236, plotH)
-    w.chart:Draw(view)
+    if on then w.chart:Draw(v.chart) end
 end
 
 function Builders.resultRows(body)
@@ -942,15 +1049,18 @@ function Builders.resultRows(body)
 end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
---- the running (with its pace bar) and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- the running and result bodies (each with its pace bar under the Damage profile heading, then the
+--- Spell breakdown heading) with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
 --- @return number
 function States.MinContentHeight()
     local B = NS.HudBreakdown
     local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
     local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
-    -- The pace bar never steps aside (the chart does), so the running body's minimum carries it.
-    local running = RUNNING_ROWS_TOP + NS.HudChart.PACE_H + GAP + rows + RUNNING_ROWS_BOTTOM
-    local result = RESULT_ROWS_TOP + rows + RESULT_ROWS_BOTTOM
+    -- The pace bar never steps aside (the plot does), so the running and result minimums carry it
+    -- with its heading.
+    local stack = profileH(true, false, 0) + BREAKDOWN_H + rows
+    local running = RUNNING_ROWS_TOP + stack + RUNNING_ROWS_BOTTOM
+    local result = RESULT_ROWS_TOP + stack + RESULT_ROWS_BOTTOM
     return math.max(idle, running, result)
 end
 

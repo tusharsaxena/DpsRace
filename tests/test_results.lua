@@ -114,12 +114,13 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
     assertEqual(c.target.fs.__text, "Cleave \195\1515")
-    assertEqual(c.time.fs.__text, "3:00 |cff9e9ead+9.2s|r", "the length, then the tail in the caption gray")
+    assertEqual(c.time.fs.__text .. "|" .. c.time.trail.__text, "3:00|+9.2s", "the length's chip, then the tail")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
-    assertEqual(c.status.fs.__text, "Spec best (cleave)", "a best outranks its flag in the tag")
+    assertEqual(c.status.fs.__text, "Spec best", "a best outranks its flag in the tag; the box holds the first part only")
+    assertEqual(c.status.chip1.fs.__text .. "|" .. c.status.chip2.fs.__text, "Cleave|3:00", "the board: two chips")
     local status = pane.list:TipLines(run, 10)
-    assertEqual(status[1], "Spec best (cleave)")
+    assertEqual(status[1], "Spec best: cleave \194\183 3:00", "the tooltip names the whole board")
     local named = false
     for _, l in ipairs(status) do
         if type(l) == "table" and l[1]:find("Incinerate", 1, true) then named = true end
@@ -169,7 +170,8 @@ test("results: the detail's section headings are the larger SECTION font; Spell 
     i.R.ShowRun("a")
     local d = ui(i).detail
     local w, F = d.w, i.NS.Style.FONT
-    assertEqual(F.SECTION, "GameFontNormal", "a size above the 10px column headers")
+    assertEqual(F.SECTION, "GameFontNormalLarge", "a step above GameFontNormal (Round C, 2026-10-25)")
+    assertEqual(i.NS.Style.SECTION_H, 22, "the 16px heading's line")
     assertEqual(w.spellsTitle.__text, "Spell breakdown")
     assertTrue(w.spellsTitle:IsShown())
     for name, fs in pairs({ breakdown = w.spellsTitle, chart = w.chart.title, timing = w.timingLabel,
@@ -182,6 +184,28 @@ test("results: the detail's section headings are the larger SECTION font; Spell 
     assertTrue(y(d.cmp.toggle) > y(w.list.parent), "the toggle is under the list")
     assertEqual(y(w.spellsTitle) - y(d.cmp.toggle), i.NS.ResultsDetail.SECTION_H, "one heading line")
     assertEqual(i.NS.ResultsTips.Detail("breakdown", i.NS.Recorder.Get("a"))[1], "Spell breakdown", "the heading's tooltip")
+end)
+
+test("results: every section heading has SECTION_GAP of clear space above it, the y-advances from config", function()
+    local i = inst()
+    seed(i, { mkRun("a", { note = "Opened with Bloodlust", flags = { reloaded = true } }) })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    local w, D = d.w, i.NS.ResultsDetail
+    local GAP, H = D.SECTION_GAP, D.SECTION_H
+    assertEqual(GAP, i.NS.Style.SECTION_GAP)
+    assertTrue(GAP >= 14 and GAP <= 18, "a gap the eye reads as a break")
+    local function y(region) return region.__points[1][5] end
+    -- Spell breakdown: the delta line's height and its 4px under the delta, then the gap.
+    assertEqual(y(w.spellsTitle), y(w.delta) - 14 - 4 - GAP, "Spell breakdown under the header")
+    -- Timing (no chart this session): under the spell list's rows and their 8px, then the gap.
+    local n, pitch = w.list:Count(), i.NS.HudBreakdown.Pitch()
+    assertEqual(y(w.timingLabel), y(w.list.parent) - n * pitch - 8 - GAP, "Timing under the spell rows")
+    -- Talents: under the gear grid (or Not recorded), its 6px, then the gap.
+    assertTrue(y(d.lo.title) < y(w.timingLabel) - H, "Gear under the timing strip")
+    assertTrue(y(w.flags) < y(d.lo.talentsTitle) - H - GAP, "the flags box clear of Talents")
+    assertTrue(y(w.noteTitle) <= y(w.flags) - GAP, "Note clear of the flags box")
 end)
 
 test("results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec", function()
@@ -273,7 +297,7 @@ test("results: the Status column tags each run; the DPS column shows every run's
     assertEqual(rows[1].cells.dps.fs.__text, "10.0K", "an incomplete run's DPS is shown")
     assertEqual(rows[1].cells.damage.fs.__text, "900.0K")
     assertEqual(rows[1].cells.status.fs.__text, "Incomplete")
-    assertEqual(rows[1].cells.time.fs.__text, "1:30 / 3:00")
+    assertEqual(rows[1].cells.time.fs.__text .. " " .. rows[1].cells.time.trail.__text, "3:00 at 1:30")
     assertEqual(rows[2].cells.dps.fs.__text, "\226\128\148")
     assertEqual(rows[2].cells.status.fs.__text, "Lost")
     assertEqual(rows[2].cells.damage.fs.__text, "\226\128\148")
@@ -294,13 +318,15 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     local C = i.NS.ResultsTable.COLORS
     local key, text, bestColor, icon = Runs.Status(by.top)
     assertEqual(key, "best", "with no view max given, the board's best")
-    assertEqual(text, "Spec best (cleave)", "the target type follows")
+    assertEqual(text, "Spec best", "the first part only: the board is the trail's")
+    assertEqual(Runs.StatusChips(by.top, key)[1][1], "Cleave", "the target type and the length follow")
     assertEqual(bestColor, C.blue, "Spec best in blue")
     assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
     local maxColor
     key, text, maxColor, icon = Runs.Status(by.top, 150000)
     assertEqual(key, "max", "the view's max outranks Spec best")
-    assertEqual(text, "Max (cleave)")
+    assertEqual(text, "Max")
+    assertEqual(Runs.StatusChips(by.top, key)[2][1], "3:00")
     assertEqual(icon, "ph:crown")
     assertEqual(maxColor, C.violet, "Max in violet")
     i.R.Show()
@@ -310,7 +336,8 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "slow" then other = row.cells.status end
     end
     assert(badge, "the top run is drawn")
-    assertEqual(badge.fs.__text, "Spec best (cleave)", "one spec in the view: its top run is its Spec best, no Max")
+    assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
+    assertTrue(badge.chip1:IsShown(), "Spec best names its board after the box")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
     -- A second spec in the view (the mage's run): now the view-wide top is Max.
@@ -325,10 +352,13 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "top" then badge = row.cells.status end
         if row.run.id == "slow" then other = row.cells.status end
     end
-    assertEqual(badge.fs.__text, "Max (cleave)", "two specs in the view: the top run is Max")
+    assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
+    assertEqual(badge.chip2.fs.__text, "3:00", "Max names its board too")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
     assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
     assertEqual(other.fs.__text, "Complete")
+    assertFalse(other.chip1:IsShown(), "only Spec best and Max carry a board")
+    assertEqual(Runs.StatusChips(by.slow, "complete"), nil)
     assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
     assertEqual((Runs.Status(by.slow)), "complete")
     local lateKey, _, lateColor, lateIcon = Runs.Status(by.late)
@@ -345,6 +375,82 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         seen[hue] = k
     end
     assertEqual(Runs.STATUS.incomplete.color, C.orange, "Incomplete in orange")
+end)
+
+test("results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise", function()
+    local i = inst()
+    local Tbl = i.NS.ResultsTable
+    local presets = i.NS.HudStates.PRESETS
+    local seen = {}
+    for _, len in ipairs(presets) do
+        local c = Tbl.LengthColor(len)
+        assertTrue(c ~= Tbl.LENGTH_NEUTRAL, len .. "s is a preset: it has a hue")
+        local hue = table.concat(c, ",")
+        assertEqual(seen[hue], nil, len .. "s shares its color with " .. tostring(seen[hue]))
+        seen[hue] = len
+        -- Muted: no channel at full strength or near black, so it reads on the dark table.
+        for _, v in ipairs(c) do assertTrue(v > 0.4 and v < 0.95, len .. "s is not muted") end
+    end
+    -- ROYGBIV in length order: the shortest red, the longest indigo.
+    assertTrue(Tbl.LengthColor(30)[1] > Tbl.LengthColor(30)[3], "the shortest is red")
+    assertTrue(Tbl.LengthColor(300)[3] > Tbl.LengthColor(300)[1], "the longest is blue")
+    assertEqual(Tbl.LengthColor(45), Tbl.LENGTH_NEUTRAL, "a custom length is neutral")
+    assertEqual(Tbl.LengthColor(nil), Tbl.LENGTH_NEUTRAL)
+    assertEqual(Tbl.Hex({ 1, 0, 0.5 }), "ffff0080")
+end)
+
+test("results: the Time column and the Bests Length column take the length color; the tail stays gray", function()
+    local i = inst()
+    seed(i, {
+        mkRun("two", { race = { length = 120, grace = 1 } }),
+        mkRun("odd", { race = { length = 45, grace = 1 }, result = { damage = 1, dps = 1, tail = 0 },
+                       date = NOW - 2 * HOUR }),
+    })
+    i.R.Show()
+    local Tbl = i.NS.ResultsTable
+    local cells = {}
+    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells end
+    assertEqual(cells.two.time.fs.__text .. "|" .. cells.two.time.trail.__text, "2:00|+9.2s", "the tail after the box")
+    local yellow = Tbl.LengthColor(120)
+    assertEqual(cells.two.time.fs.__color[1], yellow[1], "2:00 in its preset hue")
+    assertEqual(cells.two.time.fs.__color[3], yellow[3])
+    assertEqual(cells.odd.time.fs.__color[1], Tbl.LENGTH_NEUTRAL[1], "0:45 is neutral")
+    i.R.ShowTab("bests")
+    local pane = assert(ui(i).panes.bests)
+    pane.dropdowns.category.onSelect("cleave")
+    for _, row in ipairs(visible(pane)) do
+        local want = Tbl.LengthColor(row.run.race.length)
+        assertEqual(row.cells.length.fs.__color[1], want[1], "the Bests length in its color")
+    end
+end)
+
+test("results: Status tags are boxed in their hue with the icon inside", function()
+    local i = inst()
+    seed(i, { mkRun("top"), mkRun("slow", { result = { damage = 1, dps = 1 }, date = NOW - 2 * HOUR }) })
+    i.R.Show()
+    local pane = runsPane(i)
+    local edges = {}
+    for _, row in ipairs(visible(pane)) do
+        rawset(row.cells.status.box, "SetBackdropBorderColor", function(_, r, g, b) edges[row.run.id] = { r, g, b } end)
+    end
+    pane:Refresh()
+    local C = i.NS.ResultsTable.COLORS
+    assertEqual(edges.top and edges.top[3], C.blue[3], "Spec best's box in its blue")
+    assertEqual(edges.slow and edges.slow[2], C.green[2], "Complete's box in its green")
+    assertEqual(pane.list:column("target").boxed, true, "the Target tag is boxed too")
+    -- The sort by Status is the tag order, unchanged by the box: Spec best before Complete.
+    pane.list:SetSort("status")
+    assertEqual(visibleIDs(pane), "top,slow")
+end)
+
+test("results: the HUD never draws a race length in the Results length colors", function()
+    for _, file in ipairs({ "Hud.lua", "Hud_Appearance.lua", "Hud_Breakdown.lua", "Hud_Chart.lua", "Hud_States.lua" }) do
+        local f = assert(io.open(T.root .. "/modules/" .. file, "rb"))
+        local src = f:read("*a")
+        f:close()
+        assertFalse(src:find("LengthColor", 1, true) ~= nil, file .. " uses the Results length colors")
+        assertFalse(src:find("LENGTH_COLORS", 1, true) ~= nil, file .. " uses the Results length colors")
+    end
 end)
 
 test("results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)", function()
@@ -462,91 +568,8 @@ test("results: v/s Max and the Max tag are per target type", function()
     assertEqual(cells.cleave2.vsMax.fs.__text, "-50.0%")
     assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
     assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
-    assertEqual(cells.boss.status.fs.__text, "Spec best (boss-level)", "one spec per target type: no Max")
-end)
-
-test("results: Group by character, class & spec or target, with folding headers", function()
-    local i = inst()
-    local Runs = i.NS.ResultsRuns
-    seed(i, {
-        mkRun("a", { result = { damage = 1, dps = 300000 } }),
-        mkRun("b", { target = { category = "boss", count = 1 }, result = { damage = 1, dps = 100000 },
-                     date = NOW - 2 * HOUR }),
-        mkRun("m", { char = "mage", result = { damage = 1, dps = 200000 }, date = NOW - 3 * HOUR }),
-    })
-    i.R.Show()
-    local pane = runsPane(i)
-    pane:SetFilter("char", "all")
-    pane:SetFilter("spec", "all")
-    assertEqual(pane.filters.group, "none", "flat by default")
-    local opts = Runs.Options(i.NS.Recorder.All()).group
-    assertEqual(opts[1].label, "Group: None")
-    assertEqual(#opts, 4)
-    local function shape()
-        local out = {}
-        for _, row in ipairs(visible(pane)) do
-            out[#out + 1] = row.group and ("[" .. row.group.label:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-                .. " " .. row.group.count .. "]") or row.run.id
-        end
-        return table.concat(out, ",")
-    end
-    pane.dropdowns.group.onSelect("target")
-    assertEqual(shape(), "[Target: Cleave 2],a,m,[Target: Boss-level 1],b", "the catalog's order, newest first inside")
-    pane.dropdowns.group.onSelect("char")
-    assertEqual(shape(), "[Character: Kaosmage 1],m,[Character: Lanfear 2],a,b")
-    pane.dropdowns.group.onSelect("classSpec")
-    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],m,[Class & spec: Warlock \194\183 Destruction 2],a,b")
-    -- A header click folds its group; another unfolds it.
-    visible(pane)[1]:__fire("OnClick")
-    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],[Class & spec: Warlock \194\183 Destruction 2],a,b")
-    visible(pane)[1]:__fire("OnClick")
-    assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],m,[Class & spec: Warlock \194\183 Destruction 2],a,b")
-    -- The grouped column's header flips the groups' order.
-    pane.dropdowns.group.onSelect("char")
-    pane.list.heads[3]:__fire("OnClick")
-    assertEqual(shape(), "[Character: Lanfear 2],a,b,[Character: Kaosmage 1],m")
-    pane.dropdowns.group.onSelect("none")
-    assertEqual(shape(), "a,b,m")
-end)
-
-test("results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on", function()
-    local i = inst()
-    seed(i, { mkRun("a"), mkRun("m", { char = "mage", date = NOW - 2 * HOUR }) })
-    i.R.Show()
-    local pane = runsPane(i)
-    assertEqual(pane.barH, 32, "expanded: the filter bar is one row")
-    assertEqual(pane.viewButtons.save.label.__text, "Save")
-    pane:SetFilter("char", "all")
-    pane:SetFilter("spec", "all")
-    pane:SetFilter("group", "target")
-    pane.list:SetSort("dps")
-    pane.viewButtons.save:__fire("OnClick")
-    local saved = i.NS.db.profile.views.runs
-    assertEqual(saved.filters.char, "all")
-    assertEqual(saved.filters.group, "target")
-    assertEqual(saved.sortKey, "dps")
-    -- Clear returns to the saved view after the filters moved.
-    pane:SetFilter("char", "current")
-    pane:SetFilter("group", "none")
-    pane.viewButtons.clear:__fire("OnClick")
-    assertEqual(pane.filters.char, "all")
-    assertEqual(pane.filters.group, "target")
-    assertEqual(pane.list.sortKey, "dps")
-    -- A rebuilt view (a new login) opens on the saved view.
-    local fresh = i.NS.ResultsRuns.Build(i.mocks.UIParent)
-    assertEqual(fresh.filters.char, "all")
-    assertEqual(fresh.list.sortKey, "dps")
-    -- Reset deletes it and applies the stock view.
-    pane.viewButtons.reset:__fire("OnClick")
-    assertEqual(i.NS.db.profile.views, nil)
-    assertEqual(pane.filters.char, "current")
-    assertEqual(pane.filters.group, "none")
-    assertEqual(pane.list.sortKey, "date")
-    assertTrue(pane.list.sortDesc)
-    -- Clear with nothing saved is the stock view too.
-    pane:SetFilter("hideFlagged", true)
-    pane.viewButtons.clear:__fire("OnClick")
-    assertFalse(pane.filters.hideFlagged)
+    assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
+    assertEqual(cells.boss.status.chip1.fs.__text, "Boss-level")
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()
@@ -770,7 +793,7 @@ test("results: detail renders breakdown sorted with percentages", function()
     assertEqual(d.w.meterDps.value.__text, "5", "Blizzard's figure, muted")
     assertEqual(d.w.name.__text, "Lanfear")
     assertEqual(d.w.meta[1].__text, "Frostmourne \194\183 ilvl 313.2 \194\183 Silvermoon City, Falconwing Square")
-    assertEqual(d.w.meta[2].__text, "Cleave Training Dummy \194\183 Cleave \195\1515 \194\183 3:00 +2.0s")
+    assertEqual(d.w.meta[2].__text, "+2.0s \194\183 Cleave Training Dummy")
     assertTrue(d.w.meta[3].__text:find("build 120105", 1, true) ~= nil)
     assertTrue(d.w.meta[3].__text:find("v0.1.0", 1, true) ~= nil)
 end)
@@ -885,7 +908,8 @@ test("results: delete asks confirmation then fires RUNS_CHANGED", function()
     d.w.delete:__fire("OnClick")
     assertEqual(#i.popups, 1, "no confirmation was asked")
     assertEqual(i.popups[1].which, "DPSRACE_DELETE_RUN")
-    assertEqual(i.popups[1].data, "a")
+    assertEqual(i.popups[1].data.id, "a")
+    assertEqual(i.popups[1].data.onAccept, nil, "the window's own Delete marks nothing")
     assertTrue(i.NS.Recorder.Get("a") ~= nil, "deleted before the player confirmed")
     assertEqual(changed.count, 0)
     i.mocks.StaticPopupDialogs.DPSRACE_DELETE_RUN.OnAccept(nil, i.popups[1].data)
@@ -1195,22 +1219,22 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1240)
+    assertEqual(minW, 1328)
     assertEqual(minH, 420)
-    assertEqual(u.width, 1300)
+    assertEqual(u.width, 1340)
     assertEqual(u.height, 560)
     -- The toggle: collapsed has its own size and minimum; expanding brings the first back.
     assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 880)
+    assertEqual((u.frame:GetResizeBounds()), 968)
     assertEqual(u.width, 980)
     assertEqual(u.viewToggle.iconName, "chevron-right")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "expanded")
-    assertEqual(u.width, 1300)
+    assertEqual(u.width, 1340)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
     assertEqual(u.footRight.__text, "Runs to keep: 0 (never prune)")
@@ -1233,7 +1257,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     u.frame:__fire("OnSizeChanged", 1400, 600)
     assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1240, "expanded never goes under its minimum")
+    assertEqual(u.width, 1328, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)
@@ -1244,7 +1268,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     assertEqual(w.point, nil)
     assertEqual(w.expanded, nil)
     assertEqual(w.collapsed, nil)
-    assertEqual(u.width, 1300)
+    assertEqual(u.width, 1340)
 end)
 
 test("results: collapsed, the detail replaces the list, with a back control", function()
@@ -1290,6 +1314,77 @@ test("results: hidden with its parent is not closed by the player", function()
     ui(i).frame:Hide()
     ui(i).frame:__fire("OnHide")
     assertFalse(i.R.wanted, "Escape did not close it")
+end)
+
+-- Blizzard's close stack as the talent tree's panel open runs it: CloseSpecialWindows hides the
+-- frame, then the tree shows, then the next frame comes.
+local function closeStack(i, treeAfter)
+    local tree = i.mocks.PlayerSpellsFrame
+    ui(i).frame:Hide()
+    ui(i).frame:__fire("OnHide")
+    if treeAfter ~= nil then tree.shown = treeAfter end
+    i.mocks.__fireTimers()
+end
+
+local function withTree(i, shown)
+    local tree = { shown = shown }
+    function tree:IsShown() return self.shown end
+    i.mocks.PlayerSpellsFrame = tree
+    return tree
+end
+
+test("results: the talent tree's panel open closes the window, and it comes back under the tree", function()
+    local i = inst()
+    withTree(i, false)
+    i.R.Show()
+    closeStack(i, true)
+    assertTrue(i.R.wanted, "the window stayed closed under the talent tree")
+    assertTrue(ui(i).frame:IsShown(), "the window is wanted but not shown")
+end)
+
+test("results: Escape with the talent tree up closes both, and the window stays closed", function()
+    local i = inst()
+    withTree(i, true)
+    i.R.Show()
+    closeStack(i, false)
+    assertFalse(i.R.wanted, "Escape with the tree up did not close the window")
+    assertFalse(ui(i).frame:IsShown())
+end)
+
+test("results: Escape with no talent tree closes the window for good", function()
+    local i = inst()
+    withTree(i, false)
+    i.R.Show()
+    closeStack(i, false)
+    assertFalse(i.R.wanted, "the window came back with no tree")
+    -- The client before the talent frame loads: no PlayerSpellsFrame at all.
+    local j = inst()
+    j.R.Show()
+    closeStack(j)
+    assertFalse(j.R.wanted, "the window came back with no talent frame loaded")
+end)
+
+test("results: the close control with the talent tree up closes the window alone", function()
+    local i = inst()
+    withTree(i, true)
+    i.R.Show()
+    -- In the client Hide runs OnHide at once, inside the window's own `hiding` bracket.
+    local f = ui(i).frame
+    local hide = f.Hide
+    function f:Hide() hide(self); self:__fire("OnHide"); return self end
+    local before = #i.mocks.__timers()
+    i.R.Hide()
+    assertEqual(#i.mocks.__timers(), before, "the window's own close armed the look")
+    i.mocks.__fireTimers()
+    assertFalse(i.R.wanted, "the close control's close was undone by the open tree")
+end)
+
+test("results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook", function()
+    local src = assert(io.open(T.root .. "/modules/Results.lua", "rb")):read("*a")
+    assertFalse(src:find("UIPanelWindows", 1, true) ~= nil, "Results registers itself as a Blizzard UI panel")
+    assertFalse(src:find("UIPanelLayout", 1, true) ~= nil, "Results sets a Blizzard UI panel layout")
+    assertFalse(src:find("ShowUIPanel(", 1, true) ~= nil, "Results calls ShowUIPanel")
+    assertFalse(src:find("hooksecurefunc", 1, true) ~= nil, "Results hooks a Blizzard function")
 end)
 
 test("results: the stand-down hides it and the stand-up brings it back", function()

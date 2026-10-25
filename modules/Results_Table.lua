@@ -50,7 +50,20 @@ local C = {
     slate  = { 0.55, 0.58, 0.64 },
 }
 Tbl.COLORS = C
-local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
+local BADGE_ICON = 11       -- an icon inside a badge (the Status column's tags)
+Tbl.BADGE_ICON = BADGE_ICON
+
+-- The race length colors (the owner's call, 2026-10-25): the five preset lengths
+-- (NS.HudStates.PRESETS) in muted ROYGBIV hues, shortest to longest, and any other length a neutral
+-- gray. The Results window's only: the HUD never draws a length in these.
+Tbl.LENGTH_COLORS = {
+    [30]  = { 0.86, 0.52, 0.52 },   -- soft red
+    [60]  = { 0.88, 0.67, 0.46 },   -- soft orange
+    [120] = { 0.86, 0.81, 0.52 },   -- soft yellow
+    [180] = { 0.56, 0.80, 0.58 },   -- soft green
+    [300] = { 0.58, 0.66, 0.92 },   -- soft indigo
+}
+Tbl.LENGTH_NEUTRAL = { 0.76, 0.76, 0.80 }
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -119,6 +132,22 @@ function Tbl.SpecInfo(specID, fallbackName)
         if ok and type(name) == "string" then return name, icon end
     end
     return fallbackName, nil
+end
+
+--- A race length's color (Tbl.LENGTH_COLORS): a preset's hue, else the neutral gray. Plain numbers
+--- off a stored run only.
+--- @param seconds number|nil
+--- @return table color
+function Tbl.LengthColor(seconds)
+    return type(seconds) == "number" and Tbl.LENGTH_COLORS[seconds] or Tbl.LENGTH_NEUTRAL
+end
+
+--- A color as the "aarrggbb" hex an inline |c escape takes.
+--- @param color table  { r, g, b }
+--- @return string
+function Tbl.Hex(color)
+    return ("ff%02x%02x%02x"):format(math.floor(color[1] * 255 + 0.5), math.floor(color[2] * 255 + 0.5),
+        math.floor(color[3] * 255 + 0.5))
 end
 
 --- The category badge: "Cleave", or "Cleave ×5" for a counted group, and its color.
@@ -292,25 +321,95 @@ function Cells.icons(row, col)
     return cell
 end
 
--- A tag in a 1px box; a column whose text also answers an icon name draws that icon before the word.
--- A tag: its icon (where the column names one) before its word, both in the tag's color, on no box
--- of its own (the owner's call, 2026-10-25).
-function Cells.badge(row)
-    local cell = { box = CreateFrame("Frame", nil, row) }
-    cell.box:SetHeight(16)
+-- A tag: its icon (where the column names one) before its word, both in the tag's color. A `boxed`
+-- column draws it in a 1px box tinted the tag's color, its icon inside (the Status, Target and Time
+-- columns: the owner's calls, 2026-10-25); any other is the colored word on no box (the Bests Flags).
+-- A column with `chips = n` draws up to n more boxed chips after the tag (Spec best's and Max's
+-- board: the target type and the race length); a `trail` column draws plain text after the last box
+-- (the Time column's tail).
+function Cells.badge(row, col)
+    local cell = { box = col.boxed and Tbl.Panel(row) or CreateFrame("Frame", nil, row) }
+    cell.box:SetHeight(Tbl.CHIP_H)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
     cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
     cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
-    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 0, 0)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", col.boxed and 4 or 0, 0)
     cell.icon:Hide()
+    -- Each chip a part of its own (cell.chip1, ...), so a group header's showCells hides it too.
+    cell.chipCount = col.chips or 0
+    for i = 1, cell.chipCount do cell["chip" .. i] = Tbl.Chip(row) end
+    if col.trail then cell.trail = Tbl.Text(row, FONT.TEXT, C.dim) end
     return cell
 end
-
 
 local function paint(fs, color)
     color = color or C.text
     fs:SetTextColor(color[1], color[2], color[3])
+end
+
+-- A box's tint: its edge and a faint fill in `color`.
+local function tint(box, color)
+    if not box.SetBackdropBorderColor then return end
+    box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
+    box:SetBackdropColor(color[1], color[2], color[3], 0.08)
+end
+
+-- ── chips ───────────────────────────────────────────────────────────────────────────────────────
+-- A chip is a boxed badge with no icon: a 1px box tinted its color around its word in that color.
+-- The Runs list's Target and Time cells and Status boards, the Bests Length cells and the detail's
+-- header draw one. Its width is Tbl.BadgeWidth's (config, never measured).
+
+Tbl.CHIP_H = 16
+Tbl.CHIP_GAP = 4            -- the gap between two boxes, and between a box and the text after it
+
+--- A chip in `parent`, hidden until Tbl.SetChip paints it.
+function Tbl.Chip(parent)
+    local chip = Tbl.Panel(parent)
+    chip:SetHeight(Tbl.CHIP_H)
+    chip.fs = Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
+    chip.fs:SetPoint("CENTER", chip, "CENTER", 0, 0)
+    chip:Hide()
+    return chip
+end
+
+--- Paint `chip` with `s` in `color` and size it (Tbl.BadgeWidth, boxed), never wider than `maxW`
+--- when given (its word is cut to the box). Hidden for "" or nil.
+--- @return number width  0 when hidden
+function Tbl.SetChip(chip, s, color, maxW)
+    local on = type(s) == "string" and s ~= ""
+    chip:SetShown(on)
+    if not on then return 0 end
+    color = color or C.text
+    chip.fs:SetText(s)
+    paint(chip.fs, color)
+    tint(chip, color)
+    local w = Tbl.BadgeWidth(s, true)
+    if type(maxW) == "number" and w > maxW then w = math.max(14, math.floor(maxW)) end
+    chip:SetWidth(w)
+    chip.fs:SetWidth(w - 6)
+    chip.text, chip.color, chip.w = s, color, w
+    return w
+end
+
+--- A race length as its chip: "2:00" and its length color (Tbl.LengthColor).
+--- @return string text, table color
+function Tbl.LengthChip(length)
+    return NS.Format.Length(length), Tbl.LengthColor(length)
+end
+
+--- The text after a run's time chip: the tail after the buzzer ("+9.1s"), or for a run that ended
+--- before its buzzer the time combat ended ("at 1:04"); nil when there is neither. Plain numbers off
+--- the stored run only.
+--- @return string|nil
+function Tbl.TimeTail(run)
+    local result = type(run) == "table" and type(run.result) == "table" and run.result or {}
+    if run.status == "incomplete" and type(result.endedAt) == "number" then
+        return L["at %s"]:format(NS.Format.Length(result.endedAt))
+    end
+    local tail = result.tail
+    if type(tail) ~= "number" or tail < 0.05 then return nil end
+    return L["+%.1fs"]:format(tail)
 end
 
 local Bind = {}
@@ -366,26 +465,80 @@ function Bind.icons(cell, col, run)
     if col.after then col.after(cell, run) end
 end
 
+--- A badge's width from its label's length (config, never a measured width): 6 px a character (a
+--- UTF-8 continuation byte adds none: "·" is one), 4 px of pad (14 in a box), plus `extra` for an
+--- icon. Pure; the fit tests size columns against it.
+--- @param s string
+--- @param boxed boolean|nil
+--- @param extra number|nil
+--- @return number
+function Tbl.BadgeWidth(s, boxed, extra)
+    local chars = select(2, s:gsub("[^\128-\191]", ""))
+    return math.floor(chars * 6 + (boxed and 14 or 4) + (extra or 0))
+end
+
+-- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
+-- A boxed tag also takes its tint on the box's edge and fill.
+local function layoutBadge(cell, col, s, color, extra)
+    cell.fs:ClearAllPoints()
+    local w = Tbl.BadgeWidth(s, col.boxed, extra)
+    if cell.w and w > cell.w then w = math.max(14, cell.w) end
+    if not col.boxed then
+        cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
+        cell.fs:SetWidth(math.max(1, w - extra))
+        return w
+    end
+    cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
+    cell.fs:SetWidth(math.max(1, w - 6 - extra))
+    tint(cell.box, color)
+    return w
+end
+
+-- The icon, tinted the tag's color, before the word: answers the room the word shifts right by.
+local function bindIcon(cell, icon, color)
+    local path = icon and NS.Icon(icon)
+    cell.icon:SetShown(path ~= nil)
+    if not path then return 0 end
+    cell.icon:SetTexture(path)
+    cell.icon:SetVertexColor(color[1], color[2], color[3])
+    return BADGE_ICON + 2
+end
+
+-- The chips after the tag's box, each { text, color }, left to right in what the column has left.
+-- Answers the width used so far and the last box drawn (the trail sits after it).
+local function bindChips(cell, chips, used)
+    local last, gap = cell.box, Tbl.CHIP_GAP
+    for i = 1, cell.chipCount do
+        local chip, spec = cell["chip" .. i], chips and chips[i]
+        local room = cell.w and (cell.w - used - gap) or nil
+        local w = Tbl.SetChip(chip, spec and spec[1], spec and spec[2], room)
+        if w > 0 then
+            chip:ClearAllPoints()
+            chip:SetPoint("LEFT", last, "RIGHT", gap, 0)
+            used, last = used + gap + w, chip
+        end
+    end
+    return used, last
+end
+
 function Bind.badge(cell, col, run)
-    local s, color, icon = col.text(run)
+    local s, color, icon, trail, chips = col.text(run)
     s = s or ""
     color = color or C.amber
     cell.fs:SetText(s)
     paint(cell.fs, color)
     cell.box:SetShown(s ~= "")
-    -- The icon, tinted the tag's color, sits before the word; the word shifts right to make room.
-    local path = icon and NS.Icon(icon)
-    local extra = path and (BADGE_ICON + 2) or 0
-    cell.icon:SetShown(path ~= nil)
-    if path then
-        cell.icon:SetTexture(path)
-        cell.icon:SetVertexColor(color[1], color[2], color[3])
-    end
-    cell.fs:ClearAllPoints()
-    cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
-    cell.box:SetWidth(math.floor(#s * 6 + 4 + extra))
+    local boxW = layoutBadge(cell, col, s, color, bindIcon(cell, icon, color))
+    cell.box:SetWidth(boxW)
+    local used, last = bindChips(cell, chips, boxW)
+    if not cell.trail then return end
+    -- The trail takes what the column has left after the last box (placeCell's width).
+    cell.trail:ClearAllPoints()
+    cell.trail:SetPoint("LEFT", last, "RIGHT", Tbl.CHIP_GAP, 0)
+    cell.trail:SetText(trail or "")
+    cell.trail:SetShown(trail ~= nil and trail ~= "")
+    cell.trail:SetWidth(math.max(10, (cell.w or 0) - used - Tbl.CHIP_GAP))
 end
-
 
 -- Place one cell in its column, from the column's x and width alone.
 local function placeCell(row, cell, col, x, w)
@@ -403,6 +556,7 @@ local function placeCell(row, cell, col, x, w)
     elseif kind == "badge" then
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
+        cell.w = w
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -545,7 +699,7 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge", width | flex+min, tip = fn(run) -> lines, about = header text,
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
 --- @param opts table  { sortKey, sortDesc, onClick(run), onRightClick(run, row), empty = text,

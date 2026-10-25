@@ -90,20 +90,25 @@ local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
     "GetSpecializationInfoByID", "GetCursorPosition", "UIParent", "MenuUtil",
 }
-files["modules/Results.lua"] = { read_globals = resultsGlobals }
+-- The window's shell also reads whether Blizzard's talent frame is up (IsShown only): the tree's
+-- panel open closes the window through UISpecialFrames, and the window comes back under it.
+files["modules/Results.lua"] = { read_globals = { "PlayerSpellsFrame", (table.unpack or unpack)(resultsGlobals) } }
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The detail's loadout (#6): the item data, the item tooltip and its modified click, the Dressing
--- Room and the client's loadout serialization version (View prints its link to chat: no SetItemRef).
+-- Room, the client's loadout serialization version, and View's SetItemRef (it opens the tree).
 files["modules/Results_Loadout.lua"] = {
     read_globals = {
         "GameTooltip", "C_Item", "C_Traits", "DressUpItemLink", "HandleModifiedItemClick",
-        "IsShiftKeyDown", "ChatEdit_InsertLink",
+        "IsShiftKeyDown", "ChatEdit_InsertLink", "SetItemRef",
     },
 }
+
+-- The sample history (B5) dates its runs back from now.
+files["modules/MockRuns.lua"] = { read_globals = { "time" } }
 
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.

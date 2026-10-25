@@ -150,8 +150,12 @@ test("chart: the pace is the best's damage spread evenly over its length", funct
     assertEqual(C.Pace(best, 10), 1000)
     assertEqual(C.Pace(best, 45), 3000, "clamped at the buzzer")
     assertEqual(C.Pace(best, -2), 0)
-    assertEqual(C.PaceMax(best, 10), 2000, "half-full is on pace")
-    assertEqual(C.PaceMax(best, 0), 1, "a range at 0:00 all the same")
+    local lo, hi = C.PaceBounds(best, 10)
+    assertEqual(lo, 500, "Pace bar range 1.5 by default: half the pace")
+    assertEqual(hi, 1500, "to half again: on pace in the middle")
+    lo, hi = C.PaceBounds(best, 0)
+    assertEqual(lo, 0)
+    assertEqual(hi, 1, "a range at 0:00 all the same")
 end)
 
 test("chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last", function()
@@ -278,12 +282,13 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its pace diago
     local _, _, x1, y1 = lastDash:GetEndPoint()
     assertTrue(math.abs(x1 - (2 + (width - 4) * (1 - 0.4 / #chart.diag))) < 1e-6, "the last dash ends short of the corner")
     assertTrue(y1 < level and y1 > level - (level - 2) / #chart.diag, "the diagonal climbs to the best's level")
-    -- The pace bar: twice the best's average pace now (plain), the live total (opaque).
+    -- The pace bar: 0.5 to 1.5 x the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())
     assertEqual(pace.label.__text, "vs best pace")
     local elapsed = f.Race.Elapsed()
-    assertTrue(math.abs(pace.bar.__max - 2 * 3000000 * elapsed / 30) < 1e-3, "2 x pace at the last redraw")
+    assertTrue(math.abs(pace.bar.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
+    assertTrue(math.abs(pace.bar.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")
     assertTrue(rawequal(pace.bar.__value, reads[#reads].total), "the live total, untouched")
     assertTrue(pace.tick:IsShown(), "the on-pace tick")
 end)
@@ -304,7 +309,8 @@ test("chart: the tick reuses the live views and rebuilds the chart's only when w
     assertEqual(c2.max, 3000000 * Chart.HEADROOM)
     local _, p3 = Chart.LiveViews(run, 6, true, true)
     assertTrue(rawequal(p3, p2), "one pace table")
-    assertEqual(p3.max, 2 * 3000000 * 6 / 30, "its max refilled each pass")
+    assertEqual(p3.lo, 0.5 * 3000000 * 6 / 30, "its ends refilled each pass")
+    assertEqual(p3.hi, 1.5 * 3000000 * 6 / 30)
     -- The first bucket's capture gives the run its slices: the view follows them.
     pump(f, 1.5)
     local c4 = Chart.LiveViews(run, 7, true, true)
@@ -403,12 +409,87 @@ test("chart: the result card draws the race's slices to its plain final damage, 
     local col = b.w.chart.cols[10]
     assertEqual(col.__max, run.result.damage, "scaled to the plain final damage")
     assertTrue(rawequal(col.__value, rec.values[10]), "the very handle captured live")
-    assertEqual(b.rowsTop, 104 + f.NS.HudChart.BlockHeight(80) + 8, "the rows under the chart and its gap")
+    local BREAKDOWN = f.NS.HudStates.BREAKDOWN_H
+    assertEqual(b.rowsTop, 104 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the rows under the chart and its heading")
     -- A /reload empties the store: the card has no chart, and its rows move back up.
     f.NS.Slices.Reset()
     f.Hud.Refresh()
     assertFalse(b.w.chart.shown)
-    assertEqual(b.rowsTop, 104)
+    assertEqual(b.rowsTop, 104 + BREAKDOWN)
+end)
+
+test("chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15", function()
+    local Chart = T.NS.HudChart
+    local run = { id = "r", race = { length = 30 }, result = { damage = 1000 }, flags = {} }
+    local best = { id = "b", race = { length = 30 }, result = { damage = 2000 } }
+    local v = Chart.WithBest({ max = 1000, note = "" }, run, best)
+    assertEqual(v.best, 2000, "the best's damage at this run's length: the diagonal's end")
+    assertEqual(v.max, 2000 * 1.15, "the best is the larger")
+    assertEqual(v.note, "vs best pace")
+    v = Chart.WithBest({ max = 1000 }, run, { id = "b", race = { length = 30 }, result = { damage = 500 } })
+    assertEqual(v.max, 1000 * 1.15, "the run is the larger")
+    v = Chart.WithBest({ max = 1000 }, run, nil)
+    assertEqual(v.max, 1000, "no best: the run's own damage, no headroom")
+    assertEqual(v.best, nil, "no diagonal")
+    v = Chart.WithBest({ max = 1000 }, run, run)
+    assertEqual(v.best, nil, "never against itself")
+    run.flags.sharedSession = true
+    v = Chart.WithBest({ max = 1000 }, run, best)
+    assertEqual(v.best, nil, "a shared session: no diagonal")
+end)
+
+-- The diagonal's end level for `best` over `max` on `chart`'s plot (the last dash stops short of it).
+local function diagonalTo(chart, best, max)
+    local level = 2 + (chart.plotH - 4) * best / max
+    local _, _, _, y1 = chart.diag[#chart.diag]:GetEndPoint()
+    return y1 < level and y1 > level - (level - 2) / #chart.diag
+end
+
+test("chart: the result card draws the earlier best's diagonal, the columns on the shared max", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    local run = resolved(f)
+    local b = body(f)
+    local chart = b.w.chart
+    assertTrue(chart.shown)
+    local max = 3000000 * 1.15
+    assertEqual(chart.cols[10].__max, max, "the columns use the diagonal's max")
+    for _, l in ipairs(chart.diag) do assertTrue(l:IsShown(), "the best's diagonal") end
+    assertTrue(diagonalTo(chart, 3000000, max), "the diagonal climbs to the best's damage at the buzzer")
+    assertTrue(run.result.damage < 3000000)
+    -- The detail draws the same.
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    local d = R.__ui().detail.w.chart
+    assertEqual(d.cols[1].__max, max)
+    for _, l in ipairs(d.diag) do assertTrue(l:IsShown(), "the detail's diagonal") end
+    assertTrue(diagonalTo(d, 3000000, max))
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart: the earlier best deleted while the card is up drops its diagonal and the shared max", function()
+    local f = hud()
+    local best = seedBest(f, 3000000, 30)
+    local run = resolved(f)
+    local chart = body(f).w.chart
+    assertEqual(chart.cols[10].__max, 3000000 * 1.15)
+    f.NS.Recorder.Delete(best.id)
+    assertEqual(f.Race.State(), "result", "the card's own run is still stored")
+    chart = body(f).w.chart
+    for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "the deleted best's diagonal") end
+    assertEqual(chart.cols[10].__max, run.result.damage, "back on the run's own damage")
+    assertEqual(body(f).w.chips:Texts()[1], "New best", "the delta chip names no best")
+end)
+
+test("chart: with no earlier best the result card and the detail draw no diagonal", function()
+    local f = hud()
+    local run = resolved(f)
+    local chart = body(f).w.chart
+    for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "a diagonal with no earlier best") end
+    assertEqual(chart.cols[10].__max, run.result.damage)
+    local R = f.NS.Results
+    R.ShowRun(run.id)
+    for _, l in ipairs(R.__ui().detail.w.chart.diag) do assertFalse(l:IsShown()) end
 end)
 
 test("chart: the Results detail shows the chart for a run raced this session only", function()
@@ -420,7 +501,7 @@ test("chart: the Results detail shows the chart for a run raced this session onl
     assertTrue(d.w.chart.shown, "this session's run has its chart")
     assertEqual(d.w.chart.cols[1].__max, run.result.damage)
     local lines = f.NS.ResultsTips.Detail("chart", run)
-    assertEqual(lines[1], "Damage over the race", "the chart has a tooltip")
+    assertEqual(lines[1], "Damage profile", "the chart has a tooltip")
     -- An earlier session's run (after a /reload): no section at all.
     f.NS.Slices.Reset()
     R.ShowRun(run.id)
@@ -461,30 +542,42 @@ end)
 
 -- ── test mode ───────────────────────────────────────────────────────────────────────────────────
 
-test("chart: test mode draws the sample's chart against a sample best, then on its result card", function()
+test("chart: test mode's still running body draws the sample's chart against the sample history's best", function()
     local f = hud()
-    local P = f.NS.Preview
-    assertTrue(P.Start())
-    f:advance(3.2)
-    P.Beat()
-    f:advance(10)
-    P.Beat()
+    assertTrue(f.NS.Preview.Start())
     local b = body(f)
     assertEqual(f.Hud.__ui().current, "running")
     assertTrue(b.w.chart.shown)
     assertTrue(b.w.pace.bar:IsShown())
     assertEqual(b.w.chart.note.__text, "vs best pace")
     assertTrue(type(b.w.chart.cols[5].__value) == "number" and b.w.chart.cols[5].__value > 0, "plain sample numbers")
+    local after = b.w.chart.cols[f.NS.Preview.STILL_AT + 1].__value
+    assertTrue(after == nil or after == 0, "a still moment: nothing past it")
+end)
+
+test("chart: the sim draws the sample's chart live against a best, then on its result card", function()
+    local f = hud()
+    local Sim = f.NS.Sim
+    assertTrue(f.NS.Preview.Start({ mode = "sim", scenario = "newbest" }))
+    f:advance(3.2)
+    Sim.Beat()
+    f:advance(10)
+    Sim.Beat()
+    local b = body(f)
+    assertEqual(f.Hud.__ui().current, "running")
+    assertTrue(b.w.chart.shown)
+    assertTrue(b.w.pace.bar:IsShown())
+    assertEqual(b.w.chart.note.__text, "vs best pace")
     f:advance(40)
-    P.Beat()
+    Sim.Beat()
     assertEqual(f.Hud.__ui().current, "result")
     assertTrue(body(f).w.chart.shown, "the sample's result card has its chart")
 end)
 
-test("chart: test mode honors Show damage chart and Show pace bar", function()
+test("chart: the sim honors Show damage chart and Show pace bar", function()
     local f = hud()
-    local P = f.NS.Preview
-    assertTrue(P.Start())
+    local P = f.NS.Sim
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     f:advance(3.2)
     P.Beat()
     f:advance(10)

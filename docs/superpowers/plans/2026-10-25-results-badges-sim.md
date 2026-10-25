@@ -1,0 +1,123 @@
+# 2026-10-25: Results badges and length colors, Group by, pace range, the talent view, test vs sim
+
+Branch `feat/2026-10-25-results-badges-sim`, from master `da963f6`. This is the owner's backlog after the
+chart, compare and loadout merge.
+
+**Gate per commit:** `lua tests/run.lua` and `luacheck .` (0/0), each through
+`~/.claude/dev-copilot/bin/ka0s-bounded`. Gate on the exit code. Every touched function stays at CCN 15 or below.
+
+**Checkpoints:** each step is one or more commits, and its box is ticked in the step's last commit. A fresh session
+resumes at the first open box. The branch is pushed after each milestone and never merged without the owner's
+go-ahead.
+
+## Decisions (the owner, 2026-10-25)
+
+- **Status names its board.**
+  - The Spec best and Max statuses carry the target type and race length.
+  - Status is a boxed badge (its icon inside, the first part only: Spec best, Max, Complete, Incomplete, Flagged,
+    Died, Lost).
+  - Spec best and Max are followed by plain text `<target> · <time>`, the time in its length color.
+- **Race length colors, in the Results view only (never the HUD).**
+  - The 5 presets (0:30, 1:00, 2:00, 3:00, 5:00) take ROYGBIV hues in a muted tone.
+  - A non-preset length gets a neutral color.
+  - The colors apply to the Time column and to the Status column's time text.
+  - Badges may reuse hues, since the length colors are muted text.
+- **Group by:** add *Duration*, and *Target type + duration*.
+- **Talent view:** opening the tree from the posted chat link must not close the Results window. The tree opens over it.
+- **Pace bar:**
+  - The max is a configurable multiple of the best's pace, default 1.5× (was 2×).
+  - The post-race result card shows the pace bar too: the run's plain final damage against the best's damage.
+  - It is hidden with no best or on a shared session.
+- **`/dr test` vs `/dr sim`:**
+  - `test` shows static mocked data in every view (the HUD and the Results window).
+  - `sim` plays a whole race through the scenarios: arm, race, post-race, then Results.
+  - Neither writes to SavedVariables.
+- **Reminder (not code):** iterate on the comparison view and the Dressing Room with the owner.
+- **Chart border:** stays the fixed faint edge, with no setting (the owner, 2026-10-25).
+
+## Steps
+
+### B1: Runs Status and length colors
+
+- [x] B1.1 Length colors: a pure `lengthColor(seconds)` with muted ROYGBIV hues for the presets and a neutral color
+  otherwise, used by the Time column in the Results views only.
+- [x] B1.2 Status as boxed badges with the icon inside and the first part only. Spec best and Max get the
+  `<target> · <time>` text after the badge, the time length-colored. Tooltips, the sort and the Bests tab stay
+  consistent.
+
+### B2: Group by
+
+- [x] B2.1 Group by *Duration*, and by *Target type + duration*, with ordering, labels, saved views, tests and docs.
+
+### B3: Pace bar
+
+- [x] B3.1 A pace range setting (default 1.5) driving `PaceMax`. The tick sits at 1/x.
+- [x] B3.2 The pace bar on the HUD result card (plain final damage vs the best), its settings respected, test mode
+  included.
+
+### B4: The talent view over Results
+
+- [x] B4.1 Find why the Results window closes when the talent tree opens (UIPanel and UISpecialFrames registration,
+  strata), fix it without taint, and add a smoke row.
+  - Found: `ShowUIPanel(PlayerSpellsFrame)` resolves to the `center` area and runs `CloseWindows`, whose
+    `CloseSpecialWindows` hides every `UISpecialFrames` entry. Fixed: the window comes back one frame later when
+    the tree is up (no hook, still in `UISpecialFrames`).
+  - Open for the owner: the tree (`MEDIUM`) still draws under the window (`HIGH`, the standard's on-demand
+    browser tier) where they overlap; drawing it on top needs a deviation row or a standard change.
+
+### B5: test vs sim
+
+- [x] B5.1 `/dr test`: static mocked data in every view (the HUD states and the Results window's mocked runs and
+  detail). No engine, no SavedVariables.
+  - Done: every Results file reads through one seam (`modules/Results_Source.lua`), routed to an in-memory sample
+    history (`modules/MockRuns.lua`) while test mode or a sim is on and back to the store when it ends. The HUD
+    holds the running body still (`/dr test armed|running|result` picks), the Results window opens with its
+    own strip; Share, Save and Reset refuse on samples, and a note or a delete stays in memory.
+- [x] B5.2 `/dr sim [scenario]`: the scripted full race (arm, race, post-race, Results) across the scenarios, with
+  the Results window showing the sim run in memory only.
+  - Done: `modules/Sim.lua` (newbest, behind, first, incomplete, died, flagged, shared; newbest by default). The
+    chat box completes no addon's slash words, so the help line and `/dr sim <unknown>` list the scenarios.
+
+### B6: Finish
+
+- [x] B6.1 Docs sync (ARCHITECTURE, schema, settings-panel, slash surface, smoke rows and the pending list, the test
+  inventory) and a completeness pass.
+  - Done: ARCHITECTURE's overview names this pass, Known Limitations moved to `docs/known-limitations.md` (past
+    ~60 lines; the hub keeps a summary), and the cap census lists the two test files in the on-notice band;
+    README and scope.md follow the pace range, the result card's pace bar, the new groupings and test vs sim.
+    The complexity suite finds no function above CCN 15 that this branch touched.
+  - Open for the owner: the group label (*Target + duration* kept), and the tree over Results (B4.1).
+
+## Round C (the owner, 2026-10-25, after testing the B pass)
+
+Decisions:
+
+- **Results detail headings:**
+  - The section headings get larger again (a step above GameFontNormal), with a matching line height.
+  - Clear space goes above every section heading. The detail read as cramped and dense.
+- **HUD running body and result card:**
+  - "Damage over the race" is renamed "Damage profile" everywhere.
+  - The pace bar sits directly below the chart's heading, above the plot.
+  - A "Spell breakdown" heading goes above the spell rows.
+  - Proper space above each heading. The HUD headings use the same font and size as the Results detail's section headings.
+- **Pace bar:**
+  - The tick sits in the MIDDLE.
+  - The bar runs linearly from pace × (2 − m) to pace × m: empty at or below the low end, full at or above the high end (the StatusBar clamps).
+  - m is the *Pace bar range* setting, default 1.5, meaning ±50%. This supersedes B3.1's tick at 1/m. The bounds and tooltip are adjusted so the low end stays at 0 or above (m ≤ 2).
+- **Stop! / waiting screen:** two buttons.
+  - *Stop now* takes the result immediately instead of waiting out the damage tail.
+  - *Cancel* discards the race and saves nothing.
+- **Result card:**
+  - A *Delete* button with a confirm, beside Race Again, Details and Share. All four buttons are the same width.
+  - The chart draws the gray average-pace diagonal for the best. The post-race plot's max covers both the run's damage and the best's.
+
+- [x] C1.1 Results detail: larger section headings and space above each section.
+- [x] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
+- [x] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
+- [x] C1.4 Stop! screen: *Stop now* and *Cancel*.
+- [x] C1.5 Result card: *Delete* with a confirm, equal-width buttons, the best-pace diagonal on the post-race chart.
+- [x] C1.6 Docs, smoke rows and the test inventory.
+  - Done: Stop Now is Race.StopNow (the quiet waived, never the combat end: in combat it reads on the regen
+    edge); the waiting screen's Discard Run and Close (Keep Waiting) became Stop Now and Cancel. Smoke rows
+    SM-DR-RC4 to SM-DR-RC10 (section 16) and R10, R12, R17, SM-DR-CH5 rewritten. The complexity suite finds
+    no function above CCN 15 that this round touched.

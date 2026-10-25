@@ -248,11 +248,11 @@ end)
 
 -- ── test mode ───────────────────────────────────────────────────────────────────────────────────
 
-test("countdown: test mode demonstrates it in its running phase, and it stops with test mode", function()
+test("countdown: the sim demonstrates it in its running phase, and it stops with the sim", function()
     local f = fixture()
-    assertTrue(f.NS.Preview.Start())
-    local P = f.NS.Preview
-    local runFrom = P.SCRIPT[1].secs
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    local P = f.NS.MockRuns
+    local runFrom = 3                          -- the sim's armed phase
     f:advance(runFrom + P.LENGTH - 10.5)       -- 10.5s left in the sample race
     assertNil(f.C.Shown())
     f:advance(1)
@@ -265,20 +265,25 @@ test("countdown: test mode demonstrates it in its running phase, and it stops wi
     assertFalse(frameShown(f))
 end)
 
-test("countdown: the test race's buzzer clears it, and the setting holds in test mode", function()
+test("countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none", function()
     local f = fixture()
-    assertTrue(f.NS.Preview.Start())
-    local P = f.NS.Preview
-    f:advance(P.SCRIPT[1].secs + P.LENGTH - 2)
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    local P = f.NS.MockRuns
+    f:advance(3 + P.LENGTH - 2)
     assertEqual(f.C.Shown(), 2)
     f:advance(2.5)
     assertEqual(f.NS.Preview.Diagnose().phase, "stop")
     assertNil(f.C.Shown())
 
+    local h = fixture()
+    assertTrue(h.NS.Preview.Start())
+    h:advance(30)
+    assertNil(h.C.Shown(), "a still running body counts nothing down")
+
     local g = fixture()
     g.NS.db.profile.race.centerCountdown = false
-    assertTrue(g.NS.Preview.Start())
-    g:advance(P.SCRIPT[1].secs + P.LENGTH - 2)
+    assertTrue(g.NS.Preview.Start({ mode = "sim" }))
+    g:advance(3 + P.LENGTH - 2)
     assertNil(g.C.Shown())
     assertNil(g.C.__ui())
 end)

@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (52)
+### test_race.lua (57)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -193,6 +193,11 @@ Total.
 - race: no new session at all is lost
 - race: cancel in armed/running stores nothing; cancel in stopping discards
 - race: cancel on a result dismisses it and keeps the run; race again arms
+- race: stop now acts only while stopping
+- race: stop now out of combat reads at once through the normal path, the quiet waived
+- race: stop now in combat reads nothing until the regen edge, then reads without the quiet
+- race: stop now on a still-sealed read retries on the poll, as any read does
+- race: stop now on a run that ended before the buzzer reads it as incomplete
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
 
@@ -226,7 +231,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (63)
+### test_hud.lua (71)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -255,8 +260,16 @@ Total.
 - hud: the result card's rows stop above its buttons at every window height
 - hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
-- hud: the result card's three buttons are chained by anchor, so they never overlap at the minimum width
-- hud: Discard run on the waiting body throws the attempt away
+- hud: the equal buttons' width is whole pixels from the body's width and the gap
+- hud: the result card's four buttons sit in one row, the same width each, at any width
+- hud: Cancel on the waiting body throws the attempt away
+- hud: the Stop! and waiting bodies carry Stop Now and Cancel, the same width, with tooltips
+- hud: Stop Now out of combat takes the result at once, without the quiet
+- hud: Stop Now in combat reads at the combat end and says so
+- hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race
+- hud: a result card whose run is deleted in the Results window is dismissed
+- hud: a canceled card Delete leaves a later Results-window delete of that run an outside one
+- hud: the card's Delete accepted after the card has gone leaves no mark behind
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
@@ -292,7 +305,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (24)
+### test_chart.lua (29)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -312,12 +325,32 @@ Total.
 - chart: the chart steps aside at the minimum height; the rows keep their three
 - chart: the overlay sits one band over the plot's columns
 - chart: the result card draws the race's slices to its plain final damage, and none without them
+- chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15
+- chart: the result card draws the earlier best's diagonal, the columns on the shared max
+- chart: the earlier best deleted while the card is up drops its diagonal and the shared max
+- chart: with no earlier best the result card and the detail draw no diagonal
 - chart: the Results detail shows the chart for a run raced this session only
 - chart: the detail's title hover goes with its chart, so it never covers the section under it
 - chart: a lost run has no chart on the card or in the detail
-- chart: test mode draws the sample's chart against a sample best, then on its result card
-- chart: test mode honors Show damage chart and Show pace bar
+- chart: test mode's still running body draws the sample's chart against the sample history's best
+- chart: the sim draws the sample's chart live against a best, then on its result card
+- chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
+
+### test_pace.lua (12)
+
+- pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
+- pace: the tick sits in the middle of the bar's width, in whole pixels
+- pace: the running bar's tick stays in the middle while its range follows Pace bar range
+- pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
+- pace: the result card sets the plain final damage against the best's pace at the buzzer
+- pace: a run that just became the best is set against the previous best
+- pace: no pace bar on the result card with no earlier best, and the rows move back up
+- pace: Show pace bar off, a shared session and a lost run hide the result card's bar
+- pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside
+- pace: the sim's result card shows the pace bar against the sample best, and honors the setting
+- pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown
+- pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
 
 ### test_countdown.lua (20)
 
@@ -337,8 +370,8 @@ Total.
 - countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
 - countdown: a /reload before the window shows nothing until it opens
 - countdown: a /reload past the buzzer shows nothing
-- countdown: test mode demonstrates it in its running phase, and it stops with test mode
-- countdown: the test race's buzzer clears it, and the setting holds in test mode
+- countdown: the sim demonstrates it in its running phase, and it stops with the sim
+- countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
@@ -351,22 +384,25 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (46)
+### test_results.lua (54)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
 - results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
 - results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
+- results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
+- results: the Time column and the Bests Length column take the length color; the tail stays gray
+- results: Status tags are boxed in their hue with the icon inside
+- results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
 - results: the Damage and DPS bars run 10% to 100% within each target type
 - results: v/s Max and the Max tag are per target type
-- results: Group by character, class & spec or target, with folding headers
-- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
 - results: Only best keeps the runs holding their board's best
 - results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
@@ -394,11 +430,44 @@ Total.
 - results: position, size and Master scale persist; Reset position restores them
 - results: collapsed, the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
+- results: the talent tree's panel open closes the window, and it comes back under the tree
+- results: Escape with the talent tree up closes both, and the window stays closed
+- results: Escape with no talent tree closes the window for good
+- results: the close control with the talent tree up closes the window alone
+- results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
+
+### test_results_fit.lua (3)
+
+- results: every Runs column fits the narrowest list either view lays out
+- results: the Bests Flags chips are plain, and a two-flag best fits its column
+- results: the Runs filter bar fits inside both views' minimum width
+
+### test_results_group.lua (4)
+
+- results: Group by character, class & spec or target, with folding headers
+- results: Group by duration, and by target type and duration, shortest first
+- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
+- results: hovering Save, Reset or Clear shows its tooltip without an error
+
+### test_results_badges.lua (12)
+
+- badges: the Target cell is a boxed chip in its category color, the count inside
+- badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
+- badges: Spec best and Max name their board in two chips: the target type, then the length
+- badges: a group header row hides the cells' chips; the rows draw them again
+- badges: a chip never runs past its column: a too-long word is cut to the box
+- badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
+- badges: the window minimums hold the wider columns, the Note column last and inside the list
+- badges: the Bests Length column is a chip in its length color
+- badges: the detail's target line leads with the type and length chips, laid out from their widths
+- badges: drawing the chips reads no frame's size or position back
+- badges: group headers color their value as plain text: class, target type, length
+- badges: the HUD draws none of the Results chips
 
 ### test_compare.lua (12)
 
@@ -494,7 +563,7 @@ Total.
 - settings: lowering Runs to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
-### test_slash.lua (27)
+### test_slash.lua (30)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -519,6 +588,9 @@ Total.
 - slash: hud show, hide and toggle; a bare hud toggles
 - slash: results opens the Results window; results bests opens the bests
 - slash: test turns test mode on and off through the Master controls row
+- slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
+- slash: sim plays the default scenario or the one named; an unknown one lists them all
+- slash: the sim help line lists every scenario Sim.Names() has
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
@@ -540,24 +612,46 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (16)
+### test_preview.lua (22)
 
-- preview: preview runs armed->running->stop->waiting->result and never writes a run
-- preview: the running body counts the 30s race down with live figures
-- preview: the running clock follows the Race clock setting
-- preview: the result card is the sample run, with its chips
-- preview: the test strip says so on the display while it is on, and only then
-- preview: with no Widgets library the title carries the marker
-- preview: arming a real race ends preview
+- preview: test mode holds the running body still with live figures, chart, pace bar and spells
+- preview: the still running clock follows the Race clock setting
+- preview: a queued state opens on that body; SetState switches armed, running and result
+- preview: the test strip says so on the HUD while it is on, and only then
+- preview: with no Widgets library each window's title carries the marker
+- preview: test mode opens the Results window on the sample history, with its strip
+- preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
+- preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
+- preview: a note or a delete changes the sample in memory; Save view and Share refuse
+- preview: ending it gives the store back, the player's view and an open window kept open
+- preview: a Results window test mode opened closes with it
+- preview: a Results window the player closed and reopened stays open when test mode ends
+- preview: arming a real race ends test mode and gives the Results window the store
 - preview: a start in combat is refused with one line; combat ends it and says so
 - preview: a start during a real race is refused
 - preview: turning it off gives the HUD back, closing it if test mode opened it
-- preview: Start again restarts the script; Reset all settings ends it
-- preview: the stand-down ends it silently and cancels its timer
+- preview: closing the HUD ends it; Reset all settings ends it
+- preview: the stand-down ends it silently and gives the store back
 - preview: over a real result card its controls never touch the real race
 - preview: a HUD test mode opened is handed to the race that ended it, and closes with it
-- preview: a stand-down drops the HUD test mode opened
+- preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
+
+### test_sim.lua (13)
+
+- sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
+- sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
+- sim: behind finishes under the best with a minus chip
+- sim: first races a board with no best: the chart on its own scale, no pace bar
+- sim: shared draws no chart and no pace bar, live or on the card
+- sim: flagged shows the late cast after the buzzer and on the card
+- sim: incomplete and died end before the buzzer and read out of combat
+- sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
+- sim: closing the HUD, Reset all settings and the stand-down end a running script
+- sim: switching to test mode stops the script; a sim restarts in place
+- sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim
+- sim: the sample result card's Delete is grayed and does nothing
+- sim: the result card draws the best's diagonal with a best before the run, and none on a first race
 
 ### test_launcher.lua (8)
 
@@ -711,21 +805,26 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 52 |
+| test_race.lua | 57 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 63 |
-| test_chart.lua | 24 |
+| test_hud.lua | 71 |
+| test_chart.lua | 29 |
+| test_pace.lua | 12 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 46 |
+| test_results.lua | 54 |
+| test_results_fit.lua | 3 |
+| test_results_group.lua | 4 |
+| test_results_badges.lua | 12 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
-| test_slash.lua | 27 |
+| test_slash.lua | 30 |
 | test_share.lua | 13 |
-| test_preview.lua | 16 |
+| test_preview.lua | 22 |
+| test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -739,4 +838,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **585** |
+| **Total** | **664** |

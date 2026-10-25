@@ -98,7 +98,11 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   run with no captured ID falls back to the newest session created after the arm and is flagged
   `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
   `sealed` read is retried for 10 s; a missing session, a raise or a
-  meter reset makes the run `lost` (kept, with no result). A run resolved with no combat-end
+  meter reset makes the run `lost` (kept, with no result). *Stop Now* on the Stop! or waiting screen
+  (`Race.StopNow`, Round C) waives the 2.5 s of quiet, never the combat end: out of combat the read
+  runs on the press, in combat it runs on the regen edge (nothing is readable before), and a sealed
+  read retries on the poll as ever. Damage that lands after the read is not counted. The decision is
+  the press, the combat flag and `GetTime()`, never a meter value. A run resolved with no combat-end
   loadout takes the arm-time one; a run resumed after a /reload or a stand-down has neither, and
   takes a fresh snapshot when it resolves out of combat.
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
@@ -107,7 +111,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   (`RUN_SAVED`) and `RACE_RESULT(run)` is sent. Watchers drops every registration. `Race.Cancel()`
   dismisses the card; `Race.Arm` races again.
 - **Cancel** before the result discards the run: an armed one was never stored, a running or
-  stopping one is deleted from the store.
+  stopping one is deleted from the store (the HUD's *Cancel* on the running, Stop! and waiting
+  screens, `/dr cancel`).
 - **Resume** (`OnEnable` and the stand-up): the logged-in character's newest stored `running` or
   `stopping` run is carried on (`Recorder.Pending` holds only this character's runs; another
   character's waits for its own login). Its session gone: `lost`. Running, before its buzzer and in
@@ -136,7 +141,7 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   and talent loadout; `ResultsLoadout.Fill` draws the grid from the links (the item data from
   `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
   the other run's the same way and highlights the slots whose link differs, and marks a different
-  import string. *View* prints the `talentbuild` link to the player's own chat window (`NS.Print`), where a click opens the talent tree through Blizzard's chat link handling; it opens no Blizzard frame itself (ARCHITECTURE.md, Taint Notes). Nothing is stored.
+  import string. *View* opens the talent tree through `SetItemRef` with the `talentbuild` link (an accepted taint risk, ARCHITECTURE.md Taint Notes) and also prints the link to the player's own chat window (`NS.Print`), where a click opens the tree again. Nothing is stored.
 - **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
@@ -159,7 +164,9 @@ race.
   (`run.race.lastDamage`) is under 2.5 s old, then *Waiting* (for combat to end, or for the read); a
   run that ended before the buzzer waits from the start. The live tail is `lastDamage − length`, the
   time in combat `Race.SinceBuzzer()`. After `race.hintDelay` seconds in combat past the buzzer the
-  waiting body names the drop-combat spells `IsPlayerSpell` says the character has.
+  waiting body names the drop-combat spells `IsPlayerSpell` says the character has. Both phases carry
+  *Stop Now* (`Race.StopNow`) and *Cancel* (`Race.Cancel`) across the foot, the same width; after *Stop
+  Now* in combat the button grays and the waiting title reads *Reading when combat ends*.
 - **Showing**: `IsShown()` = wanted and `NS.MasterVisibilityAllows()`. With `hud.showMode = "onArm"`
   the window opens on arm and on `RACE_RESULT`, and closes again when the race it opened for goes
   back to idle; the player's own Show/Hide/close wins. Closing a result card (the × or Escape)
@@ -186,18 +193,38 @@ race.
   stretch, and the RUNNING → STOPPING edge at the buzzer makes one last read for the bucket ending
   there. The running body's view (`HudChart.LiveViews`) carries the buckets and the scale: the
   board's best (`Bests.Board()[Bests.Key(run)]`) x 1.15 with its level and pace diagonal, or with no
-  best the live total itself; and the pace bar's range, `2 x best.damage x elapsed / best.length`.
+  best the live total itself; and the pace bar's ends (`HudChart.PaceBounds`), with
+  `pace = best.damage x elapsed / best.length` and `m = live.paceRange` (1.1-2.0): `lo = pace x (2 - m)`,
+  `hi = max(pace x m, lo + 1)`, its tick fixed in the middle of the bar's configured width (Round C). A
+  live total outside the range is the StatusBar's to clamp, empty or full; nothing compares it. Both sit under the *Damage
+  profile* heading, the pace bar directly under it and above the plot, and *Spell breakdown* heads the
+  rows (Round C; laid out from config by `HudStates.ProfileHeight` and `BREAKDOWN_H`).
   On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
   `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
   `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three
-  spell rows. Nothing is computed from a value.
+  spell rows (only the plot steps aside: the *Damage profile* heading stays over the pace bar). Nothing is computed from a value. After the race the result card draws the pace bar
+  again (`HudChart.ResultPace`), all plain: `SetMinMaxValues(PaceBounds(prev, run.race.length))` and
+  `SetValue(run.result.damage)`, where `prev` is `Bests.Before(run)`, the best on the board raced
+  before the run (what the delta chip names, so the previous best when the run just became the best).
+  It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
-  (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
-  (`NS.Share.Prompt`). Between the chips and the spells, with *Show damage chart* on, the race's
-  chart again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with
-  buckets this session), each column scaled to the plain `result.damage`.
+  (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
+  (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
+  less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own
+  confirmation (`Results.ConfirmDelete`, `DPSRACE_DELETE_RUN`), whose Accept deletes through
+  `ResultsSource.Delete` → `Recorder.Delete`; the HUD hears `RUNS_CHANGED`, and once the card's run has
+  left the store it dismisses the card (`Race.Cancel()`), going back to the Arm Race screen, open, after
+  its own Delete. The card's own Delete is known by the popup's Accept (`ConfirmDelete`'s `onAccept`
+  marks the run just before the delete), so a canceled popup leaves a later delete in the Results
+  window an outside one. Any other store change (an earlier best deleted) redraws the card, so its
+  delta chip, pace bar and diagonal follow the store. Between the chips and the spells, with *Show damage chart* on, the race's chart
+  again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with buckets this
+  session). With a best before the run (`Bests.Before(run)`, as the pace bar) `HudChart.WithBest` draws
+  that best's gray dashed diagonal from 0:00 to its damage at the run's length, and the plot's max (the
+  columns' too) is max(`result.damage`, that) x 1.15; without one each column is scaled to the plain
+  `result.damage`, no diagonal. All plain numbers.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
   down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
   leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
@@ -234,10 +261,11 @@ timer or `OnUpdate`.
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
-  (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`); a run without buckets
-  has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
-  time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
-  against the length (*1:04 / 2:00*).
+  (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
+  run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
+  target line leads with two chips (`Detail.Meta`): the target type in its category color and the
+  race length in its length color (`ResultsTable.LengthChip`), then `ResultsTable.TimeTail` (the DoT
+  tail, *+11.1s*, or when an incomplete run's combat ended, *at 1:04*) and the target's name.
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
   delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
@@ -266,26 +294,48 @@ timer or `OnUpdate`.
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.
 
-## Test mode (spec §6.5, preview-mode)
+## Test mode and the sim (spec §6.5, preview-mode; B5)
 
 - **On**: the Master controls' *Test mode* row (`state.testMode`), `/dr test` and the launcher's *Test
-  mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. A start is refused
-  with one line in combat and while a real race is armed, running or waiting for its result; the
-  checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
-- **The script**: a fresh sample run (the player's own name and spec, a single-target dummy, a
-  made-up 147.6K DPS) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result, drawn by
-  `NS.Hud.Render(state, run, figures)`: the HUD's own bodies, so the layout is the real one. One
-  `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
-  holds until test mode ends. The running body and the result card draw a sample damage chart (plain
-  numbers, one bucket a second), and the running body a pace bar, against a sample best a little
-  under the sample's damage. The engine never moves and nothing is stored.
-- **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
+  mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. `/dr test <armed|running|result>`
+  and `/dr sim [scenario]` queue their start (`Preview.Queue`) and turn the same row on through the
+  seam (`NS.StartSim` for the sim, both in `core/DpsRace.lua`), so the checkbox follows; with the
+  preview already on they switch it in place (`Preview.Start` again, or `Preview.SetState` for a still
+  body). A start is refused with one line in combat and while a real race is armed, running or waiting
+  for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
+- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 16 runs on the
+  player and two made-up characters, every Status, target type and preset length, notes, loadouts
+  from the player's own `Recorder.SnapshotLoadout()`, and sample chart records) and routes the
+  Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
+  window draws the sample as it draws the store: the Runs view opens on every character and spec,
+  the Bests tab, the detail's compare, chart, gear and talents. A note or a delete changes the
+  sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
+- **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
+  `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample
+  0:30 race beating the history's best on its board (`Sim.Sample("newbest")`: the clock, live figures,
+  the chart against the best's pace, the pace bar and the spells), or armed or the result card. No
+  timer runs. The Results window opens on the sample.
+- **sim** (`Preview.Mode() == "sim"`, `modules/Sim.lua`): the scenario's sample race (`newbest`,
+  `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; its DPS set against the history's best
+  on its board) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result 4 s (a run that ends
+  before its buzzer goes Running → Waiting out of combat → Result), then joins the sample history
+  (`ResultsSource.Add`, with its chart record unless shared) and the Results window opens on it while
+  the HUD keeps the card. One `C_Timer` ticker at 10 Hz advances it and stops at the Results step. The
+  running body and the card draw the chart and the pace bar against that best (scale B and no pace bar
+  for `first`, neither for `shared`), the center countdown shows silently in its last seconds, and the
+  card's delta is `Bests.Delta` against the sample history. *Stop Now* on its Stop! or waiting body
+  jumps the script to the result card (`Sim.SkipToResult`); *Cancel* ends the sim.
+- **The marker**: while either is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
-  Widgets library the title reads *DPS Race · Test* instead, never both.
+  Widgets library the title reads *DPS Race · Test* instead, never both. The Results window lays its
+  own under its tabs while it reads the sample (*Test mode: sample runs. Nothing here is saved*), or
+  titles itself *DPS Race — Results · Test*.
 - **Off**: its own switch, *Reset all settings* (the row's `default = false`), combat
   (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
-  receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). A HUD that test mode
-  opened is closed again, except for a race. Closing the HUD (its X or Escape) and the sample bodies'
-  Cancel / Discard Run end it too, through `Hud.Act`, and never reach `Race.Cancel`: a start is
+  receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). The Results window
+  goes back to the store (`ResultsSource.Restore`: the selection and the pick dropped, the player's
+  Runs view restored); each window the preview opened is closed again, except the HUD for a race.
+  Closing the HUD (its X or Escape) and the sample bodies'
+  Cancel ends it too, through `Hud.Act`, and never reaches `Race.Cancel`: a start is
   allowed over a real result card, which the preview covers and leaves as it was; the sample card's
-  Race Again and Details are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).
+  Race Again, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).

@@ -144,9 +144,42 @@ function NS.ToggleLock()
     return NS.SetByPath("locked", NS.GetSetting("locked") ~= true)
 end
 
-function NS.ToggleTestMode()
+-- Start the queued preview through the Test mode row's write seam, so the Master controls' checkbox
+-- follows; an active preview switches in place (the row is already on, so its write would not run).
+local function startQueued(opts)
+    local P = NS.Preview
+    P.Queue(opts)
+    if P.IsActive() then return P.Start() end
+    return NS.SetByPath("state.testMode", true)
+end
+
+--- `/dr test [armed|running|result]`, the Master controls' row and the launcher's entry: a bare call
+--- turns test mode on or off; a state word holds that HUD body still (test mode on, or switched to).
+--- @param word string|nil
+function NS.ToggleTestMode(word)
     if refused() then return false end
-    return NS.SetByPath("state.testMode", not NS.Preview.IsActive())
+    local P = NS.Preview
+    if word == nil or word == "" then return NS.SetByPath("state.testMode", not P.IsActive()) end
+    if not P.IsState(word) then
+        NS.Print(L["Usage: %s test [armed|running|result]"]:format(NS.SLASH))
+        return false
+    end
+    if P.Mode() == "test" then return P.SetState(word) end
+    return startQueued({ mode = "test", state = word })
+end
+
+--- `/dr sim [scenario]`: play a whole sample race (the default scenario with none); an active preview
+--- switches to it in place.
+--- @param word string|nil
+function NS.StartSim(word)
+    if refused() then return false end
+    if word == nil or word == "" then word = NS.Sim.DEFAULT end
+    if not NS.Sim.IsScenario(word) then
+        NS.Print(NS.Sim.Usage())
+        for _, s in ipairs(NS.Sim.SCENARIOS) do NS.Print(L["  %s: %s"]:format(s.key, L[s.desc])) end
+        return false
+    end
+    return startQueued({ mode = "sim", scenario = word })
 end
 
 --- Test mode's combat end, said once (preview-mode).

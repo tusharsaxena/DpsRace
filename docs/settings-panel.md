@@ -57,7 +57,7 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 | Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
-| Test mode | `state.testMode` | checkbox, session-only | Starts or stops the preview; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
+| Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while `/dr sim` plays too, and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
 | Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`) |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
@@ -129,8 +129,9 @@ pace bar*.
 | Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
 | *Chart and pace* heading | | | |
-| Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows. Also gates the HUD result card's chart; the Results detail shows it whatever this says |
-| Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the KPIs: its range is twice the best's average damage by now, so its center tick is *on pace*. Hidden with no best and on a shared session |
+| Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows; then only the plot hides, and the *Damage profile* heading stays over the pace bar. Also gates the HUD result card's chart (with a best before the run, that best's diagonal on a max covering both the run's damage and the best's, x 1.15; Round C); the Results detail shows it whatever this says |
+| Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the *Damage profile* heading and above the plot: it runs from pace x (2 - range) to pace x range around the best's average damage by now (*Pace bar range*), its tick fixed in the middle marking *on pace*. Also gates the HUD result card's pace bar (the final damage against the best before the run: the previous best when the run just became the best), in the same place, under the heading and above the plot. Hidden with no best, on a shared session and on a lost run's card |
+| Pace bar range | `live.paceRange` | slider 1.1 to 2.0, step 0.05 | How far either side of the best's pace so far the pace bar reaches (default 1.5 = ±50%): it runs from pace x (2 - range) to pace x range, the tick fixed in the middle. A value stored above 2.0 reads as 2.0. Its own line. Reaction: `NS.Hud.Refresh()` |
 
 #### Tab: HUD Appearance
 

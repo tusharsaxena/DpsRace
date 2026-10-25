@@ -122,11 +122,11 @@ function Compare.Default(run, runs)
     if not Compare.Usable(run) then return nil end
     local Bests = NS.Bests
     local key = Bests.Key(run)
-    local best = (runs and Bests.Compute(runs) or Bests.Board())[key]
+    local best = (runs and Bests.Compute(runs) or NS.ResultsSource.Board())[key]
     if not best then return nil end
     if best.id ~= run.id then return best, "best" end
     local rest = {}
-    for _, r in ipairs(runs or NS.Recorder.All()) do
+    for _, r in ipairs(runs or NS.ResultsSource.All()) do
         if r.id ~= run.id then rest[#rest + 1] = r end
     end
     local second = Bests.Compute(rest)[key]
@@ -141,7 +141,7 @@ end
 --- @return table|nil other, string|nil kind  "picked" | "best" | "runnerUp"
 function Compare.Target(run, pickID)
     if not Compare.Usable(run) then return nil end
-    local picked = pickID ~= nil and pickID ~= run.id and NS.Recorder.Get(pickID) or nil
+    local picked = pickID ~= nil and pickID ~= run.id and NS.ResultsSource.Get(pickID) or nil
     if Compare.Usable(picked) then return picked, "picked" end
     return Compare.Default(run)
 end
@@ -310,7 +310,7 @@ function Compare.LayoutBar(p, y, cw)
     local picked = x.kind == "picked"
     -- Clear Pick follows the pick itself: open on the picked run, the toggle falls back to the
     -- board, but the pick still steers every other run and must stay clearable.
-    local hasPick = p.pickID ~= nil and NS.Recorder.Get(p.pickID) ~= nil
+    local hasPick = p.pickID ~= nil and NS.ResultsSource.Get(p.pickID) ~= nil
     x.clear:SetShown(hasPick)
     if hasPick then place(x.clear, p.content, cw - Compare.CLEAR_W, y - 1) end
     y = y - Compare.BAR_H

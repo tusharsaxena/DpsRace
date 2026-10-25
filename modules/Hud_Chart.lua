@@ -12,10 +12,22 @@ local _, NS = ...
 --     owner's call, 2026-10-25).
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
---   * After the race: the run's plain final damage.
--- The pace bar's range is twice the best's average damage by now (plain, from GetTime()); its value is
--- the live total, and its center tick marks "on pace". It says nothing more: no ahead or behind, no
--- color chosen from the value, because comparing a secret is not allowed.
+--   * After the race: the run's plain final damage, or with a best before the run (Bests.Before, the
+--     run the result's delta and pace bar name) max(the run's damage, the best's at this run's
+--     length) x HEADROOM, with the best's diagonal drawn as on scale A (Round C, 2026-10-25). Every
+--     value is plain then.
+-- The pace bar runs linearly from pace x (2 - m) to pace x m around the best's average damage by now
+-- (m the *Pace bar range*, 1.5 by default: +-50%; plain, from GetTime()); its value is the live total,
+-- and its tick, fixed in the middle of the bar, marks "on pace". A value outside the range is the
+-- StatusBar's to clamp (empty or full): we never compare it. It says nothing more: no ahead or behind,
+-- no color chosen from the value, because comparing a secret is not allowed. The HUD result card
+-- draws it again after the race, the run's plain final damage against the best before it at the
+-- buzzer (Chart.ResultPace).
+--
+-- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
+-- detail's heading role, with the view's note at its right. On the HUD the pace bar sits between the
+-- heading and the plot (Place's `midH`), and the heading stays with the pace bar alone when the plot is
+-- off or steps aside (SetParts).
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
 -- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
@@ -32,7 +44,7 @@ local Style = NS.Style
 local FONT = Style.FONT
 
 Chart.HEADROOM = 1.15   -- scale A: the best's final damage plus room to pass it
-Chart.HEAD_H = 14       -- the header line over the plot
+Chart.HEAD_H = Style.SECTION_H   -- the heading's line over the plot (FONT.SECTION)
 Chart.AXIS_H = 12       -- the time labels under it
 Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
@@ -47,6 +59,9 @@ local DIAGONAL = { 0.9, 0.9, 0.92, 0.7 }
 local TICK = { 1, 1, 1, 0.85 }
 
 local D = NS.defaults.profile.appearance.chart
+local LIVE = NS.defaults.profile.live
+
+Chart.PACE_RANGE_MIN, Chart.PACE_RANGE_MAX = 1.1, 2.0   -- settings/Hud.lua's slider bounds (the low end >= 0)
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -85,17 +100,27 @@ function Chart.ColumnEdges(inner, count, gap)
     return xs, widths
 end
 
---- The chart block's whole height for a plot `plotH` tall: header, plot, gap, time labels. `headH`
---- is the header line's height when the chart was built with a larger title (Chart.New).
+--- The chart block's whole height for a plot `plotH` tall: heading, `midH` (the HUD's pace bar line
+--- between the heading and the plot), plot, gap, time labels.
 --- @param plotH number
 --- @param headH number|nil  default HEAD_H
+--- @param midH number|nil  default 0
 --- @return number
-function Chart.BlockHeight(plotH, headH)
-    return (headH or Chart.HEAD_H) + plotH + Chart.GAP + Chart.AXIS_H
+function Chart.BlockHeight(plotH, headH, midH)
+    return (headH or Chart.HEAD_H) + (midH or 0) + plotH + Chart.GAP + Chart.AXIS_H
 end
 
 local function shared(run)
     return type(run.flags) == "table" and run.flags.sharedSession == true
+end
+
+-- `best` when it is another run with a plain damage and length to draw a pace from.
+local function drawable(best, run)
+    if type(best) ~= "table" or best == run or best.id == run.id then return nil end
+    local damage = type(best.result) == "table" and best.result.damage
+    local length = type(best.race) == "table" and best.race.length
+    if type(damage) ~= "number" or damage <= 0 or type(length) ~= "number" or length <= 0 then return nil end
+    return best
 end
 
 --- The best on `run`'s board (the board the HUD's result delta reads), when it has a plain damage
@@ -104,12 +129,7 @@ end
 --- @return table|nil
 function Chart.BestOf(run)
     if type(run) ~= "table" or not NS.Bests then return nil end
-    local best = NS.Bests.Board()[NS.Bests.Key(run)]
-    if type(best) ~= "table" or best == run or best.id == run.id then return nil end
-    local damage = type(best.result) == "table" and best.result.damage
-    local length = type(best.race) == "table" and best.race.length
-    if type(damage) ~= "number" or damage <= 0 or type(length) ~= "number" or length <= 0 then return nil end
-    return best
+    return drawable(NS.Bests.Board()[NS.Bests.Key(run)], run)
 end
 
 --- The best's average damage by `elapsed` seconds: its final damage spread evenly over its length.
@@ -122,9 +142,33 @@ function Chart.Pace(best, elapsed)
     return best.result.damage * t / length
 end
 
---- The pace bar's range: twice the pace, so a half-full bar is on pace (at least 1, for 0:00).
-function Chart.PaceMax(best, elapsed)
-    return math.max(2 * Chart.Pace(best, elapsed), 1)
+--- The configured pace bar range (live.paceRange): how far either side of the best's pace the bar
+--- reaches, clamped at read time to the slider's bounds (a value stored above 2.0 before Round C reads 2.0).
+--- @return number
+function Chart.PaceRange()
+    local v = NS.GetSetting and tonumber(NS.GetSetting("live.paceRange"))
+    return math.max(Chart.PACE_RANGE_MIN, math.min(Chart.PACE_RANGE_MAX, v or LIVE.paceRange))
+end
+
+--- The pace bar's ends around the best's pace by `elapsed`: lo = pace x (2 - m), hi = pace x m, with m
+--- `range` (default the setting), so the pace sits in the middle; hi is at least lo + 1 (0:00).
+--- @param best table
+--- @param elapsed number
+--- @param range number|nil
+--- @return number lo, number hi
+function Chart.PaceBounds(best, elapsed, range)
+    local m = range or Chart.PaceRange()
+    local pace = Chart.Pace(best, elapsed)
+    local lo = pace * (2 - m)
+    return lo, math.max(pace * m, lo + 1)
+end
+
+--- The on-pace tick's offset from the bar's left edge, in whole pixels: the middle of the bar. Plain
+--- config math on the width Place() was handed, never a measured size.
+--- @param barW number
+--- @return number
+function Chart.TickX(barW)
+    return math.floor(barW / 2 + 0.5)
 end
 
 --- What the running body draws: the chart's view and the pace bar's, each nil when hidden. Both hide
@@ -134,11 +178,11 @@ end
 --- @param showChart boolean  live.chart
 --- @param showPace boolean  live.paceBar
 --- @return table|nil chart  { count, values, length, max, best, note }  (max nil: scale B, the live total)
---- @return table|nil pace  { max }
+--- @return table|nil pace  { lo, hi }
 -- THE LIVE VIEWS ARE CACHED (the 20 Hz tick, performance-§3): the chart's view and the best behind it
 -- are rebuilt only when what decides them changes. The best is looked up again only when the run or
 -- the bests board changed (Bests.Board hands out a new table after every invalidation); the pace
--- table is one table, its max refilled each pass.
+-- table is one table, its ends refilled each pass.
 local live = { pace = {} }
 
 local function liveBest(run)
@@ -177,19 +221,59 @@ function Chart.LiveViews(run, elapsed, showChart, showPace)
     if showChart then chart = liveChart(run, best) end
     if showPace and best then
         pace = live.pace
-        pace.max = Chart.PaceMax(best, elapsed)
+        pace.lo, pace.hi = Chart.PaceBounds(best, elapsed)
     end
     return chart, pace
 end
 
+--- The HUD result card's pace bar (#3, 2026-10-25), or nil when it hides: the run's plain final damage
+--- against the best before it (Bests.Before, the run the delta chip names, so the previous best when
+--- this run just became the best) at the buzzer, the best's pace taken at the run's length through
+--- PaceBounds, so the range and the tick are the running bar's. Hidden when Show pace bar is off, on a lost
+--- run, on a shared session and with no earlier best.
+--- @param run table
+--- @param showPace boolean  live.paceBar
+--- @return table|nil pace  { lo, hi, value }
+function Chart.ResultPace(run, showPace)
+    if not showPace or type(run) ~= "table" or run.status == "lost" or shared(run) then return nil end
+    local damage = type(run.result) == "table" and run.result.damage
+    local length = type(run.race) == "table" and run.race.length
+    if type(damage) ~= "number" or type(length) ~= "number" or length <= 0 or not NS.Bests then return nil end
+    local best = drawable(NS.Bests.Before(run), run)
+    if not best then return nil end
+    local lo, hi = Chart.PaceBounds(best, length)
+    return { lo = lo, hi = hi, value = damage }
+end
+
+--- An after-the-race view against the best before the run (Round C, 2026-10-25): with `best` (a run
+--- raced before `run` on its board, with a plain damage and length) the view gets the best's damage at
+--- this run's length (`best`, the diagonal's end) and its max becomes max(the run's damage, that) x
+--- HEADROOM, so the columns and the diagonal share one scale. Without one, or on a shared session, the
+--- view is as given: scaled to the run's own damage, no diagonal. Plain numbers only (a stored run).
+--- @param view table  { count, values, length, max, note }, max the run's plain final damage
+--- @param run table
+--- @param best table|nil
+--- @return table view
+function Chart.WithBest(view, run, best)
+    best = type(run) == "table" and type(run.race) == "table" and drawable(best, run) or nil
+    if not best or shared(run) then return view end
+    local at = Chart.Pace(best, run.race.length)
+    view.best = at
+    view.max = math.max(view.max or 0, at) * Chart.HEADROOM
+    view.note = L["vs best pace"]
+    return view
+end
+
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
---- its slices scaled to its plain final damage.
+--- its slices scaled to its plain final damage, against the best before it when there is one
+--- (Chart.WithBest).
 --- @param run table
 --- @return table|nil
 function Chart.ResultView(run)
     local rec = NS.Slices.Drawable(run)
     if not rec then return nil end
-    return { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    return Chart.WithBest(view, run, NS.Bests and NS.Bests.Before(run) or nil)
 end
 
 -- ── the chart ───────────────────────────────────────────────────────────────────────────────────
@@ -214,17 +298,17 @@ local function restylePlot(s)
     s.plot:SetBackdropColor(bg.r, bg.g, bg.b, bg.a)
 end
 
---- A chart built into `parent`: its header, plot and time labels, placed by Place(). `titleFont`
---- (a Style.FONT value) sets the title's font and `headH` its line's height: the Results detail
---- passes its larger section header; the HUD keeps FONT.HEADER on HEAD_H.
+--- A chart built into `parent`: its heading, plot and time labels, placed by Place(). `titleFont`
+--- (a Style.FONT value) sets the title's font and `headH` its line's height; both default to the
+--- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share.
 --- @param parent table
 --- @param titleFont string|nil
 --- @param headH number|nil
 --- @return table chart
 function Chart.New(parent, titleFont, headH)
     local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H }, Strip)
-    s.title = Style.Text(parent, titleFont or FONT.HEADER)
-    s.title:SetText(L["Damage over the race"])
+    s.title = Style.Text(parent, titleFont or FONT.SECTION)
+    s.title:SetText(L["Damage profile"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
     local plot = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     if plot.SetBackdrop then
@@ -243,31 +327,47 @@ function Chart.New(parent, titleFont, headH)
     return s
 end
 
-local REGIONS = { "title", "note", "plot" }
+--- Show or hide the heading (its title and note) and the plot (with its time labels) apart: the HUD
+--- keeps the heading over the pace bar when the plot is off or steps aside.
+--- @param head boolean
+--- @param plot boolean
+function Strip:SetParts(head, plot)
+    head, plot = head and true or false, plot and true or false
+    self.title:SetShown(head)
+    self.note:SetShown(head)
+    self.plot:SetShown(plot)
+    for _, fs in ipairs(self.axis) do fs:SetShown(plot) end
+    self.shown = plot
+end
 
 --- Show or hide every part.
 function Strip:SetShown(on)
-    on = on and true or false
-    for _, key in ipairs(REGIONS) do self[key]:SetShown(on) end
-    for _, fs in ipairs(self.axis) do fs:SetShown(on) end
-    self.shown = on
+    self:SetParts(on, on)
 end
 
---- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall.
+--- The note at the heading's right, for a heading shown without its plot (Draw sets it otherwise).
+function Strip:SetNote(text)
+    self.note:SetText(text or "")
+end
+
+--- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall and
+--- `midH` (default 0) under the heading's line.
 --- @param anchor table
 --- @param y number
 --- @param width number
 --- @param plotH number
-function Strip:Place(anchor, y, width, plotH)
+--- @param midH number|nil
+function Strip:Place(anchor, y, width, plotH, midH)
     self.width, self.plotH = width, plotH
     self.title:ClearAllPoints()
     self.title:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.note:ClearAllPoints()
     self.note:SetPoint("TOPRIGHT", anchor, "TOPLEFT", width, y)
+    local py = y - self.headH - (midH or 0)
     self.plot:ClearAllPoints()
-    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - self.headH)
+    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, py)
     self.plot:SetSize(width, plotH)
-    local ay = y - self.headH - plotH - Chart.GAP
+    local ay = py - plotH - Chart.GAP
     local points = { { "TOPLEFT", 0 }, { "TOP", width / 2 }, { "TOPRIGHT", width } }
     for i, fs in ipairs(self.axis) do
         fs:ClearAllPoints()
@@ -330,16 +430,19 @@ local function showAll(lines, on)
     for _, l in ipairs(lines) do l:SetShown(on) end
 end
 
--- Scale A's overlay: the best's average-pace diagonal, plain geometry, from 0:00 to the best's
--- level at the buzzer.
-function Strip:drawPace(best)
+-- The best's average-pace diagonal, plain geometry, from 0:00 to the best's level at the buzzer:
+-- `best` over `max`, both plain whenever a best is given (scale A: max = best x HEADROOM; after the
+-- race: Chart.WithBest's shared max). Moved only when the geometry or that level changed.
+function Strip:drawPace(best, max)
     local on = best ~= nil
     showAll(self.diag, on)
-    if not on or self.lines == self.geometry then return end
-    self.lines = self.geometry
+    if not on then return end
+    local key = ("%s|%s"):format(tostring(self.geometry), tostring(best / max))
+    if self.lines == key then return end
+    self.lines = key
     local x0, y0 = Chart.INSET, Chart.INSET
     local x1 = (self.width or 0) - Chart.INSET
-    local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) / Chart.HEADROOM
+    local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) * best / max
     dashes(self.diag, self.over, x0, y0, x1, level)
 end
 
@@ -369,7 +472,7 @@ function Strip:Draw(view, max)
         col:Show()
     end
     for i = count + 1, #self.cols do self.cols[i]:Hide() end
-    self:drawPace(view.best)
+    self:drawPace(view.best, view.max)
     self.note:SetText(view.note or "")
     local length = view.length or 0
     self.axis[1]:SetText(NS.Format.Length(0))
@@ -391,7 +494,7 @@ end
 local Pace = {}
 Pace.__index = Pace
 
---- The pace bar built into `parent`: its caption, the bar and the on-pace tick at its center.
+--- The pace bar built into `parent`: its caption, the bar and the on-pace tick (placed by Place).
 --- @param parent table
 --- @return table pace
 function Chart.NewPace(parent)
@@ -424,11 +527,25 @@ function Pace:Place(anchor, y, width)
     self.label:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.bar:ClearAllPoints()
     self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", Chart.PACE_LABEL_W, y - 2)
-    self.bar:SetSize(math.max(1, width - Chart.PACE_LABEL_W), Chart.PACE_H - 4)
+    self.barW = math.max(1, width - Chart.PACE_LABEL_W)
+    self.bar:SetSize(self.barW, Chart.PACE_H - 4)
+    self:PlaceTick()
 end
 
---- The range: twice the best's pace now (plain).
-function Pace:SetMax(max)
+--- The on-pace tick in the middle of the bar's configured width; moved only when the width changed.
+function Pace:PlaceTick()
+    local barW = self.barW
+    if not barW or self.tickW == barW then return end
+    self.tickW = barW
+    local x = Chart.TickX(barW)
+    self.tick:ClearAllPoints()
+    self.tick:SetPoint("TOP", self.bar, "TOPLEFT", x, 2)
+    self.tick:SetPoint("BOTTOM", self.bar, "BOTTOMLEFT", x, -2)
+end
+
+--- The range: pace x (2 - m) to pace x m around the best's pace now (plain, Chart.PaceBounds).
+function Pace:SetRange(lo, hi)
+    self:PlaceTick()
     local A = NS.HudAppearance
     if A and self.stamp ~= A.stamp then
         self.stamp = A.stamp
@@ -436,10 +553,11 @@ function Pace:SetMax(max)
         self.bar:SetStatusBarTexture(look.texture)
         self.bar:SetStatusBarColor(look.r, look.g, look.b, look.a)
     end
-    self.bar:SetMinMaxValues(0, max)
+    self.bar:SetMinMaxValues(lo, hi)
 end
 
---- The live total (opaque), straight to the bar; none reads empty.
+--- The live total (opaque), straight to the bar: below the range it reads empty, above it full (the
+--- StatusBar clamps; nothing here compares it). None reads empty.
 function Pace:SetValue(total)
     if total == nil then return self.bar:SetValue(0) end
     self.bar:SetValue(total)

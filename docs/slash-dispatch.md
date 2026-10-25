@@ -38,7 +38,7 @@ capture's `perf` hold alone never prints the disabled line. While disabled:
 
 - every **reserved** verb keeps answering (`help`, `config`, `enable`, `disable`, `list`, `get`,
   `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`);
-- a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `lock`, `unlock`) prints
+- a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`) prints
   one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
   (slash-commands-§2, §7).
 
@@ -66,7 +66,8 @@ copy.
 | `hud [show\|hide\|toggle]` | `doHud` | `NS.SetHudShown(word)`; a bare `hud` toggles, any other word prints the usage line |
 | `results [bests]` | `doResults` | `NS.ShowResults(word)`: `NS.Results.Show()`, or `ShowTab("bests")` |
 | `target` | `doTarget` | `Recorder.SnapshotTarget("target")`: `Target: <name> · creature <npcID> · category <label>`, or *No target.* |
-| `test` | `NS.ToggleTestMode` | Writes `state.testMode` through the seam, so the Master controls' checkbox follows |
+| `test [armed\|running\|result]` | `doTest` → `NS.ToggleTestMode(word)` | A bare `test` writes `state.testMode` through the seam (on or off), so the Master controls' checkbox follows. A state word holds that HUD body still: switched in place while test mode is on, else queued (`Preview.Queue`) and started through the same row write; any other word prints *Usage: /dr test [armed\|running\|result]* |
+| `sim [scenario]` | `doSim` → `NS.StartSim(word)` | Queues the scenario (`newbest` with none) and turns `state.testMode` on through the seam, or switches an active preview in place. An unknown word prints the usage line (`Sim.Usage()`, every scenario) and one line per scenario with what it shows. The chat box completes no addon's slash words, so these lines are the list |
 | `lock` / `unlock` | `doLock` | Writes the `locked` row through the seam and echoes it in the `set` shape (slash-commands-§8); degraded, written through with the HUD's `SetLocked` as the reaction |
 
 ## The Arm or cancel key
