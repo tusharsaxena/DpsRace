@@ -363,7 +363,7 @@ Total.
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
 - results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
 - results: the Time column and the Bests Length column take the length color; the tail stays gray
-- results: Status tags are boxed in their hue with the icon inside; the column fits the window minimums
+- results: Status tags are boxed in their hue with the icon inside
 - results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
@@ -403,6 +403,12 @@ Total.
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
+
+### test_results_fit.lua (3)
+
+- results: every Runs column fits the narrowest list either view lays out
+- results: the longest Status board fits after the boxed Spec best
+- results: the Bests Flags chips are plain, and a two-flag best fits its column
 
 ### test_compare.lua (12)
 
@@ -723,6 +729,7 @@ Total.
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 50 |
+| test_results_fit.lua | 3 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -743,4 +750,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **589** |
+| **Total** | **592** |

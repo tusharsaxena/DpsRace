@@ -498,7 +498,7 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
-Runs.STATUS_W = 190
+Runs.STATUS_W = 212
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -598,7 +598,7 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        -- Wide enough for the longest board after its box: "Spec best" then "single target · 0:30".
+        -- Wide enough for the longest board after its box: "Spec best" then "single target · 10:00".
         { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, trail = true,
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,

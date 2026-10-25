@@ -89,8 +89,9 @@ function Bests.Columns()
         { key = "date", label = L["Date"], width = 64, desc = true,
           sort = function(run) return run.date end,
           text = function(run) return Tbl.Date(run.date, "%d %b") end },
-        -- Boxed chips, as the Runs list's Status tags are.
-        { key = "flags", label = L["Flags"], width = 110, kind = "badge", boxed = true,
+        -- Plain chips (only the Runs list's Status tags are boxed): a two-flag best, "1 late ·
+        -- Reloaded", fits the column.
+        { key = "flags", label = L["Flags"], width = 110, kind = "badge",
           text = function(run) return Tbl.ShortFlags(run), C.amber end },
     }
 end

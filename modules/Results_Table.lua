@@ -51,6 +51,7 @@ local C = {
 }
 Tbl.COLORS = C
 local BADGE_ICON = 11       -- an icon inside a badge (the Status column's tags)
+Tbl.BADGE_ICON = BADGE_ICON
 
 -- The race length colors (the owner's call, 2026-10-25): the five preset lengths
 -- (NS.HudStates.PRESETS) in muted ROYGBIV hues, shortest to longest, and any other length a neutral
@@ -398,20 +399,32 @@ function Bind.icons(cell, col, run)
     if col.after then col.after(cell, run) end
 end
 
--- The tag's word beside its icon and the box's width, from the label's length (config, never a
--- measured width). A boxed tag also takes its tint on the box's edge and fill.
+--- A badge's width from its label's length (config, never a measured width): 6 px a character (a
+--- UTF-8 continuation byte adds none: "·" is one), 4 px of pad (14 in a box), plus `extra` for an
+--- icon. Pure; the fit tests size columns against it.
+--- @param s string
+--- @param boxed boolean|nil
+--- @param extra number|nil
+--- @return number
+function Tbl.BadgeWidth(s, boxed, extra)
+    local chars = select(2, s:gsub("[^\128-\191]", ""))
+    return math.floor(chars * 6 + (boxed and 14 or 4) + (extra or 0))
+end
+
+-- The tag's word beside its icon and the box's width (Tbl.BadgeWidth). A boxed tag also takes its
+-- tint on the box's edge and fill.
 local function layoutBadge(cell, col, s, color, extra)
     cell.fs:ClearAllPoints()
     if not col.boxed then
         cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
-        return math.floor(#s * 6 + 4 + extra)
+        return Tbl.BadgeWidth(s, false, extra)
     end
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
     if cell.box.SetBackdropBorderColor then
         cell.box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
         cell.box:SetBackdropColor(color[1], color[2], color[3], 0.08)
     end
-    return math.floor(#s * 6 + 14 + extra)
+    return Tbl.BadgeWidth(s, true, extra)
 end
 
 function Bind.badge(cell, col, run)
