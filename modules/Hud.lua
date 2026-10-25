@@ -265,6 +265,8 @@ local function resultView(v)
     v.icons = setting("live.icons") ~= false
     -- The race's chart again (#2), when the HUD shows charts and the run has its slices this session.
     if setting("live.chart") ~= false then v.chart = NS.HudChart.ResultView(run) end
+    -- The pace bar again (#3): the plain final damage against the best before the run.
+    v.pace = NS.HudChart.ResultPace(run, setting("live.paceBar") ~= false)
 end
 
 local function runningView(v)

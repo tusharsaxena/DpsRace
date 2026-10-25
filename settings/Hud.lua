@@ -77,7 +77,7 @@ NS.RegisterSchemaRows({
       onChange = redraw },
     { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show pace bar"], default = LIVE.paceBar,
-      tooltip = L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."],
+      tooltip = L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."],
       onChange = redraw },
     { path = "live.paceRange", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "number",
       min = 1.1, max = 3.0, step = 0.1, label = L["Pace bar range"], default = LIVE.paceRange, startsLine = true,

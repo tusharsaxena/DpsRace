@@ -96,6 +96,21 @@ local function isEarlierRival(other, run, key)
     return before(other, run) and Bests.Key(other) == key
 end
 
+--- The best on `run`'s board among the runs raced BEFORE it: what Delta compares against, and what
+--- the HUD result card's pace bar sets the run beside (the previous best when the run just became
+--- the best). `run` itself need not count.
+--- @param run table
+--- @param runs table|nil  defaults to every stored run
+--- @return table|nil prev
+function Bests.Before(run, runs)
+    if type(run) ~= "table" then return nil end
+    local key, prev = Bests.Key(run), nil
+    for _, other in ipairs(runs or NS.Recorder.All()) do
+        if isEarlierRival(other, run, key) and (not prev or ranksAbove(other, prev)) then prev = other end
+    end
+    return prev
+end
+
 --- The run compared with the best on its board BEFORE it.
 --- @param run table
 --- @param runs table|nil  defaults to every stored run
@@ -103,10 +118,7 @@ end
 --- @return boolean isNewBest  it beats the previous best, or is the first complete run on its board
 function Bests.Delta(run, runs)
     if not counts(run) then return nil, false end
-    local key, prev = Bests.Key(run), nil
-    for _, other in ipairs(runs or NS.Recorder.All()) do
-        if isEarlierRival(other, run, key) and (not prev or ranksAbove(other, prev)) then prev = other end
-    end
+    local prev = Bests.Before(run, runs)
     if not prev then return nil, true end
     local mine, theirs = dpsOf(run), dpsOf(prev)
     if theirs <= 0 then return nil, mine > theirs end

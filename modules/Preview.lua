@@ -79,7 +79,8 @@ end
 
 -- The sample's chart and pace bar (#2, #3): its damage at each whole second so far, against a made-up
 -- best a little under it, scaled as a race with a best is (plain numbers; a real race's are secret).
--- The result card's is scaled to the sample's final damage.
+-- The result card's chart is scaled to the sample's final damage; its pace bar sets that damage beside
+-- the sample best's.
 local SAMPLE_BEST = { race = { length = Preview.LENGTH }, result = { damage = DPS * Preview.LENGTH * 0.96 } }
 
 local function sampleChart(elapsed, final)
@@ -113,7 +114,11 @@ local FIGURES = {
         return { tail = TAIL, sinceBuzzer = since, inCombat = true,
                   hint = L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] }
     end,
-    result = function() return { isNew = true, delta = 2.4, icons = true, chart = sampleChart(Preview.LENGTH, true) } end,
+    -- The result card's pace bar: the sample's final damage against the sample best at the buzzer.
+    result = function()
+        return { isNew = true, delta = 2.4, icons = true, chart = sampleChart(Preview.LENGTH, true),
+                 pace = { max = NS.HudChart.PaceMax(SAMPLE_BEST, Preview.LENGTH), value = DPS * Preview.LENGTH } }
+    end,
 }
 
 -- The center countdown (modules/Countdown.lua) shows in the sample race's last seconds, silently, and

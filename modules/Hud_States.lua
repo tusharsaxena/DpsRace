@@ -851,6 +851,8 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    w.pace = NS.HudChart.NewPace(f)
+    w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
     w.chart:SetShown(false)
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
@@ -878,7 +880,7 @@ function Builders.result(parent)
         self.width, self.height = width, height
     end
     function body.Update(self, v)
-        Builders.resultChart(self, v.chart)
+        Builders.resultExtras(self, v)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
@@ -903,21 +905,32 @@ end
 -- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
 
--- The result card's chart (#2): the run's in-session slices, scaled to its plain final damage, between
--- the chips and the rows; none for a run without slices, and it steps aside when it would leave fewer
--- than MIN_ROWS rows.
-function Builders.resultChart(body, view)
+-- The result card's pace bar (#3) and chart (#2), between the chips and the rows. The pace bar is the
+-- run's plain final damage against the best before it (modules/Hud_Chart.lua ResultPace), the running
+-- bar's widget, range and tick; it never steps aside, so MinContentHeight carries it. The chart is
+-- the run's in-session slices, scaled to its plain final damage; none for a run without slices, and
+-- it steps aside when it would leave fewer than MIN_ROWS rows. Every value here is plain (a stored run).
+function Builders.resultExtras(body, v)
     local w, f = body.w, body.frame
+    local width = body.width or 236
+    local top = RESULT_ROWS_TOP
+    w.pace:SetShown(v.pace ~= nil)
+    if v.pace then
+        w.pace:Place(f, -top, width)
+        w.pace:SetMax(v.pace.max)
+        w.pace:SetValue(v.pace.value)
+        top = top + NS.HudChart.PACE_H + GAP
+    end
     local blockH, plotH = chartBlock()
-    local on = view ~= nil and roomForRows(body, RESULT_ROWS_TOP + blockH, RESULT_ROWS_BOTTOM)
+    local on = v.chart ~= nil and roomForRows(body, top + blockH, RESULT_ROWS_BOTTOM)
     w.chart:SetShown(on)
-    body.rowsTop = on and (RESULT_ROWS_TOP + blockH) or RESULT_ROWS_TOP
+    body.rowsTop = on and (top + blockH) or top
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     if not on then return end
-    w.chart:Place(f, -RESULT_ROWS_TOP, body.width or 236, plotH)
-    w.chart:Draw(view)
+    w.chart:Place(f, -top, width, plotH)
+    w.chart:Draw(v.chart)
 end
 
 function Builders.resultRows(body)
@@ -942,15 +955,16 @@ function Builders.resultRows(body)
 end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
---- the running (with its pace bar) and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- the running and result bodies (each with its pace bar) with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
 --- @return number
 function States.MinContentHeight()
     local B = NS.HudBreakdown
     local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
     local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
-    -- The pace bar never steps aside (the chart does), so the running body's minimum carries it.
-    local running = RUNNING_ROWS_TOP + NS.HudChart.PACE_H + GAP + rows + RUNNING_ROWS_BOTTOM
-    local result = RESULT_ROWS_TOP + rows + RESULT_ROWS_BOTTOM
+    -- The pace bar never steps aside (the chart does), so the running and result minimums carry it.
+    local paceH = NS.HudChart.PACE_H + GAP
+    local running = RUNNING_ROWS_TOP + paceH + rows + RUNNING_ROWS_BOTTOM
+    local result = RESULT_ROWS_TOP + paceH + rows + RESULT_ROWS_BOTTOM
     return math.max(idle, running, result)
 end
 

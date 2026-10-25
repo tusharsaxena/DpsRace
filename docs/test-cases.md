@@ -319,11 +319,18 @@ Total.
 - chart: test mode honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
-### test_pace.lua (3)
+### test_pace.lua (10)
 
 - pace: Pace bar range defaults to 1.5, drives PaceMax and is clamped to 1.1-3.0
 - pace: the tick sits at 1/range of the bar's width, in whole pixels
 - pace: the running bar's tick follows Pace bar range, laid out from the configured width
+- pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
+- pace: the result card sets the plain final damage against the best's pace at the buzzer
+- pace: a run that just became the best is set against the previous best
+- pace: no pace bar on the result card with no earlier best, and the rows move back up
+- pace: Show pace bar off, a shared session and a lost run hide the result card's bar
+- pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside
+- pace: test mode's result card shows the pace bar against the sample best, and honors the setting
 
 ### test_countdown.lua (20)
 
@@ -737,7 +744,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
 | test_chart.lua | 24 |
-| test_pace.lua | 3 |
+| test_pace.lua | 10 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 48 |
@@ -763,4 +770,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **597** |
+| **Total** | **604** |

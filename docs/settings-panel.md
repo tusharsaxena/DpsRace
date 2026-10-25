@@ -130,7 +130,7 @@ pace bar*.
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
 | *Chart and pace* heading | | | |
 | Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows. Also gates the HUD result card's chart; the Results detail shows it whatever this says |
-| Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the KPIs: its range is *Pace bar range* times the best's average damage by now, and its tick is *on pace*. Hidden with no best and on a shared session |
+| Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the KPIs: its range is *Pace bar range* times the best's average damage by now, and its tick is *on pace*. Also gates the HUD result card's pace bar (the final damage against the best before the run: the previous best when the run just became the best), between the chips and the chart. Hidden with no best, on a shared session and on a lost run's card |
 | Pace bar range | `live.paceRange` | slider 1.1 to 3.0, step 0.1 | The pace bar's right end as a multiple of the best's pace so far (default 1.5); the tick sits at 1/range of the bar's width, two thirds along at 1.5. Its own line. Reaction: `NS.Hud.Refresh()` |
 
 #### Tab: HUD Appearance

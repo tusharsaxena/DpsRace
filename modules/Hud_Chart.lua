@@ -103,18 +103,22 @@ local function shared(run)
     return type(run.flags) == "table" and run.flags.sharedSession == true
 end
 
+-- `best` when it is another run with a plain damage and length to draw a pace from.
+local function drawable(best, run)
+    if type(best) ~= "table" or best == run or best.id == run.id then return nil end
+    local damage = type(best.result) == "table" and best.result.damage
+    local length = type(best.race) == "table" and best.race.length
+    if type(damage) ~= "number" or damage <= 0 or type(length) ~= "number" or length <= 0 then return nil end
+    return best
+end
+
 --- The best on `run`'s board (the board the HUD's result delta reads), when it has a plain damage
 --- and length to draw from; never `run` itself.
 --- @param run table
 --- @return table|nil
 function Chart.BestOf(run)
     if type(run) ~= "table" or not NS.Bests then return nil end
-    local best = NS.Bests.Board()[NS.Bests.Key(run)]
-    if type(best) ~= "table" or best == run or best.id == run.id then return nil end
-    local damage = type(best.result) == "table" and best.result.damage
-    local length = type(best.race) == "table" and best.race.length
-    if type(damage) ~= "number" or damage <= 0 or type(length) ~= "number" or length <= 0 then return nil end
-    return best
+    return drawable(NS.Bests.Board()[NS.Bests.Key(run)], run)
 end
 
 --- The best's average damage by `elapsed` seconds: its final damage spread evenly over its length.
@@ -207,6 +211,24 @@ function Chart.LiveViews(run, elapsed, showChart, showPace)
         pace.max = Chart.PaceMax(best, elapsed)
     end
     return chart, pace
+end
+
+--- The HUD result card's pace bar (#3, 2026-10-25), or nil when it hides: the run's plain final damage
+--- against the best before it (Bests.Before, the run the delta chip names, so the previous best when
+--- this run just became the best) at the buzzer, the best's pace taken at the run's length through
+--- PaceMax, so the range and the tick are the running bar's. Hidden when Show pace bar is off, on a lost
+--- run, on a shared session and with no earlier best.
+--- @param run table
+--- @param showPace boolean  live.paceBar
+--- @return table|nil pace  { max, value }
+function Chart.ResultPace(run, showPace)
+    if not showPace or type(run) ~= "table" or run.status == "lost" or shared(run) then return nil end
+    local damage = type(run.result) == "table" and run.result.damage
+    local length = type(run.race) == "table" and run.race.length
+    if type(damage) ~= "number" or type(length) ~= "number" or length <= 0 or not NS.Bests then return nil end
+    local best = drawable(NS.Bests.Before(run), run)
+    if not best then return nil end
+    return { max = Chart.PaceMax(best, length), value = damage }
 end
 
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):

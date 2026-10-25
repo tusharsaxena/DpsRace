@@ -191,7 +191,11 @@ race.
   On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
   `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
   `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three
-  spell rows. Nothing is computed from a value.
+  spell rows. Nothing is computed from a value. After the race the result card draws the pace bar
+  again (`HudChart.ResultPace`), all plain: `SetMinMaxValues(0, PaceMax(prev, run.race.length))` and
+  `SetValue(run.result.damage)`, where `prev` is `Bests.Before(run)`, the best on the board raced
+  before the run (what the delta chip names, so the previous best when the run just became the best).
+  It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
@@ -278,8 +282,8 @@ timer or `OnUpdate`.
   `NS.Hud.Render(state, run, figures)`: the HUD's own bodies, so the layout is the real one. One
   `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
   holds until test mode ends. The running body and the result card draw a sample damage chart (plain
-  numbers, one bucket a second), and the running body a pace bar, against a sample best a little
-  under the sample's damage. The engine never moves and nothing is stored.
+  numbers, one bucket a second), and the running body and the result card a pace bar, against a
+  sample best a little under the sample's damage. The engine never moves and nothing is stored.
 - **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
   Widgets library the title reads *DPS Race · Test* instead, never both.

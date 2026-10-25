@@ -235,7 +235,8 @@ each frame's strata, level and toplevel.
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
-  best and `GetTime()`, and the columns' edges are plain config math (whole pixels from the plot's
+  best and `GetTime()` (the result card's pace bar is all plain: a stored run's final damage against
+  the best before it), and the columns' edges are plain config math (whole pixels from the plot's
   width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
