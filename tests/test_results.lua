@@ -170,7 +170,8 @@ test("results: the detail's section headings are the larger SECTION font; Spell 
     i.R.ShowRun("a")
     local d = ui(i).detail
     local w, F = d.w, i.NS.Style.FONT
-    assertEqual(F.SECTION, "GameFontNormal", "a size above the 10px column headers")
+    assertEqual(F.SECTION, "GameFontNormalLarge", "a step above GameFontNormal (Round C, 2026-10-25)")
+    assertEqual(i.NS.Style.SECTION_H, 22, "the 16px heading's line")
     assertEqual(w.spellsTitle.__text, "Spell breakdown")
     assertTrue(w.spellsTitle:IsShown())
     for name, fs in pairs({ breakdown = w.spellsTitle, chart = w.chart.title, timing = w.timingLabel,
@@ -183,6 +184,28 @@ test("results: the detail's section headings are the larger SECTION font; Spell 
     assertTrue(y(d.cmp.toggle) > y(w.list.parent), "the toggle is under the list")
     assertEqual(y(w.spellsTitle) - y(d.cmp.toggle), i.NS.ResultsDetail.SECTION_H, "one heading line")
     assertEqual(i.NS.ResultsTips.Detail("breakdown", i.NS.Recorder.Get("a"))[1], "Spell breakdown", "the heading's tooltip")
+end)
+
+test("results: every section heading has SECTION_GAP of clear space above it, the y-advances from config", function()
+    local i = inst()
+    seed(i, { mkRun("a", { note = "Opened with Bloodlust", flags = { reloaded = true } }) })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    local w, D = d.w, i.NS.ResultsDetail
+    local GAP, H = D.SECTION_GAP, D.SECTION_H
+    assertEqual(GAP, i.NS.Style.SECTION_GAP)
+    assertTrue(GAP >= 14 and GAP <= 18, "a gap the eye reads as a break")
+    local function y(region) return region.__points[1][5] end
+    -- Spell breakdown: the delta line's height and its 4px under the delta, then the gap.
+    assertEqual(y(w.spellsTitle), y(w.delta) - 14 - 4 - GAP, "Spell breakdown under the header")
+    -- Timing (no chart this session): under the spell list's rows and their 8px, then the gap.
+    local n, pitch = w.list:Count(), i.NS.HudBreakdown.Pitch()
+    assertEqual(y(w.timingLabel), y(w.list.parent) - n * pitch - 8 - GAP, "Timing under the spell rows")
+    -- Talents: under the gear grid (or Not recorded), its 6px, then the gap.
+    assertTrue(y(d.lo.title) < y(w.timingLabel) - H, "Gear under the timing strip")
+    assertTrue(y(w.flags) < y(d.lo.talentsTitle) - H - GAP, "the flags box clear of Talents")
+    assertTrue(y(w.noteTitle) <= y(w.flags) - GAP, "Note clear of the flags box")
 end)
 
 test("results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec", function()

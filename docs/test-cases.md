@@ -365,11 +365,12 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (53)
+### test_results.lua (54)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
 - results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
 - results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
@@ -775,7 +776,7 @@ Total.
 | test_pace.lua | 10 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 53 |
+| test_results.lua | 54 |
 | test_results_fit.lua | 4 |
 | test_results_group.lua | 3 |
 | test_compare.lua | 12 |
@@ -799,4 +800,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **629** |
+| **Total** | **630** |

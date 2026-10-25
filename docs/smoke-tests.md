@@ -43,6 +43,9 @@ static sample data in the HUD and the Results window, and `/dr sim`'s scenarios 
 R8e, SM-DR-CH8, SM-DR-CH9 and SM-DR-BL8 (rewritten: the scripted race moved from `/dr test` to
 `/dr sim`).
 
+Rows for Round C of the same backlog (the owner's notes after testing it), not yet run: section 16's
+SM-DR-RC1 (new: the detail's larger headings and the space above them).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -372,3 +375,9 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 | SM-DR-BL14 | `/dr sim` (the default, *newbest*), then `/dr sim behind`, `first`, `incomplete`, `died`, `flagged` and `shared`, each to its Results window | *newbest*: chart and pace bar against the best, *New best +4%*, Results on the sim's run (now the board's Spec best; its compare is the old best). *behind*: a red *-7% vs best*. *first*: a Boss-level 0:30 board with no best: *first race on this board*, the chart on its own scale, no pace bar. *incomplete* (18 s) and *died* (12 s): no Stop!, *Reading the result*, the card shows the run incomplete; Results tags it *Incomplete* / *Died*. *flagged*: *1 late cast* on Stop! and a late-cast chip on the card. *shared*: no chart and no pace bar, live, on the card or in the detail | A screenshot of each result card |
 | SM-DR-BL15 | Type `/dr sim sideways`; start `/dr sim` in combat and with a race armed; start `/dr sim`, then `/dr test`, then `/dr sim died`; during a sim enter combat, then arm a real race | The usage line lists every scenario, then one line each with what it shows; both starts are refused with one line; `/dr test` switches the sim to the still views and `/dr sim died` starts a new sim from Armed; combat and arming end it like test mode, the Results window it opened closes | The lines printed |
 | SM-DR-BL16 | `/dr help` and read the `sim` line; `/dr test`, close the Results window it opened, reopen it with `/dr results`, then `/dr test` to end it; start `/dr sim` and, while it is still racing, end it each way in turn: close the HUD, *Reset all settings*, `/dr disable` | The `sim` help line lists the same scenarios as `/dr sim sideways`; the Results window you reopened stays open on your own history; each end stops the sample race at once (no further HUD updates, no center countdown), the Results window is back on your own history, and no sim run appears in it after a `/reload` | Which end left the sample playing |
+
+## 16. Round C: the detail's headings, the HUD's profile and the centered pace bar
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-RC1 | Open a run raced this session with a flag and a note in the Results detail and scroll through it; then a run from before the last `/reload` | *Spell breakdown*, the chart's heading, *Timing*, *Gear*, *Talents*, the flags box's title and *Note* are one gold heading a step larger than before (GameFontNormalLarge), each with a clear band of space above it and nothing overlapping under it; the header at the top has no extra space above it; without the chart *Timing* moves up and keeps its space | A screenshot of each part |

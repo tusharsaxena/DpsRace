@@ -111,7 +111,7 @@ Decisions:
   - A *Delete* button with a confirm, beside Race Again, Details and Share. All four buttons are the same width.
   - The chart draws the gray average-pace diagonal for the best. The post-race plot's max covers both the run's damage and the best's.
 
-- [ ] C1.1 Results detail: larger section headings and space above each section.
+- [x] C1.1 Results detail: larger section headings and space above each section.
 - [ ] C1.2 HUD: "Damage profile", the pace bar under the chart heading, the "Spell breakdown" heading, spacing and the shared heading font (running and result).
 - [ ] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
 - [ ] C1.4 Stop! screen: *Stop now* and *Cancel*.

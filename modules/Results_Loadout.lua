@@ -384,6 +384,7 @@ end
 
 local function layoutTalents(p, x, y, cw)
     local tw = Loadout.TALENT_W
+    y = y - NS.Style.SECTION_GAP
     place(x.talentsTitle, p.content, 0, y)
     y = y - NS.Style.SECTION_H
     place(x.talents, p.content, 0, y - 2)
@@ -401,9 +402,11 @@ local function layoutTalents(p, x, y, cw)
     return y
 end
 
---- The Gear section and the Talents line at `y` across `cw`; answers the y beneath.
+--- The Gear section and the Talents line at `y` across `cw`, each heading SECTION_GAP under the block
+--- above it; answers the y beneath.
 function Loadout.Layout(p, y, cw)
     local x = p.lo
+    y = y - NS.Style.SECTION_GAP
     place(x.title, p.content, 0, y)
     local has = x.gear ~= nil
     x.dress:SetShown(has)

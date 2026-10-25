@@ -14,7 +14,8 @@ local _, NS = ...
 --
 -- SECTION HEADINGS (the owner's call, 2026-10-25): Spell breakdown (over the compare's toggle and the
 -- spell list), the chart's title, Timing, Gear, Talents, the flags box's title and Note are all
--- FONT.SECTION, a size above the column headers, each on a SECTION_H line.
+-- FONT.SECTION, a step above GameFontNormal, each on a SECTION_H line with SECTION_GAP of clear space
+-- above it (the header is the only block above the first heading, so no heading sits at the very top).
 --
 -- THE DAMAGE CHART (#2) sits under the breakdown, for a run raced since the last /reload or login: the
 -- run's in-session slices (modules/Slices.lua), drawn by modules/Hud_Chart.lua and scaled to its plain
@@ -53,9 +54,11 @@ local LINE_H = 14
 local ICON = 28
 local ICON_GAP = 4
 -- Every section heading (Spell breakdown, the chart, Timing, Gear, Talents, the flags, Note) is
--- FONT.SECTION on a line of SECTION_H.
+-- FONT.SECTION on a line of SECTION_H, SECTION_GAP under the block above it.
 local SECTION_H = NS.Style.SECTION_H
+local SECTION_GAP = NS.Style.SECTION_GAP
 Detail.SECTION_H = SECTION_H
+Detail.SECTION_GAP = SECTION_GAP
 Detail.ICON = ICON
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
@@ -658,6 +661,7 @@ end
 -- The breakdown's heading, over the compare's toggle and the spell list (the plain or the compared).
 function Pane:layoutSpellsTitle(y)
     local t = self.w.spellsTitle
+    y = y - SECTION_GAP
     t:ClearAllPoints()
     t:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     return y - SECTION_H
@@ -680,6 +684,7 @@ function Pane:layoutChart(y, cw)
     chart.over:EnableMouse(view ~= nil)
     self.w.chartTitleHover:SetShown(view ~= nil)
     if not view then return y end
+    y = y - SECTION_GAP
     local Chart = NS.HudChart
     local plotH = Chart.PlotHeight()
     chart:Place(self.content, y, cw, plotH)
@@ -757,6 +762,7 @@ function Pane:layoutTiming(y, cw)
     end
     for _, item in ipairs(w.legend) do item.swatch:SetShown(on); item.fs:SetShown(on) end
     if not on then return y end
+    y = y - SECTION_GAP
     w.timingLabel:ClearAllPoints()
     w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     y = y - SECTION_H
@@ -798,6 +804,7 @@ end
 function Pane:layoutFlags(y, cw)
     local w = self.w
     if (self.flagText or "") ~= "" then
+        y = y - SECTION_GAP
         local h = 7 + SECTION_H + 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H
         w.flags:ClearAllPoints()
         w.flags:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
@@ -815,6 +822,7 @@ function Pane:layoutNote(y, cw)
     w.noteTitle:SetShown(titled)
     w.noteTitleHover:SetShown(titled)
     if titled then
+        y = y - SECTION_GAP
         w.noteTitle:ClearAllPoints()
         w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
         y = y - SECTION_H
