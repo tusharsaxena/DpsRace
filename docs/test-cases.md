@@ -441,10 +441,9 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_results_fit.lua (4)
+### test_results_fit.lua (3)
 
 - results: every Runs column fits the narrowest list either view lays out
-- results: the longest Status board fits after the boxed Spec best
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
 
@@ -453,6 +452,21 @@ Total.
 - results: Group by character, class & spec or target, with folding headers
 - results: Group by duration, and by target type and duration, shortest first
 - results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
+
+### test_results_badges.lua (12)
+
+- badges: the Target cell is a boxed chip in its category color, the count inside
+- badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
+- badges: Spec best and Max name their board in two chips: the target type, then the length
+- badges: a group header row hides the cells' chips; the rows draw them again
+- badges: a chip never runs past its column: a too-long word is cut to the box
+- badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
+- badges: the window minimums hold the wider columns, the Note column last and inside the list
+- badges: the Bests Length column is a chip in its length color
+- badges: the detail's target line leads with the type and length chips, laid out from their widths
+- badges: drawing the chips reads no frame's size or position back
+- badges: group headers color their value as plain text: class, target type, length
+- badges: the HUD draws none of the Results chips
 
 ### test_compare.lua (12)
 
@@ -799,8 +813,9 @@ Total.
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 54 |
-| test_results_fit.lua | 4 |
+| test_results_fit.lua | 3 |
 | test_results_group.lua | 3 |
+| test_results_badges.lua | 12 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -822,4 +837,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **652** |
+| **Total** | **663** |

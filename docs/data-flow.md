@@ -263,8 +263,9 @@ timer or `OnUpdate`.
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
   (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
   run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
-  time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
-  against the length (*1:04 / 2:00*).
+  target line leads with two chips (`Detail.Meta`): the target type in its category color and the
+  race length in its length color (`ResultsTable.LengthChip`), then `ResultsTable.TimeTail` (the DoT
+  tail, *+11.1s*, or when an incomplete run's combat ended, *at 1:04*) and the target's name.
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
   delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →

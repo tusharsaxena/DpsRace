@@ -52,7 +52,10 @@ in-memory samples and writing nothing to SavedVariables. Its Round C (the owner'
 it) renamed the chart *Damage profile* and gave the HUD its section headings, centered the pace bar's
 tick, put *Stop Now* (`Race.StopNow`: the result read now, the quiet waived) and *Cancel* on the Stop!
 and waiting screens, and gave the result card *Delete* in a row of four equal buttons and the best's
-average-pace diagonal on the chart after the race.
+average-pace diagonal on the chart after the race. The owner's notes on the Results window then boxed
+the Runs list's *Target* and *Time* cells and the Status board in their category and length colors
+(also the Bests *Length* and the detail's target line) and colored the group headers' values as plain
+text in the class, category and length colors.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
