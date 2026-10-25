@@ -342,10 +342,10 @@ end
 --- Read `p.run`'s loadout (and, while comparing, the other run's) and paint the parts.
 function Loadout.Fill(p)
     local x = p.lo
-    local gear, talents = NS.Loadouts.Of(p.run)
+    local gear, talents = NS.ResultsSource.LoadoutOf(p.run)
     x.gear, x.talentsData = gear, talents
     local other = p:CompareTarget()
-    local otherGear, otherTalents = NS.Loadouts.Of(other)
+    local otherGear, otherTalents = NS.ResultsSource.LoadoutOf(other)
     local changed = other and Loadout.ChangedSlots(gear, otherGear) or {}
     x.cellList, x.rows = Loadout.Grid(gear)
     x.changedCount = 0

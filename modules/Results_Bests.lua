@@ -158,7 +158,7 @@ local function resolveCategory(chosen, options)
 end
 
 function View:Refresh()
-    local board = NS.Bests.Board({ cleanOnly = self.filters.cleanOnly == true })
+    local board = NS.ResultsSource.Board({ cleanOnly = self.filters.cleanOnly == true })
     local options = Bests.Options(board)
     self.filters.category = resolveCategory(self.filters.category, options.category) or Bests.DEFAULTS.category
     for key, dd in pairs(self.dropdowns) do

@@ -350,7 +350,7 @@ local STATUS_ORDER = { max = 0, best = 1, complete = 2, flagged = 3, incomplete 
 function Runs.HoldsBest(run)
     local Bests = NS.Bests
     if not (Bests and Bests.Board) then return false end
-    local held = Bests.Board()[Bests.Key(run)]
+    local held = NS.ResultsSource.Board()[Bests.Key(run)]
     return held ~= nil and held.id == run.id
 end
 
@@ -765,7 +765,32 @@ function View:ApplyView(v)
     if self.dropdowns and next(self.dropdowns) then self:Refresh() end
 end
 
+-- While the window shows the sample history (test mode, a sim) the view is the sample's: Save and
+-- Reset refuse with one line, so nothing the samples set reaches the profile (modules/Results_Source.lua).
+local function sampleRefusal()
+    if not NS.ResultsSource.IsMock() then return false end
+    NS.Print(L["Not saved: the Results window is showing sample runs."])
+    return true
+end
+
+-- The sample history spans several characters and specs, so it opens on all of them; the view the
+-- player had comes back when the store does (Runs.SampleView, the shell's OnSourceChanged).
+Runs.SAMPLE_VIEW = { filters = { char = "all", spec = "all" } }
+
+--- Enter (`on`) or leave the sample history's view: entering keeps the player's view to restore.
+function View:SampleView(on)
+    if on then
+        if not self.realView then self.realView = self:CaptureView() end
+        self:ApplyView(Runs.SAMPLE_VIEW)
+    elseif self.realView then
+        local real = self.realView
+        self.realView = nil
+        self:ApplyView(real)
+    end
+end
+
 function View:SaveView()
+    if sampleRefusal() then return false end
     local p = NS.db and NS.db.profile
     if not p then return false end
     if type(p.views) ~= "table" then p.views = {} end
@@ -775,6 +800,7 @@ function View:SaveView()
 end
 
 function View:ResetView()
+    if sampleRefusal() then return false end
     local p = NS.db and NS.db.profile
     if p and type(p.views) == "table" then
         p.views.runs = nil
@@ -870,7 +896,7 @@ end
 
 --- Re-read the store and redraw: options, filtered list, count, selection.
 function View:Refresh()
-    local all = NS.Recorder.All()
+    local all = NS.ResultsSource.All()
     self:paintFilters(Runs.Options(all))
     self.filtered = Runs.Filter(all, self.filters)
     local n = #self.filtered

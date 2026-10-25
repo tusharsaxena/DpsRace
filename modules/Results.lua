@@ -104,12 +104,17 @@ end
 
 -- ── the parts ───────────────────────────────────────────────────────────────────────────────────
 
+-- Every run the window draws comes through modules/Results_Source.lua: the store, or the sample
+-- history while test mode or a sim is on.
+local Source = NS.ResultsSource
+
 local function run(id)
-    return id and NS.Recorder.Get(id) or nil
+    return id and Source.Get(id) or nil
 end
 
+-- A sample run is never shared: its numbers are made up.
 local function canShare()
-    return NS.Share ~= nil and type(NS.Share.Prompt) == "function"
+    return NS.Share ~= nil and type(NS.Share.Prompt) == "function" and not Source.IsMock()
 end
 
 local function share(r)
@@ -136,6 +141,8 @@ local function buildTab(name)
             -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
             count = function(text) ui.runsCount = text end,
         })
+        -- Built while the sample history is shown: it opens on the sample's view.
+        if Source.IsMock() then pane:SampleView(true) end
     else
         pane = NS.ResultsBests.Build(ui.body, {
             open = function(r) Results.ShowRun(r.id) end, share = share,
@@ -326,7 +333,7 @@ function Results.ToggleView()
 end
 
 local function bodySize()
-    return ui.width - 2, ui.height - HEADER_H - TAB_H - FOOTER_H - 2
+    return ui.width - 2, ui.height - HEADER_H - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
 end
 
 local function layoutRuns(pane, width, height)
@@ -406,6 +413,36 @@ local function windowShown()
     return ui ~= nil and ui.frame:IsShown() == true
 end
 
+-- ── the sample marker (test mode, a sim) ────────────────────────────────────────────────────────
+-- While the window shows the sample history it says so, as the HUD does in test mode: the library's
+-- strip under the tab strip, the body moved down by its height. With no Widgets library there is no
+-- strip, and the title carries the word instead; never both.
+
+local function ensureStrip()
+    if ui.stripTried then return ui.strip end
+    ui.stripTried = true
+    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"])
+    if strip then
+        strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1))
+        strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + TAB_H + 1))
+    end
+    ui.strip = strip
+    return strip
+end
+
+local function applySampleMarker()
+    local on = Source.IsMock()
+    local strip = on and ensureStrip() or ui.strip
+    if strip then strip:SetShown(on) end
+    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    if ui.drop ~= drop then
+        ui.drop = drop
+        ui.body:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1 + drop))
+    end
+    local marked = on and not strip
+    ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
+end
+
 local function hideWindow()
     if windowShown() then
         hiding = true
@@ -459,6 +496,7 @@ function Results.Refresh()
     local scale = tonumber(NS.GetSetting("scale"))
     if scale then ui.frame:SetScale(scale) end
     if not windowShown() then ui.frame:Show() end
+    applySampleMarker()
     renderTab()
 end
 
@@ -591,19 +629,39 @@ function Results.ConfirmDelete(id)
     return true
 end
 
---- Delete a run from the store (Recorder.Delete fires RUNS_CHANGED, which redraws the window).
+--- Delete a run from the store (Recorder.Delete fires RUNS_CHANGED, which redraws the window), or a
+--- sample run from the sample history (the source redraws it).
 function Results.DeleteRun(id)
     if selected == id then selected, detailOpen = nil, false end
-    return NS.Recorder.Delete(id)
+    return Source.Delete(id)
 end
 
 --- Store a run's note (trimmed, at most 200 characters) and answer what was stored.
 function Results.SetNote(id, text)
     local r = run(id)
     if not r then return nil end
-    -- Through Recorder.SetNote, not Save: RUN_SAVED would prune the store for a typed note.
-    NS.Recorder.SetNote(id, NS.ResultsDetail.ClampNote(text))
+    -- Through Recorder.SetNote (the source's, for a stored run), not Save: RUN_SAVED would prune the
+    -- store for a typed note.
+    Source.SetNote(id, NS.ResultsDetail.ClampNote(text))
     return r.note
+end
+
+--- The source changed (modules/Results_Source.lua): `swapped` between the store and the sample
+--- history, which drops the selection and the compare's pick (neither is in the other) and moves the
+--- Runs view to the sample's or back to the player's; else the sample changed (a note, a delete, the
+--- sim's run). A hidden window redraws in full on its next show.
+function Results.OnSourceChanged(swapped)
+    if swapped then
+        selected, detailOpen = nil, false
+        if ui then
+            ui.detail:SetPick(nil)
+            if ui.panes.runs then ui.panes.runs:SampleView(Source.IsMock()) end
+        end
+    end
+    if windowShown() then
+        applySampleMarker()
+        renderTab()
+    end
 end
 
 --- The lifecycle's stand-down: the window hides (it decides not to show while stood down).

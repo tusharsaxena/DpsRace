@@ -462,6 +462,11 @@ L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbe
 L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"
 
+-- The Results window on the sample history (modules/Results.lua, modules/Results_Runs.lua)
+L["Test mode: sample runs. Nothing here is saved"] = "Test mode: sample runs. Nothing here is saved"
+L["DPS Race \226\128\148 Results \194\183 Test"] = "DPS Race \226\128\148 Results \194\183 Test"
+L["Not saved: the Results window is showing sample runs."] = "Not saved: the Results window is showing sample runs."
+
 -- The Results window's tooltips (modules/Results_Tips.lua, modules/Results_Runs.lua)
 L["Role: %s"] = "Role: %s"
 L["Class color"] = "Class color"

@@ -474,7 +474,7 @@ end
 
 local function setDelta(fs, run)
     if run.status ~= "complete" then return fs:SetText("") end
-    local pct, isNew = NS.Bests.Delta(run)
+    local pct, isNew = NS.ResultsSource.Delta(run)
     if isNew then
         fs:SetText(pct and L["New best +%.1f%%"]:format(pct) or L["New best"])
         fs:SetTextColor(C.green[1], C.green[2], C.green[3])
@@ -543,7 +543,7 @@ function Pane:Show(run)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
-    self.chartView = NS.HudChart.ResultView(run)
+    self.chartView = NS.ResultsSource.ChartView(run)
     self:fillFlags(run)
     -- The note as written: its own "Note" heading says what it is.
     self.noteText = type(run.note) == "string" and run.note or ""

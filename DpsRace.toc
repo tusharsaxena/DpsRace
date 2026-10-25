@@ -120,6 +120,9 @@ modules\Hud.lua
 modules\Countdown.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE, so each follows the files it captures (the row pitch is read at CALL time).
+# Where the window reads its runs: the store, or the sample history while test mode or a sim is on
+# (B5). Reached at CALL time only.
+modules\Results_Source.lua
 modules\Results_Table.lua
 # What the tables say on hover (every cell, every header); reached at CALL time.
 modules\Results_Tips.lua

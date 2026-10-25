@@ -49,9 +49,9 @@ local function loadoutLines(run, lines)
         lines[#lines + 1] = { L["Gear and talents: not recorded"], 0.62, 0.62, 0.68 }
         return
     end
-    local _, talents = NS.Loadouts.Of(run)
+    local _, talents = NS.ResultsSource.LoadoutOf(run)
     if talents then lines[#lines + 1] = L["Talents: %s"]:format(NS.ResultsLoadout.TalentsText(talents)) end
-    local changed = NS.Loadouts.GearChanged(run)
+    local changed = NS.ResultsSource.GearChanged(run)
     if changed then lines[#lines + 1] = { L["Gear changed since the previous run"], C().amber[1], C().amber[2], C().amber[3] } end
 end
 
@@ -250,7 +250,7 @@ end
 
 function DETAIL.delta(run)
     if run.status ~= "complete" then return nil end
-    local pct, isNew = NS.Bests.Delta(run)
+    local pct, isNew = NS.ResultsSource.Delta(run)
     if not pct and not isNew then return nil end
     local lines = { isNew and L["New best"] or L["%+.1f%% vs best"]:format(pct) }
     lines[#lines + 1] = L["Against the best DPS before this run for the same spec, target type and race length."]
@@ -455,7 +455,7 @@ end
 -- is the client's own item tooltip, with `changed`'s line after it while the compare is on.
 
 local function loadoutOf(run)
-    return NS.Loadouts.Of(run)
+    return NS.ResultsSource.LoadoutOf(run)
 end
 
 local function otherWho(other)
