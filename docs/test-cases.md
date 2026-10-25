@@ -447,11 +447,12 @@ Total.
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
 
-### test_results_group.lua (3)
+### test_results_group.lua (4)
 
 - results: Group by character, class & spec or target, with folding headers
 - results: Group by duration, and by target type and duration, shortest first
 - results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
+- results: hovering Save, Reset or Clear shows its tooltip without an error
 
 ### test_results_badges.lua (12)
 
@@ -814,7 +815,7 @@ Total.
 | test_layers.lua | 6 |
 | test_results.lua | 54 |
 | test_results_fit.lua | 3 |
-| test_results_group.lua | 3 |
+| test_results_group.lua | 4 |
 | test_results_badges.lua | 12 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
@@ -837,4 +838,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **663** |
+| **Total** | **664** |

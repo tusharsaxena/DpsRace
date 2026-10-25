@@ -141,7 +141,7 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   and talent loadout; `ResultsLoadout.Fill` draws the grid from the links (the item data from
   `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
   the other run's the same way and highlights the slots whose link differs, and marks a different
-  import string. *View* prints the `talentbuild` link to the player's own chat window (`NS.Print`), where a click opens the talent tree through Blizzard's chat link handling; it opens no Blizzard frame itself (ARCHITECTURE.md, Taint Notes). Nothing is stored.
+  import string. *View* opens the talent tree through `SetItemRef` with the `talentbuild` link (an accepted taint risk, ARCHITECTURE.md Taint Notes) and also prints the link to the player's own chat window (`NS.Print`), where a click opens the tree again. Nothing is stored.
 - **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`

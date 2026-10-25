@@ -705,14 +705,7 @@ local function buildBar(view)
     for _, spec in ipairs(VIEW_BUTTONS) do
         local b = NS.HudStates.Button(bar, L[spec.label], function() view[spec.act](view) end)
         b:SetWidth(VIEW_BUTTON_W)
-        b.tip = L[spec.tip]
-        b:HookScript("OnEnter", function(self)
-            if not GameTooltip then return end
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(self.tip, 1, 1, 1, 1, true)
-            GameTooltip:Show()
-        end)
-        b:HookScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+        b.tip = { L[spec.label], L[spec.tip] }   -- the shared button's own tooltip shape
         view.viewButtons[spec.key] = b
     end
     view.bar = bar

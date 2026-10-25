@@ -238,3 +238,32 @@ test("results: Save, Reset and Clear the Runs view, and a saved view is what the
     assertEqual(pane.filters.group, "targetLength")
     assertEqual(i.NS.ResultsRuns.Build(i.mocks.UIParent).filters.group, "targetLength")
 end)
+
+test("results: hovering Save, Reset or Clear shows its tooltip without an error", function()
+    -- In game the shared button's OnEnter handed GameTooltip:SetText a nil title: the view buttons
+    -- set a bare string where the button reads { title, text }.
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.Show()
+    local pane = runsPane(i)
+    local shown = {}
+    i.mocks.GameTooltip = {
+        SetOwner = function() end, Show = function() end, Hide = function() end,
+        AddLine = function(_, text) shown[#shown + 1] = text end,
+        SetText = function(_, text)
+            assertTrue(type(text) == "string", "SetText needs a string, got " .. type(text))
+            shown[#shown + 1] = text
+        end,
+    }
+    for _, key in ipairs({ "save", "reset", "clear" }) do
+        local b = pane.viewButtons[key]
+        assertEqual(type(b.tip), "table", key .. ": the tooltip is { title, text }")
+        b:__fire("OnEnter")
+    end
+    assertEqual(shown[1], "Save")
+    assertTrue(shown[2]:find("default view", 1, true) ~= nil, "the Save tooltip's text follows its title")
+    local b = pane.viewButtons.save
+    b.tip = "a bare title"
+    b:__fire("OnEnter")
+    assertEqual(shown[#shown], "a bare title", "a bare string tooltip still shows, as the title")
+end)

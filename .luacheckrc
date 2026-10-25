@@ -99,11 +99,11 @@ files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The detail's loadout (#6): the item data, the item tooltip and its modified click, the Dressing
--- Room and the client's loadout serialization version (View prints its link to chat: no SetItemRef).
+-- Room, the client's loadout serialization version, and View's SetItemRef (it opens the tree).
 files["modules/Results_Loadout.lua"] = {
     read_globals = {
         "GameTooltip", "C_Item", "C_Traits", "DressUpItemLink", "HandleModifiedItemClick",
-        "IsShiftKeyDown", "ChatEdit_InsertLink",
+        "IsShiftKeyDown", "ChatEdit_InsertLink", "SetItemRef",
     },
 }
 

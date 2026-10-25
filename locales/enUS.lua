@@ -666,9 +666,9 @@ L["Nothing was equipped in this slot."] = "Nothing was equipped in this slot."
 L["Try the run's gear on in the Dressing Room."] = "Try the run's gear on in the Dressing Room."
 L["Hero talents: %s"] = "Hero talents: %s"
 L["The talent loadout the run was raced with."] = "The talent loadout the run was raced with."
-L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."] =
-    "Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."
-L["Only you see it: nothing is sent to a channel."] = "Only you see it: nothing is sent to a channel."
+L["Open the run's talent tree, read-only, and post its link to your chat window to open again later."] =
+    "Open the run's talent tree, read-only, and post its link to your chat window to open again later."
+L["Only you see the link: nothing is sent to a channel."] = "Only you see the link: nothing is sent to a channel."
 L["this run"] = "this run"
 L["Talents for %s: %s \226\128\148 click the link to view the tree."] =
     "Talents for %s: %s \226\128\148 click the link to view the tree."

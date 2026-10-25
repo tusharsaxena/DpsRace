@@ -167,24 +167,25 @@ function Loadout.DressUp(gear)
     return n
 end
 
---- Post the loadout's talentbuild link to the player's own chat window, to click there: Blizzard's
---- chat hyperlink handling then opens its talent tree, read-only.
+--- Open the loadout's talent tree, read-only, through SetItemRef with its talentbuild link, and post
+--- the same link to the player's own chat window to open again later.
 ---
---- NEVER OPENS A BLIZZARD FRAME FROM ADDON CODE (the owner's call, 2026-10-25). View used to call
---- SetItemRef itself, which showed PlayerSpellsFrame from this addon's execution: its OnShow wrote
---- the action bars' show-grid state tainted, and a later in-combat slot change ended in
---- ADDON_ACTION_BLOCKED on MultiBarRightButton1:SetShown() (Blizzard_ActionBar UpdateShownButtons).
---- A line in the chat frame is drawn by the chat frame alone; the click on the link is the player's.
+--- THE TAINT RISK IS THE OWNER'S CALL (2026-10-25, reversing the chat-link-only View). SetItemRef
+--- from this button shows PlayerSpellsFrame from this addon's execution; its OnShow writes the
+--- action bars' show-grid state tainted, so a later in-combat slot change can end in
+--- ADDON_ACTION_BLOCKED on MultiBarRightButtonN:SetShown() (Blizzard_ActionBar UpdateShownButtons),
+--- once seen in game. Clicking the posted chat link instead opens the tree without that risk.
 --- @param t table|nil  a stored talent loadout
 --- @param level number|nil  the character's level when it raced
 --- @param who string|nil  names the run in the line ("Lanfear, 25 Oct 14:02")
---- @return boolean posted
+--- @return boolean opened
 function Loadout.View(t, level, who)
     if not Loadout.CanView(t) then return false end
     local link = Loadout.Hyperlink(t, level)
     if not link then return false end
     NS.Print(L["Talents for %s: %s \226\128\148 click the link to view the tree."]:format(who or L["this run"], link))
-    return true
+    if type(SetItemRef) ~= "function" then return false end
+    return (pcall(SetItemRef, Loadout.LinkData(t, level), link, "LeftButton"))
 end
 
 --- The run View names in its chat line: its character and date.

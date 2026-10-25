@@ -272,15 +272,17 @@ each frame's strata, level and toplevel.
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
   textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
   broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
-- The detail's *View* (#6) opens no Blizzard frame from addon code. It prints the stored
-  `talentbuild` link into the player's own chat window (`NS.Print`), and the player's click on the
-  link goes through Blizzard's own chat hyperlink handling. Until 2026-10-25 it called `SetItemRef`
-  itself, which showed the talent frame (`PlayerSpellsFrame`) from this addon's execution: its
-  `OnShow` writes the action bars' show-grid state, so that state was written tainted, and a later
-  in-combat slot change (a proc or an override) failed in `Blizzard_ActionBar`'s
-  `UpdateShownButtons` with `[ADDON_ACTION_BLOCKED] AddOn 'DpsRace' tried to call the protected
-  function 'MultiBarRightButton1:SetShown()'`, as the owner saw in game. `test_loadout` fails if
-  *View* reaches `SetItemRef`; smoke row SM-DR-LO4 repeats the in-combat check. The other two paths
+- The detail's *View* (#6) opens the talent tree from addon code, an ACCEPTED RISK (the owner's
+  call, 2026-10-25). It calls `SetItemRef` with the stored `talentbuild` link, which shows the talent
+  frame (`PlayerSpellsFrame`) from this addon's execution, and it also prints the same link into the
+  player's own chat window (`NS.Print`). The frame's `OnShow` writes the action bars' show-grid
+  state, so that state is written tainted, and a later in-combat slot change (a proc or an override)
+  can fail in `Blizzard_ActionBar`'s `UpdateShownButtons` with `[ADDON_ACTION_BLOCKED] AddOn
+  'DpsRace' tried to call the protected function 'MultiBarRightButton1:SetShown()'`, as the owner
+  once saw in game. For a few hours on 2026-10-25 *View* only posted the chat link (a click on a chat
+  link goes through Blizzard's own hyperlink handling and avoids it); the owner preferred the direct
+  open, and the posted link stays as the taint-free way to open the tree. `test_loadout` pins both
+  the `SetItemRef` call and the chat line; smoke row SM-DR-LO4 repeats the in-combat check. The other two paths
   that reach a Blizzard frame stay: *Dressing Room* calls `DressUpItemLink` (it opens
   `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
   client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item

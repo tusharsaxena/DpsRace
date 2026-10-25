@@ -32,7 +32,7 @@ and the smoke row that measures it where one exists.
   loadout's name is the player's last saved loadout for the spec, else the active config's (which
   may be generic); that the first is the one the player sees is a smoke row (SM-DR-LO4).
 - **A stored talent string opens only on a client with its serialization version.** After a patch
-  that changes it, *View* (which posts the string's link to chat) is grayed with a tooltip saying so; *Copy* still hands out the string, and
+  that changes it, *View* (which opens the tree and posts its link to chat) is grayed with a tooltip saying so; *Copy* still hands out the string, and
   the gear grid is unaffected. Talents are compared only as a *Different loadout* marker, never
   node by node (the owner's call, 2026-10-25).
 - **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper

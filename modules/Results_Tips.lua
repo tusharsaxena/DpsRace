@@ -495,8 +495,8 @@ function LOADOUT.talents(run)
 end
 
 function LOADOUT.view()
-    return { L["View"], L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."],
-             dimLine(L["Only you see it: nothing is sent to a channel."]) }
+    return { L["View"], L["Open the run's talent tree, read-only, and post its link to your chat window to open again later."],
+             dimLine(L["Only you see the link: nothing is sent to a channel."]) }
 end
 
 function LOADOUT.viewOff(run)
