@@ -186,7 +186,8 @@ race.
   stretch, and the RUNNING → STOPPING edge at the buzzer makes one last read for the bucket ending
   there. The running body's view (`HudChart.LiveViews`) carries the buckets and the scale: the
   board's best (`Bests.Board()[Bests.Key(run)]`) x 1.15 with its level and pace diagonal, or with no
-  best the live total itself; and the pace bar's range, `2 x best.damage x elapsed / best.length`.
+  best the live total itself; and the pace bar's range, `live.paceRange x best.damage x elapsed / best.length`
+  (at least 1), its tick at 1/range of the bar's configured width.
   On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
   `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
   `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three

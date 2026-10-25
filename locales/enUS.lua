@@ -402,8 +402,11 @@ L["Show damage chart"] = "Show damage chart"
 L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."] =
     "Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."
 L["Show pace bar"] = "Show pace bar"
-L["Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
-    "Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."
+L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
+    "Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."
+L["Pace bar range"] = "Pace bar range"
+L["The pace bar's right end, as a multiple of the best's pace so far: at 1.5 a full bar is half again the best's damage by now. The tick marks the best's pace, at 1/range of the bar's width. 1.1 to 3.0."] =
+    "The pace bar's right end, as a multiple of the best's pace so far: at 1.5 a full bar is half again the best's damage by now. The tick marks the best's pace, at 1/range of the bar's width. 1.1 to 3.0."
 L["Damage chart"] = "Damage chart"
 L["Chart height"] = "Chart height"
 L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."] =

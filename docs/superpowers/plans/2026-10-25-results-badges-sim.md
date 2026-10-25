@@ -51,7 +51,7 @@ go-ahead.
 
 ### B3: Pace bar
 
-- [ ] B3.1 A pace range setting (default 1.5) driving `PaceMax`. The tick sits at 1/x.
+- [x] B3.1 A pace range setting (default 1.5) driving `PaceMax`. The tick sits at 1/x.
 - [ ] B3.2 The pace bar on the HUD result card (plain final damage vs the best), its settings respected, test mode
   included.
 

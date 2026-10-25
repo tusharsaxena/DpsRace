@@ -13,9 +13,11 @@ local _, NS = ...
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
 --   * After the race: the run's plain final damage.
--- The pace bar's range is twice the best's average damage by now (plain, from GetTime()); its value is
--- the live total, and its center tick marks "on pace". It says nothing more: no ahead or behind, no
--- color chosen from the value, because comparing a secret is not allowed.
+-- The pace bar's range is a multiple of the best's average damage by now (*Pace bar range*, 1.5 by
+-- default; plain, from GetTime()); its value is the live total, and its tick, at 1/range of the bar's
+-- width, marks "on pace". It says nothing more: no ahead or behind, no color chosen from the value,
+-- because comparing a secret is not allowed. The HUD result card draws it again after the race, the
+-- run's plain final damage against the best before it at the buzzer (Chart.ResultPace).
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
 -- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
@@ -47,6 +49,9 @@ local DIAGONAL = { 0.9, 0.9, 0.92, 0.7 }
 local TICK = { 1, 1, 1, 0.85 }
 
 local D = NS.defaults.profile.appearance.chart
+local LIVE = NS.defaults.profile.live
+
+Chart.PACE_RANGE_MIN, Chart.PACE_RANGE_MAX = 1.1, 3.0   -- settings/Hud.lua's slider bounds
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -122,9 +127,31 @@ function Chart.Pace(best, elapsed)
     return best.result.damage * t / length
 end
 
---- The pace bar's range: twice the pace, so a half-full bar is on pace (at least 1, for 0:00).
-function Chart.PaceMax(best, elapsed)
-    return math.max(2 * Chart.Pace(best, elapsed), 1)
+--- The configured pace bar range (live.paceRange): the bar's right end as a multiple of the best's
+--- pace, clamped to the slider's bounds.
+--- @return number
+function Chart.PaceRange()
+    local v = NS.GetSetting and tonumber(NS.GetSetting("live.paceRange"))
+    return math.max(Chart.PACE_RANGE_MIN, math.min(Chart.PACE_RANGE_MAX, v or LIVE.paceRange))
+end
+
+--- The pace bar's range: `range` (default the setting) times the pace, so the bar is on pace at
+--- 1/range of its width (at least 1, for 0:00).
+--- @param best table
+--- @param elapsed number
+--- @param range number|nil
+--- @return number
+function Chart.PaceMax(best, elapsed, range)
+    return math.max((range or Chart.PaceRange()) * Chart.Pace(best, elapsed), 1)
+end
+
+--- The on-pace tick's offset from the bar's left edge, in whole pixels: 1/range of the bar's width.
+--- Plain config math on the width Place() was handed, never a measured size.
+--- @param barW number
+--- @param range number
+--- @return number
+function Chart.TickX(barW, range)
+    return math.floor(barW / range + 0.5)
 end
 
 --- What the running body draws: the chart's view and the pace bar's, each nil when hidden. Both hide
@@ -391,7 +418,7 @@ end
 local Pace = {}
 Pace.__index = Pace
 
---- The pace bar built into `parent`: its caption, the bar and the on-pace tick at its center.
+--- The pace bar built into `parent`: its caption, the bar and the on-pace tick (placed by Place).
 --- @param parent table
 --- @return table pace
 function Chart.NewPace(parent)
@@ -424,11 +451,25 @@ function Pace:Place(anchor, y, width)
     self.label:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.bar:ClearAllPoints()
     self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", Chart.PACE_LABEL_W, y - 2)
-    self.bar:SetSize(math.max(1, width - Chart.PACE_LABEL_W), Chart.PACE_H - 4)
+    self.barW = math.max(1, width - Chart.PACE_LABEL_W)
+    self.bar:SetSize(self.barW, Chart.PACE_H - 4)
+    self:PlaceTick()
 end
 
---- The range: twice the best's pace now (plain).
+--- The on-pace tick at 1/range of the bar's configured width; moved only when either changed.
+function Pace:PlaceTick()
+    local barW, range = self.barW, Chart.PaceRange()
+    if not barW or (self.tickW == barW and self.tickRange == range) then return end
+    self.tickW, self.tickRange = barW, range
+    local x = Chart.TickX(barW, range)
+    self.tick:ClearAllPoints()
+    self.tick:SetPoint("TOP", self.bar, "TOPLEFT", x, 2)
+    self.tick:SetPoint("BOTTOM", self.bar, "BOTTOMLEFT", x, -2)
+end
+
+--- The range: *Pace bar range* times the best's pace now (plain); the tick follows the setting.
 function Pace:SetMax(max)
+    self:PlaceTick()
     local A = NS.HudAppearance
     if A and self.stamp ~= A.stamp then
         self.stamp = A.stamp

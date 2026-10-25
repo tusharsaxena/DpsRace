@@ -157,8 +157,9 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- History > Results table: two bar blocks of four and a font block of six.
     local RESULTS_TABLE_ROWS = 2 * 4 + 6
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
-    -- degraded load keeps every one of them (History's Include talents link, #6, the 18th).
-    local PAGE_ROWS = 18
+    -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
+    -- Pace bar range, the 19th).
+    local PAGE_ROWS = 19
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

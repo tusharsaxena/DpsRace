@@ -319,6 +319,12 @@ Total.
 - chart: test mode honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
+### test_pace.lua (3)
+
+- pace: Pace bar range defaults to 1.5, drives PaceMax and is clamped to 1.1-3.0
+- pace: the tick sits at 1/range of the bar's width, in whole pixels
+- pace: the running bar's tick follows Pace bar range, laid out from the configured width
+
 ### test_countdown.lua (20)
 
 - countdown: 10..1 show one per second in the last 10s, then go at the buzzer
@@ -731,6 +737,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
 | test_chart.lua | 24 |
+| test_pace.lua | 3 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 48 |
@@ -756,4 +763,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **594** |
+| **Total** | **597** |
