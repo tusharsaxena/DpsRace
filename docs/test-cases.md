@@ -458,12 +458,11 @@ Total.
 - results: Escape with no talent tree closes the window for good
 - results: the close control with the talent tree up closes the window alone
 
-### test_results_badges.lua (12)
+### test_results_badges.lua (11)
 
 - badges: the Target cell is a boxed chip in its category color, the count inside
 - badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
-- badges: Spec best and Max name their board in two chips: the target type, then the length
-- badges: a group header row hides the cells' chips; the rows draw them again
+- badges: Spec best and Max are the box alone; their board is in the tooltip
 - badges: a chip never runs past its column: a too-long word is cut to the box
 - badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
 - badges: the window minimums hold the wider columns, the Note column last and inside the list
@@ -821,7 +820,7 @@ Total.
 | test_results_fit.lua | 3 |
 | test_results_group.lua | 4 |
 | test_results_tree.lua | 5 |
-| test_results_badges.lua | 12 |
+| test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -843,4 +842,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **665** |
+| **Total** | **664** |

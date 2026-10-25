@@ -345,9 +345,9 @@ end
 -- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
 -- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
 -- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
--- is the board's (spec x dummy type x length). Both name their board after the box in two boxed
--- chips (Runs.StatusChips), the target type in its category color and the length in its length
--- color, as the Target and Time columns draw them: a best depends on the target type and the length.
+-- is the board's (spec x dummy type x length). The tag is the box alone (the owner's call,
+-- 2026-10-25: the board's chips after it were too noisy); the Target and Time columns beside it
+-- already name the board, and the tooltip spells it out (Runs.StatusBoard).
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -398,7 +398,7 @@ function Runs.Status(run, top)
     return key, L[tag.label], tag.color, tag.icon
 end
 
--- The tags that name their board after the box.
+-- The tags whose tooltip names their board.
 local NAMES_BOARD = { best = true, max = true }
 
 --- The board a Spec best or Max tag names: the target type in lower case and the race length
@@ -408,20 +408,6 @@ function Runs.StatusBoard(run)
     local length = run.race and run.race.length
     return NS.Dummies.Label(run.target and run.target.category):lower(), NS.Format.Length(length),
         Tbl.LengthColor(length)
-end
-
---- The chips after a tag's box for Spec best and Max: the target type ("Boss-level", as the Target
---- column names it, without a count: a board is per type) in its category color, then the race
---- length in its length color; nil for every other tag.
---- @param run table
---- @param key string  Runs.Status's key
---- @return table|nil  { { text, color }, { text, color } }
-function Runs.StatusChips(run, key)
-    if not NAMES_BOARD[key] then return nil end
-    local category = run.target and run.target.category or "other"
-    local label, catColor = Tbl.Badge({ category = category })
-    local time, lengthColor = Tbl.LengthChip(run.race and run.race.length)
-    return { { label, catColor }, { time, lengthColor } }
 end
 
 local function categoryOf(run)
@@ -549,7 +535,7 @@ end
 Runs.NOTE_W = 80
 Runs.TARGET_W = 98
 Runs.TIME_W = 84
-Runs.STATUS_W = 226
+Runs.STATUS_W = 92
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -651,13 +637,13 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        -- Wide enough for the longest board after its box: "Spec best" then [Single target] [10:00].
-        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, chips = 2,
+        -- Wide enough for the widest tag alone: the boxed "Incomplete" with its icon.
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true,
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
-              local key, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
-              return text, color, icon, nil, Runs.StatusChips(run, key)
+              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
+              return text, color, icon
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
