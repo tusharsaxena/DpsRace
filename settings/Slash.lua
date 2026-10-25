@@ -56,7 +56,8 @@ NS.COMMANDS = {
                                                                    feature(function() doTarget() end) },
     { "test",        L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"],
                                                                    feature(function(rest) doTest(rest) end) },
-    { "sim",         L["Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"],
+    -- The scenario list comes from modules/Sim.lua (loaded before settings/), so the help line follows it.
+    { "sim",         L["Play a whole sample race: /dr sim [%s]"]:format(table.concat(NS.Sim.Names(), "|")),
                                                                    feature(function(rest) doSim(rest) end) },
     { "lock",        L["Lock the race HUD in place"],
                                                                    feature(function() doLock(true) end) },

@@ -294,7 +294,7 @@ L["Open the Results window; /dr results bests opens the bests"] =
     "Open the Results window; /dr results bests opens the bests"
 L["Print your target's name, creature ID and category"] = "Print your target's name, creature ID and category"
 L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"] = "Sample data in the HUD and the Results window: /dr test [armed|running|result]"
-L["Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"] = "Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"
+L["Play a whole sample race: /dr sim [%s]"] = "Play a whole sample race: /dr sim [%s]"
 L["Lock the race HUD in place"] = "Lock the race HUD in place"
 L["Unlock the race HUD to move and resize it"] = "Unlock the race HUD to move and resize it"
 L["Nothing to cancel."] = "Nothing to cancel."

@@ -203,6 +203,26 @@ test("sim: the end conditions: combat, arming a real race, the switch; refused i
     assertEqual(#f.M.__timers(), 0, "a timer outlived the sim")
 end)
 
+test("sim: closing the HUD, Reset all settings and the stand-down end a running script", function()
+    local ends = {
+        close = function(f) f.Hud.Act.close() end,
+        resetall = function(f) f.NS.Helpers.RestoreAllDefaults() end,
+        standdown = function(f) assertTrue(f.NS.SetByPath("enabled", false)) end,
+    }
+    for _, key in ipairs({ "close", "resetall", "standdown" }) do
+        local f = fixture()
+        sim(f, "newbest")
+        f:advance(5)
+        assertEqual(f.Sim.Diagnose().ticking, true, key .. ": the script was not ticking")
+        ends[key](f)
+        assertFalse(f.Preview.IsActive(), key .. " left the sim on")
+        assertEqual(f.Sim.Diagnose().ticking, false, key .. ": the script kept ticking")
+        assertEqual(#f.M.__timers(), 0, key .. ": a timer outlived the sim")
+        assertFalse(f.NS.ResultsSource.IsMock(), key .. ": the store was not given back")
+        assertEqual(next(f.NS.db.global.runs), nil, key .. ": a sim run reached the store")
+    end
+end)
+
 test("sim: switching to test mode stops the script; a sim restarts in place", function()
     local f = fixture()
     sim(f, "newbest")

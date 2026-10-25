@@ -262,6 +262,23 @@ test("preview: a Results window test mode opened closes with it", function()
     assertFalse(f.NS.ResultsSource.IsMock())
 end)
 
+test("preview: a Results window the player closed and reopened stays open when test mode ends", function()
+    local f = fixture()
+    assertTrue(f.Preview.Start())
+    assertTrue(f.R.IsShown(), "test mode opened the Results window")
+    f.R.Hide()
+    f.R.Show()
+    f.Preview.Stop()
+    assertTrue(f.R.IsShown(), "the window the player reopened closed with test mode")
+    assertFalse(f.NS.ResultsSource.IsMock())
+    -- A later start opens it again as its own, and closes it with itself.
+    f.R.Hide()
+    assertTrue(f.Preview.Start())
+    assertTrue(f.R.IsShown())
+    f.Preview.Stop()
+    assertFalse(f.R.IsShown(), "the Results window test mode opened stayed open")
+end)
+
 -- ── the end conditions ──────────────────────────────────────────────────────────────────────────
 
 test("preview: arming a real race ends test mode and gives the Results window the store", function()

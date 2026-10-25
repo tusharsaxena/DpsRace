@@ -336,6 +336,19 @@ test("slash: sim plays the default scenario or the one named; an unknown one lis
     assertFalse(NS.Preview.IsActive(), "the switch ends a sim too")
 end)
 
+test("slash: the sim help line lists every scenario Sim.Names() has", function()
+    local inst = T.load()
+    local NS = inst.NS
+    local desc
+    for _, entry in ipairs(NS.COMMANDS) do
+        if entry[1] == "sim" then desc = entry[2] end
+    end
+    assertEqual(desc, "Play a whole sample race: /dr sim [" .. table.concat(NS.Sim.Names(), "|") .. "]")
+    for _, name in ipairs(NS.Sim.Names()) do
+        assertTrue(desc:find(name, 1, true) ~= nil, name)
+    end
+end)
+
 test("slash: lock and unlock write the Lock frame row through the seam and echo it", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks

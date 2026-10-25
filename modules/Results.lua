@@ -473,12 +473,19 @@ local function reopenUnderTree()
     Results.Show()
 end
 
+-- The player closed the window: a preview that opened it no longer owns it (it stays the player's).
+local function closedByPlayer()
+    local P = NS.Preview
+    if P and type(P.ResultsClosed) == "function" then P.ResultsClosed() end
+end
+
 -- The frame went away by Escape (UISpecialFrames): the player closed it. A frame still shown in its
 -- own right was hidden with its parent (Alt-Z), which is not the player closing it.
 function onHide()
     NS.CloseMenu()
     if hiding or (ui and ui.frame:IsShown()) then return end
     Results.wanted = false
+    closedByPlayer()
     if not talentTreeShown() and C_Timer and C_Timer.After then C_Timer.After(0, reopenUnderTree) end
 end
 
@@ -507,6 +514,7 @@ end
 
 function Results.Hide()
     Results.wanted = false
+    closedByPlayer()
     Results.Refresh()
 end
 

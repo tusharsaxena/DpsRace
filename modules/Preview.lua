@@ -91,6 +91,12 @@ function Preview.OpenResults(id)
     if id then R.ShowRun(id) else R.Show() end
 end
 
+--- The Results window was closed (Results.Hide or Escape): a later open is the player's own, so the
+--- end of the preview no longer closes it. A sample open after this one asks again.
+function Preview.ResultsClosed()
+    resultsOpened = false
+end
+
 -- ── test mode: the static views ────────────────────────────────────────────────────────────────
 
 -- The static HUD: the sample race beating the history's best on its board (the most a body draws:

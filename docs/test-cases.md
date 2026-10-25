@@ -528,7 +528,7 @@ Total.
 - settings: lowering Runs to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
-### test_slash.lua (29)
+### test_slash.lua (30)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -555,6 +555,7 @@ Total.
 - slash: test turns test mode on and off through the Master controls row
 - slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
 - slash: sim plays the default scenario or the one named; an unknown one lists them all
+- slash: the sim help line lists every scenario Sim.Names() has
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
@@ -576,7 +577,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (21)
+### test_preview.lua (22)
 
 - preview: test mode holds the running body still with live figures, chart, pace bar and spells
 - preview: the still running clock follows the Race clock setting
@@ -589,6 +590,7 @@ Total.
 - preview: a note or a delete changes the sample in memory; Save view and Share refuse
 - preview: ending it gives the store back, the player's view and an open window kept open
 - preview: a Results window test mode opened closes with it
+- preview: a Results window the player closed and reopened stays open when test mode ends
 - preview: arming a real race ends test mode and gives the Results window the store
 - preview: a start in combat is refused with one line; combat ends it and says so
 - preview: a start during a real race is refused
@@ -600,7 +602,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (9)
+### test_sim.lua (10)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -610,6 +612,7 @@ Total.
 - sim: flagged shows the late cast after the buzzer and on the card
 - sim: incomplete and died end before the buzzer and read out of combat
 - sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
+- sim: closing the HUD, Reset all settings and the stand-down end a running script
 - sim: switching to test mode stops the script; a sim restarts in place
 
 ### test_launcher.lua (8)
@@ -779,10 +782,10 @@ Total.
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
-| test_slash.lua | 29 |
+| test_slash.lua | 30 |
 | test_share.lua | 13 |
-| test_preview.lua | 21 |
-| test_sim.lua | 9 |
+| test_preview.lua | 22 |
+| test_sim.lua | 10 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -796,4 +799,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **626** |
+| **Total** | **629** |
