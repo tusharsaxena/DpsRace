@@ -848,18 +848,21 @@ end
 
 -- The run on the result card left the store (the card's Delete, or a delete in the Results window):
 -- the card is dismissed (Race.Cancel keeps nothing it could, the run is gone). After the card's own
--- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length.
-local deleting   -- the run id the card's Delete asked about
+-- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length. Any
+-- other change to the store (an earlier best deleted) redraws the card: its delta chip, pace bar and
+-- the best's diagonal name the best before the run, read from the store again.
+local deleting   -- the run id whose delete the card's popup accepted, for the one RUNS_CHANGED it fires
 local backToIdle -- defined with the acts below
 
 local function onRunsChanged()
+    local accepted = deleting
+    deleting = nil
     if NS.Race.State() ~= S().RESULT then return end
     local run = NS.Race.Current()
-    if not run or NS.Recorder.Get(run.id) ~= nil then return end
-    local mine = deleting == run.id
-    deleting = nil
+    if not run then return end
+    if NS.Recorder.Get(run.id) ~= nil then return Hud.Refresh() end
     debug("the result card's run %s was deleted", tostring(run.id))
-    if mine then return backToIdle(run) end
+    if accepted == run.id then return backToIdle(run) end
     NS.Race.Cancel()
 end
 
@@ -992,13 +995,16 @@ end
 
 --- Delete on the result card (Round C): the Results window's own confirmation (Results.ConfirmDelete,
 --- whose Accept deletes through the source seam and Recorder.Delete); the store's RUNS_CHANGED then
---- takes the HUD back to the Arm Race screen (onRunsChanged). The sample card has nothing to delete.
+--- takes the HUD back to the Arm Race screen (onRunsChanged). The card's mark is set only by that
+--- popup's Accept, so a canceled popup leaves a later delete elsewhere an outside one. The sample
+--- card has nothing to delete.
+local function markDeleting(id) deleting = id end
+
 function Act.delete()
     if previewOn() or NS.Race.State() ~= S().RESULT then return false end
     local run, R = NS.Race.Current(), NS.Results
     if not (run and R and type(R.ConfirmDelete) == "function") then return false end
-    deleting = run.id
-    return R.ConfirmDelete(run.id)
+    return R.ConfirmDelete(run.id, markDeleting)
 end
 
 function Act.share()

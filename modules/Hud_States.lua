@@ -811,7 +811,7 @@ end
 local function stopButtons(body)
     local links = footerButtons(body, {
         { L["Stop Now"], function() act("stopNow") end, "primary",
-          tip = { L["Stop Now"], L["Take the result now instead of waiting out the damage tail. Damage that lands after this is not counted. In combat the result is read the moment combat ends."] } },
+          tip = { L["Stop Now"], L["Take the result now instead of waiting out the damage tail. Out of combat it is read at once; in combat it is read the moment combat ends, and damage up to then counts."] } },
         { L["Cancel"], function() act("cancel") end, "danger",
           tip = { L["Cancel"], L["Discard this race. Nothing is saved."] } },
     })

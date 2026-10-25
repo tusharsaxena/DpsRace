@@ -231,7 +231,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (69)
+### test_hud.lua (71)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -268,6 +268,8 @@ Total.
 - hud: Stop Now in combat reads at the combat end and says so
 - hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race
 - hud: a result card whose run is deleted in the Results window is dismissed
+- hud: a canceled card Delete leaves a later Results-window delete of that run an outside one
+- hud: the card's Delete accepted after the card has gone leaves no mark behind
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
@@ -303,7 +305,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (28)
+### test_chart.lua (29)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -325,6 +327,7 @@ Total.
 - chart: the result card draws the race's slices to its plain final damage, and none without them
 - chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15
 - chart: the result card draws the earlier best's diagonal, the columns on the shared max
+- chart: the earlier best deleted while the card is up drops its diagonal and the shared max
 - chart: with no earlier best the result card and the detail draw no diagonal
 - chart: the Results detail shows the chart for a run raced this session only
 - chart: the detail's title hover goes with its chart, so it never covers the section under it
@@ -790,8 +793,8 @@ Total.
 | test_race.lua | 57 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 69 |
-| test_chart.lua | 28 |
+| test_hud.lua | 71 |
+| test_chart.lua | 29 |
 | test_pace.lua | 12 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
@@ -819,4 +822,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **649** |
+| **Total** | **652** |

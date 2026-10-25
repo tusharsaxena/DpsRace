@@ -742,6 +742,37 @@ test("hud: a result card whose run is deleted in the Results window is dismissed
     assertEqual(g.Race.State(), "result")
 end)
 
+test("hud: a canceled card Delete leaves a later Results-window delete of that run an outside one", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    -- onArm (the default): the arm opens the window, so the race going back to idle closes it.
+    local run = resolved(f)
+    assertTrue(f.Hud.IsShown())
+    body(f).w.delete:__fire("OnClick")
+    assertEqual(#popups, 1)
+    -- The popup is canceled (its Accept never runs); the run is then deleted in the Results window.
+    f.NS.Results.DeleteRun(run.id)
+    assertEqual(f.NS.Recorder.Get(run.id), nil)
+    assertEqual(f.Race.State(), "idle", "the card is dismissed")
+    assertFalse(f.Hud.IsShown(), "dismissed as any outside delete: the onArm HUD closes with the race")
+end)
+
+test("hud: the card's Delete accepted after the card has gone leaves no mark behind", function()
+    local popups = {}
+    local f = hud{ mutate = function(m)
+        m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
+    end }
+    f.Hud.Show()
+    local first = resolved(f)
+    body(f).w.delete:__fire("OnClick")
+    f.Race.Cancel()
+    f.M.StaticPopupDialogs.DPSRACE_DELETE_RUN.OnAccept(nil, popups[1].data)
+    assertEqual(f.NS.Recorder.Get(first.id), nil, "the accepted delete still deletes")
+    assertEqual(f.Race.State(), "idle")
+end)
+
 test("hud: result body shows % and the best delta chip", function()
     local f = hud()
     -- An earlier best on the same board (spec 267 · other · 30s), 80% of this run's DPS.

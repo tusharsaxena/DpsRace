@@ -216,7 +216,10 @@ race.
   confirmation (`Results.ConfirmDelete`, `DPSRACE_DELETE_RUN`), whose Accept deletes through
   `ResultsSource.Delete` → `Recorder.Delete`; the HUD hears `RUNS_CHANGED`, and once the card's run has
   left the store it dismisses the card (`Race.Cancel()`), going back to the Arm Race screen, open, after
-  its own Delete. Between the chips and the spells, with *Show damage chart* on, the race's chart
+  its own Delete. The card's own Delete is known by the popup's Accept (`ConfirmDelete`'s `onAccept`
+  marks the run just before the delete), so a canceled popup leaves a later delete in the Results
+  window an outside one. Any other store change (an earlier best deleted) redraws the card, so its
+  delta chip, pace bar and diagonal follow the store. Between the chips and the spells, with *Show damage chart* on, the race's chart
   again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with buckets this
   session). With a best before the run (`Bests.Before(run)`, as the pace bar) `HudChart.WithBest` draws
   that best's gray dashed diagonal from 0:00 to its damage at the run's length, and the plot's max (the

@@ -467,6 +467,20 @@ test("chart: the result card draws the earlier best's diagonal, the columns on t
     assertEqual(#f.W.SecretGeometryReads(), 0)
 end)
 
+test("chart: the earlier best deleted while the card is up drops its diagonal and the shared max", function()
+    local f = hud()
+    local best = seedBest(f, 3000000, 30)
+    local run = resolved(f)
+    local chart = body(f).w.chart
+    assertEqual(chart.cols[10].__max, 3000000 * 1.15)
+    f.NS.Recorder.Delete(best.id)
+    assertEqual(f.Race.State(), "result", "the card's own run is still stored")
+    chart = body(f).w.chart
+    for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "the deleted best's diagonal") end
+    assertEqual(chart.cols[10].__max, run.result.damage, "back on the run's own damage")
+    assertEqual(body(f).w.chips:Texts()[1], "New best", "the delta chip names no best")
+end)
+
 test("chart: with no earlier best the result card and the detail draw no diagonal", function()
     local f = hud()
     local run = resolved(f)

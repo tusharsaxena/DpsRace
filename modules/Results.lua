@@ -627,13 +627,21 @@ StaticPopupDialogs["DPSRACE_DELETE_RUN"] = {
     timeout      = 0,
     whileDead    = true,
     hideOnEscape = true,
-    OnAccept     = function(_, data) Results.DeleteRun(data) end,
+    OnAccept     = function(_, data)
+        if data.onAccept then data.onAccept(data.id) end
+        Results.DeleteRun(data.id)
+    end,
 }
 
---- Ask before deleting a run (spec §6.2); the popup's Accept deletes it.
-function Results.ConfirmDelete(id)
+--- Ask before deleting a run (spec §6.2); the popup's Accept deletes it. `onAccept(id)`, when given,
+--- runs on that Accept just before the delete, so a caller knows the delete is its own (the HUD
+--- result card's Delete); a Cancel or Escape runs nothing.
+--- @param id string
+--- @param onAccept function|nil
+--- @return boolean asked
+function Results.ConfirmDelete(id, onAccept)
     if not run(id) then return false end
-    StaticPopup_Show("DPSRACE_DELETE_RUN", nil, nil, id)
+    StaticPopup_Show("DPSRACE_DELETE_RUN", nil, nil, { id = id, onAccept = onAccept })
     return true
 end
 

@@ -132,8 +132,8 @@ L["Grace %.1fs"] = "Grace %.1fs"
 L["Damage still landing (DoTs, travel time) counts. Casts that start more than %.1fs after the buzzer are flagged on the result."] =
     "Damage still landing (DoTs, travel time) counts. Casts that start more than %.1fs after the buzzer are flagged on the result."
 L["Stop Now"] = "Stop Now"
-L["Take the result now instead of waiting out the damage tail. Damage that lands after this is not counted. In combat the result is read the moment combat ends."] =
-    "Take the result now instead of waiting out the damage tail. Damage that lands after this is not counted. In combat the result is read the moment combat ends."
+L["Take the result now instead of waiting out the damage tail. Out of combat it is read at once; in combat it is read the moment combat ends, and damage up to then counts."] =
+    "Take the result now instead of waiting out the damage tail. Out of combat it is read at once; in combat it is read the moment combat ends, and damage up to then counts."
 L["Discard this race. Nothing is saved."] = "Discard this race. Nothing is saved."
 L["Waiting for combat to end"] = "Waiting for combat to end"
 L["Reading the result"] = "Reading the result"
