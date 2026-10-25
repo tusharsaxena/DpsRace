@@ -287,7 +287,7 @@ each frame's strata, level and toplevel.
   `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
   client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item
   tooltips are `GameTooltip:SetHyperlink` on a stored link.
-- **The talent tree's panel open closes the Results window, and the window comes back (B4.1).**
+- **The Results window steps aside for the talent tree and comes back when it closes (B4.1).**
   Blizzard shows `PlayerSpellsFrame` (the *View* link's click, or the N key) through
   `ShowUIPanel`; with no other panel up its `centerOrLeft` area resolves to `center`, and
   `FramePositionDelegate:ShowUIPanel` runs `CloseWindows`, whose `CloseSpecialWindows` hides every
@@ -295,9 +295,14 @@ each frame's strata, level and toplevel.
   (`Blizzard_UIParentPanelManager`, `Blizzard_PlayerSpells`). The window stays in `UISpecialFrames`
   (standalone-windows), is never added to `UIPanelWindows`, sets no `UIPanelLayout-*` attribute and
   hooks nothing: its `OnHide` answers a close-stack close made while the tree was down with a
-  one-frame `C_Timer.After(0)` look, and shows itself again if the tree is up by then. The one read
-  of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results` pins the four close paths and
-  scans the module for `UIPanelWindows`, `UIPanelLayout`, `ShowUIPanel(` and `hooksecurefunc`.
+  one-frame `C_Timer.After(0)` look, and if the tree is up by then it waits (a `C_Timer.NewTicker`
+  polling `IsShown` every `Results.TREE_POLL` seconds) and shows itself again once the tree is
+  down (the owner's call, 2026-10-25: the tree on top, the window back after). When *View* opens the
+  tree while another panel was already up (no close stack), `Results.StepAsideForTree` hides the
+  window and waits the same way. The player opening or closing the window ends the wait. The one
+  read of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results_tree` pins the close
+  paths and the wait, and `test_results` scans the module for `UIPanelWindows`, `UIPanelLayout`,
+  `ShowUIPanel(` and `hooksecurefunc`.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -311,9 +316,9 @@ shape the design most:
   as `nil`; the chart and the pace bar **compare by eye only** (#3), against the best's average pace.
 - **Unmeasured client behavior** is the spec's open items O1 to O7 and the client assumptions C1 to
   C26, closed in the owner's smoke-test pass.
-- **The talent tree draws under the Results window where the two overlap** (B4.1): the window is an
-  on-demand browser at `HIGH`, the tree a `MEDIUM` UI panel; putting the tree on top is the owner's
-  call (a deviation row or a standard change).
+- **The Results window steps aside while the talent tree is open** (B4.1): the window is an
+  on-demand browser at `HIGH` and the tree a `MEDIUM` UI panel, so the tree cannot draw over it;
+  the window hides while the tree is up and comes back when it closes (the owner's call).
 
 ## Documentation map
 

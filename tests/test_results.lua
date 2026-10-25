@@ -1316,69 +1316,6 @@ test("results: hidden with its parent is not closed by the player", function()
     assertFalse(i.R.wanted, "Escape did not close it")
 end)
 
--- Blizzard's close stack as the talent tree's panel open runs it: CloseSpecialWindows hides the
--- frame, then the tree shows, then the next frame comes.
-local function closeStack(i, treeAfter)
-    local tree = i.mocks.PlayerSpellsFrame
-    ui(i).frame:Hide()
-    ui(i).frame:__fire("OnHide")
-    if treeAfter ~= nil then tree.shown = treeAfter end
-    i.mocks.__fireTimers()
-end
-
-local function withTree(i, shown)
-    local tree = { shown = shown }
-    function tree:IsShown() return self.shown end
-    i.mocks.PlayerSpellsFrame = tree
-    return tree
-end
-
-test("results: the talent tree's panel open closes the window, and it comes back under the tree", function()
-    local i = inst()
-    withTree(i, false)
-    i.R.Show()
-    closeStack(i, true)
-    assertTrue(i.R.wanted, "the window stayed closed under the talent tree")
-    assertTrue(ui(i).frame:IsShown(), "the window is wanted but not shown")
-end)
-
-test("results: Escape with the talent tree up closes both, and the window stays closed", function()
-    local i = inst()
-    withTree(i, true)
-    i.R.Show()
-    closeStack(i, false)
-    assertFalse(i.R.wanted, "Escape with the tree up did not close the window")
-    assertFalse(ui(i).frame:IsShown())
-end)
-
-test("results: Escape with no talent tree closes the window for good", function()
-    local i = inst()
-    withTree(i, false)
-    i.R.Show()
-    closeStack(i, false)
-    assertFalse(i.R.wanted, "the window came back with no tree")
-    -- The client before the talent frame loads: no PlayerSpellsFrame at all.
-    local j = inst()
-    j.R.Show()
-    closeStack(j)
-    assertFalse(j.R.wanted, "the window came back with no talent frame loaded")
-end)
-
-test("results: the close control with the talent tree up closes the window alone", function()
-    local i = inst()
-    withTree(i, true)
-    i.R.Show()
-    -- In the client Hide runs OnHide at once, inside the window's own `hiding` bracket.
-    local f = ui(i).frame
-    local hide = f.Hide
-    function f:Hide() hide(self); self:__fire("OnHide"); return self end
-    local before = #i.mocks.__timers()
-    i.R.Hide()
-    assertEqual(#i.mocks.__timers(), before, "the window's own close armed the look")
-    i.mocks.__fireTimers()
-    assertFalse(i.R.wanted, "the close control's close was undone by the open tree")
-end)
-
 test("results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook", function()
     local src = assert(io.open(T.root .. "/modules/Results.lua", "rb")):read("*a")
     assertFalse(src:find("UIPanelWindows", 1, true) ~= nil, "Results registers itself as a Blizzard UI panel")

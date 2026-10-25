@@ -92,6 +92,7 @@ local SUITES = {
     "test_results",
     "test_results_fit",
     "test_results_group",
+    "test_results_tree",
     "test_results_badges",
     "test_compare",
     "test_loadout",

@@ -60,13 +60,13 @@ and the smoke row that measures it where one exists.
 - **The share's talents link may need a second message** (#6). With *Include talents link* on, the
   link follows the score line as its own message when both do not fit in 255 bytes; a link longer
   than 255 bytes on its own is dropped rather than cut.
-- **The talent tree draws under the Results window where the two overlap** (B4.1). The window
-  comes back when the tree's panel open closes it, but it is an on-demand browser at `HIGH`
-  (frame-layering-§1, standalone-windows), and Blizzard's `PlayerSpellsFrame` is a `MEDIUM` UI panel,
-  so the tree cannot draw over it; the player moves or closes the window. Putting the tree on top
-  needs the window at `MEDIUM`, a strata the standard gives windows kept up while playing: that is
-  the owner's call (a deviation row, or a change to the standard), not made here. Escape still
-  closes both at once, and the HUD (in `UISpecialFrames` too) is closed by the tree's open as before.
+- **The Results window steps aside while the talent tree is open** (B4.1). It is an on-demand
+  browser at `HIGH` (frame-layering-§1, standalone-windows), and Blizzard's `PlayerSpellsFrame` is a
+  `MEDIUM` UI panel, so the tree cannot draw over it, and a runtime strata switch is forbidden
+  (frame-layering-§4). So the window hides while the tree is up, the parts the tree does not cover
+  included, and comes back when the tree closes (the owner's call, 2026-10-25, over a deviation that
+  would put the window at `MEDIUM`). Escape with the tree up closes both at once, and the HUD (in
+  `UISpecialFrames` too) is closed by the tree's open as before.
 - ***Stop Now* in combat waits for combat to end** (Round C). Every meter value is secret in combat,
   so the result cannot be read there; the press waives the 2.5 s of quiet after the combat end, not
   the combat end itself, so damage dealt between the press and the combat end counts (the tooltip says
