@@ -185,7 +185,10 @@ function Loadout.View(t, level, who)
     if not link then return false end
     NS.Print(L["Talents for %s: %s \226\128\148 click the link to view the tree."]:format(who or L["this run"], link))
     if type(SetItemRef) ~= "function" then return false end
-    return (pcall(SetItemRef, Loadout.LinkData(t, level), link, "LeftButton"))
+    local opened = pcall(SetItemRef, Loadout.LinkData(t, level), link, "LeftButton")
+    -- The Results window steps aside for the tree and comes back when it closes (modules/Results.lua).
+    if opened and NS.Results and NS.Results.StepAsideForTree then NS.Results.StepAsideForTree() end
+    return opened
 end
 
 --- The run View names in its chat line: its character and date.

@@ -33,7 +33,7 @@ Start here, then read the docs:
 - **`docs/testing.md`** — how to verify: the headless harness, lint, and the green commit gate.
 - Topic detail in `docs/` as needed (`scope.md`, `module-map.md`, `schema.md`, `settings-panel.md`,
   `data-flow.md`, `common-tasks.md`, `slash-dispatch.md`, `profiles.md`, `debug.md`,
-  `performance.md`, `smoke-tests.md`).
+  `performance.md`, `smoke-tests.md`, `compat-layer.md`, `known-limitations.md`).
 
 Green gate before every commit: `lua tests/run.lua` and `luacheck .` (0/0). Never auto-stage/commit/
 push and never bump the version without an explicit instruction.

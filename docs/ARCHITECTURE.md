@@ -45,7 +45,7 @@ added the live damage chart and pace bar (#2, #3), the run detail's compare (#7)
 talents stored with each run (#6, run-record format 2).
 The second 2026-10-25 pass ([`superpowers/plans/2026-10-25-results-badges-sim.md`](superpowers/plans/2026-10-25-results-badges-sim.md))
 added the Runs list's boxed Status badges naming their board and the race length colors (Results
-only), Group by *Duration* and *Target + duration*, the *Pace bar range* setting and the result
+only), Group by *Time* and *Target + time*, the *Pace bar range* setting and the result
 card's pace bar, the Results window's return after the talent tree's panel open, and the split of
 `/dr test` (static samples in every view) from `/dr sim` (a whole scripted race), both drawing
 in-memory samples and writing nothing to SavedVariables. Its Round C (the owner's notes after testing
@@ -55,7 +55,10 @@ and waiting screens, and gave the result card *Delete* in a row of four equal bu
 average-pace diagonal on the chart after the race. The owner's notes on the Results window then boxed
 the Runs list's *Target* and *Time* cells and the Status board in their category and length colors
 (also the Bests *Length* and the detail's target line) and colored the group headers' values as plain
-text in the class, category and length colors.
+text in the class, category and length colors. The talent tree step-aside branch then made the Status
+cell the tag alone (its board in the tooltip), brought the window minimums to 834 collapsed and 1198
+expanded, and added Group by *Spec + target + time* and *Full* (a new profile's default), renaming
+*Duration* to *Time*.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -207,9 +210,10 @@ own frame. `Countdown.Suspend()` drops them at the stand-down.
 
 `modules/Results.lua` registers no game event and no `OnUpdate`: it redraws from its bus receiver
 (`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while the window
-is on screen. Its one timer is a one-frame `C_Timer.After(0)` armed by `OnHide` after a close from
-Blizzard's close-all-windows step (`CloseSpecialWindows`), so the window can come back under the
-talent tree (Taint Notes, B4.1).
+is on screen. Its only timers are the talent tree's: a one-frame `C_Timer.After(0)` armed by `OnHide`
+after a close from Blizzard's close-all-windows step (`CloseSpecialWindows`), and, while the tree is up,
+a `C_Timer.NewTicker` polling it every `Results.TREE_POLL` (0.25) seconds, canceled when the tree closes
+or the player opens or closes the window, so the window comes back once the tree is down (Taint Notes, B4.1).
 
 `modules/Preview.lua` (test mode and the sim) registers no game event either; combat ends it through
 `NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays its script
@@ -287,7 +291,7 @@ each frame's strata, level and toplevel.
   `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
   client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item
   tooltips are `GameTooltip:SetHyperlink` on a stored link.
-- **The talent tree's panel open closes the Results window, and the window comes back (B4.1).**
+- **The Results window steps aside for the talent tree and comes back when it closes (B4.1).**
   Blizzard shows `PlayerSpellsFrame` (the *View* link's click, or the N key) through
   `ShowUIPanel`; with no other panel up its `centerOrLeft` area resolves to `center`, and
   `FramePositionDelegate:ShowUIPanel` runs `CloseWindows`, whose `CloseSpecialWindows` hides every
@@ -295,9 +299,14 @@ each frame's strata, level and toplevel.
   (`Blizzard_UIParentPanelManager`, `Blizzard_PlayerSpells`). The window stays in `UISpecialFrames`
   (standalone-windows), is never added to `UIPanelWindows`, sets no `UIPanelLayout-*` attribute and
   hooks nothing: its `OnHide` answers a close-stack close made while the tree was down with a
-  one-frame `C_Timer.After(0)` look, and shows itself again if the tree is up by then. The one read
-  of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results` pins the four close paths and
-  scans the module for `UIPanelWindows`, `UIPanelLayout`, `ShowUIPanel(` and `hooksecurefunc`.
+  one-frame `C_Timer.After(0)` look, and if the tree is up by then it waits (a `C_Timer.NewTicker`
+  polling `IsShown` every `Results.TREE_POLL` seconds) and shows itself again once the tree is
+  down (the owner's call, 2026-10-25: the tree on top, the window back after). When *View* opens the
+  tree while another panel was already up (no close stack), `Results.StepAsideForTree` hides the
+  window and waits the same way. The player opening or closing the window ends the wait. The one
+  read of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results_tree` pins the close
+  paths and the wait, and `test_results` scans the module for `UIPanelWindows`, `UIPanelLayout`,
+  `ShowUIPanel(` and `hooksecurefunc`.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -311,9 +320,9 @@ shape the design most:
   as `nil`; the chart and the pace bar **compare by eye only** (#3), against the best's average pace.
 - **Unmeasured client behavior** is the spec's open items O1 to O7 and the client assumptions C1 to
   C26, closed in the owner's smoke-test pass.
-- **The talent tree draws under the Results window where the two overlap** (B4.1): the window is an
-  on-demand browser at `HIGH`, the tree a `MEDIUM` UI panel; putting the tree on top is the owner's
-  call (a deviation row or a standard change).
+- **The Results window steps aside while the talent tree is open** (B4.1): the window is an
+  on-demand browser at `HIGH` and the tree a `MEDIUM` UI panel, so the tree cannot draw over it;
+  the window hides while the tree is up and comes back when it closes (the owner's call).
 
 ## Documentation map
 
@@ -374,10 +383,10 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. Two test files are in the 1000–1500 on-notice band:
-`tests/test_results.lua` at 1467 lines (the next Results suite goes in a new file, as
-`test_results_group` and `test_results_fit` did) and `tests/test_hud.lua` at 1257. The largest addon
-files are `modules/Hud_States.lua` at 979 lines, `modules/Hud.lua` at 972 and `modules/Results_Table.lua`
-at 967 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+Nothing is over the cap today. Five files are in the 1000–1500 on-notice band: two test files,
+`tests/test_results.lua` at 1433 lines (the next Results suite goes in a new file, as
+`test_results_group`, `test_results_fit`, `test_results_tree` and `test_results_badges` did) and
+`tests/test_hud.lua` at 1416, and three addon files, `modules/Hud_States.lua` at 1075 lines,
+`modules/Results_Table.lua` at 1056 and `modules/Hud.lua` at 1023 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`)
 rather than grow these.

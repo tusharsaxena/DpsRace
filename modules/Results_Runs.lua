@@ -26,8 +26,9 @@ Runs.DEFAULTS = {
     char = "current", spec = "current", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
     -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
-    -- reads no predicate for it.
-    group = "none",
+    -- reads no predicate for it. A new profile groups by Full: character, class, spec, target and
+    -- time (the owner's call, 2026-10-25).
+    group = "full",
 }
 Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
@@ -262,9 +263,9 @@ local function lengthText(length)
     return Runs.Colored(length == nil and DASH or NS.Format.Length(length), Tbl.LengthColor(length))
 end
 
-local function durationGroup(run)
+local function timeGroup(run)
     local length = lengthOf(run)
-    return "length:" .. tostring(length), L["Duration: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
+    return "length:" .. tostring(length), L["Time: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
 end
 
 -- One group per (target type, length) pair: the catalog's order, then shortest first in each type.
@@ -276,18 +277,57 @@ local function targetLengthGroup(run)
         L["Target: %s"]:format(L["%s \194\183 %s"]:format(categoryText(category), lengthText(length))), rank
 end
 
+-- One group per (spec, target type, length): a best's own board (spec x dummy type x length). The
+-- spec in its class color, then the type and the length in theirs; ordered by class and spec name,
+-- then the catalog's order, then shortest first.
+local function specTargetLengthGroup(run)
+    local char = run.char or {}
+    local spec = Tbl.SpecInfo(char.specID, char.spec) or Tbl.ClassName(char.class)
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local key = ("%s|%s|%s|%s"):format(tostring(char.class), tostring(char.specID), category, tostring(length))
+    local label = L["Spec: %s"]:format(("%s \194\183 %s \194\183 %s"):format(
+        Runs.Colored(tostring(spec), Tbl.ClassColor(char.class)), categoryText(category), lengthText(length)))
+    local rank = ("%s|%s|%03d|%07d"):format(tostring(Tbl.ClassName(char.class)):lower(), tostring(spec):lower(),
+        CATEGORY_RANK[category] or 99, length or NO_LENGTH_RANK)
+    return key, label, rank
+end
+
+-- Full (the owner's call, 2026-10-25): one group per character, class, spec, target type and length,
+-- in that order. The character and the class and spec in the class color, the type and the time in
+-- theirs; ordered by character name, class, spec, the catalog's order, then shortest first.
+local function fullGroup(run)
+    local char = run.char or {}
+    local class = Tbl.ClassName(char.class)
+    local spec = Tbl.SpecInfo(char.specID, char.spec) or class
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local key = ("%s|%s|%s|%s|%s"):format(Runs.CharKey(run), tostring(char.class), tostring(char.specID),
+        category, tostring(length))
+    local color = Tbl.ClassColor(char.class)
+    local label = L["Full: %s"]:format(("%s \194\183 %s \194\183 %s \194\183 %s \194\183 %s"):format(
+        Runs.Colored(tostring(char.name or "?"), color), Runs.Colored(tostring(class), color),
+        Runs.Colored(tostring(spec), color), categoryText(category), lengthText(length)))
+    local rank = ("%s|%s|%s|%03d|%07d"):format(Runs.CharKey(run):lower(), tostring(class):lower(),
+        tostring(spec):lower(), CATEGORY_RANK[category] or 99, length or NO_LENGTH_RANK)
+    return key, label, rank
+end
+
 Runs.GROUPS = {
     none = nil,
     char = { of = charGroup, column = "char" },
     classSpec = { of = classSpecGroup },
     target = { of = targetGroup, column = "target" },
-    length = { of = durationGroup, column = "time" },
+    length = { of = timeGroup, column = "time" },
     targetLength = { of = targetLengthGroup, column = "target" },
+    specTargetLength = { of = specTargetLengthGroup },
+    full = { of = fullGroup, column = "char" },
 }
-Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength" }
+Runs.GROUP_ORDER = { "none", "full", "char", "classSpec", "target", "length", "targetLength", "specTargetLength" }
 local GROUP_LABELS = {
     none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
-    length = "Group: Duration", targetLength = "Group: Target + duration",
+    length = "Group: Time", targetLength = "Group: Target + time", specTargetLength = "Group: Spec + target + time",
+    full = "Group: Full",
 }
 
 --- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and
@@ -345,9 +385,9 @@ end
 -- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
 -- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
 -- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
--- is the board's (spec x dummy type x length). Both name their board after the box in two boxed
--- chips (Runs.StatusChips), the target type in its category color and the length in its length
--- color, as the Target and Time columns draw them: a best depends on the target type and the length.
+-- is the board's (spec x dummy type x length). The tag is the box alone (the owner's call,
+-- 2026-10-25: the board's chips after it were too noisy); the Target and Time columns beside it
+-- already name the board, and the tooltip spells it out (Runs.StatusBoard).
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -398,7 +438,7 @@ function Runs.Status(run, top)
     return key, L[tag.label], tag.color, tag.icon
 end
 
--- The tags that name their board after the box.
+-- The tags whose tooltip names their board.
 local NAMES_BOARD = { best = true, max = true }
 
 --- The board a Spec best or Max tag names: the target type in lower case and the race length
@@ -408,20 +448,6 @@ function Runs.StatusBoard(run)
     local length = run.race and run.race.length
     return NS.Dummies.Label(run.target and run.target.category):lower(), NS.Format.Length(length),
         Tbl.LengthColor(length)
-end
-
---- The chips after a tag's box for Spec best and Max: the target type ("Boss-level", as the Target
---- column names it, without a count: a board is per type) in its category color, then the race
---- length in its length color; nil for every other tag.
---- @param run table
---- @param key string  Runs.Status's key
---- @return table|nil  { { text, color }, { text, color } }
-function Runs.StatusChips(run, key)
-    if not NAMES_BOARD[key] then return nil end
-    local category = run.target and run.target.category or "other"
-    local label, catColor = Tbl.Badge({ category = category })
-    local time, lengthColor = Tbl.LengthChip(run.race and run.race.length)
-    return { { label, catColor }, { time, lengthColor } }
 end
 
 local function categoryOf(run)
@@ -549,7 +575,7 @@ end
 Runs.NOTE_W = 80
 Runs.TARGET_W = 98
 Runs.TIME_W = 84
-Runs.STATUS_W = 226
+Runs.STATUS_W = 92
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -651,13 +677,13 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        -- Wide enough for the longest board after its box: "Spec best" then [Single target] [10:00].
-        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, chips = 2,
+        -- Wide enough for the widest tag alone: the boxed "Incomplete" with its icon.
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true,
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
-              local key, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
-              return text, color, icon, nil, Runs.StatusChips(run, key)
+              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
+              return text, color, icon
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,

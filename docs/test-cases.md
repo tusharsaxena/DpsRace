@@ -384,7 +384,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (54)
+### test_results.lua (50)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
@@ -430,10 +430,6 @@ Total.
 - results: position, size and Master scale persist; Reset position restores them
 - results: collapsed, the detail replaces the list, with a back control
 - results: hidden with its parent is not closed by the player
-- results: the talent tree's panel open closes the window, and it comes back under the tree
-- results: Escape with the talent tree up closes both, and the window stays closed
-- results: Escape with no talent tree closes the window for good
-- results: the close control with the talent tree up closes the window alone
 - results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook
 - results: the stand-down hides it and the stand-up brings it back
 - results: the library-absent load still draws the window, with no dropdowns or close control
@@ -447,19 +443,28 @@ Total.
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
 
-### test_results_group.lua (4)
+### test_results_group.lua (6)
 
 - results: Group by character, class & spec or target, with folding headers
-- results: Group by duration, and by target type and duration, shortest first
+- results: Group by time, and by target type and time, shortest first
 - results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
 - results: hovering Save, Reset or Clear shows its tooltip without an error
+- results: Group by spec + target + time, one group per board, the spec in its class color
+- results: Group by Full: character, class, spec, target and time, in that order
 
-### test_results_badges.lua (12)
+### test_results_tree.lua (5)
+
+- results: the talent tree's panel open closes the window, and it comes back when the tree closes
+- results: the player opening or closing the window ends its wait for the tree
+- results: Escape with the talent tree up closes both, and the window stays closed
+- results: Escape with no talent tree closes the window for good
+- results: the close control with the talent tree up closes the window alone
+
+### test_results_badges.lua (11)
 
 - badges: the Target cell is a boxed chip in its category color, the count inside
 - badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
-- badges: Spec best and Max name their board in two chips: the target type, then the length
-- badges: a group header row hides the cells' chips; the rows draw them again
+- badges: Spec best and Max are the box alone; their board is in the tooltip
 - badges: a chip never runs past its column: a too-long word is cut to the box
 - badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
 - badges: the window minimums hold the wider columns, the Note column last and inside the list
@@ -813,10 +818,11 @@ Total.
 | test_pace.lua | 12 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 54 |
+| test_results.lua | 50 |
 | test_results_fit.lua | 3 |
-| test_results_group.lua | 4 |
-| test_results_badges.lua | 12 |
+| test_results_group.lua | 6 |
+| test_results_tree.lua | 5 |
+| test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -838,4 +844,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **664** |
+| **Total** | **666** |

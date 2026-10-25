@@ -77,7 +77,16 @@ local function seed(i, runs)
 end
 
 local function ui(i) return assert(i.R.__ui(), "the Results window was never built") end
-local function runsPane(i) return assert(ui(i).panes.runs, "the Runs tab was never built") end
+-- A new profile opens grouped by spec, target and time; these cases read the flat list, so the
+-- pane is ungrouped the first time a case reaches it (the grouping itself is test_results_group's).
+local function runsPane(i)
+    local pane = assert(ui(i).panes.runs, "the Runs tab was never built")
+    if not pane.__flat then
+        pane.__flat = true
+        if pane.filters.group ~= "none" then pane:SetFilter("group", "none") end
+    end
+    return pane
+end
 local function visible(pane) return pane.list:Visible() end
 
 local function visibleIDs(pane)
@@ -118,7 +127,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
     assertEqual(c.status.fs.__text, "Spec best", "a best outranks its flag in the tag; the box holds the first part only")
-    assertEqual(c.status.chip1.fs.__text .. "|" .. c.status.chip2.fs.__text, "Cleave|3:00", "the board: two chips")
+    assertEqual(c.status.chip1, nil, "the tag is the box alone: no board chips after it")
     local status = pane.list:TipLines(run, 10)
     assertEqual(status[1], "Spec best: cleave \194\183 3:00", "the tooltip names the whole board")
     local named = false
@@ -319,14 +328,12 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     local key, text, bestColor, icon = Runs.Status(by.top)
     assertEqual(key, "best", "with no view max given, the board's best")
     assertEqual(text, "Spec best", "the first part only: the board is the trail's")
-    assertEqual(Runs.StatusChips(by.top, key)[1][1], "Cleave", "the target type and the length follow")
     assertEqual(bestColor, C.blue, "Spec best in blue")
     assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
     local maxColor
     key, text, maxColor, icon = Runs.Status(by.top, 150000)
     assertEqual(key, "max", "the view's max outranks Spec best")
     assertEqual(text, "Max")
-    assertEqual(Runs.StatusChips(by.top, key)[2][1], "3:00")
     assertEqual(icon, "ph:crown")
     assertEqual(maxColor, C.violet, "Max in violet")
     i.R.Show()
@@ -337,7 +344,7 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     end
     assert(badge, "the top run is drawn")
     assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
-    assertTrue(badge.chip1:IsShown(), "Spec best names its board after the box")
+    assertEqual(badge.chip1, nil, "the tag is the box alone: no board after it")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
     -- A second spec in the view (the mage's run): now the view-wide top is Max.
@@ -353,12 +360,11 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "slow" then other = row.cells.status end
     end
     assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
-    assertEqual(badge.chip2.fs.__text, "3:00", "Max names its board too")
+    assertEqual(badge.chip2, nil, "Max is the box alone too")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
     assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
     assertEqual(other.fs.__text, "Complete")
-    assertFalse(other.chip1:IsShown(), "only Spec best and Max carry a board")
-    assertEqual(Runs.StatusChips(by.slow, "complete"), nil)
+    assertEqual(other.chip1, nil, "no tag carries a board")
     assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
     assertEqual((Runs.Status(by.slow)), "complete")
     local lateKey, _, lateColor, lateIcon = Runs.Status(by.late)
@@ -569,7 +575,6 @@ test("results: v/s Max and the Max tag are per target type", function()
     assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
     assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
     assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
-    assertEqual(cells.boss.status.chip1.fs.__text, "Boss-level")
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()
@@ -1219,7 +1224,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1328)
+    assertEqual(minW, 1198)
     assertEqual(minH, 420)
     assertEqual(u.width, 1340)
     assertEqual(u.height, 560)
@@ -1228,7 +1233,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 968)
+    assertEqual((u.frame:GetResizeBounds()), 834)
     assertEqual(u.width, 980)
     assertEqual(u.viewToggle.iconName, "chevron-right")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
@@ -1257,7 +1262,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     u.frame:__fire("OnSizeChanged", 1400, 600)
     assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1328, "expanded never goes under its minimum")
+    assertEqual(u.width, 1198, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)
@@ -1316,69 +1321,6 @@ test("results: hidden with its parent is not closed by the player", function()
     assertFalse(i.R.wanted, "Escape did not close it")
 end)
 
--- Blizzard's close stack as the talent tree's panel open runs it: CloseSpecialWindows hides the
--- frame, then the tree shows, then the next frame comes.
-local function closeStack(i, treeAfter)
-    local tree = i.mocks.PlayerSpellsFrame
-    ui(i).frame:Hide()
-    ui(i).frame:__fire("OnHide")
-    if treeAfter ~= nil then tree.shown = treeAfter end
-    i.mocks.__fireTimers()
-end
-
-local function withTree(i, shown)
-    local tree = { shown = shown }
-    function tree:IsShown() return self.shown end
-    i.mocks.PlayerSpellsFrame = tree
-    return tree
-end
-
-test("results: the talent tree's panel open closes the window, and it comes back under the tree", function()
-    local i = inst()
-    withTree(i, false)
-    i.R.Show()
-    closeStack(i, true)
-    assertTrue(i.R.wanted, "the window stayed closed under the talent tree")
-    assertTrue(ui(i).frame:IsShown(), "the window is wanted but not shown")
-end)
-
-test("results: Escape with the talent tree up closes both, and the window stays closed", function()
-    local i = inst()
-    withTree(i, true)
-    i.R.Show()
-    closeStack(i, false)
-    assertFalse(i.R.wanted, "Escape with the tree up did not close the window")
-    assertFalse(ui(i).frame:IsShown())
-end)
-
-test("results: Escape with no talent tree closes the window for good", function()
-    local i = inst()
-    withTree(i, false)
-    i.R.Show()
-    closeStack(i, false)
-    assertFalse(i.R.wanted, "the window came back with no tree")
-    -- The client before the talent frame loads: no PlayerSpellsFrame at all.
-    local j = inst()
-    j.R.Show()
-    closeStack(j)
-    assertFalse(j.R.wanted, "the window came back with no talent frame loaded")
-end)
-
-test("results: the close control with the talent tree up closes the window alone", function()
-    local i = inst()
-    withTree(i, true)
-    i.R.Show()
-    -- In the client Hide runs OnHide at once, inside the window's own `hiding` bracket.
-    local f = ui(i).frame
-    local hide = f.Hide
-    function f:Hide() hide(self); self:__fire("OnHide"); return self end
-    local before = #i.mocks.__timers()
-    i.R.Hide()
-    assertEqual(#i.mocks.__timers(), before, "the window's own close armed the look")
-    i.mocks.__fireTimers()
-    assertFalse(i.R.wanted, "the close control's close was undone by the open tree")
-end)
-
 test("results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook", function()
     local src = assert(io.open(T.root .. "/modules/Results.lua", "rb")):read("*a")
     assertFalse(src:find("UIPanelWindows", 1, true) ~= nil, "Results registers itself as a Blizzard UI panel")
@@ -1405,7 +1347,7 @@ test("results: the library-absent load still draws the window, with no dropdowns
     assertTrue(u.frame:IsShown())
     assertEqual(u.close, nil)
     assertEqual(next(u.panes.runs.dropdowns), nil, "a dead dropdown was drawn")
-    assertEqual(#u.panes.runs.list:Visible(), 1)
+    assertEqual(#u.panes.runs.list:Visible(), 2, "the run under its spec + target + time header")
     i.R.ShowTab("bests")
     assertEqual(u.panes.bests:Count(), 1)
 end)

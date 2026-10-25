@@ -23,7 +23,7 @@ NS.HudBreakdown = Breakdown
 local L = NS.L
 
 -- Compact rows, as LootHistory's list draws them (18px, GameFontHighlightSmall): modules/Style.lua.
--- That is the default; the height, the bar's fill and the text are the player's, General > HUD
+-- That is the default; the height, the bar's fill and the text are the player's, HUD > HUD
 -- Appearance > Spell bars and Spell text (modules/Hud_Appearance.lua), read from config at call time.
 Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2

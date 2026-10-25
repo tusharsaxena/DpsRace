@@ -211,7 +211,7 @@ names are permanent: renaming one unbinds every player's key.
 
 Every control reads through `NS.GetSetting(path)` and writes through `NS.SetByPath(path, value)`,
 the same seam `/dr set path value` uses, so the panel and the CLI cannot drift apart. A row's
-`onChange` is its reaction (`settings/General.lua`, the `reactions` table). Rows whose storage is
+`onChange` is its reaction, set on the row in its page file (the Master controls' in `settings/General.lua`'s `reactions` table). Rows whose storage is
 not a profile path carry their own `get`/`set`: the debug console, test mode and the minimap button.
 The table above is derived from `NS.Schema`; `lua tests/run.lua` pins its row order
 (`test_schema.lua`).

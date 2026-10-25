@@ -324,9 +324,8 @@ end
 -- A tag: its icon (where the column names one) before its word, both in the tag's color. A `boxed`
 -- column draws it in a 1px box tinted the tag's color, its icon inside (the Status, Target and Time
 -- columns: the owner's calls, 2026-10-25); any other is the colored word on no box (the Bests Flags).
--- A column with `chips = n` draws up to n more boxed chips after the tag (Spec best's and Max's
--- board: the target type and the race length); a `trail` column draws plain text after the last box
--- (the Time column's tail).
+-- A column whose text returns chips draws up to that many more boxed chips after the tag (no column
+-- uses it today); a `trail` column draws plain text after the last box (the Time column's tail).
 function Cells.badge(row, col)
     local cell = { box = col.boxed and Tbl.Panel(row) or CreateFrame("Frame", nil, row) }
     cell.box:SetHeight(Tbl.CHIP_H)

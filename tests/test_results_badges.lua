@@ -63,7 +63,16 @@ local function seed(i, runs)
 end
 
 local function ui(i) return assert(i.R.__ui(), "the Results window was never built") end
-local function runsPane(i) return assert(ui(i).panes.runs, "the Runs tab was never built") end
+-- A new profile opens grouped by spec, target and time; these cases read the flat list, so the
+-- pane is ungrouped the first time a case reaches it (the grouping itself is test_results_group's).
+local function runsPane(i)
+    local pane = assert(ui(i).panes.runs, "the Runs tab was never built")
+    if not pane.__flat then
+        pane.__flat = true
+        if pane.filters.group ~= "none" then pane:SetFilter("group", "none") end
+    end
+    return pane
+end
 
 local function cellsById(pane)
     local out = {}
@@ -133,9 +142,8 @@ test("badges: the Time cell boxes the length in its color; the tail or the end o
     assertEqual(i.NS.ResultsTable.TimeTail({ status = "complete", result = { tail = 0.01 } }), nil)
 end)
 
-test("badges: Spec best and Max name their board in two chips: the target type, then the length", function()
+test("badges: Spec best and Max are the box alone; their board is in the tooltip", function()
     local i = inst()
-    local Tbl = i.NS.ResultsTable
     seed(i, {
         mkRun("top", { result = { damage = 27000000, dps = 150000 }, race = { length = 120, grace = 1 } }),
         mkRun("slow", { result = { damage = 1, dps = 1 }, race = { length = 120, grace = 1 }, date = NOW - 2 * HOUR }),
@@ -144,29 +152,11 @@ test("badges: Spec best and Max name their board in two chips: the target type, 
     local cells = cellsById(runsPane(i))
     local s = cells.top.status
     assertEqual(s.fs.__text, "Spec best")
-    assertEqual(s.trail, nil, "no plain text after the box any more")
-    assertTrue(s.chip1:IsShown() and s.chip2:IsShown())
-    assertEqual(s.chip1.fs.__text, "Cleave", "the board's type, as the Target column names it, no count")
-    sameColor(s.chip1.color, Tbl.CATEGORY_COLORS.cleave, "the type chip")
-    assertEqual(s.chip2.fs.__text, "2:00")
-    sameColor(s.chip2.color, Tbl.LengthColor(120), "the length chip")
-    assertEqual(s.chip1.__points[1][2], s.box, "the type chip follows the status box")
-    assertEqual(s.chip2.__points[1][2], s.chip1, "the length chip follows the type chip")
-    assertEqual(s.chip1.__width, Tbl.BadgeWidth("Cleave", true))
-    assertFalse(cells.slow.status.chip1:IsShown(), "Complete names no board")
-    assertFalse(cells.slow.status.chip2:IsShown())
-end)
-
-test("badges: a group header row hides the cells' chips; the rows draw them again", function()
-    local i = inst()
-    seed(i, { mkRun("top", { result = { damage = 27000000, dps = 150000 } }) })
-    i.R.Show()
-    local pane = runsPane(i)
-    pane:SetFilter("group", "target")
-    local header, row = pane.list:Visible()[1], pane.list:Visible()[2]
-    assertTrue(header.group ~= nil, "the first row is the group's header")
-    assertFalse(header.cells.status.chip1:IsShown(), "a header draws no chip")
-    assertTrue(row.cells.status.chip1:IsShown(), "the run under it does")
+    assertEqual(s.trail, nil, "no plain text after the box")
+    assertEqual(s.chip1, nil, "no board chips after the box (too noisy)")
+    local tip = i.NS.ResultsRuns.StatusTip(i.NS.db.global.runs.top)
+    assertTrue(tip[1]:find("cleave", 1, true) ~= nil and tip[1]:find("2:00", 1, true) ~= nil,
+        "the tooltip still names the board: " .. tostring(tip[1]))
 end)
 
 test("badges: a chip never runs past its column: a too-long word is cut to the box", function()
@@ -207,15 +197,10 @@ test("badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)", 
             assertTrue(box + gap + chars(tail) * 6 <= Runs.TIME_W, NS.Format.Length(len) .. " " .. tail .. " overflows Time")
         end
     end
-    -- Status: the boxed Spec best and its icon, then the longest type chip and a custom length's.
-    local longest = ""
-    for _, label in pairs(NS.Dummies.LABELS) do
-        if chars(label) > chars(longest) then longest = label end
+    -- Status: every tag's box and icon, alone.
+    for _, tag in pairs(Runs.STATUS) do
+        assertTrue(Tbl.BadgeWidth(L[tag.label], true, Tbl.BADGE_ICON + 2) <= Runs.STATUS_W, tag.label .. " is cut off")
     end
-    assertEqual(longest, "Single target")
-    local status = Tbl.BadgeWidth(L["Spec best"], true, Tbl.BADGE_ICON + 2) + gap + Tbl.BadgeWidth(longest, true)
-        + gap + Tbl.BadgeWidth("10:00", true)
-    assertTrue(status <= Runs.STATUS_W, "the longest Status board is cut off")
     -- The Bests Length chip: a custom length's.
     local col
     for _, c in ipairs(NS.ResultsBests.Columns()) do if c.key == "length" then col = c end end
@@ -225,8 +210,8 @@ end)
 test("badges: the window minimums hold the wider columns, the Note column last and inside the list", function()
     local i = inst()
     local R, Runs = i.NS.Results, i.NS.ResultsRuns
-    assertEqual(R.VIEWS.collapsed.minWidth, 968)
-    assertEqual(R.VIEWS.expanded.minWidth, 1328)
+    assertEqual(R.VIEWS.collapsed.minWidth, 834)
+    assertEqual(R.VIEWS.expanded.minWidth, 1198)
     local cols = Runs.Columns()
     assertEqual(cols[#cols].key, "note", "the Note column stays at the far right")
     for _, view in ipairs({ "collapsed", "expanded" }) do
@@ -296,7 +281,7 @@ test("badges: group headers color their value as plain text: class, target type,
     _, label = Runs.GROUPS.targetLength.of(run)
     assertEqual(label, "Target: " .. cleave .. "Cleave|r \194\183 " .. length .. "3:00|r", "both colors")
     _, label = Runs.GROUPS.length.of(run)
-    assertEqual(label, "Duration: " .. length .. "3:00|r")
+    assertEqual(label, "Time: " .. length .. "3:00|r")
     _, label = Runs.GROUPS.char.of(run)
     assertEqual(label, "Character: " .. class .. "Lanfear|r")
     _, label = Runs.GROUPS.classSpec.of(run)

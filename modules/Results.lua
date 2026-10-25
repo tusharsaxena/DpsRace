@@ -20,8 +20,8 @@ local _, NS = ...
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
 -- tab (a hidden one redraws in full on its next show), SETTINGS_CHANGED redraws the footer. No game
--- event and no OnUpdate; the one timer is the one-frame look after a close-stack close (the talent
--- tree's panel open, below).
+-- event and no OnUpdate; the only timers are the talent tree's (below): the one-frame look after a
+-- close-stack close, and the Results.TREE_POLL ticker while the tree is up.
 -- The receiver is a target of this module's own, so the latch drops it at stand-down.
 
 local Results = { wanted = false }
@@ -30,13 +30,14 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 968 px with the Note column
--- and the boxed Target, Time and Status chips: 826 px of fixed columns, the Character column's 60
--- and the gaps, pads and scrollbar) and its two-row filter bar; expanded adds the 360 px detail and
--- lays the filter bar in one row.
+-- Each view's minimum: collapsed holds the Runs list's columns (about 834 px with the Note column,
+-- the boxed Target and Time chips and the Status tag alone: 692 px of fixed columns, the Character
+-- column's 60 and the gaps, pads and scrollbar) and its two-row filter bar; expanded adds the 360 px
+-- detail and lays the filter bar in one row, which sets its minimum (1198: the bar's 1196 px and
+-- the window's border).
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1328 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 968 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1198 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 834 },
 }
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
@@ -452,25 +453,65 @@ local function hideWindow()
     NS.CloseMenu()
 end
 
--- THE TALENT TREE OPENS OVER IT (the owner's call, 2026-10-25). Blizzard shows its talent frame
--- (`PlayerSpellsFrame`: the talentbuild link the detail's View posts to chat, or the N key) as a
--- "center" UI panel when no other panel is up, and FramePositionDelegate:ShowUIPanel then runs
--- CloseWindows, whose CloseSpecialWindows hides every UISpecialFrames entry: this window among
--- them, just before the tree shows. The frame stays in UISpecialFrames (standalone-windows: Escape
--- and the close stack), so the close is answered rather than prevented: a close-stack close made
--- while the tree was down looks again on the next frame, and a tree up by then is what closed it,
--- so the window comes back. Escape with the tree up closes both (the tree was up at the close), and
--- the window's own close control never gets here (it hides with `hiding` set). The one read of a
--- Blizzard frame is IsShown; nothing is hooked, shown or hidden on Blizzard's side.
+-- THE WINDOW STEPS ASIDE FOR THE TALENT TREE AND COMES BACK WHEN IT CLOSES (the owner's call,
+-- 2026-10-25). Blizzard shows its talent frame (`PlayerSpellsFrame`: the detail's View, the
+-- talentbuild link it posts to chat, or the N key) as a "center" UI panel when no other panel is
+-- up, and FramePositionDelegate:ShowUIPanel then runs CloseWindows, whose CloseSpecialWindows hides
+-- every UISpecialFrames entry: this window among them, just before the tree shows. The frame stays
+-- in UISpecialFrames (standalone-windows: Escape and the close stack), so the close is answered
+-- rather than prevented: a close-stack close made while the tree was down looks again on the next
+-- frame, and a tree up by then is what closed it, so the window waits, polling IsShown, and comes
+-- back once the tree is down. It does not come back OVER the tree: this window sits at HIGH strata
+-- (frame-layering-§1, an on-demand browser) and the tree is a MEDIUM panel, and a runtime strata
+-- switch is forbidden (frame-layering-§4), so stepping aside is how the tree gets the screen.
+-- Escape with the tree up closes both (the tree was up at the close), and the window's own close
+-- control never gets here (it hides with `hiding` set). The player opening or closing the window
+-- while it waits ends the wait. The one read of a Blizzard frame is IsShown; nothing is hooked,
+-- shown or hidden on Blizzard's side.
+Results.TREE_POLL = 0.25   -- seconds between looks at the tree while the window waits for it
+local treeWait
+
 local function talentTreeShown()
     local f = PlayerSpellsFrame
     return type(f) == "table" and type(f.IsShown) == "function" and f:IsShown() == true
 end
 
+local function stopTreeWait()
+    if treeWait then treeWait:Cancel() end
+    treeWait = nil
+end
+
+local function backAfterTree()
+    if talentTreeShown() then return end
+    stopTreeWait()
+    if Results.wanted then return end
+    debug("the talent tree closed; back")
+    Results.Show()
+end
+
+local function awaitTree()
+    if treeWait or not (C_Timer and C_Timer.NewTicker) then return end
+    debug("stepped aside for the talent tree")
+    treeWait = C_Timer.NewTicker(Results.TREE_POLL, backAfterTree)
+end
+
 local function reopenUnderTree()
     if Results.wanted or not talentTreeShown() then return end
-    debug("closed by the talent tree's panel open; reopened")
-    Results.Show()
+    awaitTree()
+end
+
+--- The detail's View just opened the talent tree: when the window is still up (another panel was
+--- already open, so the close stack did not run), it steps aside and comes back when the tree closes.
+function Results.StepAsideForTree()
+    if not (Results.wanted and talentTreeShown()) then return end
+    Results.wanted = false
+    Results.Refresh()
+    awaitTree()
+end
+
+--- Whether the window is waiting for the talent tree to close (the suites).
+function Results.AwaitingTree()
+    return treeWait ~= nil
 end
 
 -- The player closed the window: a preview that opened it no longer owns it (it stays the player's).
@@ -508,11 +549,13 @@ function Results.Refresh()
 end
 
 function Results.Show()
+    stopTreeWait()
     Results.wanted = true
     Results.Refresh()
 end
 
 function Results.Hide()
+    stopTreeWait()
     Results.wanted = false
     closedByPlayer()
     Results.Refresh()

@@ -34,7 +34,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Recorder` | `modules/Recorder.lua`: a snapshot call that raised, and each prune's count |
 | `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
-| `Results` | `modules/Results.lua`: the window and each tab built; `modules/Results_Source.lua`: the source switched to the sample history and back |
+| `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
 
@@ -80,7 +80,7 @@ locked=<bool>` (the body on screen, the event set the HUD's frame holds, whether
 `OnUpdate` is attached), and the Results line: `results tab=<runs|bests> mode=<wide|narrow>
 rows=<n> selected=<id|none>` (the tab, whether the detail sits beside the list, the rows the tab
 shows, the run the detail shows). The HUD's trace lines carry the `Hud` tag (the window built, each
-race transition it heard); the Results window's the `Results` tag (the window and each tab built);
+race transition it heard); the Results window's the `Results` tag (the window and each tab built, the talent tree step-aside);
 `Format` says when the client's formatter is refused.
 
 ### Caps

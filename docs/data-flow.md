@@ -245,8 +245,10 @@ race.
 ## The Results window (spec §6.2)
 
 The window reads stored run records only: every number on one went through `NS.Secrets` on its way
-into the store, so sorting, percentages and the timing strip are plain Lua. It holds no game event,
-timer or `OnUpdate`.
+into the store, so sorting, percentages and the timing strip are plain Lua. It holds no game event
+or `OnUpdate`; its only timers are the talent tree's step-aside (a one-frame `C_Timer.After(0)`
+look after a close-stack close, then a `Results.TREE_POLL` ticker while the tree is up; ARCHITECTURE.md
+Taint Notes, B4.1).
 
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
   (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
