@@ -33,6 +33,7 @@ in the spec, sections 1, 2 and 13
   1.5 by default: ±50%). Both are visual only: no value is ever
   compared. The result card and the Results detail draw the chart again for runs raced this session,
   and the result card shows the pace bar again: the run's final damage against the best before it.
+  After the race the chart draws that best's average-pace diagonal too, on a scale that covers both.
 - **Compare two runs** (#7). The Results detail sets a run beside the best on its board (the
   runner-up for the best itself) or a run picked from the Runs row menu: damage, DPS, the %
   difference and every spell matched by ID.

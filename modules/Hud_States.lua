@@ -970,6 +970,8 @@ function Builders.result(parent)
           tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
     w.again, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
+    -- The sample card of test mode has no run to race again, open or delete (modules/Hud.lua Act).
+    w.realOnly = { w.again, w.details, w.delete }
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height
@@ -989,10 +991,7 @@ function Builders.result(parent)
         self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
         if lost then self.w.list:Clear() else self:DrawRows() end
         setEnabled(self.w.share, v.canShare == true)
-        -- The sample card of test mode has no run to race again or open (modules/Hud.lua Act).
-        setEnabled(self.w.again, v.preview ~= true)
-        setEnabled(self.w.details, v.preview ~= true)
-        setEnabled(self.w.delete, v.preview ~= true)
+        for _, b in ipairs(self.w.realOnly) do setEnabled(b, v.preview ~= true) end
     end
     function body.DrawRows(self) Builders.resultRows(self) end
     return body

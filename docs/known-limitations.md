@@ -67,5 +67,9 @@ and the smoke row that measures it where one exists.
   needs the window at `MEDIUM`, a strata the standard gives windows kept up while playing: that is
   the owner's call (a deviation row, or a change to the standard), not made here. Escape still
   closes both at once, and the HUD (in `UISpecialFrames` too) is closed by the tree's open as before.
+- ***Stop Now* in combat waits for combat to end** (Round C). Every meter value is secret in combat,
+  so the result cannot be read there; the press waives the 2.5 s of quiet after the combat end, not
+  the combat end itself. Damage that lands after the read (a DoT still ticking out of combat) is not
+  counted.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).

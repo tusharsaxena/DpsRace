@@ -116,4 +116,8 @@ Decisions:
 - [x] C1.3 Pace bar centered at ±(m − 1), the setting's bounds and tooltip, tests.
 - [x] C1.4 Stop! screen: *Stop now* and *Cancel*.
 - [x] C1.5 Result card: *Delete* with a confirm, equal-width buttons, the best-pace diagonal on the post-race chart.
-- [ ] C1.6 Docs, smoke rows and the test inventory.
+- [x] C1.6 Docs, smoke rows and the test inventory.
+  - Done: Stop Now is Race.StopNow (the quiet waived, never the combat end: in combat it reads on the regen
+    edge); the waiting screen's Discard Run and Close (Keep Waiting) became Stop Now and Cancel. Smoke rows
+    SM-DR-RC4 to SM-DR-RC10 (section 16) and R10, R12, R17, SM-DR-CH5 rewritten. The complexity suite finds
+    no function above CCN 15 that this round touched.

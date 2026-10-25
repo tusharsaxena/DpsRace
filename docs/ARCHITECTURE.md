@@ -48,7 +48,11 @@ added the Runs list's boxed Status badges naming their board and the race length
 only), Group by *Duration* and *Target + duration*, the *Pace bar range* setting and the result
 card's pace bar, the Results window's return after the talent tree's panel open, and the split of
 `/dr test` (static samples in every view) from `/dr sim` (a whole scripted race), both drawing
-in-memory samples and writing nothing to SavedVariables.
+in-memory samples and writing nothing to SavedVariables. Its Round C (the owner's notes after testing
+it) renamed the chart *Damage profile* and gave the HUD its section headings, centered the pace bar's
+tick, put *Stop Now* (`Race.StopNow`: the result read now, the quiet waived) and *Cancel* on the Stop!
+and waiting screens, and gave the result card *Delete* in a row of four equal buttons and the best's
+average-pace diagonal on the chart after the race.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -102,7 +106,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
-| `RUNS_CHANGED` | `modules/Recorder.lua` | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `settings/History.lua`: repaints the stored count |
+| `RUNS_CHANGED` | `modules/Recorder.lua` | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*); `settings/History.lua`: repaints the stored count |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Runs to keep* on `global.history.keep` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
@@ -232,6 +236,10 @@ each frame's strata, level and toplevel.
 - Share sends one chat line from a menu click (a hardware event), through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`)
   with the old global beneath it, and only out of combat and out of the client's chat lockdown. The
   line is plain text with every `|` replaced, so no chat escape reaches a channel.
+- The HUD's *Stop Now*, *Cancel* and *Delete* (Round C) are plain buttons on the plain HUD frame and
+  call only the addon's own engine and the Results window's StaticPopup (`DPSRACE_DELETE_RUN`): no
+  protected call, so all three work in combat. *Stop Now* decides from the press, the combat flag and
+  `GetTime()`, never from a meter value.
 - The settings panel's combat lock is the library's (options-ui-§2): the panel refuses to open under
   lockdown, and the addon draws no page-level lock of its own.
 - Meter values may be secret (events-frames-taint-§8). Only `core/Secrets.lua` tests them. The
@@ -248,7 +256,8 @@ each frame's strata, level and toplevel.
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
   best and `GetTime()` (the result card's pace bar is all plain: a stored run's final damage against
-  the best before it), and the columns' edges are plain config math (whole pixels from the plot's
+  the best before it, and so is the chart after the race, the best's diagonal and the shared max
+  included), and the columns' edges are plain config math (whole pixels from the plot's
   width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
