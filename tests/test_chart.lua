@@ -154,7 +154,65 @@ test("chart: the pace is the best's damage spread evenly over its length", funct
     assertEqual(C.PaceMax(best, 0), 1, "a range at 0:00 all the same")
 end)
 
+test("chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last", function()
+    local C = T.NS.HudChart
+    -- The HUD's default width (300, the body's 12 px pads each side): 272 px of plot, 268 inside.
+    local xs, ws = C.ColumnEdges(268, 60, 0)
+    assertEqual(#xs, 60)
+    local total = 0
+    for i = 1, 60 do
+        assertEqual(xs[i], math.floor((i - 1) * 268 / 60 + 0.5), "edge " .. i)
+        assertEqual(ws[i] % 1, 0, "column " .. i .. " is whole pixels")
+        if i < 60 then assertEqual(xs[i] + ws[i], xs[i + 1], "column " .. i .. " touches the next") end
+        total = total + ws[i]
+    end
+    assertEqual(total, 268, "no pixel lost or doubled")
+    assertTrue(ws[1] == 4 or ws[1] == 5, "4 or 5 px a column at 268 / 60")
+    -- A gap of 2: every column but the last loses 2 px; the edges stay where they were.
+    local gx, gw = C.ColumnEdges(268, 60, 2)
+    assertEqual(gx[30], xs[30])
+    assertEqual(gw[30], ws[30] - 2)
+    assertEqual(gw[60], ws[60], "the last column keeps its span")
+    -- Never narrower than 1 px.
+    local _, tiny = C.ColumnEdges(30, 60, 3)
+    for i = 1, 60 do assertTrue(tiny[i] >= 1) end
+    assertEqual(#(C.ColumnEdges(100, 0, 0)), 0, "no columns, no edges")
+end)
+
 -- ── the running HUD ─────────────────────────────────────────────────────────────────────────────
+
+test("chart: the columns take the Column gap setting; the plot's background its Chart background swatch", function()
+    local f = hud()
+    running(f, 30)
+    pump(f, 1.5)
+    local chart = body(f).w.chart
+    for i = 1, 29 do
+        assertEqual(chart.colX[i] + chart.colW[i], chart.colX[i + 1], "gap 0: column " .. i .. " touches the next")
+    end
+    local bg
+    rawset(chart.plot, "SetBackdropColor", function(_, r, g, b, a) bg = { r, g, b, a } end)
+    assertTrue(f.NS.SetByPath("appearance.chart.columnGap", 2))
+    assertTrue(f.NS.SetByPath("appearance.chart.bgColor", { r = 0.1, g = 0.2, b = 0.3, a = 0.5 }))
+    tick(f)
+    assertEqual(chart.colX[2] - (chart.colX[1] + chart.colW[1]), 2, "the gap drawn")
+    assertTrue(bg ~= nil, "the plot restyled on the change")
+    assertEqual(bg[1], 0.1)
+    assertEqual(bg[4], 0.5, "the swatch's alpha")
+end)
+
+test("chart: the pace bar has its own look; styling the chart's columns leaves it alone", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    running(f, 30)
+    pump(f, 1.5)
+    local b = body(f)
+    assertTrue(f.NS.SetByPath("appearance.chart.barColor", { r = 1, g = 0, b = 0, a = 1 }))
+    assertTrue(f.NS.SetByPath("appearance.pace.barColor", { r = 0, g = 1, b = 0, a = 1 }))
+    pump(f, 0.5)
+    assertEqual(b.w.chart.cols[1].__barColor[1], 1, "the columns take the chart's color")
+    assertEqual(b.w.pace.bar.__barColor[1], 0, "the pace bar does not")
+    assertEqual(b.w.pace.bar.__barColor[2], 1, "the pace bar takes its own")
+end)
 
 test("chart: each column holds exactly the handle read at its boundary, and none fills early", function()
     local f = hud()
@@ -190,12 +248,13 @@ test("chart: with no best the scale is the live total itself (B): no line, no di
     assertTrue(T.isSecret(chart.cols[1].__max), "the range is a secret")
     assertTrue(rawequal(chart.cols[1].__max, last), "the range is the latest live total")
     assertEqual(chart.note.__text, "first race on this board")
-    assertFalse(chart.bestLabel:IsShown(), "a best line with no best")
+    assertEqual(chart.bestLine, nil, "no best line at all (the owner's call, 2026-10-25)")
+    assertEqual(chart.bestLabel, nil, "no best label at all")
     for _, l in ipairs(chart.diag) do assertFalse(l:IsShown(), "a pace diagonal with no best") end
     assertFalse(b.w.pace.bar:IsShown(), "a pace bar with no best")
 end)
 
-test("chart: with a best the scale is its damage x 1.15 (A), with its level, its pace and the pace bar", function()
+test("chart: with a best the scale is its damage x 1.15 (A), with its pace diagonal and the pace bar", function()
     local f = hud()
     local reads = recordReads(f)
     seedBest(f, 3000000, 30)
@@ -206,8 +265,9 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its level, its
     assertEqual(chart.cols[1].__max, 3000000 * 1.15, "a plain range")
     assertTrue(T.isSecret(chart.cols[1].__value), "the value is still the read's handle")
     assertEqual(chart.note.__text, "vs best pace")
-    assertTrue(chart.bestLabel:IsShown())
-    assertTrue(chart.bestLabel.__text:find("^Best ") ~= nil, chart.bestLabel.__text)
+    assertEqual(chart.bestLine, nil, "no gold best line")
+    assertEqual(chart.bestLabel, nil, "no Best label")
+    for _, l in ipairs(chart.diag) do assertTrue(l:IsShown(), "the pace diagonal") end
     -- The diagonal runs from the plot's inner corner to the best's level at the buzzer.
     local width, plotH = chart.width, chart.plotH
     local level = 2 + (plotH - 4) / 1.15
@@ -218,8 +278,6 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its level, its
     local _, _, x1, y1 = lastDash:GetEndPoint()
     assertTrue(math.abs(x1 - (2 + (width - 4) * (1 - 0.4 / #chart.diag))) < 1e-6, "the last dash ends short of the corner")
     assertTrue(y1 < level and y1 > level - (level - 2) / #chart.diag, "the diagonal climbs to the best's level")
-    local _, _, _, by = chart.bestLine[1]:GetStartPoint()
-    assertTrue(math.abs(by - level) < 1e-6, "the best line sits at the best's level")
     -- The pace bar: twice the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())

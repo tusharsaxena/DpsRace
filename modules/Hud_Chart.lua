@@ -7,8 +7,9 @@ local _, NS = ...
 -- A VISUAL INDICATOR, NO MATH ON A VALUE. A bucket's value is the live total copied at its boundary:
 -- secret in combat, and it stays secret. It goes to StatusBar:SetValue and nowhere else; the bar does
 -- the comparison on screen. The scale is one of three:
---   * A, the board has a best: its plain final damage x HEADROOM, with the best's level drawn as a
---     gold line and its average pace as a dashed diagonal from 0:00 to the buzzer.
+--   * A, the board has a best: its plain final damage x HEADROOM, with its average pace drawn as a
+--     dashed diagonal from 0:00 to the best's level at the buzzer (no level line, no label: the
+--     owner's call, 2026-10-25).
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
 --   * After the race: the run's plain final damage.
@@ -17,9 +18,11 @@ local _, NS = ...
 -- color chosen from the value, because comparing a secret is not allowed.
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
--- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The best
--- line and the diagonal are plain geometry (Line regions) on an overlay frame one band over the
--- columns (core/Constants.lua LAYERS.LEVEL.CHART_OVERLAY).
+-- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
+-- columns touch (the column gap defaults to 0) and read as one area over the plot's own backdrop:
+-- each column's edges are whole pixels, x_i = floor(i * inner / count + 0.5), so no column is a
+-- fraction wide and no seam shows between two. The diagonal is plain geometry (Line regions) on an
+-- overlay frame one band over the columns (core/Constants.lua LAYERS.LEVEL.CHART_OVERLAY).
 
 local Chart = {}
 NS.HudChart = Chart
@@ -33,15 +36,13 @@ Chart.HEAD_H = 14       -- the header line over the plot
 Chart.AXIS_H = 12       -- the time labels under it
 Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
-Chart.COL_GAP = 1
-Chart.DASHES = 16       -- dashes in the diagonal and in the best line
+Chart.DASHES = 16       -- dashes in the diagonal
 Chart.PACE_H = 12       -- the pace bar's line
 Chart.PACE_LABEL_W = 78
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
-local PLOT_BG, PLOT_EDGE = { 0, 0, 0, 0.35 }, { 1, 1, 1, 0.10 }
-local TRACK = { 1, 1, 1, 0.04 }
-local BEST = { 0.79, 0.64, 0.0, 0.9 }
+local PLOT_EDGE = { 1, 1, 1, 0.10 }
+local PACE_TRACK = { 1, 1, 1, 0.08 }   -- the pace bar's empty part
 local DIAGONAL = { 0.9, 0.9, 0.92, 0.7 }
 local TICK = { 1, 1, 1, 0.85 }
 
@@ -56,11 +57,41 @@ function Chart.PlotHeight()
     return v or D.height
 end
 
---- The chart block's whole height for a plot `plotH` tall: header, plot, gap, time labels.
---- @param plotH number
+--- The configured gap between two columns, in whole pixels (0 to 3).
 --- @return number
-function Chart.BlockHeight(plotH)
-    return Chart.HEAD_H + plotH + Chart.GAP + Chart.AXIS_H
+function Chart.ColumnGap()
+    local v = NS.GetSetting and tonumber(NS.GetSetting("appearance.chart.columnGap"))
+    return math.max(0, math.floor(v or D.columnGap or 0))
+end
+
+--- Each column's left edge and width, in whole pixels from the plot's inner left, for `count`
+--- columns across `inner` pixels with `gap` between two: the edges fall on x_i =
+--- floor(i * inner / count + 0.5), a column spans to the next edge less the gap (the last keeps
+--- its whole span), and none is narrower than 1. Plain config math, never a measured size.
+--- @param inner number
+--- @param count number
+--- @param gap number|nil
+--- @return table xs, table widths
+function Chart.ColumnEdges(inner, count, gap)
+    local xs, widths = {}, {}
+    gap = gap or 0
+    if count < 1 then return xs, widths end
+    local function edge(i) return math.floor(i * inner / count + 0.5) end
+    for i = 1, count do
+        local x0, x1 = edge(i - 1), edge(i)
+        xs[i] = x0
+        widths[i] = math.max(1, x1 - x0 - (i < count and gap or 0))
+    end
+    return xs, widths
+end
+
+--- The chart block's whole height for a plot `plotH` tall: header, plot, gap, time labels. `headH`
+--- is the header line's height when the chart was built with a larger title (Chart.New).
+--- @param plotH number
+--- @param headH number|nil  default HEAD_H
+--- @return number
+function Chart.BlockHeight(plotH, headH)
+    return (headH or Chart.HEAD_H) + plotH + Chart.GAP + Chart.AXIS_H
 end
 
 local function shared(run)
@@ -173,31 +204,40 @@ local function dash(frame, color)
     return l
 end
 
---- A chart built into `parent`: its header, plot and time labels, placed by Place().
+-- The plot's backdrop: its color from HUD Appearance > Chart background, once per change (the same
+-- stamp the columns read). The edge stays the fixed faint line.
+local function restylePlot(s)
+    local A = NS.HudAppearance
+    if not A or s.plotStamp == A.stamp or not s.plot.SetBackdropColor then return end
+    s.plotStamp = A.stamp
+    local bg = A.ChartBackground()
+    s.plot:SetBackdropColor(bg.r, bg.g, bg.b, bg.a)
+end
+
+--- A chart built into `parent`: its header, plot and time labels, placed by Place(). `titleFont`
+--- (a Style.FONT value) sets the title's font and `headH` its line's height: the Results detail
+--- passes its larger section header; the HUD keeps FONT.HEADER on HEAD_H.
 --- @param parent table
+--- @param titleFont string|nil
+--- @param headH number|nil
 --- @return table chart
-function Chart.New(parent)
-    local s = setmetatable({ parent = parent, cols = {}, diag = {}, bestLine = {} }, Strip)
-    s.title = Style.Text(parent, FONT.HEADER)
+function Chart.New(parent, titleFont, headH)
+    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H }, Strip)
+    s.title = Style.Text(parent, titleFont or FONT.HEADER)
     s.title:SetText(L["Damage over the race"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
     local plot = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     if plot.SetBackdrop then
         plot:SetBackdrop(FLAT)
-        plot:SetBackdropColor(PLOT_BG[1], PLOT_BG[2], PLOT_BG[3], PLOT_BG[4])
         plot:SetBackdropBorderColor(PLOT_EDGE[1], PLOT_EDGE[2], PLOT_EDGE[3], PLOT_EDGE[4])
     end
     s.plot = plot
-    -- The lines' own frame, a band over the columns: a child frame draws over its parent's regions.
+    restylePlot(s)
+    -- The diagonal's own frame, a band over the columns: a child frame draws over its parent's regions.
     s.over = CreateFrame("Frame", nil, plot)
     s.over:SetAllPoints(plot)
     s.over:SetFrameLevel(plot:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.CHART_OVERLAY)
-    for i = 1, Chart.DASHES do
-        s.diag[i] = dash(s.over, DIAGONAL)
-        s.bestLine[i] = dash(s.over, BEST)
-    end
-    s.bestLabel = Style.Text(s.over, FONT.CAPTION, BEST, "RIGHT")
-    s.bestLabel:SetPoint("TOPRIGHT", s.over, "TOPRIGHT", -3, -2)
+    for i = 1, Chart.DASHES do s.diag[i] = dash(s.over, DIAGONAL) end
     s.axis = { Style.Text(parent, FONT.CAPTION), Style.Text(parent, FONT.CAPTION, nil, "CENTER"),
                Style.Text(parent, FONT.CAPTION, nil, "RIGHT") }
     return s
@@ -225,9 +265,9 @@ function Strip:Place(anchor, y, width, plotH)
     self.note:ClearAllPoints()
     self.note:SetPoint("TOPRIGHT", anchor, "TOPLEFT", width, y)
     self.plot:ClearAllPoints()
-    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - Chart.HEAD_H)
+    self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - self.headH)
     self.plot:SetSize(width, plotH)
-    local ay = y - Chart.HEAD_H - plotH - Chart.GAP
+    local ay = y - self.headH - plotH - Chart.GAP
     local points = { { "TOPLEFT", 0 }, { "TOP", width / 2 }, { "TOPRIGHT", width } }
     for i, fs in ipairs(self.axis) do
         fs:ClearAllPoints()
@@ -246,29 +286,31 @@ local function restyle(col)
     col:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
 end
 
+-- A column: a vertical StatusBar and nothing else (no track of its own: the plot's backdrop is the
+-- background, so the columns read as one area).
 local function newColumn(plot)
     local col = CreateFrame("StatusBar", nil, plot)
     col:SetOrientation("VERTICAL")
-    local track = col:CreateTexture(nil, "BACKGROUND")
-    track:SetAllPoints(col)
-    track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], TRACK[4])
     return col
 end
 
--- Lay `count` columns across the plot (from Place's width and height, never a measured size).
+-- Lay `count` columns across the plot (from Place's width and height and the configured gap, never a
+-- measured size), each on whole-pixel edges (Chart.ColumnEdges).
 function Strip:layoutColumns(count)
-    local key = ("%d|%s|%s"):format(count, tostring(self.width), tostring(self.plotH))
+    local gap = Chart.ColumnGap()
+    local key = ("%d|%s|%s|%d"):format(count, tostring(self.width), tostring(self.plotH), gap)
     if self.geometry == key then return end
     self.geometry = key
-    local inner = (self.width or 0) - 2 * Chart.INSET
-    local colW = math.max(0.5, (inner - (count - 1) * Chart.COL_GAP) / count)
+    local inner = math.max(0, (self.width or 0) - 2 * Chart.INSET)
+    local xs, widths = Chart.ColumnEdges(inner, count, gap)
     local h = math.max(1, (self.plotH or 0) - 2 * Chart.INSET)
+    self.colX, self.colW = xs, widths
     for i = 1, count do
         local col = self.cols[i] or newColumn(self.plot)
         self.cols[i] = col
         col:ClearAllPoints()
-        col:SetPoint("BOTTOMLEFT", self.plot, "BOTTOMLEFT", Chart.INSET + (i - 1) * (colW + Chart.COL_GAP), Chart.INSET)
-        col:SetSize(colW, h)
+        col:SetPoint("BOTTOMLEFT", self.plot, "BOTTOMLEFT", Chart.INSET + xs[i], Chart.INSET)
+        col:SetSize(widths[i], h)
     end
     self.lines = nil
 end
@@ -288,20 +330,16 @@ local function showAll(lines, on)
     for _, l in ipairs(lines) do l:SetShown(on) end
 end
 
--- Scale A's overlay: the best's level and its average-pace diagonal, plain geometry.
-function Strip:drawBest(best)
+-- Scale A's overlay: the best's average-pace diagonal, plain geometry, from 0:00 to the best's
+-- level at the buzzer.
+function Strip:drawPace(best)
     local on = best ~= nil
     showAll(self.diag, on)
-    showAll(self.bestLine, on)
-    self.bestLabel:SetShown(on)
-    if not on then return end
-    self.bestLabel:SetText(L["Best %s"]:format(NS.Format.Number(best)))
-    if self.lines == self.geometry then return end
+    if not on or self.lines == self.geometry then return end
     self.lines = self.geometry
     local x0, y0 = Chart.INSET, Chart.INSET
     local x1 = (self.width or 0) - Chart.INSET
     local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) / Chart.HEADROOM
-    dashes(self.bestLine, self.over, x0, level, x1, level)
     dashes(self.diag, self.over, x0, y0, x1, level)
 end
 
@@ -322,6 +360,7 @@ end
 function Strip:Draw(view, max)
     if max == nil then max = view.max end
     local count = view.count or 0
+    restylePlot(self)
     self:layoutColumns(count)
     for i = 1, count do
         local col = self.cols[i]
@@ -330,7 +369,7 @@ function Strip:Draw(view, max)
         col:Show()
     end
     for i = count + 1, #self.cols do self.cols[i]:Hide() end
-    self:drawBest(view.best)
+    self:drawPace(view.best)
     self.note:SetText(view.note or "")
     local length = view.length or 0
     self.axis[1]:SetText(NS.Format.Length(0))
@@ -362,7 +401,7 @@ function Chart.NewPace(parent)
     p.bar = CreateFrame("StatusBar", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
-    track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], TRACK[4] * 2)
+    track:SetColorTexture(PACE_TRACK[1], PACE_TRACK[2], PACE_TRACK[3], PACE_TRACK[4])
     p.tick = p.bar:CreateTexture(nil, "OVERLAY")
     p.tick:SetColorTexture(TICK[1], TICK[2], TICK[3], TICK[4])
     p.tick:SetWidth(2)
@@ -393,7 +432,7 @@ function Pace:SetMax(max)
     local A = NS.HudAppearance
     if A and self.stamp ~= A.stamp then
         self.stamp = A.stamp
-        local look = A.Chart()
+        local look = A.Pace()
         self.bar:SetStatusBarTexture(look.texture)
         self.bar:SetStatusBarColor(look.r, look.g, look.b, look.a)
     end

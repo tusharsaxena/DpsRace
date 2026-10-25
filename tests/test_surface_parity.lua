@@ -151,8 +151,9 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     local l, d = pair()
     local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
     -- HUD > HUD Appearance: four font blocks of six, the spell bars' block of four and its row height,
-    -- and the damage chart's block of four and its height (each an `extra`, so it goes with the block).
-    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 1
+    -- the damage chart's block of four with its height and column gap (each an `extra`, so it goes
+    -- with the block), the chart background's color pair, and the pace bar's block of four.
+    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4
     -- History > Results table: two bar blocks of four and a font block of six.
     local RESULTS_TABLE_ROWS = 2 * 4 + 6
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a

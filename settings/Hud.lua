@@ -69,11 +69,11 @@ NS.RegisterSchemaRows({
 })
 
 -- The damage chart (#2) and the pace bar (#3) on the running HUD: read on every redraw, so a redraw is
--- the whole reaction. Their look is HUD Appearance > Damage chart.
+-- the whole reaction. Their look is HUD Appearance > Damage chart, Chart background and Pace bar.
 NS.RegisterSchemaRows({
     { path = "live.chart", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show damage chart"], default = LIVE.chart,
-      tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its level and its average pace) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
+      tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
       onChange = redraw },
     { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show pace bar"], default = LIVE.paceBar,
@@ -118,7 +118,8 @@ append(H.BarGroup({
     } },
 }))
 append(fontBlock("spellText", L["Spell text"], 500))
--- The damage chart's columns and the pace bar (#2, #3): a bar block with the plot's height after it.
+-- The damage chart's columns (#2): a bar block with the plot's height and the column gap after it
+-- (a bar spacing, appended after the mandated four, options-ui-§16).
 append(H.BarGroup({
     prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Damage chart"], order = 600,
     classColor = PLAYER_CLASS, defaults = AD.chart,
@@ -126,10 +127,29 @@ append(H.BarGroup({
         path = "appearance.chart.height", type = "number", min = 40, max = 160, step = 2,
         label = L["Chart height"], default = AD.chart.height, startsLine = true,
         tooltip = L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."],
+    }, {
+        path = "appearance.chart.columnGap", type = "number", min = 0, max = 3, step = 1,
+        label = L["Column gap"], default = AD.chart.columnGap,
+        tooltip = L["The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."],
     } },
 }))
+-- The chart plot's background: a backdrop with no fill texture, so a swatch and its class-color
+-- companion and nothing else (options-ui-§16, §17), under a heading of its own.
+append(H.ColorPair({
+    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Chart background"], order = 700,
+    key = "bgColor", companionKey = "useClassColorBg", label = L["Background color"],
+    classColor = PLAYER_CLASS,
+    defaults = { bgColor = AD.chart.bgColor, useClassColorBg = AD.chart.useClassColorBg },
+}))
+-- The pace bar (#3), its own bar block since 2026-10-25: styling the chart's columns no longer
+-- restyles it.
+append(H.BarGroup({
+    prefix = "appearance.pace.", page = PAGE, group = APPEARANCE, subgroup = L["Pace bar"], order = 800,
+    classColor = PLAYER_CLASS, defaults = AD.pace,
+}))
 -- The appended rows, in the addon's own words; every other row is the library's.
-local OWN_WORDS = { ["appearance.bars.rowHeight"] = true, ["appearance.chart.height"] = true }
+local OWN_WORDS = { ["appearance.bars.rowHeight"] = true, ["appearance.chart.height"] = true,
+                    ["appearance.chart.columnGap"] = true }
 for _, r in ipairs(appearanceRows) do
     r.onChange = restyle
     -- The library's words, not this addon's (options-ui-§21), except the appended rows.

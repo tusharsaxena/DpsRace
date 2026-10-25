@@ -62,10 +62,16 @@ NS.defaults = {
                      useClassColorBar = false, rowHeight = 18 },
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
-            -- The damage chart's columns and the pace bar's fill (modules/Hud_Chart.lua): the mockup's
-            -- brighter indigo, and the plot's height in pixels.
+            -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
+            -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
+            -- smooth area), and the plot's background swatch (its composed class-color companion
+            -- beside it, options-ui-§17).
             chart = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
-                      useClassColorBar = false, height = 80 },
+                      useClassColorBar = false, height = 80, columnGap = 0,
+                      bgColor = { r = 0, g = 0, b = 0, a = 0.35 }, useClassColorBg = false },
+            -- The pace bar's fill, its own block since 2026-10-25: the chart's look when it was split off.
+            pace = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
+                     useClassColorBar = false },
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
         -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
