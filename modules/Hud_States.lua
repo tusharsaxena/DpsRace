@@ -523,10 +523,75 @@ local function styleRunning(body, mode)
     local kpiH = math.max(KPI_HEIGHT, ff.size + 26)
     placeKpi(w.damage, f, -top, kpiH, true)
     placeKpi(w.dps, f, -top, kpiH, false)
-    body.rowsTop = top + kpiH + GAP
+    body.kpiBottom = top + kpiH + GAP
+end
+
+-- Whether `top` and `bottom` leave room for MIN_ROWS spell rows in the height Layout handed the body.
+local function roomForRows(body, top, bottom)
+    if type(body.height) ~= "number" then return true end
+    return States.RowCapacity(body.height - top - bottom) >= MIN_ROWS
+end
+
+-- The chart's block (header, plot, time labels and the gap under it) at the configured plot height.
+local function chartBlock()
+    local plotH = NS.HudChart.PlotHeight()
+    return NS.HudChart.BlockHeight(plotH) + GAP, plotH
+end
+
+-- Whether the stack's inputs changed since it was last placed, noting them when they did: compared
+-- field by field into one reused table, so the 20 Hz tick builds no key.
+local function restack(body, top, paceH, chart, plotH)
+    local last = body.placed
+    if last and last.top == top and last.paceH == paceH and last.chart == chart and last.plotH == plotH
+        and last.width == body.width and last.height == body.height then
+        return false
+    end
+    last = last or {}
+    last.top, last.paceH, last.chart, last.plotH = top, paceH, chart, plotH
+    last.width, last.height = body.width, body.height
+    body.placed = last
+    return true
+end
+
+-- THE PACE BAR AND THE CHART (#3, #2) sit between the KPIs and the spell rows, each only when its view
+-- is given (modules/Hud_Chart.lua LiveViews); the chart steps aside when it would leave fewer than
+-- MIN_ROWS rows. Placed again only when what decides the stack changed: every input is config.
+local function placeExtras(body, v)
+    local w, f = body.w, body.frame
+    local Chart = NS.HudChart
+    local top = body.kpiBottom or RUNNING_ROWS_TOP
+    local paceH = v.pace and (Chart.PACE_H + GAP) or 0
+    local blockH, plotH = chartBlock()
+    local chart = v.chart ~= nil and roomForRows(body, top + paceH + blockH, RUNNING_ROWS_BOTTOM)
+    w.pace:SetShown(v.pace ~= nil)
+    w.chart:SetShown(chart)
+    body.chartView = chart and v.chart or nil
+    if not restack(body, top, paceH, chart, plotH) then return end
+    local y, width = top, body.width or 236
+    if v.pace then w.pace:Place(f, -y, width) end
+    y = y + paceH
+    if chart then
+        w.chart:Place(f, -y, width, plotH)
+        y = y + blockH
+    end
+    body.rowsTop = y
     w.rows:ClearAllPoints()
-    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -y)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
+end
+
+-- The live draw of the chart and the pace bar: opaque values to the bars' setters only. With no best
+-- the chart's scale is the live total itself (scale B). No `and`/`or` on the total: that would
+-- truth-test it.
+local function drawExtras(body, live)
+    local total
+    if type(live) == "table" then total = live.total end
+    if body.paceShown then body.w.pace:SetValue(total) end
+    local view = body.chartView
+    if not view then return end
+    local scale
+    if view.max == nil then scale = total end
+    body.w.chart:Draw(view, scale)
 end
 
 -- The running body's spell rows. live.rows 0 is every spell (the owner's call, 2026-10-24): as many as
@@ -592,6 +657,10 @@ function Builders.running(parent)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    w.pace = NS.HudChart.NewPace(f)
+    w.pace:SetShown(false)
+    w.chart = NS.HudChart.New(f)
+    w.chart:SetShown(false)
     -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -608,10 +677,13 @@ function Builders.running(parent)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
 
-    function body.Layout(self, _, height) self.height = height end
+    function body.Layout(self, width, height) self.width, self.height = width, height end
 
     function body.Update(self, v)
         styleRunning(self, v.clockMode)
+        placeExtras(self, v)
+        self.paceShown = v.pace ~= nil
+        if v.pace then self.w.pace:SetMax(v.pace.max) end
         setClocks(self.w, v)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.
@@ -622,6 +694,7 @@ function Builders.running(parent)
 
     --- The live figures: opaque values, straight to the formatter and the rows.
     function body.SetLive(self, live, rows, icons)
+        drawExtras(self, live)
         if type(live) ~= "table" then
             setKpi(self.w.damage, DASH)
             setKpi(self.w.dps, DASH)
@@ -778,6 +851,8 @@ function Builders.result(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
     w.list = NS.HudBreakdown.New(w.rows)
+    w.chart = NS.HudChart.New(f)
+    w.chart:SetShown(false)
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -800,9 +875,10 @@ function Builders.result(parent)
     w.again:SetPoint("BOTTOMRIGHT", w.details, "BOTTOMLEFT", -6, 0)
     function body.Layout(self, width, height)
         self.w.chips.width = width
-        self.height = height
+        self.width, self.height = width, height
     end
     function body.Update(self, v)
+        Builders.resultChart(self, v.chart)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
@@ -827,19 +903,37 @@ end
 -- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
 States.RESULT_ROWS = 5
 
+-- The result card's chart (#2): the run's in-session slices, scaled to its plain final damage, between
+-- the chips and the rows; none for a run without slices, and it steps aside when it would leave fewer
+-- than MIN_ROWS rows.
+function Builders.resultChart(body, view)
+    local w, f = body.w, body.frame
+    local blockH, plotH = chartBlock()
+    local on = view ~= nil and roomForRows(body, RESULT_ROWS_TOP + blockH, RESULT_ROWS_BOTTOM)
+    w.chart:SetShown(on)
+    body.rowsTop = on and (RESULT_ROWS_TOP + blockH) or RESULT_ROWS_TOP
+    w.rows:ClearAllPoints()
+    w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
+    w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
+    if not on then return end
+    w.chart:Place(f, -RESULT_ROWS_TOP, body.width or 236, plotH)
+    w.chart:Draw(view)
+end
+
 function Builders.resultRows(body)
     local run = body.shownRun
     local spells = type(run) == "table" and type(run.spells) == "table" and run.spells or {}
     local rows = tonumber(body.rowsSetting) or States.RESULT_ROWS
     local total = #spells
+    local top = body.rowsTop or RESULT_ROWS_TOP
     local cap
     if rows == 0 then
         cap = total
         if type(body.height) == "number" then
-            cap = math.min(total, States.RowCapacity(body.height - RESULT_ROWS_TOP - RESULT_ROWS_BOTTOM))
+            cap = math.min(total, States.RowCapacity(body.height - top - RESULT_ROWS_BOTTOM))
         end
     else
-        cap = rowsFor(body, RESULT_ROWS_TOP, RESULT_ROWS_BOTTOM, rows)
+        cap = rowsFor(body, top, RESULT_ROWS_BOTTOM, rows)
     end
     local offset = 0
     if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
@@ -848,13 +942,14 @@ function Builders.resultRows(body)
 end
 
 --- The content height the tallest body's fixed stack needs: the idle body down to its links, and
---- the running and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- the running (with its pace bar) and result bodies with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
 --- @return number
 function States.MinContentHeight()
     local B = NS.HudBreakdown
     local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
     local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
-    local running = RUNNING_ROWS_TOP + rows + RUNNING_ROWS_BOTTOM
+    -- The pace bar never steps aside (the chart does), so the running body's minimum carries it.
+    local running = RUNNING_ROWS_TOP + NS.HudChart.PACE_H + GAP + rows + RUNNING_ROWS_BOTTOM
     local result = RESULT_ROWS_TOP + rows + RESULT_ROWS_BOTTOM
     return math.max(idle, running, result)
 end

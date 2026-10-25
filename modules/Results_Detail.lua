@@ -12,6 +12,21 @@ local _, NS = ...
 --
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
+-- SECTION HEADINGS (the owner's call, 2026-10-25): Spell breakdown (over the compare's toggle and the
+-- spell list), the chart's title, Timing, Gear, Talents, the flags box's title and Note are all
+-- FONT.SECTION, a size above the column headers, each on a SECTION_H line.
+--
+-- THE DAMAGE CHART (#2) sits under the breakdown, for a run raced since the last /reload or login: the
+-- run's in-session slices (modules/Slices.lua), drawn by modules/Hud_Chart.lua and scaled to its plain
+-- final damage. A run from an earlier session, a lost run or a shared session has no section at all.
+--
+-- THE COMPARE (#7) sits under the score: a toggle that sets the run beside the best on its board, or
+-- beside a run picked from a Runs row's menu. Its parts and its pure logic are
+-- modules/Results_Compare.lua's; while it is on, its compared breakdown takes the plain one's place.
+--
+-- THE LOADOUT (#6) sits under the timing strip: the run's gear and talents, drawn by
+-- modules/Results_Loadout.lua, which highlights what changed while the compare is on.
+--
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
@@ -34,6 +49,14 @@ local BUTTON_H = 20
 local KPI_H = 46
 local STRIP_H = 34
 local LINE_H = 14
+-- The header (the owner's call, 2026-10-25): larger class and spec icons beside a larger name.
+local ICON = 28
+local ICON_GAP = 4
+-- Every section heading (Spell breakdown, the chart, Timing, Gear, Talents, the flags, Note) is
+-- FONT.SECTION on a line of SECTION_H.
+local SECTION_H = NS.Style.SECTION_H
+Detail.SECTION_H = SECTION_H
+Detail.ICON = ICON
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
 local CYAN = { 0.3, 0.85, 1.0 }
@@ -267,15 +290,17 @@ end
 
 local function buildHeader(p, c)
     local w = p.w
+    -- The spec icon names the spec (its tooltip says spec and class): no spec text beside the name.
     w.class = c:CreateTexture(nil, "ARTWORK")
-    w.class:SetSize(18, 18)
+    w.class:SetSize(ICON, ICON)
     w.spec = c:CreateTexture(nil, "ARTWORK")
-    w.spec:SetSize(18, 18)
-    w.name = Tbl.Text(c, FONT.HEADING, C.text)
-    w.specName = Tbl.Text(c, FONT.TEXT, C.dim)
+    w.spec:SetSize(ICON, ICON)
+    w.name = Tbl.Text(c, FONT.NAME, C.text)
     w.meta = { Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim) }
     w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)
     w.delta = Tbl.Text(c, FONT.TEXT, C.green)
+    w.spellsTitle = Tbl.Text(c, FONT.SECTION)
+    w.spellsTitle:SetText(L["Spell breakdown"])
 end
 
 local function legendItem(c, color, label)
@@ -296,7 +321,7 @@ end
 
 local function buildTiming(p, c)
     local w = p.w
-    w.timingLabel = Tbl.Text(c, FONT.HEADER)
+    w.timingLabel = Tbl.Text(c, FONT.SECTION)
     w.timingLabel:SetText(L["Timing"])
     w.strip = CreateFrame("Frame", nil, c)
     w.strip:SetHeight(STRIP_H)
@@ -328,11 +353,13 @@ end
 local function buildFlags(p, c)
     local w = p.w
     w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
-    w.flagTitle = Tbl.Text(w.flags, FONT.HEADER, { 0.95, 0.84, 0.65 })
+    w.flagTitle = Tbl.Text(w.flags, FONT.SECTION, { 0.95, 0.84, 0.65 })
     w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -7)
     w.flagBody = wrapText(w.flags, FONT.TEXT, { 0.94, 0.84, 0.65 })
-    w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -24)
+    w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -(7 + SECTION_H))
     w.flagBody:SetPoint("BOTTOMRIGHT", w.flags, "BOTTOMRIGHT", -9, 6)
+    w.noteTitle = Tbl.Text(c, FONT.SECTION)
+    w.noteTitle:SetText(L["Note"])
     w.note = wrapText(c, FONT.TEXT, C.dim)
     w.noteBox = CreateFrame("EditBox", nil, c, "BackdropTemplate")
     w.noteBox:SetAutoFocus(false)
@@ -377,12 +404,15 @@ local function wireTips(p)
     hoverOver(p, w.class, "class")
     hoverOver(p, w.spec, "class")
     hoverOver(p, w.name, "name")
-    hoverOver(p, w.specName, "class")
     for i, key in ipairs({ "realm", "target", "stamp" }) do hoverOver(p, w.meta[i], key) end
+    hoverOver(p, w.spellsTitle, "breakdown")
     hover(p, w.damage.frame, "damage")
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
     hoverOver(p, w.delta, "delta")
+    -- Kept: the title keeps its anchors while hidden, so its hover follows the chart's visibility.
+    w.chartTitleHover = hoverOver(p, w.chart.title, "chart")
+    hover(p, w.chart.over, "chart")
     hoverOver(p, w.timingLabel, "strip")
     hover(p, w.strip, "strip")
     for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do hoverOver(p, axis, "strip") end
@@ -394,6 +424,7 @@ local function wireTips(p)
     hover(p, w.flags, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
+    w.noteTitleHover = hoverOver(p, w.noteTitle, function() return p.editing and "noteBox" or "note" end)
     hover(p, w.noteBox, "noteBox")
     hover(p, w.back, "back")
     hover(p, w.addNote, "addNote")
@@ -409,7 +440,8 @@ end
 
 --- The detail pane in `parent`.
 --- @param parent table
---- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare() }
+--- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
+---                       clearPick() }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
@@ -426,8 +458,12 @@ function Detail.Build(parent, hooks)
     p.w.empty:SetText(L["Select a run to see its detail."])
     local c = p.content
     buildHeader(p, c)
+    NS.ResultsCompare.Build(p, c)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
+    p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
+    p.w.chart:SetShown(false)
     buildTiming(p, c)
+    NS.ResultsLoadout.Build(p, c)
     buildFlags(p, c)
     buildButtons(p)
     wireTips(p)
@@ -459,7 +495,7 @@ function Pane:fillHeader(run)
     w.name:SetText(char.name or "?")
     local color = Tbl.ClassColor(char.class)
     w.name:SetTextColor(color[1], color[2], color[3])
-    w.specName:SetText(specName and ("\194\183 " .. specName) or "")
+    self.specName = specName   -- named by the spec icon's tooltip, never drawn beside the name
     local a, b, c = Detail.Meta(run)
     w.meta[1]:SetText(a)
     w.meta[2]:SetText(b)
@@ -502,16 +538,59 @@ function Pane:Show(run)
     if not has then return end
     self:fillHeader(run)
     self:fillScore(run)
+    NS.ResultsCompare.Fill(self)
+    NS.ResultsLoadout.Fill(self)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
+    self.chartView = NS.HudChart.ResultView(run)
     self:fillFlags(run)
-    self.noteText = type(run.note) == "string" and run.note ~= "" and L["Note: %s"]:format(run.note) or ""
+    -- The note as written: its own "Note" heading says what it is.
+    self.noteText = type(run.note) == "string" and run.note or ""
     self.w.note:SetText(self.noteText)
     self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["Edit Note"] or L["Add Note"])
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
     self.scroll = 0
     self:Layout(self.width, self.height, self.narrow)
+end
+
+-- ── the compare ─────────────────────────────────────────────────────────────────────────────────
+
+--- Whether the detail shows the compare now: the toggle on, and a run to compare with.
+function Pane:Comparing()
+    return self.comparing == true and self.cmp ~= nil and self.cmp.other ~= nil
+end
+
+--- The run the detail is compared with and its kind ("picked" | "best" | "runnerUp"): nil while the
+--- compare is off, unless `resolved` asks for the toggle's target either way. The loadout's
+--- highlights (modules/Results_Loadout.lua) read the comparison through this.
+--- @param resolved boolean|nil
+--- @return table|nil other, string|nil kind
+function Pane:CompareTarget(resolved)
+    if not (resolved or self:Comparing()) then return nil end
+    return NS.ResultsCompare.TargetOf(self)
+end
+
+-- Repaint the compare's parts and lay the pane out again, the scroll kept.
+function Pane:refreshCompare()
+    if not self.run then return end
+    NS.ResultsCompare.Fill(self)
+    NS.ResultsLoadout.Fill(self)
+    self:Layout(self.width, self.height, self.narrow)
+end
+
+--- The toggle: compare on or off (view state for the session, never stored).
+function Pane:SetComparing(on)
+    self.comparing = on and true or false
+    self:refreshCompare()
+end
+
+--- Compare with run `id` (the row menu's pick) from now on, the toggle turned on; nil clears the
+--- pick, back to the best on the board.
+function Pane:SetPick(id)
+    self.pickID = id
+    if id ~= nil then self.comparing = true end
+    self:refreshCompare()
 end
 
 -- ── the note ────────────────────────────────────────────────────────────────────────────────────
@@ -550,12 +629,13 @@ function Pane:layoutHeader(y, cw)
     w.class:ClearAllPoints()
     w.class:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     w.spec:ClearAllPoints()
-    w.spec:SetPoint("TOPLEFT", self.content, "TOPLEFT", 21, y)
+    w.spec:SetPoint("TOPLEFT", self.content, "TOPLEFT", ICON + ICON_GAP, y)
+    -- The name level with the icons' middle, after them.
+    local nameX = 2 * (ICON + ICON_GAP) + 4
     w.name:ClearAllPoints()
-    w.name:SetPoint("TOPLEFT", self.content, "TOPLEFT", 44, y)
-    w.specName:ClearAllPoints()
-    w.specName:SetPoint("LEFT", w.name, "RIGHT", 6, 0)
-    y = y - 24
+    w.name:SetPoint("LEFT", self.content, "TOPLEFT", nameX, y - ICON / 2)
+    w.name:SetWidth(math.max(40, cw - nameX))
+    y = y - ICON - 6
     for _, fs in ipairs(w.meta) do
         fs:ClearAllPoints()
         fs:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
@@ -575,6 +655,14 @@ function Pane:layoutHeader(y, cw)
     return y - LINE_H - 4
 end
 
+-- The breakdown's heading, over the compare's toggle and the spell list (the plain or the compared).
+function Pane:layoutSpellsTitle(y)
+    local t = self.w.spellsTitle
+    t:ClearAllPoints()
+    t:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    return y - SECTION_H
+end
+
 function Pane:layoutSpells(y, cw)
     local host = self.w.list.parent
     local n = self.w.list:Count()
@@ -583,6 +671,20 @@ function Pane:layoutSpells(y, cw)
     local pitch = NS.HudBreakdown.Pitch()
     host:SetSize(cw, math.max(1, n * pitch))
     return y - n * pitch - 8
+end
+
+-- The damage chart, when the run has slices this session; nothing at all when it has none.
+function Pane:layoutChart(y, cw)
+    local view, chart = self.chartView, self.w.chart
+    chart:SetShown(view ~= nil)
+    chart.over:EnableMouse(view ~= nil)
+    self.w.chartTitleHover:SetShown(view ~= nil)
+    if not view then return y end
+    local Chart = NS.HudChart
+    local plotH = Chart.PlotHeight()
+    chart:Place(self.content, y, cw, plotH)
+    chart:Draw(view)
+    return y - Chart.BlockHeight(plotH, SECTION_H) - 8
 end
 
 local function placeMark(tex, strip, x, inset)
@@ -657,7 +759,7 @@ function Pane:layoutTiming(y, cw)
     if not on then return y end
     w.timingLabel:ClearAllPoints()
     w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-    y = y - 14
+    y = y - SECTION_H
     w.strip:ClearAllPoints()
     w.strip:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     w.strip:SetWidth(cw)
@@ -696,13 +798,27 @@ end
 function Pane:layoutFlags(y, cw)
     local w = self.w
     if (self.flagText or "") ~= "" then
-        local h = 30 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H
+        local h = 7 + SECTION_H + 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H
         w.flags:ClearAllPoints()
         w.flags:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
         w.flags:SetSize(cw, h)
         y = y - h - 8
     end
+    return self:layoutNote(y, cw)
+end
+
+-- The note under its own heading: the heading shows with a note, or while one is being written.
+function Pane:layoutNote(y, cw)
+    local w = self.w
     local note = self.noteText or ""
+    local titled = self.editing == true or note ~= ""
+    w.noteTitle:SetShown(titled)
+    w.noteTitleHover:SetShown(titled)
+    if titled then
+        w.noteTitle:ClearAllPoints()
+        w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+        y = y - SECTION_H
+    end
     w.noteBox:SetShown(self.editing == true)
     w.note:SetShown(not self.editing and note ~= "")
     w.noteHover:SetShown(not self.editing and note ~= "")
@@ -728,8 +844,15 @@ function Pane:Layout(width, height, narrow)
     self.content:SetWidth(cw)
     if not self.run then return end
     local y = self:layoutHeader(0, cw)
-    y = self:layoutSpells(y, cw)
+    y = self:layoutSpellsTitle(y)
+    y = NS.ResultsCompare.LayoutBar(self, y, cw)
+    local comparing = self:Comparing()
+    self.w.list.parent:SetShown(not comparing)
+    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
+    if not comparing then y = self:layoutSpells(y, cw) end
+    y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
+    y = NS.ResultsLoadout.Layout(self, y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y
     self.content:SetHeight(math.max(1, self.contentH))

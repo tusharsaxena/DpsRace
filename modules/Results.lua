@@ -29,11 +29,12 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 780 px) and its two-row filter
--- bar; expanded adds the 360 px detail and lays the filter bar in one row (about 1170 px).
+-- Each view's minimum: collapsed holds the Runs list's columns (about 870 px with the Note column:
+-- 728 px of fixed columns, the Character column's 60 and the gaps, pads and scrollbar) and its
+-- two-row filter bar; expanded adds the 360 px detail and lays the filter bar in one row.
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1180 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 800 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1240 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 880 },
 }
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
@@ -269,6 +270,7 @@ local function ensureWindow()
         delete = function(r) Results.ConfirmDelete(r.id) end,
         saveNote = function(r, text) return Results.SetNote(r.id, text) end,
         canShare = canShare,
+        clearPick = function() Results.ClearPick() end,
     })
     NS.ApplySkin(f)
     f:SetScript("OnHide", function() onHide() end)
@@ -503,8 +505,31 @@ function Results.EditNote(id)
     return true
 end
 
+--- Compare the run in the detail with run `id` (the row menu's *Compare With This Run*): a session-only
+--- pick, never stored, that holds until it is cleared or the run is deleted. The detail opens on the
+--- run it was showing with the compare on.
+--- @return boolean picked
+function Results.CompareWith(id)
+    if not (run(id) and NS.ResultsCompare.Usable(run(id))) then return false end
+    ensureWindow()
+    ui.detail:SetPick(id)
+    if selected then Results.ShowRun(selected) end
+    return true
+end
+
+--- Clear the pick: the detail compares with the best on its run's board again.
+function Results.ClearPick()
+    if ui then ui.detail:SetPick(nil) end
+end
+
+--- The picked run's id, or nil.
+function Results.Pick()
+    return ui and ui.detail.pickID or nil
+end
+
 --- A row's right-click menu (LootHistory's): Add Note (Edit Note once it has one), Share with the
---- channels as a submenu, and Delete behind its confirmation.
+--- channels as a submenu, Compare With This Run (for the run in the detail; grayed on that run itself
+--- and on a lost one), and Delete behind its confirmation.
 --- @param r table  the run
 --- @param owner table  the row
 --- @return boolean opened
@@ -516,6 +541,8 @@ function Results.RowMenu(r, owner)
         root:CreateButton(hasNote and L["Edit Note"] or L["Add Note"], function() Results.EditNote(r.id) end)
         local shareMenu = root:CreateButton(L["Share"])
         if canShare() and NS.Share.Line(r) then NS.Share.FillMenu(shareMenu, r) else shareMenu:SetEnabled(false) end
+        local cmp = root:CreateButton(L["Compare With This Run"], function() Results.CompareWith(r.id) end)
+        if r.id == selected or not NS.ResultsCompare.Usable(r) then cmp:SetEnabled(false) end
         root:CreateButton("|cffff5555" .. L["Delete"] .. "|r", function() Results.ConfirmDelete(r.id) end)
     end)
     return true

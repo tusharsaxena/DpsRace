@@ -67,7 +67,8 @@ alias reaches both). There is no `diag` or `dump`; those are ordinary unknown wo
   active profile, stored `enabled`, stood-down state and the latch's holds.
 - **settings**: every setting that differs from its default as `path = value (default)`, plus
   `enabled` always.
-- **state**: the stored run count and whether the HUD, the Results window and test mode are showing.
+- **state**: the stored run count, the loadout store's gear sets and talent loadouts with the races
+  holding a damage chart this session (`loadouts gear=<n> talents=<n> chart races=<n>`), and whether the HUD, the Results window and test mode are showing.
 - **rejected**: event names the client refused at registration (`NS.rejectedEvents`).
 - The end marker, `[Diag] ==== Ka0s DPS Race diagnostics end: N line(s) ====`.
 

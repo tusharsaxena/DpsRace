@@ -51,6 +51,8 @@ local STORED = {
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
+    ["live.chart"]           = { "bool",   true },
+    ["live.paceBar"]         = { "bool",   true },
     ["race.defaultLength"]   = { "number", 180 },
     ["race.countdownCue"]    = { "bool",   true },
     ["race.centerCountdown"] = { "bool",   true },
@@ -60,6 +62,7 @@ local STORED = {
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    ["share.talentsLink"]    = { "bool",   false },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -90,6 +93,18 @@ local STORED = {
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
+    ["appearance.chart.barTexture"] = { "string", "Solid" },
+    ["appearance.chart.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
+    ["appearance.chart.barColor"] = { "color", "table" },
+    ["appearance.chart.useClassColorBar"] = { "bool", false },
+    ["appearance.chart.height"] = { "number", 80, 40, 160, 2 },
+    ["appearance.chart.columnGap"] = { "number", 0, 0, 3, 1 },
+    ["appearance.chart.bgColor"] = { "color", "table" },
+    ["appearance.chart.useClassColorBg"] = { "bool", false },
+    ["appearance.pace.barTexture"] = { "string", "Solid" },
+    ["appearance.pace.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
+    ["appearance.pace.barColor"] = { "color", "table" },
+    ["appearance.pace.useClassColorBar"] = { "bool", false },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
     ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
@@ -127,6 +142,35 @@ test("settings: the stored paths, types, defaults and ranges are exactly the pin
     local pinned = 0
     for _ in pairs(STORED) do pinned = pinned + 1 end
     assertEqual(seen, pinned, "a stored path went, or one is declared twice")
+end)
+
+test("settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar", function()
+    local NS = T.NS
+    local subs, last = {}, nil
+    for _, r in ipairs(NS.SchemaForPage("hud")) do
+        if r.group == "HUD Appearance" and r.subgroup ~= last then
+            subs[#subs + 1] = r.subgroup
+            last = r.subgroup
+        end
+    end
+    local tail = table.concat(subs, ",", #subs - 2)
+    assertEqual(tail, "Damage chart,Chart background,Pace bar", "the chart's blocks, last on the tab")
+    local order = {}
+    for _, r in ipairs(NS.SchemaForPage("hud")) do
+        if r.subgroup == "Damage chart" or r.subgroup == "Chart background" or r.subgroup == "Pace bar" then
+            order[#order + 1] = r.path
+        end
+    end
+    assertEqual(table.concat(order, ","), table.concat({
+        "appearance.chart.barTexture", "appearance.chart.barAlpha", "appearance.chart.barColor",
+        "appearance.chart.useClassColorBar", "appearance.chart.height", "appearance.chart.columnGap",
+        "appearance.chart.bgColor", "appearance.chart.useClassColorBg",
+        "appearance.pace.barTexture", "appearance.pace.barAlpha", "appearance.pace.barColor",
+        "appearance.pace.useClassColorBar" }, ","))
+    assertEqual(row(NS, "appearance.chart.bgColor").label, "Background color")
+    assertTrue(row(NS, "appearance.chart.bgColor").hasAlpha ~= false, "the background swatch carries its alpha")
+    assertEqual(row(NS, "appearance.chart.bgColor").default.a, 0.35, "the plot's old backdrop")
+    assertEqual(row(NS, "appearance.chart.columnGap").label, "Column gap")
 end)
 
 test("settings: every row sits on a page the panel draws, and every page has a group", function()
@@ -315,7 +359,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps M
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 6 + 4 * 6 + 4 + 1, "the Race HUD tab's six rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 8 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's eight rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -338,6 +382,8 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
         "live.icons|Live breakdown|Show spell icons|false",
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",
+        "live.chart|Chart and pace|Show damage chart|false",
+        "live.paceBar|Chart and pace|Show pace bar|false",
     }, "\n"))
 end)
 
@@ -377,7 +423,7 @@ end)
 test("settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance", function()
     local tip = T.mocks.__subcategories["HUD"].defaultsTooltip
     assertEqual(tip, "Restore every HUD setting on this profile to its addon default: the Race HUD tab "
-        .. "(display and live breakdown) and HUD Appearance.")
+        .. "(display, live breakdown, chart and pace) and HUD Appearance.")
 end)
 
 -- ── History: stored count, Purge history… ────────────────────────────────────────────────────────

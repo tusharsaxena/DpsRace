@@ -20,6 +20,9 @@ local _, NS = ...
 local Style = {}
 NS.Style = Style
 
+-- The line a FONT.SECTION heading takes in the run detail, its gap under it included.
+Style.SECTION_H = 18
+
 -- The font object each role draws in (Blizzard's; the client defines every one of them).
 Style.FONT = {
     TITLE   = "GameFontNormal",          -- a window's title, centered in its title bar (gold)
@@ -27,6 +30,9 @@ Style.FONT = {
     HEADER  = "GameFontNormalSmall",     -- a column header or a section label (gold)
     TEXT    = "GameFontHighlightSmall",  -- rows, cells, buttons, checkboxes, card text (white)
     HEADING = "GameFontHighlight",       -- a name that heads a card or a pane (white, 12px)
+    -- The Results detail's own headings (the owner's call, 2026-10-25: its sections read too alike).
+    SECTION = "GameFontNormal",          -- a section heading in the run detail (gold, 12px; HEADER is 10px)
+    NAME    = "GameFontHighlightLarge",  -- the character name heading the run detail (white, 16px)
     CAPTION = "GameFontDisableSmall",    -- footers, KPI captions, hints, axis labels (gray)
     FIGURE  = "GameFontNormalHuge",      -- a KPI figure (recolored by its caller)
     EMPTY   = "GameFontDisableLarge",    -- an empty list's message

@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 1, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 2, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -251,7 +251,7 @@ Total.
 - hud: the sticky-combat hint asks for the player's spells once per race
 - hud: the live rows stop above the caption and CANCEL at every window height
 - hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
-- hud: the default window size shows every default live row
+- hud: the default window size shows every default live row under the chart and the pace bar
 - hud: the result card's rows stop above its buttons at every window height
 - hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
 - hud: the minimum height holds the idle body's whole stack
@@ -292,6 +292,33 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
+### test_chart.lua (24)
+
+- chart: the bucket count is the length in whole seconds, at most 60
+- chart: a capture copies the handle into each bucket it is the first read at or after
+- chart: a shared session's buckets stay empty, and the store never inspects a value
+- chart: Drawable answers only a scored run with slices this session
+- chart: the pace is the best's damage spread evenly over its length
+- chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last
+- chart: the columns take the Column gap setting; the plot's background its Chart background swatch
+- chart: the pace bar has its own look; styling the chart's columns leaves it alone
+- chart: each column holds exactly the handle read at its boundary, and none fills early
+- chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar
+- chart: with a best the scale is its damage x 1.15 (A), with its pace diagonal and the pace bar
+- chart: the tick reuses the live views and rebuilds the chart's only when what decides it changes
+- chart: hidden, with the pace bar, while the run is on a shared session
+- chart: Show damage chart and Show pace bar turn each off
+- chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last
+- chart: the chart steps aside at the minimum height; the rows keep their three
+- chart: the overlay sits one band over the plot's columns
+- chart: the result card draws the race's slices to its plain final damage, and none without them
+- chart: the Results detail shows the chart for a run raced this session only
+- chart: the detail's title hover goes with its chart, so it never covers the section under it
+- chart: a lost run has no chart on the card or in the detail
+- chart: test mode draws the sample's chart against a sample best, then on its result card
+- chart: test mode honors Show damage chart and Show pace bar
+- chart: the diagnostics state section counts the loadout store and the races holding a chart
+
 ### test_countdown.lua (20)
 
 - countdown: 10..1 show one per second in the last 10s, then go at the buzzer
@@ -324,9 +351,13 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (37)
+### test_results.lua (46)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
+- results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
+- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
+- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
@@ -348,6 +379,11 @@ Total.
 - results: detail flags name late-cast spells and the session matched by list
 - results: delete asks confirmation then fires RUNS_CHANGED
 - results: note limited to 200 chars
+- results: opening the note scrolls its box into view
+- results: every detail element has a tooltip; spells show the client's spell tooltip beside the window
+- results: the timing strip's marks draw above its two segments
+- results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines
+- results: the live HUD's spell rows take no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: bests tab groups by spec x category x length with clean-only toggle
@@ -363,6 +399,50 @@ Total.
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
+
+### test_compare.lua (12)
+
+- compare: CompareSpells matches by id, with each side's damage, share and the difference
+- compare: a spell on one side only has nil damage and share on the other
+- compare: rows sort by the run's damage, then the other's, then the id
+- compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
+- compare: the figures and their % difference; none against a zero or missing figure
+- compare: the default is the best on the run's board; for the best itself, the runner-up
+- compare: a picked run wins while it is stored and not the run itself
+- compare: the toggle sets the run beside the best: the score table and the compared breakdown
+- compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
+- compare: the row menu's pick, the different-board note and Clear Pick
+- compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
+- compare: the collapsed view draws the compare in the list's place; no number is read off a frame
+
+### test_loadout.lua (26)
+
+- loadout: SnapshotLoadout reads every equipped link but the shirt and the tabard
+- loadout: SnapshotLoadout reads the talents: the saved loadout's name, the hero tree, the string
+- loadout: with no saved loadout the active config's name is used
+- loadout: a client without the APIs, or one that raises, yields absent fields, never an error
+- loadout: a secret value never reaches the snapshot
+- loadout: the hash is djb2 as eight hex digits, and pure
+- loadout: Store keeps each distinct set once; the run holds only the keys
+- loadout: two different sets with one hash are told apart; the same set finds its own key
+- loadout: Of resolves a run's keys; a run without one has neither
+- loadout: Delete, DeleteAll and Prune drop the loadouts no run refers to
+- loadout: a run of a later format keeps the sets it refers to
+- loadout: the format 2 migration leaves old runs as they were, without a loadout
+- loadout: a race keeps the combat-end loadout, not the arm-time one
+- loadout: a run with no combat-end snapshot falls back to the arm-time one
+- loadout: a second combat end in the read's wait replaces the loadout and drops the first
+- loadout: a run resumed after a /reload whose combat ended unheard still takes a loadout
+- loadout: the detail draws the gear grid in the character frame's order, and the talents line
+- loadout: an item's hover is the client's own tooltip; a modified click goes to the client
+- loadout: a run stored before #6 says Not recorded, with nothing to view or copy
+- loadout: View is grayed with a reason once the client's serialization version moved; Copy still works
+- loadout: under the compare the changed slots are highlighted and a different loadout is marked
+- loadout: the pure parts: changed slots, the link data, the talents text
+- loadout: the copy window opens on the import string
+- loadout: the Spec cell's tooltip names the loadout and notes gear changed since the previous run
+- loadout: the share line takes the talents link only with Include talents link on
+- loadout: Include talents link sits under Sharing on the History tab, before Storage
 
 ### test_schema.lua (15)
 
@@ -382,10 +462,11 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (28)
+### test_settings.lua (29)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
+- settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar
 - settings: every row sits on a page the panel draws, and every page has a group
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
@@ -634,11 +715,14 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
+| test_chart.lua | 24 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 37 |
+| test_results.lua | 46 |
+| test_compare.lua | 12 |
+| test_loadout.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 28 |
+| test_settings.lua | 29 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -655,4 +739,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **513** |
+| **Total** | **585** |

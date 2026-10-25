@@ -16,6 +16,8 @@ local MIDDOT = " \194\183 "
 local TIMES = "\195\151"           -- the multiplication sign: "Cleave x5"
 local EMDASH = " \226\128\148 "
 local WHISPER_POPUP = "DPSRACE_SHARE_WHISPER"
+-- The client sends at most this many bytes in one chat message.
+Share.MAX_CHAT = 255
 
 -- The channels the menu offers, in its order, and when each is open to the player.
 Share.CHANNELS = {
@@ -72,6 +74,43 @@ function Share.Line(run)
     return clean(table.concat(parts, MIDDOT) .. " " .. L["(Ka0s DPS Race)"])
 end
 
+--- The run's talentbuild link (#6), for the share: [<spec>: <loadout>], or nil when the run has no
+--- talent string. Its escapes are the link's own; the text inside is stripped of any.
+--- @param run table
+--- @return string|nil
+function Share.TalentsLink(run)
+    local _, talents = NS.Loadouts.Of(run)
+    if not talents then return nil end
+    local char = type(run.char) == "table" and run.char or {}
+    local name = talents.name or L["Talents"]
+    local text = char.spec and ("%s: %s"):format(char.spec, name) or name
+    return NS.ResultsLoadout.Hyperlink(talents, char.level, text)
+end
+
+local function includeTalents()
+    local p = NS.db and NS.db.profile
+    return p and p.share and p.share.talentsLink == true
+end
+
+--- What a share sends, in order: the line, with the talents link after it when *Include talents
+--- link* is on and the run has one (in the same message when both fit in one, else a second; a link
+--- too long for a message of its own is left out).
+--- @param run table
+--- @return table|nil messages  nil for a run with no line
+function Share.Messages(run)
+    local line = Share.Line(run)
+    if not line then return nil end
+    local link = includeTalents() and Share.TalentsLink(run) or nil
+    if not link then return { line } end
+    -- A link past a chat message's length would be cut mid-escape: share the line alone.
+    if #link > Share.MAX_CHAT then
+        if NS.Debug then NS.Debug("Share", "talents link of %d bytes dropped", #link) end
+        return { line }
+    end
+    if #line + 1 + #link <= Share.MAX_CHAT then return { line .. " " .. link } end
+    return { line, link }
+end
+
 -- ── sending ─────────────────────────────────────────────────────────────────────────────────────
 
 local function fighting()
@@ -102,14 +141,19 @@ end
 --- @param target string|nil  the whisper's recipient
 --- @return boolean sent
 function Share.Send(run, channel, target)
-    local line = Share.Line(run)
-    if not line then return false end
+    local messages = Share.Messages(run)
+    if not messages then return false end
     if fighting() then return refuseInCombat() end
     local send = sender()
     if type(send) ~= "function" then return false end
-    local ok, err = pcall(send, line, channel, nil, target)
-    if not ok then NS.Debug("Share", "send to %s failed: %s", channel, err) end
-    return ok
+    for _, text in ipairs(messages) do
+        local ok, err = pcall(send, text, channel, nil, target)
+        if not ok then
+            NS.Debug("Share", "send to %s failed: %s", channel, err)
+            return false
+        end
+    end
+    return true
 end
 
 -- The whisper's recipient: a name typed into the popup, the player target's name offered first.

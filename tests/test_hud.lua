@@ -463,6 +463,8 @@ test("hud: the live rows stop above the caption and CANCEL at every window heigh
         local h = math.max(height, f.Hud.MIN_HEIGHT)
         f.NS.db.profile.windows.hud.height = h
         f.NS.db.profile.live.rows = 15
+        -- The rows alone: the chart's own share of the stack has its own case (Damage chart, below).
+        f.NS.db.profile.live.chart = false
         f.Hud.Show()
         running(f, 30)
         f.meter.SetSession(25, session(15))
@@ -503,17 +505,25 @@ test("hud: live rows 0 shows every spell that fits and the wheel scrolls through
     assertEqual(b.w.count.__text, "3 rows")
 end)
 
-test("hud: the default window size shows every default live row", function()
+test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 460, "the default matches mockup screen 04")
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 520, "screen 04's rows plus the chart and pace bar (#2, #3)")
     assertEqual(f.NS.db.profile.live.rows, 8)
+    -- A best on the board, so the pace bar shows too: the tallest default stack.
+    local best = f.NS.Recorder.NewRun(30)
+    best.status, best.result = "complete", { damage = 9000000, dps = 300000 }
+    best.date = 1
+    f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 460)
+    assertEqual(f.Hud.Diagnose().height, 520)
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
     pump(f, 0.5)
-    assertEqual(body(f).w.list:Count(), 8, "all 8 rows fit at 300x460")
+    local b = body(f)
+    assertTrue(b.w.chart.shown, "the chart is up")
+    assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x520")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
@@ -535,6 +545,7 @@ test("hud: the result card follows Spell rows shown; at 0 it lists every spell a
     local f = hud()
     f.NS.db.profile.windows.hud.height = 700
     f.NS.db.profile.live.rows = 3
+    f.NS.db.profile.live.chart = false   -- the rows alone; the card's chart has its own case
     local run = resolved(f)
     run.spells = {}
     for i = 1, 40 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
@@ -1210,7 +1221,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     -- The stack moved down for the taller clock: the KPIs at 26 + 32, the rows under them.
     local p = w.damage.frame.__points[1]
     assertEqual(p[5], -58)
-    assertEqual(body(f).rowsTop, 58 + 46 + 8)
+    assertEqual(body(f).kpiBottom, 58 + 46 + 8)
+    -- The chart sits between the KPIs and the rows, at its configured height (no best: no pace bar).
+    assertEqual(body(f).rowsTop, 58 + 46 + 8 + f.NS.HudChart.BlockHeight(80) + 8)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
 end)
 

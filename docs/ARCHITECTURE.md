@@ -26,15 +26,21 @@ setup file per module, each a descriptor plus a degradation stub (anti-pattern #
 - **The engine** decides. `modules/Meter.lua` reads `C_DamageMeter`; `modules/Timeline.lua` and
   `modules/Scoring.lua` are pure timing and scoring; `modules/Race.lua` is the state machine
   (idle, armed, running, stopping, result) driven by `modules/Watchers.lua`'s events and
-  `GetTime()`; `modules/Recorder.lua` snapshots and stores runs; `modules/Bests.lua` works out
-  personal bests and protects them from pruning.
-- **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`), the
-  Results window (`modules/Results*.lua`), the chat share (`modules/Share.lua`) and test mode
+  `GetTime()`; `modules/Recorder.lua` snapshots and stores runs, with the gear and talents raced
+  (`modules/Loadouts.lua` keeps each distinct set once); `modules/Slices.lua` holds the damage
+  chart's buckets for this session only; `modules/Bests.lua` works out personal bests and protects
+  them from pruning.
+- **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`, with
+  the live damage chart and pace bar in `modules/Hud_Chart.lua`), the Results window
+  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout), the chat share (`modules/Share.lua`) and test mode
   (`modules/Preview.lua`). None of them decides anything from a meter value.
 - **The shell** configures and reaches. The settings pages, the slash verbs, the launcher and three
   key bindings, the stand-down latch, the perf harness and the diagnostics report.
 
 The design and every rule's reason are in the spec; [scope.md](scope.md) says what is in and out.
+The 2026-10-25 pass ([`superpowers/plans/2026-10-25-chart-compare-loadout.md`](superpowers/plans/2026-10-25-chart-compare-loadout.md))
+added the live damage chart and pace bar (#2, #3), the run detail's compare (#7), and the gear and
+talents stored with each run (#6, run-record format 2).
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -57,7 +63,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Timeline`, `Scoring`, `Bests`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -167,7 +173,9 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 `modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
 countdown text is one `OnUpdate` on the window, attached only while the race is RUNNING (20 Hz) or
-STOPPING (4 Hz: no clock, and combat may hold for minutes), and that is all.
+STOPPING (4 Hz: no clock, and combat may hold for minutes), and one `C_Timer` at the damage chart's
+next bucket boundary while the window is shown and the race RUNNING (at most 60 a race, so a quiet
+stretch still fills its bucket; one more read at the buzzer fills the last), and that is all.
 `Hud.Suspend()` drops all of it at the stand-down.
 
 `modules/Countdown.lua` registers no game event: the race's final seconds are one `C_Timer` per
@@ -198,8 +206,9 @@ Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 `core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
 Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
-mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with one level band, `LEVEL.DETAIL`, that
-lifts the Results detail pane over the Runs pane it sits inside. The StaticPopups, the debug console,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
+which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
+which lifts the damage chart's pace diagonal over its columns. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
 each frame's strata, level and toplevel.
 
@@ -222,7 +231,12 @@ each frame's strata, level and toplevel.
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
   (`modules/Format.lua`, the one instance) and `C_Spell`'s name and icon lookups; the one question it
-  asks of one is `== nil`. The HUD window is a plain non-secure frame, so it opens and redraws in
+  asks of one is `== nil`. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
+  the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
+  total go to `SetValue`, and a scale with no best is the live total itself through
+  `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
+  best and `GetTime()`, and the columns' edges are plain config math (whole pixels from the plot's
+  width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
@@ -232,6 +246,19 @@ each frame's strata, level and toplevel.
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
   textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
   broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
+- The detail's *View* (#6) opens no Blizzard frame from addon code. It prints the stored
+  `talentbuild` link into the player's own chat window (`NS.Print`), and the player's click on the
+  link goes through Blizzard's own chat hyperlink handling. Until 2026-10-25 it called `SetItemRef`
+  itself, which showed the talent frame (`PlayerSpellsFrame`) from this addon's execution: its
+  `OnShow` writes the action bars' show-grid state, so that state was written tainted, and a later
+  in-combat slot change (a proc or an override) failed in `Blizzard_ActionBar`'s
+  `UpdateShownButtons` with `[ADDON_ACTION_BLOCKED] AddOn 'DpsRace' tried to call the protected
+  function 'MultiBarRightButton1:SetShown()'`, as the owner saw in game. `test_loadout` fails if
+  *View* reaches `SetItemRef`; smoke row SM-DR-LO4 repeats the in-combat check. The other two paths
+  that reach a Blizzard frame stay: *Dressing Room* calls `DressUpItemLink` (it opens
+  `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
+  client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item
+  tooltips are `GameTooltip:SetHyperlink` on a stored link.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -258,6 +285,14 @@ each frame's strata, level and toplevel.
   `race.lastDamage`, the last update heard before the reload; a restart already heard is already on
   the run. A running run resumed out of combat before its buzzer takes the resume time as its end,
   an upper bound, because the real combat edge was missed.
+- **A run's loadout is what was worn when combat ended** (#6). Gear and talents cannot change in
+  combat, but a weapon can be swapped in it; the record holds the weapon at the combat end. The
+  loadout's name is the player's last saved loadout for the spec, else the active config's (which
+  may be generic); that the first is the one the player sees is a smoke row (SM-DR-LO4).
+- **A stored talent string opens only on a client with its serialization version.** After a patch
+  that changes it, *View* (which posts the string's link to chat) is grayed with a tooltip saying so; *Copy* still hands out the string, and
+  the gear grid is unaffected. Talents are compared only as a *Different loadout* marker, never
+  node by node (the owner's call, 2026-10-25).
 - **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper
   sets it per run in the meantime.
 - **A pull that carries on the last fight's session is netted, not separated.** When the meter
@@ -268,6 +303,21 @@ each frame's strata, level and toplevel.
   flag says.
 - **The HUD's minimum height is set at the default look.** A taller *Row height*, or larger clock or
   figure fonts, leave fewer spell rows at the minimum height; the window can be made taller.
+- **The damage chart is this session's only** (#2). Its buckets hold the live totals read in
+  combat, which stay secret, and the client writes a secret to SavedVariables as `nil` (the reload
+  probe, 2026-10-25). So a run raced before the last `/reload` or login shows no chart on the
+  result card or in the Results detail, and a race run with the HUD closed captured none. A bucket
+  is filled by the HUD's first read at or after its boundary; one noticed more than a second late
+  stays empty.
+- **The chart and the pace bar compare by eye only** (#3). A secret cannot be compared, so neither
+  says ahead or behind, and the pace is the best's *average* (its damage spread evenly over its
+  length): the best has no stored curve, so an opener-heavy best looks easy early on.
+- **The compare's picked run lasts the session** (#7). *Compare With This Run* is view state, never
+  stored: a `/reload` or login returns every run's compare to its board's best (the runner-up for
+  the best itself). A run alone on its board has nothing to compare with until one is picked.
+- **The share's talents link may need a second message** (#6). With *Include talents link* on, the
+  link follows the score line as its own message when both do not fit in 255 bytes; a link longer
+  than 255 bytes on its own is dropped rather than cut.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 
@@ -330,5 +380,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest file is
-`modules/Hud.lua` at 916 lines (layout-§1).
+Nothing is over the cap today, and nothing is in the 1000–1500 on-notice band. The largest files
+are `modules/Hud.lua` at 970 lines and `modules/Hud_States.lua` at 965 (layout-§1); the 2026-10-25
+pass put its new parts in their own modules (`Hud_Chart`, `Results_Compare`, `Results_Loadout`,
+`Slices`, `Loadouts`) rather than grow these two.

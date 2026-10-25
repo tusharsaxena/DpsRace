@@ -50,7 +50,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Arm** (`Race.Arm(length, count)`, out of combat only): refused with `busy` (armed or running),
   `pending` (a run is stopping, or a stored run is unresolved), `bad_length`, `in_combat`,
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
-  the player, target and place, the session IDs the client holds are remembered (they belong to
+  the player, target and place, `Recorder.SnapshotLoadout` reads the gear links and the talent
+  loadout into memory as the fallback (#6), the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
   combat and death events. The newest of those IDs is kept on the run as `race.armMaxSession`, so
   a run resumed after a `/reload` (which loses the set) still never adopts an earlier fight's session.
@@ -87,14 +88,19 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   never swallows a later instant. An auto-repeat success (Auto Shot, Shoot; with a sealed ID, any
   success while one is repeating) is never a press. A 0.5 s `C_Timer.NewTicker` polls for
   readiness, only in this state; a poll that finds the player out of combat with no regen edge heard
-  starts the quiet itself, so a missed edge never leaves a run waiting.
+  starts the quiet itself, so a missed edge never leaves a run waiting. The race's combat end (the
+  regen edge, out of combat) also re-reads the loadout and stores it on the run through
+  `Loadouts.Attach` (deduped in `global.loadouts`, the run holding only the keys): exactly what raced,
+  bar a weapon swapped in combat. A later combat end in the wait replaces it.
 - **Ready to read**: combat has ended **and** 2.5 s have passed since the later of the combat end and
   the last DamageDone update for the session (updates land up to 1.3 s after combat drops). The
   session is read by its ID through `Meter.ReadSession`, never as "current", into plain numbers. A
   run with no captured ID falls back to the newest session created after the arm and is flagged
   `sessionFromList` (spec §9). A `sharedSession` run is netted against its `race.baseline` here. A
   `sealed` read is retried for 10 s; a missing session, a raise or a
-  meter reset makes the run `lost` (kept, with no result).
+  meter reset makes the run `lost` (kept, with no result). A run resolved with no combat-end
+  loadout takes the arm-time one; a run resumed after a /reload or a stand-down has neither, and
+  takes a fresh snapshot when it resolves out of combat.
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
   the run the moment its update arrives, so a `/reload` after it keeps it); the run is saved
@@ -122,11 +128,22 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
   `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
   with the best on its board before it.
+- **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
+  `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
+  holds the best; a run picked from a Runs row's menu wins while it is stored. Both runs are stored
+  records, so `CompareSpells` divides and sorts plain numbers; nothing is stored.
+- **The detail's loadout** (#6): `Loadouts.Of(run)` resolves the run's keys into its stored gear set
+  and talent loadout; `ResultsLoadout.Fill` draws the grid from the links (the item data from
+  `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
+  the other run's the same way and highlights the slots whose link differs, and marks a different
+  import string. *View* prints the `talentbuild` link to the player's own chat window (`NS.Print`), where a click opens the talent tree through Blizzard's chat link handling; it opens no Blizzard frame itself (ARCHITECTURE.md, Taint Notes). Nothing is stored.
 - **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
   `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
   just stored and never the race's current run (the one on the result card), and fires `RUNS_CHANGED`
-  once. While stood down the bus receiver is dropped, so nothing prunes.
+  once. While stood down the bus receiver is dropped, so nothing prunes. A prune that removed any run,
+  `Recorder.Delete` and `Recorder.DeleteAll` then drop every loadout no stored run refers to
+  (`Loadouts.Sweep`).
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).
@@ -161,11 +178,26 @@ race.
   slice is redrawn from the offset, nothing is measured, and the count is the length of the addon's
   own copy of the list). The rows, the clocks and the figures take their look from HUD > HUD
   Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
+- **The damage chart and the pace bar** (#2, #3; `modules/Slices.lua`, `modules/Hud_Chart.lua`):
+  every fresh `Meter.ReadLive()` while RUNNING also goes to `Slices.Capture(run, elapsed, total)`,
+  with `elapsed` from `GetTime()`. The race has min(60, length) buckets; the first read at or after a
+  bucket's boundary copies its `total` handle into it (one noticed more than a second late, or on a
+  shared session, leaves it empty). A `C_Timer` at the next boundary forces a read in a quiet
+  stretch, and the RUNNING → STOPPING edge at the buzzer makes one last read for the bucket ending
+  there. The running body's view (`HudChart.LiveViews`) carries the buckets and the scale: the
+  board's best (`Bests.Board()[Bests.Key(run)]`) x 1.15 with its level and pace diagonal, or with no
+  best the live total itself; and the pace bar's range, `2 x best.damage x elapsed / best.length`.
+  On each live read the columns get `SetMinMaxValues(scale)` / `SetValue(bucket)` and the pace bar
+  `SetValue(total)`; on each 20 Hz redraw the pace bar's plain range follows the clock. Both hide on
+  `flags.sharedSession`; the pace bar with no best; the chart when it would leave fewer than three
+  spell rows. Nothing is computed from a value.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
   (`Race.Arm` with the run's length and count), *Details* (`NS.Results.ShowRun`) and *Share*
-  (`NS.Share.Prompt`).
+  (`NS.Share.Prompt`). Between the chips and the spells, with *Show damage chart* on, the race's
+  chart again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with
+  buckets this session), each column scaled to the plain `result.damage`.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
   down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
   leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
@@ -196,11 +228,14 @@ timer or `OnUpdate`.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% to 100% within each target type (each type's smallest and largest of the runs passed, `barKey`), sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, Delete behind its confirmation).
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
-  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
+  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
+  the breakdown, for a run raced since the last `/reload` or login, the damage chart
+  (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`); a run without buckets
+  has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
   time is `Format.RunTime`: the length and the DoT tail (*2:00 +11.1s*), or the time in combat
   against the length (*1:04 / 2:00*).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
@@ -241,7 +276,9 @@ timer or `OnUpdate`.
   made-up 147.6K DPS) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result, drawn by
   `NS.Hud.Render(state, run, figures)`: the HUD's own bodies, so the layout is the real one. One
   `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
-  holds until test mode ends. The engine never moves and nothing is stored.
+  holds until test mode ends. The running body and the result card draw a sample damage chart (plain
+  numbers, one bucket a second), and the running body a pace bar, against a sample best a little
+  under the sample's damage. The engine never moves and nothing is stored.
 - **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
   Widgets library the title reads *DPS Race · Test* instead, never both.

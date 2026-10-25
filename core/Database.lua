@@ -3,12 +3,19 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 1
+NS.SCHEMA_VERSION = 2
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
 -- `perProfile = true` and runs once for every stored profile.
 local STEPS = {
     { to = 1, run = function() end },   -- 0 -> 1: pre-versioning, a no-op
+    -- 1 -> 2: the run record's format 2 (#6) adds run.loadout, which a format-1 run is simply
+    -- without, so no stored run is rewritten (each keeps its own `schema = 1`). Only the format stamp
+    -- moves: a stored 1 would outlive the new default, since AceDB never overwrites a stored value.
+    { to = 2, run = function(sv)
+        local g = type(sv) == "table" and sv.global
+        if type(g) == "table" and type(g.schema) == "number" and g.schema < 2 then g.schema = 2 end
+    end },
 }
 NS.__migrationSteps = STEPS   -- test seam only
 

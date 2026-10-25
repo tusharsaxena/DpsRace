@@ -236,7 +236,6 @@ L["Select a run to see its detail."] = "Select a run to see its detail."
 L["DPS \194\183 Incomplete"] = "DPS \194\183 Incomplete"
 L["Flag \194\183 %s"] = "Flag \194\183 %s"
 L["Flags \194\183 %d"] = "Flags \194\183 %d"
-L["Note: %s"] = "Note: %s"
 L["Edit Note"] = "Edit Note"
 L["Combat ended at %s, before the buzzer."] = "Combat ended at %s, before the buzzer."
 L["Damage stopped %ss after the buzzer"] = "Damage stopped %ss after the buzzer"
@@ -365,8 +364,8 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
 L["Restore every Race setting on this profile to its addon default."] =
     "Restore every Race setting on this profile to its addon default."
-L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."] =
-    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display and live breakdown) and HUD Appearance."
+L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
+    "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 
 -- HUD page: the Race HUD tab's Live breakdown subsection (settings/Hud.lua)
 L["Live breakdown"] = "Live breakdown"
@@ -392,6 +391,25 @@ L["Draw each spell's icon on the HUD's rows."] = "Draw each spell's icon on the 
 L["Show live DPS"] = "Show live DPS"
 L["Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."] =
     "Show Blizzard's live DPS figure beside the damage while the race runs. Your score is damage divided by the race length."
+
+-- HUD page: the Race HUD tab's Chart and pace subsection and HUD Appearance's Damage chart (#2, #3)
+L["Chart and pace"] = "Chart and pace"
+L["Show damage chart"] = "Show damage chart"
+L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."] =
+    "Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."
+L["Show pace bar"] = "Show pace bar"
+L["Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
+    "Draw a bar under the live figures against the best on this board: its center tick is the best's average pace at this moment of the race. Hidden with no best yet, and when the pull carried an earlier fight's session."
+L["Damage chart"] = "Damage chart"
+L["Chart height"] = "Chart height"
+L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."] =
+    "The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."
+L["Column gap"] = "Column gap"
+L["The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."] =
+    "The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."
+L["Chart background"] = "Chart background"
+L["Background color"] = "Background color"
+L["Pace bar"] = "Pace bar"
 
 -- History page (settings/History.lua)
 L["History"] = "History"
@@ -541,3 +559,110 @@ L["When combat ended."] = "When combat ended."
 L["Restart"] = "Restart"
 L["Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."] =
     "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag."
+
+-- The run detail's compare (modules/Results_Compare.lua, its tooltips in modules/Results_Tips.lua, the
+-- row menu's pick in modules/Results.lua)
+L["Compare With This Run"] = "Compare With This Run"
+L["Compare vs best"] = "Compare vs best"
+L["Compare vs runner-up"] = "Compare vs runner-up"
+L["Compare vs %s"] = "Compare vs %s"
+L["Clear Pick"] = "Clear Pick"
+L["Different board: the spec, target type or race length differ."] =
+    "Different board: the spec, target type or race length differ."
+L["This run"] = "This run"
+L["Best"] = "Best"
+L["Runner-up"] = "Runner-up"
+L["Picked"] = "Picked"
+L["Difference"] = "Difference"
+L["Spell"] = "Spell"
+L["Compare"] = "Compare"
+L["Sets this run beside %s: damage, DPS and every spell."] =
+    "Sets this run beside %s: damage, DPS and every spell."
+L["This run has no score to compare (it was lost)."] = "This run has no score to compare (it was lost)."
+L["No other complete run on this run's board (same spec, target type and race length) to compare with."] =
+    "No other complete run on this run's board (same spec, target type and race length) to compare with."
+L["Pick another run from a row's right-click menu: Compare With This Run."] =
+    "Pick another run from a row's right-click menu: Compare With This Run."
+L["Compare with the best on this run's board again."] = "Compare with the best on this run's board again."
+L["Different board"] = "Different board"
+L["The picked run differs in spec, target type or race length, so the figures are not like for like."] =
+    "The picked run differs in spec, target type or race length, so the figures are not like for like."
+L["This run: %s"] = "This run: %s"
+L["Picked: %s"] = "Picked: %s"
+L["This run against %s"] = "This run against %s"
+L["Damage: %s against %s (%s)"] = "Damage: %s against %s (%s)"
+L["DPS: %s against %s (%s)"] = "DPS: %s against %s (%s)"
+L["Difference: this run against the other, as a share of the other's figure."] =
+    "Difference: this run against the other, as a share of the other's figure."
+L["the run you picked"] = "the run you picked"
+L["the runner-up on its board (this run holds the best)"] =
+    "the runner-up on its board (this run holds the best)"
+L["the best on its board (same spec, target type and race length)"] =
+    "the best on its board (same spec, target type and race length)"
+L["%s: not cast"] = "%s: not cast"
+L["%s: %s damage"] = "%s: %s damage"
+L["%s: %s damage (%.1f%%)"] = "%s: %s damage (%.1f%%)"
+L["Difference: %s"] = "Difference: %s"
+
+-- The damage chart and the pace bar (modules/Hud_Chart.lua, #2, #3) and the detail's chart tooltip
+L["Damage over the race"] = "Damage over the race"
+L["vs best pace"] = "vs best pace"
+L["first race on this board"] = "first race on this board"
+L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."] =
+    "Your damage so far at each step of the race, captured live and scaled to the run's final damage."
+L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
+    "Only races run since your last reload or login have it: the live numbers cannot be saved."
+
+-- The run detail's gear and talents (modules/Results_Loadout.lua, #6) and their tooltips
+L["Gear"] = "Gear"
+L["Talents"] = "Talents"
+L["Not recorded"] = "Not recorded"
+L["Unnamed loadout"] = "Unnamed loadout"
+L["Talent loadout"] = "Talent loadout"
+L["Dressing Room"] = "Dressing Room"
+L["View"] = "View"
+L["Copy"] = "Copy"
+L["Different loadout"] = "Different loadout"
+L["Empty"] = "Empty"
+L["1 item equipped when combat ended."] = "1 item equipped when combat ended."
+L["%d items equipped when combat ended."] = "%d items equipped when combat ended."
+L["Hover an item for its tooltip; Shift-click links it in chat."] =
+    "Hover an item for its tooltip; Shift-click links it in chat."
+L["This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."] =
+    "This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."
+L["Nothing was equipped in this slot."] = "Nothing was equipped in this slot."
+L["Try the run's gear on in the Dressing Room."] = "Try the run's gear on in the Dressing Room."
+L["Hero talents: %s"] = "Hero talents: %s"
+L["The talent loadout the run was raced with."] = "The talent loadout the run was raced with."
+L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."] =
+    "Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."
+L["Only you see it: nothing is sent to a channel."] = "Only you see it: nothing is sent to a channel."
+L["this run"] = "this run"
+L["Talents for %s: %s \226\128\148 click the link to view the tree."] =
+    "Talents for %s: %s \226\128\148 click the link to view the tree."
+L["Spell breakdown"] = "Spell breakdown"
+L["Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."] =
+    "Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."
+L["No note"] = "No note"
+L["This run has no note. Add one from its detail or the row's right-click menu."] =
+    "This run has no note. Add one from its detail or the row's right-click menu."
+L["The note you kept with the run. Click to sort."] = "The note you kept with the run. Click to sort."
+L["This run has no talent string to open."] = "This run has no talent string to open."
+L["The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."] =
+    "The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."
+L["The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."] =
+    "The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."
+L["The talents differ from %s's."] = "The talents differ from %s's."
+L["Copy both strings to see the difference node by node."] = "Copy both strings to see the difference node by node."
+L["Changed: the other run had nothing here."] = "Changed: the other run had nothing here."
+L["Changed: the other run wore %s."] = "Changed: the other run wore %s."
+L["the other run"] = "the other run"
+
+-- The Spec cell's loadout lines and the share's talents link (#6)
+L["Gear and talents: not recorded"] = "Gear and talents: not recorded"
+L["Talents: %s"] = "Talents: %s"
+L["Gear changed since the previous run"] = "Gear changed since the previous run"
+L["Sharing"] = "Sharing"
+L["Include talents link"] = "Include talents link"
+L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] =
+    "Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."

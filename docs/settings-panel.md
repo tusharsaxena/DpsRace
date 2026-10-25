@@ -12,7 +12,7 @@ built on first show (options-ui-§1, §5).
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
-| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*); the HUD Appearance tab: the clocks', figures' and spell rows' look |
+| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Runs to keep (0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
@@ -108,14 +108,15 @@ A page of its own since 2026-10-25 (the owner's call: the two HUD tabs off Gener
 `NS.RegisterTabbedPage` in `settings/Hud.lua` and listed just above History. Its rows, paths and
 defaults are the ones the two tabs had on General. The header **Defaults** button restores both
 tabs on the current profile; its tooltip reads *Restore every HUD setting on this profile to its
-addon default: the Race HUD tab (display and live breakdown) and HUD Appearance.*
+addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance.*
 
 Tabs, in order: *Race HUD*, *HUD Appearance*.
 
 #### Tab: Race HUD
 
-Every HUD setting, in two subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
-shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
+Every HUD setting, in three subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
+shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*; *Show damage chart* | *Show
+pace bar*.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
@@ -127,6 +128,9 @@ shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*.
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
 | Show live DPS | `live.showDps` | checkbox | Blizzard's live DPS figure beside the damage |
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
+| *Chart and pace* heading | | | |
+| Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows. Also gates the HUD result card's chart; the Results detail shows it whatever this says |
+| Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the KPIs: its range is twice the best's average damage by now, so its center tick is *on pace*. Hidden with no best and on a shared session |
 
 #### Tab: HUD Appearance
 
@@ -143,8 +147,11 @@ The defaults are the look shipped before the tab existed.
 | *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
 | *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
 | *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
+| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
+| *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
+| *Pace bar* | `appearance.pace.` | the bar block; the chart's old look (solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
-Every live breakdown row's reaction is `NS.Hud.Refresh()`.
+Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 
 ### History
 
@@ -152,6 +159,8 @@ Every live breakdown row's reaction is `NS.Hud.Refresh()`.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
+| *Sharing* heading | | | |
+| Include talents link | `share.talentsLink` | checkbox | Off by default (the owner's call, 2026-10-25): the share stays one line. On, `Share.Messages` appends the run's `talentbuild` link (`[<spec>: <loadout>]`, clickable in others' chat), in the same message when both fit in 255 bytes, else as a second message. A run with no talent string, or one whose link alone passes 255 bytes, shares the line alone. Registered before *Runs to keep*, so the stored count and *Purge history…* stay under *Storage* |
 | *Storage* heading | | | |
 | Runs to keep | `global.history.keep` | slider 0 to 10000 | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). 0 (the default) never prunes. Above 0 the prune runs at login and after each saved run (spec §7), never on the change itself |
 | *Stored now* | — | text | `NS.History.StoredLine()`: the stored count and its size at about 1.5 KB a run; repainted on `RUN_SAVED` / `RUNS_CHANGED` |

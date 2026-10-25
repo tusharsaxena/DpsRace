@@ -42,13 +42,29 @@ function CELL.date(run)
     return lines
 end
 
+-- The Spec cell's loadout lines (#6): the talents it ran, and whether the gear changed since the same
+-- character's previous run on the spec. A run from before #6 says it has none.
+local function loadoutLines(run, lines)
+    if type(run.loadout) ~= "table" then
+        lines[#lines + 1] = { L["Gear and talents: not recorded"], 0.62, 0.62, 0.68 }
+        return
+    end
+    local _, talents = NS.Loadouts.Of(run)
+    if talents then lines[#lines + 1] = L["Talents: %s"]:format(NS.ResultsLoadout.TalentsText(talents)) end
+    local changed = NS.Loadouts.GearChanged(run)
+    if changed then lines[#lines + 1] = { L["Gear changed since the previous run"], C().amber[1], C().amber[2], C().amber[3] } end
+end
+
 function CELL.icons(run)
     local char = run.char or {}
     local spec = Tbl().SpecInfo(char.specID, char.spec)
     local c = Tbl().ClassColor(char.class)
     local role = char.role and L["Role: %s"]:format(char.role:sub(1, 1) .. char.role:sub(2):lower()) or nil
-    return { ("%s %s"):format(spec or L["Unknown spec"], Tbl().ClassName(char.class)),
-             { L["Class color"], c[1], c[2], c[3] }, role }
+    local lines = { ("%s %s"):format(spec or L["Unknown spec"], Tbl().ClassName(char.class)),
+                    { L["Class color"], c[1], c[2], c[3] } }
+    if role then lines[#lines + 1] = role end
+    loadoutLines(run, lines)
+    return lines
 end
 
 function CELL.char(run)
@@ -184,6 +200,7 @@ local ABOUT = {
     vsMax = "How far this run's DPS is from the highest complete run in view on the same target type.",
     status = "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
+    note = "The note you kept with the run. Click to sort.",
 }
 
 --- A header's tooltip: { title, text }, or nil for a column with nothing to say.
@@ -250,6 +267,17 @@ function DETAIL.strip(run)
 end
 
 DETAIL.tail = CELL.time
+
+function DETAIL.breakdown()
+    return { L["Spell breakdown"],
+        L["Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."] }
+end
+
+function DETAIL.chart()
+    return { L["Damage over the race"],
+        L["Your damage so far at each step of the race, captured live and scaled to the run's final damage."],
+        dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
+end
 
 local LEGEND = {
     "The race, from the start to the buzzer (to the end of combat for an incomplete run).",
@@ -333,5 +361,178 @@ function Tips.Spell(spell, run, rank, count)
         lines[#lines + 1] = L["%.1f%% of the run's damage"]:format(dmg / damage * 100)
     end
     if rank and count then lines[#lines + 1] = dimLine(L["#%d of %d spells"]:format(rank, count)) end
+    return lines
+end
+
+-- ── the compare ─────────────────────────────────────────────────────────────────────────────────
+-- The detail's compare (modules/Results_Compare.lua): the toggle, Clear Pick, the different-board
+-- note and the score table under themselves; a compared spell row after the client's spell tooltip.
+
+local function otherName(kind)
+    if kind == "picked" then return L["the run you picked"] end
+    if kind == "runnerUp" then return L["the runner-up on its board (this run holds the best)"] end
+    return L["the best on its board (same spec, target type and race length)"]
+end
+
+-- Who and when the other run was: "Lanfear · 25 Oct 14:02".
+local function otherStamp(other)
+    local char = type(other.char) == "table" and other.char or {}
+    return ("%s \194\183 %s"):format(tostring(char.name or "?"), Tbl().Date(other.date, "%d %b %Y %H:%M"))
+end
+
+local function pctOf(pct) return pct and L["%+.1f%%"]:format(pct) or DASH end
+
+local COMPARE = {}
+
+function COMPARE.toggle(run, other, kind)
+    if not NS.ResultsCompare.Usable(run) then
+        return { L["Compare"], L["This run has no score to compare (it was lost)."] }
+    end
+    if not other then
+        return { L["Compare"], L["No other complete run on this run's board (same spec, target type and race length) to compare with."] }
+    end
+    return { L["Compare"], L["Sets this run beside %s: damage, DPS and every spell."]:format(otherName(kind)),
+             dimLine(otherStamp(other)),
+             dimLine(L["Pick another run from a row's right-click menu: Compare With This Run."]) }
+end
+
+function COMPARE.clear()
+    return { L["Clear Pick"], L["Compare with the best on this run's board again."] }
+end
+
+function COMPARE.boards(run, other)
+    if not other then return nil end
+    return { L["Different board"],
+             L["The picked run differs in spec, target type or race length, so the figures are not like for like."],
+             dimLine(L["This run: %s"]:format(CELL.time(run)[1])), dimLine(L["Picked: %s"]:format(CELL.time(other)[1])) }
+end
+
+function COMPARE.score(run, other, kind)
+    if not other then return nil end
+    local k = NS.ResultsCompare.Kpis(run, other)
+    return { L["This run against %s"]:format(otherName(kind)),
+             L["Damage: %s against %s (%s)"]:format(grouped(k.damageA), grouped(k.damageB), pctOf(k.damagePct)),
+             L["DPS: %s against %s (%s)"]:format(grouped(k.dpsA), grouped(k.dpsB), pctOf(k.dpsPct)),
+             dimLine(otherStamp(other)),
+             dimLine(L["Difference: this run against the other, as a share of the other's figure."]) }
+end
+
+--- A compare part's tooltip lines (`key`: toggle, clear, boards, score), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param other table|nil  the run it is compared with
+--- @param kind string|nil  "picked" | "best" | "runnerUp"
+--- @return table|nil
+function Tips.Compare(key, run, other, kind)
+    local fn = COMPARE[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, other, kind)
+    if not ok or type(lines) ~= "table" then return nil end
+    return lines
+end
+
+local function sideLine(label, dmg, pct)
+    if not dmg then return L["%s: not cast"]:format(label) end
+    if not pct then return L["%s: %s damage"]:format(label, grouped(dmg)) end
+    return L["%s: %s damage (%.1f%%)"]:format(label, grouped(dmg), pct)
+end
+
+--- What follows the client's spell tooltip on a compared row: each side's exact damage and share,
+--- and the difference.
+--- @param row table  one of ResultsCompare.Spells' rows
+--- @param kind string|nil
+--- @return table
+function Tips.CompareSpell(row, kind)
+    local delta = row.delta or 0
+    local sign = delta > 0 and "+" or ""
+    return { { sideLine(L["This run"], row.dmgA, row.shareA), 1, 0.82, 0 },
+             sideLine(NS.ResultsCompare.OtherLabel(kind), row.dmgB, row.shareB),
+             L["Difference: %s"]:format(sign .. grouped(delta)) }
+end
+
+-- ── the loadout ─────────────────────────────────────────────────────────────────────────────────
+-- The detail's gear and talents (modules/Results_Loadout.lua, #6): each part under itself; an item
+-- is the client's own item tooltip, with `changed`'s line after it while the compare is on.
+
+local function loadoutOf(run)
+    return NS.Loadouts.Of(run)
+end
+
+local function otherWho(other)
+    return other and otherStamp(other) or L["the other run"]
+end
+
+local LOADOUT = {}
+
+function LOADOUT.gear(run)
+    local gear = loadoutOf(run)
+    local n = 0
+    for _ in pairs(gear or {}) do n = n + 1 end
+    return { L["Gear"], n == 1 and L["1 item equipped when combat ended."] or L["%d items equipped when combat ended."]:format(n),
+             dimLine(L["Hover an item for its tooltip; Shift-click links it in chat."]) }
+end
+
+function LOADOUT.none()
+    return { L["Not recorded"],
+             L["This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."] }
+end
+
+function LOADOUT.empty()
+    return { L["Empty"], L["Nothing was equipped in this slot."] }
+end
+
+function LOADOUT.dressUp()
+    return { L["Dressing Room"], L["Try the run's gear on in the Dressing Room."] }
+end
+
+function LOADOUT.talents(run)
+    local _, t = loadoutOf(run)
+    if not t then return LOADOUT.none() end
+    local lines = { t.name or L["Unnamed loadout"] }
+    if t.heroName then lines[#lines + 1] = L["Hero talents: %s"]:format(t.heroName) end
+    lines[#lines + 1] = L["The talent loadout the run was raced with."]
+    return lines
+end
+
+function LOADOUT.view()
+    return { L["View"], L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."],
+             dimLine(L["Only you see it: nothing is sent to a channel."]) }
+end
+
+function LOADOUT.viewOff(run)
+    local _, t = loadoutOf(run)
+    if not (t and t.importString) then return { L["View"], L["This run has no talent string to open."] } end
+    return { L["View"], L["The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."] }
+end
+
+function LOADOUT.copy()
+    return { L["Copy"], L["The loadout's import string, to paste into the talent frame, Wowhead or Raidbots."] }
+end
+
+function LOADOUT.differs(_, other)
+    return { L["Different loadout"], L["The talents differ from %s's."]:format(otherWho(other)),
+             dimLine(L["Copy both strings to see the difference node by node."]) }
+end
+
+function LOADOUT.changed(_, other, slot)
+    local otherGear = loadoutOf(other)
+    local link = otherGear and otherGear[slot]
+    local name = link and NS.ResultsLoadout.ItemName(link)
+    if not name then return { L["Changed: the other run had nothing here."] } end
+    return { L["Changed: the other run wore %s."]:format(name) }
+end
+
+--- A loadout part's tooltip lines (`key`: gear, none, empty, dressUp, talents, view, viewOff, copy,
+--- differs, changed), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param other table|nil  the run it is compared with
+--- @param extra any  `changed`: the slot
+--- @return table|nil
+function Tips.Loadout(key, run, other, extra)
+    local fn = LOADOUT[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, other, extra)
+    if not ok or type(lines) ~= "table" then return nil end
     return lines
 end

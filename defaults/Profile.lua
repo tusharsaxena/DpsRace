@@ -33,6 +33,10 @@ NS.defaults = {
             icons   = true,   -- spell icons
             showDps = true,   -- Blizzard's live DPS figure, labeled live
             hz      = 4,      -- live reads per second, 2-10 (spec §10)
+            -- The running body's damage chart (#2) and pace bar (#3), each on HUD > Race HUD > Chart
+            -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
+            chart   = true,
+            paceBar = true,
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
@@ -58,6 +62,16 @@ NS.defaults = {
                      useClassColorBar = false, rowHeight = 18 },
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
+            -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
+            -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
+            -- smooth area), and the plot's background swatch (its composed class-color companion
+            -- beside it, options-ui-§17).
+            chart = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
+                      useClassColorBar = false, height = 80, columnGap = 0,
+                      bgColor = { r = 0, g = 0, b = 0, a = 0.35 }, useClassColorBg = false },
+            -- The pace bar's fill, its own block since 2026-10-25: the chart's look when it was split off.
+            pace = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
+                     useClassColorBar = false },
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
         -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
@@ -71,15 +85,21 @@ NS.defaults = {
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "", fontShadow = true },
         },
+        -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
+        -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
+        -- Its row is History > History > Sharing (settings/History.lua).
+        share = { talentsLink = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD.
         windows = {
-            hud = { width = 300, height = 460 },   -- tall enough for all 8 live rows (screen 04)
+            -- Tall enough for all 8 live rows under the pace bar and the damage chart (screen 04, #2).
+            hud = { width = 300, height = 520 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.
-            results = { view = "expanded", expanded = { width = 1220, height = 560 },
-                        collapsed = { width = 900, height = 560 } },
+            -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
+            results = { view = "expanded", expanded = { width = 1300, height = 560 },
+                        collapsed = { width = 980, height = 560 } },
         },
     },
     global = {
@@ -87,10 +107,14 @@ NS.defaults = {
         -- would backfill it onto a legacy account (savedvariables-§1).
         schemaVersion = 0,
         -- The run record format (spec §7). Not a migration stamp: a stored run carries its own copy.
-        schema = 1,
+        -- Format 2 (#6) adds the run's loadout keys.
+        schema = 2,
         -- The run store, keyed by run id (modules/Recorder.lua). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},
+        -- The loadout store (#6, modules/Loadouts.lua): each distinct gear set and talent loadout once,
+        -- by its hash; a run holds only the keys (run.loadout). Orphans go with every removal.
+        loadouts = { gear = {}, talents = {} },
         -- Runs to keep (spec §6.3): 0 = never prune. Above 0, the oldest runs go first and a run
         -- holding a best is always kept (modules/Recorder.lua Prune). Global like the store it
         -- bounds. Its row is the History page's (settings/History.lua).

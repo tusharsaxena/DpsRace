@@ -1,7 +1,8 @@
 local _, NS = ...
 -- modules/Hud_Appearance.lua — the HUD's configured look (HUD > HUD Appearance, settings/Hud.lua):
--- the two running clocks, the live Damage and DPS figures, and the spell rows' bars and text, which
--- the Results window's breakdown shares. Each block is a composed group (options-ui-§16) stored under
+-- the two running clocks, the live Damage and DPS figures, the spell rows' bars and text, which
+-- the Results window's breakdown shares, the damage chart's columns and plot background, and the
+-- pace bar's fill. Each block is a composed group (options-ui-§16) stored under
 -- `appearance.<block>.`; this file turns a block into what a widget setter takes.
 --
 -- MEDIA BY NAME. A face or a bar texture is stored by its LibSharedMedia name, so a profile travels
@@ -115,6 +116,28 @@ function Appearance.BarAt(p, def, class)
         texture = fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,
     }
+end
+
+--- The damage chart's columns (HUD Appearance > Damage chart).
+--- @return table { texture, r, g, b, a }
+function Appearance.Chart()
+    return Appearance.BarAt("appearance.chart.", D.chart)
+end
+
+--- The damage chart plot's background (HUD Appearance > Chart background): the swatch, or the
+--- player's class color while its companion is on, the swatch's alpha kept either way.
+--- @return table { r, g, b, a }
+function Appearance.ChartBackground()
+    local r, g, b, a = color(setting("appearance.chart.bgColor") or D.chart.bgColor,
+        setting("appearance.chart.useClassColorBg") == true)
+    return { r = r, g = g, b = b, a = a }
+end
+
+--- The pace bar's fill (HUD Appearance > Pace bar), its own block since 2026-10-25: styling the
+--- chart's columns no longer restyles it.
+--- @return table { texture, r, g, b, a }
+function Appearance.Pace()
+    return Appearance.BarAt("appearance.pace.", D.pace)
 end
 
 --- The spell rows' height in pixels (the breakdown's pitch adds its gap).

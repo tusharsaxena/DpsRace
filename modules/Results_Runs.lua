@@ -469,6 +469,49 @@ function Runs.StatusTip(run, top)
     return lines
 end
 
+-- The Note column (the owner's call, 2026-10-25): the run's note cut to NOTE_CHARS characters with
+-- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
+-- last in either direction (the table's rule for a missing value).
+Runs.NOTE_W = 80
+Runs.NOTE_CHARS = 10
+local ELLIPSIS = "\226\128\166"
+
+local function noteOf(run)
+    local note = type(run) == "table" and run.note
+    if type(note) ~= "string" or note == "" then return nil end
+    return note
+end
+
+--- The Note cell's text: the note's first NOTE_CHARS characters (UTF-8 characters, never a byte cut
+--- through one), an ellipsis after them when the note is longer; "" with no note.
+function Runs.NoteCell(run)
+    local note = noteOf(run)
+    if not note then return "" end
+    local n, cut = 0, nil
+    for pos in note:gmatch("()[^\128-\191]") do
+        n = n + 1
+        if n > Runs.NOTE_CHARS then
+            cut = pos - 1
+            break
+        end
+    end
+    if not cut then return note end
+    return note:sub(1, cut) .. ELLIPSIS
+end
+
+--- The Note column's sort value: the note in lower case, nil (last) with none.
+function Runs.NoteSort(run)
+    local note = noteOf(run)
+    return note and note:lower() or nil
+end
+
+--- The Note cell's tooltip: "Note", then the whole note (wrapped by the tooltip).
+function Runs.NoteTip(run)
+    local note = noteOf(run)
+    if not note then return { L["No note"], L["This run has no note. Add one from its detail or the row's right-click menu."] } end
+    return { L["Note"], note }
+end
+
 -- The tail in the caption gray, after the length (NS.Format.RunTime).
 local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
     math.floor(C.dim[3] * 255 + 0.5))
@@ -530,6 +573,9 @@ function Runs.Columns()
               return text, color, icon
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
+        { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
+          sort = Runs.NoteSort, text = function(run) return Runs.NoteCell(run), C.dim end,
+          tip = Runs.NoteTip },
     }
 end
 

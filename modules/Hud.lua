@@ -16,9 +16,11 @@ local _, NS = ...
 -- WHAT RUNS, AND WHEN (spec §10). While the window is shown: PLAYER_TARGET_CHANGED and the regen edges
 -- (the idle target card and the Arm button's combat refusal). While it is shown AND the race is
 -- RUNNING: DAMAGE_METER_COMBAT_SESSION_UPDATED, coalesced into one live read per 1/live.hz seconds
--- (4 Hz by default), never from OnUpdate. While shown and RUNNING or STOPPING: one OnUpdate, redrawing
--- at 20 Hz for the clock text while RUNNING and at 4 Hz while STOPPING (no clock; combat may hold for
--- minutes), the drop-combat spells asked once per race and the stop chips rebuilt only on a change.
+-- (4 Hz by default), never from OnUpdate, and one timer at the damage chart's next bucket boundary
+-- (at most 60 a race), so the chart's buckets fill in a quiet stretch too. While shown and RUNNING or
+-- STOPPING: one OnUpdate, redrawing at 20 Hz for the clock text while RUNNING and at 4 Hz while
+-- STOPPING (no clock; combat may hold for minutes), the drop-combat spells asked once per race and the
+-- stop chips rebuilt only on a change.
 -- Nothing else. The buzzer's raid warning answers RACE_BUZZER, with the window closed too. The
 -- countdown cue and the center-screen numbers of the last seconds are modules/Countdown.lua's.
 -- Stand-down (Suspend) drops every registration, timer and the OnUpdate.
@@ -68,6 +70,7 @@ local events                   -- this module's AceEvent target (nil until first
 local registered = "none"      -- "none" | "idle" | "live"
 local ticking, tickAcc = false, 0
 local liveTimer, lastRead, liveData
+local sliceTimer               -- the next chart bucket's boundary (modules/Slices.lua)
 local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
 local preview                  -- what Hud.Render pushed while test mode is on
@@ -260,6 +263,8 @@ local function resultView(v)
     if run.status == "complete" then v.delta, v.isNew = NS.Bests.Delta(run) end
     v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function"
     v.icons = setting("live.icons") ~= false
+    -- The race's chart again (#2), when the HUD shows charts and the run has its slices this session.
+    if setting("live.chart") ~= false then v.chart = NS.HudChart.ResultView(run) end
 end
 
 local function runningView(v)
@@ -269,6 +274,8 @@ local function runningView(v)
     if elapsed and length then elapsed = math.min(elapsed, length) end
     v.elapsed = elapsed
     v.live = liveData
+    v.chart, v.pace = NS.HudChart.LiveViews(v.run, elapsed, setting("live.chart") ~= false,
+        setting("live.paceBar") ~= false)
 end
 
 local FILL = { idle = idleView, running = runningView, result = resultView }
@@ -301,6 +308,9 @@ local function previewView()
     local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
     commonView(v)
     for k, x in pairs(preview.extra or {}) do v[k] = x end
+    -- The sample honors the chart and pace settings, as a real race's views do (#2, #3).
+    if setting("live.chart") == false then v.chart = nil end
+    if setting("live.paceBar") == false then v.pace = nil end
     v.key = BODY_OF[preview.key] or preview.key
     if v.key == "stopping" then v.key = "stop" end
     if v.key == "idle" then idleView(v) end
@@ -575,23 +585,60 @@ end
 
 local function cancelLive()
     if liveTimer then liveTimer:Cancel() end
-    liveTimer = nil
+    if sliceTimer then sliceTimer:Cancel() end
+    liveTimer, sliceTimer = nil, nil
+end
+
+local readLive
+
+-- THE CHART'S BUCKETS (#2). A read at or after a bucket's boundary copies its live total into the
+-- bucket (modules/Slices.lua): the throttled reads above do it while damage lands, and a timer at the
+-- next boundary makes sure one comes then even in a quiet stretch. The last boundary is the buzzer's
+-- (onState). A boundary still unfilled is retried no faster than LIVE_RETRY.
+local LIVE_RETRY = 0.1
+
+local function scheduleSlice()
+    if sliceTimer or not liveWanted() then return end
+    local run, elapsed = NS.Race.Current(), NS.Race.Elapsed()
+    local at = NS.Slices.NextBoundary(run)
+    if not (at and elapsed) or at >= run.race.length then return end
+    sliceTimer = C_Timer.NewTimer(math.max(LIVE_RETRY, at - elapsed), function()
+        sliceTimer = nil
+        if liveTimer then liveTimer:Cancel() end
+        liveTimer = nil
+        readLive()
+    end)
+end
+
+local function capture(fresh, elapsed)
+    if not fresh then return end
+    NS.Slices.Capture(NS.Race.Current(), elapsed or NS.Race.Elapsed(), fresh.total)
 end
 
 --- One live read and redraw: the running body's figures and rows from NS.Meter.ReadLive (opaque).
-local function readLive()
+function readLive()
     liveTimer = nil
     if not liveWanted() then return end
     local t0 = Perf.on and debugprofilestop()
     lastRead = GetTime()
-    liveData = NS.Meter.ReadLive() or liveData
+    local fresh = NS.Meter.ReadLive()
+    capture(fresh)
+    liveData = fresh or liveData
     local body = ui.body.running
     if body and ui.current == "running" then
         body:SetLive(liveData, setting("live.rows"), setting("live.icons") ~= false)
     end
+    scheduleSlice()
     if t0 then Perf.Note("hudLive", debugprofilestop() - t0) end
 end
 Hud.ReadLive = readLive
+
+-- The buzzer: one last read fills the bucket that ends on it, while the window is on screen.
+local function captureBuzzer()
+    if not windowShown() or NS.IsStoodDown() or previewOn() or NS.Race.SinceBuzzer() == nil then return end
+    local run = NS.Race.Current()
+    if run and run.race then capture(NS.Meter.ReadLive(), run.race.length) end
+end
 
 --- A meter update: coalesced into at most one read per 1/live.hz seconds (spec §10).
 local function requestLive()
@@ -630,6 +677,7 @@ local function syncEvents()
     if want == "live" then
         NS.SafeRegisterEvent(events, METER_EVENT, onAceEvent, NS.rejectedEvents)
         requestLive()
+        scheduleSlice()
     end
 end
 
@@ -784,6 +832,7 @@ local function onState(_, from, to)
         pick.editing = false
         autoShow()
     end
+    if from == St.RUNNING and to == St.STOPPING then captureBuzzer() end
     -- Straight from idle into a live race is the /reload (or stand-up) resume: its HUD comes back
     -- as the arm's did, and closes with the race the same way.
     if from == St.IDLE and (to == St.RUNNING or to == St.STOPPING) then autoShow() end

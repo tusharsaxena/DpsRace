@@ -178,6 +178,59 @@ local function build()
     end
     M.GetBuildInfo = function() return "12.0.5", "60000", "Oct 1 2026", M.__context.build end
 
+    -- The loadout (#6, modules/Recorder.lua SnapshotLoadout): the equipped links by slot, the talent
+    -- APIs over one settable table, and the item lookups the detail's gear grid draws with. A case
+    -- edits M.__gear / M.__talents before snapshotting; nil = an empty slot or no active config.
+    M.__gear = {
+        [1] = "|cnIQ4:|Hitem:212001::::::::80:267::6:2:10390:1540::::::|h[Hood of the Test]|h|r",
+        [5] = "|cnIQ4:|Hitem:212005::::::::80:267::6:2:10390:1540::::::|h[Robe of the Test]|h|r",
+        [16] = "|cnIQ3:|Hitem:212016::::::::80:267::6:1:10390::::::|h[Staff of the Test]|h|r",
+        [4] = "|cnIQ1:|Hitem:6833::::::::80:267::::::::|h[White Tuxedo Shirt]|h|r",
+        [19] = "|cnIQ1:|Hitem:5976::::::::80:267::::::::|h[Guild Tabard]|h|r",
+    }
+    M.GetInventoryItemLink = function(unit, slot)
+        if unit ~= "player" then return nil end
+        return M.__gear[slot]
+    end
+    M.__talents = {
+        configID = 7001, savedConfigID = 7002, configName = "Active", savedName = "Raid ST",
+        heroSpecID = 58, heroName = "Diabolist", importString = "C0PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        serialVersion = 2,
+    }
+    local tal = M.__talents
+    M.C_ClassTalents = {
+        GetActiveConfigID = function() return M.__talents and M.__talents.configID end,
+        GetLastSelectedSavedConfigID = function() return M.__talents and M.__talents.savedConfigID end,
+        GetActiveHeroTalentSpec = function() return M.__talents and M.__talents.heroSpecID end,
+    }
+    M.C_Traits = {
+        GetConfigInfo = function(id)
+            local t = M.__talents
+            if not t then return nil end
+            if id == t.savedConfigID and t.savedName then return { ID = id, name = t.savedName } end
+            if id == t.configID then return { ID = id, name = t.configName } end
+            return nil
+        end,
+        GetSubTreeInfo = function(_, id)
+            local t = M.__talents
+            return t and id == t.heroSpecID and { ID = id, name = t.heroName } or nil
+        end,
+        GenerateImportString = function(id)
+            local t = M.__talents
+            return t and id == t.configID and t.importString or nil
+        end,
+        GetLoadoutSerializationVersion = function() return (M.__talents or tal).serialVersion end,
+    }
+    -- C_Item over a link: its quality from the link's |cnIQ<n>: color, a fixed icon and item level.
+    M.C_Item = {
+        GetItemQualityByID = function(link)
+            return type(link) == "string" and tonumber(link:match("|cnIQ(%d+):")) or nil
+        end,
+        GetItemIconByID = function(link) return type(link) == "string" and 134400 or nil end,
+        GetDetailedItemLevelInfo = function(link) return type(link) == "string" and 639 or nil end,
+        GetItemQualityColor = function(q) return 0.1 * (q or 0), 0.5, 1 end,
+    }
+
     -- The class and spec reference data the Results window draws a run with (modules/Results_Table.lua):
     -- a few classes' icon coordinates, colors and names, and the spec lookup by ID. Plain client tables.
     M.CLASS_ICON_TCOORDS = {

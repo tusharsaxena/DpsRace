@@ -34,6 +34,8 @@ function NS.Diagnostics.Sections()
                 return
             end
             out:add("Diag", "runs stored=%s", countRuns())
+            local gear, talents = NS.Loadouts.Counts()
+            out:add("Diag", "loadouts gear=%s talents=%s chart races=%s", gear, talents, NS.Slices.Held())
             local run = NS.Race.Current()
             out:add("Diag", "race state=%s run=%s session=%s pending=%s meter=%s", NS.Race.State(),
                 run and run.id, run and run.race and run.race.sessionID, #NS.Recorder.Pending(),

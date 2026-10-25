@@ -15,7 +15,8 @@ local _, NS = ...
 -- THE STORE is db.global.runs, keyed by run id: account-wide, so a profile switch never hides a
 -- character's history and bests span alts (spec §7). Save fires RUN_SAVED(run); Delete, DeleteAll and
 -- Prune fire RUNS_CHANGED. Prune asks NS.Bests (CALL time) which runs hold a best, and never removes
--- one, nor a run still running or stopping (Race.Resume needs it).
+-- one, nor a run still running or stopping (Race.Resume needs it). Each removal also drops the
+-- loadouts (modules/Loadouts.lua) no run refers to any more.
 
 local Recorder = {}
 NS.Recorder = Recorder
@@ -23,7 +24,8 @@ NS.Recorder = Recorder
 local Secrets = NS.Secrets
 
 -- The run record format (spec §7). A stored run carries its own copy; db.global.schema is the same.
-Recorder.RUN_SCHEMA = 1
+-- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one.
+Recorder.RUN_SCHEMA = 2
 
 -- An id is time() .. "-" .. a four-digit random; a clash with a stored run is redrawn this many times.
 local ID_ATTEMPTS = 32
@@ -144,6 +146,79 @@ function Recorder.SnapshotWhere()
         subzone      = Secrets.PlainString(ask(GetSubZoneText)),
         instanceType = Secrets.PlainString(instanceType),
     }
+end
+
+-- ── the loadout (#6) ────────────────────────────────────────────────────────────────────────────
+-- What the player raced with: every equipped item's link and the talent loadout. All of it is plain
+-- data read out of combat (at arm, and at the race's combat end), so no secret reaches it; each value
+-- still passes through NS.Secrets like every other snapshot. modules/Loadouts.lua stores it deduped.
+
+-- The equipment slots a loadout records, in slot order: 1-18 without the shirt (4); the tabard (19)
+-- is never read (the owner's call, 2026-10-25: both are cosmetic).
+Recorder.GEAR_SLOTS = { 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 }
+
+--- The equipped items' links by slot, an empty slot absent; nil with nothing equipped (or no API).
+local function snapshotGear()
+    local gear, any = {}, false
+    for _, slot in ipairs(Recorder.GEAR_SLOTS) do
+        local link = Secrets.PlainString(ask(GetInventoryItemLink, "player", slot))
+        if link and link ~= "" then
+            gear[slot] = link
+            any = true
+        end
+    end
+    return any and gear or nil
+end
+
+local function currentSpecID()
+    local Compat = NS.Compat
+    local specIndex = Secrets.PlainNumber(ask(Compat.GetSpecialization))
+    if not specIndex then return nil end
+    return Secrets.PlainNumber((ask(Compat.GetSpecializationInfo, specIndex)))
+end
+
+-- A trait config's name, or nil.
+local function configName(traits, id)
+    if type(id) ~= "number" then return nil end
+    local info = ask(traits.GetConfigInfo, id)
+    return type(info) == "table" and Secrets.PlainString(info.name) or nil
+end
+
+-- The hero talent tree: its SubTreeID and its name, read while its config is the active one.
+local function heroOf(t, talents, traits)
+    t.heroSpecID = Secrets.PlainNumber(ask(talents.GetActiveHeroTalentSpec))
+    if not t.heroSpecID then return end
+    local info = ask(traits.GetSubTreeInfo, t.configID, t.heroSpecID)
+    t.heroName = type(info) == "table" and Secrets.PlainString(info.name) or nil
+end
+
+--- The active talent loadout: its spec, config, name (the player's saved loadout's, else the active
+--- config's), hero tree, import string and the client's serialization version. nil without the APIs
+--- or an active config.
+local function snapshotTalents()
+    local talents, traits = C_ClassTalents, C_Traits
+    if type(talents) ~= "table" or type(traits) ~= "table" then return nil end
+    local configID = Secrets.PlainNumber(ask(talents.GetActiveConfigID))
+    if not configID then return nil end
+    local specID = currentSpecID()
+    local t = { specID = specID, configID = configID }
+    local saved = specID and Secrets.PlainNumber(ask(talents.GetLastSelectedSavedConfigID, specID))
+    t.name = configName(traits, saved) or configName(traits, configID)
+    heroOf(t, talents, traits)
+    t.importString = Secrets.PlainString(ask(traits.GenerateImportString, configID))
+    if t.importString == "" then t.importString = nil end
+    t.serialVersion = Secrets.PlainNumber(ask(traits.GetLoadoutSerializationVersion))
+    return t
+end
+
+--- What the player is wearing and the talents they run, read out of combat (#6).
+--- @return table|nil loadout  { gear = { [slot] = link }|nil, talents = { specID, configID, name,
+---                            heroSpecID, heroName, importString, serialVersion }|nil }; nil when
+---                            neither could be read
+function Recorder.SnapshotLoadout()
+    local gear, talents = snapshotGear(), snapshotTalents()
+    if not gear and not talents then return nil end
+    return { gear = gear, talents = talents }
 end
 
 -- ── the store ───────────────────────────────────────────────────────────────────────────────────
@@ -283,6 +358,7 @@ function Recorder.Delete(id)
     local runs = store()
     if not runs or not Secrets.IsSafeKey(id) or runs[id] == nil then return false end
     runs[id] = nil
+    NS.Loadouts.Sweep()
     NS.SendBus(NS.MSG.RUNS_CHANGED)
     return true
 end
@@ -297,6 +373,7 @@ function Recorder.DeleteAll()
         runs[id] = nil
         n = n + 1
     end
+    NS.Loadouts.Sweep()
     if n > 0 then NS.SendBus(NS.MSG.RUNS_CHANGED) end
     return n
 end
@@ -343,6 +420,7 @@ function Recorder.Prune(keep, protect)
     end
     if n > 0 then
         debug("pruned %d run(s) to keep %d", n, keep)
+        NS.Loadouts.Sweep()
         NS.SendBus(NS.MSG.RUNS_CHANGED)
     end
     return n
