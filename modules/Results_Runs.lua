@@ -36,7 +36,7 @@ local DASH = "\226\128\148"
 local FILTER_H = 32         -- one row of the filter bar
 local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths
     { key = "char", width = 110 }, { key = "spec", width = 96 }, { key = "category", width = 96 },
-    { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 136 },
+    { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 164 },
 }
 local CHECKS = {
     { key = "hideFlagged", label = "Hide flagged", width = 100 },
@@ -233,15 +233,46 @@ local function targetGroup(run)
     return category, L["Target: %s"]:format(NS.Dummies.Label(category)), CATEGORY_RANK[category] or 99
 end
 
+-- The race length modes (the owner's call, 2026-10-25): one group per length, shortest first, the
+-- time in its length color (Tbl.LengthColor). A run with no length sorts last. The keys carry their
+-- mode's prefix, so a fold made in one mode never folds a group in another.
+local NO_LENGTH_RANK = 1e6
+
+local function lengthOf(run)
+    local length = run.race and run.race.length
+    return type(length) == "number" and length or nil
+end
+
+local function lengthText(length)
+    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.LengthColor(length)), NS.Format.Length(length))
+end
+
+local function durationGroup(run)
+    local length = lengthOf(run)
+    return "length:" .. tostring(length), L["Duration: %s"]:format(lengthText(length)), length or NO_LENGTH_RANK
+end
+
+-- One group per (target type, length) pair: the catalog's order, then shortest first in each type.
+local function targetLengthGroup(run)
+    local category = run.target and run.target.category or "other"
+    local length = lengthOf(run)
+    local rank = (CATEGORY_RANK[category] or 99) * (NO_LENGTH_RANK + 1) + (length or NO_LENGTH_RANK)
+    return category .. "|" .. tostring(length),
+        L["Target: %s"]:format(L["%s \194\183 %s"]:format(NS.Dummies.Label(category), lengthText(length))), rank
+end
+
 Runs.GROUPS = {
     none = nil,
     char = { of = charGroup, column = "char" },
     classSpec = { of = classSpecGroup },
     target = { of = targetGroup, column = "target" },
+    length = { of = durationGroup, column = "time" },
+    targetLength = { of = targetLengthGroup, column = "target" },
 }
-Runs.GROUP_ORDER = { "none", "char", "classSpec", "target" }
+Runs.GROUP_ORDER = { "none", "char", "classSpec", "target", "length", "targetLength" }
 local GROUP_LABELS = {
     none = "Group: None", char = "Group: Character", classSpec = "Group: Class & spec", target = "Group: Target",
+    length = "Group: Duration", targetLength = "Group: Target + duration",
 }
 
 --- Each dropdown's options for the resolved runs in `runs`, each list led by its "all" entry, and

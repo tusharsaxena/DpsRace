@@ -90,6 +90,7 @@ local SUITES = {
     "test_layers",
     "test_results",
     "test_results_fit",
+    "test_results_group",
     "test_compare",
     "test_loadout",
     "test_schema",

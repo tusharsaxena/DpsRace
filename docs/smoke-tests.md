@@ -33,8 +33,9 @@ to chat, and the in-combat action-bar check); S3, W5 and W7 again (the new HUD A
 detail's header and headings, the wider window).
 
 Rows for the 2026-10-25 backlog (branch `feat/2026-10-25-results-badges-sim`), not yet run: section 15's
-SM-DR-BL1 to SM-DR-BL4 (new: the boxed Status badges and the race length colors); W1 and W7 again (the
-Status badges, the wider window minimums).
+SM-DR-BL1 to SM-DR-BL4 (new: the boxed Status badges and the race length colors) and SM-DR-BL5 (new: Group
+by *Duration* and *Target + duration*); W1 and W7 again (the Status badges, the wider window minimums), and W4c
+again (the wider *Group* dropdown).
 
 ## How to run it
 
@@ -353,3 +354,4 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 | SM-DR-BL2 | Race at 0:30, 1:00, 2:00, 3:00, 5:00 and a custom length (0:45), then read the *Time* column, the time after a *Spec best* badge, and the Bests tab's *Length* column | 0:30 soft red, 1:00 soft orange, 2:00 soft yellow, 3:00 soft green, 5:00 soft indigo, each muted and readable on the table; 0:45 a neutral gray; the tail (*+9.1s*) stays the caption gray; the HUD's own length texts keep their usual color | A screenshot of each |
 | SM-DR-BL3 | Hover a *Spec best* cell, a *Max* cell and a *Flagged* cell; hover the *Status* header; click the *Status* header twice | The title names the whole board (*Spec best: boss-level · 2:00*), then what the tag means and every flag; the header tooltip says both name their target type and length; the sort runs Max, Spec best, Complete, Flagged, Incomplete, Died, Lost and back | A screenshot of each tooltip |
 | SM-DR-BL4 | Collapse the window and drag it as narrow as it goes, then expand it and do the same; open the Bests tab | At 932 (collapsed) and 1292 (expanded) every column header and cell still fits, the *Character* column readable; the Bests *Flags* chips are plain amber text with no box, a two-flag best's *1 late · Reloaded* inside its column | A screenshot at each minimum |
+| SM-DR-BL5 | With runs at several lengths on two target types in view (a custom length among them), pick *Group: Duration*, then *Group: Target + duration*; fold a group in each and switch between the two; click the *Time* header in *Duration* and the *Target* header in *Target + duration*; *Save* the view and `/reload` | The dropdown shows both labels whole. *Duration* puts one gold header per length, shortest first (*Duration: 1:00 (3)*, the time in its length color, a custom length gray), the sort holding inside each; *Target + duration* puts one per pair in the catalog's target order, shortest first inside each type (*Target: Cleave · 1:00 (2)*, then *Target: Cleave · 3:00*, then *Target: Boss-level · 2:00*); a fold in one mode never folds a group in the other and is still there on switching back; the grouped column's header flips the groups' order; after the `/reload` the window opens on the saved mode | A screenshot of each mode |

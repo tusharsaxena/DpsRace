@@ -47,7 +47,7 @@ go-ahead.
 
 ### B2: Group by
 
-- [ ] B2.1 Group by *Duration*, and by *Target type + duration*, with ordering, labels, saved views, tests and docs.
+- [x] B2.1 Group by *Duration*, and by *Target type + duration*, with ordering, labels, saved views, tests and docs.
 
 ### B3: Pace bar
 

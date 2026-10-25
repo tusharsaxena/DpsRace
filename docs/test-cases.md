@@ -351,7 +351,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (50)
+### test_results.lua (48)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
@@ -369,8 +369,6 @@ Total.
 - results: the bars take History > Results table's look, over the rows' own stripe
 - results: the Damage and DPS bars run 10% to 100% within each target type
 - results: v/s Max and the Max tag are per target type
-- results: Group by character, class & spec or target, with folding headers
-- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
 - results: Only best keeps the runs holding their board's best
 - results: v/s Max is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
@@ -409,6 +407,12 @@ Total.
 - results: every Runs column fits the narrowest list either view lays out
 - results: the longest Status board fits after the boxed Spec best
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
+
+### test_results_group.lua (3)
+
+- results: Group by character, class & spec or target, with folding headers
+- results: Group by duration, and by target type and duration, shortest first
+- results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
 
 ### test_compare.lua (12)
 
@@ -728,8 +732,9 @@ Total.
 | test_chart.lua | 24 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 50 |
+| test_results.lua | 48 |
 | test_results_fit.lua | 3 |
+| test_results_group.lua | 3 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -750,4 +755,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **592** |
+| **Total** | **593** |
