@@ -208,7 +208,7 @@ copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, topl
 Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
 mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
 which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
-which lifts the damage chart's best line and pace diagonal over its columns. The StaticPopups, the debug console,
+which lifts the damage chart's pace diagonal over its columns. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
 each frame's strata, level and toplevel.
 
@@ -234,8 +234,9 @@ each frame's strata, level and toplevel.
   asks of one is `== nil`. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
-  `SetMinMaxValues`; the pace bar's range, the best's line and the diagonal are plain numbers from
-  the stored best and `GetTime()`. The HUD window is a plain non-secure frame, so it opens and redraws in
+  `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
+  best and `GetTime()`, and the columns' edges are plain config math (whole pixels from the plot's
+  width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
@@ -245,11 +246,19 @@ each frame's strata, level and toplevel.
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
   textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
   broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
-- The detail's *View* (#6) hands a stored `talentbuild` link to `SetItemRef` from an addon button,
-  so Blizzard's handler opens the read-only talent tree on an addon's path. The tree is not
-  protected; whether that path later blocks an action in the talent UI is unconfirmed and is
-  smoke row SM-DR-LO4. The gear grid's modified click goes to the client's own
-  `HandleModifiedItemClick`, and the item tooltips are `GameTooltip:SetHyperlink` on a stored link.
+- The detail's *View* (#6) opens no Blizzard frame from addon code. It prints the stored
+  `talentbuild` link into the player's own chat window (`NS.Print`), and the player's click on the
+  link goes through Blizzard's own chat hyperlink handling. Until 2026-10-25 it called `SetItemRef`
+  itself, which showed the talent frame (`PlayerSpellsFrame`) from this addon's execution: its
+  `OnShow` writes the action bars' show-grid state, so that state was written tainted, and a later
+  in-combat slot change (a proc or an override) failed in `Blizzard_ActionBar`'s
+  `UpdateShownButtons` with `[ADDON_ACTION_BLOCKED] AddOn 'DpsRace' tried to call the protected
+  function 'MultiBarRightButton1:SetShown()'`, as the owner saw in game. `test_loadout` fails if
+  *View* reaches `SetItemRef`; smoke row SM-DR-LO4 repeats the in-combat check. The other two paths
+  that reach a Blizzard frame stay: *Dressing Room* calls `DressUpItemLink` (it opens
+  `DressUpFrame`, which touches no action bar) and the gear grid's modified click goes to the
+  client's own `HandleModifiedItemClick`; both remain smoke-checked (SM-DR-LO3, SM-DR-LO2). The item
+  tooltips are `GameTooltip:SetHyperlink` on a stored link.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -281,7 +290,7 @@ each frame's strata, level and toplevel.
   loadout's name is the player's last saved loadout for the spec, else the active config's (which
   may be generic); that the first is the one the player sees is a smoke row (SM-DR-LO4).
 - **A stored talent string opens only on a client with its serialization version.** After a patch
-  that changes it, *View* is grayed with a tooltip saying so; *Copy* still hands out the string, and
+  that changes it, *View* (which posts the string's link to chat) is grayed with a tooltip saying so; *Copy* still hands out the string, and
   the gear grid is unaffected. Talents are compared only as a *Different loadout* marker, never
   node by node (the owner's call, 2026-10-25).
 - **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper

@@ -292,16 +292,19 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (21)
+### test_chart.lua (24)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
 - chart: a shared session's buckets stay empty, and the store never inspects a value
 - chart: Drawable answers only a scored run with slices this session
 - chart: the pace is the best's damage spread evenly over its length
+- chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last
+- chart: the columns take the Column gap setting; the plot's background its Chart background swatch
+- chart: the pace bar has its own look; styling the chart's columns leaves it alone
 - chart: each column holds exactly the handle read at its boundary, and none fills early
 - chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar
-- chart: with a best the scale is its damage x 1.15 (A), with its level, its pace and the pace bar
+- chart: with a best the scale is its damage x 1.15 (A), with its pace diagonal and the pace bar
 - chart: the tick reuses the live views and rebuilds the chart's only when what decides it changes
 - chart: hidden, with the pace bar, while the run is on a shared session
 - chart: Show damage chart and Show pace bar turn each off
@@ -348,9 +351,13 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (42)
+### test_results.lua (46)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
+- results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
+- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
+- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
@@ -455,10 +462,11 @@ Total.
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 
-### test_settings.lua (28)
+### test_settings.lua (29)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
+- settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar
 - settings: every row sits on a page the panel draws, and every page has a group
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
 - settings: the scoring sliders say they apply to new runs
@@ -707,14 +715,14 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
-| test_chart.lua | 21 |
+| test_chart.lua | 24 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 42 |
+| test_results.lua | 46 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
-| test_settings.lua | 28 |
+| test_settings.lua | 29 |
 | test_slash.lua | 27 |
 | test_share.lua | 13 |
 | test_preview.lua | 16 |
@@ -731,4 +739,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **577** |
+| **Total** | **585** |

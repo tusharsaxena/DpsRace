@@ -147,7 +147,9 @@ The defaults are the look shipped before the tab existed.
 | *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
 | *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
 | *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
-| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80, an `extra`) | the damage chart's columns and the pace bar's fill, and the chart's plot height, on the HUD (running and result card) and in the Results detail |
+| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
+| *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
+| *Pace bar* | `appearance.pace.` | the bar block; the chart's old look (solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
 Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 

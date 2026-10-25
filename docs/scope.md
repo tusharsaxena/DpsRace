@@ -31,7 +31,7 @@ in the spec, sections 1, 2 and 13
   difference and every spell matched by ID.
 - **The loadout behind each run** (#6). Every new run keeps its equipped gear (slots 1 to 18, no
   shirt or tabard) and its talent loadout, each distinct set stored once. The detail draws the gear
-  grid with the client's item tooltips and the talents with *View* and *Copy*; under the compare it
+  grid with the client's item tooltips and the talents with *View* (a clickable link posted to chat) and *Copy*; under the compare it
   highlights the changed slots and marks a different loadout.
 - **Resilience to `/reload`.** A run is stored from its first hit, and a reload at any point resumes
   it, reads it later, or settles it as lost (spec §4.5).
