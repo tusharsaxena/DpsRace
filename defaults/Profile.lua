@@ -97,8 +97,9 @@ NS.defaults = {
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.
-            results = { view = "expanded", expanded = { width = 1220, height = 560 },
-                        collapsed = { width = 900, height = 560 } },
+            -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
+            results = { view = "expanded", expanded = { width = 1300, height = 560 },
+                        collapsed = { width = 980, height = 560 } },
         },
     },
     global = {

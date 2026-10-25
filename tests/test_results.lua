@@ -94,7 +94,7 @@ end
 
 -- ── the run list ────────────────────────────────────────────────────────────────────────────────
 
-test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status", function()
+test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note", function()
     local i = inst()
     local run = mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false } })
     seed(i, { run })
@@ -102,7 +102,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status", "no flag column: the Status cell carries the flags")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status|Note", "no flag column: the Status cell carries the flags")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -125,6 +125,97 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
         if type(l) == "table" and l[1]:find("Incinerate", 1, true) then named = true end
     end
     assertTrue(named, "the Status tooltip carries the flag, naming the spell")
+end)
+
+test("results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last", function()
+    local i = inst()
+    local long = mkRun("long", { note = "Tried Bloodlust at the pull", date = 1000 })
+    local short = mkRun("short", { note = "apple", date = 900 })
+    local exact = mkRun("exact", { note = "0123456789", date = 800 })
+    local none = mkRun("none", { date = 700 })
+    seed(i, { long, short, exact, none })
+    local Runs = i.NS.ResultsRuns
+    assertEqual(Runs.NoteCell(long), "Tried Bloo\226\128\166", "10 characters, then the ellipsis")
+    assertEqual(Runs.NoteCell(exact), "0123456789", "exactly 10: no ellipsis")
+    assertEqual(Runs.NoteCell(none), "", "no note: empty")
+    assertEqual(Runs.NoteCell({ note = "\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169" }),
+        "\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\195\169\226\128\166",
+        "UTF-8 characters, never a byte cut through one")
+    local tip = Runs.NoteTip(long)
+    assertEqual(tip[1], "Note")
+    assertEqual(tip[2], "Tried Bloodlust at the pull", "the whole note")
+    assertEqual(Runs.NoteTip(none)[1], "No note")
+    i.R.Show()
+    local pane = runsPane(i)
+    local col
+    for _, c in ipairs(pane.list.columns) do if c.key == "note" then col = c end end
+    assertTrue(col ~= nil, "no Note column")
+    assertEqual(col.width, 80, "a fixed 80 px")
+    assertTrue(i.NS.ResultsTips.About(col) ~= nil, "the Note header has a tooltip")
+    local Tbl = i.NS.ResultsTable
+    local function order(desc)
+        local ids = {}
+        for n, run in ipairs(Tbl.Sort(pane.list.columns, { long, short, exact, none }, "note", desc)) do ids[n] = run.id end
+        return table.concat(ids, ",")
+    end
+    assertEqual(order(false), "exact,short,long,none", "A to Z ignoring case, no note last")
+    assertEqual(order(true), "long,short,exact,none", "Z to A, no note still last")
+end)
+
+test("results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list", function()
+    local i = inst()
+    seed(i, { mkRun("a", { note = "Opened with Bloodlust" }) })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    local w, F = d.w, i.NS.Style.FONT
+    assertEqual(F.SECTION, "GameFontNormal", "a size above the 10px column headers")
+    assertEqual(w.spellsTitle.__text, "Spell breakdown")
+    assertTrue(w.spellsTitle:IsShown())
+    for name, fs in pairs({ breakdown = w.spellsTitle, chart = w.chart.title, timing = w.timingLabel,
+                            gear = d.lo.title, talents = d.lo.talentsTitle, flags = w.flagTitle, note = w.noteTitle }) do
+        assertEqual(fs.__fontObject, F.SECTION, name .. " heading is not FONT.SECTION")
+    end
+    -- Spell breakdown sits above the compare's toggle, which sits above the spell list.
+    local function y(region) return region.__points[1][5] end
+    assertTrue(y(w.spellsTitle) > y(d.cmp.toggle), "the heading is under the toggle")
+    assertTrue(y(d.cmp.toggle) > y(w.list.parent), "the toggle is under the list")
+    assertEqual(y(w.spellsTitle) - y(d.cmp.toggle), i.NS.ResultsDetail.SECTION_H, "one heading line")
+    assertEqual(i.NS.ResultsTips.Detail("breakdown", i.NS.Recorder.Get("a"))[1], "Spell breakdown", "the heading's tooltip")
+end)
+
+test("results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec", function()
+    local i = inst()
+    seed(i, { mkRun("a") })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local w = ui(i).detail.w
+    assertEqual(i.NS.ResultsDetail.ICON, 28)
+    assertEqual(w.name.__fontObject, i.NS.Style.FONT.NAME)
+    assertEqual(w.name.__text, "Lanfear")
+    assertEqual(w.specName, nil, "the spec text beside the name is gone")
+    assertEqual(i.NS.ResultsTips.Detail("class", i.NS.Recorder.Get("a"))[1], "Destruction Warlock",
+        "the spec icon's tooltip names the spec and the class")
+end)
+
+test("results: the note shows as written under a Note heading; the heading also shows while writing one", function()
+    local i = inst()
+    seed(i, { mkRun("a", { note = "Opened with Bloodlust" }), mkRun("b", { date = NOW - 2 * HOUR }) })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    local w = d.w
+    assertEqual(w.note.__text, "Opened with Bloodlust", "no Note: prefix")
+    assertTrue(w.noteTitle:IsShown())
+    assertEqual(w.noteTitle.__text, "Note")
+    assertTrue(w.noteTitle.__points[1][5] > w.note.__points[1][5], "the heading sits over the note")
+    i.R.ShowRun("b")
+    assertFalse(w.noteTitle:IsShown(), "a heading with no note")
+    d:openNote()
+    assertTrue(w.noteTitle:IsShown(), "the heading while writing a note")
+    assertTrue(w.noteBox:IsShown())
+    d:closeNote()
+    assertFalse(w.noteTitle:IsShown())
 end)
 
 test("results: every cell and header has a tooltip; it sits right of the window, or left when there is no room", function()
@@ -828,7 +919,7 @@ test("results: note limited to 200 chars", function()
     assertEqual(changed.count, 1, "the note was not announced as a store change")
     assertFalse(d.editing)
     assertEqual(d.w.addNote.label.__text, "Edit Note")
-    assertEqual(d.w.note.__text, "Note: " .. string.rep("x", 200))
+    assertEqual(d.w.note.__text, string.rep("x", 200), "the note as written, under its own heading")
 end)
 
 test("results: opening the note scrolls its box into view", function()
@@ -1104,22 +1195,22 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1180)
+    assertEqual(minW, 1240)
     assertEqual(minH, 420)
-    assertEqual(u.width, 1220)
+    assertEqual(u.width, 1300)
     assertEqual(u.height, 560)
     -- The toggle: collapsed has its own size and minimum; expanding brings the first back.
     assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 800)
-    assertEqual(u.width, 900)
+    assertEqual((u.frame:GetResizeBounds()), 880)
+    assertEqual(u.width, 980)
     assertEqual(u.viewToggle.iconName, "chevron-right")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "expanded")
-    assertEqual(u.width, 1220)
+    assertEqual(u.width, 1300)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
     assertEqual(u.footRight.__text, "Runs to keep: 0 (never prune)")
@@ -1139,21 +1230,21 @@ test("results: position, size and Master scale persist; Reset position restores 
     assertEqual(w.point, "TOPLEFT")
     assertEqual(w.x, 40)
     assertEqual(w.y, 601)
-    u.frame:__fire("OnSizeChanged", 1300, 600)
-    assertEqual(u.width, 1300)
+    u.frame:__fire("OnSizeChanged", 1400, 600)
+    assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1180, "expanded never goes under its minimum")
+    assertEqual(u.width, 1240, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)
-    w.expanded = { width = 1300, height = 600 }
+    w.expanded = { width = 1400, height = 600 }
     w.collapsed = { width = 950, height = 500 }
     i.NS.SetByPath("scale", 1.0)
     i.R.ResetPosition()
     assertEqual(w.point, nil)
     assertEqual(w.expanded, nil)
     assertEqual(w.collapsed, nil)
-    assertEqual(u.width, 1220)
+    assertEqual(u.width, 1300)
 end)
 
 test("results: collapsed, the detail replaces the list, with a back control", function()
@@ -1276,7 +1367,7 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertTrue(ui(i).footLeft.__text:find(runsPane(i).countText, 1, true) == 1, "the count leads the footer")
     i.R.ShowRun("a")
     local d = ui(i).detail
-    assertEqual(d.w.name.__fontObject, "GameFontHighlight", "the name that heads the pane")
+    assertEqual(d.w.name.__fontObject, "GameFontHighlightLarge", "the name that heads the pane, larger (2026-10-25)")
     assertEqual(d.w.damage.label.__text, "Damage")
     assertEqual(d.w.damage.label.__fontObject, "GameFontDisableSmall", "a KPI caption")
     assertEqual(d.w.damage.value.__fontObject, "GameFontNormalHuge", "a KPI figure stays large")

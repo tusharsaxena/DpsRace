@@ -236,7 +236,6 @@ L["Select a run to see its detail."] = "Select a run to see its detail."
 L["DPS \194\183 Incomplete"] = "DPS \194\183 Incomplete"
 L["Flag \194\183 %s"] = "Flag \194\183 %s"
 L["Flags \194\183 %d"] = "Flags \194\183 %d"
-L["Note: %s"] = "Note: %s"
 L["Edit Note"] = "Edit Note"
 L["Combat ended at %s, before the buzzer."] = "Combat ended at %s, before the buzzer."
 L["Damage stopped %ss after the buzzer"] = "Damage stopped %ss after the buzzer"
@@ -635,8 +634,19 @@ L["Nothing was equipped in this slot."] = "Nothing was equipped in this slot."
 L["Try the run's gear on in the Dressing Room."] = "Try the run's gear on in the Dressing Room."
 L["Hero talents: %s"] = "Hero talents: %s"
 L["The talent loadout the run was raced with."] = "The talent loadout the run was raced with."
-L["Open Blizzard's talent tree, read-only, on the run's loadout."] =
-    "Open Blizzard's talent tree, read-only, on the run's loadout."
+L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."] =
+    "Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."
+L["Only you see it: nothing is sent to a channel."] = "Only you see it: nothing is sent to a channel."
+L["this run"] = "this run"
+L["Talents for %s: %s \226\128\148 click the link to view the tree."] =
+    "Talents for %s: %s \226\128\148 click the link to view the tree."
+L["Spell breakdown"] = "Spell breakdown"
+L["Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."] =
+    "Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."
+L["No note"] = "No note"
+L["This run has no note. Add one from its detail or the row's right-click menu."] =
+    "This run has no note. Add one from its detail or the row's right-click menu."
+L["The note you kept with the run. Click to sort."] = "The note you kept with the run. Click to sort."
 L["This run has no talent string to open."] = "This run has no talent string to open."
 L["The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."] =
     "The game has changed how it saves talents since this run: its loadout no longer opens. Copy still works."

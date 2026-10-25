@@ -3,9 +3,10 @@ local _, NS = ...
 -- the loadout store (modules/Loadouts.lua). A *Gear* section draws the equipped items in two columns
 -- in the character frame's order, each with its quality border and item level; hovering one shows the
 -- client's own item tooltip from the stored link, Shift-click links it in chat, and *Dressing Room*
--- tries the whole set on. A *Talents* line names the loadout and its hero tree, with *View* (Blizzard's
--- talent tree, read-only, through the `talentbuild` link) and *Copy* (the import string in the copy
--- window). A run stored before #6 says *Not recorded*.
+-- tries the whole set on. A *Talents* line names the loadout and its hero tree, with *View* (the
+-- `talentbuild` link posted to the player's own chat window, where a click opens Blizzard's talent tree,
+-- read-only) and *Copy* (the import string in the copy window). A run stored before #6 says *Not
+-- recorded*.
 --
 -- UNDER THE COMPARE (#7, the pane's CompareTarget): the gear slots whose link differs from the other
 -- run's are highlighted, and a *Different loadout* line shows when the two import strings differ. No
@@ -166,12 +167,31 @@ function Loadout.DressUp(gear)
     return n
 end
 
---- Open Blizzard's talent tree, read-only, on the loadout (the talentbuild link's own handler).
---- @return boolean opened
-function Loadout.View(t, level)
-    if not Loadout.CanView(t) or type(SetItemRef) ~= "function" then return false end
-    local data = Loadout.LinkData(t, level)
-    return (pcall(SetItemRef, data, Loadout.Hyperlink(t, level), "LeftButton"))
+--- Post the loadout's talentbuild link to the player's own chat window, to click there: Blizzard's
+--- chat hyperlink handling then opens its talent tree, read-only.
+---
+--- NEVER OPENS A BLIZZARD FRAME FROM ADDON CODE (the owner's call, 2026-10-25). View used to call
+--- SetItemRef itself, which showed PlayerSpellsFrame from this addon's execution: its OnShow wrote
+--- the action bars' show-grid state tainted, and a later in-combat slot change ended in
+--- ADDON_ACTION_BLOCKED on MultiBarRightButton1:SetShown() (Blizzard_ActionBar UpdateShownButtons).
+--- A line in the chat frame is drawn by the chat frame alone; the click on the link is the player's.
+--- @param t table|nil  a stored talent loadout
+--- @param level number|nil  the character's level when it raced
+--- @param who string|nil  names the run in the line ("Lanfear, 25 Oct 14:02")
+--- @return boolean posted
+function Loadout.View(t, level, who)
+    if not Loadout.CanView(t) then return false end
+    local link = Loadout.Hyperlink(t, level)
+    if not link then return false end
+    NS.Print(L["Talents for %s: %s \226\128\148 click the link to view the tree."]:format(who or L["this run"], link))
+    return true
+end
+
+--- The run View names in its chat line: its character and date.
+function Loadout.RunLabel(run)
+    if type(run) ~= "table" then return nil end
+    local char = type(run.char) == "table" and run.char or {}
+    return ("%s, %s"):format(tostring(char.name or "?"), Tbl.Date(run.date, "%d %b %H:%M"))
 end
 
 --- The loadout's import string in the copy window.
@@ -264,17 +284,17 @@ function Loadout.Build(p, c)
     local x = { cells = {} }
     p.lo = x
     local Button = NS.HudStates.Button
-    x.title = Tbl.Text(c, FONT.HEADER)
+    x.title = Tbl.Text(c, FONT.SECTION)
     x.title:SetText(L["Gear"])
     x.dress = Button(c, L["Dressing Room"], function() Loadout.DressUp(x.gear) end)
     x.dress:SetSize(Loadout.DRESS_W, Loadout.BUTTON_H)
     x.none = Tbl.Text(c, FONT.TEXT, C.dim)
     x.none:SetText(L["Not recorded"])
     x.grid = CreateFrame("Frame", nil, c)
-    x.talentsTitle = Tbl.Text(c, FONT.HEADER)
+    x.talentsTitle = Tbl.Text(c, FONT.SECTION)
     x.talentsTitle:SetText(L["Talents"])
     x.talents = Tbl.Text(c, FONT.TEXT, C.text)
-    x.view = Button(c, L["View"], function() Loadout.View(x.talentsData, charLevel(p)) end)
+    x.view = Button(c, L["View"], function() Loadout.View(x.talentsData, charLevel(p), Loadout.RunLabel(p.run)) end)
     x.copy = Button(c, L["Copy"], function() Loadout.Copy(x.talentsData, Tbl.WindowOf(p.frame)) end)
     for _, b in ipairs({ x.view, x.copy }) do b:SetSize(Loadout.TALENT_W, Loadout.BUTTON_H) end
     x.differs = Tbl.Text(c, FONT.TEXT, C.amber)
@@ -365,7 +385,7 @@ end
 local function layoutTalents(p, x, y, cw)
     local tw = Loadout.TALENT_W
     place(x.talentsTitle, p.content, 0, y)
-    y = y - Loadout.LINE_H - 4
+    y = y - NS.Style.SECTION_H
     place(x.talents, p.content, 0, y - 2)
     x.talents:SetWidth(math.max(40, cw - 2 * tw - 12))
     place(x.view, p.content, cw - 2 * tw - 4, y)
@@ -387,8 +407,8 @@ function Loadout.Layout(p, y, cw)
     place(x.title, p.content, 0, y)
     local has = x.gear ~= nil
     x.dress:SetShown(has)
-    if has then place(x.dress, p.content, cw - Loadout.DRESS_W, y + 2) end
-    y = y - Loadout.LINE_H - 6
+    if has then place(x.dress, p.content, cw - Loadout.DRESS_W, y) end
+    y = y - math.max(NS.Style.SECTION_H, Loadout.BUTTON_H) - 2
     x.none:SetShown(not has)
     x.grid:SetShown(has)
     if has then

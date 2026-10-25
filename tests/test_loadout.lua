@@ -2,8 +2,9 @@
 -- gear links without the shirt and tabard, the talent loadout, every API absent or raising), its
 -- deduped store (modules/Loadouts.lua: the hash, a collision, the orphan sweep on every removal), the
 -- race taking it at arm and again at its combat end, the run format 2 migration, the detail's gear
--- grid and talents line (modules/Results_Loadout.lua) with the compare's highlights, the Spec cell's
--- tooltip and the share line's optional talents link.
+-- grid and talents line (modules/Results_Loadout.lua) with the compare's highlights (View posting the
+-- talents link to chat, never opening a Blizzard frame itself), the Spec cell's tooltip and the share
+-- line's optional talents link.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -347,9 +348,21 @@ test("loadout: the detail draws the gear grid in the character frame's order, an
     assertTrue(lo.dress:IsShown())
     lo.dress:__fire("OnClick")
     assertEqual(#M.__dressed, 3, "every equipped item tried on")
+    -- View posts the link to the player's own chat window and opens no Blizzard frame itself (the
+    -- talent frame shown from addon code tainted the action bars: ADDON_ACTION_BLOCKED in combat).
+    local printed = {}
+    local realPrint = NS.Print
+    NS.Print = function(msg, ...) printed[#printed + 1] = msg; return realPrint(msg, ...) end
     lo.view:__fire("OnClick")
-    assertEqual(M.__itemRefs[1][1], "talentbuild:267:80:" .. M.__talents.importString)
-    assertTrue(M.__itemRefs[1][2]:find("|Htalentbuild:267:80:", 1, true) ~= nil, "the link's text")
+    NS.Print = realPrint
+    assertEqual(#M.__itemRefs, 0, "View called SetItemRef: it must never open a Blizzard frame itself")
+    assertEqual(#printed, 1, "View posts one chat line")
+    assertTrue(printed[1]:find("|Htalentbuild:267:80:" .. M.__talents.importString .. "|h", 1, true) ~= nil,
+        "the line carries the clickable talentbuild link")
+    assertTrue(printed[1]:find("^Talents for Lanfear, ") ~= nil, "the line names the run: " .. printed[1])
+    assertTrue(printed[1]:find("click the link to view the tree", 1, true) ~= nil)
+    assertTrue(NS.ResultsTips.Loadout("view", NS.Recorder.Get("r"))[2]:find("chat", 1, true) ~= nil,
+        "the tooltip says it posts to chat")
     local copied
     NS.ShowCopy = function(text) copied = text return true end
     lo.copy:__fire("OnClick")
@@ -404,7 +417,8 @@ test("loadout: View is grayed with a reason once the client's serialization vers
     assertEqual(why, "version")
     local lines = NS.ResultsTips.Loadout("viewOff", NS.Recorder.Get("r"))
     assertTrue(lines[2]:find("no longer opens", 1, true) ~= nil)
-    assertFalse(NS.ResultsLoadout.View(lo.talentsData, 80), "a stale string was opened")
+    assertFalse(NS.ResultsLoadout.View(lo.talentsData, 80), "a stale string was posted")
+    assertEqual(#M.__itemRefs, 0)
 end)
 
 test("loadout: under the compare the changed slots are highlighted and a different loadout is marked", function()

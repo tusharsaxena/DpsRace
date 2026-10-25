@@ -29,11 +29,12 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 780 px) and its two-row filter
--- bar; expanded adds the 360 px detail and lays the filter bar in one row (about 1170 px).
+-- Each view's minimum: collapsed holds the Runs list's columns (about 870 px with the Note column:
+-- 728 px of fixed columns, the Character column's 60 and the gaps, pads and scrollbar) and its
+-- two-row filter bar; expanded adds the 360 px detail and lays the filter bar in one row.
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1180 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 800 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1240 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 880 },
 }
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list

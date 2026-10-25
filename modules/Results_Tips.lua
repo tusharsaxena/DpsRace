@@ -200,6 +200,7 @@ local ABOUT = {
     vsMax = "How far this run's DPS is from the highest complete run in view on the same target type.",
     status = "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
+    note = "The note you kept with the run. Click to sort.",
 }
 
 --- A header's tooltip: { title, text }, or nil for a column with nothing to say.
@@ -266,6 +267,11 @@ function DETAIL.strip(run)
 end
 
 DETAIL.tail = CELL.time
+
+function DETAIL.breakdown()
+    return { L["Spell breakdown"],
+        L["Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."] }
+end
 
 function DETAIL.chart()
     return { L["Damage over the race"],
@@ -489,7 +495,8 @@ function LOADOUT.talents(run)
 end
 
 function LOADOUT.view()
-    return { L["View"], L["Open Blizzard's talent tree, read-only, on the run's loadout."] }
+    return { L["View"], L["Post the run's talents to your chat window as a link. Click the link there to see the talent tree, read-only."],
+             dimLine(L["Only you see it: nothing is sent to a channel."]) }
 end
 
 function LOADOUT.viewOff(run)
