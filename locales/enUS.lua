@@ -340,9 +340,10 @@ L["Complete"] = "Complete"
 L["Flagged"] = "Flagged"
 L["Incomplete"] = "Incomplete"
 L["%s / %s"] = "%s / %s"
+L["at %s"] = "at %s"
 L["Time %s"] = "Time %s"
-L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length. Each preset length has its own color."] =
-    "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length. Each preset length has its own color."
+L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows when combat ended instead. Each preset length has its own color."] =
+    "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows when combat ended instead. Each preset length has its own color."
 L["Countdown"] = "Countdown"
 L["At the buzzer"] = "At the buzzer"
 L["Scoring rules"] = "Scoring rules"

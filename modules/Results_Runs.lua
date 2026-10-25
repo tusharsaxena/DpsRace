@@ -210,11 +210,19 @@ end
 -- ── grouping (LootHistory's Group by) ──────────────────────────────────────────────────────────
 -- One entry per mode: `of(run)` answers the group's key, its header label ("Character: Lânfear")
 -- and its rank (the groups' order); `column` is the column whose header flips that order.
+-- THE HEADER'S VALUE IN ITS OWN COLOR (the owner's call, 2026-10-25): plain colored text, never a
+-- box. A character or a class and spec in the class color, a target type in its category color
+-- (Tbl.CATEGORY_COLORS), a race length in its length color (Tbl.LengthColor). The prefix ("Target:")
+-- stays the header's gold and the count its gray.
+
+--- `text` wrapped in an inline color escape of `color`.
+function Runs.Colored(text, color)
+    return ("|c%s%s|r"):format(Tbl.Hex(color), text)
+end
+
 local function charGroup(run)
     local char = run.char or {}
-    local c = Tbl.ClassColor(char.class)
-    local name = ("|cff%02x%02x%02x%s|r"):format(math.floor(c[1] * 255 + 0.5), math.floor(c[2] * 255 + 0.5),
-        math.floor(c[3] * 255 + 0.5), tostring(char.name or "?"))
+    local name = Runs.Colored(tostring(char.name or "?"), Tbl.ClassColor(char.class))
     return Runs.CharKey(run), L["Character: %s"]:format(name), tostring(char.name or "?"):lower()
 end
 
@@ -222,15 +230,21 @@ local function classSpecGroup(run)
     local char = run.char or {}
     local class, spec = Tbl.ClassName(char.class), Tbl.SpecInfo(char.specID, char.spec)
     local label = spec and ("%s \194\183 %s"):format(class, spec) or class
-    return tostring(char.class) .. "|" .. tostring(char.specID), L["Class & spec: %s"]:format(label), label:lower()
+    return tostring(char.class) .. "|" .. tostring(char.specID),
+        L["Class & spec: %s"]:format(Runs.Colored(label, Tbl.ClassColor(char.class))), label:lower()
 end
 
 local CATEGORY_RANK = {}
 for i, key in ipairs(NS.Dummies.CATEGORIES) do CATEGORY_RANK[key] = i end
 
+-- A target type's name in its category color.
+local function categoryText(category)
+    return Runs.Colored(NS.Dummies.Label(category), Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other)
+end
+
 local function targetGroup(run)
     local category = run.target and run.target.category or "other"
-    return category, L["Target: %s"]:format(NS.Dummies.Label(category)), CATEGORY_RANK[category] or 99
+    return category, L["Target: %s"]:format(categoryText(category)), CATEGORY_RANK[category] or 99
 end
 
 -- The race length modes (the owner's call, 2026-10-25): one group per length, shortest first, the
@@ -245,8 +259,7 @@ end
 
 -- A run with no length reads as a dash, not "0:00": it groups after the longest length.
 local function lengthText(length)
-    local text = length == nil and DASH or NS.Format.Length(length)
-    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.LengthColor(length)), text)
+    return Runs.Colored(length == nil and DASH or NS.Format.Length(length), Tbl.LengthColor(length))
 end
 
 local function durationGroup(run)
@@ -260,7 +273,7 @@ local function targetLengthGroup(run)
     local length = lengthOf(run)
     local rank = (CATEGORY_RANK[category] or 99) * (NO_LENGTH_RANK + 1) + (length or NO_LENGTH_RANK)
     return category .. "|" .. tostring(length),
-        L["Target: %s"]:format(L["%s \194\183 %s"]:format(NS.Dummies.Label(category), lengthText(length))), rank
+        L["Target: %s"]:format(L["%s \194\183 %s"]:format(categoryText(category), lengthText(length))), rank
 end
 
 Runs.GROUPS = {
@@ -332,9 +345,9 @@ end
 -- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
 -- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
 -- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
--- is the board's (spec x dummy type x length). Both name their board after the box in plain text,
--- "boss-level · 2:00", the length in its color (Runs.StatusTrail): a best depends on the target type
--- and the race length.
+-- is the board's (spec x dummy type x length). Both name their board after the box in two boxed
+-- chips (Runs.StatusChips), the target type in its category color and the length in its length
+-- color, as the Target and Time columns draw them: a best depends on the target type and the length.
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -397,15 +410,18 @@ function Runs.StatusBoard(run)
         Tbl.LengthColor(length)
 end
 
---- The plain text after a tag's box: "boss-level · 2:00", the time in its length color, for Spec
---- best and Max; nil for every other tag.
+--- The chips after a tag's box for Spec best and Max: the target type ("Boss-level", as the Target
+--- column names it, without a count: a board is per type) in its category color, then the race
+--- length in its length color; nil for every other tag.
 --- @param run table
 --- @param key string  Runs.Status's key
---- @return string|nil
-function Runs.StatusTrail(run, key)
+--- @return table|nil  { { text, color }, { text, color } }
+function Runs.StatusChips(run, key)
     if not NAMES_BOARD[key] then return nil end
-    local target, time, color = Runs.StatusBoard(run)
-    return L["%s \194\183 %s"]:format(target, "|c" .. Tbl.Hex(color) .. time .. "|r")
+    local category = run.target and run.target.category or "other"
+    local label, catColor = Tbl.Badge({ category = category })
+    local time, lengthColor = Tbl.LengthChip(run.race and run.race.length)
+    return { { label, catColor }, { time, lengthColor } }
 end
 
 local function categoryOf(run)
@@ -531,7 +547,9 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
-Runs.STATUS_W = 212
+Runs.TARGET_W = 98
+Runs.TIME_W = 84
+Runs.STATUS_W = 226
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -571,18 +589,17 @@ function Runs.NoteTip(run)
     return { L["Note"], note }
 end
 
--- The tail in the caption gray, after the length (NS.Format.RunTime).
-local TAIL_HEX = Tbl.Hex(C.dim)
-
---- The Time cell: the run's time (NS.Format.RunTime) in its race length's color (Tbl.LengthColor),
---- the tail after it kept in the caption gray.
---- @return string text, table color
+--- The Time cell: the race length in a chip of its length color (Tbl.LengthChip), then the tail
+--- after the buzzer ("+9.1s") or, for a run that ended early, when combat ended ("at 1:04"), as
+--- plain caption-gray text after the box (Tbl.TimeTail).
+--- @return string text, table color, nil, string|nil trail
 function Runs.TimeCell(run)
-    return NS.Format.RunTime(run, TAIL_HEX), Tbl.LengthColor(run.race and run.race.length)
+    local text, color = Tbl.LengthChip(run.race and run.race.length)
+    return text, color, nil, Tbl.TimeTail(run)
 end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
+--- time (the length's chip and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
 --- its max off the whole list the table is handed (its `scan`, every run the filters pass).
 function Runs.Columns()
     local view = { top = {}, maxTag = {} }
@@ -600,10 +617,13 @@ function Runs.Columns()
         { key = "ilvl", label = L["iLvl"], width = 40, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        { key = "target", label = L["Target"], width = 84, kind = "badge", desc = false,
+        -- Boxed in the category color; wide enough for "Single target" and any type with a count
+        -- ("Dungeoneer ×20").
+        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
-        { key = "time", label = L["Time"], width = 76, desc = true,
+        -- The length boxed in its color, then the tail: "5:00" then "+15.9s" or "at 4:59".
+        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", boxed = true, trail = true, desc = true,
           sort = NS.Format.RunSeconds,
           text = Runs.TimeCell },
         { key = "damage", label = L["Damage"], width = 60, desc = true,
@@ -631,13 +651,13 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        -- Wide enough for the longest board after its box: "Spec best" then "single target · 10:00".
-        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, trail = true,
+        -- Wide enough for the longest board after its box: "Spec best" then [Single target] [10:00].
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, chips = 2,
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
               local key, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
-              return text, color, icon, Runs.StatusTrail(run, key)
+              return text, color, icon, nil, Runs.StatusChips(run, key)
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,

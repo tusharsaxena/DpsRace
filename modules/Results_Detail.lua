@@ -223,21 +223,26 @@ function Detail.SortedSpells(run)
     return out
 end
 
---- The header's three meta lines.
---- @return string realmLine, string targetLine, string stampLine
+--- The header's three meta lines, and the target line's two chips (the owner's call, 2026-10-25):
+--- the target type in its category color (Tbl.Badge, the count included) and the race length in its
+--- length color (Tbl.LengthChip), boxed as the Runs list draws them, before the line's text (the
+--- tail or when combat ended, then the target's name).
+--- @return string realmLine, string targetLine, string stampLine, table chips  { { text, color } x2 }
 function Detail.Meta(run)
     local char, where, target = run.char or {}, run.where or {}, run.target or {}
     local place = where.zone or ""
     if where.subzone and where.subzone ~= "" then place = place .. ", " .. where.subzone end
     local first = { char.realm or "?", L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) }
     if place ~= "" then first[#first + 1] = place end
-    local badge = Tbl.Badge(target)
-    local second = { target.name or L["Unknown target"], badge, NS.Format.RunTime(run) }
+    local second = { Tbl.TimeTail(run) }
+    second[#second + 1] = target.name or L["Unknown target"]
+    local badge, badgeColor = Tbl.Badge(target)
+    local chips = { { badge, badgeColor }, { Tbl.LengthChip(run.race and run.race.length) } }
     local third = { Tbl.Date(run.date, "%d %b %Y %H:%M") }
     if run.build then third[#third + 1] = L["build %s"]:format(tostring(run.build)) end
     if run.addon then third[#third + 1] = "v" .. tostring(run.addon) end
     local sep = " \194\183 "
-    return table.concat(first, sep), table.concat(second, sep), table.concat(third, sep)
+    return table.concat(first, sep), table.concat(second, sep), table.concat(third, sep), chips
 end
 
 -- ── the pane ────────────────────────────────────────────────────────────────────────────────────
@@ -300,6 +305,8 @@ local function buildHeader(p, c)
     w.spec:SetSize(ICON, ICON)
     w.name = Tbl.Text(c, FONT.NAME, C.text)
     w.meta = { Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim) }
+    -- The target line's chips (Detail.Meta): the target type, then the race length.
+    w.metaChips = { Tbl.Chip(c), Tbl.Chip(c) }
     w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)
     w.delta = Tbl.Text(c, FONT.TEXT, C.green)
     w.spellsTitle = Tbl.Text(c, FONT.SECTION)
@@ -408,6 +415,7 @@ local function wireTips(p)
     hoverOver(p, w.spec, "class")
     hoverOver(p, w.name, "name")
     for i, key in ipairs({ "realm", "target", "stamp" }) do hoverOver(p, w.meta[i], key) end
+    for _, chip in ipairs(w.metaChips) do hover(p, chip, "target") end
     hoverOver(p, w.spellsTitle, "breakdown")
     hover(p, w.damage.frame, "damage")
     hover(p, w.dps.frame, "dps")
@@ -499,10 +507,13 @@ function Pane:fillHeader(run)
     local color = Tbl.ClassColor(char.class)
     w.name:SetTextColor(color[1], color[2], color[3])
     self.specName = specName   -- named by the spec icon's tooltip, never drawn beside the name
-    local a, b, c = Detail.Meta(run)
+    local a, b, c, chips = Detail.Meta(run)
     w.meta[1]:SetText(a)
     w.meta[2]:SetText(b)
     w.meta[3]:SetText(c)
+    -- Each chip's width (Tbl.BadgeWidth's) is kept for the layout: nothing is read back.
+    self.metaChipW = {}
+    for i, chip in ipairs(w.metaChips) do self.metaChipW[i] = Tbl.SetChip(chip, chips[i][1], chips[i][2]) end
 end
 
 function Pane:fillScore(run)
@@ -627,6 +638,25 @@ end
 -- Each block below places its widgets at `y` (negative, down from the content's top) across `cw`
 -- and answers the y beneath it.
 
+-- The target line: its two chips from the left (their widths Tbl.SetChip's, kept at fill), the
+-- line's text after them in what is left, level with the chips' middle. A CHIP_LINE_H line.
+local CHIP_LINE_H = Tbl.CHIP_H + 2
+
+function Pane:layoutTargetLine(y, cw)
+    local w, x = self.w, 0
+    for i, chip in ipairs(w.metaChips) do
+        chip:ClearAllPoints()
+        chip:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y)
+        local cwi = self.metaChipW and self.metaChipW[i] or 0
+        if cwi > 0 then x = x + cwi + Tbl.CHIP_GAP end
+    end
+    local fs = w.meta[2]
+    fs:ClearAllPoints()
+    fs:SetPoint("LEFT", self.content, "TOPLEFT", x, y - Tbl.CHIP_H / 2)
+    fs:SetWidth(math.max(10, cw - x))
+    return y - CHIP_LINE_H
+end
+
 function Pane:layoutHeader(y, cw)
     local w = self.w
     w.class:ClearAllPoints()
@@ -639,11 +669,15 @@ function Pane:layoutHeader(y, cw)
     w.name:SetPoint("LEFT", self.content, "TOPLEFT", nameX, y - ICON / 2)
     w.name:SetWidth(math.max(40, cw - nameX))
     y = y - ICON - 6
-    for _, fs in ipairs(w.meta) do
-        fs:ClearAllPoints()
-        fs:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-        fs:SetWidth(cw)
-        y = y - LINE_H
+    for i, fs in ipairs(w.meta) do
+        if i == 2 then
+            y = self:layoutTargetLine(y, cw)
+        else
+            fs:ClearAllPoints()
+            fs:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+            fs:SetWidth(cw)
+            y = y - LINE_H
+        end
     end
     y = y - 8
     local third = math.floor((cw - 12) / 3)

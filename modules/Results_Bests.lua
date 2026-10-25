@@ -70,13 +70,10 @@ function Bests.Columns()
               local char = run.char or {}
               return char.name or "?", Tbl.ClassColor(char.class)
           end },
-        { key = "length", label = L["Length"], width = 56, desc = true,
+        -- Boxed in its length color, as the Runs list's Time column (Tbl.LengthChip): "10:00" fits.
+        { key = "length", label = L["Length"], width = 56, kind = "badge", boxed = true, desc = true,
           sort = function(run) return run.race and run.race.length end,
-          -- In its length color, as the Runs list's Time column (Tbl.LengthColor).
-          text = function(run)
-              local length = run.race and run.race.length
-              return NS.Format.Length(length), Tbl.LengthColor(length)
-          end },
+          text = function(run) return Tbl.LengthChip(run.race and run.race.length) end },
         { key = "ilvl", label = L["iLvl"], width = 56, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
