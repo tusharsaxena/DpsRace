@@ -158,7 +158,7 @@ end)
 
 -- ── the feature verbs (spec §6.4) ────────────────────────────────────────────────────────────────
 
-local FEATURE_VERBS = { "arm", "cancel", "hud", "results", "target", "test", "lock", "unlock" }
+local FEATURE_VERBS = { "arm", "cancel", "hud", "results", "target", "test", "sim", "lock", "unlock" }
 local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
 
 --- The printed lines without the chat tag.
@@ -297,6 +297,43 @@ test("slash: test turns test mode on and off through the Master controls row", f
     assertTrue(NS.GetSetting("state.testMode"))
     NS.Slash:OnSlash("test")
     assertFalse(NS.Preview.IsActive())
+end)
+
+test("slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    NS.Slash:OnSlash("test result")
+    assertTrue(NS.GetSetting("state.testMode"), "started through the Master controls row")
+    assertEqual(NS.Preview.Mode(), "test")
+    assertEqual(NS.Preview.Diagnose().phase, "result")
+    NS.Slash:OnSlash("test ARMED")
+    assertEqual(NS.Preview.Diagnose().phase, "armed", "switched in place")
+    M.__resetPrinted()
+    NS.Slash:OnSlash("test stop")
+    assertEqual(bare(M)[1], "Usage: /dr test [armed|running|result]")
+    assertEqual(NS.Preview.Diagnose().phase, "armed", "a bad word changes nothing")
+    NS.Slash:OnSlash("test")
+    assertFalse(NS.Preview.IsActive())
+end)
+
+test("slash: sim plays the default scenario or the one named; an unknown one lists them all", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    NS.Slash:OnSlash("sim")
+    assertEqual(NS.Preview.Mode(), "sim")
+    assertEqual(NS.Preview.Diagnose().scenario, "newbest", "the default")
+    assertTrue(NS.GetSetting("state.testMode"), "the Master controls' row follows")
+    NS.Slash:OnSlash("sim died")
+    assertEqual(NS.Preview.Diagnose().scenario, "died", "switched in place")
+    M.__resetPrinted()
+    NS.Slash:OnSlash("sim sideways")
+    local out = bare(M)
+    assertEqual(out[1], "Usage: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]")
+    assertEqual(#out, 1 + #NS.Sim.SCENARIOS, "one line a scenario")
+    assertEqual(out[2], "  newbest: beats the best")
+    assertEqual(NS.Preview.Diagnose().scenario, "died")
+    NS.Slash:OnSlash("test")
+    assertFalse(NS.Preview.IsActive(), "the switch ends a sim too")
 end)
 
 test("slash: lock and unlock write the Lock frame row through the seam and echo it", function()

@@ -99,6 +99,7 @@ local SUITES = {
     "test_slash",
     "test_share",
     "test_preview",
+    "test_sim",
     "test_launcher",
     "test_keybinds",
     "test_disabled",

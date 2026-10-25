@@ -107,6 +107,9 @@ files["modules/Results_Loadout.lua"] = {
     },
 }
 
+-- The sample history (B5) dates its runs back from now.
+files["modules/MockRuns.lua"] = { read_globals = { "time" } }
+
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.
 files["modules/Share.lua"] = {

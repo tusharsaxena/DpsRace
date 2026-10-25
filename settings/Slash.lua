@@ -10,7 +10,7 @@ local function out(line) NS.Print(line) end
 
 local cli   -- built at the bottom, once NS.COMMANDS exists; handlers reach it at CALL time
 local doEnabled, doDebug, doPerf, doSetVerb
-local doArm, doCancel, doHud, doResults, doTarget, doLock
+local doArm, doCancel, doHud, doResults, doTarget, doLock, doTest, doSim
 
 --- A feature verb's handler behind the stand-down: the dispatcher refuses every feature verb while the
 --- `disabled` hold is taken, and this answers the `perf` hold's line (slash-commands-§7, "Which
@@ -54,7 +54,10 @@ NS.COMMANDS = {
                                                                    feature(function(rest) doResults(rest) end) },
     { "target",      L["Print your target's name, creature ID and category"],
                                                                    feature(function() doTarget() end) },
-    { "test",        L["Turn test mode on or off"],                feature(function() NS.ToggleTestMode() end) },
+    { "test",        L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"],
+                                                                   feature(function(rest) doTest(rest) end) },
+    { "sim",         L["Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"],
+                                                                   feature(function(rest) doSim(rest) end) },
     { "lock",        L["Lock the race HUD in place"],
                                                                    feature(function() doLock(true) end) },
     { "unlock",      L["Unlock the race HUD to move and resize it"],
@@ -248,6 +251,17 @@ function doHud(rest)
     if word == "" then word = "toggle" end
     if not HUD_WORDS[word] then return out(L["Usage: %s hud show, %s hud hide or %s hud toggle"]:format(NS.SLASH, NS.SLASH, NS.SLASH)) end
     NS.SetHudShown(word)
+end
+
+--- `test [armed|running|result]`: a bare `test` turns test mode on or off; a state word holds that
+--- HUD body still.
+function doTest(rest)
+    NS.ToggleTestMode(tostring(rest or ""):match("^%s*(%S*)"):lower())
+end
+
+--- `sim [scenario]`: a whole sample race; with no scenario, the default one.
+function doSim(rest)
+    NS.StartSim(tostring(rest or ""):match("^%s*(%S*)"):lower())
 end
 
 --- `results [bests]`.

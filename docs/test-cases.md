@@ -292,7 +292,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (24)
+### test_chart.lua (25)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -315,8 +315,9 @@ Total.
 - chart: the Results detail shows the chart for a run raced this session only
 - chart: the detail's title hover goes with its chart, so it never covers the section under it
 - chart: a lost run has no chart on the card or in the detail
-- chart: test mode draws the sample's chart against a sample best, then on its result card
-- chart: test mode honors Show damage chart and Show pace bar
+- chart: test mode's still running body draws the sample's chart against the sample history's best
+- chart: the sim draws the sample's chart live against a best, then on its result card
+- chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
 ### test_pace.lua (10)
@@ -330,7 +331,7 @@ Total.
 - pace: no pace bar on the result card with no earlier best, and the rows move back up
 - pace: Show pace bar off, a shared session and a lost run hide the result card's bar
 - pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside
-- pace: test mode's result card shows the pace bar against the sample best, and honors the setting
+- pace: the sim's result card shows the pace bar against the sample best, and honors the setting
 
 ### test_countdown.lua (20)
 
@@ -350,8 +351,8 @@ Total.
 - countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
 - countdown: a /reload before the window shows nothing until it opens
 - countdown: a /reload past the buzzer shows nothing
-- countdown: test mode demonstrates it in its running phase, and it stops with test mode
-- countdown: the test race's buzzer clears it, and the setting holds in test mode
+- countdown: the sim demonstrates it in its running phase, and it stops with the sim
+- countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
@@ -527,7 +528,7 @@ Total.
 - settings: lowering Runs to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
-### test_slash.lua (27)
+### test_slash.lua (29)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -552,6 +553,8 @@ Total.
 - slash: hud show, hide and toggle; a bare hud toggles
 - slash: results opens the Results window; results bests opens the bests
 - slash: test turns test mode on and off through the Master controls row
+- slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
+- slash: sim plays the default scenario or the one named; an unknown one lists them all
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
@@ -573,24 +576,41 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (16)
+### test_preview.lua (21)
 
-- preview: preview runs armed->running->stop->waiting->result and never writes a run
-- preview: the running body counts the 30s race down with live figures
-- preview: the running clock follows the Race clock setting
-- preview: the result card is the sample run, with its chips
-- preview: the test strip says so on the display while it is on, and only then
-- preview: with no Widgets library the title carries the marker
-- preview: arming a real race ends preview
+- preview: test mode holds the running body still with live figures, chart, pace bar and spells
+- preview: the still running clock follows the Race clock setting
+- preview: a queued state opens on that body; SetState switches armed, running and result
+- preview: the test strip says so on the HUD while it is on, and only then
+- preview: with no Widgets library each window's title carries the marker
+- preview: test mode opens the Results window on the sample history, with its strip
+- preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
+- preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
+- preview: a note or a delete changes the sample in memory; Save view and Share refuse
+- preview: ending it gives the store back, the player's view and an open window kept open
+- preview: a Results window test mode opened closes with it
+- preview: arming a real race ends test mode and gives the Results window the store
 - preview: a start in combat is refused with one line; combat ends it and says so
 - preview: a start during a real race is refused
 - preview: turning it off gives the HUD back, closing it if test mode opened it
-- preview: Start again restarts the script; Reset all settings ends it
-- preview: the stand-down ends it silently and cancels its timer
+- preview: closing the HUD ends it; Reset all settings ends it
+- preview: the stand-down ends it silently and gives the store back
 - preview: over a real result card its controls never touch the real race
 - preview: a HUD test mode opened is handed to the race that ended it, and closes with it
-- preview: a stand-down drops the HUD test mode opened
+- preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
+
+### test_sim.lua (9)
+
+- sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
+- sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
+- sim: behind finishes under the best with a minus chip
+- sim: first races a board with no best: the chart on its own scale, no pace bar
+- sim: shared draws no chart and no pace bar, live or on the card
+- sim: flagged shows the late cast after the buzzer and on the card
+- sim: incomplete and died end before the buzzer and read out of combat
+- sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
+- sim: switching to test mode stops the script; a sim restarts in place
 
 ### test_launcher.lua (8)
 
@@ -748,7 +768,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 63 |
-| test_chart.lua | 24 |
+| test_chart.lua | 25 |
 | test_pace.lua | 10 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
@@ -759,9 +779,10 @@ Total.
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
-| test_slash.lua | 27 |
+| test_slash.lua | 29 |
 | test_share.lua | 13 |
-| test_preview.lua | 16 |
+| test_preview.lua | 21 |
+| test_sim.lua | 9 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -775,4 +796,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **609** |
+| **Total** | **626** |

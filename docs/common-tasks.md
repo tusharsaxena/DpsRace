@@ -37,7 +37,8 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
   (`modules/Style.lua`, spec §6 *Style*) and every button through `NS.HudStates.Button`; only a race
   clock keeps a face and size of its own.
 - Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
-  stop and waiting split), and give `modules/Preview.lua`'s script a step for it.
+  stop and waiting split), give `modules/Sim.lua`'s script a step for it and `modules/MockRuns.lua`'s
+  `Figures` its figures (and `Preview.STATES` the body, if test mode should hold it still).
 - A live value may only reach a widget setter, `NS.Format.Number` or `C_Spell`, and may only be
   tested against `nil` (the taint notes in [ARCHITECTURE.md](ARCHITECTURE.md#taint-notes)).
   `test_hud`'s secret-render cases and its geometry-read recorder check it.

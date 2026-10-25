@@ -230,13 +230,13 @@ test("pace: at the minimum height the result card keeps its pace bar and three r
     assertTrue(b.w.list:Count() >= 3)
 end)
 
-test("pace: test mode's result card shows the pace bar against the sample best, and honors the setting", function()
+test("pace: the sim's result card shows the pace bar against the sample best, and honors the setting", function()
     local f = hud()
-    local P = f.NS.Preview
-    assertTrue(P.Start())
+    local P = f.NS.Sim
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     f:advance(3.2)
     P.Beat()
-    f:advance(50)
+    f:advance(41)
     P.Beat()
     assertEqual(f.Hud.__ui().current, "result")
     local pace = body(f).w.pace

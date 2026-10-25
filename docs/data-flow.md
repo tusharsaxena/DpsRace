@@ -271,26 +271,47 @@ timer or `OnUpdate`.
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.
 
-## Test mode (spec §6.5, preview-mode)
+## Test mode and the sim (spec §6.5, preview-mode; B5)
 
 - **On**: the Master controls' *Test mode* row (`state.testMode`), `/dr test` and the launcher's *Test
-  mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. A start is refused
-  with one line in combat and while a real race is armed, running or waiting for its result; the
-  checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
-- **The script**: a fresh sample run (the player's own name and spec, a single-target dummy, a
-  made-up 147.6K DPS) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result, drawn by
-  `NS.Hud.Render(state, run, figures)`: the HUD's own bodies, so the layout is the real one. One
-  `C_Timer` ticker at 10 Hz advances it, and stops when the result card is reached; the result card
-  holds until test mode ends. The running body and the result card draw a sample damage chart (plain
-  numbers, one bucket a second), and the running body and the result card a pace bar, against a
-  sample best a little under the sample's damage. The engine never moves and nothing is stored.
-- **The marker**: while test mode is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
+  mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. `/dr test <armed|running|result>`
+  and `/dr sim [scenario]` queue their start (`Preview.Queue`) and turn the same row on through the
+  seam (`NS.StartSim` for the sim, both in `core/DpsRace.lua`), so the checkbox follows; with the
+  preview already on they switch it in place (`Preview.Start` again, or `Preview.SetState` for a still
+  body). A start is refused with one line in combat and while a real race is armed, running or waiting
+  for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
+- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 16 runs on the
+  player and two made-up characters, every Status, target type and preset length, notes, loadouts
+  from the player's own `Recorder.SnapshotLoadout()`, and sample chart records) and routes the
+  Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
+  window draws the sample as it draws the store: the Runs view opens on every character and spec,
+  the Bests tab, the detail's compare, chart, gear and talents. A note or a delete changes the
+  sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
+- **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
+  `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample
+  0:30 race beating the history's best on its board (`Sim.Sample("newbest")`: the clock, live figures,
+  the chart against the best's pace, the pace bar and the spells), or armed or the result card. No
+  timer runs. The Results window opens on the sample.
+- **sim** (`Preview.Mode() == "sim"`, `modules/Sim.lua`): the scenario's sample race (`newbest`,
+  `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; its DPS set against the history's best
+  on its board) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result 4 s (a run that ends
+  before its buzzer goes Running → Waiting out of combat → Result), then joins the sample history
+  (`ResultsSource.Add`, with its chart record unless shared) and the Results window opens on it while
+  the HUD keeps the card. One `C_Timer` ticker at 10 Hz advances it and stops at the Results step. The
+  running body and the card draw the chart and the pace bar against that best (scale B and no pace bar
+  for `first`, neither for `shared`), the center countdown shows silently in its last seconds, and the
+  card's delta is `Bests.Delta` against the sample history.
+- **The marker**: while either is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
-  Widgets library the title reads *DPS Race · Test* instead, never both.
+  Widgets library the title reads *DPS Race · Test* instead, never both. The Results window lays its
+  own under its tabs while it reads the sample (*Test mode: sample runs. Nothing here is saved*), or
+  titles itself *DPS Race — Results · Test*.
 - **Off**: its own switch, *Reset all settings* (the row's `default = false`), combat
   (`PLAYER_REGEN_DISABLED` → `Preview.Stop("combat")`, said once) and arming a real race (its bus
-  receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). A HUD that test mode
-  opened is closed again, except for a race. Closing the HUD (its X or Escape) and the sample bodies'
+  receiver → `Preview.Stop("race")`, said once, the HUD left open for the race). The Results window
+  goes back to the store (`ResultsSource.Restore`: the selection and the pick dropped, the player's
+  Runs view restored); each window the preview opened is closed again, except the HUD for a race.
+  Closing the HUD (its X or Escape) and the sample bodies'
   Cancel / Discard Run end it too, through `Hud.Act`, and never reach `Race.Cancel`: a start is
   allowed over a real result card, which the preview covers and leaves as it was; the sample card's
   Race Again and Details are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).

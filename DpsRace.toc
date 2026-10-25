@@ -140,9 +140,16 @@ modules\Results.lua
 # Share (T9): the one-line share and the race's own chat lines. LOAD-BEARING: builds its bus receiver
 # (RACE_STATE_CHANGED / RACE_RESULT) at FILE SCOPE through core\Bus.lua.
 modules\Share.lua
-# Test mode (T9). LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through
-# core\Bus.lua; drives the HUD (modules\Hud.lua) at CALL time.
+# The sample data test mode and the sim draw (B5): a made-up run history and HUD race, never stored.
+# Reached at CALL time only.
+modules\MockRuns.lua
+# Test mode and the sim's shell (T9, B5). LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED)
+# at FILE SCOPE through core\Bus.lua; drives the HUD (modules\Hud.lua) and the Results window's source
+# (modules\Results_Source.lua) at CALL time.
 modules\Preview.lua
+# `/dr sim`'s scenarios and script (B5). LOAD-BEARING: captures NS.MockRuns at FILE SCOPE, so it
+# follows modules\MockRuns.lua.
+modules\Sim.lua
 modules\Diagnostics.lua
 
 # Settings (last -- depend on everything else being initialized)

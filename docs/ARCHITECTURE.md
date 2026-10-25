@@ -32,8 +32,10 @@ setup file per module, each a descriptor plus a degradation stub (anti-pattern #
   them from pruning.
 - **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`, with
   the live damage chart and pace bar in `modules/Hud_Chart.lua`), the Results window
-  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout), the chat share (`modules/Share.lua`) and test mode
-  (`modules/Preview.lua`). None of them decides anything from a meter value.
+  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout), the chat share (`modules/Share.lua`), and test mode and the sim
+  (`modules/Preview.lua`, `modules/Sim.lua`, drawing `modules/MockRuns.lua`'s in-memory sample data;
+  the Results window reads it through its source seam, `modules/Results_Source.lua`). None of them
+  decides anything from a meter value.
 - **The shell** configures and reaches. The settings pages, the slash verbs, the launcher and three
   key bindings, the stand-down latch, the perf harness and the diagnostics report.
 
@@ -63,7 +65,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `Preview` (test mode) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -90,7 +92,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes to `global.history.keep`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
@@ -128,10 +130,11 @@ in `settings/Slash.lua`, in its declared order:
 | `hud [show\|hide\|toggle]` | The race HUD; a bare `hud` toggles |
 | `results [bests]` | Open the Results window, on the Bests tab when asked |
 | `target` | Print the target's name, creature ID and catalog category |
-| `test` | Turn test mode on or off (the Master controls' *Test mode* row) |
+| `test [armed\|running\|result]` | Static sample data in the HUD and the Results window: a bare `test` turns test mode on or off (the Master controls' *Test mode* row); a word holds that HUD body still |
+| `sim [scenario]` | Play a whole sample race, then open the Results window on it; `newbest` (the default), `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; an unknown word lists them |
 | `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
 
-The eight feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
+The nine feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
 disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
 The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
 
@@ -195,9 +198,10 @@ is on screen. Its one timer is a one-frame `C_Timer.After(0)` armed by `OnHide` 
 Blizzard's close-all-windows step (`CloseSpecialWindows`), so the window can come back under the
 talent tree (Taint Notes, B4.1).
 
-`modules/Preview.lua` (test mode) registers no game event either; combat ends it through
-`NS:OnCombatChanged`. While it plays its script it holds one `C_Timer` ticker at 10 Hz, canceled when
-the script reaches the result card, when test mode ends and at the stand-down. `modules/Share.lua`
+`modules/Preview.lua` (test mode and the sim) registers no game event either; combat ends it through
+`NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays its script
+(`modules/Sim.lua`) it holds one `C_Timer` ticker at 10 Hz, canceled when the script opens the Results
+window, when the sim ends or switches and at the stand-down. `modules/Share.lua`
 and `settings/History.lua` hold only their bus receivers.
 
 The pipeline from event to screen: [data-flow.md](data-flow.md).
@@ -243,7 +247,8 @@ each frame's strata, level and toplevel.
   combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
   never displays a value.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
-  it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store,
+  it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store
+  (or, in test mode and the sim, `modules/MockRuns.lua`'s plain sample records),
   so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
   config; its only geometry read is its own anchor on drag stop.
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
@@ -367,7 +372,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | Doc | Status | Trigger |
 |---|---|---|
 | `perf-analysis/README.md` | Present | The performance harness is wired (`core/PerfSetup.lua`) |
-| `slash-dispatch.md` | Present | 21 commands in `NS.COMMANDS` (eight or more) |
+| `slash-dispatch.md` | Present | 22 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |

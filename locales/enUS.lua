@@ -293,7 +293,8 @@ L["The race HUD: /dr hud show, hide or toggle"] = "The race HUD: /dr hud show, h
 L["Open the Results window; /dr results bests opens the bests"] =
     "Open the Results window; /dr results bests opens the bests"
 L["Print your target's name, creature ID and category"] = "Print your target's name, creature ID and category"
-L["Turn test mode on or off"] = "Turn test mode on or off"
+L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"] = "Sample data in the HUD and the Results window: /dr test [armed|running|result]"
+L["Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"] = "Play a whole sample race: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]"
 L["Lock the race HUD in place"] = "Lock the race HUD in place"
 L["Unlock the race HUD to move and resize it"] = "Unlock the race HUD to move and resize it"
 L["Nothing to cancel."] = "Nothing to cancel."
@@ -462,10 +463,25 @@ L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbe
 L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"
 
--- The Results window on the sample history (modules/Results.lua, modules/Results_Runs.lua)
+-- Test mode's static views and the sim (B5: modules/Preview.lua, modules/Sim.lua, modules/MockRuns.lua,
+-- the Results window's marker in modules/Results.lua, core/DpsRace.lua)
+L["Usage: %s test [armed|running|result]"] = "Usage: %s test [armed|running|result]"
+L["Usage: %s sim [%s]"] = "Usage: %s sim [%s]"
+L["  %s: %s"] = "  %s: %s"
+L["beats the best"] = "beats the best"
+L["complete, behind the best"] = "complete, behind the best"
+L["the first race on its board: no best, no pace bar"] = "the first race on its board: no best, no pace bar"
+L["combat ends before the buzzer"] = "combat ends before the buzzer"
+L["you die mid-race"] = "you die mid-race"
+L["a late cast after the buzzer"] = "a late cast after the buzzer"
+L["a shared session: no chart, no pace bar"] = "a shared session: no chart, no pace bar"
 L["Test mode: sample runs. Nothing here is saved"] = "Test mode: sample runs. Nothing here is saved"
 L["DPS Race \226\128\148 Results \194\183 Test"] = "DPS Race \226\128\148 Results \194\183 Test"
 L["Not saved: the Results window is showing sample runs."] = "Not saved: the Results window is showing sample runs."
+L["You"] = "You"
+L["Sample note: opener with every cooldown"] = "Sample note: opener with every cooldown"
+L["Sample note: five dummies in reach"] = "Sample note: five dummies in reach"
+L["Sample note: another character's best"] = "Sample note: another character's best"
 
 -- The Results window's tooltips (modules/Results_Tips.lua, modules/Results_Runs.lua)
 L["Role: %s"] = "Role: %s"

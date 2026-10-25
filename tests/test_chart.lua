@@ -462,30 +462,42 @@ end)
 
 -- ── test mode ───────────────────────────────────────────────────────────────────────────────────
 
-test("chart: test mode draws the sample's chart against a sample best, then on its result card", function()
+test("chart: test mode's still running body draws the sample's chart against the sample history's best", function()
     local f = hud()
-    local P = f.NS.Preview
-    assertTrue(P.Start())
-    f:advance(3.2)
-    P.Beat()
-    f:advance(10)
-    P.Beat()
+    assertTrue(f.NS.Preview.Start())
     local b = body(f)
     assertEqual(f.Hud.__ui().current, "running")
     assertTrue(b.w.chart.shown)
     assertTrue(b.w.pace.bar:IsShown())
     assertEqual(b.w.chart.note.__text, "vs best pace")
     assertTrue(type(b.w.chart.cols[5].__value) == "number" and b.w.chart.cols[5].__value > 0, "plain sample numbers")
+    local after = b.w.chart.cols[f.NS.Preview.STILL_AT + 1].__value
+    assertTrue(after == nil or after == 0, "a still moment: nothing past it")
+end)
+
+test("chart: the sim draws the sample's chart live against a best, then on its result card", function()
+    local f = hud()
+    local Sim = f.NS.Sim
+    assertTrue(f.NS.Preview.Start({ mode = "sim", scenario = "newbest" }))
+    f:advance(3.2)
+    Sim.Beat()
+    f:advance(10)
+    Sim.Beat()
+    local b = body(f)
+    assertEqual(f.Hud.__ui().current, "running")
+    assertTrue(b.w.chart.shown)
+    assertTrue(b.w.pace.bar:IsShown())
+    assertEqual(b.w.chart.note.__text, "vs best pace")
     f:advance(40)
-    P.Beat()
+    Sim.Beat()
     assertEqual(f.Hud.__ui().current, "result")
     assertTrue(body(f).w.chart.shown, "the sample's result card has its chart")
 end)
 
-test("chart: test mode honors Show damage chart and Show pace bar", function()
+test("chart: the sim honors Show damage chart and Show pace bar", function()
     local f = hud()
-    local P = f.NS.Preview
-    assertTrue(P.Start())
+    local P = f.NS.Sim
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     f:advance(3.2)
     P.Beat()
     f:advance(10)

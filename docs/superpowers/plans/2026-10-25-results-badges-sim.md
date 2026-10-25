@@ -67,10 +67,16 @@ go-ahead.
 
 ### B5: test vs sim
 
-- [ ] B5.1 `/dr test`: static mocked data in every view (the HUD states and the Results window's mocked runs and
+- [x] B5.1 `/dr test`: static mocked data in every view (the HUD states and the Results window's mocked runs and
   detail). No engine, no SavedVariables.
-- [ ] B5.2 `/dr sim [scenario]`: the scripted full race (arm, race, post-race, Results) across the scenarios, with
+  - Done: every Results file reads through one seam (`modules/Results_Source.lua`), routed to an in-memory sample
+    history (`modules/MockRuns.lua`) while test mode or a sim is on and back to the store when it ends. The HUD
+    holds the running body still (`/dr test armed|running|result` picks), the Results window opens with its
+    own strip; Share, Save and Reset refuse on samples, and a note or a delete stays in memory.
+- [x] B5.2 `/dr sim [scenario]`: the scripted full race (arm, race, post-race, Results) across the scenarios, with
   the Results window showing the sim run in memory only.
+  - Done: `modules/Sim.lua` (newbest, behind, first, incomplete, died, flagged, shared; newbest by default). The
+    chat box completes no addon's slash words, so the help line and `/dr sim <unknown>` list the scenarios.
 
 ### B6: Finish
 
