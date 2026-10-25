@@ -189,9 +189,11 @@ own frame. `Countdown.Suspend()` drops them at the stand-down.
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | the window shown | `Hud.Refresh` | the Arm button's *Leave combat to arm* and the footer |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | the window shown and the race RUNNING | one coalesced `Meter.ReadLive` per `1/live.hz` s | the live breakdown at 4 Hz by default, never from `OnUpdate` (spec §10) |
 
-`modules/Results.lua` registers no game event, no timer and no `OnUpdate`: it redraws from its bus
-receiver (`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while
-the window is on screen.
+`modules/Results.lua` registers no game event and no `OnUpdate`: it redraws from its bus receiver
+(`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while the window
+is on screen. Its one timer is a one-frame `C_Timer.After(0)` armed by `OnHide` after a close from
+Blizzard's close-all-windows step (`CloseSpecialWindows`), so the window can come back under the
+talent tree (Taint Notes, B4.1).
 
 `modules/Preview.lua` (test mode) registers no game event either; combat ends it through
 `NS:OnCombatChanged`. While it plays its script it holds one `C_Timer` ticker at 10 Hz, canceled when
