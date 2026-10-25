@@ -50,7 +50,19 @@ local C = {
     slate  = { 0.55, 0.58, 0.64 },
 }
 Tbl.COLORS = C
-local BADGE_ICON = 11       -- an icon inside a badge (the Status column's Best trophy)
+local BADGE_ICON = 11       -- an icon inside a badge (the Status column's tags)
+
+-- The race length colors (the owner's call, 2026-10-25): the five preset lengths
+-- (NS.HudStates.PRESETS) in muted ROYGBIV hues, shortest to longest, and any other length a neutral
+-- gray. The Results window's only: the HUD never draws a length in these.
+Tbl.LENGTH_COLORS = {
+    [30]  = { 0.86, 0.52, 0.52 },   -- soft red
+    [60]  = { 0.88, 0.67, 0.46 },   -- soft orange
+    [120] = { 0.86, 0.81, 0.52 },   -- soft yellow
+    [180] = { 0.56, 0.80, 0.58 },   -- soft green
+    [300] = { 0.58, 0.66, 0.92 },   -- soft indigo
+}
+Tbl.LENGTH_NEUTRAL = { 0.76, 0.76, 0.80 }
 
 -- The category badge colors (mockup screens 08-09): one hue per catalog category.
 Tbl.CATEGORY_COLORS = {
@@ -119,6 +131,22 @@ function Tbl.SpecInfo(specID, fallbackName)
         if ok and type(name) == "string" then return name, icon end
     end
     return fallbackName, nil
+end
+
+--- A race length's color (Tbl.LENGTH_COLORS): a preset's hue, else the neutral gray. Plain numbers
+--- off a stored run only.
+--- @param seconds number|nil
+--- @return table color
+function Tbl.LengthColor(seconds)
+    return type(seconds) == "number" and Tbl.LENGTH_COLORS[seconds] or Tbl.LENGTH_NEUTRAL
+end
+
+--- A color as the "aarrggbb" hex an inline |c escape takes.
+--- @param color table  { r, g, b }
+--- @return string
+function Tbl.Hex(color)
+    return ("ff%02x%02x%02x"):format(math.floor(color[1] * 255 + 0.5), math.floor(color[2] * 255 + 0.5),
+        math.floor(color[3] * 255 + 0.5))
 end
 
 --- The category badge: "Cleave", or "Cleave ×5" for a counted group, and its color.
@@ -292,21 +320,25 @@ function Cells.icons(row, col)
     return cell
 end
 
--- A tag in a 1px box; a column whose text also answers an icon name draws that icon before the word.
--- A tag: its icon (where the column names one) before its word, both in the tag's color, on no box
--- of its own (the owner's call, 2026-10-25).
-function Cells.badge(row)
-    local cell = { box = CreateFrame("Frame", nil, row) }
+-- A tag: its icon (where the column names one) before its word, both in the tag's color. A `boxed`
+-- column draws it in a 1px box tinted the tag's color, its icon inside (the Status column: the
+-- owner's call, 2026-10-25); any other is the colored word on no box (the Target column). A `trail`
+-- column also draws plain text after the tag (Spec best's and Max's board).
+function Cells.badge(row, col)
+    local cell = { box = col.boxed and Tbl.Panel(row) or CreateFrame("Frame", nil, row) }
     cell.box:SetHeight(16)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
     cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
     cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
-    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 0, 0)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", col.boxed and 4 or 0, 0)
     cell.icon:Hide()
+    if col.trail then
+        cell.trail = Tbl.Text(row, FONT.TEXT, C.dim)
+        cell.trail:SetPoint("LEFT", cell.box, "RIGHT", 4, 0)
+    end
     return cell
 end
-
 
 local function paint(fs, color)
     color = color or C.text
@@ -366,8 +398,24 @@ function Bind.icons(cell, col, run)
     if col.after then col.after(cell, run) end
 end
 
+-- The tag's word beside its icon and the box's width, from the label's length (config, never a
+-- measured width). A boxed tag also takes its tint on the box's edge and fill.
+local function layoutBadge(cell, col, s, color, extra)
+    cell.fs:ClearAllPoints()
+    if not col.boxed then
+        cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
+        return math.floor(#s * 6 + 4 + extra)
+    end
+    cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
+    if cell.box.SetBackdropBorderColor then
+        cell.box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
+        cell.box:SetBackdropColor(color[1], color[2], color[3], 0.08)
+    end
+    return math.floor(#s * 6 + 14 + extra)
+end
+
 function Bind.badge(cell, col, run)
-    local s, color, icon = col.text(run)
+    local s, color, icon, trail = col.text(run)
     s = s or ""
     color = color or C.amber
     cell.fs:SetText(s)
@@ -381,11 +429,14 @@ function Bind.badge(cell, col, run)
         cell.icon:SetTexture(path)
         cell.icon:SetVertexColor(color[1], color[2], color[3])
     end
-    cell.fs:ClearAllPoints()
-    cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
-    cell.box:SetWidth(math.floor(#s * 6 + 4 + extra))
+    local boxW = layoutBadge(cell, col, s, color, extra)
+    cell.box:SetWidth(boxW)
+    if not cell.trail then return end
+    -- The trail takes what the column has left after the box (placeCell's width).
+    cell.trail:SetText(trail or "")
+    cell.trail:SetShown(trail ~= nil and trail ~= "")
+    cell.trail:SetWidth(math.max(10, (cell.w or 0) - boxW - 4))
 end
-
 
 -- Place one cell in its column, from the column's x and width alone.
 local function placeCell(row, cell, col, x, w)
@@ -403,6 +454,7 @@ local function placeCell(row, cell, col, x, w)
     elseif kind == "badge" then
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
+        cell.w = w
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -545,7 +597,7 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge", width | flex+min, tip = fn(run) -> lines, about = header text,
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, trail), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
 --- @param opts table  { sortKey, sortDesc, onClick(run), onRightClick(run, row), empty = text,

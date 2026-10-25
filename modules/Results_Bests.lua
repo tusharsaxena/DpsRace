@@ -72,7 +72,11 @@ function Bests.Columns()
           end },
         { key = "length", label = L["Length"], width = 56, desc = true,
           sort = function(run) return run.race and run.race.length end,
-          text = function(run) return NS.Format.Length(run.race and run.race.length) end },
+          -- In its length color, as the Runs list's Time column (Tbl.LengthColor).
+          text = function(run)
+              local length = run.race and run.race.length
+              return NS.Format.Length(length), Tbl.LengthColor(length)
+          end },
         { key = "ilvl", label = L["iLvl"], width = 56, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
@@ -85,7 +89,8 @@ function Bests.Columns()
         { key = "date", label = L["Date"], width = 64, desc = true,
           sort = function(run) return run.date end,
           text = function(run) return Tbl.Date(run.date, "%d %b") end },
-        { key = "flags", label = L["Flags"], width = 110, kind = "badge",
+        -- Boxed chips, as the Runs list's Status tags are.
+        { key = "flags", label = L["Flags"], width = 110, kind = "badge", boxed = true,
           text = function(run) return Tbl.ShortFlags(run), C.amber end },
     }
 end

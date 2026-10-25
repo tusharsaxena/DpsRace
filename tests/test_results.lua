@@ -117,9 +117,10 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.time.fs.__text, "3:00 |cff9e9ead+9.2s|r", "the length, then the tail in the caption gray")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
-    assertEqual(c.status.fs.__text, "Spec best (cleave)", "a best outranks its flag in the tag")
+    assertEqual(c.status.fs.__text, "Spec best", "a best outranks its flag in the tag; the box holds the first part only")
+    assertEqual(c.status.trail.__text, "cleave \194\183 |cff8fcc943:00|r", "the board after the box, the length in its color")
     local status = pane.list:TipLines(run, 10)
-    assertEqual(status[1], "Spec best (cleave)")
+    assertEqual(status[1], "Spec best: cleave \194\183 3:00", "the tooltip names the whole board")
     local named = false
     for _, l in ipairs(status) do
         if type(l) == "table" and l[1]:find("Incinerate", 1, true) then named = true end
@@ -294,13 +295,15 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     local C = i.NS.ResultsTable.COLORS
     local key, text, bestColor, icon = Runs.Status(by.top)
     assertEqual(key, "best", "with no view max given, the board's best")
-    assertEqual(text, "Spec best (cleave)", "the target type follows")
+    assertEqual(text, "Spec best", "the first part only: the board is the trail's")
+    assertEqual(Runs.StatusTrail(by.top, key), "cleave \194\183 |cff8fcc943:00|r", "the target type and the length follow")
     assertEqual(bestColor, C.blue, "Spec best in blue")
     assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
     local maxColor
     key, text, maxColor, icon = Runs.Status(by.top, 150000)
     assertEqual(key, "max", "the view's max outranks Spec best")
-    assertEqual(text, "Max (cleave)")
+    assertEqual(text, "Max")
+    assertEqual(Runs.StatusTrail(by.top, key), "cleave \194\183 |cff8fcc943:00|r")
     assertEqual(icon, "ph:crown")
     assertEqual(maxColor, C.violet, "Max in violet")
     i.R.Show()
@@ -310,7 +313,8 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "slow" then other = row.cells.status end
     end
     assert(badge, "the top run is drawn")
-    assertEqual(badge.fs.__text, "Spec best (cleave)", "one spec in the view: its top run is its Spec best, no Max")
+    assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
+    assertTrue(badge.trail:IsShown(), "Spec best names its board after the box")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
     -- A second spec in the view (the mage's run): now the view-wide top is Max.
@@ -325,10 +329,13 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "top" then badge = row.cells.status end
         if row.run.id == "slow" then other = row.cells.status end
     end
-    assertEqual(badge.fs.__text, "Max (cleave)", "two specs in the view: the top run is Max")
+    assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
+    assertEqual(badge.trail.__text, "cleave \194\183 |cff8fcc943:00|r", "Max names its board too")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
     assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
     assertEqual(other.fs.__text, "Complete")
+    assertFalse(other.trail:IsShown(), "only Spec best and Max carry a board")
+    assertEqual(Runs.StatusTrail(by.slow, "complete"), nil)
     assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
     assertEqual((Runs.Status(by.slow)), "complete")
     local lateKey, _, lateColor, lateIcon = Runs.Status(by.late)
@@ -345,6 +352,95 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         seen[hue] = k
     end
     assertEqual(Runs.STATUS.incomplete.color, C.orange, "Incomplete in orange")
+end)
+
+test("results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise", function()
+    local i = inst()
+    local Tbl = i.NS.ResultsTable
+    local presets = i.NS.HudStates.PRESETS
+    local seen = {}
+    for _, len in ipairs(presets) do
+        local c = Tbl.LengthColor(len)
+        assertTrue(c ~= Tbl.LENGTH_NEUTRAL, len .. "s is a preset: it has a hue")
+        local hue = table.concat(c, ",")
+        assertEqual(seen[hue], nil, len .. "s shares its color with " .. tostring(seen[hue]))
+        seen[hue] = len
+        -- Muted: no channel at full strength or near black, so it reads on the dark table.
+        for _, v in ipairs(c) do assertTrue(v > 0.4 and v < 0.95, len .. "s is not muted") end
+    end
+    -- ROYGBIV in length order: the shortest red, the longest indigo.
+    assertTrue(Tbl.LengthColor(30)[1] > Tbl.LengthColor(30)[3], "the shortest is red")
+    assertTrue(Tbl.LengthColor(300)[3] > Tbl.LengthColor(300)[1], "the longest is blue")
+    assertEqual(Tbl.LengthColor(45), Tbl.LENGTH_NEUTRAL, "a custom length is neutral")
+    assertEqual(Tbl.LengthColor(nil), Tbl.LENGTH_NEUTRAL)
+    assertEqual(Tbl.Hex({ 1, 0, 0.5 }), "ffff0080")
+end)
+
+test("results: the Time column and the Bests Length column take the length color; the tail stays gray", function()
+    local i = inst()
+    seed(i, {
+        mkRun("two", { race = { length = 120, grace = 1 } }),
+        mkRun("odd", { race = { length = 45, grace = 1 }, result = { damage = 1, dps = 1, tail = 0 },
+                       date = NOW - 2 * HOUR }),
+    })
+    i.R.Show()
+    local Tbl = i.NS.ResultsTable
+    local cells = {}
+    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells end
+    assertEqual(cells.two.time.fs.__text, "2:00 |cff9e9ead+9.2s|r", "the tail keeps its caption gray")
+    local yellow = Tbl.LengthColor(120)
+    assertEqual(cells.two.time.fs.__color[1], yellow[1], "2:00 in its preset hue")
+    assertEqual(cells.two.time.fs.__color[3], yellow[3])
+    assertEqual(cells.odd.time.fs.__color[1], Tbl.LENGTH_NEUTRAL[1], "0:45 is neutral")
+    i.R.ShowTab("bests")
+    local pane = assert(ui(i).panes.bests)
+    pane.dropdowns.category.onSelect("cleave")
+    for _, row in ipairs(visible(pane)) do
+        local want = Tbl.LengthColor(row.run.race.length)
+        assertEqual(row.cells.length.fs.__color[1], want[1], "the Bests length in its color")
+    end
+end)
+
+test("results: Status tags are boxed in their hue with the icon inside; the column fits the window minimums", function()
+    local i = inst()
+    seed(i, { mkRun("top"), mkRun("slow", { result = { damage = 1, dps = 1 }, date = NOW - 2 * HOUR }) })
+    i.R.Show()
+    local pane = runsPane(i)
+    local edges = {}
+    for _, row in ipairs(visible(pane)) do
+        rawset(row.cells.status.box, "SetBackdropBorderColor", function(_, r, g, b) edges[row.run.id] = { r, g, b } end)
+    end
+    pane:Refresh()
+    local C = i.NS.ResultsTable.COLORS
+    assertEqual(edges.top and edges.top[3], C.blue[3], "Spec best's box in its blue")
+    assertEqual(edges.slow and edges.slow[2], C.green[2], "Complete's box in its green")
+    assertEqual(pane.list:column("target").boxed, nil, "the Target tag keeps no box")
+    -- The sort by Status is the tag order, unchanged by the box: Spec best before Complete.
+    pane.list:SetSort("status")
+    assertEqual(visibleIDs(pane), "top,slow")
+    -- Every column, the Status board included, fits the narrowest list either view lays out.
+    local Runs, R = i.NS.ResultsRuns, i.R
+    for _, view in ipairs({ "collapsed", "expanded" }) do
+        local body = R.VIEWS[view].minWidth - 2
+        local listW = view == "expanded" and body - math.min(R.DETAIL_WIDTH, math.floor(body * 0.38)) or body
+        local cols = Runs.Columns()
+        local place = i.NS.ResultsTable.Columns(cols, listW)
+        local last = place[#place]
+        assertTrue(last.x + last.w + 6 + 8 <= listW, view .. ": the columns overflow the list")
+        for n, col in ipairs(cols) do
+            if col.flex then assertTrue(place[n].w >= col.min, view .. ": the Character column is squeezed") end
+        end
+    end
+end)
+
+test("results: the HUD never draws a race length in the Results length colors", function()
+    for _, file in ipairs({ "Hud.lua", "Hud_Appearance.lua", "Hud_Breakdown.lua", "Hud_Chart.lua", "Hud_States.lua" }) do
+        local f = assert(io.open(T.root .. "/modules/" .. file, "rb"))
+        local src = f:read("*a")
+        f:close()
+        assertFalse(src:find("LengthColor", 1, true) ~= nil, file .. " uses the Results length colors")
+        assertFalse(src:find("LENGTH_COLORS", 1, true) ~= nil, file .. " uses the Results length colors")
+    end
 end)
 
 test("results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)", function()
@@ -462,7 +558,8 @@ test("results: v/s Max and the Max tag are per target type", function()
     assertEqual(cells.cleave2.vsMax.fs.__text, "-50.0%")
     assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
     assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
-    assertEqual(cells.boss.status.fs.__text, "Spec best (boss-level)", "one spec per target type: no Max")
+    assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
+    assertEqual(cells.boss.status.trail.__text, "boss-level \194\183 |cff8fcc943:00|r")
 end)
 
 test("results: Group by character, class & spec or target, with folding headers", function()
@@ -1195,7 +1292,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1240)
+    assertEqual(minW, 1270)
     assertEqual(minH, 420)
     assertEqual(u.width, 1300)
     assertEqual(u.height, 560)
@@ -1204,7 +1301,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 880)
+    assertEqual((u.frame:GetResizeBounds()), 910)
     assertEqual(u.width, 980)
     assertEqual(u.viewToggle.iconName, "chevron-right")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
@@ -1233,7 +1330,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     u.frame:__fire("OnSizeChanged", 1400, 600)
     assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1240, "expanded never goes under its minimum")
+    assertEqual(u.width, 1270, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)

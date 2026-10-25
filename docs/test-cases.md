@@ -351,7 +351,7 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (46)
+### test_results.lua (50)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
@@ -361,6 +361,10 @@ Total.
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
+- results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
+- results: the Time column and the Bests Length column take the length color; the tail stays gray
+- results: Status tags are boxed in their hue with the icon inside; the column fits the window minimums
+- results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
 - results: the Damage and DPS bars run 10% to 100% within each target type
@@ -718,7 +722,7 @@ Total.
 | test_chart.lua | 24 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
-| test_results.lua | 46 |
+| test_results.lua | 50 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_schema.lua | 15 |
@@ -739,4 +743,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **585** |
+| **Total** | **589** |

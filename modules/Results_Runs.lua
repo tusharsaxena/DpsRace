@@ -296,10 +296,12 @@ end
 -- The Status tags (the owner's call, 2026-10-24), in the badge colors: one per resolved status, and
 -- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
 -- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
--- Each tag is its icon before its word, both in the tag's own hue, and every hue is distinct (the
--- owner's call, 2026-10-25). Max is the view's: the complete run with the highest DPS the filters
--- pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best is the
--- board's (spec x dummy type x length).
+-- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
+-- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
+-- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
+-- is the board's (spec x dummy type x length). Both name their board after the box in plain text,
+-- "boss-level · 2:00", the length in its color (Runs.StatusTrail): a best depends on the target type
+-- and the race length.
 Runs.STATUS = {
     max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
@@ -325,8 +327,9 @@ local function runDps(run)
     return type(dps) == "number" and dps or nil
 end
 
---- A run's status tag: its key, its label, its color and its icon name. `top` is the view's max DPS
---- (Runs.MaxDps over the runs the filters pass): the complete run holding it is Max, over Spec best.
+--- A run's status tag: its key, its label (the word in the box: "Spec best", never its board), its
+--- color and its icon name. `top` is the view's max DPS (Runs.MaxDps over the runs the filters
+--- pass): the complete run holding it is Max, over Spec best.
 --- @param run table
 --- @param top number|nil
 --- @return string key, string text, table color, string|nil icon
@@ -346,12 +349,30 @@ function Runs.Status(run, top)
         key = "complete"
     end
     local tag = Runs.STATUS[key]
-    local text = L[tag.label]
-    -- Spec best and Max are per target type: the type follows, "Spec best (cleave)".
-    if key == "best" or key == "max" then
-        text = L["%s (%s)"]:format(text, NS.Dummies.Label(run.target and run.target.category):lower())
-    end
-    return key, text, tag.color, tag.icon
+    return key, L[tag.label], tag.color, tag.icon
+end
+
+-- The tags that name their board after the box.
+local NAMES_BOARD = { best = true, max = true }
+
+--- The board a Spec best or Max tag names: the target type in lower case and the race length
+--- ("boss-level", "2:00"), and the length's color (Tbl.LengthColor).
+--- @return string target, string time, table color
+function Runs.StatusBoard(run)
+    local length = run.race and run.race.length
+    return NS.Dummies.Label(run.target and run.target.category):lower(), NS.Format.Length(length),
+        Tbl.LengthColor(length)
+end
+
+--- The plain text after a tag's box: "boss-level · 2:00", the time in its length color, for Spec
+--- best and Max; nil for every other tag.
+--- @param run table
+--- @param key string  Runs.Status's key
+--- @return string|nil
+function Runs.StatusTrail(run, key)
+    if not NAMES_BOARD[key] then return nil end
+    local target, time, color = Runs.StatusBoard(run)
+    return L["%s \194\183 %s"]:format(target, "|c" .. Tbl.Hex(color) .. time .. "|r")
 end
 
 local function categoryOf(run)
@@ -458,14 +479,18 @@ local STATUS_ABOUT = {
     lost = "The meter's session could not be read after combat. There is no score.",
 }
 
---- The Status cell's tooltip: the tag, what it means, then every flag the run carries (what the
---- flag column's mark used to say).
+--- The Status cell's tooltip: the tag (with its whole board for Spec best and Max: "Spec best:
+--- boss-level · 2:00"), what it means, then every flag the run carries (what the flag column's mark
+--- used to say).
 function Runs.StatusTip(run, top)
-    local key, text, color = Runs.Status(run, top)
-    local lines = { { text, color[1], color[2], color[3] }, L[STATUS_ABOUT[key]] }
-    for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
+    local key, text = Runs.Status(run, top)
     -- lines[1] is the title: SideTip draws it from a string.
-    lines[1] = text
+    local lines = { text, L[STATUS_ABOUT[key]] }
+    if NAMES_BOARD[key] then
+        local target, time = Runs.StatusBoard(run)
+        lines[1] = L["%s: %s \194\183 %s"]:format(text, target, time)
+    end
+    for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
     return lines
 end
 
@@ -473,6 +498,7 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
+Runs.STATUS_W = 190
 Runs.NOTE_CHARS = 10
 local ELLIPSIS = "\226\128\166"
 
@@ -513,8 +539,14 @@ function Runs.NoteTip(run)
 end
 
 -- The tail in the caption gray, after the length (NS.Format.RunTime).
-local TAIL_HEX = ("ff%02x%02x%02x"):format(math.floor(C.dim[1] * 255 + 0.5), math.floor(C.dim[2] * 255 + 0.5),
-    math.floor(C.dim[3] * 255 + 0.5))
+local TAIL_HEX = Tbl.Hex(C.dim)
+
+--- The Time cell: the run's time (NS.Format.RunTime) in its race length's color (Tbl.LengthColor),
+--- the tail after it kept in the caption gray.
+--- @return string text, table color
+function Runs.TimeCell(run)
+    return NS.Format.RunTime(run, TAIL_HEX), Tbl.LengthColor(run.race and run.race.length)
+end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
 --- time (the length and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
@@ -540,7 +572,7 @@ function Runs.Columns()
           text = function(run) return Tbl.Badge(run.target) end },
         { key = "time", label = L["Time"], width = 76, desc = true,
           sort = NS.Format.RunSeconds,
-          text = function(run) return NS.Format.RunTime(run, TAIL_HEX), C.text end },
+          text = Runs.TimeCell },
         { key = "damage", label = L["Damage"], width = 60, desc = true,
           sort = function(run) return run.result and run.result.damage end,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
@@ -566,11 +598,13 @@ function Runs.Columns()
           sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
           text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
           tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
-        { key = "status", label = L["Status"], width = 150, kind = "badge", desc = false,
+        -- Wide enough for the longest board after its box: "Spec best" then "single target · 0:30".
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true, trail = true,
+          desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
-              return text, color, icon
+              local key, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
+              return text, color, icon, Runs.StatusTrail(run, key)
           end,
           tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,

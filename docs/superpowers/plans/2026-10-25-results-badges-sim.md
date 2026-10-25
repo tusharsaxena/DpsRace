@@ -39,9 +39,9 @@ go-ahead.
 
 ### B1: Runs Status and length colors
 
-- [ ] B1.1 Length colors: a pure `lengthColor(seconds)` with muted ROYGBIV hues for the presets and a neutral color
+- [x] B1.1 Length colors: a pure `lengthColor(seconds)` with muted ROYGBIV hues for the presets and a neutral color
   otherwise, used by the Time column in the Results views only.
-- [ ] B1.2 Status as boxed badges with the icon inside and the first part only. Spec best and Max get the
+- [x] B1.2 Status as boxed badges with the icon inside and the first part only. Spec best and Max get the
   `<target> · <time>` text after the badge, the time length-colored. Tooltips, the sort and the Bests tab stay
   consistent.
 

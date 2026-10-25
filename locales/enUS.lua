@@ -254,7 +254,8 @@ L["Only best"] = "Only best"
 L["Save"] = "Save"
 L["Reset"] = "Reset"
 L["Clear"] = "Clear"
-L["%s (%s)"] = "%s (%s)"
+L["%s \194\183 %s"] = "%s \194\183 %s"
+L["%s: %s \194\183 %s"] = "%s: %s \194\183 %s"
 L["Runs view saved as default."] = "Runs view saved as default."
 L["Runs view reset to stock defaults."] = "Runs view reset to stock defaults."
 L["Save these filters, the grouping and the sort as this profile's default view of Runs."] = "Save these filters, the grouping and the sort as this profile's default view of Runs."
@@ -333,8 +334,8 @@ L["Flagged"] = "Flagged"
 L["Incomplete"] = "Incomplete"
 L["%s / %s"] = "%s / %s"
 L["Time %s"] = "Time %s"
-L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."] =
-    "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length."
+L["The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length. Each preset length has its own color."] =
+    "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows its time in combat against the length. Each preset length has its own color."
 L["Countdown"] = "Countdown"
 L["At the buzzer"] = "At the buzzer"
 L["Scoring rules"] = "Scoring rules"
@@ -492,15 +493,15 @@ L["Who raced. Hover a name for the realm, race and where."] =
 L["Equipped item level when the race was armed."] = "Equipped item level when the race was armed."
 L["The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."] =
     "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."
-L["The race length the best was set at."] = "The race length the best was set at."
+L["The race length the best was set at. Each preset length has its own color."] = "The race length the best was set at. Each preset length has its own color."
 L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."] =
     "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."
 L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."] =
     "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."
 L["How far this run's DPS is from the highest complete run in view on the same target type."] =
     "How far this run's DPS is from the highest complete run in view on the same target type."
-L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
-    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Complete, Flagged, Incomplete, Died or Lost otherwise."
+L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
+    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."
 L["What happened on the run that its result should mention: late casts, a restart, a reload."] =
     "What happened on the run that its result should mention: late casts, a restart, a reload."
 L["A lost run has no DPS to compare."] = "A lost run has no DPS to compare."
