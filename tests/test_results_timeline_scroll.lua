@@ -194,6 +194,38 @@ test("timeline scroll: the arrows are disabled and dimmed at 1x and each at its 
     assertFalse(L:IsEnabled() or R:IsEnabled(), "both off back at 1x")
 end)
 
+test("timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off", function()
+    local i, u = opened()
+    local TL = i.TL
+    -- At 1.5x a 512 px zoomed axis's end in pixels, divided back, lands one ulp short of the range.
+    local r, zw = TL.PosRange(1.5), 512 * 1.5
+    assertTrue((r * zw) / zw < r, "the rounding the snap is for")
+    assertEqual(TL.ClampPos((r * zw) / zw, 1.5), r, "snapped onto the end")
+    assertEqual(TL.ClampPos(1e-12, 1.5), 0, "and onto 0:00")
+    TL.ZoomBy(2)
+    local _, _, laneW = TL.LaneGeometry(u.width)
+    TL.ScrollTo(TL.PosRange(2) * laneW * 2)
+    assertEqual(u.pos, TL.PosRange(2))
+    assertFalse(u.scrollRight:IsEnabled(), "right off at the dragged-to end")
+end)
+
+test("timeline scroll: zoomed in on a run with no casts, the arrows stay off", function()
+    local i, u = opened()
+    local TL = i.TL
+    local old = mkRun(i.NS, "old", 20, {}, { schema = 2, date = NOW - 4 * HOUR })
+    old.casts = nil
+    i.NS.db.global.runs.old = old
+    i.NS.Bests.Invalidate()
+    i.R.ShowRun("old")
+    TL.ZoomBy(2)   -- the zoom controls still step over an empty view
+    assertTrue(u.empty:IsShown(), "nothing drawn")
+    assertTrue(TL.ZoomAt(u.zoomI) > 1, "zoomed in")
+    assertFalse(u.scrollLeft:IsEnabled() or u.scrollRight:IsEnabled(), "no arrows over an empty view")
+    i.R.DeleteRun("old")
+    TL.ZoomBy(2)
+    assertFalse(u.scrollLeft:IsEnabled() or u.scrollRight:IsEnabled(), "nor with no run at all")
+end)
+
 -- ── the control sizes ───────────────────────────────────────────────────────────────────────────
 
 test("timeline scroll: the five heading-line controls are one size, icons and glyphs alike", function()

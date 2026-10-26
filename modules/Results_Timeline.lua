@@ -263,9 +263,14 @@ function Timeline.ZoomAt(i)
     return Timeline.ZOOMS[math.max(1, math.min(n, tonumber(i) or 1))]
 end
 
---- The view's left edge, a fraction of the zoomed axis, clamped so the view stays on the axis.
+--- The view's left edge, a fraction of the zoomed axis, clamped so the view stays on the axis; a
+--- value a rounding error short of either end (the thumb dragged there) snaps onto it.
 function Timeline.ClampPos(pos, zoom)
-    return math.max(0, math.min(1 - 1 / zoom, tonumber(pos) or 0))
+    local hi = 1 - 1 / zoom
+    pos = math.max(0, math.min(hi, tonumber(pos) or 0))
+    if pos > hi - 1e-9 then return hi end
+    if pos < 1e-9 then return 0 end
+    return pos
 end
 
 --- The left edge after zooming from `from` to `to` about the view's middle.
@@ -950,11 +955,12 @@ local function placeBar(g, shown)
     ui.syncing = false
 end
 
--- The arrows at this pan: each live only zoomed in and short of its end of the axis, else disabled
--- and dimmed.
+-- The arrows at this pan: each live only zoomed in on drawn lanes and short of its end of the axis,
+-- else disabled and dimmed.
 local function placeArrows(g)
-    local left = g.zoom > 1 and ui.pos > 0
-    local right = g.zoom > 1 and ui.pos < Timeline.PosRange(g.zoom)
+    local live = g.zoom > 1 and not ui.isEmpty
+    local left = live and ui.pos > 0
+    local right = live and ui.pos < Timeline.PosRange(g.zoom)
     ui.scrollLeft:SetEnabled(left)
     ui.scrollLeft:SetAlpha(left and 1 or Timeline.DIM)
     ui.scrollRight:SetEnabled(right)

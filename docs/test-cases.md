@@ -714,13 +714,15 @@ Total.
 - timeline view: it opens exactly over the Results window, expanded or collapsed, never stored
 - timeline view: over a Results window smaller than its minimums, it keeps its minimums
 
-### test_results_timeline_scroll.lua (6)
+### test_results_timeline_scroll.lua (8)
 
 - timeline scroll: the wheel scrolls up and down at any zoom; Shift+wheel left and right only zoomed in
 - timeline scroll: the zoom and arrow tooltips say how the wheel and the arrows scroll
 - timeline scroll: the arrows end the Casts heading line, after reset, chevrons from the catalog
 - timeline scroll: each arrow pans a quarter of the view, clamped to the axis
 - timeline scroll: the arrows are disabled and dimmed at 1x and each at its end of the axis
+- timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off
+- timeline scroll: zoomed in on a run with no casts, the arrows stay off
 - timeline scroll: the five heading-line controls are one size, icons and glyphs alike
 
 ### test_sizing.lua (14)
@@ -1070,7 +1072,7 @@ Total.
 | test_results_timeline_zoom.lua | 7 |
 | test_results_timeline_modal.lua | 8 |
 | test_results_timeline_view.lua | 6 |
-| test_results_timeline_scroll.lua | 6 |
+| test_results_timeline_scroll.lua | 8 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 17 |
@@ -1092,4 +1094,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **858** |
+| **Total** | **860** |

@@ -470,7 +470,7 @@ Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band
 `test_results_sections` did)
 and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
 six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1323 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27; its suite's
+first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1329 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27; its suite's
 P12, P13, P14 and P15 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view` and `test_results_timeline_scroll` suites), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1050 (the detail's Delta box contexts, 2026-10-26) and
