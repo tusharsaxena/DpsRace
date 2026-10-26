@@ -366,7 +366,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   only, in *Casts* only.
 - [x] **Timeline placement:** the timeline always opens at the Results window's current position and size (its
   expanded or collapsed view as shown), so it overlays it exactly; moving or resizing it while open is not saved.
-- [x] **Results default view:** a new profile opens the Results window collapsed.
+- [x] **Results default view:** a new profile opens the Results window collapsed. Migration 3 -> 4 keeps an existing
+  profile that was in the old expanded default expanded, and clears the timeline's no longer read `windows.timeline`.
 - [x] **Delta 0.0% in green:** the top run's 0.0% in the Delta column (and the detail's Delta box) is a green from
   the same palette as the column's red.
 

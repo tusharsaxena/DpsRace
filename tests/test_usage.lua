@@ -516,7 +516,7 @@ test("usage: the format 3 migration raises the stamp and rewrites no run", funct
     NS:InitDB()
     NS:RunMigrations()
     local g = NS.db.global
-    assertEqual(g.schemaVersion, 3)
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
     assertEqual(g.schema, 3)
     local run = g.runs.old
     assertEqual(run.schema, 2, "an old run was rewritten")

@@ -739,7 +739,7 @@ Total.
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
 
-### test_schema.lua (16)
+### test_schema.lua (17)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
@@ -754,6 +754,7 @@ Total.
 - schema: entering combat ends test mode, and says so once
 - schema: General visibility changes the registration set while enabled
 - schema: a migration runs once and stamps the stored version
+- schema: migration 4 keeps an old profile's expanded view and drops the timeline's place
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
@@ -1063,7 +1064,7 @@ Total.
 | test_results_timeline_view.lua | 7 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
-| test_schema.lua | 16 |
+| test_schema.lua | 17 |
 | test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
@@ -1082,4 +1083,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **852** |
+| **Total** | **853** |

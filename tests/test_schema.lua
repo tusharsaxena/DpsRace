@@ -143,6 +143,32 @@ test("schema: a migration runs once and stamps the stored version", function()
     assertEqual(NSi.db.global.schemaVersion, top)
 end)
 
+test("schema: migration 4 keeps an old profile's expanded view and drops the timeline's place", function()
+    local inst = T.load({ init = false })
+    local NSi = inst.NS
+    local old = { windows = { results = { expanded = { width = 1400, height = 600 } },
+                              timeline = { point = "CENTER", width = 980, height = 560 } } }
+    local kept = { windows = { results = { view = "collapsed" } } }
+    local fresh = { windows = { hud = { width = 300 } } }
+    local bare = {}
+    _G.DpsRaceDB = { global = { schemaVersion = 3, schema = 3 },
+                     profiles = { Old = old, Kept = kept, Fresh = fresh, Bare = bare } }
+    inst.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    NSi:InitDB()
+    NSi:RunMigrations()
+    assertEqual(NSi.db.global.schemaVersion, 4)
+    assertEqual(old.windows.results.view, "expanded", "the old default's stripped view is written")
+    assertEqual(old.windows.results.expanded.width, 1400, "its size kept")
+    assertEqual(old.windows.timeline, nil, "the timeline's unread place dropped")
+    assertEqual(kept.windows.results.view, "collapsed", "a stored view kept")
+    assertEqual(fresh.windows.results, nil, "a profile that never stored the Results window keeps the default")
+    assertEqual(next(bare), nil, "an empty profile untouched")
+    -- Idempotent: a second pass changes nothing.
+    old.windows.results.view = "collapsed"
+    NSi:RunMigrations()
+    assertEqual(old.windows.results.view, "collapsed", "the step ran twice")
+end)
+
 test("panel: the category registers eagerly and every page body renders on first show", function()
     local inst = T.load()
     local M = inst.mocks
