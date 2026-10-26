@@ -5,11 +5,11 @@ local _, NS = ...
 --
 -- THE LAYOUT. A legend bar (this run's date in gold, the compared run's in blue and what it is: the
 -- best, the runner-up or the picked run), then one pair of lanes per ability: its name cell (icon,
--- name, "(pet)" for a pet's, and under the name its cooldown when over 15 s) beside two lanes, the top
+-- name, "(pet)" for a pet's, and under the name its cooldown when 29 s or more) beside two lanes, the top
 -- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
 -- (blue), each lane's cast count at its right. Nothing sits between the name cell and the lanes but
 -- the gap (the owner's call, 2026-10-26: a cooldown beside the lanes read as part of them). Abilities
--- with a cooldown over 15 s come first, longest first; the rest follow by count. The time axis (0,
+-- with a cooldown of 29 s or more come first, longest first; the rest follow by count. The time axis (0,
 -- the quarters, the end) is pinned under the lanes, which scroll (the mouse wheel). A tick's tooltip
 -- names the spell and its time; a name's shows the client's spell tooltip and both counts.
 --
@@ -95,11 +95,10 @@ local function groupsOf(run)
     return NS.Casts.Group(list, run.casts.spells)
 end
 
--- Important abilities (base cooldown over 15 s) first, the longest first; then the rest by this run's
+-- Important abilities (base cooldown 29 s or more) first, the longest first; then the rest by this run's
 -- count, then the compared run's; the player's before the pet's, then the id.
 local function before(a, b)
-    local limit = NS.Casts.IMPORTANT_MS
-    local ia, ib = a.cd > limit, b.cd > limit
+    local ia, ib = NS.Casts.IsLong(a.cd), NS.Casts.IsLong(b.cd)
     if ia ~= ib then return ia end
     if ia and a.cd ~= b.cd then return a.cd > b.cd end
     if a.countA ~= b.countA then return a.countA > b.countA end
@@ -161,13 +160,13 @@ function Timeline.MarkX(t, span, width)
     return inset + math.max(0, math.min(span, t)) / span * math.max(0, width - 2 * inset)
 end
 
---- A row's cooldown: m:ss when over 15 s, else nothing.
+--- A row's cooldown: m:ss when 29 s or more, else nothing.
 function Timeline.CooldownText(row)
-    if not (row and row.cd > NS.Casts.IMPORTANT_MS) then return "" end
+    if not (row and NS.Casts.IsLong(row.cd)) then return "" end
     return NS.Format.Length(row.cd / 1000)
 end
 
---- The line under a row's name in its name cell: "1:30 cooldown" when over 15 s, else nothing.
+--- The line under a row's name in its name cell: "1:30 cooldown" when 29 s or more, else nothing.
 function Timeline.CooldownLine(row)
     local cd = Timeline.CooldownText(row)
     return cd ~= "" and L["%s cooldown"]:format(cd) or ""

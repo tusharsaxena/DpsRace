@@ -580,7 +580,7 @@ local function paceLine(pace)
 end
 
 --- The Damage profile block's height: the space above its heading, the heading, the pace bar's line,
---- the plot and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
+--- the plot (its frame, with the icons' row on top) and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
 --- @param pace boolean
 --- @param chart boolean
 --- @param plotH number
@@ -589,7 +589,7 @@ function States.ProfileHeight(pace, chart, plotH)
     if not (pace or chart) then return 0 end
     local Chart = NS.HudChart
     local h = HEAD_GAP + SECTION_H + paceLine(pace)
-    if chart then h = h + plotH + Chart.GAP + Chart.AXIS_H end
+    if chart then h = h + Chart.FrameHeight(plotH) + Chart.GAP + Chart.AXIS_H end
     return h + GAP
 end
 local profileH = States.ProfileHeight

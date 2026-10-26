@@ -548,7 +548,7 @@ Total.
 
 - casts: Encode writes centiseconds, a p before a pet cast, comma-joined
 - casts: Decode reads the stored string back, skipping what does not parse
-- casts: an important ability's base cooldown is more than 15 s
+- casts: an important ability's base cooldown is 29 s or more
 - casts: Important and Of read a run's record; a run without one has none
 - casts: Group puts cooldowns first, longest first, then the rest by count
 - casts: nothing is heard before Begin or after Stop; other units are never heard
@@ -623,18 +623,20 @@ Total.
 - sections: a heading the run does not draw hides its arrow
 - sections: a lost run after a drawn one hides Timing's heading hover, so it takes no click
 
-### test_chart_icons.lua (27)
+### test_chart_icons.lua (29)
 
 - chart icons: a cast's x is INSET + t / length across the width less both insets
 - chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
 - chart icons: an icon is centered on its cast's time, held inside the plot at either end
 - chart icons: an icon that would overlap the one before it on the top row takes the second
 - chart icons: the rows the plot holds follow its configured height, at least one
+- chart icons: the plot frame holds one icon row over the configured height, one more row in all
+- chart icons: the columns and the best's diagonal scale below the reserved row
 - chart icons: three casts in one second stack on three rows of the 80 px plot
 - chart icons: three casts in one second on the short plot: one icon and a +2 mark
 - chart icons: six casts in one second: four rows and a +2 on the 80 px plot, a +5 on the short one
 - chart icons: crowds an icon's width apart on the last row get a mark each, never overlapping
-- chart icons: only casts of an ability whose base cooldown is over 15 s get one
+- chart icons: only casts of an ability whose base cooldown is 29 s or more get one
 - chart icons: drawn live on the running HUD, the spell's icon along the top, no geometry read back
 - chart icons: two casts close together on the running HUD stagger onto the second row
 - chart icons: three casts in one second are all captured and all drawn on the 80 px running chart
@@ -1007,7 +1009,7 @@ Total.
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
 | test_results_sections.lua | 8 |
-| test_chart_icons.lua | 27 |
+| test_chart_icons.lua | 29 |
 | test_results_timeline.lua | 13 |
 | test_sizing.lua | 11 |
 | test_tooltips.lua | 4 |
@@ -1030,4 +1032,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **812** |
+| **Total** | **814** |

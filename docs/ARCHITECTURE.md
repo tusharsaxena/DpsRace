@@ -71,7 +71,7 @@ and the detail a *Usage* section of what was used (every detail section heading 
 the folded set in `profile.windows.results.collapsedSections`), with *Edit* to tick or untick every candidate
 (`modules/Results_Usage.lua`), and a list of hidden items (`global.usage.hidden`, History > Usage)
 that none of them ever shows; the damage chart marks each cast of an
-ability whose base cooldown is over 15 s with that ability's icon (*Show cooldown icons*), live and
+ability whose base cooldown is 29 s or more with that ability's icon (*Show cooldown icons*), live and
 after the race; and the detail's *Timeline* button opens the ability timeline (`modules/Results_Timeline.lua`),
 every ability's casts in two lanes, this run's above the compared run's. The same pass replaced *Runs
 to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores is plain: the spell
@@ -444,7 +444,7 @@ Nothing is over the cap today. Seven files are in the 1000–1500 on-notice band
 `tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline`, `test_results_delta` and `test_results_sections` did)
-and `tests/test_hud.lua` at 1412 (the waiting hint box's cases went to a new `test_hud_hint`), and
+and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
 five addon files, `modules/Results_Table.lua` at 1171 lines, `modules/Results_Detail.lua` at 1125
 (the detail's collapsible sections, 2026-10-26), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and

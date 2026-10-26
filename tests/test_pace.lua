@@ -219,7 +219,7 @@ test("pace: the result card sets the plain final damage against the best's pace 
     assertEqual(tickX(pace), math.floor(b.width / 2 + 0.5), "the same tick, in the middle")
     -- Under the Damage profile heading, above the plot: the plot and the rows move down by its line.
     assertTrue(b.w.chart.shown)
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 2 + 12 + 8) + BREAKDOWN)
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN)
     -- The range follows the setting.
     assertTrue(f.NS.SetByPath("live.paceRange", 2))
     assertEqual(pace.behind.__min, 0)
@@ -247,7 +247,8 @@ test("pace: no pace bar on the result card with no earlier best, and the rows mo
     resolved(f)
     local b = body(f)
     assertFalse(b.w.pace.bar:IsShown(), "the first run on its board")
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the plot right under its heading")
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN,
+        "the plot right under its heading")
 end)
 
 test("pace: Show pace bar off, a shared session and a lost run hide the result card's bar", function()
@@ -323,7 +324,8 @@ local function assertStack(f, b, top)
     assertEqual(y(w.chart.note), y(title), "the note on the heading's line")
     assertEqual(y(w.pace.bar), y(title) - 22 - 2, "the pace bar directly under the heading")
     assertEqual(y(w.chart.plot), y(w.pace.bar) + 2 - 12 - 4, "the plot under the pace bar")
-    assertEqual(y(w.chart.axis[1]), y(w.chart.plot) - 80 - 2, "the time labels under the plot")
+    assertEqual(w.chart.frameH, 80 + 13, "the plot frame: its 80px and the icon row on top")
+    assertEqual(y(w.chart.axis[1]), y(w.chart.plot) - 80 - 13 - 2, "the time labels under the plot")
     assertEqual(y(w.spellsTitle), y(w.chart.axis[1]) - 12 - 8 - 6, "Spell breakdown under the time labels")
     assertEqual(-b.rowsTop, y(w.spellsTitle) - 22, "the rows under their heading")
 end

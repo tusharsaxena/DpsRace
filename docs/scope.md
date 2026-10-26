@@ -50,7 +50,7 @@ in the spec, sections 1, 2 and 13
   the arm. The Runs list's *Used* column shows them as icons, the detail lists what was used and,
   under *Edit*, every candidate for the player to correct and *Save*; items the player never wants
   listed go on a hidden list (History > *Usage*). The damage chart marks each cast of an ability
-  with a cooldown over 15 s with its icon, and the detail's *Timeline* opens every ability's casts
+  with a cooldown of 29 s or more with its icon, and the detail's *Timeline* opens every ability's casts
   in two lanes, this run's beside the compared run's.
 - **Account-wide history**, so bests span alts. Runs older than *Days to keep* (90 by default, 0
   never) are pruned at login and after each saved run, never one holding a best (spec §6.3, §7; the

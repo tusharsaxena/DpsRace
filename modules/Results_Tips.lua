@@ -336,7 +336,7 @@ end
 function DETAIL.chart()
     return { L["Damage profile"],
         L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."],
-        L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."],
+        L["An icon along the top marks each cast of an ability with a cooldown of 29 seconds or more. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
 end
 
@@ -378,7 +378,7 @@ local function castsLine(label, n)
 end
 
 --- What follows the client's spell tooltip on a timeline row's name (#14): the ability's cooldown when
---- over 15 s, then each run's cast count (the compared run's only when there is one).
+--- 29 s or more, then each run's cast count (the compared run's only when there is one).
 --- @param row table  one of ResultsTimeline.Rows' rows
 --- @param otherLabel string|nil  the compared run's label, or nil with none
 --- @return table

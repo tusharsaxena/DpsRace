@@ -255,13 +255,16 @@ race.
   `result.damage`, no diagonal. All plain numbers.
 - **The cooldown icons** (#14, *Show cooldown icons*, `live.castDots`): the running chart's view
   carries the race's important casts so far as `cooldowns` (`Casts.Filter(Casts.Live(),
-  Casts.LiveSpells())`: a base cooldown over 15 s), read again only when `Casts.Size()` or the run
+  Casts.LiveSpells())`: a base cooldown of 29 s or more), read again only when `Casts.Size()` or the run
   changed, so the 20 Hz redraw builds nothing. `Strip:drawIcons` lays a pooled 12 px frame with the
   spell's icon (`HudBreakdown.SpellIcon` on the cast's plain ID) along the top of the plot, centered
   at `HudChart.IconX(t, length, width)`: `TimeX` = INSET + clamp(t, 0, length) / length x (width - 2
   x INSET), held half an icon inside either edge. `HudChart.IconRows` drops an icon closer than its
   width to the last one on its row to the first row below with room (`IconY`), on as many rows as
-  the configured plot height holds (`IconRowCount`: 5 at 80 px, 2 at the 40 px minimum); a cast
+  the plot frame holds (`IconRowCount` on `FrameHeight`: the configured height plus `RESERVE`, one
+  icon row on top, so 6 at 80 px and 3 at the 40 px minimum). The columns and the best's diagonal
+  scale within the configured height below that reserved row, so one row of icons never covers
+  them; the rows past it stack down over the columns as before. A cast
   with no room above sits on the last row, alone as an icon, or with others crowded there as one
   pooled *+n* mark at the first one's x, its hover (`ResultsTips.CastCrowd`) listing each cast and
   its time on bullets, so no cast is dropped. Plain numbers on the configured width and height,
@@ -361,7 +364,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   still records a hidden item, so un-hiding it brings it back on every run.
 - **The ability timeline** (#14, `modules/Results_Timeline.lua`): the detail's *Timeline* button,
   live for a run with a non-empty cast list, opens a pop-out window on the detail pane. It draws
-  `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown over 15 s
+  `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown of 29 s or more
   first, longest first, then by this run's count, then the other's, the player's before the pet's),
   each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
   count at its right, over an axis to the longer of the two races (`Span`, `Ticks`). The compared run

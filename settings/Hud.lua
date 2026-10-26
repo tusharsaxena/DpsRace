@@ -82,7 +82,7 @@ NS.RegisterSchemaRows({
       onChange = redraw },
     { path = "live.castDots", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show cooldown icons"], default = LIVE.castDots,
-      tooltip = L["Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."],
+      tooltip = L["Mark each cast of an ability with a cooldown of 29 seconds or more (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."],
       onChange = redrawCooldowns },
     { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show pace bar"], default = LIVE.paceBar,

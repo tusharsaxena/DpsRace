@@ -83,7 +83,7 @@ and the smoke row that measures it where one exists.
   tick fires `UNIT_SPELLCAST_SUCCEEDED` is unmeasured. While a player channel is open (its
   `CHANNEL_START` to its `CHANNEL_STOP`) only its first success counts; a pet's channel is not deduped,
   as only the player's channel edges are heard (`Casts.Hear`; smoke row SM-DR-UT3).
-- **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, over 15 s). Talents
+- **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, 29 s or more). Talents
   and haste that shorten it are not seen, and a spell with charges can report a short one (Kill
   Command read 500 ms in the probe), so it gets no dot and sorts with the rotation on the timeline.
 - **A cast more than 10 s before the pull is not the race's** (#13, #14; `Casts.PREPULL`). While

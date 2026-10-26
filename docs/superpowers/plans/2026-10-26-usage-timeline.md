@@ -313,9 +313,9 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P11: The owner's third test round and the timeline backlog (2026-10-26)
 
-- [ ] **Cooldown threshold:** an important cast is one whose base cooldown is 29 s or more (was over 15 s): chart
+- [x] **Cooldown threshold:** an important cast is one whose base cooldown is 29 s or more (was over 15 s): chart
   icons and the timeline's cooldown ordering and lines follow it.
-- [ ] **Chart headroom:** the plot is taller by one icon row (plus a small gap) on top; the columns and the best-pace
+- [x] **Chart headroom:** the plot is taller by one icon row (plus a small gap) on top; the columns and the best-pace
   line scale below that row, so a single row of icons never covers them. Icons still stack into more rows as today.
 - [ ] **Spell breakdown width:** the expanded view's detail is wider (360 -> 440; the expanded minimum and the new
   profile default follow); the spell-name column is wider; a thin dim-gray vertical line separates *This run* from

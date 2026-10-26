@@ -32,8 +32,8 @@ local Secrets = NS.Secrets
 Casts.VERSION = 1
 -- Auto-repeat attacks: Auto Shot, Auto Attack, Shoot (a wand).
 Casts.AUTO = { [75] = true, [6603] = true, [5019] = true }
--- An important ability's base cooldown is MORE than this (ms): what the chart marks with a dot.
-Casts.IMPORTANT_MS = 15000
+-- An important ability's base cooldown is at least this (ms): what the chart marks with an icon.
+Casts.IMPORTANT_MS = 29000
 -- How many seconds before the clock's start a cast heard while armed still counts (the pre-pull).
 Casts.PREPULL = 10
 
@@ -263,11 +263,15 @@ function Casts.Of(run)
     return rec and Casts.Decode(rec.list) or nil
 end
 
---- Whether a spell is important: its base cooldown is more than IMPORTANT_MS.
+--- Whether a base cooldown (ms) is a long one: at least IMPORTANT_MS (29 s).
+function Casts.IsLong(ms)
+    return type(ms) == "number" and ms >= Casts.IMPORTANT_MS
+end
+
+--- Whether a spell is important: its base cooldown is at least IMPORTANT_MS.
 --- @param spells table|nil  { [id] = ms }
 function Casts.IsImportant(spells, id)
-    local ms = type(spells) == "table" and spells[id]
-    return type(ms) == "number" and ms > Casts.IMPORTANT_MS
+    return Casts.IsLong(type(spells) == "table" and spells[id] or nil)
 end
 
 --- The casts in `list` whose spell is important by `spells`.
@@ -289,7 +293,7 @@ function Casts.Important(run)
 end
 
 local function byImportance(a, b)
-    local ia, ib = a.cd > Casts.IMPORTANT_MS, b.cd > Casts.IMPORTANT_MS
+    local ia, ib = Casts.IsLong(a.cd), Casts.IsLong(b.cd)
     if ia ~= ib then return ia end
     if ia and a.cd ~= b.cd then return a.cd > b.cd end
     if a.count ~= b.count then return a.count > b.count end

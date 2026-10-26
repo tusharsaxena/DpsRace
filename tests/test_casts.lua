@@ -50,11 +50,14 @@ test("casts: Decode reads the stored string back, skipping what does not parse",
     assertEqual(Casts.Encode(again), Casts.Encode(list))
 end)
 
-test("casts: an important ability's base cooldown is more than 15 s", function()
+test("casts: an important ability's base cooldown is 29 s or more", function()
     local Casts = T.NS.Casts
-    local spells = { [1] = 15000, [2] = 15001, [3] = 0 }
-    assertFalse(Casts.IsImportant(spells, 1), "exactly 15 s is not over it")
-    assertTrue(Casts.IsImportant(spells, 2))
+    local spells = { [1] = 28900, [2] = 29000, [3] = 0 }
+    assertFalse(Casts.IsImportant(spells, 1), "28.9 s is short of it")
+    assertTrue(Casts.IsImportant(spells, 2), "exactly 29 s is important")
+    assertTrue(Casts.IsLong(29000))
+    assertFalse(Casts.IsLong(28999))
+    assertFalse(Casts.IsLong(nil))
     assertFalse(Casts.IsImportant(spells, 3))
     assertFalse(Casts.IsImportant(spells, 4), "an unknown cooldown is not important")
     assertFalse(Casts.IsImportant(nil, 2))
@@ -80,7 +83,7 @@ end)
 test("casts: Group puts cooldowns first, longest first, then the rest by count", function()
     local Casts = T.NS.Casts
     local list = Casts.Decode("0:1,100:2,200:2,300:3,400:p4,500:p4,600:p4,700:5,800:2,50:1")
-    local groups = Casts.Group(list, { [1] = 30000, [2] = 0, [3] = 120000, [5] = 15000 })
+    local groups = Casts.Group(list, { [1] = 30000, [2] = 0, [3] = 120000, [5] = 28900 })
     local order = {}
     for i, g in ipairs(groups) do order[i] = (g.pet and "p" or "") .. g.id .. "x" .. g.count end
     assertEqual(table.concat(order, ","), "3x1,1x2,2x3,p4x3,5x1")

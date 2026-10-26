@@ -414,7 +414,8 @@ test("chart: the result card draws the race's slices to its plain final damage, 
     assertEqual(col.__max, run.result.damage, "scaled to the plain final damage")
     assertTrue(rawequal(col.__value, rec.values[10]), "the very handle captured live")
     local BREAKDOWN = f.NS.HudStates.BREAKDOWN_H
-    assertEqual(b.rowsTop, 80 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the rows under the chart and its heading")
+    assertEqual(b.rowsTop, 80 + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN,
+        "the rows under the chart (its 13px icon row on top) and its heading")
     -- A /reload empties the store: the card has no chart, and its rows move back up.
     f.NS.Slices.Reset()
     f.Hud.Refresh()

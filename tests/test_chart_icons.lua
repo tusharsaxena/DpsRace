@@ -168,6 +168,42 @@ test("chart icons: the rows the plot holds follow its configured height, at leas
     assertTrue(-Chart.IconY(Chart.IconRowCount(80)) + Chart.ICON / 2 <= 80 - Chart.INSET, "the last row inside the plot")
 end)
 
+test("chart icons: the plot frame holds one icon row over the configured height, one more row in all", function()
+    local Chart = T.NS.HudChart
+    assertEqual(Chart.RESERVE, Chart.ICON + Chart.ICON_GAP, "one row: an icon and its gap")
+    assertEqual(Chart.FrameHeight(80), 93)
+    assertEqual(Chart.FrameHeight(40), 53)
+    assertEqual(Chart.IconRowCount(Chart.FrameHeight(80)), 6, "the default plot: 5 rows, and the reserved one")
+    assertEqual(Chart.IconRowCount(Chart.FrameHeight(40)), 3, "the 40 px minimum: 2 rows, and the reserved one")
+    assertEqual(Chart.BlockHeight(80, 22), 22 + 93 + Chart.GAP + Chart.AXIS_H, "the block carries the frame")
+    -- The first row's icons end above the columns' area (the configured height, from the bottom).
+    local rowBottom = -Chart.IconY(1) + Chart.ICON / 2
+    for _, h in ipairs({ 40, 80, 160 }) do
+        local colTop = Chart.FrameHeight(h) - (h - Chart.INSET)
+        assertTrue(rowBottom < colTop, ("the reserved row clears the columns at %d px"):format(h))
+    end
+end)
+
+test("chart icons: the columns and the best's diagonal scale below the reserved row", function()
+    local f = hud()
+    local best = f.NS.Recorder.NewRun(30)
+    best.status, best.result, best.date = "complete", { damage = 3000000, dps = 100000 }, 1
+    f.NS.Recorder.Save(best)
+    racing(f)
+    local chart = body(f).w.chart
+    local Chart = f.NS.HudChart
+    local row = Chart.ICON + Chart.ICON_GAP
+    assertEqual(chart.frameH, chart.plotH + row, "the frame: the configured height and one row on top")
+    assertEqual(chart.colH, chart.plotH - 2 * Chart.INSET, "the columns keep the configured height")
+    assertTrue(Chart.INSET + chart.colH <= chart.frameH - row, "the columns' top at most the frame less a row")
+    local _, _, _, y1 = chart.diag[1]:GetEndPoint()
+    assertTrue(y1 <= chart.frameH - row, "the diagonal's top under the reserved row")
+    local p = chart.cols[1].__points[#chart.cols[1].__points]
+    assertEqual(p[1], "BOTTOMLEFT", "the columns stand on the plot's bottom")
+    assertEqual(p[5], Chart.INSET)
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
 test("chart icons: three casts in one second stack on three rows of the 80 px plot", function()
     local Chart = T.NS.HudChart
     local xs = { 20, 21, 22 }
@@ -219,15 +255,15 @@ test("chart icons: crowds an icon's width apart on the last row get a mark each,
     accounted(rows, marks, #xs)
 end)
 
-test("chart icons: only casts of an ability whose base cooldown is over 15 s get one", function()
+test("chart icons: only casts of an ability whose base cooldown is 29 s or more get one", function()
     local NS = T.NS
-    local run = { casts = { v = 1, list = "-160:6353,100:1122,200:17962,210:29722,300:5,400:6353",
+    local run = { casts = { v = 1, list = "-160:6353,100:1122,200:17962,210:29722,300:5,350:7,400:6353",
                             spells = { [6353] = 45000, [1122] = 180000, [17962] = 13000, [29722] = 0,
-                                       [5] = 15000 } } }
+                                       [5] = 28900, [7] = 29000 } } }
     local casts = NS.HudChart.CooldownsOf(run)
     local got = {}
     for i, c in ipairs(casts) do got[i] = c.id end
-    assertEqual(table.concat(got, ","), "6353,1122,6353", "exactly 15 s is not over it")
+    assertEqual(table.concat(got, ","), "6353,1122,7,6353", "28.9 s gets none, exactly 29 s gets one")
     assertNil(NS.HudChart.CooldownsOf({}), "a run with no casts recorded")
     assertNil(NS.HudChart.CooldownsOf({ casts = { v = 1, list = "100:29722", spells = { [29722] = 0 } } }),
         "nothing important: no icons")
@@ -317,20 +353,20 @@ end)
 test("chart icons: on the short plot the crowd's overflow is a +n mark whose tooltip lists each cast", function()
     local f = hud()
     assertTrue(f.NS.SetByPath("appearance.chart.height", 40))
-    crowded(f, 3)
+    crowded(f, 4)
     local chart = body(f).w.chart
     assertEqual(chart.plotH, 40)
     local marks = chart:Marks()
     assertEqual(#marks, 1)
     local m = marks[1]
-    assertEqual(m.row, 2, "on the last row")
+    assertEqual(m.row, 3, "on the last row: the reserved one and the 40 px plot's two")
     assertEqual(#m.casts, 2)
     assertEqual(m.frame.text:GetText(), "+2")
     assertTrue(m.frame:IsShown() and m.frame.__mouse, "shown, and it takes the mouse")
     local p = m.frame.__points[#m.frame.__points]
     assertTrue(p[1] == "CENTER" and p[2] == chart.over and p[3] == "TOPLEFT", "on the overlay")
     near(p[4], m.x)
-    near(p[5], f.NS.HudChart.IconY(2))
+    near(p[5], f.NS.HudChart.IconY(3))
     assertEqual(drawn(chart), #f.NS.Casts.Live() - 2, "every cooldown drawn (the two rotational casts have none)")
     local shown = hover(f, m.frame)
     assertTrue(shown ~= nil and shown.owner == m.frame, "the tooltip under the mark")
@@ -352,14 +388,15 @@ test("chart icons: six casts in one second: nothing dropped on the 80 px plot or
     local chart = body(f).w.chart
     local cooldowns = 3 + 6
     assertEqual(drawn(chart), cooldowns, "the 80 px plot")
-    assertEqual(#chart:Marks(), 1)
-    assertEqual(chart:Marks()[1].frame.text:GetText(), "+2")
-    assertEqual(chart:Marks()[1].row, 5)
+    assertEqual(#chart:Marks(), 0, "six rows with the reserved one: one icon each")
+    local rows = {}
+    for i = 4, 9 do rows[#rows + 1] = tostring(chart:Icons()[i].row) end
+    assertEqual(table.concat(rows, ","), "1,2,3,4,5,6")
     assertTrue(f.NS.SetByPath("appearance.chart.height", 40))
     pump(f, 0.5)
     assertEqual(chart.plotH, 40)
     assertEqual(drawn(chart), cooldowns, "the short plot")
-    assertEqual(chart:Marks()[1].frame.text:GetText(), "+5")
+    assertEqual(chart:Marks()[1].frame.text:GetText(), "+4", "two icons, then the rest on the third row")
     for _, d in ipairs(chart.markPool.free or {}) do assertFalse(d:IsShown(), "a released mark stays hidden") end
     assertEqual(#f.W.SecretGeometryReads(), 0)
 end)

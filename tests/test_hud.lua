@@ -506,8 +506,8 @@ end)
 
 test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 560,
-        "screen 04's rows plus the headings, the chart and the pace bar (#2, #3, Round C)")
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 573,
+        "screen 04's rows plus the headings, the chart (its icon row too, UT-P11) and the pace bar (#2, #3, Round C)")
     assertEqual(f.NS.db.profile.live.rows, 8)
     -- A best on the board, so the pace bar shows too: the tallest default stack.
     local best = f.NS.Recorder.NewRun(30)
@@ -515,7 +515,7 @@ test("hud: the default window size shows every default live row under the chart 
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 560)
+    assertEqual(f.Hud.Diagnose().height, 573)
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
@@ -523,7 +523,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 260x560")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 260x573")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
@@ -1377,8 +1377,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(p[5], -58)
     assertEqual(body(f).kpiBottom, 58 + 46 + 8)
     -- The chart sits between the KPIs and the rows, at its configured height (no best: no pace bar).
-    -- Damage profile (6 + 22), the 80px plot, its 2 + 12 time labels and 8, then Spell breakdown.
-    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN)
+    -- Damage profile (6 + 22), the 80px plot and its 13px icon row, its 2 + 12 time labels and 8, then
+    -- Spell breakdown.
+    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
 end)
 

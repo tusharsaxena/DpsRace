@@ -36,7 +36,10 @@ local _, NS = ...
 -- owner's call, 2026-10-26): the bar has no label of its own and spans the plot's width, edge to edge.
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
--- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
+-- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The plot
+-- frame is RESERVE taller than that height, on top (the owner's third test round, 2026-10-26): one
+-- row of cooldown icons (ICON and ICON_GAP) sits there, and the columns and the diagonal scale within
+-- the configured height below it, so a single row of icons never covers them (Chart.FrameHeight). The
 -- columns touch (the column gap defaults to 0) and read as one area over the plot's own backdrop:
 -- each column's edges are whole pixels, x_i = floor(i * inner / count + 0.5), so no column is a
 -- fraction wide and no seam shows between two. The diagonal is plain geometry (Line regions) on an
@@ -44,11 +47,12 @@ local _, NS = ...
 --
 -- THE COOLDOWN ICONS (#14; icons for the first dots, the owner's call, 2026-10-26): the ability's own
 -- icon, ICON px square, along the top of the plot at each cast of an important ability (a base
--- cooldown over 15 s, modules/Casts.lua), centered at x = INSET + clamp(t, 0, length) / length x
+-- cooldown of 29 s or more, modules/Casts.lua), centered at x = INSET + clamp(t, 0, length) / length x
 -- (width - 2 x INSET), the cast's plain race-clock time over the plain length across the width Place()
 -- was handed, held inside the plot. An icon that would overlap the one placed last on its row drops to
--- the first row below with room, on as many rows as the configured plot height holds (Chart.IconRowCount:
--- 5 on the default 80 px plot, 2 on the 40 px minimum). The last row takes a cast with no room above as
+-- the first row below with room, on as many rows as the whole plot frame holds (Chart.IconRowCount on
+-- Chart.FrameHeight: 6 on the default 80 px plot, 3 on the 40 px minimum), the rows past the first
+-- over the columns as before. The last row takes a cast with no room above as
 -- an icon when it stands alone there, and a crowd of them as one *+n* mark at the first one's place, n
 -- the casts it stands for, its hover listing each with its time (ResultsTips.CastCrowd): nothing is
 -- dropped (the owner's second test round, 2026-10-26: a potion, a trinket and Bestial Wrath in one second
@@ -75,6 +79,7 @@ Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
 Chart.ICON = 12         -- a cooldown icon's size (#14)
 Chart.ICON_GAP = 1      -- between two rows of icons
+Chart.RESERVE = Chart.ICON + Chart.ICON_GAP   -- the plot's headroom on top: one row of icons
 
 -- The plot is a fill with no edge (the owner's call, 2026-10-26: the faint gray border is gone).
 Chart.PLOT_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8x8" }
@@ -129,14 +134,22 @@ function Chart.ColumnEdges(inner, count, gap)
     return xs, widths
 end
 
+--- The plot frame's height for a configured plot `plotH` tall: that height (the columns' and the
+--- diagonal's) plus RESERVE on top, the first row of icons' own.
+--- @param plotH number
+--- @return number
+function Chart.FrameHeight(plotH)
+    return (tonumber(plotH) or 0) + Chart.RESERVE
+end
+
 --- The chart block's whole height for a plot `plotH` tall: heading, `midH` (the HUD's pace bar line
---- between the heading and the plot), plot, gap, time labels.
+--- between the heading and the plot), the plot frame (Chart.FrameHeight), gap, time labels.
 --- @param plotH number
 --- @param headH number|nil  default HEAD_H
 --- @param midH number|nil  default 0
 --- @return number
 function Chart.BlockHeight(plotH, headH, midH)
-    return (headH or Chart.HEAD_H) + (midH or 0) + plotH + Chart.GAP + Chart.AXIS_H
+    return (headH or Chart.HEAD_H) + (midH or 0) + Chart.FrameHeight(plotH) + Chart.GAP + Chart.AXIS_H
 end
 
 local function shared(run)
@@ -513,8 +526,9 @@ function Strip:SetNote(text)
     self.note:SetText(text or "")
 end
 
---- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall and
---- `midH` (default 0) under the heading's line.
+--- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall (the
+--- columns' height; the frame is Chart.FrameHeight, the icons' row on top) and `midH` (default 0)
+--- under the heading's line.
 --- @param anchor table
 --- @param y number
 --- @param width number
@@ -529,8 +543,10 @@ function Strip:Place(anchor, y, width, plotH, midH)
     local py = y - self.headH - (midH or 0)
     self.plot:ClearAllPoints()
     self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, py)
-    self.plot:SetSize(width, plotH)
-    local ay = py - plotH - Chart.GAP
+    local frameH = Chart.FrameHeight(plotH)
+    self.frameH = frameH
+    self.plot:SetSize(width, frameH)
+    local ay = py - frameH - Chart.GAP
     local points = { { "TOPLEFT", 0 }, { "TOP", width / 2 }, { "TOPRIGHT", width } }
     for i, fs in ipairs(self.axis) do
         fs:ClearAllPoints()
@@ -558,7 +574,8 @@ local function newColumn(plot)
 end
 
 -- Lay `count` columns across the plot (from Place's width and height and the configured gap, never a
--- measured size), each on whole-pixel edges (Chart.ColumnEdges).
+-- measured size), each on whole-pixel edges (Chart.ColumnEdges), within the configured height from the
+-- plot's bottom: the RESERVE row over them is the icons'.
 function Strip:layoutColumns(count)
     local gap = Chart.ColumnGap()
     local key = ("%d|%s|%s|%d"):format(count, tostring(self.width), tostring(self.plotH), gap)
@@ -567,7 +584,7 @@ function Strip:layoutColumns(count)
     local inner = math.max(0, (self.width or 0) - 2 * Chart.INSET)
     local xs, widths = Chart.ColumnEdges(inner, count, gap)
     local h = math.max(1, (self.plotH or 0) - 2 * Chart.INSET)
-    self.colX, self.colW = xs, widths
+    self.colX, self.colW, self.colH = xs, widths, h
     for i = 1, count do
         local col = self.cols[i] or newColumn(self.plot)
         self.cols[i] = col
@@ -724,7 +741,7 @@ function Strip:drawIcons(casts, length)
             placed[#placed + 1], xs[#xs + 1] = casts[i], x
         end
     end
-    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(self.plotH))
+    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(Chart.FrameHeight(self.plotH)))
     for i, cast in ipairs(placed) do
         if rows[i] then self:placeIcon(cast, xs[i], Chart.IconY(rows[i]), rows[i]) end
     end
