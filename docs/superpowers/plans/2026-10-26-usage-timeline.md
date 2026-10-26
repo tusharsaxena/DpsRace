@@ -289,7 +289,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   casts, which will not happen after release.* a compared run with no casts (raced before cast recording) left the blue lanes
   empty. Compare instead against the best run in the same group or board that has casts, with a note naming both;
   the best run itself compares against its runner-up (with casts), as the detail's compare does.
-- [ ] **Compare bars and Difference:** each bar's length is the row's percentage difference against the table's
+- [x] **Compare bars and Difference:** each bar's length is the row's percentage difference against the table's
   largest percentage difference (not the absolute amount); the Difference column reads `+78.3K +2.3%`, the
   percentage in the bar's muted green or red.
 - [ ] **Compare score table:** no box; its columns at exactly the spell table's x positions; a thin separator line

@@ -2,8 +2,8 @@ local _, NS = ...
 -- modules/Results_Compare.lua — the run detail's compare (#7): a stored run beside the best on its
 -- board, or beside a run the player picked from a Runs row's right-click menu (*Compare With This
 -- Run*). A toggle under the score turns it on; on, the detail draws a second figure column (damage,
--- DPS, the % difference) and the breakdown matched spell by spell, each side's damage and share
--- and the difference, in place of the plain breakdown. modules/Results_Detail.lua builds and places
+-- DPS, the difference as an amount and a %) and the breakdown matched spell by spell, each side's
+-- damage and share and the difference, in place of the plain breakdown. modules/Results_Detail.lua builds and places
 -- these parts through the functions here; the shell (modules/Results.lua) owns the pick.
 --
 -- PLAIN NUMBERS ONLY. Both runs are stored records (every figure went through NS.Secrets on its way
@@ -26,6 +26,10 @@ local C = Tbl.COLORS
 local FONT = NS.Style.FONT
 
 Compare.VALUE_W = 80        -- each figure column, in the score table and the compared breakdown
+-- The Difference column: the amount and the % ("-710.2K -100.0%", 15 characters at Tbl.BadgeWidth's
+-- 6 px and its 4 px pad), at the right of both tables; it fits the 360 px detail of the expanded
+-- view at its 1264 px minimum (tests/test_compare.lua).
+Compare.DIFF_W = 94
 Compare.ROW_H = 15          -- one line of the score table
 Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
@@ -76,10 +80,11 @@ local function rowBefore(a, b)
     return idBefore(a.id, b.id)
 end
 
---- The two runs' spells matched by id: { id, dmgA, dmgB, shareA, shareB, delta }, sorted by the run's
---- damage, then the other's. A spell on one side only has nil damage and share on the other; a
+--- The two runs' spells matched by id: { id, dmgA, dmgB, shareA, shareB, delta, pct }, sorted by the
+--- run's damage, then the other's. A spell on one side only has nil damage and share on the other; a
 --- share is nil when its run's damage total is missing or zero. `delta` is dmgA - dmgB, a missing
---- side counting 0.
+--- side counting 0; `pct` is dmgA against dmgB (Compare.Pct, a missing dmgA counting 0), nil when
+--- the other run has none of it.
 --- @param run table  the run shown (side A)
 --- @param other table|nil  the run it is compared with (side B)
 --- @return table rows
@@ -90,7 +95,7 @@ function Compare.Spells(run, other)
     local function add(id)
         local da, db = a[id], b[id]
         rows[#rows + 1] = { id = id, dmgA = da, dmgB = db, shareA = share(da, ta), shareB = share(db, tb),
-                            delta = (da or 0) - (db or 0) }
+                            delta = (da or 0) - (db or 0), pct = Compare.Pct(da or 0, db) }
     end
     for id in pairs(a) do add(id) end
     for id in pairs(b) do if a[id] == nil then add(id) end end
@@ -106,23 +111,46 @@ function Compare.Pct(a, b)
     return (a / b - 1) * 100
 end
 
---- The score table's figures: each side's damage and DPS, and the % difference of each.
---- @return table { damageA, damageB, damagePct, dpsA, dpsB, dpsPct }
-function Compare.Kpis(run, other)
-    local ra, rb = resultOf(run), resultOf(other)
-    return { damageA = num(ra.damage), damageB = num(rb.damage), damagePct = Compare.Pct(ra.damage, rb.damage),
-             dpsA = num(ra.dps), dpsB = num(rb.dps), dpsPct = Compare.Pct(ra.dps, rb.dps) }
+local function minus(a, b)
+    a, b = num(a), num(b)
+    return a and b and a - b or nil
 end
 
---- A score row's difference on a scale shared by its rows: `a` against `b` as a share of the larger
---- (-1 to 1), so damage and DPS, in different units, draw comparable bars; nil when either is
---- missing or neither is above 0.
-function Compare.ScoreDiff(a, b)
-    a, b = num(a), num(b)
-    if not (a and b) then return nil end
-    local top = math.max(a, b)
-    if top <= 0 then return nil end
-    return (a - b) / top
+--- The score table's figures: each side's damage and DPS, and the difference of each, as an amount
+--- (nil when either side is missing) and as a %.
+--- @return table { damageA, damageB, damageDelta, damagePct, dpsA, dpsB, dpsDelta, dpsPct }
+function Compare.Kpis(run, other)
+    local ra, rb = resultOf(run), resultOf(other)
+    return { damageA = num(ra.damage), damageB = num(rb.damage), damageDelta = minus(ra.damage, rb.damage),
+             damagePct = Compare.Pct(ra.damage, rb.damage),
+             dpsA = num(ra.dps), dpsB = num(rb.dps), dpsDelta = minus(ra.dps, rb.dps), dpsPct = Compare.Pct(ra.dps, rb.dps) }
+end
+
+--- The score table's two lines as the spell rows' shape: { delta, pct } for damage, then DPS.
+function Compare.ScoreRows(k)
+    k = k or {}
+    return { { delta = k.damageDelta, pct = k.damagePct }, { delta = k.dpsDelta, pct = k.dpsPct } }
+end
+
+--- The largest absolute `pct` across a table's rows (0 with none): the length of a full bar.
+function Compare.MaxPct(rows)
+    local top = 0
+    for _, r in ipairs(rows or {}) do
+        local p = num(r.pct)
+        if p and math.abs(p) > top then top = math.abs(p) end
+    end
+    return top
+end
+
+--- A row's difference on its table's scale, as Compare.Bar takes it: its `pct` against `maxPct`; a
+--- row with no % (the other run's figure is 0 or missing) takes the whole scale, its side from
+--- `delta`. Nothing (nil, 0) when `delta` is 0 or unknown.
+--- @return number|nil diff, number maxDiff
+function Compare.Scaled(pct, delta, maxPct)
+    delta, pct, maxPct = num(delta), num(pct), num(maxPct) or 0
+    if not delta or delta == 0 then return nil, 0 end
+    if pct and maxPct > 0 then return pct, maxPct end
+    return delta > 0 and 1 or -1, 1
 end
 
 --- One row's difference bar: the column it sits in, "this" when `diff` is above 0 (this run is
@@ -133,16 +161,6 @@ function Compare.Bar(diff, maxDiff, width)
     diff, maxDiff = num(diff), num(maxDiff)
     if not (diff and maxDiff) or diff == 0 or maxDiff <= 0 then return nil, 0 end
     return diff > 0 and "this" or "other", math.min(width, width * math.abs(diff) / maxDiff)
-end
-
---- The largest absolute `delta` across the compared spell rows (0 with none).
-function Compare.MaxDelta(rows)
-    local top = 0
-    for _, r in ipairs(rows or {}) do
-        local d = num(r.delta)
-        if d and math.abs(d) > top then top = math.abs(d) end
-    end
-    return top
 end
 
 --- Whether a run can take part in a compare: a stored record with a result (a lost run has none).
@@ -224,6 +242,23 @@ end
 function Compare.DeltaText(delta)
     if type(delta) ~= "number" or delta == 0 then return "0" end
     return (delta > 0 and "+" or "-") .. NS.Format.Number(math.abs(delta))
+end
+
+-- A color escape for `c` (r, g, b in 0..1) around one %s.
+local function escape(c)
+    local function byte(v) return math.floor(v * 255 + 0.5) end
+    return ("|cff%02x%02x%02x"):format(byte(c[1]), byte(c[2]), byte(c[3])) .. "%s|r"
+end
+local PCT_UP, PCT_DOWN = escape(Compare.BAR_UP), escape(Compare.BAR_DOWN)
+
+--- The Difference cell (the owner's call, 2026-10-26): the amount, then a space and the % in the
+--- bars' muted green or red ("+78.3K +2.3%"); the amount alone with no % (the other run's figure is
+--- 0 or missing) or no difference; a dash with no amount. The amount takes its color from paint().
+function Compare.DiffText(delta, pct)
+    if type(delta) ~= "number" then return DASH end
+    pct = num(pct)
+    if delta == 0 or not pct then return Compare.DeltaText(delta) end
+    return Compare.DeltaText(delta) .. " " .. (delta > 0 and PCT_UP or PCT_DOWN):format(pctText(pct))
 end
 
 local function paint(fs, value)
@@ -332,23 +367,23 @@ function Compare.Fill(p)
     x.head[3]:SetText(Compare.OtherLabel(kind))
     x.spellHead[3]:SetText(Compare.OtherLabel(kind))
     local k = other and Compare.Kpis(p.run, other) or {}
-    local values = { { k.damageA, k.damageB, k.damagePct }, { k.dpsA, k.dpsB, k.dpsPct } }
+    local values, diffs = { { k.damageA, k.damageB }, { k.dpsA, k.dpsB } }, Compare.ScoreRows(k)
     for i, line in ipairs(x.lines) do
-        local v = values[i]
+        local v, d = values[i], diffs[i]
         line[2]:SetText(figure(v[1]))
         line[3]:SetText(figure(v[2]))
-        line[4]:SetText(pctText(v[3]))
-        paint(line[4], v[3])
+        line[4]:SetText(Compare.DiffText(d.delta, d.pct))
+        paint(line[4], d.delta)
     end
 end
 
 -- ── layout ──────────────────────────────────────────────────────────────────────────────────────
 
 -- The figure columns' left edges across `width`: this run, the other run (a gap between them), and
--- the difference at the right.
+-- the difference (Compare.DIFF_W wide) at the right.
 local function columns(width, inset)
     local vw = Compare.VALUE_W
-    local diff = width - inset - vw
+    local diff = width - inset - Compare.DIFF_W
     return { diff - 2 * vw - Compare.GAP, diff - vw, diff }
 end
 
@@ -360,7 +395,7 @@ function Compare.Cell(j, width, inset)
     local cols, vw, pad = columns(width, inset or 0), Compare.VALUE_W, Compare.PAD
     if j == 2 then return cols[1], vw - pad end
     if j == 3 then return cols[2] + pad, vw - pad end
-    return cols[3], vw
+    return cols[3], Compare.DIFF_W
 end
 
 -- A line's difference bar, at `y` from `point` of `parent`: in this run's column it grows left from
@@ -412,8 +447,8 @@ local function layoutScore(p, y, cw)
     place(x.score, p.content, 0, y)
     x.score:SetSize(cw, h)
     local cols = columns(cw, 8)
-    local k = x.other and Compare.Kpis(p.run, x.other) or {}
-    local diffs = { Compare.ScoreDiff(k.damageA, k.damageB), Compare.ScoreDiff(k.dpsA, k.dpsB) }
+    local diffs = Compare.ScoreRows(x.other and Compare.Kpis(p.run, x.other))
+    local maxPct = Compare.MaxPct(diffs)
     for line = 0, 2 do
         local set = line == 0 and x.head or x.lines[line]
         local ly = -5 - line * rowH
@@ -422,7 +457,10 @@ local function layoutScore(p, y, cw)
             local cx, w = Compare.Cell(j, cw, 8)
             place(set[j], x.score, cx, ly, w)
         end
-        if line > 0 then placeBar(set.bar, x.score, "TOPLEFT", ly + 1, rowH - 1, cols, diffs[line], 1) end
+        if line > 0 then
+            local d = diffs[line]
+            placeBar(set.bar, x.score, "TOPLEFT", ly + 1, rowH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
+        end
     end
     return y - h - 6
 end
@@ -442,7 +480,7 @@ local function newRow(host)
     return row
 end
 
-local function fillRow(row, data, cw, rowH, maxDiff)
+local function fillRow(row, data, cw, rowH, maxPct)
     local cols, icon = columns(cw, 0), rowH - 2
     row:SetSize(cw, rowH)
     row.icon:SetSize(icon, icon)
@@ -461,11 +499,11 @@ local function fillRow(row, data, cw, rowH, maxDiff)
             fs:SetWidth(w)
         end
     end
-    placeBar(row.bar, row, "LEFT", 0, rowH, cols, data.delta, maxDiff)
+    placeBar(row.bar, row, "LEFT", 0, rowH, cols, Compare.Scaled(data.pct, data.delta, maxPct))
     t[1]:SetText(NS.HudBreakdown.SpellName(data.id))
     t[2]:SetText(Compare.SpellFigure(data.dmgA, data.shareA))
     t[3]:SetText(Compare.SpellFigure(data.dmgB, data.shareB))
-    t[4]:SetText(Compare.DeltaText(data.delta))
+    t[4]:SetText(Compare.DiffText(data.delta, data.pct))
     paint(t[4], data.delta)
     row.data = data
 end
@@ -483,14 +521,14 @@ local function layoutSpells(p, y, cw)
         local cx, w = Compare.Cell(j, cw, 0)
         place(x.spellHead[j], host, cx, 0, w)
     end
-    local maxDiff = Compare.MaxDelta(data)
+    local maxPct = Compare.MaxPct(data)
     NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
     for i, d in ipairs(data) do
         local row = NS.Pool.Acquire(x.rows, function() return newRow(host) end)
         row.pane = p
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -Compare.ROW_H - (i - 1) * pitch)
-        fillRow(row, d, cw, rowH, maxDiff)
+        fillRow(row, d, cw, rowH, maxPct)
     end
     return y - Compare.ROW_H - #data * pitch - 8
 end
