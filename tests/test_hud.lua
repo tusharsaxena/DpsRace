@@ -185,10 +185,10 @@ end)
 test("hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own", function()
     local f = hud()
     local D = f.NS.defaults.profile
-    D.race.defaultLength, D.live.hz, D.live.rows = 120, 6, 5
+    D.race.defaultLength, D.live.hz, D.live.rows = 60, 6, 5
     f.NS.GetSetting = function() return nil end      -- a degraded load: the store cannot answer
     local v = f.Hud.View()
-    assertEqual(v.length, 120, "a second default for race.defaultLength")
+    assertEqual(v.length, 60, "a second default for race.defaultLength")
     assertEqual(v.hz, 6, "a second default for live.hz")
     assertEqual(v.rows, 5, "a second default for live.rows")
 end)
