@@ -53,6 +53,33 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] `history.keepDays` (default 90, 0 = never) replaces `history.keep`; `Recorder.Prune` removes resolved runs older
   than that many days, never one holding a best; the History page row; schema, docs, tests.
 
+## Probe findings (measured 2026-10-26, client 12.1.5 build 70575, BM Hunter, open world, one 1:00 race)
+
+- **Casts are plain in combat.** Every `UNIT_SPELLCAST_*` spell ID and castGUID for `player` and `pet` was a plain
+  number / string mid-combat (smoke C10 confirmed for the open world; instances were not tested, by the owner's call).
+- **SUCCEEDED is the press that went off.** Spamming a key on cooldown fires `FAILED` (Kill Command: 16 SENT/SUCC,
+  40 FAIL); `SENT` precedes `SUCC` for player casts and once went unanswered. Count `SUCCEEDED` only.
+- **Pet casts arrive as unit `pet`** (Claw, Growl, Tendon Rip) with plain IDs; `IsPlayerSpell` is false for them.
+- **Auto Shot (75) fires SUCCEEDED on every shot** (22 in a minute): auto-repeat attacks must be filtered out.
+- **No channel was cast**, so the per-tick SUCCEEDED behavior is still unmeasured: dedupe defensively (ignore a
+  SUCCEEDED for the spell of an open CHANNEL_START until its CHANNEL_STOP).
+- **A pre-pull cast is heard while ARMED** (Wild Thrash SENT/SUCC on the clock's own frame): listen from the arm.
+- **`GetSpellBaseCooldown` is plain in and out of combat** (ms): Bestial Wrath 90000, Spatial Rift 180000, Feign Death
+  30000, trinket 120000, potion 300000, Wild Thrash 8000, Tendon Rip 10000, Kill Command 500 (charges), Barbed Shot /
+  Cobra Shot / Auto Shot 0. "Important" (over 15 s) reads correctly from it. `C_Spell.GetSpellCooldown` is secret in
+  combat (as documented).
+- **On-use gear:** `C_Item.GetItemSpell` names each slot's use spell (trinket, engineering belt, tabard); the trinket's
+  cast SUCCEEDED with exactly that spell ID. Both cooldown readers are plain after combat, but the **cooldown compare
+  gives a false positive**: the belt's Nitro Boosts showed a cooldown started when the potion was drunk (shared
+  cooldown). Casts are the source of truth; the cooldown delta is not used.
+- **Consumables:** bag counts are plain after combat (Potion of Recklessness 146 -> 145); the potion's cast matched its
+  item spell. Item class 0 subclasses seen: 1 potion, 3 flask, 8 other (oil, augment-style stones, battle standard),
+  0 generic. A flask's buff spell equals its item spell (1235108). Auras are plain at the arm and after combat.
+- **Weapon enchant** reads plain at the arm (`GetWeaponEnchantInfo`: enchant id 8051); the enchant id does not map to
+  the oil item, so it is listed as a weapon enchant and the player ticks the oil.
+- **No food buff or augment rune was active**, so their detection stays a rule (the *Well Fed* aura name) to verify in
+  the build's smoke rows.
+
 ### P2: The probe (debug-only; reverted after the findings)
 
 - [x] `modules/UsageProbe.lua`, active only while debug logging is on. At arm: the equipped slots with a use
@@ -62,9 +89,9 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   against the arm maps; channel start/stop vs SUCCEEDED ticks; `GetSpellBaseCooldown` per new spell (kind and value)
   and `IsPlayerSpell` / `IsSpellKnownOrOverridesKnown`. After the result: bag counts and item cooldowns again (kinds and
   deltas), auras again. A summary at the end.
-- [ ] Pushed; the owner runs it (one race with a trinket and a potion; one with a channel and a pet), copies the
+- [x] Pushed; the owner runs it (one race with a trinket and a potion; one with a channel and a pet), copies the
   console.
-- [ ] Findings recorded here and in memory; probe reverted.
+- [x] Findings recorded here and in memory; probe reverted.
 
 ### P3: Capture
 

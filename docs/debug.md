@@ -36,7 +36,6 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
 | `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
-| `Probe` | `modules/UsageProbe.lua` (debug only, 2026-10-26, reverted after its findings), from the arm to the result: the arm snapshot (each on-use gear slot with both cooldown readers, each bag consumable with its class, spell and count, the helpful auras, the weapon enchant), one line per `UNIT_SPELLCAST_*` event for `player` and `pet` (times since the arm and the clock, every ID's kind, a match to an on-use or consumable spell), each new spell's cooldown answers, and after the result the bag-count changes, the gear cooldowns, the auras again and a per-spell summary. It ends with *end of report* |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
 
 The library writes the latch's stand-down and stand-up edges with their holds, and the launcher's

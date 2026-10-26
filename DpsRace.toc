@@ -151,9 +151,6 @@ modules\Preview.lua
 # follows modules\MockRuns.lua.
 modules\Sim.lua
 modules\Diagnostics.lua
-# The usage probe (debug only, 2026-10-26; reverted after its findings). LOAD-BEARING: builds its bus
-# receiver (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua.
-modules\UsageProbe.lua
 
 # Settings (last -- depend on everything else being initialized)
 # LOAD-BEARING: publishes NS.RegisterSchemaRows, which settings\General.lua calls at FILE SCOPE.

@@ -73,11 +73,6 @@ files["modules/Hud_Breakdown.lua"] = { read_globals = { "C_Spell", "GameTooltip"
 -- A stored run's character's class color (the Results table's bars), and the fallback faces.
 files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
--- The usage probe (debug only): the gear, bag, aura and spell questions it asks.
-files["modules/UsageProbe.lua"] = {
-    read_globals = { "C_Item", "C_Spell", "C_Container", "C_UnitAuras", "GetInventoryItemID", "GetInventoryItemCooldown",
-                     "GetWeaponEnchantInfo", "GetSpellBaseCooldown", "IsPlayerSpell", "IsSpellKnownOrOverridesKnown" },
-}
 -- The shared look: a title-bar control draws its tooltip.
 files["modules/Style.lua"] = { read_globals = { "GameTooltip" } }
 -- The final seconds' cue sound (the center numbers draw on their own frame, no client global).

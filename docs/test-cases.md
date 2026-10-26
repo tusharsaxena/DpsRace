@@ -141,7 +141,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (59)
+### test_race.lua (57)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -200,8 +200,6 @@ Total.
 - race: stop now on a run that ended before the buzzer reads it as incomplete
 - race: inputs in the wrong state change nothing
 - race: the diagnostics state section names the race state, run, session and pending count
-- usage probe: off without debug logging
-- usage probe: the arm snapshot, the casts matched to gear and bags, and the after-race deltas
 
 ### test_race_resume.lua (16)
 
@@ -814,7 +812,7 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 7 |
 | test_bests.lua | 20 |
-| test_race.lua | 59 |
+| test_race.lua | 57 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
@@ -848,4 +846,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **670** |
+| **Total** | **668** |
