@@ -31,6 +31,7 @@ Compare.VALUE_W = 80        -- each figure column, in the score table and the co
 -- view at its 1264 px minimum (tests/test_compare.lua).
 Compare.DIFF_W = 94
 Compare.ROW_H = 15          -- one line of the score table
+Compare.RULE_GAP = 4        -- the space above and below the rule between the two tables
 Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
 Compare.GAP = 6             -- between this run's column and the other's
@@ -308,17 +309,21 @@ local function heads(f, font, colors)
     return out
 end
 
--- A difference bar under a line's figures (above the panel's fill, below the text).
+-- A difference bar under a line's figures (below the text).
 local function newBar(f)
     local bar = f:CreateTexture(nil, "BORDER")
     bar:Hide()
     return bar
 end
 
+-- The score table (the owner's call, 2026-10-26): no box, its columns the spell table's (Compare.Cell),
+-- and a faint rule under it, the window's divider gray, between its lines and the spell table's header.
 local function buildScore(p, c, x)
-    x.score = Tbl.Panel(c)
+    x.score = CreateFrame("Frame", nil, c)
     hover(p, x.score, "score")
     local f = x.score
+    x.rule = f:CreateTexture(nil, "ARTWORK")
+    x.rule:SetColorTexture(0.24, 0.24, 0.27, 0.85)
     x.head = heads(f, FONT.HEADER)
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
@@ -379,23 +384,41 @@ end
 
 -- ── layout ──────────────────────────────────────────────────────────────────────────────────────
 
+local function place(fs, parent, x, y, width)
+    fs:ClearAllPoints()
+    fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    if width then fs:SetWidth(width) end
+end
+
 -- The figure columns' left edges across `width`: this run, the other run (a gap between them), and
 -- the difference (Compare.DIFF_W wide) at the right.
-local function columns(width, inset)
+local function columns(width)
     local vw = Compare.VALUE_W
-    local diff = width - inset - Compare.DIFF_W
+    local diff = width - Compare.DIFF_W
     return { diff - 2 * vw - Compare.GAP, diff - vw, diff }
 end
 
---- Column `j`'s text box across `width` (with `inset` at the right): its left x and width, the same
---- for a header and every line under it. This run's figure stops PAD short of its right edge, the
---- other's starts PAD into its column: each sits off the edge its bar grows from.
---- @return number x, number width
-function Compare.Cell(j, width, inset)
-    local cols, vw, pad = columns(width, inset or 0), Compare.VALUE_W, Compare.PAD
-    if j == 2 then return cols[1], vw - pad end
-    if j == 3 then return cols[2] + pad, vw - pad end
-    return cols[3], Compare.DIFF_W
+--- Column `j`'s text box across `width`: its left x, width and justify, the one geometry of both
+--- tables (the score table's and the spell table's headers and every line under them), so their
+--- columns line up. The name column runs from the left edge to this run's; a spell row's name then
+--- steps past its icon. This run's figure stops PAD short of its right edge, the other's starts PAD
+--- into its column: each sits off the edge its bar grows from.
+--- @return number x, number width, string justify
+function Compare.Cell(j, width)
+    local cols, vw, pad = columns(width), Compare.VALUE_W, Compare.PAD
+    local justify = Compare.JUSTIFY[j]
+    if j == 1 then return 0, cols[1] - 4, justify end
+    if j == 2 then return cols[1], vw - pad, justify end
+    if j == 3 then return cols[2] + pad, vw - pad, justify end
+    return cols[3], Compare.DIFF_W, justify
+end
+
+-- A header or line of four FontStrings at `y` in `parent`, each in its column's box (Compare.Cell).
+local function placeLine(set, parent, y, width)
+    for j = 1, 4 do
+        local cx, w = Compare.Cell(j, width)
+        place(set[j], parent, cx, y, w)
+    end
 end
 
 -- A line's difference bar, at `y` from `point` of `parent`: in this run's column it grows left from
@@ -412,12 +435,6 @@ local function placeBar(bar, parent, point, y, h, cols, diff, maxDiff)
     bar:SetPoint(point, parent, point, side == "this" and cols[1] + vw - len or cols[2], y)
     bar:SetWidth(len)
     bar:SetHeight(h)
-end
-
-local function place(fs, parent, x, y, width)
-    fs:ClearAllPoints()
-    fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    if width then fs:SetWidth(width) end
 end
 
 --- The toggle's line (and the different-board note) at `y` across `cw`; answers the y beneath.
@@ -441,28 +458,27 @@ function Compare.LayoutBar(p, y, cw)
     return y - 2
 end
 
+-- The score table at `y`: its header and two lines in the spell table's columns, the rule under them.
 local function layoutScore(p, y, cw)
-    local x, rowH = p.cmp, Compare.ROW_H
-    local h = 3 * rowH + 10
+    local x, rowH, gap = p.cmp, Compare.ROW_H, Compare.RULE_GAP
+    local ruleY = -3 * rowH - gap
     place(x.score, p.content, 0, y)
-    x.score:SetSize(cw, h)
-    local cols = columns(cw, 8)
+    x.score:SetSize(cw, -ruleY + 1)
+    local cols = columns(cw)
     local diffs = Compare.ScoreRows(x.other and Compare.Kpis(p.run, x.other))
     local maxPct = Compare.MaxPct(diffs)
     for line = 0, 2 do
         local set = line == 0 and x.head or x.lines[line]
-        local ly = -5 - line * rowH
-        place(set[1], x.score, 8, ly, cols[1] - 12)
-        for j = 2, 4 do
-            local cx, w = Compare.Cell(j, cw, 8)
-            place(set[j], x.score, cx, ly, w)
-        end
+        local ly = -line * rowH
+        placeLine(set, x.score, ly, cw)
         if line > 0 then
             local d = diffs[line]
             placeBar(set.bar, x.score, "TOPLEFT", ly + 1, rowH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
         end
     end
-    return y - h - 6
+    place(x.rule, x.score, 0, ruleY, cw)
+    x.rule:SetHeight(1)
+    return y + ruleY - 1 - gap
 end
 
 local function newRow(host)
@@ -481,7 +497,7 @@ local function newRow(host)
 end
 
 local function fillRow(row, data, cw, rowH, maxPct)
-    local cols, icon = columns(cw, 0), rowH - 2
+    local cols, icon = columns(cw), rowH - 2
     row:SetSize(cw, rowH)
     row.icon:SetSize(icon, icon)
     row.icon:ClearAllPoints()
@@ -494,7 +510,7 @@ local function fillRow(row, data, cw, rowH, maxPct)
             fs:SetPoint("LEFT", row, "LEFT", icon + 4, 0)
             fs:SetWidth(math.max(20, cols[1] - icon - 8))
         else
-            local cx, w = Compare.Cell(j, cw, 0)
+            local cx, w = Compare.Cell(j, cw)
             fs:SetPoint("LEFT", row, "LEFT", cx, 0)
             fs:SetWidth(w)
         end
@@ -515,12 +531,7 @@ local function layoutSpells(p, y, cw)
     local host = x.spellHost
     place(host, p.content, 0, y)
     host:SetSize(cw, Compare.ROW_H + math.max(1, #data * pitch))
-    local cols = columns(cw, 0)
-    place(x.spellHead[1], host, 0, 0, cols[1] - 4)
-    for j = 2, 4 do
-        local cx, w = Compare.Cell(j, cw, 0)
-        place(x.spellHead[j], host, cx, 0, w)
-    end
+    placeLine(x.spellHead, host, 0, cw)
     local maxPct = Compare.MaxPct(data)
     NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
     for i, d in ipairs(data) do

@@ -268,6 +268,44 @@ test("compare: This run right, Best run left; each header at its column's x, wid
     assertTrue(x.spellHead[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
 end)
 
+test("compare: the score table has no box, its columns are the spell table's, and a rule sits between them", function()
+    for _, view in ipairs({ "expanded", "collapsed" }) do
+        local i = inst()
+        seed(i, { mkRun("best", 300), mkRun("low", 100) })
+        i.NS.db.profile.windows.results = { view = view }
+        i.R.ShowRun("low")
+        local d = detail(i)
+        d:SetComparing(true)
+        local x, Cmp = d.cmp, i.Cmp
+        local cw = d.content.__width
+        assertEqual(x.score.__template, nil, view .. ": the score table is drawn in a backdrop box (Tbl.Panel)")
+        -- Both tables hang off the pane's left edge, so a column's x is the same number in each.
+        assertEqual(x.score.__points[1][4], 0, view .. ": the score table's left edge")
+        assertEqual(x.spellHost.__points[1][4], 0, view .. ": the spell table's left edge")
+        for j = 2, 4 do
+            local cx, w, justify = Cmp.Cell(j, cw)
+            for _, fs in ipairs({ x.head[j], x.lines[1][j], x.lines[2][j], x.spellHead[j], x.rows.active[1].texts[j] }) do
+                assertEqual(fs.__points[1][4], cx, view .. ": column " .. j .. "'s x differs between the tables")
+                assertEqual(fs.__width, w, view .. ": column " .. j .. "'s width differs between the tables")
+                assertEqual(fs.__justifyH, justify, view .. ": column " .. j .. "'s justify differs between the tables")
+            end
+        end
+        assertEqual(x.head[1].__points[1][4], x.spellHead[1].__points[1][4], view .. ": the name columns' x")
+        assertEqual(x.head[1].__width, x.spellHead[1].__width, view .. ": the name columns' width")
+        -- The rule: one pixel, across the table, under the DPS line and above the spell header.
+        local rule = x.rule
+        assertTrue(rule:IsShown(), view .. ": no rule between the tables")
+        assertEqual(rule.__height, 1)
+        assertEqual(rule.__width, cw, view .. ": the rule runs across the table")
+        assertEqual(rule.__points[1][2], x.score)
+        local ruleY = rule.__points[1][5]
+        assertTrue(ruleY < x.lines[2][2].__points[1][5] - Cmp.ROW_H + 1, view .. ": the rule runs through the DPS line")
+        local scoreY, hostY = x.score.__points[1][5], x.spellHost.__points[1][5]
+        assertTrue(hostY < scoreY + ruleY - 1, view .. ": the spell header sits on the rule")
+        assertTrue(x.lines[1].bar:IsShown(), view .. ": the score table's bars are gone")
+    end
+end)
+
 test("compare: one bar per row, on the higher run's side, its length the row's % difference against the table's", function()
     local i = inst()
     local low = mkRun("low", 100, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 500 },
@@ -345,9 +383,9 @@ test("compare: the Difference column fits the detail at both views' minimum widt
             assertTrue(Tbl.BadgeWidth(plain) <= fs.__width, view .. ": " .. what .. " is clipped")
             assertTrue(fs.__points[1][4] + fs.__width <= right, view .. ": " .. what .. " runs past the pane")
         end
-        for n = 1, 2 do fits(x.lines[n][4], cw - 8, "score line " .. n .. "'s Difference") end
+        for n = 1, 2 do fits(x.lines[n][4], cw, "score line " .. n .. "'s Difference") end
         for _, row in ipairs(x.rows.active) do fits(row.texts[4], cw, "a spell's Difference") end
-        fits(x.head[4], cw - 8, "the score header")
+        fits(x.head[4], cw, "the score header")
         fits(x.spellHead[4], cw, "the spell header")
         assertTrue(x.lines[1][1].__width >= Tbl.BadgeWidth("Damage"), view .. ": the score table's names are squeezed")
         assertTrue(x.rows.active[1].texts[1].__width >= 40, view .. ": the spell names are squeezed")
