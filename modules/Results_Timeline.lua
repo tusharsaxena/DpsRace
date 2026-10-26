@@ -17,8 +17,18 @@ local _, NS = ...
 -- (blue), each lane's cast count just past its right end. Nothing sits between the name cell and the lanes but
 -- the gap (the owner's call, 2026-10-26: a cooldown beside the lanes read as part of them). Abilities
 -- with a cooldown of 29 s or more come first, longest first; the rest follow by count. The time axis (0,
--- the quarters, the end) is pinned under both sections, which scroll together (the mouse wheel). A tick's tooltip
--- names the spell and its time; a name's shows the client's spell tooltip and both counts.
+-- the quarters, the end) is pinned under both sections, which scroll together (the mouse wheel), and
+-- drawn again under the compared run's strip (P12). A tick's tooltip names the spell and its time; a
+-- name's shows the client's spell tooltip and both counts.
+--
+-- ZOOM (P12, the owner's call, 2026-10-27). Three controls at the right of the *Casts* heading line
+-- (zoom out, zoom in, reset) step the time axis through ZOOMS for the strips and the lanes together:
+-- the time area is laid out ZOOMS[i] times the lanes' width and shown through clipping scroll frames
+-- (one over the strips and their axis, one over the lanes, one over the pinned axis) that pan
+-- together, the name cells and the counts staying put. Shift+mouse wheel pans; a thin bar under the
+-- pinned axis shows where the view is. The view is kept as the fraction of the axis at its left edge
+-- (`pos`), so a resize keeps the same moment at the left; a zoom keeps the view's middle. Zoom and pan
+-- go back to 1x on another run or compare target.
 --
 -- WHICH RUNS. The detail's: its run, and its compare target resolved whether or not the compare is on
 -- (CompareTarget(true)). Every detail draw and every compare change (a pick, Clear Pick, the toggle)
@@ -33,7 +43,7 @@ local _, NS = ...
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
 -- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, MarkX,
--- LaneGeometry, Stack, Sections, CooldownText, CooldownLine, IconLines and Legend are pure.
+-- LaneGeometry, Stack, Sections, ClampPos, Rezoom, CooldownText, CooldownLine, IconLines and Legend are pure.
 
 local Timeline = { wanted = false }
 NS.ResultsTimeline = Timeline
@@ -46,6 +56,7 @@ local C = Tbl.COLORS
 
 local DW = NS.defaults.profile.windows.timeline
 Timeline.FRAME_NAME = "DpsRaceTimeline"
+-- 980 by 560 (860 before P12: the owner asked for more room for the strips by default).
 Timeline.WIDTH, Timeline.HEIGHT = DW.width, DW.height
 -- 640 (was 540, P11): at 540 a 1:00 race gave the cast icons about 5 px a second, two rows for every
 -- global cooldown's worth of casts; 640 gives them 7.
@@ -53,13 +64,14 @@ Timeline.MIN_WIDTH = 640
 Timeline.MIN_HEIGHT = 240
 
 -- The geometry: a 150 px name cell (the icon and the name on the top lane's line, the cooldown under
--- it), 10 px, the lanes, then each lane's count 5 px past its right end (P11: flush with the lane, not
--- out at the window's edge) in a 30 px cell; each lane 16 px, 2 px between a pair's lanes and 10 px
--- between pairs.
+-- it), 10 px, the lanes, then each lane's count 10 px past its right end (P11: flush with the lane, not
+-- out at the window's edge; 5 px until P12 read as touching it) in a 26 px cell (30 until P12: the
+-- wider gap came out of it, so a 1:00 race keeps 7 px a second at the minimum width; three digits
+-- still fit); each lane 16 px, 2 px between a pair's lanes and 10 px between pairs.
 Timeline.PAD = 12
 Timeline.NAME_W = 150
-Timeline.COUNT_W = 30
-Timeline.COUNT_GAP = 5
+Timeline.COUNT_W = 26
+Timeline.COUNT_GAP = 10
 Timeline.GAP = 10
 Timeline.LANE_H = 16
 Timeline.LANE_GAP = 2
@@ -72,12 +84,22 @@ Timeline.INSET = 1          -- half a tick: one at 0:00 or at the end stays insi
 Timeline.LEGEND_H = 26
 Timeline.NOTE_H = 16
 Timeline.AXIS_H = 20
--- The *Casts* strips: 14 px icons on a 15 px row pitch, 4 px between the two strips, at most
--- MAX_STACK rows a strip.
+-- The *Casts* strips: 14 px icons, closer than 15 px apart they stack, on an 18 px row pitch (P12: 15
+-- read as cramped), 4 px above this run's strip, 8 px between the two strips and 4 px over their own
+-- axis (CASTS_AXIS_H), at most MAX_STACK rows a strip. The strips' clip reaches CLIP_PAD past the lanes
+-- at each end, so an icon at 0:00 or at the end shows whole.
 Timeline.CAST_ICON = 14
-Timeline.CAST_STEP = 15
-Timeline.STRIP_GAP = 4
+Timeline.CAST_PITCH = 15
+Timeline.CAST_STEP = 18
+Timeline.CASTS_PAD = 4
+Timeline.STRIP_GAP = 8
+Timeline.CASTS_AXIS_H = 16
 Timeline.MAX_STACK = 12
+Timeline.CLIP_PAD = 8
+-- The zoom steps (the time axis's width over the lanes'), and a Shift+wheel notch: a quarter of the view.
+Timeline.ZOOMS = { 1, 1.5, 2, 3, 4, 6, 8 }
+Timeline.PAN = 0.25
+Timeline.BAR_H = 3          -- the pan bar under the pinned axis
 
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
@@ -164,9 +186,46 @@ function Timeline.Span(run, other)
     return math.max(1, lengthOf(run), lengthOf(other))
 end
 
---- The axis's ticks: 0, the quarters and the end.
-function Timeline.Ticks(span)
-    return { 0, span / 4, span / 2, span * 3 / 4, span }
+-- The round steps a zoomed axis labels in, in seconds.
+local STEPS = { 1, 2, 5, 10, 15, 30, 60, 120, 300, 600 }
+
+-- The smallest round step of `raw` seconds or more (a multiple of ten minutes past the list).
+local function roundStep(raw)
+    for _, step in ipairs(STEPS) do
+        if step >= raw then return step end
+    end
+    return math.ceil(raw / 600) * 600
+end
+
+--- The axis's ticks: 0, the quarters and the end; zoomed in (`zoom` > 1), every round step that
+--- leaves about a quarter of the lanes' width between labels, then the end (a step within half a step
+--- of the end gives way to it).
+function Timeline.Ticks(span, zoom)
+    if not zoom or zoom <= 1 then return { 0, span / 4, span / 2, span * 3 / 4, span } end
+    local step, out = roundStep(span / (4 * zoom)), {}
+    local t = 0
+    while t < span - step / 2 do
+        out[#out + 1] = t
+        t = t + step
+    end
+    out[#out + 1] = span
+    return out
+end
+
+--- The zoom at step `i` of ZOOMS (clamped to the steps).
+function Timeline.ZoomAt(i)
+    local n = #Timeline.ZOOMS
+    return Timeline.ZOOMS[math.max(1, math.min(n, tonumber(i) or 1))]
+end
+
+--- The view's left edge, a fraction of the zoomed axis, clamped so the view stays on the axis.
+function Timeline.ClampPos(pos, zoom)
+    return math.max(0, math.min(1 - 1 / zoom, tonumber(pos) or 0))
+end
+
+--- The left edge after zooming from `from` to `to` about the view's middle.
+function Timeline.Rezoom(pos, from, to)
+    return Timeline.ClampPos((tonumber(pos) or 0) + 0.5 / from - 0.5 / to, to)
 end
 
 --- A cast tick's middle x in a lane `width` wide: INSET + clamp(t, 0, span) / span x (width - 2 x INSET).
@@ -217,13 +276,16 @@ function Timeline.StripHeight(rows)
 end
 
 --- Where each part of the scrolling content starts, in px down from its top, for strips of `rowsA`
---- and `rowsB` rows: the *Casts* heading at 0, this run's strip, the compared run's, the *By ability*
---- heading SECTION_GAP under them and the first pair of lanes under it.
---- @return table  { stripA, heightA, stripB, heightB, lanesHead, lanes }
+--- and `rowsB` rows: the *Casts* heading at 0, this run's strip CASTS_PAD under it, the compared run's,
+--- their axis CASTS_PAD under it, the *By ability* heading SECTION_GAP under that and the first pair
+--- of lanes under the heading.
+--- @return table  { stripA, heightA, stripB, heightB, castsAxis, lanesHead, lanes }
 function Timeline.Sections(rowsA, rowsB)
-    local s = { stripA = Style.SECTION_H, heightA = Timeline.StripHeight(rowsA), heightB = Timeline.StripHeight(rowsB) }
+    local s = { stripA = Style.SECTION_H + Timeline.CASTS_PAD, heightA = Timeline.StripHeight(rowsA),
+                heightB = Timeline.StripHeight(rowsB) }
     s.stripB = s.stripA + s.heightA + Timeline.STRIP_GAP
-    s.lanesHead = s.stripB + s.heightB + Style.SECTION_GAP
+    s.castsAxis = s.stripB + s.heightB + Timeline.CASTS_PAD
+    s.lanesHead = s.castsAxis + Timeline.CASTS_AXIS_H + Style.SECTION_GAP
     s.lanes = s.lanesHead + Style.SECTION_H
     return s
 end
@@ -395,23 +457,63 @@ local function buildStrip(color)
     return s
 end
 
+-- A clipping scroll frame on `parent` and the layer it shows (its scroll child): the layer is the
+-- zoomed time area, and panning scrolls it sideways under the clip.
+local function clipLayer(parent)
+    local clip = CreateFrame("ScrollFrame", nil, parent)
+    local layer = CreateFrame("Frame", nil, clip)
+    clip:SetScrollChild(layer)
+    return clip, layer
+end
+
+-- The zoom controls at the right end of the *Casts* heading line, right to left: reset, zoom out,
+-- zoom in; the zoom level left of them. Over the strips' clip (a higher frame level).
+local function buildZoom()
+    ui.zoomStrip = Style.NewStrip()
+    local level = ui.content:GetFrameLevel() + 10
+    local function control(name, glyph, tip, onClick)
+        local b = Style.AddToStrip(ui.zoomStrip, Style.ControlButton(ui.content, name, glyph, tip, onClick))
+        b:SetFrameLevel(level)
+        return b
+    end
+    ui.zoomReset = control("reset", "R", L["Reset zoom"], function() Timeline.ResetZoom() end)
+    ui.zoomReset:SetPoint("TOPRIGHT", ui.content, "TOPRIGHT", 0, 0)
+    ui.zoomOut = control(nil, "-", L["Zoom out"], function() Timeline.ZoomBy(-1) end)
+    ui.zoomOut:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
+    ui.zoomIn = control(nil, "+", L["Zoom in (Shift+mouse wheel scrolls along the time axis)"],
+        function() Timeline.ZoomBy(1) end)
+    ui.zoomIn:SetPoint("RIGHT", ui.zoomOut, "LEFT", -2, 0)
+    ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
+    ui.zoomText:SetPoint("RIGHT", ui.zoomIn, "LEFT", -6, 0)
+end
+
+-- The pinned axis's clip on the window and the pan bar under it (its track and the view's thumb).
+local function buildAxis(f)
+    ui.axisClip, ui.axisLayer = clipLayer(f)
+    ui.barTrack = f:CreateTexture(nil, "ARTWORK")
+    ui.barTrack:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], 0.10)
+    ui.barThumb = f:CreateTexture(nil, "OVERLAY")
+    ui.barThumb:SetColorTexture(1, 1, 1, 0.35)
+    ui.axis, ui.castsAxis, ui.grid = {}, {}, {}
+    ui.axisPool, ui.castsAxisPool = NS.Pool.New(), NS.Pool.New()
+    ui.gridPool, ui.laneGridPool = NS.Pool.New(), NS.Pool.New()
+end
+
 local function buildBody(f)
     ui.scroll = CreateFrame("ScrollFrame", nil, f)
     ui.content = CreateFrame("Frame", nil, ui.scroll)
     ui.scroll:SetScrollChild(ui.content)
     ui.scroll:EnableMouseWheel(true)
-    ui.scroll:SetScript("OnMouseWheel", function(_, delta) Timeline.Scroll(delta) end)
-    -- The ticks' own layer over the lanes (a child frame draws over its parent's textures); the
-    -- quarter lines under the ticks on it.
-    ui.marks = CreateFrame("Frame", nil, ui.content)
-    ui.marks:SetAllPoints(ui.content)
-    ui.marks:SetFrameLevel(ui.content:GetFrameLevel() + 5)
-    ui.grid = {}
-    for i = 1, 3 do
-        ui.grid[i] = ui.marks:CreateTexture(nil, "BACKGROUND")
-        ui.grid[i]:SetColorTexture(GRID[1], GRID[2], GRID[3], GRID[4])
-        ui.grid[i]:SetWidth(1)
-    end
+    ui.scroll:SetScript("OnMouseWheel", function(_, delta)
+        if IsShiftKeyDown and IsShiftKeyDown() then Timeline.Pan(delta) else Timeline.Scroll(delta) end
+    end)
+    -- The time area's two clips over the content (a child frame draws over its parent's textures):
+    -- the strips' (the icons, their axis) and the lanes' (the ticks); the grid lines under both.
+    local level = ui.content:GetFrameLevel() + 5
+    ui.castsClip, ui.castsLayer = clipLayer(ui.content)
+    ui.lanesClip, ui.marks = clipLayer(ui.content)
+    ui.castsClip:SetFrameLevel(level)
+    ui.lanesClip:SetFrameLevel(level)
     ui.pairs = NS.Pool.New()
     ui.markPool = NS.Pool.New()
     ui.hitPool = NS.Pool.New()
@@ -423,11 +525,8 @@ local function buildBody(f)
     ui.strips = { a = buildStrip(Timeline.THIS), b = buildStrip(Timeline.OTHER) }
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
-    ui.axis = {}
-    for i = 1, 5 do
-        local justify = i == 1 and "LEFT" or (i == 5 and "RIGHT" or "CENTER")
-        ui.axis[i] = Style.Text(f, FONT.CAPTION, nil, justify)
-    end
+    buildZoom()
+    buildAxis(f)
 end
 
 local function onHide()
@@ -454,7 +553,7 @@ end
 local function ensureWindow()
     if ui then return ui end
     local f = CreateFrame("Frame", Timeline.FRAME_NAME, UIParent, "BackdropTemplate")
-    ui = { frame = f, rows = {}, castsA = {}, castsB = {}, offset = 0 }
+    ui = { frame = f, rows = {}, castsA = {}, castsB = {}, offset = 0, zoomI = 1, pos = 0 }
     f:Hide()
     f:SetFrameStrata(NS.Constants.LAYERS.STRATA.WINDOW)
     f:SetClampedToScreen(true)
@@ -571,17 +670,25 @@ function Timeline.MarkLines(cast, label)
     return lines
 end
 
+-- A tick drawn now on the lanes' layer: its x and y are content coordinates as if unpanned (the
+-- layer starts at the lanes' left, under the first pair).
+local function putMark(d, g)
+    local x, y = d.x - g.laneX, d.y + ui.sections.lanes
+    d.tex:ClearAllPoints()
+    d.tex:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
+    d.hit:ClearAllPoints()
+    d.hit:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
+end
+
 -- One tick at `x` along the lane whose middle is `y` (content coordinates), the lane's full height.
-local function placeMark(cast, x, y, color, label)
+local function placeMark(cast, x, y, color, label, g)
     local m = NS.Pool.Acquire(ui.markPool, newMark)
     m:SetVertexColor(color[1], color[2], color[3], 0.95)
-    m:ClearAllPoints()
-    m:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
     local h = NS.Pool.Acquire(ui.hitPool, newHit)
     h.cast, h.label = cast, label
-    h:ClearAllPoints()
-    h:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
-    ui.drawn[#ui.drawn + 1] = { tex = m, hit = h, cast = cast, x = x, y = y, lane = color == Timeline.THIS and "a" or "b" }
+    local d = { tex = m, hit = h, cast = cast, x = x, y = y, lane = color == Timeline.THIS and "a" or "b" }
+    putMark(d, g)
+    ui.drawn[#ui.drawn + 1] = d
 end
 
 local function laneMarks(row, side, top, g)
@@ -589,8 +696,8 @@ local function laneMarks(row, side, top, g)
     local color = side == "a" and Timeline.THIS or Timeline.OTHER
     local label = side == "a" and ui.thisLabel or ui.otherLabel
     for _, t in ipairs(times) do
-        local x = Timeline.MarkX(t, g.span, g.laneW)
-        if x then placeMark({ t = t, id = row.id, pet = row.pet }, g.laneX + x, top - Timeline.LANE_H / 2, color, label) end
+        local x = Timeline.MarkX(t, g.span, g.zoomW)
+        if x then placeMark({ t = t, id = row.id, pet = row.pet }, g.laneX + x, top - Timeline.LANE_H / 2, color, label, g) end
     end
 end
 
@@ -602,9 +709,9 @@ local function iconTip(self)
     Tbl.SpellTip(ui.frame, self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
 end
 
--- An icon: a plain frame on the ticks' layer (it takes the mouse for its tooltip) holding the art.
+-- An icon: a plain frame on the strips' layer (it takes the mouse for its tooltip) holding the art.
 local function newIcon()
-    local f = CreateFrame("Frame", nil, ui.marks)
+    local f = CreateFrame("Frame", nil, ui.castsLayer)
     f:SetSize(Timeline.CAST_ICON, Timeline.CAST_ICON)
     f:EnableMouse(true)
     f.tex = f:CreateTexture(nil, "OVERLAY")
@@ -615,11 +722,18 @@ local function newIcon()
     return f
 end
 
--- Each strip's rows at this geometry: the icons' x (content coordinates) and the row each stacks onto.
+-- An icon drawn now on the strips' layer, which starts CLIP_PAD left of the lanes, at this run's strip.
+local function putIcon(d, g)
+    d.frame:ClearAllPoints()
+    d.frame:SetPoint("CENTER", ui.castsLayer, "TOPLEFT", d.x - g.laneX + Timeline.CLIP_PAD, d.y + ui.sections.stripA)
+end
+
+-- Each strip's rows at this geometry: the icons' x (content coordinates, on the zoomed axis) and the
+-- row each stacks onto.
 local function stackOf(list, g)
     local xs = {}
-    for n, c in ipairs(list) do xs[n] = g.laneX + (Timeline.MarkX(c.t, g.span, g.laneW) or 0) end
-    local rows, count, over = Timeline.Stack(xs, Timeline.CAST_STEP, Timeline.MAX_STACK)
+    for n, c in ipairs(list) do xs[n] = g.laneX + (Timeline.MarkX(c.t, g.span, g.zoomW) or 0) end
+    local rows, count, over = Timeline.Stack(xs, Timeline.CAST_PITCH, Timeline.MAX_STACK)
     return { xs = xs, rows = rows, count = count, over = over }
 end
 
@@ -647,15 +761,14 @@ local function placeStrip(side, g, label, note)
 end
 
 -- One strip's icons, from its stack.
-local function stripIcons(side, list, stack, label)
+local function stripIcons(side, list, stack, label, g)
     for n, cast in ipairs(list) do
         local f = NS.Pool.Acquire(ui.iconPool, newIcon)
         f.cast, f.label, f.over = cast, label, stack.over[n] == true
         f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
-        local y = -rowMid(side, stack.rows[n])
-        f:ClearAllPoints()
-        f:SetPoint("CENTER", ui.marks, "TOPLEFT", stack.xs[n], y)
-        ui.icons[#ui.icons + 1] = { frame = f, cast = cast, x = stack.xs[n], y = y, row = stack.rows[n], side = side }
+        local d = { frame = f, cast = cast, x = stack.xs[n], y = -rowMid(side, stack.rows[n]), row = stack.rows[n], side = side }
+        putIcon(d, g)
+        ui.icons[#ui.icons + 1] = d
     end
 end
 
@@ -677,8 +790,8 @@ local function layoutStrips(g)
     local otherName = ui.other and NS.ResultsCompare.OtherLabel(ui.kind) or nil
     placeStrip("a", g, L["This run"], stripNote(ui.castsA, "a"))
     placeStrip("b", g, otherName, stripNote(ui.castsB, "b"))
-    stripIcons("a", ui.castsA, ui.stackA, ui.thisLabel)
-    stripIcons("b", ui.castsB, ui.stackB, ui.otherLabel)
+    stripIcons("a", ui.castsA, ui.stackA, ui.thisLabel, g)
+    stripIcons("b", ui.castsB, ui.stackB, ui.otherLabel, g)
 end
 
 -- While the window is being sized: the strips' tracks to the new lane width and each icon moved along
@@ -686,18 +799,81 @@ end
 local function stretchStrips(g)
     for _, side in ipairs({ "a", "b" }) do ui.strips[side].track:SetWidth(g.laneW) end
     for _, d in ipairs(ui.icons or {}) do
-        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.laneW) or 0)
-        d.frame:ClearAllPoints()
-        d.frame:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
+        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.zoomW) or 0)
+        putIcon(d, g)
     end
+end
+
+-- ── the zoom ────────────────────────────────────────────────────────────────────────────────────
+
+local function sized(f, width, height)
+    f:SetWidth(width)
+    f:SetHeight(height)
+end
+
+-- The time area's clips and layers at this geometry: the strips' clip from this run's strip to the
+-- bottom of their axis, CLIP_PAD wider than the lanes at each end; the lanes' clip over the pairs; the
+-- pinned axis's under the scrolling content. Each layer is the zoomed axis's width.
+local function sizeClips(g)
+    local s, pad = ui.sections, Timeline.CLIP_PAD
+    local castsH = s.castsAxis + Timeline.CASTS_AXIS_H - s.stripA
+    local lanesH = math.max(1, #ui.rows * Timeline.PAIR_H - Timeline.PAIR_GAP)
+    ui.castsClip:ClearAllPoints()
+    ui.castsClip:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX - pad, -s.stripA)
+    sized(ui.castsClip, g.laneW + 2 * pad, castsH)
+    sized(ui.castsLayer, g.zoomW + 2 * pad, castsH)
+    ui.lanesClip:ClearAllPoints()
+    ui.lanesClip:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX, -s.lanes)
+    sized(ui.lanesClip, g.laneW, lanesH)
+    sized(ui.marks, g.zoomW, lanesH)
+    ui.axisClip:ClearAllPoints()
+    ui.axisClip:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX, 6)
+    sized(ui.axisClip, g.laneW, Timeline.AXIS_H - 4)
+    sized(ui.axisLayer, g.zoomW, Timeline.AXIS_H - 4)
+end
+
+-- The pan bar under the pinned axis: the lanes' width, the thumb the view's share of it at its place.
+-- Shown only zoomed in.
+local function placeBar(g, shown)
+    local zoomed = shown and g.zoom > 1
+    ui.barTrack:SetShown(zoomed)
+    ui.barThumb:SetShown(zoomed)
+    ui.thumbX, ui.thumbW = Timeline.PAD + g.laneX + ui.pos * g.laneW, g.laneW / g.zoom
+    ui.barTrack:ClearAllPoints()
+    ui.barTrack:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX, 2)
+    ui.barTrack:SetSize(g.laneW, Timeline.BAR_H)
+    ui.barThumb:ClearAllPoints()
+    ui.barThumb:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", ui.thumbX, 2)
+    ui.barThumb:SetSize(ui.thumbW, Timeline.BAR_H)
+end
+
+-- The view's left edge (`pos`) kept on the axis, and every clip panned to it together.
+local function applyPan(g)
+    ui.pos = Timeline.ClampPos(ui.pos, g.zoom)
+    ui.hoff = ui.pos * g.zoomW
+    ui.castsClip:SetHorizontalScroll(ui.hoff)
+    ui.lanesClip:SetHorizontalScroll(ui.hoff)
+    ui.axisClip:SetHorizontalScroll(ui.hoff)
+    placeBar(g, not ui.isEmpty)
+end
+
+-- The zoom level beside the controls, and the controls dimmed at the ends of the steps.
+local function placeZoom(g)
+    ui.zoomText:SetText(L["%sx"]:format(("%g"):format(g.zoom)))
+    local i = ui.zoomI or 1
+    ui.zoomIn:SetAlpha(i < #Timeline.ZOOMS and 1 or 0.4)
+    ui.zoomOut:SetAlpha(i > 1 and 1 or 0.4)
+    ui.zoomReset:SetAlpha(i > 1 and 1 or 0.4)
 end
 
 -- ── drawing ─────────────────────────────────────────────────────────────────────────────────────
 
--- The geometry for the window's stored size: the content's width, the lanes' left and width, the span.
+-- The geometry for the window's stored size and the zoom: the content's width, the lanes' left and
+-- width, the zoom and the zoomed axis's width, the span.
 local function geometry()
     local cw, laneX, laneW = Timeline.LaneGeometry(ui.width)
-    return { cw = cw, laneX = laneX, laneW = laneW, span = ui.span or 1 }
+    local zoom = Timeline.ZoomAt(ui.zoomI)
+    return { cw = cw, laneX = laneX, laneW = laneW, zoom = zoom, zoomW = laneW * zoom, span = ui.span or 1 }
 end
 
 local function layoutLegend(g)
@@ -712,22 +888,71 @@ local function layoutLegend(g)
     return top + 1
 end
 
-local function layoutAxis(g, shown)
-    local ticks = Timeline.Ticks(g.span)
-    for i, fs in ipairs(ui.axis) do
-        fs:SetShown(shown)
-        local x = Timeline.PAD + g.laneX + Timeline.MarkX(ticks[i], g.span, g.laneW)
-        local point = i == 1 and "BOTTOMLEFT" or (i == 5 and "BOTTOMRIGHT" or "BOTTOM")
-        fs:ClearAllPoints()
-        fs:SetPoint(point, ui.frame, "BOTTOMLEFT", x, 8)
-        fs:SetText(NS.Format.Length(ticks[i]))
+local function newLine(layer)
+    return function()
+        local t = layer:CreateTexture(nil, "BACKGROUND")
+        t:SetColorTexture(GRID[1], GRID[2], GRID[3], GRID[4])
+        t:SetWidth(1)
+        return t
     end
-    for i, line in ipairs(ui.grid) do
-        line:SetShown(shown)
-        line:ClearAllPoints()
-        line:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW),
-            -(ui.sections and ui.sections.stripA or 0))
-        line:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW), 0)
+end
+
+local function newLabel(layer)
+    return function() return Style.Text(layer, FONT.CAPTION) end
+end
+
+-- Both axes' labels and both layers' grid lines (at each tick but the first and the last), one per
+-- tick at this zoom, re-pooled (a draw, a release, a zoom).
+local function buildAxes(g)
+    for _, pool in ipairs({ ui.axisPool, ui.castsAxisPool, ui.gridPool, ui.laneGridPool }) do NS.Pool.ReleaseAll(pool) end
+    ui.ticks = Timeline.Ticks(g.span, g.zoom)
+    ui.axis, ui.castsAxis, ui.grid = {}, {}, {}
+    for i, t in ipairs(ui.ticks) do
+        local text = NS.Format.Length(t)
+        ui.axis[i] = NS.Pool.Acquire(ui.axisPool, newLabel(ui.axisLayer))
+        ui.axis[i]:SetText(text)
+        ui.castsAxis[i] = NS.Pool.Acquire(ui.castsAxisPool, newLabel(ui.castsLayer))
+        ui.castsAxis[i]:SetText(text)
+        if i > 1 and i < #ui.ticks then
+            ui.grid[#ui.grid + 1] = { t = t, casts = NS.Pool.Acquire(ui.gridPool, newLine(ui.castsLayer)),
+                                      lanes = NS.Pool.Acquire(ui.laneGridPool, newLine(ui.marks)) }
+        end
+    end
+end
+
+-- The label at tick `i` of `n`: the first left-aligned on 0:00, the last right-aligned on the end.
+local function labelPoint(i, n, side)
+    local h = i == 1 and "LEFT" or (i == n and "RIGHT" or "")
+    return side .. h, h == "" and "CENTER" or h
+end
+
+local function placeLabel(fs, point, justify, layer, x, y)
+    fs:SetJustifyH(justify)
+    fs:ClearAllPoints()
+    fs:SetPoint(point, layer, "TOPLEFT", x, y)
+end
+
+-- Both axes' labels and the grid lines at this geometry (the pinned axis's on its own layer, the
+-- strips' under the compared run's strip on theirs). Nothing re-pooled: a resize runs it every frame.
+local function placeAxes(g, shown)
+    ui.axisClip:SetShown(shown)
+    local s, n, pad = ui.sections, #ui.ticks, Timeline.CLIP_PAD
+    local axisY, stripsH = -(Timeline.AXIS_H - 6), s.stripB + s.heightB - s.stripA
+    for i, t in ipairs(ui.ticks) do
+        local x = Timeline.MarkX(t, g.span, g.zoomW)
+        local point, justify = labelPoint(i, n, "BOTTOM")
+        placeLabel(ui.axis[i], point, justify, ui.axisLayer, x, axisY)
+        point = labelPoint(i, n, "TOP")
+        placeLabel(ui.castsAxis[i], point, justify, ui.castsLayer, x + pad, -(s.castsAxis - s.stripA))
+    end
+    for _, line in ipairs(ui.grid) do
+        local x = Timeline.MarkX(line.t, g.span, g.zoomW)
+        line.casts:ClearAllPoints()
+        line.casts:SetPoint("TOPLEFT", ui.castsLayer, "TOPLEFT", x + pad, 0)
+        line.casts:SetHeight(stripsH)
+        line.lanes:ClearAllPoints()
+        line.lanes:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", x, 0)
+        line.lanes:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", x, 0)
     end
 end
 
@@ -753,11 +978,8 @@ local function stretchRows(g)
         placeLane(pair, pair.laneB, pair.countB, -(Timeline.LANE_H + Timeline.LANE_GAP), g.laneX, g.laneW)
     end
     for _, d in ipairs(ui.drawn or {}) do
-        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.laneW) or 0)
-        d.tex:ClearAllPoints()
-        d.tex:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
-        d.hit:ClearAllPoints()
-        d.hit:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
+        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.zoomW) or 0)
+        putMark(d, g)
     end
 end
 
@@ -768,14 +990,15 @@ local function emptyText()
     return nil
 end
 
--- Everything but the lanes: the legend, the empty message, the axis and the scroll frame.
+-- Everything but the lanes: the legend, the empty message, the axes and the scroll frame.
 local function layoutFrame(g)
     local top = layoutLegend(g)
     local empty = emptyText()
     ui.empty:SetText(empty or "")
     ui.empty:SetShown(empty ~= nil)
-    ui.scroll:SetShown(empty == nil)
-    layoutAxis(g, empty == nil)
+    ui.isEmpty = empty ~= nil
+    ui.scroll:SetShown(not ui.isEmpty)
+    placeAxes(g, not ui.isEmpty)
     ui.scroll:ClearAllPoints()
     ui.scroll:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", Timeline.PAD, -(top + 8))
     ui.viewH = math.max(1, ui.height - top - 8 - Timeline.AXIS_H - 8)
@@ -789,18 +1012,23 @@ function layout()
     ui.laidW = g.cw
     ui.stackA, ui.stackB = stackOf(ui.castsA, g), stackOf(ui.castsB, g)
     ui.sections = Timeline.Sections(ui.stackA.count, ui.stackB.count)
+    buildAxes(g)
     layoutFrame(g)
     layoutStrips(g)
     layoutRows(g)
     ui.contentH = math.max(1, ui.sections.lanes + #ui.rows * Timeline.PAIR_H - Timeline.PAIR_GAP)
     ui.content:SetHeight(ui.contentH)
+    sizeClips(g)
+    placeZoom(g)
+    applyPan(g)
     Timeline.Scroll(0)
 end
 
--- The cheap half of a resize (modules/Sizing.lua): the frame laid out at the tracked size, the lanes
--- stretched only when the width moved; layout re-pools them once, on release.
+-- The cheap half of a resize (modules/Sizing.lua): the frame laid out at the tracked size, the lanes,
+-- the strips and the clips stretched only when the width moved; layout re-pools them once, on release.
 function resize()
     if not ui then return end
+    if not ui.sections then return layout() end
     local g = geometry()
     local widthMoved = g.cw ~= ui.laidW
     ui.laidW = g.cw
@@ -808,8 +1036,17 @@ function resize()
     if widthMoved then
         stretchStrips(g)
         stretchRows(g)
+        sizeClips(g)
     end
+    applyPan(g)
     Timeline.Scroll(0)
+end
+
+-- Another run or compare target: back to 1x, from 0:00 (the same pair redrawn keeps the view).
+local function followZoom(run, other)
+    local runKey, otherKey = run and (run.id or run), other and (other.id or other)
+    if ui.runKey ~= runKey or ui.otherKey ~= otherKey then ui.zoomI, ui.pos = 1, 0 end
+    ui.runKey, ui.otherKey = runKey, otherKey
 end
 
 -- Read the followed detail's run and compare target, and draw them.
@@ -818,6 +1055,7 @@ local function draw()
     local other, kind
     if run and pane.CompareTarget then other, kind = pane:CompareTarget(true) end
     if ui.run ~= run then ui.offset = 0 end
+    followZoom(run, other)
     ui.run, ui.other, ui.kind = run, other, kind
     ui.otherHas = Timeline.Has(other)
     ui.rows = Timeline.Has(run) and Timeline.Rows(run, other) or {}
@@ -876,6 +1114,43 @@ function Timeline.Scroll(delta)
     local top = math.max(0, (ui.contentH or 0) - (ui.viewH or 0))
     ui.offset = math.max(0, math.min(top, (ui.offset or 0) - (delta or 0) * Timeline.PAIR_H))
     ui.scroll:SetVerticalScroll(ui.offset)
+end
+
+--- One Shift+wheel notch (`delta` > 0 pans toward 0:00): PAN of the view, clamped to the axis.
+function Timeline.Pan(delta)
+    if not ui then return end
+    local zoom = Timeline.ZoomAt(ui.zoomI)
+    ui.pos = Timeline.ClampPos((ui.pos or 0) - (delta or 0) * Timeline.PAN / zoom, zoom)
+    applyPan(geometry())
+end
+
+-- To zoom step `i` (clamped), about the view's middle, and the full layout (the icons restack).
+local function setZoom(i)
+    if not ui then return false end
+    i = math.max(1, math.min(#Timeline.ZOOMS, i))
+    if i == ui.zoomI then return false end
+    ui.pos = Timeline.Rezoom(ui.pos, Timeline.ZoomAt(ui.zoomI), Timeline.ZoomAt(i))
+    ui.zoomI = i
+    layout()
+    debug("zoom %sx", tostring(Timeline.ZoomAt(i)))
+    return true
+end
+
+--- `steps` zoom steps in (> 0) or out (< 0): the strips and the lanes together (the zoom controls).
+--- @return boolean changed
+function Timeline.ZoomBy(steps)
+    return setZoom((ui and ui.zoomI or 1) + (steps or 0))
+end
+
+--- Back to 1x (the reset control).
+--- @return boolean changed
+function Timeline.ResetZoom()
+    return setZoom(1)
+end
+
+--- The zoom now (1 before the window is built).
+function Timeline.Zoom()
+    return Timeline.ZoomAt(ui and ui.zoomI or 1)
 end
 
 --- Master scale on the window (a draw, and the scale row's reaction in settings/General.lua). Nothing

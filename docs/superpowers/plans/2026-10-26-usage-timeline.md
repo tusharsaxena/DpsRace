@@ -337,10 +337,10 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Compare name column:** narrower in the expanded view (P11's 152 px was too wide) and capped in the collapsed
   view; the figure columns take the room.
 - [x] **Compare separator:** thinner (1 px) and dimmer, in both views and in the score table.
-- [ ] **Timeline casts and zoom:** the *Casts* section a bit taller (less cramped); a time axis under the compared
+- [x] **Timeline casts and zoom:** the *Casts* section a bit taller (less cramped); a time axis under the compared
   run's strip too; zoom in / zoom out / reset buttons at the right of the *Casts* heading line, zooming *Casts* and
   *By ability* together (horizontal scroll when zoomed); a wider default window.
-- [ ] **Timeline counts:** a little more space between the lanes' end and the counts.
+- [x] **Timeline counts:** a little more space between the lanes' end and the counts.
 - [ ] **First-drag glitch:** on the first drag of the Results window after it opens, row cells stay where they were
   while others move (overlapping text); later drags are fine. Reproduce in a test, fix.
 

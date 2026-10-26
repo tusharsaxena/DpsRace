@@ -673,7 +673,7 @@ Total.
 - results timeline: a strip grows with the casts stacked at one time; the lanes start under it
 - results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets
 - results timeline: a strip with no casts shows a dim note in place of its icons
-- results timeline: its minimum width is 640, so the icons get room; the default opens wider
+- results timeline: its minimum width is 640, so the icons get room; the default opens wider, at 980
 - results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
 - results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
 - results timeline: a run with no casts or no run at all shows a message in place of the lanes
@@ -681,6 +681,16 @@ Total.
 - results timeline: it scrolls by a pair per notch; its position and size persist; Reset position restores them
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
+
+### test_results_timeline_zoom.lua (7)
+
+- timeline zoom: the Casts section is roomier: a wider row pitch than the icon, gaps around the strips
+- timeline zoom: a second time axis under the compared run's strip, the same labels as the pinned one
+- timeline zoom: the controls sit at the right end of the Casts heading line and step through the zooms
+- timeline zoom: zoomed in, the strips and the lanes widen together and the view pans across the axis
+- timeline zoom: a zoom keeps the view's middle; Shift+mouse wheel pans and the plain wheel scrolls
+- timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
+- timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
 
 ### test_sizing.lua (11)
 
@@ -1022,6 +1032,7 @@ Total.
 | test_results_sections.lua | 9 |
 | test_chart_icons.lua | 29 |
 | test_results_timeline.lua | 20 |
+| test_results_timeline_zoom.lua | 7 |
 | test_sizing.lua | 11 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
@@ -1043,4 +1054,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **825** |
+| **Total** | **832** |

@@ -290,7 +290,7 @@ test("results timeline: each lane's count sits just past the lane's right end, n
     local TL = i.TL
     board(i)
     local u = open(i, "this")
-    assertTrue(TL.COUNT_GAP >= 4 and TL.COUNT_GAP <= 6, "a small gap")
+    assertTrue(TL.COUNT_GAP >= 8 and TL.COUNT_GAP <= 12, "a small gap, clear of the lane's end (P12)")
     local _, laneX, laneW = TL.LaneGeometry(u.width)
     for _, pair in ipairs(pairsOf(i)) do
         for _, count in ipairs({ pair.countA, pair.countB }) do
@@ -312,30 +312,32 @@ test("results timeline: overlapping icons stack onto extra rows and the strip gr
         return xs
     end
     for _, n in ipairs({ 1, 3, 6 }) do
-        local rows, count, over = TL.Stack(same(n), TL.CAST_STEP, TL.MAX_STACK)
+        local rows, count, over = TL.Stack(same(n), TL.CAST_PITCH, TL.MAX_STACK)
         assertEqual(count, n, n .. " casts at one time need " .. n .. " rows")
         assertEqual(rows[n], n)
         assertNil(next(over), "none past the cap")
         assertEqual(TL.StripHeight(count), n * TL.CAST_STEP)
     end
     -- Icons a full pitch apart share a row; closer ones do not, and a freed row is reused.
-    local rows, count = TL.Stack({ 0, 15, 20, 30, 45 }, TL.CAST_STEP, TL.MAX_STACK)
+    local rows, count = TL.Stack({ 0, 15, 20, 30, 45 }, TL.CAST_PITCH, TL.MAX_STACK)
     assertEqual(table.concat(rows, ","), "1,1,2,1,1")
     assertEqual(count, 2)
     -- Past the cap: every icon still drawn, the rest on the row that frees first, flagged.
-    local capped, used, over = TL.Stack(same(TL.MAX_STACK + 2), TL.CAST_STEP, TL.MAX_STACK)
+    local capped, used, over = TL.Stack(same(TL.MAX_STACK + 2), TL.CAST_PITCH, TL.MAX_STACK)
     assertEqual(used, TL.MAX_STACK)
     assertEqual(#capped, TL.MAX_STACK + 2)
     assertTrue(over[TL.MAX_STACK + 1] and over[TL.MAX_STACK + 2])
     assertNil(over[TL.MAX_STACK])
     assertEqual(TL.StripHeight(0), TL.CAST_STEP, "an empty strip keeps a row for its note")
-    -- The sections: the Casts heading, this run's strip, the compared run's, the By ability heading.
+    -- The sections: the Casts heading, this run's strip, the compared run's, their axis, the By
+    -- ability heading.
     local Style = i.NS.Style
     local s = TL.Sections(3, 1)
-    assertEqual(s.stripA, Style.SECTION_H, "under the Casts heading")
+    assertEqual(s.stripA, Style.SECTION_H + TL.CASTS_PAD, "a little under the Casts heading")
     assertEqual(s.heightA, 3 * TL.CAST_STEP)
     assertEqual(s.stripB, s.stripA + s.heightA + TL.STRIP_GAP)
-    assertEqual(s.lanesHead, s.stripB + s.heightB + Style.SECTION_GAP)
+    assertEqual(s.castsAxis, s.stripB + s.heightB + TL.CASTS_PAD, "the strips' own axis under them")
+    assertEqual(s.lanesHead, s.castsAxis + TL.CASTS_AXIS_H + Style.SECTION_GAP)
     assertEqual(s.lanes, s.lanesHead + Style.SECTION_H)
 end)
 
@@ -457,12 +459,12 @@ test("results timeline: a strip with no casts shows a dim note in place of its i
     for _, d in ipairs(i.TL.Icons()) do assertEqual(d.side, "a") end
 end)
 
-test("results timeline: its minimum width is 640, so the icons get room; the default opens wider", function()
+test("results timeline: its minimum width is 640, so the icons get room; the default opens wider, at 980", function()
     local i = inst()
     local TL = i.TL
     assertEqual(TL.MIN_WIDTH, 640)
     local W = i.NS.defaults.profile.windows.timeline
-    assertEqual(W.width, 860)
+    assertEqual(W.width, 980, "120 px wider than P11's 860 (P12)")
     assertEqual(W.height, 560)
     assertTrue(W.width >= TL.MIN_WIDTH and W.height >= TL.MIN_HEIGHT)
     local _, _, laneW = TL.LaneGeometry(TL.MIN_WIDTH)

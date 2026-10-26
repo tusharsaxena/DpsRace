@@ -367,14 +367,19 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown of 29 s or more
   first, longest first, then by this run's count, then the other's, the player's before the pet's),
   each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
-  count just past its right end (`COUNT_GAP`), over an axis to the longer of the two races (`Span`, `Ticks`).
+  count just past its right end (`COUNT_GAP`), over an axis to the longer of the two races (`Span`, `Ticks`),
+  drawn again under the *Casts* strips.
   Above the lanes (under a *Casts* heading; the lanes under *By ability*) two strips on the same axis,
   this run's over the compared run's, draw every cast (`CastsOf`, the pet's too) as its ability's icon,
   stacked onto extra rows where icons would overlap (`Stack`; this run's upward, the other's downward,
   each strip `StripHeight` tall for its rows, at most `MAX_STACK`); `Sections` places the parts. The compared run
   is `ResultsDetail.CompareTarget(true)` (the best, the runner-up or the picked run, whether or not
   the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
-  position is `MarkX` on the window's stored size. The detail calls `ResultsTimeline.DetailChanged`
+  position is `MarkX` on the window's stored size and the zoom: the controls at the right of the *Casts*
+  heading line step `ZOOMS` (1x to 8x), which lays the strips' and the lanes' time area out that many
+  times the lanes' width in clipping scroll frames that pan together (Shift+mouse wheel, `Pan`), kept
+  as the fraction of the axis at the view's left (`ClampPos`, `Rezoom`); another run or compare target
+  goes back to 1x. The detail calls `ResultsTimeline.DetailChanged`
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
   with the Results window, and its position and size are `profile.windows.timeline`.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
