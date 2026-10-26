@@ -535,6 +535,23 @@ test("settings: History's Usage tab draws the hidden items as the library's ID l
         == "Account-wide: shared by every profile. ", hidden.tooltip)
 end)
 
+test("settings: History repaints when the hidden items change from anywhere, and not for other settings", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local panel = M.__subcategories["History"]
+    panel:Show()
+    panel:__fire("OnShow")
+    assert(NS.pageCtx.history, "the History page drew no ctx")
+    local repainted = 0
+    local real = NS.Helpers.RefreshPanel
+    NS.Helpers.RefreshPanel = function(...) repainted = repainted + 1 return real(...) end
+    NS.Usage.Hide(6948)
+    assertEqual(repainted, 1, "a right-click's Never show repaints the list")
+    assertTrue(NS.SetByPath("live.castDots", false))
+    assertEqual(repainted, 1, "another setting does not")
+    NS.Helpers.RefreshPanel = real
+end)
+
 test("settings: Days to keep says it is account-wide, and its label carries no suffix", function()
     local keep = row(T.NS, "global.history.keepDays")
     assertEqual(keep.label, "Days to keep")

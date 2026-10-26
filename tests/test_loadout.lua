@@ -401,7 +401,7 @@ test("loadout: the Gear heading carries the run's item level as caption subtext 
     NS.Results.ShowRun("r")
     local lo = pane(i).lo
     assertEqual(lo.ilvl.__text, "ilvl 326.8", "one decimal, as the Runs list shows it")
-    assertEqual(lo.ilvl.__color[1], NS.ResultsTable.COLORS.dim[1], "the light gray")
+    assertEqual(lo.ilvl.__color[1], NS.ResultsTable.COLORS.text[1], "the light gray")
     local pt = lo.ilvl.__points[1]
     assertEqual(pt[1], "BOTTOMLEFT")
     assertEqual(pt[2], lo.title, "right after the Gear heading, on its line")

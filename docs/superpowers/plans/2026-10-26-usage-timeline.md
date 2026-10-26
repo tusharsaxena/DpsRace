@@ -276,8 +276,9 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   (the vendored LibKa0s settings tooltips keep their format).
 - [x] **Compare vs best:** *This run* right-aligned, *Best run* (renamed from *Best*) left-aligned, the headers aligned
   with their columns; one bar per row, in the column of whichever run is higher, growing outward from the edge the two
-  columns share, its length that row's difference against the table's largest, muted green when this run is higher
-  and muted red when the compared run is; in the score table and the spell rows.
+  columns share, muted green when this run is higher and muted red when the compared run is; in the score table and
+  the spell rows. A spell row's bar is its difference against the table's largest; a score row's is the figure's gap
+  as a share of the larger of the two runs.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

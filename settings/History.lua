@@ -158,8 +158,9 @@ NS.RegisterTabbedPage({
     afterGroup      = { [GROUP] = afterHistory, [USAGE] = afterUsage },
 })
 
--- The stored count repaints when the store changes; a hidden page is only flagged, and repaints on
--- its next show (the library's RefreshPanel).
+-- The stored count repaints when the store changes, and the hidden-items list when it changes from
+-- anywhere (the detail's right-click, `/dr set` or `reset`); a hidden page is only flagged, and
+-- repaints on its next show (the library's RefreshPanel).
 local function repaint()
     local ctx = NS.pageCtx[PAGE]
     if ctx and NS.Helpers.RefreshPanel then NS.Helpers.RefreshPanel(ctx, true) end
@@ -170,5 +171,8 @@ do
     if bus then
         bus:RegisterMessage(NS.MSG.RUNS_CHANGED, repaint)
         bus:RegisterMessage(NS.MSG.RUN_SAVED, repaint)
+        bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
+            if path == NS.Usage.HIDDEN_PATH then repaint() end
+        end)
     end
 end

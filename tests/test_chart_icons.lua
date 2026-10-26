@@ -340,6 +340,21 @@ test("chart icons: test mode draws the sample's, live up to its still moment and
     assertEqual(#body(f).w.chart:Icons(), 0, "the setting holds in test mode")
 end)
 
+test("chart icons: the sim's running chart keeps one cooldown list until another cast is heard", function()
+    local f = hud()
+    local MR = f.NS.MockRuns
+    local s = MR.Race({ dps = 150000 }, MR.Dataset().runs)
+    local all = assert(f.NS.HudChart.CooldownsOf(s.run), "the sample run has no cooldowns")
+    assertTrue(#all >= 2 and all[2].t > all[1].t, "two casts at different times")
+    local t1, t2 = all[1].t, all[2].t
+    local a = MR.Figures(s, "running", t1).chart.cooldowns
+    local b = MR.Figures(s, "running", (t1 + t2) / 2).chart.cooldowns
+    assertTrue(rawequal(a, b), "the same list from tick to tick")
+    local c = MR.Figures(s, "running", t2).chart.cooldowns
+    assertFalse(rawequal(a, c), "a new list once another cast is heard")
+    assertTrue(#c > #a)
+end)
+
 test("chart icons: test mode's chart follows Show cooldown icons while it is on screen", function()
     local f = hud()
     assertTrue(f.NS.Preview.Start())

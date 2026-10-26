@@ -301,7 +301,7 @@ function Loadout.Build(p, c)
     x.title:SetText(L["Gear"])
     -- The run's item level as caption subtext right after the heading, on its line: anchored to the
     -- heading's right edge, so nothing is measured.
-    x.ilvl = Tbl.Text(c, FONT.CAPTION, C.dim)
+    x.ilvl = Tbl.Text(c, FONT.CAPTION, C.text)
     x.ilvl:SetPoint("BOTTOMLEFT", x.title, "BOTTOMRIGHT", 6, 0)
     x.dress = Button(c, L["Dressing Room"], function() Loadout.DressUp(x.gear) end)
     x.dress:SetSize(Loadout.DRESS_W, Loadout.BUTTON_H)

@@ -378,15 +378,24 @@ local function runningChart(sample, elapsed)
     return chart
 end
 
--- The running chart's cooldown icons (#14): the sample run's important casts heard by `elapsed`.
-local function runningCooldowns(run, elapsed)
-    local all = NS.HudChart.CooldownsOf(run)
+-- The running chart's cooldown icons (#14): the sample run's important casts heard by `elapsed`. Kept
+-- on the sample and built again only when another cast is heard, as the live race reuses its list, so
+-- the chart keeps its icons (and a hovered icon its tooltip) from tick to tick.
+local function runningCooldowns(s, elapsed)
+    local all = NS.HudChart.CooldownsOf(s.run)
     if not all then return nil end
-    local out = {}
+    local n = 0
     for _, c in ipairs(all) do
-        if c.t <= elapsed then out[#out + 1] = c end
+        if c.t <= elapsed then n = n + 1 end
     end
-    return out
+    if s.cdN ~= n or not s.cdList then
+        local out = {}
+        for _, c in ipairs(all) do
+            if c.t <= elapsed then out[#out + 1] = c end
+        end
+        s.cdN, s.cdList = n, out
+    end
+    return s.cdList
 end
 
 --- A sample race for the HUD against `runs` (the sample history): the run, the best before it on
@@ -423,7 +432,7 @@ local FIGURES = {
         local f = { timeLeft = MockRuns.LENGTH - elapsed, elapsed = elapsed, live = liveAt(s, elapsed) }
         if not s.shared then
             f.chart = runningChart(s, elapsed)
-            f.chart.cooldowns = runningCooldowns(s.run, elapsed)
+            f.chart.cooldowns = runningCooldowns(s, elapsed)
         end
         if s.best then
             local lo, hi = NS.HudChart.PaceBounds(s.best, elapsed)

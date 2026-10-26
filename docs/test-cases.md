@@ -597,7 +597,7 @@ Total.
 - results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
 - results usage: a sample run hides the same items
 
-### test_chart_icons.lua (17)
+### test_chart_icons.lua (18)
 
 - chart icons: a cast's x is INSET + t / length across the width less both insets
 - chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
@@ -615,6 +615,7 @@ Total.
 - chart icons: Show cooldown icons off hides them on the card and in the detail too
 - chart icons: a run recorded before casts were (format 2) draws its chart with none
 - chart icons: test mode draws the sample's, live up to its still moment and all on the card
+- chart icons: the sim's running chart keeps one cooldown list until another cast is heard
 - chart icons: test mode's chart follows Show cooldown icons while it is on screen
 
 ### test_results_timeline.lua (13)
@@ -659,7 +660,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (30)
+### test_settings.lua (31)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -688,6 +689,7 @@ Total.
 - settings: Purge history… is refused while a race is armed
 - settings: History ends with Purge history…, after the stored count, under no heading of its own
 - settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
+- settings: History repaints when the hidden items change from anywhere, and not for other settings
 - settings: Days to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
@@ -954,11 +956,11 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 22 |
-| test_chart_icons.lua | 17 |
+| test_chart_icons.lua | 18 |
 | test_results_timeline.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
-| test_settings.lua | 30 |
+| test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
 | test_preview.lua | 23 |
@@ -976,4 +978,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **770** |
+| **Total** | **772** |
