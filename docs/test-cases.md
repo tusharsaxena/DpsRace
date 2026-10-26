@@ -602,6 +602,16 @@ Total.
 - results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
 - results usage: a sample run hides the same items
 
+### test_results_sections.lua (7)
+
+- sections: every section heading has an arrow left of its text, open and chevron-down by default
+- sections: the arrow and the heading's text each fold and open every section, the arrow's icon following
+- sections: a folded section's body is hidden, and the sections under it move up by its body's height
+- sections: the folded state is the profile's, read back by a rebuilt pane and by every run
+- sections: Reset position keeps the folded sections; a profile reset and Reset all settings clear them
+- sections: Add Note opens a folded Note; folding the Note while writing closes the box unsaved
+- sections: a heading the run does not draw hides its arrow
+
 ### test_chart_icons.lua (27)
 
 - chart icons: a cast's x is INSET + t / length across the width less both insets
@@ -970,6 +980,7 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
+| test_results_sections.lua | 7 |
 | test_chart_icons.lua | 27 |
 | test_results_timeline.lua | 13 |
 | test_tooltips.lua | 4 |
@@ -992,4 +1003,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **786** |
+| **Total** | **793** |

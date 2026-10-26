@@ -440,6 +440,7 @@ end
 --- The toggle's line (and the different-board note) at `y` across `cw`; answers the y beneath.
 function Compare.LayoutBar(p, y, cw)
     local x = p.cmp
+    x.toggle:Show()
     place(x.toggle, p.content, 0, y)
     local picked = x.kind == "picked"
     -- Clear Pick follows the pick itself: open on the picked run, the toggle falls back to the
@@ -556,6 +557,14 @@ function Compare.LayoutCompared(p, y, cw)
     end
     y = layoutScore(p, y, cw)
     return layoutSpells(p, y, cw)
+end
+
+--- The Spell breakdown folded (the detail's collapsible sections): every part of the compare hidden,
+--- the toggle with them; the compare itself (on or off, the pick) is kept for the unfold.
+function Compare.Fold(p)
+    local x = p.cmp
+    for _, part in ipairs({ x.toggle, x.clear, x.boards, x.boardsHover, x.score, x.spellHost }) do part:Hide() end
+    NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
 end
 
 --- The pane's other run and its kind (nil when there is none).

@@ -109,8 +109,11 @@ NS.defaults = {
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.
             -- 1340 and 980 wide before 2026-10-26 (1220 and 900 before the Note column, 2026-10-25).
+            -- `collapsedSections` (UT-P10): the run detail's folded sections, each Detail.SECTIONS key
+            -- set to true (modules/Results_Detail.lua); empty, every section open. Not geometry: Reset
+            -- position keeps it; a profile reset and Reset all settings clear it.
             results = { view = "expanded", expanded = { width = 1264, height = 560 },
-                        collapsed = { width = 904, height = 560 } },
+                        collapsed = { width = 904, height = 560 }, collapsedSections = {} },
             -- The ability timeline (#14, modules/Results_Timeline.lua): the pop-out from the run detail.
             timeline = { width = 760, height = 480 },
         },

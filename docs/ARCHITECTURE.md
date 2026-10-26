@@ -67,7 +67,8 @@ the player's channel edges) to `modules/Casts.lua`, which keeps the cast list on
 each spell's base cooldown; `modules/Usage.lua` reads the on-use gear, the bag consumables and the
 helpful auras at the arm, and at the result works out what was used from the casts, the bag counts
 and that snapshot (no weapon enchant: an oil has no on-use). The Runs list gained a *Used* column
-and the detail a *Usage* section of what was used, with *Edit* to tick or untick every candidate
+and the detail a *Usage* section of what was used (every detail section heading folds its section with an arrow,
+the folded set in `profile.windows.results.collapsedSections`), with *Edit* to tick or untick every candidate
 (`modules/Results_Usage.lua`), and a list of hidden items (`global.usage.hidden`, History > Usage)
 that none of them ever shows; the damage chart marks each cast of an
 ability whose base cooldown is over 15 s with that ability's icon (*Show cooldown icons*), live and

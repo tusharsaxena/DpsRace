@@ -316,14 +316,17 @@ function Loadout.Build(p, c)
     for _, b in ipairs({ x.view, x.copy }) do b:SetSize(Loadout.TALENT_W, Loadout.BUTTON_H) end
     x.differs = Tbl.Text(c, FONT.TEXT, C.amber)
     x.differs:SetText(L["Different loadout"])
-    hoverOver(p, x.title, function() return x.gear and "gear" or "none" end)
-    hoverOver(p, x.none, "none")
+    local titleHover = hoverOver(p, x.title, function() return x.gear and "gear" or "none" end)
+    x.noneHover = hoverOver(p, x.none, "none")
     hover(p, x.dress, "dressUp")
-    hoverOver(p, x.talentsTitle, function() return x.talentsData and "talents" or "none" end)
-    hoverOver(p, x.talents, function() return x.talentsData and "talents" or "none" end)
+    local talentsTitleHover = hoverOver(p, x.talentsTitle, function() return x.talentsData and "talents" or "none" end)
+    x.talentsHover = hoverOver(p, x.talents, function() return x.talentsData and "talents" or "none" end)
     hover(p, x.view, function() return (Loadout.CanView(x.talentsData)) and "view" or "viewOff" end)
     hover(p, x.copy, "copy")
     x.differsHover = hoverOver(p, x.differs, "differs")
+    -- Each heading folds its section (the detail's collapsible sections).
+    p:AddHeading("gear", x.title, titleHover)
+    p:AddHeading("talents", x.talentsTitle, talentsTitleHover)
     return x
 end
 
@@ -400,18 +403,22 @@ local function layoutGrid(p, x, y, cw)
     return y - x.rows * Loadout.PITCH
 end
 
+-- The Talents heading, then (unless folded) its line with View and Copy and the Different loadout note.
 local function layoutTalents(p, x, y, cw)
     local tw = Loadout.TALENT_W
     y = y - NS.Style.SECTION_GAP
-    place(x.talentsTitle, p.content, 0, y)
+    place(x.talentsTitle, p.content, NS.ResultsDetail.INDENT, y)
     y = y - NS.Style.SECTION_H
+    local body = not p:Heading("talents", true)
+    for _, part in ipairs({ x.talents, x.talentsHover, x.view, x.copy }) do part:SetShown(body) end
+    x.differs:SetShown(body and x.different)
+    x.differsHover:SetShown(body and x.different)
+    if not body then return y end
     place(x.talents, p.content, 0, y - 2)
     x.talents:SetWidth(math.max(40, cw - 2 * tw - 12))
     place(x.view, p.content, cw - 2 * tw - 4, y)
     place(x.copy, p.content, cw - tw, y)
     y = y - Loadout.BUTTON_H - 4
-    x.differs:SetShown(x.different)
-    x.differsHover:SetShown(x.different)
     if x.different then
         place(x.differs, p.content, 0, y)
         x.differs:SetWidth(cw)
@@ -425,14 +432,18 @@ end
 function Loadout.Layout(p, y, cw)
     local x = p.lo
     y = y - NS.Style.SECTION_GAP
-    place(x.title, p.content, 0, y)
+    place(x.title, p.content, NS.ResultsDetail.INDENT, y)
+    local body = not p:Heading("gear", true)
     local has = x.gear ~= nil
-    x.dress:SetShown(has)
+    x.dress:SetShown(has and body)
     if has then place(x.dress, p.content, cw - Loadout.DRESS_W, y) end
     y = y - math.max(NS.Style.SECTION_H, Loadout.BUTTON_H) - 2
-    x.none:SetShown(not has)
-    x.grid:SetShown(has)
-    if has then
+    x.none:SetShown(body and not has)
+    x.noneHover:SetShown(body and not has)
+    x.grid:SetShown(body and has)
+    if not body then
+        return layoutTalents(p, x, y, cw) - 8
+    elseif has then
         y = layoutGrid(p, x, y, cw)
     else
         place(x.none, p.content, 0, y)

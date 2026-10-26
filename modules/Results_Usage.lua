@@ -363,7 +363,7 @@ function ResultsUsage.Build(p, c)
     x.edit = NS.HudStates.Button(c, L["Edit"], function() ResultsUsage.ToggleEdit(p) end)
     x.edit:SetSize(ResultsUsage.EDIT_W, ResultsUsage.BUTTON_H)
     x.none = Tbl.Text(c, FONT.TEXT, C.dim)
-    hoverOver(p, x.title, function() return x.recorded and "title" or "none" end)
+    local titleHover = hoverOver(p, x.title, function() return x.recorded and "title" or "none" end)
     x.noneHover = hoverOver(p, x.none, function()
         if not x.recorded then return "none" end
         return x.editing and "empty" or "unused"
@@ -372,6 +372,8 @@ function ResultsUsage.Build(p, c)
         b:HookScript("OnEnter", function(self) tip(p, self, key, x.editing) end)
         b:HookScript("OnLeave", Tbl.HideTip)
     end
+    -- The heading folds the section (the detail's collapsible sections).
+    p:AddHeading("usage", x.title, titleHover)
     return x
 end
 
@@ -499,15 +501,21 @@ end
 function ResultsUsage.Layout(p, y, cw)
     local x = p.usage
     y = y - NS.Style.SECTION_GAP
-    place(x.title, p.content, 0, y)
+    place(x.title, p.content, NS.ResultsDetail.INDENT, y)
+    local body = not p:Heading("usage", true)
     local n = x.rows and #x.rows or 0
-    x.edit:SetShown(x.recorded == true)
+    x.edit:SetShown(body and x.recorded == true)
     place(x.edit, p.content, cw - ResultsUsage.EDIT_W, y)
-    x.save:SetShown(x.recorded == true and x.editing)
+    x.save:SetShown(body and x.recorded == true and x.editing)
     place(x.save, p.content, cw - ResultsUsage.EDIT_W - ResultsUsage.BUTTON_GAP - ResultsUsage.SAVE_W, y)
     y = y - math.max(NS.Style.SECTION_H, ResultsUsage.BUTTON_H) - 2
-    x.none:SetShown(n == 0)
-    x.noneHover:SetShown(n == 0)
+    x.none:SetShown(body and n == 0)
+    x.noneHover:SetShown(body and n == 0)
+    if not body then
+        -- Folded: the heading line alone (an edit under way stays open, out of sight).
+        for _, row in ipairs(x.items) do row:Hide() end
+        return y
+    end
     if n == 0 then
         place(x.none, p.content, 0, y)
         x.none:SetWidth(cw)

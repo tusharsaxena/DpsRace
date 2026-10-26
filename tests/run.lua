@@ -100,6 +100,7 @@ local SUITES = {
     "test_casts",
     "test_usage",
     "test_results_usage",
+    "test_results_sections",
     "test_chart_icons",
     "test_results_timeline",
     "test_tooltips",

@@ -569,6 +569,10 @@ L["The meter's session could not be read after combat. There is no score."] =
 L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
 L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"
 
+-- The detail's section arrows (each heading folds or opens its section)
+L["Collapse this section"] = "Collapse this section"
+L["Expand this section"] = "Expand this section"
+
 -- The detail's Delta box and New best badge (Tips.Detail "delta" and "badge")
 L["its group in the Runs list"] = "its group in the Runs list"
 L["the Runs list's whole view"] = "the Runs list's whole view"

@@ -43,6 +43,15 @@ local _, NS = ...
 -- (modules/Results_Timeline.lua) on this pane; every draw and every compare change tells it, so it
 -- follows the run shown and its compare target while it is open.
 --
+-- COLLAPSIBLE SECTIONS (the owner's call, 2026-10-26, UT-P10): every section heading (Detail.SECTIONS)
+-- has an arrow left of its text, chevron-down while the section is open and chevron-right while it is
+-- folded; a click on the arrow or the heading's text folds or opens it. A folded section keeps its
+-- heading line (and what sits on it by the text: Gear's item level, the chart's note is cleared) and
+-- hides its body, so the sections below move up; the layout is from config, so the scroll range
+-- follows. Which sections are folded is stored in profile.windows.results.collapsedSections (a key
+-- set to true, nothing for an open one): kept by Reset position (it is no geometry), cleared by a
+-- profile reset and Reset all settings. Opening the note box (Add Note) opens a folded Note.
+--
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
@@ -60,6 +69,10 @@ Detail.STRIP_GAP = 3        -- the gap between the race and the after-the-buzzer
 Detail.STRIP_RATIO = 1.2    -- the race segment's share against the after-buzzer one's 1 (mockup)
 Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this, at least two steps
 Detail.TIMELINE_W = 72      -- the Timeline button
+-- The collapsible sections, top to bottom (the stored keys of profile.windows.results.collapsedSections).
+Detail.SECTIONS = { "spells", "chart", "timing", "gear", "talents", "usage", "flags", "note" }
+Detail.ARROW = 14           -- a heading's arrow, a square left of its text
+Detail.INDENT = Detail.ARROW + 2   -- a heading's text, after its arrow and a 2 px gap
 
 local PADX = 12
 local BUTTON_H = 20
@@ -265,6 +278,35 @@ function Detail.Meta(run)
     return table.concat(first, sep), table.concat(second, sep), table.concat(third, sep), chips
 end
 
+-- ── the folded sections (stored) ────────────────────────────────────────────────────────────────
+
+-- The profile's set of folded sections, made on first use (an old profile has none).
+local function foldedSet()
+    local prof = NS.db and NS.db.profile
+    if not prof then return nil end
+    prof.windows = prof.windows or {}
+    prof.windows.results = prof.windows.results or {}
+    local w = prof.windows.results
+    if type(w.collapsedSections) ~= "table" then w.collapsedSections = {} end
+    return w.collapsedSections
+end
+
+--- Whether section `key` (one of Detail.SECTIONS) is folded in this profile.
+--- @param key string
+--- @return boolean
+function Detail.IsCollapsed(key)
+    local set = foldedSet()
+    return set ~= nil and set[key] == true
+end
+
+--- Fold section `key` (`on`) or open it; an open section is stored as nothing.
+--- @param key string
+--- @param on boolean
+function Detail.SetCollapsed(key, on)
+    local set = foldedSet()
+    if set then set[key] = on and true or nil end
+end
+
 -- ── the pane ────────────────────────────────────────────────────────────────────────────────────
 
 local Pane = {}
@@ -298,6 +340,54 @@ local function hoverOver(p, region, key, index)
     local f = CreateFrame("Frame", nil, p.content)
     f:SetAllPoints(region)
     return hover(p, f, key, index)
+end
+
+-- ── section headings ────────────────────────────────────────────────────────────────────────────
+
+--- Give section `key`'s heading `title` its arrow (in `parent`, the content by default), anchored
+--- left of the text so it follows the heading wherever it is placed; a left click on the arrow or on
+--- `click` (the heading's hover frame) folds or opens the section.
+--- @param key string  one of Detail.SECTIONS
+--- @param title table  the heading's FontString
+--- @param click table|nil
+--- @param parent table|nil
+--- @return table arrow
+function Pane:AddHeading(key, title, click, parent)
+    local Style = NS.Style
+    local arrow = Style.ControlButton(parent or self.content, "chevron-down", "-", L["Collapse this section"],
+        function() self:ToggleSection(key) end)
+    arrow:SetSize(Detail.ARROW, Detail.ARROW)
+    arrow.icon:SetVertexColor(Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
+    arrow:SetPoint("RIGHT", title, "LEFT", Detail.ARROW - Detail.INDENT, 0)
+    if click then
+        click:EnableMouse(true)
+        click:HookScript("OnMouseUp", function(_, button)
+            if button ~= "RightButton" then self:ToggleSection(key) end
+        end)
+    end
+    arrow.click = click
+    self.heads[key] = arrow
+    return arrow
+end
+
+--- Show section `key`'s arrow (`shown`: its heading is drawn) in the stored state: chevron-down open,
+--- chevron-right folded. Each layout calls it before placing the section's body.
+--- @return boolean folded
+function Pane:Heading(key, shown)
+    local arrow, folded = self.heads[key], Detail.IsCollapsed(key)
+    arrow:SetShown(shown and true or false)
+    NS.Style.SetControlIcon(arrow, folded and "chevron-right" or "chevron-down", folded and "+" or "-")
+    arrow.tip = folded and L["Expand this section"] or L["Collapse this section"]
+    return folded
+end
+
+--- Fold or open section `key` (stored in the profile) and lay the pane out again, the scroll kept.
+function Pane:ToggleSection(key)
+    local fold = not Detail.IsCollapsed(key)
+    Detail.SetCollapsed(key, fold)
+    -- Folding the Note while it is being written closes the box unsaved, as Escape does.
+    if fold and key == "note" and self.editing then return self:closeNote() end
+    if self.run then self:Layout(self.width, self.height, self.narrow) end
 end
 
 local function kpi(parent, label, color)
@@ -398,7 +488,7 @@ local function buildFlags(p, c)
     local w = p.w
     w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
     w.flagTitle = Tbl.Text(w.flags, FONT.SECTION, { 0.95, 0.84, 0.65 })
-    w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -7)
+    w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9 + Detail.INDENT, -7)
     w.flagBody = wrapText(w.flags, FONT.TEXT, { 0.94, 0.84, 0.65 })
     w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -(7 + SECTION_H))
     w.flagBody:SetPoint("BOTTOMRIGHT", w.flags, "BOTTOMRIGHT", -9, 6)
@@ -454,7 +544,7 @@ local function wireTips(p)
     hoverOver(p, w.name, "name")
     for i, key in ipairs({ "realm", "target", "stamp" }) do hoverOver(p, w.meta[i], key) end
     for _, chip in ipairs(w.metaChips) do hover(p, chip, "target") end
-    hoverOver(p, w.spellsTitle, "breakdown")
+    w.spellsTitleHover = hoverOver(p, w.spellsTitle, "breakdown")
     hover(p, w.damage.frame, "damage")
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
@@ -464,15 +554,23 @@ local function wireTips(p)
     -- Kept: the title keeps its anchors while hidden, so its hover follows the chart's visibility.
     w.chartTitleHover = hoverOver(p, w.chart.title, "chart")
     hover(p, w.chart.over, "chart")
-    hoverOver(p, w.timingLabel, "strip")
+    w.timingTitleHover = hoverOver(p, w.timingLabel, "strip")
     hover(p, w.strip, "strip")
-    for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do hoverOver(p, axis, "strip") end
-    hoverOver(p, w.tailLine, "tail")
+    -- Kept: the timing's body hovers hide with it (no run model, or the section folded), so none is
+    -- left over the sections that move up into its place.
+    local th = {}
+    w.timingHovers = th
+    for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do th[#th + 1] = hoverOver(p, axis, "strip") end
+    th[#th + 1] = hoverOver(p, w.tailLine, "tail")
     for i, item in ipairs(w.legend) do
-        hoverOver(p, item.swatch, "legend", i)
-        hoverOver(p, item.fs, "legend", i)
+        th[#th + 1] = hoverOver(p, item.swatch, "legend", i)
+        th[#th + 1] = hoverOver(p, item.fs, "legend", i)
     end
     hover(p, w.flags, "flags")
+    -- The flags box's title takes its own click (it folds the box), so it carries the box's hover too.
+    w.flagTitleHover = CreateFrame("Frame", nil, w.flags)
+    w.flagTitleHover:SetAllPoints(w.flagTitle)
+    hover(p, w.flagTitleHover, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
     w.noteTitleHover = hoverOver(p, w.noteTitle, function() return p.editing and "noteBox" or "note" end)
@@ -499,7 +597,8 @@ function Detail.Build(parent, hooks)
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
     -- before any child is built so every child is born in it.
     frame:SetFrameLevel(parent:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.DETAIL)
-    local p = setmetatable({ frame = frame, hooks = hooks or {}, w = {}, scroll = 0, width = 340, height = 400 }, Pane)
+    local p = setmetatable({ frame = frame, hooks = hooks or {}, w = {}, heads = {}, scroll = 0, width = 340,
+                             height = 400 }, Pane)
     p.scrollFrame = CreateFrame("ScrollFrame", nil, frame)
     p.content = CreateFrame("Frame", nil, p.scrollFrame)
     p.scrollFrame:SetScrollChild(p.content)
@@ -520,6 +619,12 @@ function Detail.Build(parent, hooks)
     buildFlags(p, c)
     buildButtons(p)
     wireTips(p)
+    local w = p.w
+    p:AddHeading("spells", w.spellsTitle, w.spellsTitleHover)
+    p:AddHeading("chart", w.chart.title, w.chartTitleHover)
+    p:AddHeading("timing", w.timingLabel, w.timingTitleHover)
+    p:AddHeading("flags", w.flagTitle, w.flagTitleHover, w.flags)
+    p:AddHeading("note", w.noteTitle, w.noteTitleHover)
     return p
 end
 
@@ -669,6 +774,8 @@ end
 function Pane:openNote()
     if not self.run then return end
     self.editing = true
+    -- The box sits under the Note heading: a folded Note opens to show it.
+    Detail.SetCollapsed("note", false)
     self.w.noteBox:SetText(self.run.note or "")
     self:Layout(self.width, self.height, self.narrow)
     -- The box sits last in the content, under the spells and timing: scroll down to it.
@@ -759,8 +866,25 @@ function Pane:layoutSpellsTitle(y)
     local t = self.w.spellsTitle
     y = y - SECTION_GAP
     t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    t:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
     return y - SECTION_H
+end
+
+-- The Spell breakdown: its heading, then the compare's toggle and the plain or the compared list; folded,
+-- the heading alone.
+function Pane:layoutBreakdown(y, cw)
+    y = self:layoutSpellsTitle(y)
+    local folded = self:Heading("spells", true)
+    local comparing = self:Comparing()
+    self.w.list.parent:SetShown(not comparing and not folded)
+    if folded then
+        NS.ResultsCompare.Fold(self)
+        return y
+    end
+    y = NS.ResultsCompare.LayoutBar(self, y, cw)
+    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
+    if not comparing then y = self:layoutSpells(y, cw) end
+    return y
 end
 
 function Pane:layoutSpells(y, cw)
@@ -777,13 +901,22 @@ end
 function Pane:layoutChart(y, cw)
     local view, chart = self.chartView, self.w.chart
     chart:SetShown(view ~= nil)
-    chart.over:EnableMouse(view ~= nil)
+    local folded = self:Heading("chart", view ~= nil)
+    chart.over:EnableMouse(view ~= nil and not folded)
     self.w.chartTitleHover:SetShown(view ~= nil)
     if not view then return y end
     y = y - SECTION_GAP
     local Chart = NS.HudChart
     local plotH = Chart.PlotHeight()
     chart:Place(self.content, y, cw, plotH)
+    -- The heading after its arrow (the chart places it at the left edge, as the HUD draws it).
+    chart.title:ClearAllPoints()
+    chart.title:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
+    if folded then
+        chart:SetParts(true, false)
+        chart:SetNote("")
+        return y - SECTION_H
+    end
     chart:Draw(view)
     return y - Chart.BlockHeight(plotH, SECTION_H) - 8
 end
@@ -853,15 +986,19 @@ end
 function Pane:layoutTiming(y, cw)
     local w, model = self.w, self.model
     local on = model ~= nil
-    for _, key in ipairs({ "timingLabel", "strip", "axisLeft", "axisMid", "axisRight", "axisRace", "tailLine" }) do
-        w[key]:SetShown(on)
+    local body = on and not self:Heading("timing", on)
+    w.timingLabel:SetShown(on)
+    for _, key in ipairs({ "strip", "axisLeft", "axisMid", "axisRight", "axisRace", "tailLine" }) do
+        w[key]:SetShown(body)
     end
-    for _, item in ipairs(w.legend) do item.swatch:SetShown(on); item.fs:SetShown(on) end
+    for _, item in ipairs(w.legend) do item.swatch:SetShown(body); item.fs:SetShown(body) end
+    for _, f in ipairs(w.timingHovers) do f:SetShown(body) end
     if not on then return y end
     y = y - SECTION_GAP
     w.timingLabel:ClearAllPoints()
-    w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
     y = y - SECTION_H
+    if not body then return y end
     w.strip:ClearAllPoints()
     w.strip:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     w.strip:SetWidth(cw)
@@ -897,11 +1034,15 @@ local function wrappedLines(text, width, charW)
     return n
 end
 
+-- The flags box (folded: its title line alone), then the note.
 function Pane:layoutFlags(y, cw)
     local w = self.w
-    if (self.flagText or "") ~= "" then
+    local has = (self.flagText or "") ~= ""
+    local folded = self:Heading("flags", has)
+    w.flagBody:SetShown(not folded)
+    if has then
         y = y - SECTION_GAP
-        local h = 7 + SECTION_H + 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H
+        local h = 7 + SECTION_H + (folded and 0 or 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H)
         w.flags:ClearAllPoints()
         w.flags:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
         w.flags:SetSize(cw, h)
@@ -917,15 +1058,18 @@ function Pane:layoutNote(y, cw)
     local titled = self.editing == true or note ~= ""
     w.noteTitle:SetShown(titled)
     w.noteTitleHover:SetShown(titled)
+    -- Never folded while the box is open: Add Note opens the section, and folding it closes the box.
+    local folded = self:Heading("note", titled) and not self.editing
     if titled then
         y = y - SECTION_GAP
         w.noteTitle:ClearAllPoints()
-        w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+        w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
         y = y - SECTION_H
     end
     w.noteBox:SetShown(self.editing == true)
-    w.note:SetShown(not self.editing and note ~= "")
-    w.noteHover:SetShown(not self.editing and note ~= "")
+    w.note:SetShown(not self.editing and note ~= "" and not folded)
+    w.noteHover:SetShown(not self.editing and note ~= "" and not folded)
+    if folded then return y end
     local target = self.editing and w.noteBox or w.note
     target:ClearAllPoints()
     target:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
@@ -948,12 +1092,7 @@ function Pane:Layout(width, height, narrow)
     self.content:SetWidth(cw)
     if not self.run then return end
     local y = self:layoutHeader(0, cw)
-    y = self:layoutSpellsTitle(y)
-    y = NS.ResultsCompare.LayoutBar(self, y, cw)
-    local comparing = self:Comparing()
-    self.w.list.parent:SetShown(not comparing)
-    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
-    if not comparing then y = self:layoutSpells(y, cw) end
+    y = self:layoutBreakdown(y, cw)
     y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
     y = NS.ResultsLoadout.Layout(self, y, cw)

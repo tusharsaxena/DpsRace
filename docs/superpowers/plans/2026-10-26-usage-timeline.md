@@ -296,7 +296,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   between the score rows and the spell rows.
 - [x] **Usage rows:** the time follows the name inline, as the Runs list's group headers do (`name · at 0:01`, the
   part after the dot in the dim color), so nothing has to line up in a column.
-- [ ] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
+- [x] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
   Talents, Usage, Note and any other headed section) has an expand/collapse arrow beside its heading (the LibKa0s
   chevron icons); collapsed sections are remembered in the profile.
 - [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. The owner widened it to every window the

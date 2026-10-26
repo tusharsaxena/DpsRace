@@ -176,13 +176,17 @@ test("schema: a new profile and Reset all settings open each window at its minim
     assertEqual(W.hud.height, 560, "heights stay as they were")
     assertEqual(W.results.expanded.height, 560)
     assertEqual(W.results.collapsed.height, 560)
+    assertEqual(type(W.results.collapsedSections), "table", "the detail's folded sections (UT-P10)")
+    assertEqual(next(W.results.collapsedSections), nil, "a new profile folds no section")
     -- Wider windows, then /dr resetall's reset: back to the minimum widths.
     local p = NSi.db.profile
     p.windows.hud.width = 400
     p.windows.results.expanded.width, p.windows.results.collapsed.width = 1500, 1100
+    p.windows.results.collapsedSections.timing = true
     NSi.Helpers.RestoreAllDefaults()
     p = NSi.db.profile
     assertEqual(p.windows.hud.width, NSi.Hud.MIN_WIDTH)
     assertEqual(p.windows.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth)
     assertEqual(p.windows.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth)
+    assertEqual(next(p.windows.results.collapsedSections), nil, "every section open again")
 end)
