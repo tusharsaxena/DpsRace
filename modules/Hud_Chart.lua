@@ -32,7 +32,8 @@ local _, NS = ...
 -- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
 -- detail's heading role, with the view's note at its right. On the HUD the pace bar sits between the
 -- heading and the plot (Place's `midH`), and the heading stays with the pace bar alone when the plot is
--- off or steps aside (SetParts).
+-- off or steps aside (SetParts). The heading's note is the bar's only caption (*vs best pace*, the
+-- owner's call, 2026-10-26): the bar has no label of its own and spans the plot's width, edge to edge.
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
 -- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
@@ -64,7 +65,6 @@ Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
 Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
-Chart.PACE_LABEL_W = 78
 Chart.DOT = 6           -- a cooldown dot's size (#14)
 Chart.DOT_HIT = 10      -- its hover frame's size, where the strip has a dot tooltip
 
@@ -646,14 +646,12 @@ local function halfBar(parent)
     return b
 end
 
---- The pace bar built into `parent`: its caption, the track, the behind and ahead halves split at the
---- on-pace tick, and the tick over both (placed by Place).
+--- The pace bar built into `parent`: the track, the behind and ahead halves split at the on-pace tick,
+--- and the tick over both (placed by Place). No caption: the heading's note names it.
 --- @param parent table
 --- @return table pace
 function Chart.NewPace(parent)
     local p = setmetatable({}, Pace)
-    p.label = Style.Text(parent, FONT.CAPTION)
-    p.label:SetText(L["vs best pace"])
     p.bar = CreateFrame("Frame", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
@@ -679,18 +677,14 @@ function Chart.NewPace(parent)
 end
 
 function Pace:SetShown(on)
-    on = on and true or false
-    self.label:SetShown(on)
-    self.bar:SetShown(on)
+    self.bar:SetShown(on and true or false)
 end
 
---- Place it at `y` (negative, from `anchor`'s top) across `width`.
+--- Place it at `y` (negative, from `anchor`'s top) across `width`: the plot's whole width, edge to edge.
 function Pace:Place(anchor, y, width)
-    self.label:ClearAllPoints()
-    self.label:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.bar:ClearAllPoints()
-    self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", Chart.PACE_LABEL_W, y - 2)
-    self.barW = math.max(1, width - Chart.PACE_LABEL_W)
+    self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - 2)
+    self.barW = math.max(1, width)
     self.bar:SetSize(self.barW, Chart.PACE_H - 4)
     self:PlaceTick()
 end

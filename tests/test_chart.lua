@@ -288,7 +288,8 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its pace diago
     -- The pace bar: 0.5 to 1.5 x the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())
-    assertEqual(pace.label.__text, "vs best pace")
+    assertEqual(pace.label, nil, "no caption of its own: the heading's note names it")
+    assertEqual(b.w.chart.note.__text, "vs best pace")
     local elapsed = f.Race.Elapsed()
     assertTrue(math.abs(pace.ahead.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
     assertTrue(math.abs(pace.behind.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")

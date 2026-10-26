@@ -599,7 +599,8 @@ local function placeStack(body, top, pace, chart, plotH)
     local w, f, width = body.w, body.frame, body.width or 236
     local head = pace or chart
     w.chart:SetParts(head, chart)
-    if not chart then w.chart:SetNote("") end
+    -- No plot, no Draw: the note names the pace bar alone (it has no caption of its own).
+    if not chart then w.chart:SetNote(pace and L["vs best pace"] or "") end
     if head then
         local y = top + HEAD_GAP
         w.chart:Place(f, -y, width, plotH, paceLine(pace))
