@@ -345,6 +345,15 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **First-drag glitch:** on the first drag of the Results window after it opens, row cells stay where they were
   while others move (overlapping text); later drags are fine. Reproduce in a test, fix.
 
+### P13: Timeline as a modal, compare score labels (2026-10-27)
+
+- [ ] **Timeline modal:** the Ability timeline opens as a modal above the Results window: a higher layer than the
+  Results window (per the standard's frame-layering tiers), a dim cover over the Results window that takes its clicks
+  and hovers while the timeline is open (the owner's screenshot showed a Results tooltip through the timeline),
+  Escape closes the timeline first, and the timeline's background is fully opaque (no bleed-through).
+- [ ] **Compare score labels:** *Damage* and *DPS* in the score table in the same white as the spell names, each with
+  a built-in game icon at the spell icons' size: crossed swords for Damage, a clock (pocket watch) for DPS.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
