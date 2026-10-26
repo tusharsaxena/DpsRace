@@ -56,7 +56,7 @@ local function mkRun(id, fields)
         id = id, schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = NOW - HOUR,
         race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
         char = copy(CHARS.lan),
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
         where = { mapID = 2393, zone = "Silvermoon City", subzone = "Falconwing Square", instanceType = "none" },
         result = { damage = 26560000, dps = 147555.6, meterDps = 134100, sessionDuration = 190, tail = 9.17,
                    combatEnd = 7.34 },
@@ -103,7 +103,7 @@ end
 
 -- ── the run list ────────────────────────────────────────────────────────────────────────────────
 
-test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note", function()
+test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note", function()
     local i = inst()
     local run = mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false } })
     seed(i, { run })
@@ -111,7 +111,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|v/s Max|Status|Note", "no flag column: the Status cell carries the flags")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Delta|Status|Note", "no flag column: the Status cell carries the flags")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -122,7 +122,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.char.fs.__text, "Lanfear")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
-    assertEqual(c.target.fs.__text, "Cleave \195\1515")
+    assertEqual(c.target.fs.__text, "Cleave", "no target count (DpsRace#15)")
     assertEqual(c.time.fs.__text .. "|" .. c.time.trail.__text, "3:00|+9.2s", "the length's chip, then the tail")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")
@@ -313,7 +313,7 @@ test("results: the Status column tags each run; the DPS column shows every run's
     assertEqual(rows[3].cells.status.fs.__text, "Died")
 end)
 
-test("results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon", function()
+test("results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     seed(i, {
@@ -326,16 +326,11 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
     for _, run in ipairs(i.NS.Recorder.All()) do by[run.id] = run end
     local C = i.NS.ResultsTable.COLORS
     local key, text, bestColor, icon = Runs.Status(by.top)
-    assertEqual(key, "best", "with no view max given, the board's best")
+    assertEqual(key, "best", "the board's best")
     assertEqual(text, "Spec best", "the first part only: the board is the trail's")
     assertEqual(bestColor, C.blue, "Spec best in blue")
     assertEqual(icon, "ph:trophy", "Spec best draws the trophy")
-    local maxColor
-    key, text, maxColor, icon = Runs.Status(by.top, 150000)
-    assertEqual(key, "max", "the view's max outranks Spec best")
-    assertEqual(text, "Max")
-    assertEqual(icon, "ph:crown")
-    assertEqual(maxColor, C.violet, "Max in violet")
+    assertEqual(Runs.STATUS.max, nil, "the Max tag is gone (the owner's call, 2026-10-26)")
     i.R.Show()
     local badge, other
     for _, row in ipairs(visible(runsPane(i))) do
@@ -343,11 +338,11 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "slow" then other = row.cells.status end
     end
     assert(badge, "the top run is drawn")
-    assertEqual(badge.fs.__text, "Spec best", "one spec in the view: its top run is its Spec best, no Max")
+    assertEqual(badge.fs.__text, "Spec best", "its top run is its Spec best")
     assertEqual(badge.chip1, nil, "the tag is the box alone: no board after it")
     assertTrue(badge.icon:IsShown(), "the icon shows before the word")
     assertEqual(badge.icon.__texture, i.NS.Icon("ph:trophy"))
-    -- A second spec in the view (the mage's run): now the view-wide top is Max.
+    -- A second spec in the view (the mage's run): the view-wide top is still its Spec best.
     seed(i, {
         mkRun("top", { result = { damage = 27000000, dps = 150000 } }),
         mkRun("slow", { result = { damage = 20000000, dps = 100000 }, date = NOW - 2 * HOUR }),
@@ -359,10 +354,8 @@ test("results: Status is Max, Spec best, Flagged or Complete for a complete run,
         if row.run.id == "top" then badge = row.cells.status end
         if row.run.id == "slow" then other = row.cells.status end
     end
-    assertEqual(badge.fs.__text, "Max", "two specs in the view: the top run is Max")
-    assertEqual(badge.chip2, nil, "Max is the box alone too")
-    assertEqual(badge.icon.__texture, i.NS.Icon("ph:crown"))
-    assertTrue(Runs.ManySpecs(i.NS.Recorder.All()))
+    assertEqual(badge.fs.__text, "Spec best", "two specs in the view: no Max tag")
+    assertEqual(Runs.ManySpecs, nil)
     assertEqual(other.fs.__text, "Complete")
     assertEqual(other.chip1, nil, "no tag carries a board")
     assertEqual(other.icon.__texture, i.NS.Icon("ph:check"))
@@ -535,7 +528,7 @@ test("results: the bars take History > Results table's look, over the rows' own 
     assertTrue(rows[2].bg.__vertex[4] > 0, "the second row striped")
 end)
 
-test("results: the Damage and DPS bars run 10% to 100% within each target type", function()
+test("results: the Damage and DPS bars run 10% to 100% within each group; ungrouped, the whole view is one", function()
     local i = inst()
     seed(i, {
         mkRun("cBig", { result = { damage = 40000000, dps = 300000 } }),
@@ -546,18 +539,31 @@ test("results: the Damage and DPS bars run 10% to 100% within each target type",
                           date = NOW - 4 * HOUR }),
     })
     i.R.Show()
-    local w = {}
-    for _, row in ipairs(visible(runsPane(i))) do
-        local d = row.cells.damage
-        w[row.run.id] = { bar = d.bar.__width, full = d.barW }
+    local pane = runsPane(i)
+    local function widths()
+        local out = {}
+        for _, row in ipairs(visible(pane)) do
+            if row.run then
+                local d = row.cells.damage
+                out[row.run.id] = { bar = d.bar.__shown ~= false and d.bar.__width or 0, full = d.barW }
+            end
+        end
+        return out
     end
+    local w = widths()
+    assertEqual(w.cBig.bar, w.cBig.full, "ungrouped: the view's max fills its cell")
+    assertEqual(w.bSmall.bar, math.max(1, math.floor(w.bSmall.full * 0.1 + 0.5)), "the view's min at 10%")
+    assertTrue(w.bBig.bar < w.bBig.full, "the boss-level max is below the cleave max")
+    -- Group by target type: each group scales on its own.
+    pane:SetFilter("group", "target")
+    w = widths()
     assertEqual(w.cBig.bar, w.cBig.full, "the cleave max fills its cell")
     assertEqual(w.bBig.bar, w.bBig.full, "the boss-level max fills its cell too, though cleave did more")
     assertEqual(w.bSmall.bar, math.max(1, math.floor(w.bSmall.full * 0.1 + 0.5)), "each type's min at 10%")
     assertEqual(w.cSmall.bar, w.bSmall.bar)
 end)
 
-test("results: v/s Max and the Max tag are per target type", function()
+test("results: Delta is per group, recomputed when the grouping changes; ungrouped, the whole view is one", function()
     local i = inst()
     seed(i, {
         mkRun("cleave", { result = { damage = 1, dps = 300000 } }),
@@ -568,13 +574,35 @@ test("results: v/s Max and the Max tag are per target type", function()
                          date = NOW - 4 * HOUR }),
     })
     i.R.Show()
-    local cells = {}
-    for _, row in ipairs(visible(runsPane(i))) do cells[row.run.id] = row.cells end
-    assertEqual(cells.cleave.vsMax.fs.__text, "0.0%")
-    assertEqual(cells.cleave2.vsMax.fs.__text, "-50.0%")
-    assertEqual(cells.boss.vsMax.fs.__text, "0.0%", "the boss-level max is its own")
-    assertEqual(cells.boss2.vsMax.fs.__text, "-50.0%")
-    assertEqual(cells.boss.status.fs.__text, "Spec best", "one spec per target type: no Max")
+    local pane = runsPane(i)
+    local function cells()
+        local out = {}
+        for _, row in ipairs(visible(pane)) do if row.run then out[row.run.id] = row.cells end end
+        return out
+    end
+    local c = cells()
+    assertEqual(c.cleave.delta.fs.__text, "0.0%", "ungrouped: every run against the view's max")
+    assertEqual(c.cleave2.delta.fs.__text, "-50.0%")
+    assertEqual(c.boss.delta.fs.__text, "-66.7%")
+    assertEqual(c.boss2.delta.fs.__text, "-83.3%")
+    local Runs = i.NS.ResultsRuns
+    local col = pane.list:column("delta")
+    local by = {}
+    for _, run in ipairs(pane.filtered) do by[run.id] = run end
+    assertEqual(col.tip(by.cleave)[1], "This run is the max in view.")
+    pane:SetFilter("group", "target")
+    c = cells()
+    assertEqual(c.cleave.delta.fs.__text, "0.0%")
+    assertEqual(c.cleave2.delta.fs.__text, "-50.0%")
+    assertEqual(c.boss.delta.fs.__text, "0.0%", "the boss-level group's max is its own")
+    assertEqual(c.boss2.delta.fs.__text, "-50.0%")
+    assertEqual(col.tip(by.boss)[1], "This run is the max in its group.")
+    assertEqual(col.tip(by.boss2)[2], "The max in this group: 100,000 DPS.")
+    assertEqual(c.boss.status.fs.__text, "Spec best", "no Max tag")
+    -- Back to no grouping: recomputed, not kept from the grouped view.
+    pane:SetFilter("group", "none")
+    assertEqual(cells().boss.delta.fs.__text, "-66.7%")
+    assertEqual(Runs.Delta(by.boss2, 100000), -50)
 end)
 
 test("results: Only best keeps the runs holding their board's best", function()
@@ -592,9 +620,13 @@ test("results: Only best keeps the runs holding their board's best", function()
     assertTrue(pane.filters.onlyBest)
     assertEqual(visibleIDs(pane), "top,short", "one best per board")
     assertEqual(pane.checks.onlyBest.label.__text, "Only best")
+    local Tbl = i.NS.ResultsTable
+    for key, check in pairs(pane.checks) do
+        assertEqual(check.__hitInsets[2], -(1 + Tbl.BadgeWidth(check.label.__text, false)), key .. ": its label clicks too")
+    end
 end)
 
-test("results: v/s Max is each run's distance from the max DPS among the runs the filters pass", function()
+test("results: Delta is each run's distance from the max DPS among the runs the filters pass", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     seed(i, {
@@ -613,21 +645,21 @@ test("results: v/s Max is each run's distance from the max DPS among the runs th
     local mine = Runs.Filter(all, {})
     local top = Runs.MaxDps(mine)
     assertEqual(top, 150000, "the max is the complete runs' (an incomplete run never sets it)")
-    assertEqual(Runs.VsMax(by.top, top), 0)
-    assertTrue(math.abs(Runs.VsMax(by.slow, top) - (120000 / 150000 - 1) * 100) < 1e-9)
-    assertTrue(math.abs(Runs.VsMax(by.short, top) - -50) < 1e-9, "every board against the one max")
-    assertTrue(math.abs(Runs.VsMax(by.inc, top) - 20) < 1e-9, "an incomplete run is compared, never ranked")
-    assertEqual(Runs.VsMax(by.lost, top), nil)
-    assertEqual(Runs.VsMax(by.slow, nil), nil, "no complete run in the view")
+    assertEqual(Runs.Delta(by.top, top), 0)
+    assertTrue(math.abs(Runs.Delta(by.slow, top) - (120000 / 150000 - 1) * 100) < 1e-9)
+    assertTrue(math.abs(Runs.Delta(by.short, top) - -50) < 1e-9, "ungrouped: every board against the one max")
+    assertTrue(math.abs(Runs.Delta(by.inc, top) - 20) < 1e-9, "an incomplete run is compared, never ranked")
+    assertEqual(Runs.Delta(by.lost, top), nil)
+    assertEqual(Runs.Delta(by.slow, nil), nil, "no complete run in the view")
     assertEqual(Runs.MaxDps({ by.inc, by.lost }), nil)
     i.R.Show()
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(labels[9], "v/s Max")
+    assertEqual(labels[9], "Delta")
     local function cells()
         local out = {}
-        for _, row in ipairs(visible(pane)) do out[row.run.id] = row.cells.vsMax.fs end
+        for _, row in ipairs(visible(pane)) do out[row.run.id] = row.cells.delta.fs end
         return out
     end
     local c = cells()
@@ -646,10 +678,14 @@ test("results: v/s Max is each run's distance from the max DPS among the runs th
     assertEqual(c.mage.__text, "0.0%")
     assertEqual(c.top.__text, "-50.0%")
     -- Its sort takes every run with a value, an incomplete one included; a lost run sorts last.
-    pane.list:SetSort("vsMax", true)
+    pane.list:SetSort("delta", true)
     local order = {}
     for n, run in ipairs(pane.list.rows) do order[n] = run.id end
     assertEqual(table.concat(order, ","), "mage,inc,top,slow,short,lost")
+    -- A view saved while the column was v/s Max keeps its sort on Delta.
+    pane:ApplyView({ sortKey = "vsMax", sortDesc = false })
+    assertEqual(pane.list.sortKey, "delta")
+    assertEqual(pane.list.sortDesc, false)
 end)
 
 test("results: filters: character, spec, category, length, date range, hide flagged, include incomplete", function()
@@ -677,8 +713,9 @@ test("results: filters: character, spec, category, length, date range, hide flag
         for k, v in pairs(f) do wide[k] = v end
         return rawIds(wide)
     end
-    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Lanfear), in their current spec")
-    assertEqual(rawIds({ char = "all" }), "a,b,e", "the current spec across characters")
+    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Lanfear), in every spec")
+    assertEqual(rawIds({ char = "all" }), "a,b,c,d,e", "every character in every spec")
+    assertEqual(rawIds({ char = "all", spec = "current" }), "a,b,e", "the current spec across characters")
     assertEqual(rawIds({ spec = "all" }), "a,b,e", "the current character in every spec")
     assertEqual(ids({}), "a,b,c,d,e", "a running run is the race's, never the list's")
     assertEqual(ids({ char = "Lanfear-Frostmourne" }), "a,b,e")
@@ -1142,6 +1179,8 @@ test("results: bests tab groups by spec x category x length with clean-only togg
     assertEqual(top.flags.fs.__text, "1 late")
     assertEqual(top.date.fs.__text, os.date("%d %b", NOW - HOUR))
 
+    assertEqual(pane.clean.__hitInsets[2], -(1 + i.NS.ResultsTable.BadgeWidth("Clean runs only", false)),
+        "Clean runs only: its label clicks too")
     pane.clean:__fire("OnClick")
     assertTrue(pane.filters.cleanOnly)
     assertEqual(visibleIDs(pane), "clean,short", "the clean board's best on that board")
@@ -1194,13 +1233,15 @@ test("results: list refreshes on RUN_SAVED", function()
     assertEqual(pane.countText, "2 runs", "a hidden window came back stale")
 end)
 
-test("results: Runs opens on the current character and spec, each a choice of its own", function()
+test("results: Runs opens on the current character in every spec; current character and spec are each a choice of its own", function()
     local i = inst()
     seed(i, { mkRun("mine"), mkRun("mage", { char = "mage", date = NOW - 2 * HOUR }) })
     i.R.Show()
     local pane = runsPane(i)
     assertEqual(pane.filters.char, "current")
-    assertEqual(pane.filters.spec, "current")
+    assertEqual(pane.filters.spec, "all", "every spec (the owner's call, 2026-10-26)")
+    assertEqual(i.NS.ResultsRuns.DEFAULTS.group, "full", "grouped by Full (runsPane ungroups the pane)")
+    for _, k in ipairs({ "category", "length", "date" }) do assertEqual(pane.filters[k], "all", k) end
     assertEqual(pane:Count(), 1, "only the logged-in character's run")
     local opts = i.NS.ResultsRuns.Options(i.NS.Recorder.All())
     assertEqual(opts.char[1].label, "Current character")

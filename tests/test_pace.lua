@@ -118,9 +118,40 @@ test("pace: the running bar's tick stays in the middle while its range follows P
     pump(f, 0.5)
     assertEqual(tickX(pace), math.floor(barW / 2 + 0.5), "still the middle at 1.2")
     local pace10 = 3000000 * f.Race.Elapsed() / 30
-    assertTrue(math.abs(pace.bar.__min - 0.8 * pace10) < 1e-3, "the low end follows")
-    assertTrue(math.abs(pace.bar.__max - 1.2 * pace10) < 1e-3, "the high end follows")
-    assertTrue(T.isSecret(pace.bar.__value), "the live total, straight to the bar: the bar clamps it")
+    assertTrue(math.abs(pace.behind.__min - 0.8 * pace10) < 1e-3, "the low end follows")
+    assertTrue(math.abs(pace.ahead.__max - 1.2 * pace10) < 1e-3, "the high end follows")
+    assertTrue(T.isSecret(pace.behind.__value), "the live total, straight to the bar: the bar clamps it")
+    assertEqual(#f.W.SecretGeometryReads(), 0, "a geometry read on a frame holding a secret")
+end)
+
+test("pace: the bar splits at the tick: behind fills to the pace with red to the tick, ahead fills green past it", function()
+    local f = hud()
+    seedBest(f, 3000000, 30)
+    running(f, 30)
+    pump(f, 2)
+    local pace = body(f).w.pace
+    local x = tickX(pace)
+    local function pt(region) return region.__points[1] end
+    -- The halves meet at the tick, each sized from the configured width (re-placed under a spy).
+    local sizes = {}
+    for _, half in ipairs({ pace.behind, pace.ahead }) do
+        rawset(half, "SetSize", function(self, w, h) sizes[self] = { w, h } end)
+    end
+    pace.tickW = nil
+    pace:PlaceTick()
+    assertEqual(pt(pace.behind)[4], 0)
+    assertEqual(sizes[pace.behind][1], x)
+    assertEqual(pt(pace.ahead)[4], x)
+    assertEqual(sizes[pace.ahead][1], pace.barW - x)
+    -- Each half one side of the pace: lo..pace, pace..hi; both handed the same opaque total.
+    assertTrue(math.abs(pace.behind.__max - pace.ahead.__min) < 1e-9, "they meet at the pace")
+    assertTrue(rawequal(pace.behind.__value, pace.ahead.__value), "one value, no comparison")
+    assertTrue(T.isSecret(pace.ahead.__value))
+    -- Ahead in green; the red shortfall runs from the behind fill's end to the tick.
+    assertEqual(pace.ahead.__barColor[2], 0.86, "the KPI's green")
+    local from, to = pace.shortfall.__points[1], pace.shortfall.__points[2]
+    assertTrue(from[2] == pace.behind:GetStatusBarTexture() and from[3] == "TOPRIGHT", "from the fill's end")
+    assertTrue(to[2] == pace.behind and to[3] == "BOTTOMRIGHT", "to the tick")
     assertEqual(#f.W.SecretGeometryReads(), 0, "a geometry read on a frame holding a secret")
 end)
 
@@ -139,7 +170,9 @@ local function resolved(f)
     return f.Race.Current()
 end
 
-local RESULT_ROWS_TOP = 104   -- the KPIs, the gap and two chip lines (modules/Hud_States.lua)
+-- The KPIs, the gap, the one chip line these cases draw and the GAP under it, as the running body's
+-- boxes leave theirs (modules/Hud_States.lua Chips:Bottom).
+local RESULT_ROWS_TOP = 80
 local BREAKDOWN = 6 + 22      -- the Spell breakdown heading and the space above it (Round C)
 
 test("pace: Bests.Before is the best on the run's board raced before it, whatever the run scored", function()
@@ -174,18 +207,18 @@ test("pace: the result card sets the plain final damage against the best's pace 
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown(), "the pace bar on the result card")
     assertEqual(pace.label.__text, "vs best pace", "the running bar's label")
-    assertEqual(pace.bar.__min, 0.5 * 1e12, "the best's damage at the run's length, less 50%")
-    assertEqual(pace.bar.__max, 1.5 * 1e12, "and plus 50%")
-    assertEqual(pace.bar.__value, run.result.damage, "the plain final damage (below the range: the bar reads empty)")
-    assertEqual(type(pace.bar.__value), "number")
+    assertEqual(pace.behind.__min, 0.5 * 1e12, "the best's damage at the run's length, less 50%")
+    assertEqual(pace.ahead.__max, 1.5 * 1e12, "and plus 50%")
+    assertEqual(pace.behind.__value, run.result.damage, "the plain final damage (below the range: the bar reads empty)")
+    assertEqual(type(pace.behind.__value), "number")
     assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 2 + 0.5), "the same tick, in the middle")
     -- Under the Damage profile heading, above the plot: the plot and the rows move down by its line.
     assertTrue(b.w.chart.shown)
     assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 2 + 12 + 8) + BREAKDOWN)
     -- The range follows the setting.
     assertTrue(f.NS.SetByPath("live.paceRange", 2))
-    assertEqual(pace.bar.__min, 0)
-    assertEqual(pace.bar.__max, 2 * 1e12)
+    assertEqual(pace.behind.__min, 0)
+    assertEqual(pace.ahead.__max, 2 * 1e12)
     assertEqual(tickX(pace), math.floor((b.width - f.NS.HudChart.PACE_LABEL_W) / 2 + 0.5))
     assertEqual(#f.W.SecretGeometryReads(), 0)
 end)
@@ -199,9 +232,9 @@ test("pace: a run that just became the best is set against the previous best", f
     assertTrue(rawequal(f.NS.Bests.Board()[f.NS.Bests.Key(run)], run), "it holds the board now")
     local pace = body(f).w.pace
     assertTrue(pace.bar:IsShown(), "still drawn, against the best before it")
-    assertEqual(pace.bar.__min, 1500, "0.5 x the previous best's 3000")
-    assertEqual(pace.bar.__max, 4500, "1.5 x it")
-    assertEqual(pace.bar.__value, run.result.damage)
+    assertEqual(pace.behind.__min, 1500, "0.5 x the previous best's 3000")
+    assertEqual(pace.ahead.__max, 4500, "1.5 x it")
+    assertEqual(pace.behind.__value, run.result.damage)
 end)
 
 test("pace: no pace bar on the result card with no earlier best, and the rows move back up", function()
@@ -260,7 +293,7 @@ test("pace: the sim's result card shows the pace bar against the sample best, an
     assertEqual(f.Hud.__ui().current, "result")
     local pace = body(f).w.pace
     assertTrue(pace.bar:IsShown(), "the sample's result card has its pace bar")
-    assertTrue(pace.bar.__value > 0 and pace.bar.__value < pace.bar.__max, "the sample's damage inside the range")
+    assertTrue(pace.behind.__value > 0 and pace.behind.__value < pace.ahead.__max, "the sample's damage inside the range")
     assertTrue(f.NS.SetByPath("live.paceBar", false))
     f.Hud.Refresh()
     assertFalse(pace.bar:IsShown(), "gone with Show pace bar")
@@ -319,5 +352,22 @@ test("pace: the result card stacks the same, and keeps Damage profile over the p
     f.Hud.Refresh()
     assertFalse(b.w.chart.title:IsShown(), "nothing to head")
     assertEqual(b.rowsTop, RESULT_ROWS_TOP + BREAKDOWN, "Spell breakdown right under the chips")
+end)
+
+test("pace: the result card's stack starts under the chips it draws, as the running body's under its boxes", function()
+    local f = hud()
+    seedBest(f, 1e12, 30)
+    resolved(f)
+    local b = body(f)
+    local chips = b.w.chips
+    assertEqual(chips.lines, 1, "the delta and time chips share a line")
+    local top = chips:Bottom()
+    assertEqual(top, 46 + 8 + 18 + 8, "the boxes, the gap, one chip line and the GAP under it: no second line held")
+    assertStack(f, b, top)
+    -- Chips that wrap to a second line push the stack down by that line alone.
+    chips.width = 40
+    chips:Set(f.NS.HudStates.ResultChips(f.Hud.View()))
+    assertEqual(chips.lines, 2)
+    assertEqual(chips:Bottom(), top + 18 + 5)
 end)
 

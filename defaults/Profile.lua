@@ -17,7 +17,7 @@ NS.defaults = {
             grace      = 1.0,   -- s after the buzzer before a cast start is late (spec §5.2)
             restartGap = 6,     -- s of quiet after the buzzer before damage counts as restarted (§5.3)
             -- The Race HUD's own (modules/Hud.lua); their rows are on the Race page too.
-            defaultLength = 180,   -- s; the idle body's length until the player picks one (§4.1)
+            defaultLength = 120,   -- s; the idle body's length until the player picks one (§4.1)
             countdownCue  = true,  -- the sound at 10, 5, 3, 2, 1 s left, and each center number (§4.3)
             centerCountdown = true, -- the center-screen numbers in the last seconds (modules/Countdown.lua)
             finalCountdown  = 10,   -- s left when the numbers start, 3-10

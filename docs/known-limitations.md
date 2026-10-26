@@ -9,7 +9,7 @@ and the smoke row that measures it where one exists.
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
   and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current
-  character*, *Current spec*, grouped *Full* (character, class, spec, target and time) and newest first; *Reset* deletes the saved view and
+  character*, *All specs*, grouped *Full* (character, class, spec, target and time) and newest first; *Reset* deletes the saved view and
   *Clear* returns to it. They are view state, not settings: no schema row, and the profile reset
   takes them with the profile.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
@@ -35,8 +35,10 @@ and the smoke row that measures it where one exists.
   that changes it, *View* (which opens the tree and posts its link to chat) is grayed with a tooltip saying so; *Copy* still hands out the string, and
   the gear grid is unaffected. Talents are compared only as a *Different loadout* marker, never
   node by node (the owner's call, 2026-10-25).
-- **The cleave group's target count is 1** until it is counted in game (O7); the HUD's stepper
-  sets it per run in the meantime.
+- **There is no target count.** A count the player types added nothing, so it was removed
+  (2026-10-26), and none of the client's signals can count the dummies hit: the meter merges same-type
+  dummies into one row and the cleave group's nameplates are linked. It returns only if it can be
+  measured ([DpsRace#15](https://github.com/tusharsaxena/DpsRace/issues/15)).
 - **A pull that carries on the last fight's session is netted, not separated.** When the meter
   makes no new session for a race (the last fight's DoTs kept its session open), the run is flagged
   `sharedSession` and what that session held at the arm is taken off the total and each spell. DoT

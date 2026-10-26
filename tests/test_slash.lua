@@ -206,7 +206,7 @@ test("slash: a bare arm uses the last length, and an armed length becomes the la
     local inst, asked = armSpy()
     local NS = inst.NS
     NS.Slash:OnSlash("arm")
-    assertEqual(asked[1].length, 180, "no length raced yet: the default race length")
+    assertEqual(asked[1].length, 120, "no length raced yet: the default race length")
     NS.Slash:OnSlash("arm 1:30")
     NS.Slash:OnSlash("arm")
     assertEqual(asked[3].length, 90)

@@ -73,7 +73,7 @@ NS.RegisterSchemaRows({
 NS.RegisterSchemaRows({
     { path = "live.chart", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show damage chart"], default = LIVE.chart,
-      tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
+      tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a faint line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
       onChange = redraw },
     { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show pace bar"], default = LIVE.paceBar,

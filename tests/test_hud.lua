@@ -8,7 +8,8 @@
 -- so a label's text, a bar's values and every geometry read can be asserted.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
+local test, assertEqual, assertTrue, assertFalse, assertNil =
+    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
 
@@ -118,7 +119,7 @@ test("hud: idle arm button disabled with reason in combat", function()
     assertTrue(b.w.reason.__text:find("Not in this zone", 1, true) ~= nil, "Blizzard's reason is shown")
 end)
 
-test("hud: idle Arm uses the picked length and target count; a refusal prints its line", function()
+test("hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line", function()
     local f = hud()
     f.M.__setTarget({ guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" })
     f.Hud.Show()
@@ -126,13 +127,13 @@ test("hud: idle Arm uses the picked length and target count; a refusal prints it
     assertEqual(b.w.card.npc.__text, "#243208")
     assertEqual(b.w.card.badgeText.__text, "Cleave")
     f.Hud.Act.pickLength(60)
-    f.Hud.Act.stepCount(1)
-    f.Hud.Act.stepCount(1)
-    assertEqual(b.w.card.count.__text, "3")
+    assertNil(b.w.card.count, "no target count stepper (DpsRace#15)")
+    assertNil(b.w.card.minus)
+    assertNil(f.Hud.Act.stepCount)
     assertTrue(f.Hud.Act.arm())
     local run = f.Race.Current()
     assertEqual(run.race.length, 60)
-    assertEqual(run.target.count, 3)
+    assertNil(run.target.count, "no target count is recorded")
     assertEqual(f.NS.db.profile.race.lastLength, 60, "the last choice is remembered")
 
     f.M.__resetPrinted()
@@ -185,10 +186,10 @@ end)
 test("hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own", function()
     local f = hud()
     local D = f.NS.defaults.profile
-    D.race.defaultLength, D.live.hz, D.live.rows = 120, 6, 5
+    D.race.defaultLength, D.live.hz, D.live.rows = 60, 6, 5
     f.NS.GetSetting = function() return nil end      -- a degraded load: the store cannot answer
     local v = f.Hud.View()
-    assertEqual(v.length, 120, "a second default for race.defaultLength")
+    assertEqual(v.length, 60, "a second default for race.defaultLength")
     assertEqual(v.hz, 6, "a second default for live.hz")
     assertEqual(v.rows, 5, "a second default for live.rows")
 end)
@@ -196,17 +197,14 @@ end)
 local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" }
 local BOAR = { guid = "Creature-0-1-2-3-99999-0001", name = "Angry Boar" }
 
-test("hud: a target changed while the HUD is closed is never armed with the old count", function()
+test("hud: a target changed while the HUD is closed is never armed as the old one", function()
     local f = hud()
     f.M.__setTarget(CLEAVE)
     f.Hud.Show()
-    for _ = 1, 4 do f.Hud.Act.stepCount(1) end
-    assertEqual(body(f).w.card.count.__text, "5")
     f.Hud.Hide()
     f.M.__setTarget(BOAR)
     f.M.__fire("PLAYER_TARGET_CHANGED")       -- nobody listens while the window is closed
     assertTrue(f.NS.ToggleArm())
-    assertEqual(f.Race.Current().target.count, 1, "the stepped count of the old target was armed")
     assertEqual(f.Race.Current().target.name, "Angry Boar")
 end)
 
@@ -214,15 +212,13 @@ test("hud: reopening the HUD offers the target of the moment, not the one cached
     local f = hud()
     f.M.__setTarget(CLEAVE)
     f.Hud.Show()
-    for _ = 1, 4 do f.Hud.Act.stepCount(1) end
     f.Hud.Hide()
     f.M.__setTarget(BOAR)
     f.M.__fire("PLAYER_TARGET_CHANGED")
     f.Hud.Show()
     assertEqual(body(f).w.card.name.__text, "Angry Boar")
-    assertEqual(body(f).w.card.count.__text, "1")
     assertTrue(f.Hud.Act.arm())
-    assertEqual(f.Race.Current().target.count, 1)
+    assertEqual(f.Race.Current().target.name, "Angry Boar")
 end)
 
 -- ── the live breakdown ──────────────────────────────────────────────────────────────────────────
@@ -448,7 +444,7 @@ local CHROME, PITCH = 40 + 28, 20
 -- and the 6px that, with the GAP above, makes the shared 14px of clear space.
 local BREAKDOWN = 6 + 22
 local RUNNING_TOP, RUNNING_BOTTOM = 106 + BREAKDOWN, 42
-local RESULT_TOP, RESULT_BOTTOM = 104 + BREAKDOWN, 28
+local RESULT_TOP, RESULT_BOTTOM = 80 + BREAKDOWN, 28   -- under one chip line (Chips:Bottom)
 
 local function fits(height, top, bottom)
     return math.floor((height - CHROME - top - bottom + 2) / PITCH)

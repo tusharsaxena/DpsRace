@@ -235,7 +235,8 @@ end
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 
 local CHIP_HEIGHT, CHIP_GAP = 18, 5
--- The result card's rows sit under two lines of chips and above its row of buttons.
+-- The result card's stack sits under the chips it draws (Chips:Bottom) and above its row of buttons.
+-- RESULT_ROWS_TOP is the most room they take, two lines: the lost line's place and the minimum height.
 local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
 local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
@@ -259,13 +260,15 @@ local Chips = {}
 Chips.__index = Chips
 
 local function chips(parent, y)
-    return setmetatable({ parent = parent, y = y, pool = NS.Pool.New(), width = 260, shown = {} }, Chips)
+    return setmetatable({ parent = parent, y = y, pool = NS.Pool.New(), width = 260, shown = {}, lines = 0 },
+        Chips)
 end
 
 --- Lay out `list` ({ text, color, tip }) left to right, wrapping at the body's width.
 function Chips:Set(list)
     NS.Pool.ReleaseAll(self.pool)
     self.shown = {}
+    self.lines = 0
     local x, y, parent = 0, self.y, self.parent
     for i, item in ipairs(list or {}) do
         local chip = NS.Pool.Acquire(self.pool, function() return newChip(parent) end)
@@ -277,12 +280,22 @@ function Chips:Set(list)
         chip.tip, chip.text = item.tip, s
         local w = math.floor(textWidth(chip.label, s) + 14)
         if x > 0 and x + w > self.width then x, y = 0, y - CHIP_HEIGHT - CHIP_GAP end
+        self.lines = math.floor((self.y - y) / (CHIP_HEIGHT + CHIP_GAP) + 0.5) + 1
         chip:SetWidth(w)
         chip:ClearAllPoints()
         chip:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
         x = x + w + CHIP_GAP
         self.shown[i] = chip
     end
+end
+
+--- How far below the body's top the chips end, plus the GAP under them, as the running body's KPI
+--- boxes leave theirs (body.kpiBottom); with no chip, the GAP under the row's top. Config only.
+--- @return number
+function Chips:Bottom()
+    local n = self.lines
+    local h = n > 0 and n * CHIP_HEIGHT + (n - 1) * CHIP_GAP + GAP or 0
+    return -self.y + h
 end
 
 --- The chip texts drawn now, in order (the suites read these).
@@ -296,7 +309,7 @@ end
 
 local CARD_HEIGHT = 46
 
-local function targetCard(parent, y, stepper)
+local function targetCard(parent, y)
     local f = panel(parent)
     f:SetHeight(CARD_HEIGHT)
     f:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
@@ -310,41 +323,18 @@ local function targetCard(parent, y, stepper)
     card.badge:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
     card.badgeText = Style.Text(card.badge, FONT.TEXT, C.amber, "CENTER")
     card.badgeText:SetPoint("CENTER", card.badge, "CENTER", 0, 0)
-    card.meta = Style.Text(f, FONT.TEXT, C.dim)
-    card.meta:SetPoint("LEFT", card.badge, "RIGHT", 8, 0)
     card.npc = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
     card.npc:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 8)
-    if stepper then
-        card.minus = button(f, "-", function() act("stepCount", -1) end)
-        card.minus:SetSize(18, 18)
-        card.minus:SetPoint("LEFT", card.meta, "RIGHT", 6, 0)
-        card.count = Style.Text(f, FONT.HEADING, C.text, "CENTER")
-        card.count:SetWidth(22)
-        card.count:SetPoint("LEFT", card.minus, "RIGHT", 2, 0)
-        card.plus = button(f, "+", function() act("stepCount", 1) end)
-        card.plus:SetSize(18, 18)
-        card.plus:SetPoint("LEFT", card.count, "RIGHT", 2, 0)
-    end
     return card
 end
 
-local function setTarget(card, target, count)
+local function setTarget(card, target)
     target = target or {}
     card.name:SetText(target.name or L["No target"])
     local badge = NS.Dummies.Label(target.category or "other")
     card.badgeText:SetText(badge)
     card.badge:SetWidth(math.floor(textWidth(card.badgeText, badge) + 12))
     card.npc:SetText(type(target.npcID) == "number" and ("#%d"):format(target.npcID) or "")
-    count = count or 1
-    if card.count then
-        card.meta:SetText(L["Targets"])
-        card.count:SetText(tostring(count))
-        setEnabled(card.minus, count > 1)
-    elseif count == 1 then
-        card.meta:SetText(L["1 target"])
-    else
-        card.meta:SetText(L["%d targets"]:format(count))
-    end
 end
 
 -- ── bodies ──────────────────────────────────────────────────────────────────────────────────────
@@ -436,7 +426,7 @@ function Builders.idle(parent)
     w.customBox:SetScript("OnEscapePressed", function() act("closeCustom") end)
     w.customBox:Hide()
     w.targetCap = caption(f, L["Target"], -IDLE_TARGET_Y)
-    w.card = targetCard(f, -IDLE_CARD_Y, true)
+    w.card = targetCard(f, -IDLE_CARD_Y)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
@@ -477,7 +467,7 @@ function Builders.idle(parent)
         self.w.custom.label:SetText(isPreset and L["Custom"] or NS.Format.Length(v.length))
         self.w.customBox:SetShown(v.editing == true)
         self.w.custom:SetShown(v.editing ~= true)
-        setTarget(self.w.card, v.target, v.count)
+        setTarget(self.w.card, v.target)
         self.w.warn:SetText(v.warning or "")
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
@@ -505,7 +495,7 @@ function Builders.armed(parent)
     function body.Update(self, v)
         local run = v.run or {}
         self.w.clock:SetText(NS.Format.Clock(run.race and run.race.length or 0))
-        setTarget(self.w.card, run.target, run.target and run.target.count)
+        setTarget(self.w.card, run.target)
     end
     return body
 end
@@ -979,13 +969,14 @@ function Builders.result(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
+        -- The chips first: the stack under them starts where they end.
+        self.w.chips:Set(States.ResultChips(v))
         Builders.resultExtras(self, v)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
         setKpi(self.w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
-        self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         self.w.spellsTitle:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
@@ -1013,10 +1004,11 @@ function Builders.resultExtras(body, v)
     local w, f = body.w, body.frame
     local pace = v.pace ~= nil
     local plotH = NS.HudChart.PlotHeight()
+    local top = w.chips:Bottom()
     local on = v.chart ~= nil
-        and roomForRows(body, RESULT_ROWS_TOP + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
+        and roomForRows(body, top + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
     w.pace:SetShown(pace)
-    body.rowsTop = placeStack(body, RESULT_ROWS_TOP, pace, on, plotH)
+    body.rowsTop = placeStack(body, top, pace, on, plotH)
     if pace then
         w.pace:SetRange(v.pace.lo, v.pace.hi)
         w.pace:SetValue(v.pace.value)

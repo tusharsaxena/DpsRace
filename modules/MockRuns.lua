@@ -62,10 +62,10 @@ local ALTS = {
     fire = { name = "Mockflame", class = "MAGE", specID = 63, spec = "Fire", ilvl = 309.8 },
 }
 
--- The catalog's dummy per target type (defaults/Dummies.lua), and the count raced on it.
+-- The catalog's dummy per target type (defaults/Dummies.lua).
 local TARGETS = {
-    single = { count = 1 }, cleave = { npcID = 243208, count = 5 }, dungeoneer = { npcID = 243167, count = 1 },
-    boss = { npcID = 243205, count = 1 }, pvp = { npcID = 243211, count = 1 },
+    single = {}, cleave = { npcID = 243208 }, dungeoneer = { npcID = 243167 },
+    boss = { npcID = 243205 }, pvp = { npcID = 243211 },
 }
 
 -- The history: every target type, all five preset lengths and every Status the Runs list draws (Max,
@@ -127,8 +127,7 @@ end
 function MockRuns.Target(category)
     local spec = TARGETS[category] or TARGETS.single
     local d = spec.npcID and NS.Dummies.Lookup(spec.npcID)
-    return { npcID = spec.npcID, name = d and d.name or L["Training Dummy"], category = category,
-             count = spec.count }
+    return { npcID = spec.npcID, name = d and d.name or L["Training Dummy"], category = category }
 end
 
 --- The breakdown of `damage` at `dps` along `list`'s shares, highest first.

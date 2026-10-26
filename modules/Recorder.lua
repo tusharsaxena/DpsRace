@@ -129,7 +129,6 @@ function Recorder.SnapshotTarget(unit, prior)
     fillFromPrior(t, prior)
     local d = NS.Dummies and NS.Dummies.Lookup(t.npcID)
     t.category = d and d.category or "other"
-    t.count = d and d.count or 1
     if t.name == nil and d then t.name = d.name end
     return t
 end
@@ -250,12 +249,10 @@ end
 --- A new, unsaved run with status "armed": the player, target and place snapshotted now, and the
 --- grace and restart gap copied from the profile so changing them never re-grades it (spec §5.2).
 --- @param length number  the race length in seconds
---- @param targetCount number|nil  the armed target count; nil keeps the catalog's (else 1)
 --- @return table run  spec §7's shape; result is filled when the run is read
-function Recorder.NewRun(length, targetCount)
+function Recorder.NewRun(length)
     local grace, restartGap = raceSettings()
     local target = Recorder.SnapshotTarget("target")
-    if type(targetCount) == "number" and targetCount >= 1 then target.count = math.floor(targetCount) end
     local _, _, _, build = ask(GetBuildInfo)
     return {
         id     = newID(),

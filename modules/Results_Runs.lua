@@ -10,9 +10,8 @@ local _, NS = ...
 -- its status (late casts, a restart, a reload, a session matched by list, a death).
 --
 -- The filters are the session's: they are view state, not settings. Each login starts on the
--- logged-in character and their current spec (the owner's call, 2026-10-24: "current" is a value of
--- its own, resolved when the filter runs, so a spec swap with the window open follows at the next
--- redraw); everything else starts at "all".
+-- logged-in character in every spec (the owner's call, 2026-10-26; "current" is a value of its own,
+-- resolved when the filter runs), grouped by Full; everything else starts at "all".
 -- Filter, Options and the columns are pure over stored run records, so the suites drive them bare.
 
 local Runs = {}
@@ -23,7 +22,7 @@ local Tbl = NS.ResultsTable
 
 Runs.RESOLVED = { complete = true, incomplete = true, lost = true }
 Runs.DEFAULTS = {
-    char = "current", spec = "current", category = "all", length = "all", date = "all",
+    char = "current", spec = "all", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
     -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
     -- reads no predicate for it. A new profile groups by Full: character, class, spec, target and
@@ -49,7 +48,7 @@ local VIEW_BUTTONS = {
     { key = "save", label = "Save", act = "SaveView",
       tip = "Save these filters, the grouping and the sort as this profile's default view of Runs." },
     { key = "reset", label = "Reset", act = "ResetView",
-      tip = "Delete the saved view and go back to the stock one: your character and spec, newest first." },
+      tip = "Delete the saved view and go back to the stock one: your character in every spec, grouped by Full, newest first." },
     { key = "clear", label = "Clear", act = "ClearView",
       tip = "Go back to the saved view (the stock one when none is saved). The saved view is kept." },
 }
@@ -383,13 +382,12 @@ end
 -- a complete run split three ways. Best wins over Flagged: the flag mark beside it still says why.
 -- Best also draws the catalog's trophy (`ph:trophy`, declared in root CLAUDE.md) before its word.
 -- Each tag is a 1px box in the tag's own hue, its icon inside before its word, and every hue is
--- distinct (the owner's calls, 2026-10-25). Max is the view's: the complete run with the highest DPS
--- the filters pass, tagged only when those runs span more than one spec (Runs.ManySpecs). Spec best
--- is the board's (spec x dummy type x length). The tag is the box alone (the owner's call,
+-- distinct (the owner's calls, 2026-10-25). Spec best is the board's (spec x dummy type x length);
+-- the Max tag is gone (the owner's call, 2026-10-26: Delta's 0.0% already marks each group's top
+-- run). The tag is the box alone (the owner's call,
 -- 2026-10-25: the board's chips after it were too noisy); the Target and Time columns beside it
 -- already name the board, and the tooltip spells it out (Runs.StatusBoard).
 Runs.STATUS = {
-    max        = { label = "Max", color = C.violet, icon = "ph:crown" },
     best       = { label = "Spec best", color = C.blue, icon = "ph:trophy" },
     complete   = { label = "Complete", color = C.green, icon = "ph:check" },
     flagged    = { label = "Flagged", color = C.red, icon = "ph:flag" },
@@ -397,7 +395,7 @@ Runs.STATUS = {
     died       = { label = "Died", color = C.pink, icon = "ph:skull" },
     lost       = { label = "Lost", color = C.slate, icon = "ph:ghost" },
 }
-local STATUS_ORDER = { max = 0, best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
+local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
 
 -- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
 function Runs.HoldsBest(run)
@@ -407,26 +405,22 @@ function Runs.HoldsBest(run)
     return held ~= nil and held.id == run.id
 end
 
--- A run's DPS as the v/s Max column and the Max tag read it: nil for a lost run or one with no DPS.
+-- A run's DPS as the Delta column reads it: nil for a lost run or one with no DPS.
 local function runDps(run)
     local dps = run.status ~= "lost" and run.result and run.result.dps
     return type(dps) == "number" and dps or nil
 end
 
 --- A run's status tag: its key, its label (the word in the box: "Spec best", never its board), its
---- color and its icon name. `top` is the view's max DPS (Runs.MaxDps over the runs the filters
---- pass): the complete run holding it is Max, over Spec best.
+--- color and its icon name.
 --- @param run table
---- @param top number|nil
 --- @return string key, string text, table color, string|nil icon
-function Runs.Status(run, top)
+function Runs.Status(run)
     local key
     if run.status == "lost" then
         key = "lost"
     elseif run.status == "incomplete" then
         key = (type(run.flags) == "table" and run.flags.died) and "died" or "incomplete"
-    elseif type(top) == "number" and runDps(run) == top then
-        key = "max"
     elseif Runs.HoldsBest(run) then
         key = "best"
     elseif Runs.IsFlagged(run) then
@@ -439,9 +433,9 @@ function Runs.Status(run, top)
 end
 
 -- The tags whose tooltip names their board.
-local NAMES_BOARD = { best = true, max = true }
+local NAMES_BOARD = { best = true }
 
---- The board a Spec best or Max tag names: the target type in lower case and the race length
+--- The board a Spec best tag names: the target type in lower case and the race length
 --- ("boss-level", "2:00"), and the length's color (Tbl.LengthColor).
 --- @return string target, string time, table color
 function Runs.StatusBoard(run)
@@ -450,38 +444,20 @@ function Runs.StatusBoard(run)
         Tbl.LengthColor(length)
 end
 
-local function categoryOf(run)
-    return run.target and run.target.category or "other"
-end
-
---- `runs` split by target category: { [category] = { run, ... } }.
-function Runs.ByCategory(runs)
+--- `runs` split by `groupOf(run)` (the table's grouping key; Results_Table's Tbl.GroupKey):
+--- { [key] = { run, ... } }.
+function Runs.ByGroup(runs, groupOf)
     local out = {}
     for _, run in ipairs(runs or {}) do
-        local key = categoryOf(run)
+        local key = groupOf(run)
         out[key] = out[key] or {}
         out[key][#out[key] + 1] = run
     end
     return out
 end
 
---- Whether the complete runs in `runs` span more than one spec: only then is a view-wide Max worth a
---- tag of its own (the owner's call, 2026-10-25). Within one spec the top run is already its Spec best.
---- @param runs table  run records
---- @return boolean
-function Runs.ManySpecs(runs)
-    local first
-    for _, run in ipairs(runs or {}) do
-        local spec = run.status == "complete" and run.char and run.char.specID
-        if spec ~= nil and spec ~= false then
-            if first == nil then first = spec elseif spec ~= first then return true end
-        end
-    end
-    return false
-end
-
---- The max DPS the v/s Max column measures against: the highest among the complete runs in `runs`
---- (the runs the filters pass). Only a complete run's DPS ranks, so an incomplete one never sets it.
+--- The max DPS the Delta column measures against: the highest among the complete runs in `runs`
+--- (one group of the runs the filters pass). Only a complete run's DPS ranks, so an incomplete one never sets it.
 --- @param runs table  run records
 --- @return number|nil top  nil when no complete run with a positive DPS is in the list
 function Runs.MaxDps(runs)
@@ -493,21 +469,20 @@ function Runs.MaxDps(runs)
     return top
 end
 
---- How far a run's DPS sits from `top` (Runs.MaxDps over the runs the filters pass), as a
---- percentage: 0 on the max run, negative below it. An incomplete run is compared too (it may read
+--- How far a run's DPS sits from `top` (Runs.MaxDps over its group), as a percentage: 0 on the max run, negative below it. An incomplete run is compared too (it may read
 --- above the max: it never ranks). nil for a lost run, a run with no DPS, or no max.
 --- @param run table
 --- @param top number|nil
 --- @return number|nil pct
-function Runs.VsMax(run, top)
+function Runs.Delta(run, top)
     local dps = runDps(run)
     if not dps or type(top) ~= "number" or top <= 0 then return nil end
     if dps == top then return 0 end
     return (dps / top - 1) * 100
 end
 
-local function vsMaxText(run, top)
-    local pct = Runs.VsMax(run, top)
+local function deltaText(run, top)
+    local pct = Runs.Delta(run, top)
     if pct == nil then return DASH, C.dim end
     if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.gold end
     local color = run.status == "complete" and (pct < 0 and C.red or C.green) or C.dim
@@ -529,23 +504,25 @@ function Runs.BarStyle(block, run)
     return fill
 end
 
---- The v/s Max cell's tooltip.
-function Runs.VsMaxTip(run, top)
-    local pct = Runs.VsMax(run, top)
-    local type_ = NS.Dummies.Label(categoryOf(run)):lower()
+--- The Delta cell's tooltip. `grouped` is whether the list is grouped (the max is its group's) or
+--- flat (the max is the whole view's).
+function Runs.DeltaTip(run, top, grouped)
+    local pct = Runs.Delta(run, top)
     if pct == nil then
         return { DASH, run.status == "lost" and L["A lost run has no DPS to compare."]
-            or L["No complete run on this target type in view to compare with."] }
+            or (grouped and L["No complete run in this group to compare with."]
+                or L["No complete run in view to compare with."]) }
     end
-    local lines = { L["%+.1f%% vs the max"]:format(pct),
-                    L["The max for %s in this view: %s DPS."]:format(type_, NS.ResultsTips.Grouped(top)) }
-    if pct == 0 and run.status == "complete" then lines[1] = L["This run is the max for %s in view."]:format(type_) end
+    local where = grouped and L["The max in this group: %s DPS."] or L["The max in view: %s DPS."]
+    local lines = { L["%+.1f%% vs the max"]:format(pct), where:format(NS.ResultsTips.Grouped(top)) }
+    if pct == 0 and run.status == "complete" then
+        lines[1] = grouped and L["This run is the max in its group."] or L["This run is the max in view."]
+    end
     if run.status ~= "complete" then lines[#lines + 1] = L["An incomplete run is compared, but never sets the max."] end
     return lines
 end
 
 local STATUS_ABOUT = {
-    max = "The top DPS on its target type among the runs in view, which hold more than one spec.",
     best = "The best run for its spec, target type and race length.",
     complete = "A complete run that holds no best.",
     flagged = "A complete run that carries a flag.",
@@ -554,11 +531,11 @@ local STATUS_ABOUT = {
     lost = "The meter's session could not be read after combat. There is no score.",
 }
 
---- The Status cell's tooltip: the tag (with its whole board for Spec best and Max: "Spec best:
+--- The Status cell's tooltip: the tag (with its whole board for Spec best: "Spec best:
 --- boss-level · 2:00"), what it means, then every flag the run carries (what the flag column's mark
 --- used to say).
-function Runs.StatusTip(run, top)
-    local key, text = Runs.Status(run, top)
+function Runs.StatusTip(run)
+    local key, text = Runs.Status(run)
     -- lines[1] is the title: SideTip draws it from a string.
     local lines = { text, L[STATUS_ABOUT[key]] }
     if NAMES_BOARD[key] then
@@ -573,7 +550,7 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
-Runs.TARGET_W = 98
+Runs.TARGET_W = 92
 Runs.TIME_W = 84
 Runs.STATUS_W = 92
 Runs.NOTE_CHARS = 10
@@ -625,10 +602,13 @@ function Runs.TimeCell(run)
 end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length's chip and the tail), damage, DPS, v/s max, status (the flags are its tooltip's). The v/s Max column reads
---- its max off the whole list the table is handed (its `scan`, every run the filters pass).
+--- time (the length's chip and the tail), damage, DPS, delta, status (the flags are its tooltip's).
+--- The Delta column reads each group's max off the whole list the table is handed (its `scan`: every
+--- run the filters pass, with the grouping's key), and the bars scale within each group too
+--- (Results_Table's measure). A flat list is one group.
 function Runs.Columns()
-    local view = { top = {}, maxTag = {} }
+    local view = { top = {}, groupOf = function() return true end }
+    local function topOf(run) return view.top[view.groupOf(run)] end
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
           sort = function(run) return run.date end,
@@ -643,8 +623,7 @@ function Runs.Columns()
         { key = "ilvl", label = L["iLvl"], width = 40, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        -- Boxed in the category color; wide enough for "Single target" and any type with a count
-        -- ("Dungeoneer ×20").
+        -- Boxed in the category color; wide enough for the widest type, "Single target".
         { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
@@ -656,36 +635,33 @@ function Runs.Columns()
           sort = function(run) return run.result and run.result.damage end,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.damage or nil end,
           barStyle = function(run) return Runs.BarStyle("damageBar", run) end,
-          -- Per target type (the owner's call, 2026-10-25), as v/s Max is.
-          barKey = categoryOf,
           text = damageText },
         { key = "dps", label = L["DPS"], width = 62, desc = true,
           sort = sortDps, text = dpsText,
           bar = function(run) return run.status ~= "lost" and run.result and run.result.dps or nil end,
-          barStyle = function(run) return Runs.BarStyle("dpsBar", run) end,
-          barKey = categoryOf },
-        { key = "vsMax", label = L["v/s Max"], width = 56, desc = true,
-          -- Per target type (the owner's call, 2026-10-25): each run against the max of the runs the
-          -- filters pass on its own category; the Max tag only where that category spans specs.
-          scan = function(list)
-              view.top, view.maxTag = {}, {}
-              for category, runs in pairs(Runs.ByCategory(list)) do
-                  view.top[category] = Runs.MaxDps(runs)
-                  view.maxTag[category] = Runs.ManySpecs(runs) and view.top[category] or nil
+          barStyle = function(run) return Runs.BarStyle("dpsBar", run) end },
+        { key = "delta", label = L["Delta"], width = 56, desc = true,
+          -- Per group (the owner's call, 2026-10-26): each run against the max of its own group of
+          -- the runs the filters pass, recomputed whenever the list or its grouping changes.
+          scan = function(list, groupOf)
+              view.top, view.groupOf, view.grouped = {}, groupOf, false
+              for key, runs in pairs(Runs.ByGroup(list, groupOf)) do
+                  view.top[key] = Runs.MaxDps(runs)
+                  if key ~= true then view.grouped = true end
               end
           end,
-          sort = function(run) return Runs.VsMax(run, view.top[categoryOf(run)]) end,
-          text = function(run) return vsMaxText(run, view.top[categoryOf(run)]) end,
-          tip = function(run) return Runs.VsMaxTip(run, view.top[categoryOf(run)]) end },
+          sort = function(run) return Runs.Delta(run, topOf(run)) end,
+          text = function(run) return deltaText(run, topOf(run)) end,
+          tip = function(run) return Runs.DeltaTip(run, topOf(run), view.grouped) end },
         -- Wide enough for the widest tag alone: the boxed "Incomplete" with its icon.
         { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true,
           desc = false,
-          sort = function(run) return STATUS_ORDER[(Runs.Status(run, view.maxTag[categoryOf(run)]))] end,
+          sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)
-              local _, text, color, icon = Runs.Status(run, view.maxTag[categoryOf(run)])
+              local _, text, color, icon = Runs.Status(run)
               return text, color, icon
           end,
-          tip = function(run) return Runs.StatusTip(run, view.maxTag[categoryOf(run)]) end },
+          tip = Runs.StatusTip },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
           sort = Runs.NoteSort, text = function(run) return Runs.NoteCell(run), C.dim end,
           tip = Runs.NoteTip },
@@ -702,7 +678,7 @@ local function checkbox(view, parent, spec)
     b:SetSize(20, 20)
     b.label = Tbl.Text(b, Tbl.FONT.TEXT)
     b.label:SetPoint("LEFT", b, "RIGHT", 1, 0)
-    b.label:SetText(L[spec.label])
+    Tbl.SetCheckLabel(b, L[spec.label])
     b:SetScript("OnClick", function() view:SetFilter(spec.key, not view.filters[spec.key]) end)
     b.key = spec.key
     return b
@@ -770,6 +746,9 @@ end
 
 Runs.STOCK_SORT = { key = "date", desc = true }
 
+-- A saved sort on a column that was renamed: v/s Max became Delta (the owner's call, 2026-10-26).
+local RENAMED_SORT = { vsMax = "delta" }
+
 --- The saved view, or nil.
 function Runs.SavedView()
     local p = NS.db and NS.db.profile
@@ -795,6 +774,7 @@ function View:ApplyView(v)
         self.filters[k] = value
     end
     local sortKey = v.sortKey or Runs.STOCK_SORT.key
+    sortKey = RENAMED_SORT[sortKey] or sortKey
     local desc = v.sortDesc
     if desc == nil then desc = Runs.STOCK_SORT.desc end
     if self.list.column and self.list:column(sortKey) then

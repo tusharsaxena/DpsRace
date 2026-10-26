@@ -57,8 +57,6 @@ Hud.DROP_COMBAT = {
     { id = 5384, name = "Feign Death" }, { id = 1856, name = "Vanish" },
     { id = 58984, name = "Shadowmeld" }, { id = 66, name = "Invisibility" },
 }
--- The target-count stepper's ceiling (a cleave group; spec §4.1).
-Hud.MAX_TARGETS = 20
 Hud.FRAME_NAME = "DpsRaceHud"
 
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
@@ -74,9 +72,9 @@ local sliceTimer               -- the next chart bucket's boundary (modules/Slic
 local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
 local preview                  -- what Hud.Render pushed while test mode is on
-local pick = {}                -- the idle body's choices: length, count, target, editing
+local pick = {}                -- the idle body's choices: length, target, editing
 local dropNames                -- Hud.OwnedDropSpells() for this race, asked once (reset on arm)
--- pick.target and pick.count are the target of the moment only while the window is shown (the one
+-- pick.target is the target of the moment only while the window is shown (the one
 -- time PLAYER_TARGET_CHANGED is heard): forgotten on every show and on an arm from a closed window.
 
 local function S() return NS.Race.STATE end
@@ -252,7 +250,6 @@ local function idleView(v)
     if not pick.target then pick.target = NS.Recorder.SnapshotTarget("target") end
     local target = pick.target
     v.target = target
-    v.count = pick.count or target.count or 1
     v.length = currentLength()
     v.editing = pick.editing
     v.blocker, v.detail = armBlocker()
@@ -656,7 +653,7 @@ end
 local function onAceEvent(event)
     if NS.IsStoodDown() then return end
     if event == METER_EVENT then return requestLive() end
-    if event == "PLAYER_TARGET_CHANGED" then pick.target, pick.count = nil, nil end
+    if event == "PLAYER_TARGET_CHANGED" then pick.target = nil end
     Hud.Refresh()
 end
 
@@ -750,7 +747,7 @@ function Hud.Refresh()
     applyTestMarker()
     ui.frame:SetScale(setting("scale"))
     if not windowShown() then
-        pick.target, pick.count = nil, nil
+        pick.target = nil
         ui.frame:Show()
     end
     render(true)
@@ -890,17 +887,17 @@ local function openRun(run)
     if type(R.ShowRun) == "function" then R.ShowRun(run.id) else R.Show() end
 end
 
-local function arm(length, count)
-    local ok, reason, detail = NS.Race.Arm(length, count)
+local function arm(length)
+    local ok, reason, detail = NS.Race.Arm(length)
     if not ok then NS.Print(NS.Format.ArmRefusal(reason, detail)) end
     Hud.Refresh()
     return ok, reason
 end
 
 function Act.arm()
-    -- Closed, the HUD heard no target change: the cached target and its stepped count may be stale.
-    if not windowShown() then pick.target, pick.count = nil, nil end
-    return arm(currentLength(), pick.count)
+    -- Closed, the HUD heard no target change: the cached target may be stale.
+    if not windowShown() then pick.target = nil end
+    return arm(currentLength())
 end
 
 function Act.pickLength(n)
@@ -928,13 +925,6 @@ function Act.customLength(text)
     end
     Act.pickLength(n)
     return true
-end
-
-function Act.stepCount(delta)
-    local target = pick.target or {}
-    local n = (pick.count or target.count or 1) + delta
-    pick.count = math.max(1, math.min(Hud.MAX_TARGETS, n))
-    Hud.Refresh()
 end
 
 -- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
@@ -976,14 +966,12 @@ end
 
 --- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
---- the idle body is set to the same length and target count, so Arm Race repeats the race.
+--- the idle body is set to the same length, so Arm Race repeats the race.
 function backToIdle(run)
     local length = run and run.race and run.race.length or currentLength()
-    local count = run and run.target and run.target.count
     -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
     autoShown = false
     if NS.Race.State() == S().RESULT then NS.Race.Cancel() end
-    pick.count = count
     Act.pickLength(length)
     return true
 end

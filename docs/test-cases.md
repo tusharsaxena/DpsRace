@@ -149,7 +149,7 @@ Total.
 - race: arm refuses when meter unavailable
 - race: arm refuses a length outside 10s-15:00 and arms a valid one
 - race: session created starts the clock and persists the run as running
-- race: the target is re-read at combat start and the arm-time count is kept
+- race: the target is re-read at combat start
 - race: sessionID captured from first DamageDone update with non-zero id
 - race: a DamageDone update heard just before the session event is adopted at the start
 - race: a session event heard out of combat does not start the clock
@@ -236,12 +236,12 @@ Total.
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
 - hud: idle arm button disabled with reason in combat
-- hud: idle Arm uses the picked length and target count; a refusal prints its line
+- hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line
 - hud: a custom length is parsed, range-checked and selected
 - hud: an unknown target is allowed and said so
 - hud: a changed Default race length takes effect over the remembered pick
 - hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own
-- hud: a target changed while the HUD is closed is never armed with the old count
+- hud: a target changed while the HUD is closed is never armed as the old one
 - hud: reopening the HUD offers the target of the moment, not the one cached at close
 - hud: running render raises nothing with secret values
 - hud: running body shows no percentage text
@@ -337,11 +337,12 @@ Total.
 - chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
-### test_pace.lua (12)
+### test_pace.lua (14)
 
 - pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
 - pace: the tick sits in the middle of the bar's width, in whole pixels
 - pace: the running bar's tick stays in the middle while its range follows Pace bar range
+- pace: the bar splits at the tick: behind fills to the pace with red to the tick, ahead fills green past it
 - pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
 - pace: the result card sets the plain final damage against the best's pace at the buzzer
 - pace: a run that just became the best is set against the previous best
@@ -351,6 +352,7 @@ Total.
 - pace: the sim's result card shows the pace bar against the sample best, and honors the setting
 - pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown
 - pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
+- pace: the result card's stack starts under the chips it draws, as the running body's under its boxes
 
 ### test_countdown.lua (20)
 
@@ -386,7 +388,7 @@ Total.
 
 ### test_results.lua (50)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
 - results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
@@ -394,17 +396,17 @@ Total.
 - results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
-- results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
+- results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
 - results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
 - results: the Time column and the Bests Length column take the length color; the tail stays gray
 - results: Status tags are boxed in their hue with the icon inside
 - results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
-- results: the Damage and DPS bars run 10% to 100% within each target type
-- results: v/s Max and the Max tag are per target type
+- results: the Damage and DPS bars run 10% to 100% within each group; ungrouped, the whole view is one
+- results: Delta is per group, recomputed when the grouping changes; ungrouped, the whole view is one
 - results: Only best keeps the runs holding their board's best
-- results: v/s Max is each run's distance from the max DPS among the runs the filters pass
+- results: Delta is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
@@ -425,7 +427,7 @@ Total.
 - results: bests tab groups by spec x category x length with clean-only toggle
 - results: the Bests board shows one category at a time, so a spec and length is one row
 - results: list refreshes on RUN_SAVED
-- results: Runs opens on the current character and spec, each a choice of its own
+- results: Runs opens on the current character in every spec; current character and spec are each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
 - results: collapsed, the detail replaces the list, with a back control
@@ -604,7 +606,7 @@ Total.
 ### test_share.lua (13)
 
 - share: Share.Line matches the mockup format
-- share: one target drops the count; an uncataloged target is named; incomplete is said
+- share: the target type is named; an uncataloged target by its own name; incomplete is said
 - share: a lost run has no line, and the prompt says so
 - share: no chat escape survives into the line
 - share: Share refuses in combat
@@ -815,7 +817,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
 | test_chart.lua | 29 |
-| test_pace.lua | 12 |
+| test_pace.lua | 14 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 50 |
@@ -844,4 +846,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **666** |
+| **Total** | **668** |

@@ -8,7 +8,7 @@ in the spec, sections 1, 2 and 13
 
 - **A timed race.** The most damage in a chosen time (presets 0:30 to 5:00, custom 0:10 to 15:00)
   against any target, with known training dummies recognized from a small catalog
-  (`defaults/Dummies.lua`) and the target count set on the HUD.
+  (`defaults/Dummies.lua`). There is no target count (DpsRace#15).
 - **A frame-accurate start.** The clock starts on the new meter session, which lands on the same
   frame as the first hit (spec §2, §4.2).
 - **An honest score.** Damage is the run session's total, read after combat. DPS is that total
@@ -21,7 +21,7 @@ in the spec, sections 1, 2 and 13
 - **A Race HUD** with one body per state, a **Results window** with history, run detail and personal
   bests, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
   diagnostics report (spec §6). The Runs list names each run's status as a boxed badge (the tag
-  alone; *Spec best* and *Max* name the board they top in their tooltip), colors each preset race
+  alone; *Spec best* names the board it tops in its tooltip), colors each preset race
   length (the Results window only), and groups by *Full* (character, class, spec, target and time;
   a new profile's default), character, class and spec, target, time, target and time, or spec, target and time.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
@@ -54,7 +54,7 @@ in the spec, sections 1, 2 and 13
 | Read the combat log | Addons cannot read it in 12.0. Every number comes from `C_DamageMeter`. |
 | Cut damage off exactly at the buzzer | Values captured in combat stay secret after it, so the score is the session total and the tail is shown instead (spec §2). |
 | Show percentages or sort the live breakdown | Both are arithmetic on secret values (spec §6.1). Percentages appear on the result. |
-| Count targets automatically | The meter merges identical dummies into one row; the count comes from the catalog or a manual pick (spec §2). |
+| Count targets | The meter merges identical dummies into one row and no nameplate signal counts the dummies hit, so there is no count at all, typed or measured; it returns only if the client can measure it (DpsRace#15). |
 | Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the usage line and an unknown word list the scenarios instead (B5.2). |
 | Use target health as a start signal | Other players hitting a shared dummy fire it before your first hit (spec §2). |
 | "Time to deal X damage", or a goal bar | A threshold crossing is a comparison on a secret value, and the meter keeps no timeline. Dropped 2026-10-23. |

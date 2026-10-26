@@ -5,7 +5,7 @@ local _, NS = ...
 --
 -- PURE OVER THE STORED RUN. Each builder takes a run record and answers its lines, { title, line, ...
 -- }, a line a string or { text, r, g, b }; nothing here reads a meter or a frame. A column may carry
--- its own `tip(run)` (the Runs list's v/s Max and Status, which need the view), which wins over the
+-- its own `tip(run)` (the Runs list's Delta and Status, which need the view), which wins over the
 -- builder here by its key.
 
 local Tips = {}
@@ -101,9 +101,6 @@ function CELL.target(run)
     if type(t.level) == "number" then meta[#meta + 1] = L["Level %d"]:format(t.level) end
     if type(t.npcID) == "number" then meta[#meta + 1] = L["creature %d"]:format(t.npcID) end
     if #meta > 0 then lines[#lines + 1] = table.concat(meta, " \194\183 ") end
-    if type(t.count) == "number" then
-        lines[#lines + 1] = t.count == 1 and L["1 target (your pick)"] or L["%d targets (your pick)"]:format(t.count)
-    end
     return lines
 end
 
@@ -195,10 +192,10 @@ local ABOUT = {
     target = "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other.",
     time = "The race length, then how long your damage kept landing after the buzzer (DoTs, travel time). An incomplete run shows when combat ended instead. Each preset length has its own color.",
     length = "The race length the best was set at. Each preset length has its own color.",
-    damage = "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest.",
-    dps = "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest.",
-    vsMax = "How far this run's DPS is from the highest complete run in view on the same target type.",
-    status = "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise.",
+    damage = "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in its group to the largest (with no grouping, the whole view).",
+    dps = "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in its group to the largest (with no grouping, the whole view).",
+    delta = "How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change.",
+    status = "Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
     note = "The note you kept with the run. Click to sort.",
 }
@@ -275,7 +272,7 @@ end
 
 function DETAIL.chart()
     return { L["Damage profile"],
-        L["Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."],
+        L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
 end
 

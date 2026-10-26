@@ -102,9 +102,6 @@ L["The race could not be armed."] = "The race could not be armed."
 -- four drop-combat names are the hint's fallback when C_Spell cannot name the spell.
 L["Unknown spell"] = "Unknown spell"
 L["No target"] = "No target"
-L["Targets"] = "Targets"
-L["1 target"] = "1 target"
-L["%d targets"] = "%d targets"
 L["Race Length"] = "Race Length"
 L["Custom"] = "Custom"
 L["Target"] = "Target"
@@ -189,7 +186,6 @@ L["Delete this run? This cannot be undone, and a personal best it holds goes wit
 L["Delete"] = "Delete"
 L["Cancel"] = "Cancel"
 L["Unknown class"] = "Unknown class"
-L["%s \195\151%d"] = "%s \195\151%d"
 L["%d late"] = "%d late"
 L["Restarted"] = "Restarted"
 L["By list"] = "By list"
@@ -262,7 +258,8 @@ L["%s: %s \194\183 %s"] = "%s: %s \194\183 %s"
 L["Runs view saved as default."] = "Runs view saved as default."
 L["Runs view reset to stock defaults."] = "Runs view reset to stock defaults."
 L["Save these filters, the grouping and the sort as this profile's default view of Runs."] = "Save these filters, the grouping and the sort as this profile's default view of Runs."
-L["Delete the saved view and go back to the stock one: your character and spec, newest first."] = "Delete the saved view and go back to the stock one: your character and spec, newest first."
+L["Delete the saved view and go back to the stock one: your character in every spec, grouped by Full, newest first."] =
+    "Delete the saved view and go back to the stock one: your character in every spec, grouped by Full, newest first."
 L["Go back to the saved view (the stock one when none is saved). The saved view is kept."] = "Go back to the saved view (the stock one when none is saved). The saved view is kept."
 L["Group: None"] = "Group: None"
 L["Group: Character"] = "Group: Character"
@@ -335,11 +332,10 @@ L["What the HUD's clock shows while the race runs: the time elapsed in green, th
 L["Length"] = "Length"
 L["Time"] = "Time"
 L["Status"] = "Status"
-L["Max"] = "Max"
 L["Spec best"] = "Spec best"
 L["%+.1f%%"] = "%+.1f%%"
 L["%.1f%%"] = "%.1f%%"
-L["v/s Max"] = "v/s Max"
+L["Delta"] = "Delta"
 L["Complete"] = "Complete"
 L["Flagged"] = "Flagged"
 L["Incomplete"] = "Incomplete"
@@ -408,8 +404,8 @@ L["Show Blizzard's live DPS figure beside the damage while the race runs. Your s
 -- HUD page: the Race HUD tab's Chart and pace subsection and HUD Appearance's Damage chart (#2, #3)
 L["Chart and pace"] = "Chart and pace"
 L["Show damage chart"] = "Show damage chart"
-L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."] =
-    "Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a dashed line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."
+L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a faint line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."] =
+    "Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a faint line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."
 L["Show pace bar"] = "Show pace bar"
 L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
     "Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."
@@ -498,8 +494,6 @@ L["Level %d"] = "Level %d"
 L["Item level %s"] = "Item level %s"
 L["%s overall, counting bags"] = "%s overall, counting bags"
 L["Equipped, read when the race was armed."] = "Equipped, read when the race was armed."
-L["1 target (your pick)"] = "1 target (your pick)"
-L["%d targets (your pick)"] = "%d targets (your pick)"
 L["Race length %s"] = "Race length %s"
 L["Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."] =
     "Your damage kept landing %.1fs after the buzzer (DoTs, travel time). It counts."
@@ -529,26 +523,27 @@ L["Equipped item level when the race was armed."] = "Equipped item level when th
 L["The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."] =
     "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."
 L["The race length the best was set at. Each preset length has its own color."] = "The race length the best was set at. Each preset length has its own color."
-L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."] =
-    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."
-L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."] =
-    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."
-L["How far this run's DPS is from the highest complete run in view on the same target type."] =
-    "How far this run's DPS is from the highest complete run in view on the same target type."
-L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
-    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."
+L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."] =
+    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."
+L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."] =
+    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."
+L["How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change."] =
+    "How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change."
+L["Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
+    "Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise."
 L["What happened on the run that its result should mention: late casts, a restart, a reload."] =
     "What happened on the run that its result should mention: late casts, a restart, a reload."
 L["A lost run has no DPS to compare."] = "A lost run has no DPS to compare."
-L["No complete run on this target type in view to compare with."] =
-    "No complete run on this target type in view to compare with."
+L["No complete run in this group to compare with."] =
+    "No complete run in this group to compare with."
+L["No complete run in view to compare with."] = "No complete run in view to compare with."
 L["%+.1f%% vs the max"] = "%+.1f%% vs the max"
-L["The max for %s in this view: %s DPS."] = "The max for %s in this view: %s DPS."
-L["This run is the max for %s in view."] = "This run is the max for %s in view."
+L["The max in this group: %s DPS."] = "The max in this group: %s DPS."
+L["The max in view: %s DPS."] = "The max in view: %s DPS."
+L["This run is the max in its group."] = "This run is the max in its group."
+L["This run is the max in view."] = "This run is the max in view."
 L["An incomplete run is compared, but never sets the max."] =
     "An incomplete run is compared, but never sets the max."
-L["The top DPS on its target type among the runs in view, which hold more than one spec."] =
-    "The top DPS on its target type among the runs in view, which hold more than one spec."
 L["The best run for its spec, target type and race length."] =
     "The best run for its spec, target type and race length."
 L["A complete run that holds no best."] = "A complete run that holds no best."
@@ -644,8 +639,8 @@ L["Difference: %s"] = "Difference: %s"
 L["Damage profile"] = "Damage profile"
 L["vs best pace"] = "vs best pace"
 L["first race on this board"] = "first race on this board"
-L["Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."] =
-    "Your damage so far at each step of the race, captured live. With a best before this run, the dashed line is that best's average pace, on the same scale."
+L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."] =
+    "Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
 

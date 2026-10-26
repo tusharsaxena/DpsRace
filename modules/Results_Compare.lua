@@ -269,7 +269,7 @@ function Compare.Fill(p)
     local other, kind = Compare.Target(p.run, p.pickID)
     x.other, x.kind = other, kind
     x.data = other and Compare.Spells(p.run, other) or nil
-    x.toggle.label:SetText(Compare.ToggleLabel(kind, other))
+    Tbl.SetCheckLabel(x.toggle, Compare.ToggleLabel(kind, other))
     local on = other ~= nil
     x.toggle:SetEnabled(on)
     local tc = on and C.text or C.dim

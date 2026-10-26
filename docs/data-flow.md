@@ -222,7 +222,7 @@ race.
   delta chip, pace bar and diagonal follow the store. Between the chips and the spells, with *Show damage chart* on, the race's chart
   again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with buckets this
   session). With a best before the run (`Bests.Before(run)`, as the pace bar) `HudChart.WithBest` draws
-  that best's gray dashed diagonal from 0:00 to its damage at the run's length, and the plot's max (the
+  that best's faint gray diagonal (one 2px line at 40%) from 0:00 to its damage at the run's length, and the plot's max (the
   columns' too) is max(`result.damage`, that) x 1.15; without one each column is scaled to the plain
   `result.damage`, no diagonal. All plain numbers.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
@@ -238,7 +238,7 @@ race.
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
-  one is remembered as `race.lastLength`) and the target count from the stepper go to `Race.Arm`; a
+  one is remembered as `race.lastLength`) go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
   while a run is pending, in combat or with the meter unavailable.
 
@@ -256,7 +256,7 @@ Taint Notes, B4.1).
   time it shows.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
-  bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` scales the Damage and DPS bars linearly from 10% to 100% within each target type (each type's smallest and largest of the runs passed, `barKey`), sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
+  bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` measures per group (`Table:measure` on every `SetData` and `SetGroup`: the *Delta* column's max DPS and the Damage and DPS bars' range, each the run's own group's under the current *Group by*, the whole list with *None*; nothing is stored on a run), scales the bars linearly from 10% to 100% of that range, sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
   run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
@@ -286,12 +286,12 @@ Taint Notes, B4.1).
   right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
-  sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
+  sends `Share.Line(run)` (*DPS Race 3:00 · Cleave · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
   DPS Race)*) through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`); Whisper asks for a name first
   (`DPSRACE_SHARE_WHISPER`, the player target's name offered). The line is plain text, every `|`
   replaced.
 - **The race's own lines**, in the player's chat only: `RACE_STATE_CHANGED` to armed prints
-  `Share.ArmedLine(run)` (*Armed: 3:00 on Cleave Training Dummy ×5. First hit starts the clock.*), so
+  `Share.ArmedLine(run)` (*Armed: 3:00 on Cleave Training Dummy. First hit starts the clock.*), so
   every surface that arms says so once; `RACE_RESULT` prints `Share.ResultLine(run, Bests.Delta(run))`
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.

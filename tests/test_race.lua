@@ -138,29 +138,27 @@ test("race: session created starts the clock and persists the run as running", f
     assertEqual(f:trail(), "idle>armed,armed>running")
 end)
 
-test("race: the target is re-read at combat start and the arm-time count is kept", function()
+test("race: the target is re-read at combat start", function()
     local f = F.new()
     f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = "Cleave Training Dummy" })
-    assertTrue(f:arm(30, 5))
+    assertTrue(f:arm(30))
     local run = f.Race.Current()
-    assertEqual(run.target.count, 5)
     -- Combat starts with the same dummy targeted, its name now sealed: the arm-time read fills it.
     f.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = T.secret("x") })
     f:start(25)
     assertEqual(run.target.npcID, 243208)
     assertEqual(run.target.name, "Cleave Training Dummy")
-    assertEqual(run.target.count, 5, "the count picked at arm survives the re-read")
+    assertNil(run.target.count, "no target count (DpsRace#15)")
 
     -- A different dummy at combat start: the combat-start read is the one stored.
     local g = F.new()
     g.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243208-0000ABCDEF", name = "Cleave Training Dummy" })
-    assertTrue(g:arm(30, 5))
+    assertTrue(g:arm(30))
     g.M.__setTarget({ guid = "Creature-0-3770-2552-1234-243205-0000ABCDEF", name = "Reinforced Golem" })
     g:start(25)
     local t = g.Race.Current().target
     assertEqual(t.npcID, 243205)
     assertEqual(t.category, "boss")
-    assertEqual(t.count, 1, "another target takes its own catalog count")
 end)
 
 test("race: sessionID captured from first DamageDone update with non-zero id", function()

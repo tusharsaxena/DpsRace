@@ -150,16 +150,12 @@ function Tbl.Hex(color)
         math.floor(color[3] * 255 + 0.5))
 end
 
---- The category badge: "Cleave", or "Cleave ×5" for a counted group, and its color.
+--- The category badge, "Cleave", and its color.
 --- @return string text, table color
 function Tbl.Badge(target)
     target = type(target) == "table" and target or {}
     local category = target.category or "other"
-    local text = NS.Dummies.Label(category)
-    if type(target.count) == "number" and target.count > 1 then
-        text = L["%s \195\151%d"]:format(text, target.count)
-    end
-    return text, Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other
+    return NS.Dummies.Label(category), Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other
 end
 
 -- The flags a run carries beyond its status: incomplete and lost are what the DPS column says.
@@ -425,11 +421,11 @@ function Tbl.BarShare(v, min, max)
     return Tbl.BAR_FLOOR + (1 - Tbl.BAR_FLOOR) * t
 end
 
--- The bar's width: the cell's, times the run's share (Tbl.BarShare) between the list's smallest and
--- largest value. Plain numbers off stored runs, and the cell's width is the column layout's, never a
--- measured one.
+-- The bar's width: the cell's, times the run's share (Tbl.BarShare) between its group's smallest and
+-- largest value (Table:measure). Plain numbers off stored runs, and the cell's width is the column
+-- layout's, never a measured one.
 local function bindBar(cell, col, run)
-    local range = col.barRanges and col.barRanges[col.barKey and col.barKey(run) or true] or {}
+    local range = col.barRanges and col.barRanges[col.groupOf and col.groupOf(run) or true] or {}
     local share = Tbl.BarShare(col.bar(run), range.min, range.max)
     local on = share > 0
     local style = col.barStyle and col.barStyle(run)
@@ -474,6 +470,15 @@ end
 function Tbl.BadgeWidth(s, boxed, extra)
     local chars = select(2, s:gsub("[^\128-\191]", ""))
     return math.floor(chars * 6 + (boxed and 14 or 4) + (extra or 0))
+end
+
+--- Set a checkbox's label (`check.label`, 1px right of the box) and widen its click area over it, so
+--- a click on the words toggles it too (the owner's call, 2026-10-26). The width is the label's
+--- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one.
+function Tbl.SetCheckLabel(check, text)
+    text = text or ""
+    check.label:SetText(text)
+    check:SetHitRectInsets(0, -(1 + Tbl.BadgeWidth(text, false)), 0, 0)
 end
 
 -- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
@@ -700,7 +705,8 @@ end
 --- @param parent table
 --- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
----                         bar = fn(run) -> value, barStyle = fn(run), scan = fn(list) on SetData }
+---                         bar = fn(run) -> value, barStyle = fn(run),
+---                         scan = fn(list, groupOf) on SetData and SetGroup (Table:measure) }
 --- @param opts table  { sortKey, sortDesc, onClick(run), onRightClick(run, row), empty = text,
 ---                      stripe = false for uniform rows (default: every other row faintly tinted) }
 function Tbl.New(parent, columns, opts)
@@ -802,21 +808,30 @@ function Table:SetSort(key, desc)
     self:Bind()
 end
 
---- Replace the list (any order) and redraw it sorted, keeping the scroll where it can.
-function Table:SetData(list)
-    self.data = list or {}
-    -- Each bar column's scale: the smallest and the largest value in the whole list (every run the
-    -- filters pass, scrolled into view or not), so the bars compare the runs the view holds. A
-    -- column with `barKey(run)` keeps one range per key (the Runs list: per target type).
+--- The key of the group `run` falls in under `spec` (Table:SetGroup's shape), as Table:group keys
+--- it; `true` for every run of a flat list, which is one group.
+function Tbl.GroupKey(spec, run)
+    if not spec then return true end
+    return tostring((spec.of(run)))
+end
+
+-- Measure the list per group (the owner's call, 2026-10-26). Each bar column's scale is the
+-- smallest and the largest value in the run's own group: every run of it the filters pass, folded or
+-- scrolled out of view or not. A column that reads the whole list (the Runs list's Delta) sees it
+-- here, with the grouping's key, before a sort. A flat list is one group. Nothing is stored on a
+-- run: it is redone on every SetData and SetGroup.
+function Table:measure()
+    local spec = self.grouping
+    local function groupOf(run) return Tbl.GroupKey(spec, run) end
     for _, col in ipairs(self.columns) do
-        -- A column that reads the whole list (the Runs list's v/s Max) sees it here, before a sort.
-        if col.scan then col.scan(self.data) end
+        if col.scan then col.scan(self.data, groupOf) end
         if col.bar then
+            col.groupOf = groupOf
             local ranges = {}
             for _, run in ipairs(self.data) do
                 local v = col.bar(run)
                 if type(v) == "number" then
-                    local key = col.barKey and col.barKey(run) or true
+                    local key = groupOf(run)
                     local r = ranges[key]
                     if not r then
                         r = { min = v, max = v }
@@ -829,6 +844,12 @@ function Table:SetData(list)
             col.barRanges = ranges
         end
     end
+end
+
+--- Replace the list (any order) and redraw it sorted, keeping the scroll where it can.
+function Table:SetData(list)
+    self.data = list or {}
+    self:measure()
     self.rows = self:group(Tbl.Sort(self.columns, self.data, self.sortKey, self.sortDesc))
     self:Bind()
 end
@@ -844,6 +865,7 @@ end
 function Table:SetGroup(spec)
     if spec ~= self.grouping then self.groupDesc = false end
     self.grouping = spec
+    self:measure()
     self.rows = self:group(Tbl.Sort(self.columns, self.data or {}, self.sortKey, self.sortDesc))
     self:Bind()
 end

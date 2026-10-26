@@ -13,7 +13,6 @@ NS.Share = Share
 local L = NS.L
 
 local MIDDOT = " \194\183 "
-local TIMES = "\195\151"           -- the multiplication sign: "Cleave x5"
 local EMDASH = " \226\128\148 "
 local WHISPER_POPUP = "DPSRACE_SHARE_WHISPER"
 -- The client sends at most this many bytes in one chat message.
@@ -32,21 +31,18 @@ local function clean(s)
     return (tostring(s or ""):gsub("|", "/"))
 end
 
---- "Cleave x5" / "Single target" / an uncataloged target's own name.
+--- "Cleave" / "Single target" / an uncataloged target's own name.
 local function targetText(target)
     target = target or {}
     local text = NS.Dummies.Label(target.category)
     if (target.category == nil or target.category == "other") and target.name then text = target.name end
-    if type(target.count) == "number" and target.count > 1 then text = text .. " " .. TIMES .. target.count end
     return text
 end
 
---- "Cleave Training Dummy x5": the target by name, for the player's own lines.
+--- "Cleave Training Dummy": the target by name, for the player's own lines.
 local function targetName(target)
     target = target or {}
-    local text = target.name or NS.Dummies.Label(target.category)
-    if type(target.count) == "number" and target.count > 1 then text = text .. " " .. TIMES .. target.count end
-    return text
+    return target.name or NS.Dummies.Label(target.category)
 end
 
 local function whoText(char)
