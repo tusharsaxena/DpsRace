@@ -1103,7 +1103,7 @@ test("results: saving a note never prunes the store", function()
     local runs = {}
     for n = 1, 4 do runs[n] = mkRun("r" .. n, { date = NOW - n * DAY, result = { damage = 1000 * n, dps = 10 * n } }) end
     seed(i, runs)
-    i.NS.db.global.history.keep = 1         -- lowered with four stored: nothing goes until the next race
+    i.NS.db.global.history.keepDays = 1     -- lowered with older runs stored: nothing goes until the next race
     assertEqual(i.R.SetNote("r4", "old pull"), "old pull")
     local left = 0
     for _ in pairs(i.NS.db.global.runs) do left = left + 1 end
@@ -1283,7 +1283,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertEqual(u.width, 1340)
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
-    assertEqual(u.footRight.__text, "Runs to keep: 0 (never prune)")
+    assertEqual(u.footRight.__text, "Days to keep: 90", "the default, 90 days")
     u.close:__fire("OnClick")
     assertFalse(i.R.IsShown())
     assertFalse(u.frame:IsShown())

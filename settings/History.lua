@@ -1,6 +1,6 @@
 local _, NS = ...
 -- settings/History.lua — the History page (spec §6.3): Include talents link (the share line's, #6),
--- Runs to keep (0 = never prune), how many runs are stored, and Purge history… last (asks first;
+-- Days to keep (0 = never prune), how many runs are stored, and Purge history… last (asks first;
 -- options-ui-§21's History family).
 
 local L = NS.L
@@ -65,7 +65,7 @@ StaticPopupDialogs[POPUP] = {
     OnAccept     = function() History.DeleteAll() end,
 }
 
--- Runs to keep is read at login and after each saved run (spec §7); lowering it never deletes on the
+-- Days to keep is read at login and after each saved run (spec §7); lowering it never deletes on the
 -- spot, so a slip of the slider costs nothing until the player races again.
 NS.RegisterSchemaRows({
     -- Sharing first, so the stored count and Purge history… (drawn after the group's rows) stay
@@ -73,9 +73,9 @@ NS.RegisterSchemaRows({
     { path = "share.talentsLink", page = PAGE, group = GROUP, subgroup = L["Sharing"], type = "bool",
       label = L["Include talents link"], default = NS.defaults.profile.share.talentsLink,
       tooltip = L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] },
-    { path = "global.history.keep", page = PAGE, group = GROUP, subgroup = L["Storage"], type = "number",
-      min = 0, max = 10000, step = 1, label = L["Runs to keep"], default = NS.defaults.global.history.keep,
-      tooltip = L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] },
+    { path = "global.history.keepDays", page = PAGE, group = GROUP, subgroup = L["Storage"], type = "number",
+      min = 0, max = 3650, step = 1, label = L["Days to keep"], default = NS.defaults.global.history.keepDays,
+      tooltip = L["Account-wide: shared by every profile. Runs older than this many days are removed, at login and after each saved run, and a run that holds a personal best is always kept. 90 by default; 0 keeps every run. 0 to 3650."] },
 })
 
 -- ── Results table ── the Runs list's Damage and DPS bars (the owner's call, 2026-10-24, after
@@ -117,7 +117,7 @@ NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["History"],
     panelName       = "DpsRaceHistoryPanel",
-    defaultsTooltip = L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."],
+    defaultsTooltip = L["Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."],
     afterGroup      = { [GROUP] = afterHistory },
 })
 

@@ -15,7 +15,7 @@ two levels and must not contradict each other. The race pipeline is summarized f
   registers, the settings category registers eagerly, and `/dr` and `/dpsrace` register.
 - **`OnEnable`**: if the latch is down, nothing; otherwise `NS.RegisterGameEvents()` registers the
   combat events the current settings need, `NS.Bests.PruneToSetting()` prunes the store to
-  `global.history.keep` (0 = never), and `NS.Race.Resume()` carries on the runs a `/reload`
+  `global.history.keepDays` (0 = never), and `NS.Race.Resume()` carries on the runs a `/reload`
   interrupted (spec §4.5). The stand-up edge calls the same `Resume`.
 
 ## A setting changes
@@ -142,8 +142,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
   the other run's the same way and highlights the slots whose link differs, and marks a different
   import string. *View* opens the talent tree through `SetItemRef` with the `talentbuild` link (an accepted taint risk, ARCHITECTURE.md Taint Notes) and also prints the link to the player's own chat window (`NS.Print`), where a click opens the tree again. Nothing is stored.
-- **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
-  `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
+- **Pruning** (`Recorder.Prune(days, protect, now)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
+  `global.history.keepDays` is above 0 (90 by default). It removes every resolved run older than that many days, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
   just stored and never the race's current run (the one on the result card), and fires `RUNS_CHANGED`
   once. While stood down the bus receiver is dropped, so nothing prunes. A prune that removed any run,
@@ -278,7 +278,7 @@ Taint Notes, B4.1).
   alike); it starts on the first category present, in `NS.Dummies.CATEGORIES` order.
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
-  `SETTINGS_CHANGED` for `global.history.keep` redraws the footer.
+  `SETTINGS_CHANGED` for `global.history.keepDays` redraws the footer.
 
 ## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
 

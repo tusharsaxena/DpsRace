@@ -75,7 +75,7 @@ drift from what the client loads (testing-§9).
 | `settings/General.lua` | the General page (Master controls, then Keybindings) and the landing spec `NS.LANDING` | **load-bearing**: registers first; page order is registration order |
 | `settings/Race.lua` | the Race page, one tab: default race length, the countdown (cue, the center countdown and where it starts), the buzzer and the sticky-combat hint's delay, and the scoring rules (grace, restart gap) | after `settings/General.lua` (page order); reads `NS.HudStates.PRESETS` and `NS.Format` at file scope |
 | `settings/Hud.lua` | the HUD page (`NS.RegisterTabbedPage`), two tabs: Race HUD (`hud.showMode`, `hud.clock`, the live breakdown's `live.*` rows, and *Chart and pace*: `live.chart`, `live.paceBar`) and HUD Appearance (the composed `appearance.*` blocks, the damage chart's with *Chart height*) | after `settings/Race.lua`, before `settings/History.lua` (page order: General, Race, HUD, History, Profiles); reads `NS.defaults` at file scope |
-| `settings/History.lua` | the History page: Runs to keep, the stored count, *Purge history…* (`NS.History`: `StoredLine`, `ConfirmDeleteAll`, `DeleteAll`) | after `settings/Race.lua` (page order); builds its bus receiver at file scope |
+| `settings/History.lua` | the History page: Days to keep, the stored count, *Purge history…* (`NS.History`: `StoredLine`, `ConfirmDeleteAll`, `DeleteAll`) | after `settings/Race.lua` (page order); builds its bus receiver at file scope |
 | `settings/Profiles.lua` | the Profiles page (AceDBOptions) | registers last |
 
 Not listed in the TOC: `Bindings.xml` (the client reads it by name; three `CLICK` bindings: the two

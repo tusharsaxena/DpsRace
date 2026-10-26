@@ -62,7 +62,7 @@ local STORED = {
     ["race.hintDelay"]       = { "number", 15,      5,    60,    1 },
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
-    ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
@@ -183,7 +183,7 @@ test("settings: every row sits on a page the panel draws, and every page has a g
     end
 end)
 
-test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0", function()
+test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90", function()
     local NS = T.NS
     local grace = row(NS, "race.grace")
     assertEqual(grace.type, "number")
@@ -196,13 +196,13 @@ test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10
     assertEqual(gap.min, 3)
     assertEqual(gap.max, 15)
     assertEqual(gap.default, 6)
-    local keep = row(NS, "global.history.keep")
+    local keep = row(NS, "global.history.keepDays")
     assertEqual(keep.type, "number")
     assertEqual(keep.min, 0)
-    assertEqual(keep.max, 10000)
-    assertEqual(keep.default, 0)
+    assertEqual(keep.max, 3650)
+    assertEqual(keep.default, 90, "90 days (the owner's call, 2026-10-26)")
     assertEqual(keep.page, "history")
-    assertEqual(NS.GetSetting("global.history.keep"), 0)
+    assertEqual(NS.GetSetting("global.history.keepDays"), 90)
 end)
 
 test("settings: the scoring sliders say they apply to new runs", function()
@@ -500,18 +500,19 @@ test("settings: History ends with Purge history…, after the stored count, unde
     assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
 end)
 
-test("settings: Runs to keep says it is account-wide, and its label carries no suffix", function()
-    local keep = row(T.NS, "global.history.keep")
-    assertEqual(keep.label, "Runs to keep")
+test("settings: Days to keep says it is account-wide, and its label carries no suffix", function()
+    local keep = row(T.NS, "global.history.keepDays")
+    assertEqual(keep.label, "Days to keep")
     assertTrue(keep.tooltip:sub(1, #"Account-wide: shared by every profile. ")
         == "Account-wide: shared by every profile. ", keep.tooltip)
 end)
 
-test("settings: lowering Runs to keep never deletes on the spot", function()
+test("settings: lowering Days to keep never deletes on the spot", function()
     local inst = T.load()
     local NS = inst.NS
+    NS.db.global.history.keepDays = 0
     seed(NS, 4)
-    assertTrue(NS.SetByPath("global.history.keep", 1))
+    assertTrue(NS.SetByPath("global.history.keepDays", 1))
     assertEqual(#NS.Recorder.All(), 4, "the prune runs at login and after a saved run (spec §7)")
 end)
 

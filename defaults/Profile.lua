@@ -119,10 +119,10 @@ NS.defaults = {
         -- The loadout store (#6, modules/Loadouts.lua): each distinct gear set and talent loadout once,
         -- by its hash; a run holds only the keys (run.loadout). Orphans go with every removal.
         loadouts = { gear = {}, talents = {} },
-        -- Runs to keep (spec §6.3): 0 = never prune. Above 0, the oldest runs go first and a run
-        -- holding a best is always kept (modules/Recorder.lua Prune). Global like the store it
-        -- bounds. Its row is the History page's (settings/History.lua).
-        history = { keep = 0 },
+        -- Days to keep (spec §6.3; the owner's call, 2026-10-26): runs older than this many days are
+        -- pruned, 0 = never, and a run holding a best is always kept (modules/Recorder.lua Prune).
+        -- Global like the store it bounds. Its row is the History page's (settings/History.lua).
+        history = { keepDays = 90 },
         -- LibDBIcon's own table, handed straight to :Register (launcher-§3). Global, because the
         -- button belongs to the installation and a profile switch must not move it.
         minimap = { hide = false },

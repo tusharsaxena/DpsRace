@@ -132,10 +132,10 @@ Total.
 - bests: Delta ignores later runs, other boards and runs that never count
 - bests: Delta defaults its run list to the store
 - bests: HoldingIDs names the holders of the all-runs and the clean-only boards
-- bests: prune keep=0 removes nothing
+- bests: prune days=0 removes nothing
 - bests: prune keeps best-holding runs
 - bests: prune never removes a running or stopping run, and stops at the holders
-- bests: prune runs on RUN_SAVED with the global history.keep setting
+- bests: prune runs on RUN_SAVED with the global history.keepDays setting
 - bests: prune never removes the run just saved, nor the race's own run
 - bests: a raced run that lands below the best survives the prune its own save fires
 - bests: prune runs at OnEnable
@@ -544,7 +544,7 @@ Total.
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
 - settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar
 - settings: every row sits on a page the panel draws, and every page has a group
-- settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
+- settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
 - settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
@@ -566,8 +566,8 @@ Total.
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
 - settings: History ends with Purge history…, after the stored count, under no heading of its own
-- settings: Runs to keep says it is account-wide, and its label carries no suffix
-- settings: lowering Runs to keep never deletes on the spot
+- settings: Days to keep says it is account-wide, and its label carries no suffix
+- settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
 ### test_slash.lua (30)

@@ -388,8 +388,8 @@ local function footer()
     local count = tab == "runs" and ui.runsCount
     ui.footLeft:SetText(count and (count .. " \194\183 " .. HINT) or HINT)
     -- GetSetting answers the shipped default itself (settings/Schema.lua); no second literal here.
-    local keep = tonumber(NS.GetSetting("global.history.keep"))
-    ui.footRight:SetText(keep and keep > 0 and L["Runs to keep: %d"]:format(keep) or L["Runs to keep: 0 (never prune)"])
+    local days = tonumber(NS.GetSetting("global.history.keepDays"))
+    ui.footRight:SetText(days and days > 0 and L["Days to keep: %d"]:format(days) or L["Days to keep: 0 (never prune)"])
 end
 
 function renderDetail()
@@ -755,7 +755,7 @@ do
         bus:RegisterMessage(NS.MSG.RUN_SAVED, onStoreChanged)
         bus:RegisterMessage(NS.MSG.RUNS_CHANGED, onStoreChanged)
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if windowShown() and path == "global.history.keep" then footer() end
+            if windowShown() and path == "global.history.keepDays" then footer() end
         end)
     end
 end

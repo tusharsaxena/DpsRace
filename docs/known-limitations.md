@@ -5,7 +5,7 @@ What the addon cannot do, or does only approximately, and why. Split out of
 the hub keeps a short summary. Each entry names the client limit or the owner's decision behind it,
 and the smoke row that measures it where one exists.
 
-- **Lowering *Runs to keep* deletes nothing on the spot.** The prune runs at login and after each
+- **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
   and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current

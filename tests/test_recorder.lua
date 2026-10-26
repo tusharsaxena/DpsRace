@@ -10,6 +10,8 @@ local GOLEM_GUID = "Creature-0-3770-2552-1234-243205-0000ABCDEF"
 
 local function fresh(mutate)
     local inst = T.load{ mutate = mutate }
+    -- Stored fixtures carry 1970-era dates; never prune by age here (the prune cases set it).
+    inst.NS.db.global.history.keepDays = 0
     return inst.NS, inst.mocks, inst
 end
 

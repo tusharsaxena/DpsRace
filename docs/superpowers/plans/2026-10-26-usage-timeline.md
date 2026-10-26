@@ -50,7 +50,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P1: Pruning by age
 
-- [ ] `history.keepDays` (default 90, 0 = never) replaces `history.keep`; `Recorder.Prune` removes resolved runs older
+- [x] `history.keepDays` (default 90, 0 = never) replaces `history.keep`; `Recorder.Prune` removes resolved runs older
   than that many days, never one holding a best; the History page row; schema, docs, tests.
 
 ### P2: The probe (debug-only; reverted after the findings)

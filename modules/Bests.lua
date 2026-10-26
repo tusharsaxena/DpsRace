@@ -8,7 +8,7 @@ local _, NS = ...
 -- never do); flags inform and never void, so a flagged run holds a best unless cleanOnly asks.
 --
 -- THE CACHE is one board per cleanOnly value, built on first ask and dropped on RUN_SAVED and
--- RUNS_CHANGED. The same RUN_SAVED receiver prunes to `global.history.keep` (0 = never, spec §6.3);
+-- RUNS_CHANGED. The same RUN_SAVED receiver prunes to `global.history.keepDays` (0 = never, spec §6.3);
 -- core/DpsRace.lua's OnEnable prunes at login. The receiver is a bus target of this module's own, so
 -- the latch drops it at stand-down and replays it at stand-up (slash-commands-§7).
 
@@ -140,8 +140,8 @@ end
 --- @param protect string|nil  a run id the prune keeps
 --- @return number removed
 function Bests.PruneToSetting(protect)
-    local keep = NS.GetSetting and NS.GetSetting("global.history.keep")
-    return NS.Recorder.Prune(keep, protect)
+    local days = NS.GetSetting and NS.GetSetting("global.history.keepDays")
+    return NS.Recorder.Prune(days, protect)
 end
 
 -- ── bus ─────────────────────────────────────────────────────────────────────────────────────────

@@ -179,8 +179,8 @@ L["Runs"] = "Runs"
 L["Bests"] = "Bests"
 L["Click a row for details \194\183 right-click for options"] =
     "Click a row for details \194\183 right-click for options"
-L["Runs to keep: %d"] = "Runs to keep: %d"
-L["Runs to keep: 0 (never prune)"] = "Runs to keep: 0 (never prune)"
+L["Days to keep: %d"] = "Days to keep: %d"
+L["Days to keep: 0 (never prune)"] = "Days to keep: 0 (never prune)"
 L["Delete this run? This cannot be undone, and a personal best it holds goes with it."] =
     "Delete this run? This cannot be undone, and a personal best it holds goes with it."
 L["Delete"] = "Delete"
@@ -275,8 +275,8 @@ L["Class & spec: %s"] = "Class & spec: %s"
 L["Target: %s"] = "Target: %s"
 L["Time: %s"] = "Time: %s"
 L["Spec: %s"] = "Spec: %s"
-L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
-    "Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."
+L["Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
+    "Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."
 L["Results table"] = "Results table"
 L["Damage bar"] = "Damage bar"
 L["DPS bar"] = "DPS bar"
@@ -426,9 +426,9 @@ L["Pace bar"] = "Pace bar"
 -- History page (settings/History.lua)
 L["History"] = "History"
 L["Storage"] = "Storage"
-L["Runs to keep"] = "Runs to keep"
-L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] =
-    "Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."
+L["Days to keep"] = "Days to keep"
+L["Account-wide: shared by every profile. Runs older than this many days are removed, at login and after each saved run, and a run that holds a personal best is always kept. 90 by default; 0 keeps every run. 0 to 3650."] =
+    "Account-wide: shared by every profile. Runs older than this many days are removed, at login and after each saved run, and a run that holds a personal best is always kept. 90 by default; 0 keeps every run. 0 to 3650."
 L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d runs (about %d KB of saved variables)."
 L["Purge history\226\128\166"] = "Purge history\226\128\166"
 L["Deletes every stored run. Asks for confirmation. Personal bests go with them."] =

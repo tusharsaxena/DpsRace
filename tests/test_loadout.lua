@@ -14,6 +14,8 @@ local F = dofile(T.root .. "/tests/race_clock.lua")(T)
 
 local function fresh(mutate)
     local inst = T.load{ mutate = mutate }
+    -- Stored fixtures carry 1970-era dates; never prune by age here (the prune cases set it).
+    inst.NS.db.global.history.keepDays = 0
     return inst.NS, inst.mocks, inst
 end
 
@@ -160,19 +162,20 @@ test("loadout: Delete, DeleteAll and Prune drop the loadouts no run refers to", 
     local shared = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
     M.__gear[1] = nil
     local own = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
-    storedRun(NS, "a", shared, { date = 1 })
-    storedRun(NS, "b", shared, { date = 2 })
-    storedRun(NS, "c", own, { date = 3 })
+    local now, DAY = 100 * 86400, 86400
+    storedRun(NS, "a", shared, { date = now - 10 * DAY })
+    storedRun(NS, "b", shared, { date = now - 2 * DAY })
+    storedRun(NS, "c", own, { date = now - DAY })
     assertEqual(NS.Loadouts.Counts(), 2)
     assertTrue(NS.Recorder.Delete("c"))
     assertEqual(NS.Loadouts.Counts(), 1, "the deleted run's own gear was kept")
     assertTrue(stored(NS).gear[shared.gear] ~= nil, "a set another run uses was dropped")
-    -- Prune: the oldest goes, the set the newer run shares stays.
+    -- Prune: the run older than the days goes, the set the newer run shares stays.
     NS.Bests.HoldingIDs = function() return {} end
-    assertEqual(NS.Recorder.Prune(1), 1)
+    assertEqual(NS.Recorder.Prune(5, nil, now), 1)
     assertEqual(NS.Loadouts.Counts(), 1)
-    storedRun(NS, "d", NS.Loadouts.Store({ gear = { [2] = "d" } }), { date = 4 })
-    assertEqual(NS.Recorder.Prune(1), 1)
+    storedRun(NS, "d", NS.Loadouts.Store({ gear = { [2] = "d" } }), { date = now })
+    assertEqual(NS.Recorder.Prune(1, nil, now), 1)
     assertNil(stored(NS).gear[shared.gear], "the pruned run's set outlived it")
     assertEqual(NS.Loadouts.Counts(), 1)
     NS.Recorder.DeleteAll()
@@ -555,5 +558,5 @@ test("loadout: Include talents link sits under Sharing on the History tab, befor
     for _, r in ipairs(NS.SchemaForPage("history")) do
         if r.group == "History" then order[#order + 1] = r.path end
     end
-    assertEqual(table.concat(order, ","), "share.talentsLink,global.history.keep")
+    assertEqual(table.concat(order, ","), "share.talentsLink,global.history.keepDays")
 end)
