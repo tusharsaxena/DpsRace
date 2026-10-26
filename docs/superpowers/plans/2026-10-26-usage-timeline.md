@@ -285,7 +285,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Chart icons capture everything:** three long cooldowns in one second (potion, trinket, Bestial Wrath) showed
   two; the third row was dropped. Stack as many rows as the plot's height allows, then a *+n* mark whose tooltip lists
   every cast it stands for.
-- [ ] **Timeline compare target:** a compared run with no casts (raced before cast recording) left the blue lanes
+- [x] ~~**Timeline compare target:**~~ *Dropped by the owner (2026-10-26): only runs raced before cast recording lack
+  casts, which will not happen after release.* a compared run with no casts (raced before cast recording) left the blue lanes
   empty. Compare instead against the best run in the same group or board that has casts, with a note naming both;
   the best run itself compares against its runner-up (with casts), as the detail's compare does.
 - [ ] **Compare bars and Difference:** each bar's length is the row's percentage difference against the table's
@@ -298,7 +299,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [ ] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
   Talents, Usage, Note and any other headed section) has an expand/collapse arrow beside its heading (the LibKa0s
   chevron icons); collapsed sections are remembered in the profile.
-- [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. Lay out cheaply while sizing (no full
+- [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. The owner widened it to every window the
+  addon owns (Results, the timeline, the HUD), with one shared pattern, and asked for it as an upstream standard rule. Lay out cheaply while sizing (no full
   table rebind or detail redraw per frame) and redraw fully once on release, keeping the minimums.
 
 ### P8: Finalize (only on the owner's go-ahead)
