@@ -299,7 +299,9 @@ test("compare: the score table has no box, its columns are the spell table's, an
         assertEqual(rule.__width, cw, view .. ": the rule runs across the table")
         assertEqual(rule.__points[1][2], x.score)
         local ruleY = rule.__points[1][5]
-        assertTrue(ruleY < x.lines[2][2].__points[1][5] - Cmp.ROW_H + 1, view .. ": the rule runs through the DPS line")
+        -- A score line's figures sit on its middle (a LEFT anchor), so the line's bottom is half its height lower.
+        local dpsBottom = x.lines[2][2].__points[1][5] - Cmp.ScoreLineH() / 2
+        assertTrue(ruleY < dpsBottom, view .. ": the rule runs through the DPS line")
         local scoreY, hostY = x.score.__points[1][5], x.spellHost.__points[1][5]
         assertTrue(hostY < scoreY + ruleY - 1, view .. ": the spell header sits on the rule")
         assertTrue(x.lines[1].bar:IsShown(), view .. ": the score table's bars are gone")
@@ -643,7 +645,9 @@ test("compare: the separator draws one physical pixel wide at any UI scale, not 
 end)
 
 test("compare: Damage and DPS in the spell names' white, each after a game icon at the spell icons' size and x", function()
-    for _, case in ipairs({ { view = "expanded" }, { view = "collapsed" }, { view = "expanded", rowHeight = 26 } }) do
+    local cases = { { view = "expanded" }, { view = "collapsed" }, { view = "expanded", rowHeight = 26 },
+        { view = "expanded", rowHeight = 30 } }
+    for _, case in ipairs(cases) do
         local i = inst()
         seed(i, { mkRun("best", 300), mkRun("low", 100) })
         i.NS.db.profile.windows.results = { view = case.view }
@@ -669,15 +673,31 @@ test("compare: Damage and DPS in the spell names' white, each after a game icon 
             assertEqual(fs.__fontObject, name.__fontObject, what .. ": " .. label .. "'s font")
             for c = 1, 3 do assertEqual(fs.__color[c], name.__color[c], what .. ": " .. label .. "'s color") end
             assertEqual(fs.__color[1], i.NS.ResultsTable.COLORS.text[1], label .. " is not the spell names' white")
-            -- The icon: a plain built-in texture, the spell icons' size, its right edge 4 px before the
-            -- label, so its left edge is the spell icons' x and the label starts where a spell's name does.
+            -- The icon: a plain built-in texture, the spell icons' size, at the spell icons' x with the
+            -- label 4 px past it, so the label starts where a spell's name does.
             assertEqual(icon.__texture, icons[n], what .. ": " .. label .. "'s icon")
             assertTrue(icon:IsShown(), what .. ": " .. label .. "'s icon is hidden")
             assertEqual(icon.__width, side, what .. ": " .. label .. "'s icon width")
             assertEqual(icon.__height, side, what .. ": " .. label .. "'s icon height")
             local pt = icon.__points[1]
-            assertEqual(pt[1], "RIGHT"); assertEqual(pt[2], fs); assertEqual(pt[3], "LEFT"); assertEqual(pt[4], -4)
-            assertEqual(fs.__points[1][4] - 4 - side, row.icon.__points[1][4], what .. ": " .. label .. "'s icon x")
+            assertEqual(pt[1], "LEFT"); assertEqual(pt[2], x.score); assertEqual(pt[3], "TOPLEFT")
+            assertEqual(pt[4], row.icon.__points[1][4], what .. ": " .. label .. "'s icon x")
+            assertEqual(fs.__points[1][4] - 4 - side, pt[4], what .. ": " .. label .. " starts 4 px past its icon")
+            -- Centered on its own line, as a spell row's icon and name are: the icon, the label and the
+            -- figures share the line's middle, and the icon stays inside the line (never above its top,
+            -- in the header, or below its bottom).
+            local lineH = Cmp.ScoreLineH()
+            local top = -Cmp.ROW_H - (n - 1) * lineH
+            assertEqual(pt[5], top - lineH / 2, what .. ": " .. label .. "'s icon on its line's middle")
+            for j = 1, 4 do
+                assertEqual(line[j].__points[1][1], "LEFT", what .. ": " .. label .. " column " .. j .. "'s anchor")
+                assertEqual(line[j].__points[1][5], pt[5], what .. ": " .. label .. " column " .. j .. " off its icon's middle")
+            end
+            assertTrue(pt[5] + side / 2 <= top, what .. ": " .. label .. "'s icon runs above its line")
+            assertTrue(pt[5] - side / 2 >= top - lineH, what .. ": " .. label .. "'s icon runs below its line")
+            local bar = line.bar.__points[1]
+            assertEqual(bar[5], top, what .. ": " .. label .. "'s bar starts at its line's top")
+            assertEqual(line.bar.__height, lineH - 1, what .. ": " .. label .. "'s bar height")
             assertEqual(fs.__points[1][4], name.__points[1][4], what .. ": " .. label .. " starts where a spell's name does")
             assertEqual(fs.__width, name.__width, what .. ": " .. label .. "'s width")
         end

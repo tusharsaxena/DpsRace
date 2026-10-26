@@ -536,14 +536,22 @@ function Compare.LayoutBar(p, y, cw)
     return y - 2
 end
 
--- A score line's label past its icon, as a spell row's name past its: the icon at the line's left
--- edge, the spell icons' size, centered on the label's text.
-local function placeLabel(line, parent, y, cols)
-    local icon = Compare.IconSize()
-    place(line[1], parent, icon + 4, y, math.max(20, cols[1] - icon - 8))
+-- A score line `lineH` tall at `y` in `parent`, centered on the line as a spell row is on its row
+-- (fillRow): the icon at the line's left edge (the spell icons' size and x), the label past it where a
+-- spell's name starts, the figures in their columns (Compare.Cell). Anchored to the line, never to the
+-- label's text, so a tall icon stays inside its own line.
+local function placeScoreLine(line, parent, y, lineH, cw, cols)
+    local mid, icon = y - lineH / 2, Compare.IconSize()
     line.icon:SetSize(icon, icon)
     line.icon:ClearAllPoints()
-    line.icon:SetPoint("RIGHT", line[1], "LEFT", -4, 0)
+    line.icon:SetPoint("LEFT", parent, "TOPLEFT", 0, mid)
+    for j = 1, 4 do
+        local cx, w = Compare.Cell(j, cw)
+        if j == 1 then cx, w = icon + 4, math.max(20, cols[1] - icon - 8) end
+        line[j]:ClearAllPoints()
+        line[j]:SetPoint("LEFT", parent, "TOPLEFT", cx, mid)
+        line[j]:SetWidth(w)
+    end
 end
 
 -- The score table at `y`: its header and two lines in the spell table's columns, the rule under them.
@@ -559,10 +567,10 @@ local function layoutScore(p, y, cw)
     placeLine(x.head, x.score, 0, cw)
     for n, set in ipairs(x.lines) do
         local ly = -rowH - (n - 1) * lineH
-        placeLine(set, x.score, ly, cw)
-        placeLabel(set, x.score, ly, cols)
+        placeScoreLine(set, x.score, ly, lineH, cw, cols)
         local d = diffs[n]
-        placeBar(set.bar, x.score, "TOPLEFT", ly + 1, lineH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
+        -- The bar fills the line less its last pixel, so the two lines' bars never touch.
+        placeBar(set.bar, x.score, "TOPLEFT", ly, lineH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
     end
     placeSep(x.scoreSep, x.score, Compare.SeparatorX(cw), height)
     place(x.rule, x.score, 0, ruleY, cw)
