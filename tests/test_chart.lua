@@ -622,3 +622,22 @@ test("chart: the diagnostics state section counts the loadout store and the race
     for _, l in ipairs(lines) do if l == want then found = true end end
     assertTrue(found, "no loadouts line; got: " .. table.concat(lines, " | "))
 end)
+
+test("chart: the plot is a fill with no edge (the owner's call, 2026-10-26)", function()
+    local f = hud()
+    local Chart = f.NS.HudChart
+    assertEqual(Chart.PLOT_BACKDROP.bgFile, "Interface\\Buttons\\WHITE8x8")
+    assertEqual(Chart.PLOT_BACKDROP.edgeFile, nil, "no edge texture")
+    assertEqual(Chart.PLOT_BACKDROP.edgeSize, nil)
+    local set
+    local prior = f.M.CreateFrame
+    f.M.CreateFrame = function(...)
+        local frame = prior(...)
+        rawset(frame, "SetBackdrop", function(_, b) set = b end)
+        rawset(frame, "SetBackdropBorderColor", function() error("the plot draws no edge") end)
+        return frame
+    end
+    Chart.New(f.M.UIParent)
+    f.M.CreateFrame = prior
+    assertTrue(set == Chart.PLOT_BACKDROP, "the plot takes the edgeless backdrop")
+end)

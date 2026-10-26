@@ -308,6 +308,9 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Review fixes:** a window hidden while its grip is held ends the drag as a release would (redraw, size
   stored); a lost run hides the Timing heading's hover and arrow; the on-notice file sizes in ARCHITECTURE.md.
 
+- [x] **Chart border:** the plot's faint gray edge is removed on the HUD, the result card and the Results detail (the
+  owner, 2026-10-26; this reverses the 2026-10-25 note that the chart border stays).
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.

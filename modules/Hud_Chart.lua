@@ -76,8 +76,8 @@ Chart.PACE_H = 12       -- the pace bar's line
 Chart.ICON = 12         -- a cooldown icon's size (#14)
 Chart.ICON_GAP = 1      -- between two rows of icons
 
-local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
-local PLOT_EDGE = { 1, 1, 1, 0.10 }
+-- The plot is a fill with no edge (the owner's call, 2026-10-26: the faint gray border is gone).
+Chart.PLOT_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8x8" }
 local PACE_TRACK = { 1, 1, 1, 0.08 }   -- the pace bar's empty part
 local DIAGONAL = { 0.9, 0.9, 0.92, 0.4 }
 local TICK = { 1, 1, 1, 0.85 }
@@ -451,7 +451,7 @@ local function newLine(frame, color)
 end
 
 -- The plot's backdrop: its color from HUD Appearance > Chart background, once per change (the same
--- stamp the columns read). The edge stays the fixed faint line.
+-- stamp the columns read). It has no edge.
 local function restylePlot(s)
     local A = NS.HudAppearance
     if not A or s.plotStamp == A.stamp or not s.plot.SetBackdropColor then return end
@@ -476,8 +476,7 @@ function Chart.New(parent, titleFont, headH)
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
     local plot = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     if plot.SetBackdrop then
-        plot:SetBackdrop(FLAT)
-        plot:SetBackdropBorderColor(PLOT_EDGE[1], PLOT_EDGE[2], PLOT_EDGE[3], PLOT_EDGE[4])
+        plot:SetBackdrop(Chart.PLOT_BACKDROP)
     end
     s.plot = plot
     restylePlot(s)

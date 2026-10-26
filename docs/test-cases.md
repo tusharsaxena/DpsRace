@@ -314,7 +314,7 @@ Total.
 - hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
 - hud hint: the box resizes when the hint's text changes, and not on every redraw
 
-### test_chart.lua (29)
+### test_chart.lua (30)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -345,6 +345,7 @@ Total.
 - chart: the sim draws the sample's chart live against a best, then on its result card
 - chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
+- chart: the plot is a fill with no edge (the owner's call, 2026-10-26)
 
 ### test_pace.lua (14)
 
@@ -990,7 +991,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
 | test_hud_hint.lua | 6 |
-| test_chart.lua | 29 |
+| test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 7 |
@@ -1029,4 +1030,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **811** |
+| **Total** | **812** |
