@@ -431,3 +431,14 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 | SM-DR-DL6 | Race a board with a best; fall behind its pace early, then catch up and pass it; let it finish to the result card | Behind: the pace bar's fill stops short of the tick and the gap from the fill to the tick is red. Level: no red, no green. Ahead: the left half is full and green grows right of the tick. The colors follow at the live redraw rate with no Lua error, and the result card's bar shows the same colors from the final damage | A screenshot of each state, and any error |
 | SM-DR-DL7 | Look at the Damage profile's best-pace line on the running chart, the result card and the Results detail | One solid, faint line (2px, about 40% opaque) from the bottom-left corner to the best's level at the buzzer: no dashes, and the stair steps barely show | A close-up screenshot |
 | SM-DR-DL8 | Click the words *Compare vs best* (not the box) in a run's detail; then *Hide flagged*, *Include incomplete* and *Only best* on the Runs bar, and *Clean runs only* on the Bests tab, each on its words | Each click on the words toggles its checkbox and does what the box does; a click just past the end of the words does nothing | Which label did not toggle |
+
+## 18. The usage probe (debug only, 2026-10-26; for #13 and #14, reverted after its findings)
+
+Before each run: `/dr debug on`, then open the console with `/dr debug`. After each run's result: press the console's
+**Copy** and paste everything tagged `Probe` from *start* to *end of report*.
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-UP1 | Wear an on-use trinket; carry combat potions; have a flask or phial, a food buff, an augment rune and a weapon oil active if you can. Arm a 1:00 race on a dummy, use the trinket and a potion mid-race, cast a channeled spell once, finish to the result card | The console shows *start*, the arm snapshot lines, one line per cast, and *end of report* | The pasted Probe lines |
+| SM-DR-UP2 | On a pet class (or with a pet out), arm a 1:00 race and start a cast while armed so it lands on the first hit; use a major cooldown (over 15 s) and a filler or two; finish | The same, with `pet` lines if the pet casts | The pasted Probe lines |
+| SM-DR-UP3 | Optional: one short race on a dummy inside a dungeon or delve, if one is handy | The same | The pasted Probe lines |

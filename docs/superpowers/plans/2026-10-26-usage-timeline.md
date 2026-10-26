@@ -55,7 +55,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P2: The probe (debug-only; reverted after the findings)
 
-- [ ] `modules/UsageProbe.lua`, active only while debug logging is on. At arm: the equipped slots with a use
+- [x] `modules/UsageProbe.lua`, active only while debug logging is on. At arm: the equipped slots with a use
   (`GetInventoryItemID`, `C_Item.GetItemSpell`), the bag consumables (`C_Container`, `C_Item.GetItemInfoInstant`
   class/subclass, `GetItemSpell`, counts), the player's helpful auras, `GetWeaponEnchantInfo`, each value's kind. During
   the race: every `UNIT_SPELLCAST_*` for `player` and `pet` (event, spell ID kind, name, castGUID kind, time), matched

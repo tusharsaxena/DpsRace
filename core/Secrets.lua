@@ -103,6 +103,17 @@ function Secrets.PlainEquals(a, b)
     return a == b
 end
 
+--- What `v` is, for the usage probe's report (modules/UsageProbe.lua): "nil", "secret" (or "sealed":
+--- present but inaccessible), or the plain value's type. Never inspects a sealed value.
+--- @param v any
+--- @return string
+function Secrets.Kind(v)
+    if v == nil then return "nil" end
+    if Secrets.IsSecret(v) then return "secret" end
+    if not Secrets.CanAccess(v) then return "sealed" end
+    return type(v)
+end
+
 -- ---------------------------------------------------------------------------
 -- Table inspection
 -- ---------------------------------------------------------------------------
