@@ -455,6 +455,13 @@ Total.
 - results: Group by spec + target + time, one group per board, the spec in its class color
 - results: Group by Full: character, class, spec, target and time, in that order
 
+### test_results_delta.lua (4)
+
+- results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete or lost run
+- results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0%
+- results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
+- results: a run the Runs filters leave out falls back to its board among every stored run
+
 ### test_results_tree.lua (5)
 
 - results: the talent tree's panel open closes the window, and it comes back when the tree closes
@@ -710,7 +717,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (22)
+### test_preview.lua (23)
 
 - preview: test mode holds the running body still with live figures, chart, pace bar and spells
 - preview: the still running clock follows the Race clock setting
@@ -718,6 +725,7 @@ Total.
 - preview: the test strip says so on the HUD while it is on, and only then
 - preview: with no Widgets library each window's title carries the marker
 - preview: test mode opens the Results window on the sample history, with its strip
+- preview: the detail's Delta box and New best badge read the sample history's Runs view
 - preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
 - preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
 - preview: a note or a delete changes the sample in memory; Save view and Share refuse
@@ -914,6 +922,7 @@ Total.
 | test_results.lua | 50 |
 | test_results_fit.lua | 3 |
 | test_results_group.lua | 6 |
+| test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
@@ -927,7 +936,7 @@ Total.
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
-| test_preview.lua | 22 |
+| test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
@@ -942,4 +951,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **744** |
+| **Total** | **749** |

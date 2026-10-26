@@ -429,12 +429,13 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. Five files are in the 1000–1500 on-notice band: two test files,
+Nothing is over the cap today. Six files are in the 1000–1500 on-notice band: two test files,
 `tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
-`test_results_usage` and `test_results_timeline` did) and `tests/test_hud.lua` at 1412, and three
-addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at 1067 and
-`modules/Hud.lua` at 1011 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`test_results_usage`, `test_results_timeline` and `test_results_delta` did) and `tests/test_hud.lua`
+at 1412, and four addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at
+1068, `modules/Results_Runs.lua` at 1039 (the detail's Delta box contexts, 2026-10-26) and
+`modules/Hud.lua` at 1021 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than
 grow these.

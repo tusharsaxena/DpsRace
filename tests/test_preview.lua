@@ -167,6 +167,26 @@ test("preview: test mode opens the Results window on the sample history, with it
     assertEqual(f.NS.ResultsSource.Get("real-1"), nil, "the store is out of reach meanwhile")
 end)
 
+test("preview: the detail's Delta box and New best badge read the sample history's Runs view", function()
+    local f = fixture()
+    assertTrue(f.Preview.Start())
+    local u = rui(f)
+    local pane, Runs = u.panes.runs, f.NS.ResultsRuns
+    local tops = 0
+    for _, run in ipairs(pane.filtered) do
+        f.R.ShowRun(run.id)
+        local ctx = pane:DeltaContext(run)
+        assertTrue(ctx ~= nil, run.id .. ": a listed sample run reads the view's group")
+        assertEqual(u.detail.deltaCtx, ctx, run.id)
+        local text, _, top = Runs.DeltaBox(run, ctx)
+        assertEqual(u.detail.w.deltaBox.value.__text, text, run.id)
+        assertEqual(u.detail.w.badge:IsShown(), top, run.id)
+        if top then tops = tops + 1 end
+    end
+    assertTrue(tops > 0, "some sample run tops its group")
+    untouched(f)
+end)
+
 test("preview: the sample history covers every status, target type, preset length, notes, loadouts and charts", function()
     local f = fixture()
     assertTrue(f.Preview.Start())

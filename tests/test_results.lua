@@ -206,8 +206,8 @@ test("results: every section heading has SECTION_GAP of clear space above it, th
     assertEqual(GAP, i.NS.Style.SECTION_GAP)
     assertTrue(GAP >= 14 and GAP <= 18, "a gap the eye reads as a break")
     local function y(region) return region.__points[1][5] end
-    -- Spell breakdown: the delta line's height and its 4px under the delta, then the gap.
-    assertEqual(y(w.spellsTitle), y(w.delta) - 14 - 4 - GAP, "Spell breakdown under the header")
+    -- Spell breakdown: the Delta box's height and its 4px under the box, then the gap.
+    assertEqual(y(w.spellsTitle), y(w.deltaBox.frame) - D.KPI_H - 4 - GAP, "Spell breakdown under the header")
     -- Timing (no chart this session): under the spell list's rows and their 8px, then the gap.
     local n, pitch = w.list:Count(), i.NS.HudBreakdown.Pitch()
     assertEqual(y(w.timingLabel), y(w.list.parent) - n * pitch - 8 - GAP, "Timing under the spell rows")

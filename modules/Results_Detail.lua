@@ -1,6 +1,6 @@
 local _, NS = ...
 -- modules/Results_Detail.lua — one run in full (spec §6.2, mockup screen 08's right-hand pane): who,
--- against what and where; the score (damage, DPS, Blizzard's meter DPS muted, the best delta); the
+-- against what and where; the score (damage, DPS, Blizzard's meter DPS muted, the Delta box); the
 -- ability breakdown sorted highest first with each spell's share; the timing strip (the race, the
 -- buzzer, the grace, the tail, each late cast, the end of combat); the flags with what each means;
 -- the note; Share and Delete. Placed by the shell (modules/Results.lua) beside the list, or in its
@@ -20,6 +20,14 @@ local _, NS = ...
 -- THE DAMAGE CHART (#2) sits under the breakdown, for a run raced since the last /reload or login: the
 -- run's in-session slices (modules/Slices.lua), drawn by modules/Hud_Chart.lua and scaled to its plain
 -- final damage. A run from an earlier session, a lost run or a shared session has no section at all.
+--
+-- THE DELTA BOX (the owner's call, 2026-10-26) sits under the three figures, their size and look: the
+-- Runs list's Delta column for this run (its group under the Runs view's Group by, or the whole view
+-- with None), read through the shell's `deltaContext` hook (View:DeltaContext); a run the filters
+-- leave out falls back to its board among every run (Runs.BoardContext). The group's top complete
+-- run shows its lead over the runner-up, and a *New best* badge (the Status column's trophy, blue,
+-- no box) beside the box. The shell redraws it whenever the Runs view's filters or grouping change
+-- (Pane:RefreshDelta). The HUD's result card keeps its own chip (Bests.Delta at the race's end).
 --
 -- THE COMPARE (#7) sits under the score: a toggle that sets the run beside the best on its board, or
 -- beside a run picked from a Runs row's menu. Its parts and its pure logic are
@@ -56,6 +64,8 @@ Detail.TIMELINE_W = 72      -- the Timeline button
 local PADX = 12
 local BUTTON_H = 20
 local KPI_H = 46
+local KPI_GAP = 6           -- between two figure boxes, across and down
+local BADGE_ICON = 20       -- the New best badge's trophy
 local STRIP_H = 34
 local LINE_H = 14
 -- The header (the owner's call, 2026-10-25): larger class and spec icons beside a larger name.
@@ -68,6 +78,8 @@ local SECTION_GAP = NS.Style.SECTION_GAP
 Detail.SECTION_H = SECTION_H
 Detail.SECTION_GAP = SECTION_GAP
 Detail.ICON = ICON
+Detail.KPI_H = KPI_H
+Detail.KPI_GAP = KPI_GAP
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
 local CYAN = { 0.3, 0.85, 1.0 }
@@ -266,7 +278,9 @@ Detail.LEGEND_ROWS = { { 1, 2 }, { 3, 4, 5, 6 } }
 
 -- ── hovers ──────────────────────────────────────────────────────────────────────────────────────
 
+-- `index` may be a function: what it answers at hover time (the Delta box's context).
 local function showTip(p, owner, key, index)
+    if type(index) == "function" then index = index() end
     local lines = NS.ResultsTips.Detail(key, p.run, index)
     if lines then Tbl.BelowTip(owner, lines) end
 end
@@ -316,7 +330,19 @@ local function buildHeader(p, c)
     -- The target line's chips (Detail.Meta): the target type, then the race length.
     w.metaChips = { Tbl.Chip(c), Tbl.Chip(c) }
     w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)
-    w.delta = Tbl.Text(c, FONT.TEXT, C.green)
+    w.deltaBox = kpi(c, L["Delta"], C.dim)
+    -- The New best badge: the trophy and the words in the Status column's Spec best blue, no box.
+    w.badge = CreateFrame("Frame", nil, c)
+    w.badge:SetHeight(KPI_H)
+    w.badgeIcon = w.badge:CreateTexture(nil, "ARTWORK")
+    w.badgeIcon:SetSize(BADGE_ICON, BADGE_ICON)
+    w.badgeIcon:SetPoint("LEFT", w.badge, "LEFT", 0, 0)
+    w.badgeIcon:SetTexture(NS.Icon("ph:trophy"))
+    w.badgeIcon:SetVertexColor(C.blue[1], C.blue[2], C.blue[3])
+    w.badgeText = Tbl.Text(w.badge, FONT.SECTION, C.blue)
+    w.badgeText:SetPoint("LEFT", w.badgeIcon, "RIGHT", 6, 0)
+    w.badgeText:SetText(L["New best"])
+    w.badge:Hide()
     w.spellsTitle = Tbl.Text(c, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
 end
@@ -432,7 +458,9 @@ local function wireTips(p)
     hover(p, w.damage.frame, "damage")
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
-    hoverOver(p, w.delta, "delta")
+    local function deltaContext() return p.deltaCtx end
+    hover(p, w.deltaBox.frame, "delta", deltaContext)
+    hover(p, w.badge, "badge", deltaContext)
     -- Kept: the title keeps its anchors while hidden, so its hover follows the chart's visibility.
     w.chartTitleHover = hoverOver(p, w.chart.title, "chart")
     hover(p, w.chart.over, "chart")
@@ -465,7 +493,7 @@ end
 --- The detail pane in `parent`.
 --- @param parent table
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
----                       clearPick(), timeline(pane) }
+---                       clearPick(), timeline(pane), deltaContext(run) -> the Runs view's context or nil }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
@@ -499,18 +527,26 @@ end
 
 -- ── drawing one run ─────────────────────────────────────────────────────────────────────────────
 
-local function setDelta(fs, run)
-    if run.status ~= "complete" then return fs:SetText("") end
-    local pct, isNew = NS.ResultsSource.Delta(run)
-    if isNew then
-        fs:SetText(pct and L["New best +%.1f%%"]:format(pct) or L["New best"])
-        fs:SetTextColor(C.green[1], C.green[2], C.green[3])
-    elseif pct then
-        fs:SetText(L["%+.1f%% vs best"]:format(pct))
-        fs:SetTextColor(RED[1], RED[2], RED[3])
-    else
-        fs:SetText("")
-    end
+-- The Delta box's context: the Runs view's for the run, else its board among every run.
+function Pane:deltaContext(run)
+    local ctx = self.hooks.deltaContext and self.hooks.deltaContext(run)
+    return ctx or NS.ResultsRuns.BoardContext(run, NS.ResultsSource.All())
+end
+
+-- The Delta box and the New best badge beside it (the badge on the group's top complete run only).
+function Pane:fillDelta(run)
+    local w = self.w
+    self.deltaCtx = self:deltaContext(run)
+    local text, color, top = NS.ResultsRuns.DeltaBox(run, self.deltaCtx)
+    w.deltaBox.value:SetText(text)
+    w.deltaBox.value:SetTextColor(color[1], color[2], color[3])
+    w.badge:SetShown(top)
+end
+
+--- Redraw the Delta box and the badge for the run shown: the Runs view's filters or grouping changed
+--- (its `changed` hook, through the shell). Nothing else on the pane moves.
+function Pane:RefreshDelta()
+    if self.run then self:fillDelta(self.run) end
 end
 
 function Pane:fillHeader(run)
@@ -539,7 +575,7 @@ function Pane:fillScore(run)
     w.dps.value:SetText(lost and DASH or NS.Format.Number(result.dps or 0))
     w.meterDps.value:SetText(type(result.meterDps) == "number" and NS.Format.Number(result.meterDps) or DASH)
     w.dps.label:SetText(run.status == "incomplete" and L["DPS \194\183 Incomplete"] or L["DPS"])
-    setDelta(w.delta, run)
+    self:fillDelta(run)
 end
 
 function Pane:fillFlags(run)
@@ -703,16 +739,21 @@ function Pane:layoutHeader(y, cw)
         end
     end
     y = y - 8
-    local third = math.floor((cw - 12) / 3)
+    local third = math.floor((cw - 2 * KPI_GAP) / 3)
     for i, k in ipairs({ w.damage, w.dps, w.meterDps }) do
         k.frame:ClearAllPoints()
-        k.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", (i - 1) * (third + 6), y)
+        k.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", (i - 1) * (third + KPI_GAP), y)
         k.frame:SetWidth(third)
     end
-    y = y - KPI_H - 4
-    w.delta:ClearAllPoints()
-    w.delta:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-    return y - LINE_H - 4
+    -- The Delta box under the first figure, one box's size; the badge where the second box sits, as tall.
+    y = y - KPI_H - KPI_GAP
+    w.deltaBox.frame:ClearAllPoints()
+    w.deltaBox.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    w.deltaBox.frame:SetWidth(third)
+    w.badge:ClearAllPoints()
+    w.badge:SetPoint("TOPLEFT", self.content, "TOPLEFT", third + KPI_GAP, y)
+    w.badge:SetWidth(math.max(1, cw - third - KPI_GAP))
+    return y - KPI_H - 4
 end
 
 -- The breakdown's heading, over the compare's toggle and the spell list (the plain or the compared).

@@ -489,6 +489,79 @@ local function deltaText(run, top)
     return L["%+.1f%%"]:format(pct), color
 end
 
+-- ── the detail's Delta box (the owner's call, 2026-10-26) ───────────────────────────────────────
+-- The detail reads the Delta column's own figures for the run it shows: the run's group under the
+-- Runs view's current Group by (the whole filtered list with None), its max and its runner-up. A
+-- context is { top, first, second, scope }: the max DPS, the complete run that sets it, the next
+-- complete run below it (nil when there is none) and where they were read ("group", "view", or
+-- "board" for a run the filters leave out). Nothing is stored on a run.
+
+-- `a` ranks above `b` for the max: higher DPS; on a tie the earlier run (it set the mark first), then
+-- the id, as a best's board ranks them (modules/Bests.lua).
+local function leads(a, b)
+    local da, db = runDps(a), runDps(b)
+    if da ~= db then return da > db end
+    local ta, tb = a.date or 0, b.date or 0
+    if ta ~= tb then return ta < tb end
+    return tostring(a.id) < tostring(b.id)
+end
+
+--- The top two complete runs in `runs` by DPS (the runs Runs.MaxDps ranks): the run that sets the
+--- max and its runner-up, either nil.
+--- @return table|nil first, table|nil second
+function Runs.Leaders(runs)
+    local first, second
+    for _, run in ipairs(runs or {}) do
+        local dps = run.status == "complete" and runDps(run)
+        if dps and dps > 0 then
+            if not first or leads(run, first) then
+                first, second = run, first
+            elseif not second or leads(run, second) then
+                second = run
+            end
+        end
+    end
+    return first, second
+end
+
+--- One group's context (above) over `runs`.
+function Runs.Context(runs, scope)
+    local first, second = Runs.Leaders(runs)
+    return { top = first and runDps(first), first = first, second = second, scope = scope }
+end
+
+--- The fallback for a run the Runs view does not list: its board (spec x target type x length, as
+--- Bests keys it) among `runs`, every stored run.
+function Runs.BoardContext(run, runs)
+    local key, board = NS.Bests.Key(run), {}
+    for _, other in ipairs(runs or {}) do
+        if type(other) == "table" and NS.Bests.Key(other) == key then board[#board + 1] = other end
+    end
+    return Runs.Context(board, "board")
+end
+
+--- Whether `run` is the complete run that sets its context's max (the detail's *New best* badge).
+function Runs.IsTop(run, ctx)
+    local first = type(ctx) == "table" and ctx.first or nil
+    return type(run) == "table" and run.status == "complete" and first ~= nil
+        and (first == run or first.id == run.id)
+end
+
+--- The detail's Delta box for `run` in `ctx`: its text and color, and whether the run is its group's
+--- top. Not the top: the run's Delta cell. The top: its lead over the runner-up, green, or a dash with
+--- no runner-up. An incomplete or lost run: a dash, muted.
+--- @return string text, table color, boolean top
+function Runs.DeltaBox(run, ctx)
+    if type(ctx) ~= "table" or run.status ~= "complete" then return DASH, C.dim, false end
+    if not Runs.IsTop(run, ctx) then
+        local text, color = deltaText(run, ctx.top)
+        return text, color, false
+    end
+    local second = ctx.second and runDps(ctx.second)
+    if not second or second <= 0 then return DASH, C.dim, true end
+    return L["%+.1f%%"]:format((ctx.top / second - 1) * 100), C.green, true
+end
+
 --- The look of one bar column's cell for `run` (History > Results table): its fill and its text,
 --- every class color the run's character's.
 --- @param block string  "damageBar" | "dpsBar"
@@ -608,9 +681,12 @@ end
 --- what was used (#13: its icons, modules/Results_Usage.lua) and the note.
 --- The Delta column reads each group's max off the whole list the table is handed (its `scan`: every
 --- run the filters pass, with the grouping's key), and the bars scale within each group too
---- (Results_Table's measure). A flat list is one group.
-function Runs.Columns()
-    local view = { top = {}, groupOf = function() return true end }
+--- (Results_Table's measure). A flat list is one group. `view` (optional) is the table the scan keeps
+--- its figures in: the Runs view's own, which the detail's Delta box reads (View:DeltaContext).
+function Runs.Columns(view)
+    view = view or {}
+    view.top, view.contexts, view.ids = {}, {}, {}
+    view.groupOf = function() return true end
     local function topOf(run) return view.top[view.groupOf(run)] end
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
@@ -647,11 +723,16 @@ function Runs.Columns()
           -- Per group (the owner's call, 2026-10-26): each run against the max of its own group of
           -- the runs the filters pass, recomputed whenever the list or its grouping changes.
           scan = function(list, groupOf)
-              view.top, view.groupOf, view.grouped = {}, groupOf, false
-              for key, runs in pairs(Runs.ByGroup(list, groupOf)) do
-                  view.top[key] = Runs.MaxDps(runs)
+              view.top, view.contexts, view.ids, view.groupOf, view.grouped = {}, {}, {}, groupOf, false
+              local groups = Runs.ByGroup(list, groupOf)
+              for key in pairs(groups) do
                   if key ~= true then view.grouped = true end
               end
+              for key, runs in pairs(groups) do
+                  local ctx = Runs.Context(runs, view.grouped and "group" or "view")
+                  view.top[key], view.contexts[key] = ctx.top, ctx
+              end
+              for _, run in ipairs(list) do view.ids[run.id] = true end
           end,
           sort = function(run) return Runs.Delta(run, topOf(run)) end,
           text = function(run) return deltaText(run, topOf(run)) end,
@@ -723,16 +804,17 @@ end
 
 --- The Runs tab in `parent`.
 --- @param parent table
---- @param hooks table  { select(run), share(run), selected() -> id|nil }
+--- @param hooks table  { select(run), share(run), selected() -> id|nil, menu(run, row), count(text),
+---                       changed() after every redraw (the detail's Delta box follows it) }
 --- @return table view
 function Runs.Build(parent, hooks)
     local frame = CreateFrame("Frame", nil, parent)
     frame:SetAllPoints(parent)
-    local view = setmetatable({ frame = frame, hooks = hooks or {}, filters = {}, barH = FILTER_H }, View)
+    local view = setmetatable({ frame = frame, hooks = hooks or {}, filters = {}, barH = FILTER_H, delta = {} }, View)
     for k, v in pairs(Runs.DEFAULTS) do view.filters[k] = v end
     buildBar(view)
     view.listHost = CreateFrame("Frame", nil, frame)
-    view.list = Tbl.New(view.listHost, Runs.Columns(), {
+    view.list = Tbl.New(view.listHost, Runs.Columns(view.delta), {
         -- Newest first (the owner's call, 2026-10-24): the stock view's sort. A saved view (Save,
         -- below) replaces it at every login.
         sortKey = Runs.STOCK_SORT.key, sortDesc = Runs.STOCK_SORT.desc,
@@ -932,6 +1014,15 @@ function View:Refresh()
     self.list.selected = self.hooks.selected and self.hooks.selected() or nil
     self.list:SetData(self.filtered)
     self.list:SetGroup(Runs.GROUPS[self.filters.group or "none"])
+    if self.hooks.changed then self.hooks.changed() end
+end
+
+--- What the Delta column measured `run` against (Runs.Context's shape: its group under the grouping
+--- now, or the whole view with none), or nil when the filters leave the run out of the list.
+function View:DeltaContext(run)
+    local d = self.delta
+    if type(run) ~= "table" or not (d.ids and d.ids[run.id]) then return nil end
+    return d.contexts[d.groupOf(run)]
 end
 
 --- Set one filter and redraw.

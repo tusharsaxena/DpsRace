@@ -296,7 +296,7 @@ Taint Notes, B4.1).
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` measures per group (`Table:measure` on every `SetData` and `SetGroup`: the *Delta* column's max DPS and the Damage and DPS bars' range, each the run's own group's under the current *Group by*, the whole list with *None*; nothing is stored on a run), scales the bars linearly from 10% to 100% of that range, sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
   run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
-- **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
+- **The detail**: `ResultsDetail` draws the selected run: header, score and its *Delta* box, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
@@ -306,6 +306,19 @@ Taint Notes, B4.1).
   target line leads with two chips (`Detail.Meta`): the target type in its category color and the
   race length in its length color (`ResultsTable.LengthChip`), then `ResultsTable.TimeTail` (the DoT
   tail, *+11.1s*, or when an incomplete run's combat ended, *at 1:04*) and the target's name.
+- **The detail's Delta box** (the owner's call, 2026-10-26): the Runs list's *Delta* for the run, not
+  `Bests.Delta` (the best that stood when it was raced, which only the HUD's result card and the
+  share line still read). The column's scan (`Table:measure` → its `scan`) keeps one context per
+  group of the runs the filters pass (`ResultsRuns.Context`: the max DPS, the complete run that sets
+  it and the runner-up, `Leaders` breaking a tie to the earlier run) and which runs it listed, on the
+  Runs view, never on a run. The detail asks through the shell's `deltaContext` hook
+  (`View:DeltaContext`); a run the filters leave out (opened from the HUD, a Bests row) gets its board
+  among every run the source holds (`BoardContext`: spec x target type x length, `Bests.Key`), the
+  sample history's in test mode. `DeltaBox` answers the figure: the group's top complete run's lead
+  over the runner-up in green (a dash with none), any other complete run's own *Delta* cell, a muted
+  dash for an incomplete or lost run; the top run alone gets the *New best* badge beside the box.
+  Every `View:Refresh` (a filter, *Group by*, a saved view applied, a store change) calls the view's
+  `changed` hook, and the shell redraws the box and the badge (`Pane:RefreshDelta`).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
   delete runs). The *Usage* section's *Save* → `Usage.SetUsed` (`RUNS_CHANGED`, likewise). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →

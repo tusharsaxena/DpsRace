@@ -560,13 +560,30 @@ L["The meter's session could not be read after combat. There is no score."] =
 L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
 L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"
 
+-- The detail's Delta box and New best badge (Tips.Detail "delta" and "badge")
+L["its group in the Runs list"] = "its group in the Runs list"
+L["the Runs list's whole view"] = "the Runs list's whole view"
+L["its board (every run of the same spec, target type and race length)"] =
+    "its board (every run of the same spec, target type and race length)"
+L["The only complete run in %s: there is no runner-up to lead."] =
+    "The only complete run in %s: there is no runner-up to lead."
+L["This run's lead over the runner-up in %s."] = "This run's lead over the runner-up in %s."
+L["The runner-up: %s DPS."] = "The runner-up: %s DPS."
+L["No complete run in %s to compare with."] = "No complete run in %s to compare with."
+L["Against the max DPS in %s."] = "Against the max DPS in %s."
+L["The max: %s DPS."] = "The max: %s DPS."
+L["An incomplete run never ranks: it has no delta."] = "An incomplete run never ranks: it has no delta."
+L["The Runs list's filters leave this run out, so it is measured on its board."] =
+    "The Runs list's filters leave this run out, so it is measured on its board."
+L["Recomputed whenever the Runs list's filters or grouping change."] =
+    "Recomputed whenever the Runs list's filters or grouping change."
+L["The highest DPS among the complete runs in %s."] = "The highest DPS among the complete runs in %s."
+
 -- The run detail's tooltips (modules/Results_Tips.lua, Tips.Detail and Tips.Spell)
 L["#%d of %d spells"] = "#%d of %d spells"
 L["%.1f%% of the run's damage"] = "%.1f%% of the run's damage"
 L["A line of your own kept with the run: what you tried, what went wrong."] =
     "A line of your own kept with the run: what you tried, what went wrong."
-L["Against the best DPS before this run for the same spec, target type and race length."] =
-    "Against the best DPS before this run for the same spec, target type and race length."
 L["Back to the list; the run stays selected."] = "Back to the list; the run stays selected."
 L["Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."] =
     "Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."
@@ -580,7 +597,6 @@ L["Post the run's summary to chat: say, party, raid, guild or a whisper."] =
     "Post the run's summary to chat: say, party, raid, guild or a whisper."
 L["Remove this run from history, after a confirmation. A best it holds goes with it."] =
     "Remove this run from history, after a confirmation. A best it holds goes with it."
-L["The first complete run of its kind."] = "The first complete run of its kind."
 L["The race, from the start to the buzzer (to the end of combat for an incomplete run)."] =
     "The race, from the start to the buzzer (to the end of combat for an incomplete run)."
 L["Damage still landing after the buzzer (DoTs, travel time). It counts."] =

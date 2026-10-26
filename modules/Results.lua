@@ -142,6 +142,8 @@ local function buildTab(name)
             menu = function(r, row) Results.RowMenu(r, row) end,
             -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
             count = function(text) ui.runsCount = text end,
+            -- The detail's Delta box reads the list's groups: a new filter or grouping redraws it.
+            changed = function() ui.detail:RefreshDelta() end,
         })
         -- Built while the sample history is shown: it opens on the sample's view.
         if Source.IsMock() then pane:SampleView(true) end
@@ -283,6 +285,9 @@ local function ensureWindow()
         canShare = canShare,
         clearPick = function() Results.ClearPick() end,
         timeline = function(p) NS.ResultsTimeline.Open(p) end,
+        -- The Runs list's Delta for the run (its group, or the view), nil before the tab is built or
+        -- when its filters leave the run out (the detail falls back to the run's board).
+        deltaContext = function(r) return ui.panes.runs and ui.panes.runs:DeltaContext(r) or nil end,
     })
     NS.ApplySkin(f)
     f:SetScript("OnHide", function() onHide() end)

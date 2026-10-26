@@ -4,7 +4,7 @@ local _, NS = ...
 -- written anywhere.
 --
 -- ONE SEAM. Every Results file asks this module, never NS.Recorder, NS.Bests or NS.Loadouts, for the
--- runs it lists, a run by id, the bests board, a run's delta, its loadout, its chart, and to store a
+-- runs it lists, a run by id, the bests board, a run's loadout, its chart, and to store a
 -- note or delete a run. With no sample history in place each answer is the store's own (the same
 -- function, called at call time, so a suite's stub on NS.Bests or NS.Recorder still reaches the
 -- window). With one in place (Source.Use) the answers come from it, and a note or a delete changes it
@@ -107,11 +107,6 @@ function Source.Board(opts)
         boards[cleanOnly] = board
     end
     return board
-end
-
---- The run against the best before it on its board (NS.Bests.Delta's answers).
-function Source.Delta(run)
-    return NS.Bests.Delta(run, mock and mock.runs or nil)
 end
 
 --- A run's gear set and talent loadout (NS.Loadouts.Of's answers).

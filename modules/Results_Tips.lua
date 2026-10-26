@@ -270,14 +270,50 @@ function DETAIL.meterDps(run)
     return lines
 end
 
-function DETAIL.delta(run)
-    if run.status ~= "complete" then return nil end
-    local pct, isNew = NS.ResultsSource.Delta(run)
-    if not pct and not isNew then return nil end
-    local lines = { isNew and L["New best"] or L["%+.1f%% vs best"]:format(pct) }
-    lines[#lines + 1] = L["Against the best DPS before this run for the same spec, target type and race length."]
-    if isNew and not pct then lines[#lines + 1] = L["The first complete run of its kind."] end
+-- Where the Delta box's figures were read (a context's scope, modules/Results_Runs.lua).
+local SCOPE = {
+    group = "its group in the Runs list",
+    view = "the Runs list's whole view",
+    board = "its board (every run of the same spec, target type and race length)",
+}
+
+local function scopeOf(ctx)
+    return L[SCOPE[ctx.scope] or SCOPE.view]
+end
+
+-- What the box's figure measures for a complete run: its lead over the runner-up on the top run,
+-- else its distance from the max.
+local function deltaAgainst(run, ctx, where)
+    if NS.ResultsRuns.IsTop(run, ctx) then
+        if not ctx.second then return { L["The only complete run in %s: there is no runner-up to lead."]:format(where) } end
+        return { L["This run's lead over the runner-up in %s."]:format(where),
+                 L["The runner-up: %s DPS."]:format(grouped(result(ctx.second).dps or 0)) }
+    end
+    if not ctx.top then return { L["No complete run in %s to compare with."]:format(where) } end
+    return { L["Against the max DPS in %s."]:format(where), L["The max: %s DPS."]:format(grouped(ctx.top)) }
+end
+
+--- The Delta box: what its figure compares against (`ctx`, the pane's Runs.Context).
+function DETAIL.delta(run, ctx)
+    ctx = type(ctx) == "table" and ctx or {}
+    local lines = { L["Delta"] }
+    if run.status == "lost" then
+        lines[2] = L["A lost run has no DPS to compare."]
+    elseif run.status ~= "complete" then
+        lines[2] = L["An incomplete run never ranks: it has no delta."]
+    else
+        for _, line in ipairs(deltaAgainst(run, ctx, scopeOf(ctx))) do lines[#lines + 1] = line end
+    end
+    lines[#lines + 1] = ctx.scope == "board"
+        and L["The Runs list's filters leave this run out, so it is measured on its board."]
+        or L["Recomputed whenever the Runs list's filters or grouping change."]
     return lines
+end
+
+--- The New best badge: the run sets the max where the Delta box reads it.
+function DETAIL.badge(_, ctx)
+    ctx = type(ctx) == "table" and ctx or {}
+    return { L["New best"], L["The highest DPS among the complete runs in %s."]:format(scopeOf(ctx)) }
 end
 
 function DETAIL.strip(run)
@@ -389,10 +425,11 @@ function DETAIL.timelineOff()
     return { L["Timeline"], dimLine(L["No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."]) }
 end
 
---- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`), or nil.
+--- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`, and "delta"
+--- and "badge" take the Delta box's context in it), or nil.
 --- @param key string
 --- @param run table
---- @param index number|nil
+--- @param index number|table|nil
 --- @return table|nil
 function Tips.Detail(key, run, index)
     if type(run) ~= "table" then return nil end
@@ -402,7 +439,7 @@ function Tips.Detail(key, run, index)
     end
     local fn = DETAIL[key]
     if not fn then return nil end
-    local ok, lines = pcall(fn, run)
+    local ok, lines = pcall(fn, run, index)
     if not ok or type(lines) ~= "table" then return nil end
     local out = {}
     for i = 1, 8 do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
