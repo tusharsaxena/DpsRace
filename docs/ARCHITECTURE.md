@@ -262,7 +262,8 @@ each frame's strata, level and toplevel.
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
-  best and `GetTime()` (the result card's pace bar is all plain: a stored run's final damage against
+  best and `GetTime()`, and the pace bar's red and green are where the client ends each half's fill
+  (the red shortfall is a texture anchored to the behind half's fill texture: no value is compared) (the result card's pace bar is all plain: a stored run's final damage against
   the best before it, and so is the chart after the race, the best's diagonal and the shared max
   included), and the columns' edges are plain config math (whole pixels from the plot's
   width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in

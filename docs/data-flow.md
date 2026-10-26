@@ -222,7 +222,7 @@ race.
   delta chip, pace bar and diagonal follow the store. Between the chips and the spells, with *Show damage chart* on, the race's chart
   again: `HudChart.ResultView(run)` (through `Slices.Drawable`: scored, not shared, with buckets this
   session). With a best before the run (`Bests.Before(run)`, as the pace bar) `HudChart.WithBest` draws
-  that best's gray dashed diagonal from 0:00 to its damage at the run's length, and the plot's max (the
+  that best's faint gray diagonal (one 2px line at 40%) from 0:00 to its damage at the run's length, and the plot's max (the
   columns' too) is max(`result.damage`, that) x 1.15; without one each column is scaled to the plain
   `result.damage`, no diagonal. All plain numbers.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10

@@ -214,8 +214,8 @@ test("chart: the pace bar has its own look; styling the chart's columns leaves i
     assertTrue(f.NS.SetByPath("appearance.pace.barColor", { r = 0, g = 1, b = 0, a = 1 }))
     pump(f, 0.5)
     assertEqual(b.w.chart.cols[1].__barColor[1], 1, "the columns take the chart's color")
-    assertEqual(b.w.pace.bar.__barColor[1], 0, "the pace bar does not")
-    assertEqual(b.w.pace.bar.__barColor[2], 1, "the pace bar takes its own")
+    assertEqual(b.w.pace.behind.__barColor[1], 0, "the pace bar does not")
+    assertEqual(b.w.pace.behind.__barColor[2], 1, "the pace bar takes its own")
 end)
 
 test("chart: each column holds exactly the handle read at its boundary, and none fills early", function()
@@ -275,21 +275,24 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its pace diago
     -- The diagonal runs from the plot's inner corner to the best's level at the buzzer.
     local width, plotH = chart.width, chart.plotH
     local level = 2 + (plotH - 4) / 1.15
-    local first, lastDash = chart.diag[1], chart.diag[#chart.diag]
-    local _, _, x0, y0 = first:GetStartPoint()
+    assertEqual(#chart.diag, 1, "one solid line, not dashes (the owner's call, 2026-10-26)")
+    local line = chart.diag[1]
+    assertEqual(line.__thickness, 2)
+    assertTrue(math.abs(line.__color[4] - 0.4) < 1e-9, "40% alpha")
+    local _, _, x0, y0 = line:GetStartPoint()
     assertEqual(x0, 2)
     assertEqual(y0, 2)
-    local _, _, x1, y1 = lastDash:GetEndPoint()
-    assertTrue(math.abs(x1 - (2 + (width - 4) * (1 - 0.4 / #chart.diag))) < 1e-6, "the last dash ends short of the corner")
-    assertTrue(y1 < level and y1 > level - (level - 2) / #chart.diag, "the diagonal climbs to the best's level")
+    local _, _, x1, y1 = line:GetEndPoint()
+    assertTrue(math.abs(x1 - (width - 2)) < 1e-6, "it runs to the plot's inner corner")
+    assertTrue(math.abs(y1 - level) < 1e-6, "the diagonal climbs to the best's level")
     -- The pace bar: 0.5 to 1.5 x the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())
     assertEqual(pace.label.__text, "vs best pace")
     local elapsed = f.Race.Elapsed()
-    assertTrue(math.abs(pace.bar.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
-    assertTrue(math.abs(pace.bar.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")
-    assertTrue(rawequal(pace.bar.__value, reads[#reads].total), "the live total, untouched")
+    assertTrue(math.abs(pace.ahead.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
+    assertTrue(math.abs(pace.behind.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")
+    assertTrue(rawequal(pace.behind.__value, reads[#reads].total), "the live total, untouched")
     assertTrue(pace.tick:IsShown(), "the on-pace tick")
 end)
 
@@ -438,11 +441,11 @@ test("chart: WithBest scales an after-the-race view to max(run, best at its leng
     assertEqual(v.best, nil, "a shared session: no diagonal")
 end)
 
--- The diagonal's end level for `best` over `max` on `chart`'s plot (the last dash stops short of it).
+-- Whether the diagonal ends at the level for `best` over `max` on `chart`'s plot.
 local function diagonalTo(chart, best, max)
     local level = 2 + (chart.plotH - 4) * best / max
-    local _, _, _, y1 = chart.diag[#chart.diag]:GetEndPoint()
-    return y1 < level and y1 > level - (level - 2) / #chart.diag
+    local _, _, _, y1 = chart.diag[1]:GetEndPoint()
+    return math.abs(y1 - level) < 1e-6
 end
 
 test("chart: the result card draws the earlier best's diagonal, the columns on the shared max", function()

@@ -1,15 +1,16 @@
 local _, NS = ...
 -- modules/Hud_Chart.lua — the damage chart (#2) and the pace bar (#3): a row of vertical StatusBars,
--- one per time bucket of the race (modules/Slices.lua), and one StatusBar that sets the live damage
--- against the board's best average pace. The HUD's running body draws both live; the HUD result card
+-- one per time bucket of the race (modules/Slices.lua), and a pace bar (two StatusBars) that sets the
+-- live damage against the board's best average pace. The HUD's running body draws both live; the HUD result card
 -- and the Results detail draw the chart again after the race, for a run raced this session.
 --
 -- A VISUAL INDICATOR, NO MATH ON A VALUE. A bucket's value is the live total copied at its boundary:
 -- secret in combat, and it stays secret. It goes to StatusBar:SetValue and nowhere else; the bar does
 -- the comparison on screen. The scale is one of three:
 --   * A, the board has a best: its plain final damage x HEADROOM, with its average pace drawn as a
---     dashed diagonal from 0:00 to the best's level at the buzzer (no level line, no label: the
---     owner's call, 2026-10-25).
+--     diagonal from 0:00 to the best's level at the buzzer (no level line, no label: the owner's
+--     call, 2026-10-25), one solid 2px line at 40% (the owner's call, 2026-10-26: a 1px dashed line
+--     showed the Line region's stair steps at every dash).
 --   * B, no best yet: the current live total, itself secret (SetMinMaxValues takes a secret max),
 --     so the newest column is always full. No line, no diagonal, no number.
 --   * After the race: the run's plain final damage, or with a best before the run (Bests.Before, the
@@ -18,9 +19,13 @@ local _, NS = ...
 --     value is plain then.
 -- The pace bar runs linearly from pace x (2 - m) to pace x m around the best's average damage by now
 -- (m the *Pace bar range*, 1.5 by default: +-50%; plain, from GetTime()); its value is the live total,
--- and its tick, fixed in the middle of the bar, marks "on pace". A value outside the range is the
--- StatusBar's to clamp (empty or full): we never compare it. It says nothing more: no ahead or behind,
--- no color chosen from the value, because comparing a secret is not allowed. The HUD result card
+-- and its tick, fixed in the middle of the bar, marks "on pace". The bar is two StatusBars split at
+-- the tick (the owner's call, 2026-10-26): the left half runs lo to pace in the Pace look, with red
+-- from its fill's end to the tick (a texture anchored to the fill texture), so behind pace shows red
+-- for the shortfall; the right half runs pace to hi in green, so ahead shows green past the tick.
+-- Both are handed the same value and clamp it (empty or full): we never compare it, and no color is
+-- chosen from it; the color is where the fill ends, which the client draws. A number (+-x%) is not
+-- possible live, because dividing a secret is not allowed. The HUD result card
 -- draws it again after the race, the run's plain final damage against the best before it at the
 -- buzzer (Chart.ResultPace).
 --
@@ -48,15 +53,18 @@ Chart.HEAD_H = Style.SECTION_H   -- the heading's line over the plot (FONT.SECTI
 Chart.AXIS_H = 12       -- the time labels under it
 Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
-Chart.DASHES = 16       -- dashes in the diagonal
+Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
 Chart.PACE_LABEL_W = 78
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local PLOT_EDGE = { 1, 1, 1, 0.10 }
 local PACE_TRACK = { 1, 1, 1, 0.08 }   -- the pace bar's empty part
-local DIAGONAL = { 0.9, 0.9, 0.92, 0.7 }
+local DIAGONAL = { 0.9, 0.9, 0.92, 0.4 }
 local TICK = { 1, 1, 1, 0.85 }
+local AHEAD = { 0.36, 0.86, 0.46, 0.85 }    -- the KPI's green: past the tick
+local BEHIND = { 1.0, 0.32, 0.32, 0.85 }    -- the KPI's red: the shortfall to the tick
+local WHITE = "Interface\\Buttons\\WHITE8x8"
 
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
@@ -281,9 +289,9 @@ end
 local Strip = {}
 Strip.__index = Strip
 
-local function dash(frame, color)
+local function newLine(frame, color)
     local l = frame:CreateLine(nil, "OVERLAY")
-    l:SetThickness(1)
+    l:SetThickness(Chart.DIAGONAL_W)
     l:SetColorTexture(color[1], color[2], color[3], color[4])
     return l
 end
@@ -321,7 +329,7 @@ function Chart.New(parent, titleFont, headH)
     s.over = CreateFrame("Frame", nil, plot)
     s.over:SetAllPoints(plot)
     s.over:SetFrameLevel(plot:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.CHART_OVERLAY)
-    for i = 1, Chart.DASHES do s.diag[i] = dash(s.over, DIAGONAL) end
+    s.diag[1] = newLine(s.over, DIAGONAL)
     s.axis = { Style.Text(parent, FONT.CAPTION), Style.Text(parent, FONT.CAPTION, nil, "CENTER"),
                Style.Text(parent, FONT.CAPTION, nil, "RIGHT") }
     return s
@@ -415,15 +423,10 @@ function Strip:layoutColumns(count)
     self.lines = nil
 end
 
--- `segments` dashes from (x1, y1) to (x2, y2) on the overlay, each 60% of its step.
-local function dashes(lines, over, x1, y1, x2, y2)
-    local n = #lines
-    for k = 1, n do
-        local a, b = (k - 1) / n, (k - 0.4) / n
-        local l = lines[k]
-        l:SetStartPoint("BOTTOMLEFT", over, x1 + (x2 - x1) * a, y1 + (y2 - y1) * a)
-        l:SetEndPoint("BOTTOMLEFT", over, x1 + (x2 - x1) * b, y1 + (y2 - y1) * b)
-    end
+-- The line from (x1, y1) to (x2, y2) on the overlay.
+local function drawLine(l, over, x1, y1, x2, y2)
+    l:SetStartPoint("BOTTOMLEFT", over, x1, y1)
+    l:SetEndPoint("BOTTOMLEFT", over, x2, y2)
 end
 
 local function showAll(lines, on)
@@ -443,7 +446,7 @@ function Strip:drawPace(best, max)
     local x0, y0 = Chart.INSET, Chart.INSET
     local x1 = (self.width or 0) - Chart.INSET
     local level = y0 + ((self.plotH or 0) - 2 * Chart.INSET) * best / max
-    dashes(self.diag, self.over, x0, y0, x1, level)
+    drawLine(self.diag[1], self.over, x0, y0, x1, level)
 end
 
 local function fill(col, value, max)
@@ -494,24 +497,52 @@ end
 local Pace = {}
 Pace.__index = Pace
 
---- The pace bar built into `parent`: its caption, the bar and the on-pace tick (placed by Place).
+-- The red shortfall: from the behind half's fill end to the tick. Anchored to the fill texture, so
+-- the client places it from the value; re-anchored whenever the fill texture is set (the bar may
+-- hand back a new region).
+local function anchorShortfall(p)
+    local fillTex = p.behind:GetStatusBarTexture()
+    p.shortfall:ClearAllPoints()
+    p.shortfall:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+    p.shortfall:SetPoint("BOTTOMRIGHT", p.behind, "BOTTOMRIGHT", 0, 0)
+end
+
+local function halfBar(parent)
+    local b = CreateFrame("StatusBar", nil, parent)
+    b:SetMinMaxValues(0, 1)
+    b:SetValue(0)
+    return b
+end
+
+--- The pace bar built into `parent`: its caption, the track, the behind and ahead halves split at the
+--- on-pace tick, and the tick over both (placed by Place).
 --- @param parent table
 --- @return table pace
 function Chart.NewPace(parent)
     local p = setmetatable({}, Pace)
     p.label = Style.Text(parent, FONT.CAPTION)
     p.label:SetText(L["vs best pace"])
-    p.bar = CreateFrame("StatusBar", nil, parent)
+    p.bar = CreateFrame("Frame", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
     track:SetColorTexture(PACE_TRACK[1], PACE_TRACK[2], PACE_TRACK[3], PACE_TRACK[4])
-    p.tick = p.bar:CreateTexture(nil, "OVERLAY")
+    p.behind = halfBar(p.bar)
+    p.ahead = halfBar(p.bar)
+    p.ahead:SetStatusBarTexture(WHITE)
+    p.ahead:SetStatusBarColor(AHEAD[1], AHEAD[2], AHEAD[3], AHEAD[4])
+    p.shortfall = p.behind:CreateTexture(nil, "ARTWORK")
+    p.shortfall:SetColorTexture(BEHIND[1], BEHIND[2], BEHIND[3], BEHIND[4])
+    p.behind:SetStatusBarTexture(WHITE)
+    anchorShortfall(p)
+    -- The tick on its own frame over both halves: a child frame draws over its parent's regions.
+    p.over = CreateFrame("Frame", nil, p.bar)
+    p.over:SetAllPoints(p.bar)
+    p.over:SetFrameLevel(p.bar:GetFrameLevel() + 2)
+    p.tick = p.over:CreateTexture(nil, "OVERLAY")
     p.tick:SetColorTexture(TICK[1], TICK[2], TICK[3], TICK[4])
     p.tick:SetWidth(2)
     p.tick:SetPoint("TOP", p.bar, "TOP", 0, 2)
     p.tick:SetPoint("BOTTOM", p.bar, "BOTTOM", 0, -2)
-    p.bar:SetMinMaxValues(0, 1)
-    p.bar:SetValue(0)
     return p
 end
 
@@ -532,33 +563,48 @@ function Pace:Place(anchor, y, width)
     self:PlaceTick()
 end
 
---- The on-pace tick in the middle of the bar's configured width; moved only when the width changed.
+--- The on-pace tick in the middle of the bar's configured width, the behind half left of it and the
+--- ahead half right of it; moved only when the width changed. Config only, never a measured size.
 function Pace:PlaceTick()
     local barW = self.barW
     if not barW or self.tickW == barW then return end
     self.tickW = barW
     local x = Chart.TickX(barW)
+    local h = Chart.PACE_H - 4
     self.tick:ClearAllPoints()
     self.tick:SetPoint("TOP", self.bar, "TOPLEFT", x, 2)
     self.tick:SetPoint("BOTTOM", self.bar, "BOTTOMLEFT", x, -2)
+    self.behind:ClearAllPoints()
+    self.behind:SetPoint("TOPLEFT", self.bar, "TOPLEFT", 0, 0)
+    self.behind:SetSize(math.max(1, x), h)
+    self.ahead:ClearAllPoints()
+    self.ahead:SetPoint("TOPLEFT", self.bar, "TOPLEFT", x, 0)
+    self.ahead:SetSize(math.max(1, barW - x), h)
 end
 
---- The range: pace x (2 - m) to pace x m around the best's pace now (plain, Chart.PaceBounds).
+--- The range: pace x (2 - m) to pace x m around the best's pace now (plain, Chart.PaceBounds). The
+--- behind half runs lo to the middle (the pace), the ahead half the middle to hi.
 function Pace:SetRange(lo, hi)
     self:PlaceTick()
     local A = NS.HudAppearance
     if A and self.stamp ~= A.stamp then
         self.stamp = A.stamp
         local look = A.Pace()
-        self.bar:SetStatusBarTexture(look.texture)
-        self.bar:SetStatusBarColor(look.r, look.g, look.b, look.a)
+        self.behind:SetStatusBarTexture(look.texture)
+        self.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
+        self.ahead:SetStatusBarTexture(look.texture)
+        anchorShortfall(self)
     end
-    self.bar:SetMinMaxValues(lo, hi)
+    local mid = (lo + hi) / 2
+    self.behind:SetMinMaxValues(lo, mid)
+    self.ahead:SetMinMaxValues(mid, hi)
 end
 
---- The live total (opaque), straight to the bar: below the range it reads empty, above it full (the
---- StatusBar clamps; nothing here compares it). None reads empty.
+--- The live total (opaque), straight to both halves: each clamps it (nothing here compares it). Behind
+--- pace, the behind half stops short of the tick and the red shortfall fills the rest; ahead, the
+--- behind half is full and the ahead half fills green past the tick. None reads empty.
 function Pace:SetValue(total)
-    if total == nil then return self.bar:SetValue(0) end
-    self.bar:SetValue(total)
+    if total == nil then total = 0 end
+    self.behind:SetValue(total)
+    self.ahead:SetValue(total)
 end

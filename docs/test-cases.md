@@ -337,11 +337,12 @@ Total.
 - chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
-### test_pace.lua (13)
+### test_pace.lua (14)
 
 - pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
 - pace: the tick sits in the middle of the bar's width, in whole pixels
 - pace: the running bar's tick stays in the middle while its range follows Pace bar range
+- pace: the bar splits at the tick: behind fills to the pace with red to the tick, ahead fills green past it
 - pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
 - pace: the result card sets the plain final damage against the best's pace at the buzzer
 - pace: a run that just became the best is set against the previous best
@@ -816,7 +817,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
 | test_chart.lua | 29 |
-| test_pace.lua | 13 |
+| test_pace.lua | 14 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 50 |
@@ -845,4 +846,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **667** |
+| **Total** | **668** |
