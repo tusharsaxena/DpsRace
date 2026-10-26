@@ -294,7 +294,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   percentage in the bar's muted green or red.
 - [x] **Compare score table:** no box; its columns at exactly the spell table's x positions; a thin separator line
   between the score rows and the spell rows.
-- [ ] **Usage rows:** the time follows the name inline, as the Runs list's group headers do (`name · at 0:01`, the
+- [x] **Usage rows:** the time follows the name inline, as the Runs list's group headers do (`name · at 0:01`, the
   part after the dot in the dim color), so nothing has to line up in a column.
 - [ ] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
   Talents, Usage, Note and any other headed section) has an expand/collapse arrow beside its heading (the LibKa0s

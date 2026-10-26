@@ -81,7 +81,7 @@ local function section(i) return ui(i).detail.usage end
 -- The section's rows' names, joined.
 local function names(x)
     local out = {}
-    for n = 1, #x.rows do out[n] = x.items[n].check.label.__text end
+    for n = 1, #x.rows do out[n] = x.items[n].name end
     return table.concat(out, "|")
 end
 
@@ -293,6 +293,51 @@ end)
 
 -- ── the Usage section ───────────────────────────────────────────────────────────────────────────
 
+test("results usage: a row's line is the name, then a dim dot and the detail; the name alone with none", function()
+    local i = inst()
+    local U, Tbl = i.NS.ResultsUsage, i.NS.ResultsTable
+    local dim = Tbl.Hex(Tbl.COLORS.dim)
+    local line, plain = U.Line("Test Trinket", "at 0:01")
+    assertEqual(line, "Test Trinket|c" .. dim .. " \194\183 at 0:01|r", "the dot and the detail in the dim color")
+    assertEqual(plain, "Test Trinket \194\183 at 0:01")
+    line, plain = U.Line("Other Trinket", "")
+    assertEqual(line, "Other Trinket", "no dot without a detail")
+    assertEqual(plain, "Other Trinket")
+    assertEqual(U.Line("Well Fed", nil), "Well Fed")
+    assertEqual(U.LineWidth(300, 20), 280, "to the row's right edge")
+    assertEqual(U.LineWidth(30, 20), 20, "never narrower than 20 px")
+end)
+
+test("results usage: the detail follows the name on its line, cut at the row's edge, in and out of the edit", function()
+    local i = inst()
+    local U, Tbl = i.NS.ResultsUsage, i.NS.ResultsTable
+    local dim = Tbl.Hex(Tbl.COLORS.dim)
+    seed(i, { mkRun("a") })
+    i.R.ShowRun("a")
+    local x = section(i)
+    local row = x.items[1]
+    assertEqual(row.check.label.__text, "Test Trinket|c" .. dim .. " \194\183 x2 at 0:09, 1:12|r")
+    assertEqual(x.items[5].check.label.__text, "Well Fed|c" .. dim .. " \194\183 active at the start|r")
+    assertNil(row.detail, "no detail column")
+    local cw = row.__width
+    assertTrue(type(cw) == "number" and cw > 0, "the row was laid out")
+    assertEqual(row.check.label.__width, cw - (U.ICON + 4), "the line runs to the row's right edge")
+    -- The edit: the same line after the box and the icon, its click area never past the row.
+    x.edit:__fire("OnClick")
+    row = x.items[1]
+    assertEqual(row.check.label.__text, "Test Trinket|c" .. dim .. " \194\183 x2 at 0:09, 1:12|r")
+    assertEqual(x.items[2].check.label.__text, "Other Trinket", "an unused candidate: the name alone")
+    local lineW = row.check.label.__width
+    assertEqual(lineW, row.__width - (U.CHECK + 2 + U.ICON + 4))
+    -- A narrow pane: the line is cut at the row's edge, and so is its click area.
+    local p = ui(i).detail
+    U.Layout(p, 0, 120)
+    lineW = row.check.label.__width
+    assertEqual(lineW, 120 - (U.CHECK + 2 + U.ICON + 4))
+    assertTrue(Tbl.BadgeWidth("Test Trinket \194\183 x2 at 0:09, 1:12", false) > lineW, "the line is longer")
+    assertEqual(row.check.__hitInsets[2], -(1 + 2 + U.ICON + 4 + lineW), "the click area stops at the edge")
+end)
+
 test("results usage: the detail shows what was used, each with its icon and when, Edit and no Save", function()
     local i = inst()
     seed(i, { mkRun("a") })
@@ -307,7 +352,7 @@ test("results usage: the detail shows what was used, each with its icon and when
         assertTrue(x.items[n]:IsShown(), "row " .. n .. " hidden")
         assertFalse(x.items[n].check:IsShown(), "row " .. n .. " has a box outside the edit")
     end
-    assertEqual(x.items[1].detail.__text, "x2 at 0:09, 1:12")
+    assertEqual(x.items[1].detailText, "x2 at 0:09, 1:12")
     assertEqual(x.items[1].icon.__texture, 5000000 + TRINKET)
     assertTrue(x.edit:IsShown() and x.edit:IsEnabled(), "Edit")
     assertFalse(x.save:IsShown(), "Save is the edit's")
@@ -342,14 +387,15 @@ test("results usage: Edit lists every candidate and the extras, used ones ticked
         ticked[n] = x.state[n] and "x" or "-"
     end
     assertEqual(table.concat(ticked), "x-xxxx", "what was used starts ticked")
-    assertEqual(x.items[2].detail.__text, "", "an unused candidate has no detail")
+    assertEqual(x.items[2].detailText, "", "an unused candidate has no detail")
     assertTrue(x.save:IsShown(), "Save beside Edit")
     assertFalse(x.save:IsEnabled(), "nothing changed yet")
     assertTrue(x.edit.selected, "Edit reads as on")
     -- The label is clickable: the box's click area reaches over the icon and the words.
     local U = i.NS.ResultsUsage
     local inset = x.items[1].check.__hitInsets
-    assertEqual(inset[2], -(1 + 2 + U.ICON + 4 + i.NS.ResultsTable.BadgeWidth("Test Trinket", false)))
+    assertEqual(inset[2], -(1 + 2 + U.ICON + 4 + i.NS.ResultsTable.BadgeWidth("Test Trinket \194\183 x2 at 0:09, 1:12",
+        false)), "over the name and its detail")
     x.items[2].check:__fire("OnClick")
     assertTrue(x.save:IsEnabled(), "a new tick")
     x.edit:__fire("OnClick")
@@ -391,7 +437,7 @@ test("results usage: Save is live only while the ticks differ, writes them throu
     assertFalse(x.editing, "Save leaves the edit")
     assertFalse(x.save:IsShown())
     assertEqual(names(x), "Test Trinket|Other Trinket|Flask of Testing|Healthstone|Well Fed", "in the edit's order")
-    assertEqual(x.items[2].detail.__text, "time unknown")
+    assertEqual(x.items[2].detailText, "time unknown")
 end)
 
 test("results usage: an unticked Well Fed stays listed in the edit and can be ticked again", function()
@@ -411,7 +457,7 @@ test("results usage: an unticked Well Fed stays listed in the edit and can be ti
     x = editing(i, "a")
     assertEqual(#x.rows, 6)
     assertTrue(x.state[6] == true, "ticked again")
-    assertEqual(x.items[6].detail.__text, "active at the start")
+    assertEqual(x.items[6].detailText, "active at the start")
 end)
 
 test("results usage: a redraw of the same run keeps the edit and its ticks not saved yet, and the scroll", function()
@@ -566,7 +612,7 @@ test("results usage: a hidden item is never listed, in the section, the Used col
     x = section(i)
     assertEqual(names(x), "Test Trinket|Potion of Testing|Healthstone|Flask of Testing|Well Fed",
         "back on the run, with its times")
-    assertEqual(x.items[1].detail.__text, "x2 at 0:09, 1:12")
+    assertEqual(x.items[1].detailText, "x2 at 0:09, 1:12")
 end)
 
 test("results usage: a sample run hides the same items", function()

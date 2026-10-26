@@ -575,7 +575,7 @@ Total.
 - usage: the sample history and the sim's race carry casts and usage
 - usage: a player with no consumables gets the sample Healthstone, used with no cast
 
-### test_results_usage.lua (22)
+### test_results_usage.lua (24)
 
 - results usage: entries list the gear first, never an old enchant; a run stored before format 3 has none
 - results usage: each entry's detail says how many times and when, or why there is no time
@@ -587,6 +587,8 @@ Total.
 - results usage: the Used column draws the icons gear first, then +n; a dash for nothing or no record
 - results usage: the Used tooltip names each entry with its icon and when, or says why there is none
 - results usage: the Used column sorts by how many entries, a run with no record last either way
+- results usage: a row's line is the name, then a dim dot and the detail; the name alone with none
+- results usage: the detail follows the name on its line, cut at the row's edge, in and out of the edit
 - results usage: the detail shows what was used, each with its icon and when, Edit and no Save
 - results usage: a run with nothing used says so in a dim line, and Edit still opens the list
 - results usage: Edit lists every candidate and the extras, used ones ticked; Edit again leaves unsaved
@@ -967,7 +969,7 @@ Total.
 | test_loadout.lua | 27 |
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
-| test_results_usage.lua | 22 |
+| test_results_usage.lua | 24 |
 | test_chart_icons.lua | 27 |
 | test_results_timeline.lua | 13 |
 | test_tooltips.lua | 4 |
@@ -990,4 +992,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **784** |
+| **Total** | **786** |

@@ -5,7 +5,10 @@ local _, NS = ...
 --
 -- THE SECTION shows what was used (P9, the owner's call, 2026-10-26): one row per used entry, the
 -- item's icon and name and a dim detail ("x2 at 0:09, 1:12", "active at the start", "time unknown"),
--- or a dim *Nothing used*. *Edit* (top right) switches it to every candidate (every on-use gear item
+-- or a dim *Nothing used*. The detail follows the name on its line (P10, the owner's call): "Test
+-- Trinket · x2 at 0:09", the dot and the detail in the dim color, as the Runs list's group headers
+-- put a value after a label, so nothing lines up in a column; the line stops at the row's edge in
+-- the client's own ellipsis (Style.Text never wraps). *Edit* (top right) switches it to every candidate (every on-use gear item
 -- and every bag consumable with a use spell at the arm) and every used entry no candidate stands for
 -- (food), each with a checkbox whose label is clickable too (Tbl.SetCheckLabel), what was used ticked.
 -- *Save*, beside Edit and shown only while editing, is live only while the ticks differ from the
@@ -22,8 +25,8 @@ local _, NS = ...
 --
 -- PLAIN DATA ONLY: the stored run.usage record (plain numbers and strings). Item names and icons are
 -- the client's item data, read at call time and pcall'd. Rows are laid out from the constants here,
--- never from a size read back; Entries, Rows, UsedRows, Ticks, Edits, Changed, Clock and Detail are
--- pure over the record and the hidden list.
+-- never from a size read back; Entries, Rows, UsedRows, Ticks, Edits, Changed, Clock, Detail and Line
+-- are pure over the record and the hidden list.
 
 local ResultsUsage = {}
 NS.ResultsUsage = ResultsUsage
@@ -99,6 +102,16 @@ function ResultsUsage.Detail(e)
     end
     if e.src == "buff" then return L["active at the start"] end
     return n > 1 and L["x%d, time unknown"]:format(n) or L["time unknown"]
+end
+
+--- A row's line: the name, then " · " and the detail in the dim color (the name alone with no
+--- detail), and the same line plain (what its width is estimated from: Tbl.BadgeWidth).
+--- @return string line, string plain
+function ResultsUsage.Line(name, detail)
+    name = tostring(name or "")
+    if type(detail) ~= "string" or detail == "" then return name, name end
+    local after = " \194\183 " .. detail
+    return name .. ("|c%s%s|r"):format(Tbl.Hex(C.dim), after), name .. after
 end
 
 -- Whether used entry `e` is the one candidate `c` stands for: by its item (a gear candidate also by
@@ -328,7 +341,6 @@ local function newRow(p, x, i)
     row.icon:SetSize(ResultsUsage.ICON, ResultsUsage.ICON)
     row.check.label = Tbl.Text(row, FONT.TEXT, C.text)
     row.check.label:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
-    row.detail = Tbl.Text(row, FONT.TEXT, C.dim)
     row.check:SetScript("OnClick", function() toggle(x, i) end)
     for _, f in ipairs({ row, row.check }) do
         f:HookScript("OnEnter", function() rowTip(p, row) end)
@@ -364,24 +376,27 @@ function ResultsUsage.Build(p, c)
 end
 
 -- One row: in the edit its box, ticked or not, then the icon; outside it the icon at the left edge.
+-- The name and its detail are one line (ResultsUsage.Line); in the edit the box's click area reaches
+-- over it, never past the row (layoutRow caps it at the line's width there).
 local function fillRow(row, data, editing, ticked)
-    row.data = data
-    local name = ResultsUsage.Name(data)
+    row.data, row.editing = data, editing
+    row.name = ResultsUsage.Name(data)
+    row.detailText = data.entry and ResultsUsage.Detail(data.entry) or ""
+    local line, plain = ResultsUsage.Line(row.name, row.detailText)
+    row.lineW = Tbl.BadgeWidth(plain, false)
     row.check:SetShown(editing)
     row.icon:ClearAllPoints()
     if editing then
         row.icon:SetPoint("LEFT", row.check, "RIGHT", 2, 0)
-        Tbl.SetCheckLabel(row.check, name, 2 + ResultsUsage.ICON + 4)
+        Tbl.SetCheckLabel(row.check, line, 2 + ResultsUsage.ICON + 4, row.lineW)
         row.check:SetChecked(ticked)
         row.left = ResultsUsage.CHECK + 2 + ResultsUsage.ICON + 4
     else
         row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
-        row.check.label:SetText(name)
+        row.check.label:SetText(line)
         row.left = ResultsUsage.ICON + 4
     end
     row.icon:SetTexture(ResultsUsage.Icon(data))
-    row.detail:SetText(data.entry and ResultsUsage.Detail(data.entry) or "")
-    row.nameW = Tbl.BadgeWidth(name, false)
 end
 
 local function noneText(x)
@@ -460,17 +475,22 @@ local function place(region, parent, px, py)
     region:SetPoint("TOPLEFT", parent, "TOPLEFT", px, py)
 end
 
--- One row across `cw`: the name as wide as its estimate (never past what leaves the detail room),
--- the detail after it.
+--- How wide a row's line is across `cw` from its left edge `left`: to the row's right edge, where the
+--- client cuts a longer line with an ellipsis. Pure.
+function ResultsUsage.LineWidth(cw, left)
+    return math.max(20, cw - (left or 0))
+end
+
+-- One row across `cw`: its line from after the icon to the row's right edge; in the edit the box's
+-- click area over the line's estimate, never past that edge.
 local function layoutRow(p, row, y, cw)
-    local left = row.left or 0
-    local nameW = math.max(20, math.min(row.nameW or 0, cw - left - 90))
+    local lineW = ResultsUsage.LineWidth(cw, row.left)
     place(row, p.content, 0, y)
     row:SetWidth(cw)
-    row.check.label:SetWidth(nameW)
-    row.detail:ClearAllPoints()
-    row.detail:SetPoint("LEFT", row, "LEFT", left + nameW + 8, 0)
-    row.detail:SetWidth(math.max(20, cw - left - nameW - 8))
+    row.check.label:SetWidth(lineW)
+    if row.editing then
+        row.check:SetHitRectInsets(0, -(1 + 2 + ResultsUsage.ICON + 4 + math.min(row.lineW or 0, lineW)), 0, 0)
+    end
     row:Show()
 end
 

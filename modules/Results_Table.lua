@@ -519,11 +519,12 @@ end
 --- Set a checkbox's label (`check.label`, 1px right of the box) and widen its click area over it, so
 --- a click on the words toggles it too (the owner's call, 2026-10-26). The width is the label's
 --- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one. `extra` px more lie between
---- the box and its words (the detail's Usage rows: an item's icon), and are clickable too.
-function Tbl.SetCheckLabel(check, text, extra)
+--- the box and its words (the detail's Usage rows: an item's icon), and are clickable too. `width`
+--- stands for the words' estimate when the text carries color escapes (a Usage row's dim detail).
+function Tbl.SetCheckLabel(check, text, extra, width)
     text = text or ""
     check.label:SetText(text)
-    check:SetHitRectInsets(0, -(1 + (extra or 0) + Tbl.BadgeWidth(text, false)), 0, 0)
+    check:SetHitRectInsets(0, -(1 + (extra or 0) + (width or Tbl.BadgeWidth(text, false))), 0, 0)
 end
 
 -- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
