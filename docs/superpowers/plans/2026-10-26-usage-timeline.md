@@ -257,6 +257,28 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   were corrected with the usage paragraph. Smoke row SM-DR-UT22 (new) checks *Days to keep*; UT1 now
   also checks the `[Casts]` debug line.
 
+### P9: The owner's first test round (2026-10-26)
+
+- [ ] **Timeline window:** casts as thin vertical ticks (the lane's full height; gold this run, blue the compared
+  run) instead of dots; an ability's cooldown as a small gray line under its name, not beside the lanes; the window
+  narrowed to fit.
+- [ ] **Chart marks:** the important casts on the damage chart (live, result card, detail) as small ability icons
+  along the top of the plot, a second row when two would overlap, with a tooltip (spell and time) instead of dots.
+- [ ] **Gear header:** the run's item level as light-gray subtext right after the *Gear* heading.
+- [ ] **Usage:**
+  - no weapon enchants (or any enchant) unless the enchant has an on-use effect;
+  - the section shows only what was used; an *Edit* button next to *Save* switches to every candidate with ticks,
+    and *Save* keeps the edit;
+  - a hidden-items list (item IDs; a settings row, and *Never show this item* on a right-click in edit mode) whose
+    items never appear in the section, the *Used* column or its tooltip;
+  - the *Used* column's tooltip shows each item's icon.
+- [ ] **Tooltips:** every multi-line tooltip the addon draws itself puts each line after the title on a bullet
+  (the vendored LibKa0s settings tooltips keep their format).
+- [ ] **Compare vs best:** *This run* right-aligned, *Best run* (renamed from *Best*) left-aligned, the headers aligned
+  with their columns; one bar per row, in the column of whichever run is higher, growing outward from the edge the two
+  columns share, its length that row's difference against the table's largest, muted green when this run is higher
+  and muted red when the compared run is; in the score table and the spell rows.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
