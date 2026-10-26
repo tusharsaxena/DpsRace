@@ -68,8 +68,8 @@ each spell's base cooldown; `modules/Usage.lua` reads the on-use gear, the bag c
 helpful auras and the weapon enchants at the arm, and at the result works out what was used from the
 casts, the bag counts and that snapshot. The Runs list gained a *Used* column and the detail an
 editable *Usage* section (`modules/Results_Usage.lua`); the damage chart marks each cast of an
-ability whose base cooldown is over 15 s with a gold dot (*Show cooldown dots*), live and after the
-race; and the detail's *Timeline* button opens the ability timeline (`modules/Results_Timeline.lua`),
+ability whose base cooldown is over 15 s with that ability's icon (*Show cooldown icons*), live and
+after the race; and the detail's *Timeline* button opens the ability timeline (`modules/Results_Timeline.lua`),
 every ability's casts in two lanes, this run's above the compared run's. The same pass replaced *Runs
 to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores is plain: the spell
 IDs and castGUIDs pass through `NS.Secrets` (the probe measured both plain in combat), and the usage
@@ -136,7 +136,7 @@ watchers are the race's event wiring, and their registration set must follow the
 call, with or without the bus library. The cast list (`modules/Casts.lua`) is fed the same way:
 Watchers calls `Casts.Hear` and Race calls `Casts.Begin` / `Start` / `Stop` / `Reset`. The ability
 timeline (`modules/Results_Timeline.lua`) holds no bus receiver: the detail pane tells it on every
-draw and compare change (`ResultsTimeline.DetailChanged`). *Show cooldown dots* redraws through its
+draw and compare change (`ResultsTimeline.DetailChanged`). *Show cooldown icons* redraws through its
 row's `onChange` (`Hud.Refresh`, `Results.Refresh`), not the bus.
 
 ## Slash Commands
@@ -255,7 +255,7 @@ copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, topl
 Results window and the ability timeline, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
 mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
 which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
-which lifts the damage chart's pace diagonal (and its cooldown dots) over its columns. The StaticPopups, the debug console,
+which lifts the damage chart's pace diagonal (and its cooldown icons) over its columns. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
 each frame's strata, level and toplevel.
 
@@ -341,10 +341,11 @@ each frame's strata, level and toplevel.
   `modules/Usage.lua` reads the gear, the bags, the auras and the weapon enchants only at the arm
   (which is refused in combat) and the bag counts again on the record path after combat, each client
   call bare at call time and pcall'd, every value through `NS.Secrets`; it does not compare item
-  cooldowns. The chart's cooldown dots and the timeline's lanes are plain geometry: a cast's plain
-  time over the plain length across the configured width (`HudChart.DotX`, `ResultsTimeline.MarkX`),
-  never read back off a frame. The HUD's dots take no mouse; the Results detail's and the timeline's
-  hover frames show tooltips built from the stored record (the timeline's name cell the client's
+  cooldowns. The chart's cooldown icons and the timeline's lanes are plain geometry: a cast's plain
+  time over the plain length across the configured width (`HudChart.IconX`, `ResultsTimeline.MarkX`),
+  never read back off a frame. The chart's icons (C_Spell's texture for the plain stored or live ID)
+  take the mouse wherever the chart is drawn, the running HUD included (a plain, non-secure frame),
+  and like the timeline's hover frames show tooltips built from plain cast records (the timeline's name cell the client's
   spell tooltip by its stored ID). The timeline window is plain and non-secure like the Results
   window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.

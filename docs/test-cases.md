@@ -586,21 +586,25 @@ Total.
 - results usage: a sample run's edit changes it in memory only; the store never hears it
 - results usage: a row's hover is the item's own tooltip with its detail and source after it
 
-### test_chart_dots.lua (13)
+### test_chart_icons.lua (17)
 
-- chart dots: a dot's x is INSET + t / length across the width less both insets
-- chart dots: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no dot
-- chart dots: only casts of an ability whose base cooldown is over 15 s get one
-- chart dots: drawn live on the running HUD, along the top, with no geometry read back
-- chart dots: the live list is read again only when the race heard another cast
-- chart dots: Show cooldown dots off draws none on the running HUD; on again brings them back
-- chart dots: the result card and the Results detail draw the run's from its record
-- chart dots: a detail dot's tooltip names the spell and when it was cast
-- chart dots: the HUD's dots take no mouse
-- chart dots: Show cooldown dots off hides them on the card and in the detail too
-- chart dots: a run recorded before casts were (format 2) draws its chart with none
-- chart dots: test mode draws the sample's, live up to its still moment and all on the card
-- chart dots: test mode's chart follows Show cooldown dots while it is on screen
+- chart icons: a cast's x is INSET + t / length across the width less both insets
+- chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
+- chart icons: an icon is centered on its cast's time, held inside the plot at either end
+- chart icons: an icon that would overlap the one before it on the top row takes the second
+- chart icons: only casts of an ability whose base cooldown is over 15 s get one
+- chart icons: drawn live on the running HUD, the spell's icon along the top, no geometry read back
+- chart icons: two casts close together on the running HUD stagger onto the second row
+- chart icons: a running HUD icon's tooltip names the spell and its time
+- chart icons: the live list is read again only when the race heard another cast
+- chart icons: Show cooldown icons off draws none on the running HUD; on again brings them back
+- chart icons: the setting's row reads Show cooldown icons and keeps its stored path
+- chart icons: the result card and the Results detail draw the run's from its record
+- chart icons: an icon's tooltip on the card and in the detail names the spell and when it was cast
+- chart icons: Show cooldown icons off hides them on the card and in the detail too
+- chart icons: a run recorded before casts were (format 2) draws its chart with none
+- chart icons: test mode draws the sample's, live up to its still moment and all on the card
+- chart icons: test mode's chart follows Show cooldown icons while it is on screen
 
 ### test_results_timeline.lua (13)
 
@@ -931,7 +935,7 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 22 |
 | test_results_usage.lua | 16 |
-| test_chart_dots.lua | 13 |
+| test_chart_icons.lua | 17 |
 | test_results_timeline.lua | 13 |
 | test_schema.lua | 16 |
 | test_settings.lua | 29 |
@@ -952,4 +956,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **750** |
+| **Total** | **754** |

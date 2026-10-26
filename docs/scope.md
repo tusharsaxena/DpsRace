@@ -49,7 +49,7 @@ in the spec, sections 1, 2 and 13
   on-use gear and consumables used are worked out from those casts, the bag counts and the buffs and
   weapon enchants at the arm. The Runs list's *Used* column shows them as icons, the detail lists
   every candidate for the player to correct and *Save*, the damage chart marks each cast of an ability
-  with a cooldown over 15 s with a gold dot, and the detail's *Timeline* opens every ability's casts
+  with a cooldown over 15 s with its icon, and the detail's *Timeline* opens every ability's casts
   in two lanes, this run's beside the compared run's.
 - **Account-wide history**, so bests span alts. Runs older than *Days to keep* (90 by default, 0
   never) are pruned at login and after each saved run, never one holding a best (spec §6.3, §7; the

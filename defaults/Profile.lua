@@ -37,8 +37,9 @@ NS.defaults = {
             -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
             chart   = true,
             paceBar = true,
-            -- A gold dot on the chart at each cast of an ability whose base cooldown is over 15 s (#14):
-            -- live, on the result card and in the Results detail (modules/Hud_Chart.lua).
+            -- The ability's icon along the top of the chart at each cast of one whose base cooldown is over
+            -- 15 s (#14), *Show cooldown icons*: live, on the result card and in the Results detail
+            -- (modules/Hud_Chart.lua). The path keeps the first look's name (dots, 2026-10-26).
             castDots = true,
             -- How far either side of the best's pace so far the pace bar reaches, 1.1-2.0: it runs from
             -- pace x (2 - paceRange) to pace x paceRange, its tick in the middle (Round C; 1.5 = +-50%).

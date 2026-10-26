@@ -303,12 +303,12 @@ local function raceView()
     return v
 end
 
--- The sample's chart without its cooldown dots: a copy, as the preview owns the one it pushed.
-local function withoutDots(chart)
-    if not chart or not chart.dots then return chart end
+-- The sample's chart without its cooldown icons: a copy, as the preview owns the one it pushed.
+local function withoutCooldowns(chart)
+    if not chart or not chart.cooldowns then return chart end
     local out = {}
     for k, x in pairs(chart) do out[k] = x end
-    out.dots = nil
+    out.cooldowns = nil
     return out
 end
 
@@ -317,10 +317,10 @@ local function previewView()
     local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
     commonView(v)
     for k, x in pairs(preview.extra or {}) do v[k] = x end
-    -- The sample honors the chart, pace and dots settings, as a real race's views do (#2, #3, #14).
+    -- The sample honors the chart, pace and cooldown icon settings, as a real race's views do (#2, #3, #14).
     if setting("live.chart") == false then v.chart = nil end
     if setting("live.paceBar") == false then v.pace = nil end
-    if setting("live.castDots") == false then v.chart = withoutDots(v.chart) end
+    if setting("live.castDots") == false then v.chart = withoutCooldowns(v.chart) end
     v.key = BODY_OF[preview.key] or preview.key
     if v.key == "stopping" then v.key = "stop" end
     if v.key == "idle" then idleView(v) end

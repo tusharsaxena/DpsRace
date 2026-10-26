@@ -451,9 +451,9 @@ local function newMark()
     return t
 end
 
---- A tick's tooltip: the spell and its time (ResultsTips.Dot), then which run it is.
+--- A tick's tooltip: the spell and its time (ResultsTips.Cast), then which run it is.
 function Timeline.MarkLines(cast, label)
-    local lines = NS.ResultsTips.Dot(cast)
+    local lines = NS.ResultsTips.Cast(cast)
     if lines and label then lines[#lines + 1] = { label, 0.62, 0.62, 0.68 } end
     return lines
 end

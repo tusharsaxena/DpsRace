@@ -253,16 +253,19 @@ race.
   that best's faint gray diagonal (one 2px line at 40%) from 0:00 to its damage at the run's length, and the plot's max (the
   columns' too) is max(`result.damage`, that) x 1.15; without one each column is scaled to the plain
   `result.damage`, no diagonal. All plain numbers.
-- **The cooldown dots** (#14, *Show cooldown dots*, `live.castDots`): the running chart's view carries
-  the race's important casts so far (`Casts.Filter(Casts.Live(), Casts.LiveSpells())`: a base
-  cooldown over 15 s), read again only when `Casts.Size()` or the run changed, so the 20 Hz redraw
-  builds nothing. `Strip:drawDots` lays a 6 px gold disc along the top of the plot at
-  `HudChart.DotX(t, length, width)` = INSET + clamp(t, 0, length) / length x (width - 2 x INSET):
-  plain numbers on the configured width, laid again only when the list, its size, the length or the
-  geometry changed. After the race the result card and the Results detail draw `HudChart.DotsOf(run)`
-  (`Casts.Important` on the stored record); the detail's dots take a hover (`Strip:SetDotTip`,
-  `ResultsTips.Dot`: the spell and *Cast at m:ss*), the HUD's take no mouse. With the setting off no
-  chart draws any.
+- **The cooldown icons** (#14, *Show cooldown icons*, `live.castDots`): the running chart's view
+  carries the race's important casts so far as `cooldowns` (`Casts.Filter(Casts.Live(),
+  Casts.LiveSpells())`: a base cooldown over 15 s), read again only when `Casts.Size()` or the run
+  changed, so the 20 Hz redraw builds nothing. `Strip:drawIcons` lays a pooled 12 px frame with the
+  spell's icon (`HudBreakdown.SpellIcon` on the cast's plain ID) along the top of the plot, centered
+  at `HudChart.IconX(t, length, width)`: `TimeX` = INSET + clamp(t, 0, length) / length x (width - 2
+  x INSET), held half an icon inside either edge. `HudChart.IconRows` drops an icon closer than its
+  width to the last one on the top row to a second row just below (`IconY`). Plain numbers on the
+  configured width, laid again only when the list, its size, the length or the geometry changed.
+  After the race the result card and the Results detail draw `HudChart.CooldownsOf(run)`
+  (`Casts.Important` on the stored record). Every icon takes the mouse, on the running HUD too, and
+  shows `ResultsTips.Cast` under it (the spell and *Cast at m:ss*). With the setting off no chart
+  draws any.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
   down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
   leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
@@ -387,7 +390,7 @@ Taint Notes, B4.1).
   player's own snapshot; one run raced before format 3 has neither)) and routes the
   Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
   window draws the sample as it draws the store: the Runs view opens on every character and spec,
-  the Bests tab, the detail's compare, chart (with its cooldown dots), gear, talents and usage, and
+  the Bests tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
   the ability timeline. A note, a usage edit or a delete changes the sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
 - **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
   `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample

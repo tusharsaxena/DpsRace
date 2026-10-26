@@ -385,7 +385,7 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",
         "live.chart|Chart and pace|Show damage chart|false",
-        "live.castDots|Chart and pace|Show cooldown dots|false",
+        "live.castDots|Chart and pace|Show cooldown icons|false",
         "live.paceBar|Chart and pace|Show pace bar|false",
         "live.paceRange|Chart and pace|Pace bar range|true",
     }, "\n"))

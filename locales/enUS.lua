@@ -409,9 +409,9 @@ L["Draw your damage over the race as columns under the live figures, scaled to t
 L["Show pace bar"] = "Show pace bar"
 L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
     "Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."
-L["Show cooldown dots"] = "Show cooldown dots"
-L["Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with a gold dot along the top of the damage chart: live on the HUD, on the result card and in the Results window."] =
-    "Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with a gold dot along the top of the damage chart: live on the HUD, on the result card and in the Results window."
+L["Show cooldown icons"] = "Show cooldown icons"
+L["Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."] =
+    "Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."
 L["Pace bar range"] = "Pace bar range"
 L["How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."] =
     "How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."
@@ -661,9 +661,9 @@ L["Your damage so far at each step of the race, captured live. With a best befor
     "Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
-L["A gold dot along the top marks each cast of an ability with a cooldown over 15 seconds."] =
-    "A gold dot along the top marks each cast of an ability with a cooldown over 15 seconds."
--- A cooldown dot's tooltip on the detail's chart (#14)
+L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time."] =
+    "An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time."
+-- A cast's tooltip: a cooldown icon on the damage chart, a timeline tick (#14)
 L["%s (pet)"] = "%s (pet)"
 L["Cast at %s"] = "Cast at %s"
 

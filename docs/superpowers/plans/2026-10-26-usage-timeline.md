@@ -262,7 +262,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Timeline window:** casts as thin vertical ticks (the lane's full height; gold this run, blue the compared
   run) instead of dots; an ability's cooldown as a small gray line under its name, not beside the lanes; the window
   narrowed to fit.
-- [ ] **Chart marks:** the important casts on the damage chart (live, result card, detail) as small ability icons
+- [x] **Chart marks:** the important casts on the damage chart (live, result card, detail) as small ability icons
   along the top of the plot, a second row when two would overlap, with a tooltip (spell and time) instead of dots.
 - [x] **Gear header:** the run's item level as light-gray subtext right after the *Gear* heading.
 - [ ] **Usage:**

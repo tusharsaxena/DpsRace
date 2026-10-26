@@ -514,8 +514,6 @@ function Detail.Build(parent, hooks)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
     p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
     p.w.chart:SetShown(false)
-    -- A cooldown dot's tooltip (#14): the spell and when it was cast.
-    p.w.chart:SetDotTip(function(owner, cast) Tbl.BelowTip(owner, NS.ResultsTips.Dot(cast)) end, Tbl.HideTip)
     buildTiming(p, c)
     NS.ResultsLoadout.Build(p, c)
     NS.ResultsUsage.Build(p, c)

@@ -77,7 +77,7 @@ and the smoke row that measures it where one exists.
   Mastery Hunter on client 12.1.5). The client documents the cast events as secret only for units
   other than the player and the pet, and instances were not tested (the owner's call). A spell ID that
   arrives sealed is dropped and counted in `run.casts.dropped`, so that cast is missing from the
-  cooldown dots and the timeline, and an item it used falls back to the bag count (smoke rows C10,
+  cooldown icons and the timeline, and an item it used falls back to the bag count (smoke rows C10,
   SM-DR-UT1).
 - **A channel's ticks are deduped defensively.** No channel was cast in the probe, so whether every
   tick fires `UNIT_SPELLCAST_SUCCEEDED` is unmeasured. While a player channel is open (its
@@ -88,7 +88,7 @@ and the smoke row that measures it where one exists.
   Command read 500 ms in the probe), so it gets no dot and sorts with the rotation on the timeline.
 - **A cast more than 10 s before the pull is not the race's** (#13, #14; `Casts.PREPULL`). While
   armed every cast is heard, but when the clock starts only the last 10 s are kept: an earlier one is
-  in neither the cast list, the chart's dots, the timeline nor the usage, and the player's earlier
+  in neither the cast list, the chart's icons, the timeline nor the usage, and the player's earlier
   casts of a consumable's spell explain its bag count's drop, so a potion drunk minutes before the
   pull is not read as used. A pre-pull opener cast 11 s out is dropped with it.
 - **A consumable that leaves the bags while armed reads as used, its time unknown** (#13). The bag
@@ -116,7 +116,7 @@ and the smoke row that measures it where one exists.
 - **Runs raced before format 3 have no casts and no usage**, and neither does a run resumed after a
   `/reload` or a stand-down (both lists are held in memory until the result). Their *Used* cell is a
   dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
-  cooldown dots and their *Timeline* button is grayed. Stored runs are never rewritten
+  cooldown icons and their *Timeline* button is grayed. Stored runs are never rewritten
   ([schema.md](schema.md), migration 2 → 3).
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
