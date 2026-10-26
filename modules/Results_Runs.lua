@@ -678,7 +678,7 @@ local function checkbox(view, parent, spec)
     b:SetSize(20, 20)
     b.label = Tbl.Text(b, Tbl.FONT.TEXT)
     b.label:SetPoint("LEFT", b, "RIGHT", 1, 0)
-    b.label:SetText(L[spec.label])
+    Tbl.SetCheckLabel(b, L[spec.label])
     b:SetScript("OnClick", function() view:SetFilter(spec.key, not view.filters[spec.key]) end)
     b.key = spec.key
     return b

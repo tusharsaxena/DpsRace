@@ -114,6 +114,7 @@ return function(T)
             rawset(o, "SetTextColor", function(self, r, g, b, a) self.__color = { r, g, b, a }; return self end)
             rawset(o, "SetShadowOffset", function(self, x, y) self.__shadow = { x, y }; return self end)
             rawset(o, "SetStatusBarTexture", function(self, p) self.__barTexture = p; return self end)
+            rawset(o, "SetHitRectInsets", function(self, l, r, t, b) self.__hitInsets = { l, r, t, b }; return self end)
             -- The fill region, one per bar: what a region anchors to for the fill's end.
             rawset(o, "GetStatusBarTexture", function(self)
                 self.__fill = self.__fill or region(self)

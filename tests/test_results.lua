@@ -620,6 +620,10 @@ test("results: Only best keeps the runs holding their board's best", function()
     assertTrue(pane.filters.onlyBest)
     assertEqual(visibleIDs(pane), "top,short", "one best per board")
     assertEqual(pane.checks.onlyBest.label.__text, "Only best")
+    local Tbl = i.NS.ResultsTable
+    for key, check in pairs(pane.checks) do
+        assertEqual(check.__hitInsets[2], -(1 + Tbl.BadgeWidth(check.label.__text, false)), key .. ": its label clicks too")
+    end
 end)
 
 test("results: Delta is each run's distance from the max DPS among the runs the filters pass", function()
@@ -1175,6 +1179,8 @@ test("results: bests tab groups by spec x category x length with clean-only togg
     assertEqual(top.flags.fs.__text, "1 late")
     assertEqual(top.date.fs.__text, os.date("%d %b", NOW - HOUR))
 
+    assertEqual(pane.clean.__hitInsets[2], -(1 + i.NS.ResultsTable.BadgeWidth("Clean runs only", false)),
+        "Clean runs only: its label clicks too")
     pane.clean:__fire("OnClick")
     assertTrue(pane.filters.cleanOnly)
     assertEqual(visibleIDs(pane), "clean,short", "the clean board's best on that board")

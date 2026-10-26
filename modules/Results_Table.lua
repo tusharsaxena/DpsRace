@@ -472,6 +472,15 @@ function Tbl.BadgeWidth(s, boxed, extra)
     return math.floor(chars * 6 + (boxed and 14 or 4) + (extra or 0))
 end
 
+--- Set a checkbox's label (`check.label`, 1px right of the box) and widen its click area over it, so
+--- a click on the words toggles it too (the owner's call, 2026-10-26). The width is the label's
+--- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one.
+function Tbl.SetCheckLabel(check, text)
+    text = text or ""
+    check.label:SetText(text)
+    check:SetHitRectInsets(0, -(1 + Tbl.BadgeWidth(text, false)), 0, 0)
+end
+
 -- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
 -- A boxed tag also takes its tint on the box's edge and fill.
 local function layoutBadge(cell, col, s, color, extra)

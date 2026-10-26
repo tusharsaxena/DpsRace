@@ -181,6 +181,9 @@ test("compare: the toggle sets the run beside the best: the score table and the 
     local x = d.cmp
     assertTrue(x.toggle:IsEnabled())
     assertEqual(x.toggle.label.__text, "Compare vs best")
+    local Tbl = i.NS.ResultsTable
+    assertEqual(x.toggle.__hitInsets[2], -(1 + Tbl.BadgeWidth("Compare vs best", false)),
+        "a click on the words toggles it too: the click area runs over the label")
     assertFalse(d:Comparing(), "the compare starts off")
     assertEqual(d:CompareTarget(), nil, "no target while off")
     assertEqual(d:CompareTarget(true).id, "best", "the toggle's target, asked for either way")
