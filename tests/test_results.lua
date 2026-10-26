@@ -664,9 +664,13 @@ test("results: Delta is each run's distance from the max DPS among the runs the 
     end
     local c = cells()
     assertEqual(c.top.__text, "0.0%")
-    assertEqual(c.top.__color[1], i.NS.ResultsTable.COLORS.gold[1], "the max run in gold")
+    -- The max run's 0.0% in the column's green, the pair of its red below the max (UT-P14).
+    local C = i.NS.ResultsTable.COLORS
+    for k = 1, 3 do
+        assertEqual(c.top.__color[k], C.green[k], "the max run in green")
+        assertEqual(c.slow.__color[k], C.red[k], "below the max in red")
+    end
     assertEqual(c.slow.__text, "-20.0%")
-    assertEqual(c.slow.__color[1], 1.0, "below the max in red")
     assertEqual(c.short.__text, "-50.0%")
     assertEqual(c.inc.__text, "+20.0%")
     assertEqual(c.inc.__color[1], i.NS.ResultsTable.COLORS.dim[1], "an incomplete run muted")
@@ -1271,23 +1275,31 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(found, "not in UISpecialFrames")
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
-    assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1344)
-    assertEqual(minH, 420)
-    assertEqual(u.width, 1344, "a new profile opens at the minimum width")
-    assertEqual(u.height, 560)
-    -- The toggle: collapsed has its own size and minimum; expanding brings the first back.
-    assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
-    u.viewToggle:__fire("OnClick")
-    assertEqual(i.R.View(), "collapsed")
+    -- A new profile opens collapsed (UT-P14), at that view's minimum width.
+    assertEqual(i.NS.defaults.profile.windows.results.view, "collapsed")
+    assertEqual(i.R.View(), "collapsed", "a new profile opens collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 904)
-    assertEqual(u.width, 904, "collapsed opens at its minimum width")
-    assertEqual(u.viewToggle.iconName, "chevron-right")
+    assertEqual(minW, 904)
+    assertEqual(minH, 420)
+    assertEqual(u.width, 904, "a new profile opens at the minimum width")
+    assertEqual(u.height, 560)
+    assertEqual(u.viewToggle.iconName, "chevron-right", "collapsed: the toggle unfolds the detail")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
+    -- The toggle: expanded has its own size and minimum; collapsing brings the first back.
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "expanded")
-    assertEqual(u.width, 1344)
+    assertEqual(i.R.Mode(), "wide")
+    assertEqual((u.frame:GetResizeBounds()), 1344)
+    assertEqual(u.width, 1344, "expanded opens at its minimum width")
+    assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
+    assertEqual(runsPane(i).barH, 32, "expanded: the filter bar is one row")
+    u.viewToggle:__fire("OnClick")
+    assertEqual(i.R.View(), "collapsed")
+    assertEqual(u.width, 904)
+    -- A stored view that is neither reads as the default, collapsed.
+    i.NS.db.profile.windows.results.view = "sideways"
+    assertEqual(i.R.View(), "collapsed")
+    i.NS.db.profile.windows.results.view = "collapsed"
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
     assertEqual(u.footRight.__text, "Days to keep: 90", "the default, 90 days")
@@ -1298,6 +1310,7 @@ end)
 
 test("results: position, size and Master scale persist; Reset position restores them", function()
     local i = inst()
+    i.NS.db.profile.windows.results.view = "expanded"
     i.R.Show()
     local u = ui(i)
     rawset(u.frame, "GetPoint", function() return "TOPLEFT", nil, "BOTTOMLEFT", 40.4, 600.6 end)
@@ -1344,6 +1357,7 @@ test("results: collapsed, the detail replaces the list, with a back control", fu
 
     local j = inst()
     seed(j, { mkRun("a") })
+    j.NS.db.profile.windows.results.view = "expanded"
     j.R.Show()
     assertEqual(j.R.Mode(), "wide")
     visible(runsPane(j))[1]:__fire("OnClick")
@@ -1415,7 +1429,7 @@ test("results: the diagnostics state section names the tab, the layout and the s
     end
     local found = false
     for _, l in ipairs(lines) do
-        if l == "results tab=runs mode=wide rows=1 selected=a" then found = true end
+        if l == "results tab=runs mode=narrow rows=1 selected=a" then found = true end
     end
     assertTrue(found, "no results line; got: " .. table.concat(lines, " | "))
 end)

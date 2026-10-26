@@ -30,6 +30,8 @@ local function inst()
         m.StaticPopup_Show = function() end
     end }
     i.R, i.TL = i.NS.Results, i.NS.ResultsTimeline
+    -- The expanded view these cases were written against (a new profile opens collapsed, UT-P14).
+    i.NS.db.profile.windows.results.view = "expanded"
     return i
 end
 

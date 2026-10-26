@@ -481,10 +481,13 @@ function Runs.Delta(run, top)
     return (dps / top - 1) * 100
 end
 
+-- The Delta cell: a complete run level with the max (the top, or a run tied with it) reads 0.0% in the
+-- column's green, the pair of its red below the max (UT-P14, 2026-10-27; gold before), as the detail's
+-- Delta box draws the top's lead.
 local function deltaText(run, top)
     local pct = Runs.Delta(run, top)
     if pct == nil then return DASH, C.dim end
-    if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.gold end
+    if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.green end
     local color = run.status == "complete" and (pct < 0 and C.red or C.green) or C.dim
     return L["%+.1f%%"]:format(pct), color
 end

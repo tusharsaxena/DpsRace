@@ -463,7 +463,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: two test files,
-`tests/test_results.lua` at 1481 lines (the next Results suite goes in a new file, as
+`tests/test_results.lua` at 1495 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`,
 `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_delta` and
@@ -473,7 +473,7 @@ six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in ano
 first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1288 (the zoom and the modal, then the scrollbar and the placement over the Results window, 2026-10-27; its suite's
 P12, P13 and P14 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal` and `test_results_timeline_view` suites), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
-`modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
+`modules/Results_Runs.lua` at 1050 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than

@@ -152,7 +152,7 @@ test("results: the detail's Delta box: a best's lead, a non-best's Delta cell, a
     assertEqual(w.badgeText.__color[1], C.blue[1])
 end)
 
-test("results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0%", function()
+test("results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns
     local a = mkRun("a", { result = { damage = 1, dps = 100000 }, date = NOW - HOUR })
@@ -166,8 +166,11 @@ test("results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; th
     assertEqual(ctx.top, 100000)
     assertEqual((Runs.DeltaBox(b, ctx)), "+0.0%", "a lead of nothing over the tied runner-up")
     local text, color, top = Runs.DeltaBox(a, ctx)
-    assertEqual(text, "0.0%", "the tied runner-up: its Delta cell, gold")
-    assertEqual(color[1], i.NS.ResultsTable.COLORS.gold[1])
+    assertEqual(text, "0.0%", "the tied runner-up: its Delta cell, green (level with the max)")
+    for k = 1, 3 do assertEqual(color[k], i.NS.ResultsTable.COLORS.green[k]) end
+    -- The top's lead is that same green: the box and the column agree.
+    local _, topColor = Runs.DeltaBox(b, ctx)
+    assertTrue(topColor == color, "the top's lead and the tied run's 0.0% share one green")
     assertFalse(top)
     assertEqual(select(3, Runs.DeltaBox(a, nil)), false, "no context: a dash, no badge")
     assertEqual(Runs.Leaders({}), nil)

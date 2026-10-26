@@ -318,7 +318,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
   (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
-  run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
+  run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view it sits beside the list; in the collapsed view (the default, UT-P14) it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
   target line leads with two chips (`Detail.Meta`): the target type in its category color and the
   race length in its length color (`ResultsTable.LengthChip`), then `ResultsTable.TimeTail` (the DoT
   tail, *+11.1s*, or when an incomplete run's combat ended, *at 1:04*) and the target's name.

@@ -150,6 +150,8 @@ local function resultsInst()
         m.StaticPopup_Show = function() end
     end }
     i.R = i.NS.Results
+    -- The expanded view these cases were written against (a new profile opens collapsed, UT-P14).
+    i.NS.db.profile.windows.results.view = "expanded"
     return i
 end
 

@@ -106,13 +106,13 @@ NS.defaults = {
             -- before the chart's icon row on top, UT-P11). 300 wide before 2026-10-26.
             hud = { width = 260, height = 573 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
-            -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
-            -- the title bar's toggle switches them.
+            -- the list) and collapsed (the list alone), the default (UT-P14, 2026-10-27; expanded before).
+            -- Each keeps its own size; only the title bar's toggle switches them.
             -- 1340 and 980 wide before 2026-10-26 (1220 and 900 before the Note column, 2026-10-25).
             -- `collapsedSections` (UT-P10): the run detail's folded sections, each Detail.SECTIONS key
             -- set to true (modules/Results_Detail.lua); empty, every section open. Not geometry: Reset
             -- position keeps it; a profile reset and Reset all settings clear it.
-            results = { view = "expanded", expanded = { width = 1344, height = 560 },
+            results = { view = "collapsed", expanded = { width = 1344, height = 560 },
                         collapsed = { width = 904, height = 560 }, collapsedSections = {} },
             -- No `timeline`: the ability timeline (#14, modules/Results_Timeline.lua) opens over the
             -- Results window at its place and size every time and stores nothing (UT-P14; 980x560 and

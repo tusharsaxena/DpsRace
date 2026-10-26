@@ -366,8 +366,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   only, in *Casts* only.
 - [x] **Timeline placement:** the timeline always opens at the Results window's current position and size (its
   expanded or collapsed view as shown), so it overlays it exactly; moving or resizing it while open is not saved.
-- [ ] **Results default view:** a new profile opens the Results window collapsed.
-- [ ] **Delta 0.0% in green:** the top run's 0.0% in the Delta column (and the detail's Delta box) is a green from
+- [x] **Results default view:** a new profile opens the Results window collapsed.
+- [x] **Delta 0.0% in green:** the top run's 0.0% in the Delta column (and the detail's Delta box) is a green from
   the same palette as the column's red.
 
 ### P8: Finalize (only on the owner's go-ahead)

@@ -199,7 +199,7 @@ test("results: Save, Reset and Clear the Runs view, and a saved view is what the
     seed(i, { mkRun("a"), mkRun("m", { char = "mage", date = NOW - 2 * HOUR }) })
     i.R.Show()
     local pane = runsPane(i)
-    assertEqual(pane.barH, 32, "expanded: the filter bar is one row")
+    assertEqual(pane.barH, 2 * 32 - 6, "a new profile's collapsed view: the filter bar is two rows")
     assertEqual(pane.viewButtons.save.label.__text, "Save")
     pane:SetFilter("char", "all")
     pane:SetFilter("spec", "all")

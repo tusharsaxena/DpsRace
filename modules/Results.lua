@@ -13,9 +13,9 @@ local _, NS = ...
 -- display), and neither does General visibility: this is a browser the player opens on purpose.
 -- Built on first show; each tab is built the first time it is shown.
 --
--- EXPANDED OR COLLAPSED (the owner's call, 2026-10-25). Expanded, the default, sets the detail beside
--- the list (screen 08); collapsed shows the list alone, and a click puts the detail in its place, with
--- a back control (spec §6.2). Only the title bar's toggle switches them, never the width; each view
+-- EXPANDED OR COLLAPSED (the owner's call, 2026-10-25). Expanded sets the detail beside the list
+-- (screen 08); collapsed, the default (UT-P14, 2026-10-27; expanded before), shows the list alone, and
+-- a click puts the detail in its place, with a back control (spec §6.2). Only the title bar's toggle switches them, never the width; each view
 -- keeps its own size and minimum (Results.VIEWS), and the filter bar takes one row or two.
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
@@ -74,10 +74,10 @@ local function store()
     return p.windows.results
 end
 
---- The view shown: "expanded" (the default) or "collapsed".
+--- The view shown: "collapsed" (the default) or "expanded".
 function Results.View()
     local w = store() or {}
-    return w.view == "collapsed" and "collapsed" or "expanded"
+    return w.view == "expanded" and "expanded" or "collapsed"
 end
 
 local function storedSize()
