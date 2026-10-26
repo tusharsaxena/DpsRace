@@ -6,7 +6,8 @@
 -- list's rebind and the detail's layout, the timeline's tick pool, the HUD bodies' layout and redraw.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
+local test, assertEqual, assertTrue, assertFalse, assertNil =
+    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 local RaceClock = dofile(T.root .. "/tests/race_clock.lua")(T)
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
 
@@ -414,7 +415,7 @@ test("timeline sizing: a 30-frame drag moves the ticks and the cast icons and re
     rawset(NS.Pool, "ReleaseAll", release)
     assertEqual(churn.n, 1, "one full redraw on release")
     assertEqual(#NS.ResultsTimeline.Icons(), 5, "the icons rebuilt on release, every cast of both runs")
-    assertEqual(NS.db.profile.windows.timeline.width, 1000)
+    assertNil(NS.db.profile.windows.timeline, "the size is never stored (UT-P14)")
 end)
 
 -- ── the Race HUD ────────────────────────────────────────────────────────────────────────────────

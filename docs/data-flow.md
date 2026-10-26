@@ -375,13 +375,15 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   each strip `StripHeight` tall for its rows, at most `MAX_STACK`); `Sections` places the parts. The compared run
   is `ResultsDetail.CompareTarget(true)` (the best, the runner-up or the picked run, whether or not
   the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
-  position is `MarkX` on the window's stored size and the zoom: the controls at the right of the *Casts*
+  position is `MarkX` on the window's tracked size and the zoom: the controls at the right of the *Casts*
   heading line step `ZOOMS` (1x to 8x), which lays the strips' and the lanes' time area out that many
-  times the lanes' width in clipping scroll frames that pan together (Shift+mouse wheel, `Pan`), kept
+  times the lanes' width in clipping scroll frames that pan together (zoomed in, the mouse wheel, `Pan`,
+  and the scrollbar along the window's bottom, `ScrollTo`, whose thumb is the view's share), kept
   as the fraction of the axis at the view's left (`ClampPos`, `Rezoom`); another run or compare target
   goes back to 1x. The detail calls `ResultsTimeline.DetailChanged`
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
-  with the Results window, and its position and size are `profile.windows.timeline`.
+  with the Results window. Every open places it exactly over the Results window, that window's anchor
+  and its size in the view shown (`Results.Placement`); nothing of its place or size is stored.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
   same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
   *All categories*: the table has no target column, so two boards of one spec and length would read

@@ -356,15 +356,15 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P14: The owner's fifth test round (2026-10-27)
 
-- [ ] **Timeline scrollbar:** when zoomed, a horizontal scrollbar at the bottom of the window whose thumb grows and
+- [x] **Timeline scrollbar:** when zoomed, a horizontal scrollbar at the bottom of the window whose thumb grows and
   shrinks with the zoom (the visible share of the race), scrolling *Casts* and *By ability* together; the mouse wheel
   inside the window scrolls left and right while zoomed (Shift+wheel up and down); no scrollbar at 1x, where the wheel
   scrolls up and down as before.
-- [ ] **Timeline strip labels:** *This run* and *Best run* (or the compared run's label) centered vertically on their
+- [x] **Timeline strip labels:** *This run* and *Best run* (or the compared run's label) centered vertically on their
   strips.
-- [ ] **Timeline strip divider:** a very light 1 px horizontal line between the two strips, spanning the strips' width
+- [x] **Timeline strip divider:** a very light 1 px horizontal line between the two strips, spanning the strips' width
   only, in *Casts* only.
-- [ ] **Timeline placement:** the timeline always opens at the Results window's current position and size (its
+- [x] **Timeline placement:** the timeline always opens at the Results window's current position and size (its
   expanded or collapsed view as shown), so it overlays it exactly; moving or resizing it while open is not saved.
 - [ ] **Results default view:** a new profile opens the Results window collapsed.
 - [ ] **Delta 0.0% in green:** the top run's 0.0% in the Delta column (and the detail's Delta box) is a green from

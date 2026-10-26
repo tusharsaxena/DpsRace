@@ -25,10 +25,13 @@ local _, NS = ...
 -- (zoom out, zoom in, reset) step the time axis through ZOOMS for the strips and the lanes together:
 -- the time area is laid out ZOOMS[i] times the lanes' width and shown through clipping scroll frames
 -- (one over the strips and their axis, one over the lanes, one over the pinned axis) that pan
--- together, the name cells and the counts staying put. Shift+mouse wheel pans; a thin bar under the
--- pinned axis shows where the view is. The view is kept as the fraction of the axis at its left edge
--- (`pos`), so a resize keeps the same moment at the left; a zoom keeps the view's middle. Zoom and pan
--- go back to 1x on another run or compare target.
+-- together, the name cells and the counts staying put. Zoomed in (P14, the owner's call, 2026-10-27),
+-- a scrollbar along the window's bottom under the pinned axis, the lanes' width, its thumb the view's
+-- share of the axis (the lanes' width over the zoomed width), scrolls both sections: drag the thumb or
+-- click the track; and the mouse wheel anywhere in the window scrolls left and right (up toward 0:00),
+-- Shift+wheel up and down. At 1x there is no scrollbar and the wheel scrolls up and down. The view is
+-- kept as the fraction of the axis at its left edge (`pos`), so a resize keeps the same moment at the
+-- left; a zoom keeps the view's middle. Zoom and pan go back to 1x on another run or compare target.
 --
 -- WHICH RUNS. The detail's: its run, and its compare target resolved whether or not the compare is on
 -- (CompareTarget(true)). Every detail draw and every compare change (a pick, Clear Pick, the toggle)
@@ -38,8 +41,10 @@ local _, NS = ...
 --
 -- THE WINDOW is the Results window's kind (standalone-windows): a plain frame skinned through
 -- NS.ApplySkin, closed through NS.MakeCloseButton, in UISpecialFrames (Escape closes it), clamped,
--- movable by its title bar and resizable, its position and size in db.profile.windows.timeline;
--- Master scale acts on it. It closes with the Results window. Built on first open.
+-- movable by its title bar and resizable; Master scale acts on it. It closes with the Results window.
+-- Built on first open. Every open places it exactly over the Results window (P14, the owner's call,
+-- 2026-10-27): that window's anchor and its size in the view shown (Results.Placement), no smaller than
+-- this one's minimums. A move or a resize lasts while it is open and is never stored.
 --
 -- A MODAL (P13, the owner's call, 2026-10-27: a Results tooltip showed through it). Opened from the
 -- Results window, it sits one strata above it (LAYERS.STRATA.MODAL, frame-layering-§1), toplevel, and
@@ -50,8 +55,9 @@ local _, NS = ...
 -- window shows through.
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
--- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, MarkX,
--- LaneGeometry, Stack, Sections, ClampPos, Rezoom, CooldownText, CooldownLine, IconLines and Legend are pure.
+-- constants here and the window's tracked size, never read back off a frame; Rows, Span, Ticks, MarkX,
+-- LaneGeometry, Stack, Sections, StripMid, DividerY, ClampPos, Rezoom, PosRange, BarBand, CooldownText,
+-- CooldownLine, IconLines and Legend are pure.
 
 local Timeline = { wanted = false }
 NS.ResultsTimeline = Timeline
@@ -62,10 +68,7 @@ local FONT = Style.FONT
 local Tbl = NS.ResultsTable
 local C = Tbl.COLORS
 
-local DW = NS.defaults.profile.windows.timeline
 Timeline.FRAME_NAME = "DpsRaceTimeline"
--- 980 by 560 (860 before P12: the owner asked for more room for the strips by default).
-Timeline.WIDTH, Timeline.HEIGHT = DW.width, DW.height
 -- 640 (was 540, P11): at 540 a 1:00 race gave the cast icons about 5 px a second, two rows for every
 -- global cooldown's worth of casts; 640 gives them 7.
 Timeline.MIN_WIDTH = 640
@@ -104,10 +107,16 @@ Timeline.STRIP_GAP = 8
 Timeline.CASTS_AXIS_H = 16
 Timeline.MAX_STACK = 12
 Timeline.CLIP_PAD = 8
--- The zoom steps (the time axis's width over the lanes'), and a Shift+wheel notch: a quarter of the view.
+-- The zoom steps (the time axis's width over the lanes'), and a wheel notch while zoomed: a quarter of
+-- the view. The scrollbar (zoomed only): 10 px tall, 6 px off the window's bottom, 4 px under the
+-- pinned axis, which moves up by SCROLL_H + SCROLL_GAP to make room.
 Timeline.ZOOMS = { 1, 1.5, 2, 3, 4, 6, 8 }
 Timeline.PAN = 0.25
-Timeline.BAR_H = 3          -- the pan bar under the pinned axis
+Timeline.SCROLL_H = 10
+Timeline.SCROLL_GAP = 4
+Timeline.BOTTOM = 6         -- the pinned axis's (or the scrollbar's) gap to the window's bottom
+-- The line between the two *Casts* strips (P14): a light gray, one physical pixel tall.
+Timeline.DIVIDER = { 0.6, 0.6, 0.6, 0.15 }
 
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
@@ -252,6 +261,16 @@ function Timeline.Rezoom(pos, from, to)
     return Timeline.ClampPos((tonumber(pos) or 0) + 0.5 / from - 0.5 / to, to)
 end
 
+--- The left edge's range at `zoom` (the scrollbar's values, 0 to this): 0 at 1x.
+function Timeline.PosRange(zoom)
+    return math.max(0, 1 - 1 / (tonumber(zoom) or 1))
+end
+
+--- The band the scrollbar takes at the window's bottom at `zoom`: its height and gap zoomed in, else 0.
+function Timeline.BarBand(zoom)
+    return (tonumber(zoom) or 1) > 1 and Timeline.SCROLL_H + Timeline.SCROLL_GAP or 0
+end
+
 --- A cast tick's middle x in a lane `width` wide: INSET + clamp(t, 0, span) / span x (width - 2 x INSET).
 --- A pre-pull cast sits at 0:00, one after the buzzer at the end. nil without a time or a span.
 function Timeline.MarkX(t, span, width)
@@ -312,6 +331,18 @@ function Timeline.Sections(rowsA, rowsB)
     s.lanesHead = s.castsAxis + Timeline.CASTS_AXIS_H + Style.SECTION_GAP
     s.lanes = s.lanesHead + Style.SECTION_H
     return s
+end
+
+--- A strip's vertical middle, px down from the content's top (its label's line): `side` "a" this
+--- run's, "b" the compared run's, in `s` (Timeline.Sections), whatever rows it grew to.
+function Timeline.StripMid(s, side)
+    if side == "a" then return s.stripA + s.heightA / 2 end
+    return s.stripB + s.heightB / 2
+end
+
+--- The line between the strips: its middle, px down from the content's top (the middle of the gap).
+function Timeline.DividerY(s)
+    return s.stripA + s.heightA + Timeline.STRIP_GAP / 2
 end
 
 --- What follows the client's spell tooltip on a cast icon: its time on the race clock ("(pet)" after a
@@ -379,38 +410,6 @@ function Timeline.Legend(run, other, kind)
     return this, label, nil
 end
 
--- ── stored geometry ─────────────────────────────────────────────────────────────────────────────
-
-local function store()
-    local p = NS.db and NS.db.profile
-    if not p then return nil end
-    p.windows = p.windows or {}
-    p.windows.timeline = p.windows.timeline or {}
-    return p.windows.timeline
-end
-
-local function savePosition()
-    local w = store()
-    if not (w and ui) then return end
-    local point, _, relativePoint, x, y = ui.frame:GetPoint(1)
-    if type(point) ~= "string" or type(x) ~= "number" or type(y) ~= "number" then return end
-    w.point, w.relativePoint = point, type(relativePoint) == "string" and relativePoint or point
-    w.x, w.y = math.floor(x + 0.5), math.floor(y + 0.5)
-end
-
-local function saveSize(width, height)
-    local w = store()
-    if not w then return end
-    if type(width) == "number" then w.width = math.floor(width + 0.5) end
-    if type(height) == "number" then w.height = math.floor(height + 0.5) end
-end
-
-local function storedSize()
-    local w = store() or {}
-    return math.max(Timeline.MIN_WIDTH, tonumber(w.width) or Timeline.WIDTH),
-        math.max(Timeline.MIN_HEIGHT, tonumber(w.height) or Timeline.HEIGHT)
-end
-
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
 
 local layout, resize
@@ -441,10 +440,8 @@ local function buildChrome(f)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() f:StartMoving() end)
-    drag:SetScript("OnDragStop", function()
-        f:StopMovingOrSizing()
-        savePosition()
-    end)
+    -- Moved for as long as it is open: nothing stored, the next open goes over the Results window.
+    drag:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
     ui.drag = drag
 end
 
@@ -502,22 +499,47 @@ local function buildZoom()
     end
     ui.zoomReset = control("reset", "R", L["Reset zoom"], function() Timeline.ResetZoom() end)
     ui.zoomReset:SetPoint("TOPRIGHT", ui.content, "TOPRIGHT", 0, 0)
-    ui.zoomOut = control(nil, "-", L["Zoom out"], function() Timeline.ZoomBy(-1) end)
+    ui.zoomOut = control(nil, "-", L["Zoom out (at 1x the mouse wheel scrolls up and down)"],
+        function() Timeline.ZoomBy(-1) end)
     ui.zoomOut:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
-    ui.zoomIn = control(nil, "+", L["Zoom in (Shift+mouse wheel scrolls along the time axis)"],
+    ui.zoomIn = control(nil, "+", L["Zoom in (the mouse wheel then scrolls left and right, Shift+wheel up and down)"],
         function() Timeline.ZoomBy(1) end)
     ui.zoomIn:SetPoint("RIGHT", ui.zoomOut, "LEFT", -2, 0)
     ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
     ui.zoomText:SetPoint("RIGHT", ui.zoomIn, "LEFT", -6, 0)
 end
 
--- The pinned axis's clip on the window and the pan bar under it (its track and the view's thumb).
+-- One mouse-wheel notch on any part of the window.
+local function onWheel(_, delta) Timeline.Wheel(delta) end
+
+-- The scrollbar (zoomed in only): a horizontal slider whose values are the view's left edge in px
+-- along the zoomed axis, over its track; its thumb the view's share of it. A drag of the thumb or a
+-- click on the track (the client moves the thumb there) scrolls both sections.
+local function buildBar(f)
+    local bar = CreateFrame("Slider", nil, f)
+    bar:SetOrientation("HORIZONTAL")
+    bar:SetHeight(Timeline.SCROLL_H)
+    bar:EnableMouse(true)
+    bar:EnableMouseWheel(true)
+    bar:SetScript("OnMouseWheel", onWheel)
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints(bar)
+    bar.track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], 0.10)
+    bar.thumb = bar:CreateTexture(nil, "OVERLAY")
+    bar.thumb:SetColorTexture(1, 1, 1, 0.35)
+    bar:SetThumbTexture(bar.thumb)
+    -- Ours (applyPan) set it while `syncing`; the player's drag or click scrolls.
+    bar:SetScript("OnValueChanged", function(_, value)
+        if not ui.syncing then Timeline.ScrollTo(value) end
+    end)
+    bar:Hide()
+    ui.bar = bar
+end
+
+-- The pinned axis's clip on the window and the scrollbar under it.
 local function buildAxis(f)
     ui.axisClip, ui.axisLayer = clipLayer(f)
-    ui.barTrack = f:CreateTexture(nil, "ARTWORK")
-    ui.barTrack:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], 0.10)
-    ui.barThumb = f:CreateTexture(nil, "OVERLAY")
-    ui.barThumb:SetColorTexture(1, 1, 1, 0.35)
+    buildBar(f)
     ui.axis, ui.castsAxis, ui.grid = {}, {}, {}
     ui.axisPool, ui.castsAxisPool = NS.Pool.New(), NS.Pool.New()
     ui.gridPool, ui.laneGridPool = NS.Pool.New(), NS.Pool.New()
@@ -528,9 +550,7 @@ local function buildBody(f)
     ui.content = CreateFrame("Frame", nil, ui.scroll)
     ui.scroll:SetScrollChild(ui.content)
     ui.scroll:EnableMouseWheel(true)
-    ui.scroll:SetScript("OnMouseWheel", function(_, delta)
-        if IsShiftKeyDown and IsShiftKeyDown() then Timeline.Pan(delta) else Timeline.Scroll(delta) end
-    end)
+    ui.scroll:SetScript("OnMouseWheel", onWheel)
     -- The time area's two clips over the content (a child frame draws over its parent's textures):
     -- the strips' (the icons, their axis) and the lanes' (the ticks); the grid lines under both.
     local level = ui.content:GetFrameLevel() + 5
@@ -547,6 +567,10 @@ local function buildBody(f)
     ui.lanesHead = Style.Text(ui.content, FONT.SECTION)
     ui.lanesHead:SetText(L["By ability"])
     ui.strips = { a = buildStrip(Timeline.THIS), b = buildStrip(Timeline.OTHER) }
+    ui.divider = ui.content:CreateTexture(nil, "ARTWORK")
+    ui.divider:SetTexture(WHITE)
+    local d = Timeline.DIVIDER
+    ui.divider:SetVertexColor(d[1], d[2], d[3], d[4])
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
     buildZoom()
@@ -576,11 +600,14 @@ local function trackSize(width, height)
     if type(height) == "number" then ui.height = math.max(Timeline.MIN_HEIGHT, height) end
 end
 
+-- Exactly over the Results window (P14): its anchor and its size in the view shown, no smaller than
+-- this window's minimums. Every open; nothing stored.
 local function applyPlacement()
-    local f, w = ui.frame, store() or {}
-    ui.width, ui.height = storedSize()
+    local f = ui.frame
+    local point, relativePoint, x, y, width, height = NS.Results.Placement()
+    trackSize(width, height)
     f:ClearAllPoints()
-    f:SetPoint(w.point or "CENTER", UIParent, w.relativePoint or "CENTER", w.x or 0, w.y or 0)
+    f:SetPoint(point, UIParent, relativePoint, x, y)
     f:SetSize(ui.width, ui.height)
 end
 
@@ -599,14 +626,17 @@ local function ensureWindow()
     buildBody(f)
     NS.ApplySkin(f, Timeline.SKIN)
     f:SetScript("OnHide", onHide)
+    -- The wheel anywhere in the window (the scroll frame and the scrollbar take it too).
+    f:EnableMouseWheel(true)
+    f:SetScript("OnMouseWheel", onWheel)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Timeline.FRAME_NAME) end
     -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
-    -- the full `layout` (every pair and tick re-pooled) runs once on release.
+    -- the full `layout` (every pair and tick re-pooled) runs once on release. No `done`: the size is
+    -- never stored.
     NS.Sizing.MakeResizable(f, {
         minWidth = Timeline.MIN_WIDTH, minHeight = Timeline.MIN_HEIGHT,
-        size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
+        size = trackSize, layout = function() resize() end, redraw = function() layout() end,
     })
-    applyPlacement()
     debug("window built")
     return ui
 end
@@ -779,19 +809,30 @@ local function rowMid(side, r)
     return s.stripB + (r - 0.5) * Timeline.CAST_STEP
 end
 
--- The strip's track, its run's name level with its base row, and its note when it has no casts.
+-- The strip's track, its run's name on its middle (P14: the strip grows with its rows), and its note
+-- when it has no casts.
 local function placeStrip(side, g, label, note)
     local st, top = ui.strips[side], ui.sections["strip" .. (side == "a" and "A" or "B")]
     st.track:ClearAllPoints()
     st.track:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX, -top)
     st.track:SetSize(g.laneW, ui.sections["height" .. (side == "a" and "A" or "B")])
     st.label:ClearAllPoints()
-    st.label:SetPoint("LEFT", ui.content, "TOPLEFT", 0, -rowMid(side, 1))
+    st.label:SetPoint("LEFT", ui.content, "TOPLEFT", 0, -Timeline.StripMid(ui.sections, side))
     st.label:SetText(label or "")
     st.note:ClearAllPoints()
     st.note:SetPoint("LEFT", ui.content, "TOPLEFT", g.laneX + 6, -rowMid(side, 1))
     st.note:SetText(note or "")
     st.note:SetShown(note ~= nil)
+end
+
+-- The line between the strips, the lanes' width (the time area alone), one physical pixel tall: the
+-- run detail's compare separator's width (Compare.SepWidth) from the window's scale, not a geometry read.
+local function placeDivider(g)
+    local d = ui.divider
+    d:ClearAllPoints()
+    d:SetPoint("LEFT", ui.content, "TOPLEFT", g.laneX, -Timeline.DividerY(ui.sections))
+    d:SetWidth(g.laneW)
+    d:SetHeight(NS.ResultsCompare.SepWidth(d:GetEffectiveScale()))
 end
 
 -- One strip's icons, from its stack.
@@ -824,6 +865,7 @@ local function layoutStrips(g)
     local otherName = ui.other and NS.ResultsCompare.OtherLabel(ui.kind) or nil
     placeStrip("a", g, L["This run"], stripNote(ui.castsA, "a"))
     placeStrip("b", g, otherName, stripNote(ui.castsB, "b"))
+    placeDivider(g)
     stripIcons("a", ui.castsA, ui.stackA, ui.thisLabel, g)
     stripIcons("b", ui.castsB, ui.stackB, ui.otherLabel, g)
 end
@@ -832,6 +874,7 @@ end
 -- its strip on the row it has (the stacking is redone on release).
 local function stretchStrips(g)
     for _, side in ipairs({ "a", "b" }) do ui.strips[side].track:SetWidth(g.laneW) end
+    ui.divider:SetWidth(g.laneW)
     for _, d in ipairs(ui.icons or {}) do
         d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.zoomW) or 0)
         putIcon(d, g)
@@ -861,24 +904,27 @@ local function sizeClips(g)
     sized(ui.lanesClip, g.laneW, lanesH)
     sized(ui.marks, g.zoomW, lanesH)
     ui.axisClip:ClearAllPoints()
-    ui.axisClip:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX, 6)
+    ui.axisClip:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX,
+        Timeline.BOTTOM + Timeline.BarBand(g.zoom))
     sized(ui.axisClip, g.laneW, Timeline.AXIS_H - 4)
     sized(ui.axisLayer, g.zoomW, Timeline.AXIS_H - 4)
 end
 
--- The pan bar under the pinned axis: the lanes' width, the thumb the view's share of it at its place.
--- Shown only zoomed in.
+-- The scrollbar along the window's bottom, the lanes' width under the pinned axis: its range the
+-- zoomed axis past the lanes' width, its value the view's left edge, its thumb the view's share of it
+-- (the lanes' width over the zoomed width). Shown only zoomed in.
 local function placeBar(g, shown)
-    local zoomed = shown and g.zoom > 1
-    ui.barTrack:SetShown(zoomed)
-    ui.barThumb:SetShown(zoomed)
+    local bar = ui.bar
+    bar:SetShown(shown and g.zoom > 1)
     ui.thumbX, ui.thumbW = Timeline.PAD + g.laneX + ui.pos * g.laneW, g.laneW / g.zoom
-    ui.barTrack:ClearAllPoints()
-    ui.barTrack:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX, 2)
-    ui.barTrack:SetSize(g.laneW, Timeline.BAR_H)
-    ui.barThumb:ClearAllPoints()
-    ui.barThumb:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", ui.thumbX, 2)
-    ui.barThumb:SetSize(ui.thumbW, Timeline.BAR_H)
+    bar:ClearAllPoints()
+    bar:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX, Timeline.BOTTOM)
+    bar:SetWidth(g.laneW)
+    bar.thumb:SetSize(ui.thumbW, Timeline.SCROLL_H)
+    ui.syncing = true
+    bar:SetMinMaxValues(0, Timeline.PosRange(g.zoom) * g.zoomW)
+    bar:SetValue(ui.hoff)
+    ui.syncing = false
 end
 
 -- The view's left edge (`pos`) kept on the axis, and every clip panned to it together.
@@ -1035,7 +1081,7 @@ local function layoutFrame(g)
     placeAxes(g, not ui.isEmpty)
     ui.scroll:ClearAllPoints()
     ui.scroll:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", Timeline.PAD, -(top + 8))
-    ui.viewH = math.max(1, ui.height - top - 8 - Timeline.AXIS_H - 8)
+    ui.viewH = math.max(1, ui.height - top - 8 - Timeline.AXIS_H - 8 - Timeline.BarBand(g.zoom))
     ui.scroll:SetSize(g.cw, ui.viewH)
     ui.content:SetWidth(g.cw)
 end
@@ -1116,6 +1162,7 @@ function Timeline.Open(p)
     pane = p
     Timeline.wanted = true
     ensureWindow()
+    applyPlacement()
     ui.frame:Show()
     if ui.frame.Raise then ui.frame:Raise() end
     NS.RaiseStaticPopups()
@@ -1145,7 +1192,15 @@ function Timeline.DetailChanged(p)
     if p == pane and Timeline.IsShown() then draw() end
 end
 
---- One mouse-wheel notch (`delta` > 0 scrolls up), clamped to the lanes.
+--- One mouse-wheel notch anywhere in the window (`delta` > 0: the wheel up). Zoomed in, along the time
+--- axis (up toward 0:00) and with Shift up and down; at 1x, up and down.
+function Timeline.Wheel(delta)
+    local shift = IsShiftKeyDown and IsShiftKeyDown()
+    if Timeline.Zoom() > 1 and not shift then return Timeline.Pan(delta) end
+    Timeline.Scroll(delta)
+end
+
+--- One vertical notch (`delta` > 0 scrolls up), clamped to the lanes.
 function Timeline.Scroll(delta)
     if not ui then return end
     local top = math.max(0, (ui.contentH or 0) - (ui.viewH or 0))
@@ -1153,12 +1208,21 @@ function Timeline.Scroll(delta)
     ui.scroll:SetVerticalScroll(ui.offset)
 end
 
---- One Shift+wheel notch (`delta` > 0 pans toward 0:00): PAN of the view, clamped to the axis.
+--- One wheel notch along the time axis (`delta` > 0 pans toward 0:00): PAN of the view, clamped to it.
 function Timeline.Pan(delta)
     if not ui then return end
     local zoom = Timeline.ZoomAt(ui.zoomI)
     ui.pos = Timeline.ClampPos((ui.pos or 0) - (delta or 0) * Timeline.PAN / zoom, zoom)
     applyPan(geometry())
+end
+
+--- The scrollbar moved to `px` along the zoomed axis (its thumb dragged, its track clicked): the view's
+--- left edge there, clamped, every clip panned with it.
+function Timeline.ScrollTo(px)
+    if not (ui and ui.sections) then return end
+    local g = geometry()
+    ui.pos = Timeline.ClampPos((tonumber(px) or 0) / g.zoomW, g.zoom)
+    applyPan(g)
 end
 
 -- To zoom step `i` (clamped), about the view's middle, and the full layout (the icons restack).
@@ -1197,14 +1261,12 @@ function Timeline.ApplyScale()
     if ui and scale then ui.frame:SetScale(scale) end
 end
 
---- Back to the default place and size (the Master controls' Reset position).
+--- The Master controls' Reset position: nothing of this window is stored, so an open one goes back
+--- over the Results window (reset just before it, settings/General.lua).
 function Timeline.ResetPosition()
-    local w = store()
-    if w then w.point, w.relativePoint, w.x, w.y, w.width, w.height = nil, nil, nil, nil, nil, nil end
-    if ui then
-        applyPlacement()
-        layout()
-    end
+    if not Timeline.IsShown() then return end
+    applyPlacement()
+    layout()
 end
 
 --- The cast ticks drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.

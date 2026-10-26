@@ -675,12 +675,12 @@ Total.
 - results timeline: a strip grows with the casts stacked at one time; the lanes start under it
 - results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets
 - results timeline: a strip with no casts shows a dim note in place of its icons
-- results timeline: its minimum width is 640, so the icons get room; the default opens wider, at 980
+- results timeline: its minimum width is 640, so the icons get room; no stored size, it opens at the Results window's
 - results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
 - results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
 - results timeline: a run with no casts or no run at all shows a message in place of the lanes
 - results timeline: Escape and its close control close it, as does the Results window closing
-- results timeline: it scrolls by a pair per notch; its position and size persist; Reset position restores them
+- results timeline: it scrolls by a pair per notch; a move and a resize are never stored; Reset position puts it over the Results window
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
 
@@ -690,7 +690,7 @@ Total.
 - timeline zoom: a second time axis under the compared run's strip, the same labels as the pinned one
 - timeline zoom: the controls sit at the right end of the Casts heading line and step through the zooms
 - timeline zoom: zoomed in, the strips and the lanes widen together and the view pans across the axis
-- timeline zoom: a zoom keeps the view's middle; Shift+mouse wheel pans and the plain wheel scrolls
+- timeline zoom: a zoom keeps the view's middle; zoomed in, the wheel pans and Shift+wheel scrolls
 - timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
 - timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
 
@@ -704,6 +704,16 @@ Total.
 - timeline modal: Escape closes the timeline before the Results window, in either close-stack order
 - timeline modal: the talent tree's panel open closes the timeline and sends the window aside
 - timeline modal: the timeline's skin is opaque, nothing of the Results window shows through
+
+### test_results_timeline_view.lua (7)
+
+- timeline view: the scrollbar shows only zoomed in, its thumb the view's share of the lanes' width
+- timeline view: a drag of the thumb or a click on the track scrolls Casts and By ability together
+- timeline view: zoomed in, the wheel scrolls left and right and Shift+wheel up and down; at 1x it scrolls up and down
+- timeline view: This run and Best run sit on their strips' middles, however many rows each grew to
+- timeline view: a light 1 px line between the strips, the time area's width, in Casts only
+- timeline view: it opens exactly over the Results window, expanded or collapsed, never stored
+- timeline view: over a Results window smaller than its minimums, it keeps its minimums
 
 ### test_sizing.lua (14)
 
@@ -1050,6 +1060,7 @@ Total.
 | test_results_timeline.lua | 20 |
 | test_results_timeline_zoom.lua | 7 |
 | test_results_timeline_modal.lua | 8 |
+| test_results_timeline_view.lua | 7 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
@@ -1071,4 +1082,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **845** |
+| **Total** | **852** |

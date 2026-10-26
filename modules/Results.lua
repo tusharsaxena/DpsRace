@@ -621,6 +621,25 @@ function Results.IsCovered()
     return ui ~= nil and ui.cover ~= nil and ui.cover:IsShown() == true
 end
 
+--- Where the window is and its size in the view shown (expanded or collapsed), for the ability timeline
+--- to open exactly over it (UT-P14): its anchor (the one read savePosition makes, so a move or a view
+--- switch not yet stored still counts; the stored one before the window is built) and the size it
+--- tracks.
+--- @return string point, string relativePoint, number x, number y, number width, number height
+function Results.Placement()
+    local w = store() or {}
+    local point, relativePoint, x, y = w.point or "CENTER", w.relativePoint or "CENTER", w.x or 0, w.y or 0
+    local width, height = storedSize()
+    if ui then
+        local p, _, rp, px, py = ui.frame:GetPoint(1)
+        if type(p) == "string" and type(px) == "number" and type(py) == "number" then
+            point, relativePoint, x, y = p, type(rp) == "string" and rp or p, px, py
+        end
+        width, height = ui.width or width, ui.height or height
+    end
+    return point, relativePoint, x, y, width, height
+end
+
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
 
 --- Whether the window decides to show: wanted, and the addon standing up.

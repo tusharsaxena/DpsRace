@@ -7,7 +7,7 @@
 -- overlapping casts need, their tooltips, the empty note, the two headings), its legend, the
 -- compare target followed as the detail's run, pick and Clear Pick change, the none and empty cases,
 -- the tick tooltip, Escape,
--- closing with the Results window, the stored position, Master scale and the stand-down.
+-- closing with the Results window, a move and a resize never stored, Master scale and the stand-down.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -459,14 +459,14 @@ test("results timeline: a strip with no casts shows a dim note in place of its i
     for _, d in ipairs(i.TL.Icons()) do assertEqual(d.side, "a") end
 end)
 
-test("results timeline: its minimum width is 640, so the icons get room; the default opens wider, at 980", function()
+test("results timeline: its minimum width is 640, so the icons get room; no stored size, it opens at the Results window's", function()
     local i = inst()
     local TL = i.TL
     assertEqual(TL.MIN_WIDTH, 640)
-    local W = i.NS.defaults.profile.windows.timeline
-    assertEqual(W.width, 980, "120 px wider than P11's 860 (P12)")
-    assertEqual(W.height, 560)
-    assertTrue(W.width >= TL.MIN_WIDTH and W.height >= TL.MIN_HEIGHT)
+    assertNil(i.NS.defaults.profile.windows.timeline, "nothing of the timeline is stored (UT-P14)")
+    for _, view in pairs(i.R.VIEWS) do
+        assertTrue(view.minWidth >= TL.MIN_WIDTH and i.R.MIN_HEIGHT >= TL.MIN_HEIGHT, "the Results window is never smaller")
+    end
     local _, _, laneW = TL.LaneGeometry(TL.MIN_WIDTH)
     assertTrue(laneW / 60 >= 7, "a 1:00 race gets 7 px a second at the minimum")
 end)
@@ -560,7 +560,7 @@ test("results timeline: Escape and its close control close it, as does the Resul
     assertFalse(i.TL.IsShown())
 end)
 
-test("results timeline: it scrolls by a pair per notch; its position and size persist; Reset position restores them", function()
+test("results timeline: it scrolls by a pair per notch; a move and a resize are never stored; Reset position puts it over the Results window", function()
     local i = inst()
     local list = {}
     for n = 1, 30 do list[n] = { n, 100000 + n } end
@@ -574,23 +574,24 @@ test("results timeline: it scrolls by a pair per notch; its position and size pe
     assertEqual(u.offset, u.contentH - u.viewH, "clamped to the last pair")
     i.TL.Scroll(1000)
     assertEqual(u.offset, 0)
+    local before = i.NS.db.profile.windows.results.point
     rawset(u.frame, "GetPoint", function() return "TOPLEFT", nil, "BOTTOMLEFT", 40.4, 600.6 end)
     u.drag:__fire("OnDragStart")
     u.drag:__fire("OnDragStop")
-    local w = i.NS.db.profile.windows.timeline
-    assertEqual(w.point, "TOPLEFT")
-    assertEqual(w.x, 40)
-    assertEqual(w.y, 601)
     u.frame:__fire("OnSizeChanged", 1000, 500)
     assertEqual(u.width, 1000)
     u.frame:__fire("OnSizeChanged", 200, 100)
     assertEqual(u.width, i.TL.MIN_WIDTH, "never under its minimum")
     assertEqual(u.height, i.TL.MIN_HEIGHT)
-    w.width, w.height = 1000, 500
+    assertNil(i.NS.db.profile.windows.timeline, "nothing stored")
+    assertEqual(i.NS.db.profile.windows.results.point, before, "nor the Results window's")
+    -- Reset position (the Results window's first, settings/General.lua): back over that window.
+    i.R.ResetPosition()
     i.TL.ResetPosition()
-    assertNil(w.point)
-    assertNil(w.width)
-    assertEqual(u.width, i.NS.defaults.profile.windows.timeline.width)
+    local _, _, _, _, rw, rh = i.R.Placement()
+    assertEqual(u.width, rw)
+    assertEqual(u.height, rh)
+    assertNil(i.NS.db.profile.windows.timeline)
 end)
 
 test("results timeline: it follows Master scale while open", function()

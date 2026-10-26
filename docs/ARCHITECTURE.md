@@ -248,7 +248,7 @@ the library's corner grip through one pattern, `modules/Sizing.lua`: while the g
 change runs the window's cheap layout (re-anchor and resize what the new size needs, nothing rebound
 or redrawn) at most once a frame, a second change in one frame waiting for a single
 `C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
-stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before. What runs per frame, before and
+stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before; the timeline stores none (UT-P14: it opens over the Results window at that window's size every time). What runs per frame, before and
 after: [performance.md](performance.md#window-sizing). A size change can also arrive in the middle of a
 draw: the first row an open shows can resolve the window's rect and run its OnSizeChanged right there,
 a full layout nested in the list's row loop. The Results lists' `Table:Bind` counts itself and stops
@@ -457,6 +457,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
+| `standalone-windows` (MUST persist window position and size in SavedVariables, restored on open) | The ability timeline (`modules/Results_Timeline.lua`) stores neither: every open places it exactly over the Results window, that window's anchor and its size in the view shown (`Results.Placement`), clamped to the timeline's minimums; a move or a resize lasts while it is open. `profile.windows.timeline` is gone from the defaults and nothing writes it. The Results window and the HUD persist theirs as before | The owner asked on 2026-10-27 (UT-P14, the fifth test round) for the timeline to always open centered over the Results window at that window's dimensions in its expanded or collapsed view, so it overlays it exactly. Since P13 it is a modal over the Results window (frame-layering T6), not a main window kept up on its own, and a stored place would put it off the window it covers | 2026-10-27 | The standard carves modals over their opener out of the persistence rule (then this row goes), or the timeline becomes a window kept open on its own again |
 | `standalone-windows` | The close control is built through the one wrapper (`NS.MakeCloseButton`, the catalog's `close` mark, gray at rest) but its hover tint is the header gold, not the library's red: `modules/Style.lua` hooks the control's enter and leave (after the library's own) and repaints it with the HUD's other title-bar controls. The wrapper, the mark, the grep gate and the rest color are unchanged | The owner asked on 2026-10-24 for every title-bar control, close included, to turn gold under the pointer as MultiMeters' strip does; a red close beside three gold controls reads as two hover rules in one strip. The four-condition decline does not apply: the library still draws the control | 2026-10-24 | `LibKa0s-Core-1.0` `MakeCloseButton` takes a hover color, or the standard names the hover tint of a host's title-bar strip; or the owner prefers the red back |
 
 ### Files over the 1500-line cap
@@ -465,12 +466,12 @@ Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band
 `tests/test_results.lua` at 1481 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`,
-`test_results_timeline_modal`, `test_results_delta` and
+`test_results_timeline_modal`, `test_results_timeline_view`, `test_results_delta` and
 `test_results_sections` did)
 and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
 six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1226 (the zoom and the modal, 2026-10-27; its suite's
-P12 and P13 cases went to new `test_results_timeline_zoom` and `test_results_timeline_modal` suites), `modules/Results_Detail.lua` at 1176
+first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1288 (the zoom and the modal, then the scrollbar and the placement over the Results window, 2026-10-27; its suite's
+P12, P13 and P14 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal` and `test_results_timeline_view` suites), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,

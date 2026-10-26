@@ -114,8 +114,9 @@ NS.defaults = {
             -- position keeps it; a profile reset and Reset all settings clear it.
             results = { view = "expanded", expanded = { width = 1344, height = 560 },
                         collapsed = { width = 904, height = 560 }, collapsedSections = {} },
-            -- The ability timeline (#14, modules/Results_Timeline.lua): the pop-out from the run detail.
-            timeline = { width = 980, height = 560 },
+            -- No `timeline`: the ability timeline (#14, modules/Results_Timeline.lua) opens over the
+            -- Results window at its place and size every time and stores nothing (UT-P14; 980x560 and
+            -- its position were stored before).
         },
     },
     global = {
