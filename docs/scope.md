@@ -21,7 +21,7 @@ in the spec, sections 1, 2 and 13
 - **A Race HUD** with one body per state, a **Results window** with history, run detail and personal
   bests, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
   diagnostics report (spec §6). The Runs list names each run's status as a boxed badge (the tag
-  alone; *Spec best* and *Max* name the board they top in their tooltip), colors each preset race
+  alone; *Spec best* names the board it tops in its tooltip), colors each preset race
   length (the Results window only), and groups by *Full* (character, class, spec, target and time;
   a new profile's default), character, class and spec, target, time, target and time, or spec, target and time.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the

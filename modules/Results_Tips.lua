@@ -5,7 +5,7 @@ local _, NS = ...
 --
 -- PURE OVER THE STORED RUN. Each builder takes a run record and answers its lines, { title, line, ...
 -- }, a line a string or { text, r, g, b }; nothing here reads a meter or a frame. A column may carry
--- its own `tip(run)` (the Runs list's v/s Max and Status, which need the view), which wins over the
+-- its own `tip(run)` (the Runs list's Delta and Status, which need the view), which wins over the
 -- builder here by its key.
 
 local Tips = {}

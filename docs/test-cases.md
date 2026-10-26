@@ -386,7 +386,7 @@ Total.
 
 ### test_results.lua (50)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, v/s Max, status, note
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
 - results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
@@ -394,17 +394,17 @@ Total.
 - results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
-- results: Status is Max, Spec best, Flagged or Complete for a complete run, each with its icon
+- results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
 - results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
 - results: the Time column and the Bests Length column take the length color; the tail stays gray
 - results: Status tags are boxed in their hue with the icon inside
 - results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
 - results: the bars take History > Results table's look, over the rows' own stripe
-- results: the Damage and DPS bars run 10% to 100% within each target type
-- results: v/s Max and the Max tag are per target type
+- results: the Damage and DPS bars run 10% to 100% within each group; ungrouped, the whole view is one
+- results: Delta is per group, recomputed when the grouping changes; ungrouped, the whole view is one
 - results: Only best keeps the runs holding their board's best
-- results: v/s Max is each run's distance from the max DPS among the runs the filters pass
+- results: Delta is each run's distance from the max DPS among the runs the filters pass
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
