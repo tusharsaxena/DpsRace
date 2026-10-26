@@ -30,17 +30,19 @@ Compare.VALUE_W = 80        -- each figure column's least width, in the score ta
 -- Tbl.BadgeWidth's 6 px and its 4 px pad), at the right of both tables; it fits the 440 px detail of
 -- the expanded view at its 1344 px minimum (tests/test_compare.lua).
 Compare.DIFF_W = 94
--- The flex layout (the owner's call, 2026-10-27): the tables fill the detail at any width. The name
--- column takes what the figures leave, up to NAME_MAX; past that the three figure columns grow alike,
--- each up to its cap so a bar stays readable; past the caps the name column takes the rest.
-Compare.NAME_MAX = 180
-Compare.VALUE_MAX = 240
-Compare.DIFF_MAX = Compare.VALUE_MAX + Compare.DIFF_W - Compare.VALUE_W
+-- The flex layout (the owner's calls, 2026-10-27): the tables fill the detail at any width. The name
+-- column takes NAME_SHARE of the width, at most NAME_MAX and never more than the figures leave at
+-- their least; the three figure columns grow alike over the rest. In the expanded view's 416 px detail
+-- that gives a spell's name about 115 px of text past its icon; a wide collapsed detail stops the name
+-- at NAME_MAX and hands every further pixel to the figures.
+Compare.NAME_SHARE = 0.32
+Compare.NAME_MAX = 200
 Compare.NAME_GAP = 4        -- between the name column and this run's
 -- The line between This run and the other run, through both tables at full row height: one pixel,
--- a dim gray, centered in the gap between the two columns.
+-- a faint see-through gray (the owner's call, 2026-10-27: thinner and dimmer than P11's), centered in
+-- the gap between the two columns.
 Compare.SEP_W = 1
-Compare.SEP_COLOR = { 0.42, 0.42, 0.46, 0.8 }
+Compare.SEP_COLOR = { 0.5, 0.5, 0.5, 0.18 }
 Compare.ROW_H = 15          -- one line of the score table
 Compare.RULE_GAP = 4        -- the space above and below the rule between the two tables
 Compare.BAR_H = 22          -- the toggle's line
@@ -414,14 +416,15 @@ end
 
 --- The columns across `width` (the flex layout, from config): `name`, `value` (this run's and the
 --- other's) and `diff` wide, and the figure columns' left edges in order, this run, the other run
---- (Compare.GAP after it) and the difference, which ends at `width`.
+--- (Compare.GAP after it) and the difference, which ends at `width`. The name keeps the rounding's
+--- pixels (up to two).
 --- @return table { name, value, diff, [1] this x, [2] other x, [3] difference x }
 function Compare.Columns(width)
     local vw, dw = Compare.VALUE_W, Compare.DIFF_W
     local avail = width - Compare.GAP - Compare.NAME_GAP
-    local name = math.min(Compare.NAME_MAX, avail - 2 * vw - dw)
+    local name = math.min(Compare.NAME_MAX, math.floor(width * Compare.NAME_SHARE), avail - 2 * vw - dw)
     local grow = math.max(0, math.floor((avail - name - 2 * vw - dw) / 3))
-    vw, dw = math.min(Compare.VALUE_MAX, vw + grow), math.min(Compare.DIFF_MAX, dw + grow)
+    vw, dw = vw + grow, dw + grow
     name = avail - 2 * vw - dw
     local this = name + Compare.NAME_GAP
     return { name = name, value = vw, diff = dw, this, this + vw + Compare.GAP, width - dw }

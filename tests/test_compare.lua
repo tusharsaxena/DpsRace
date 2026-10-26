@@ -315,7 +315,8 @@ test("compare: one bar per row, on the higher run's side, its length the row's %
     i.R.ShowRun("low")
     local d = detail(i)
     d:SetComparing(true)
-    local x, Cmp, vw = d.cmp, i.Cmp, i.Cmp.VALUE_W
+    local x, Cmp = d.cmp, i.Cmp
+    local vw = Cmp.Columns(d.content.__width).value   -- each run's column at the detail's width
     local byID = {}
     for _, row in ipairs(x.rows.active) do byID[row.data.id] = row end
     -- The spell table: 30000 vs 24000 (+25%), 10000 vs 30000 (-66.7%, the largest), 500 vs 500, and
@@ -533,7 +534,7 @@ end)
 
 -- ── the flex columns, the separator and the stripes ─────────────────────────────────────────────
 
-test("compare: the columns flex with the width: the name column first, then the figures up to their caps", function()
+test("compare: the columns flex with the width: the name column a share of it up to its cap, the figures the rest", function()
     local i = inst()
     local Cmp = i.Cmp
     assertEqual(i.R.DETAIL_WIDTH, 440, "the expanded view's detail")
@@ -548,17 +549,23 @@ test("compare: the columns flex with the width: the name column first, then the 
         assertEqual(c[3] + diff, width, width .. ": the table fills its width")
         assertEqual(Cmp.SeparatorX(width), c[1] + value + 2, width .. ": the separator, centered in the gap")
     end
-    -- The expanded minimum's detail (440 less its pads): the figures at their least, the name the rest.
-    check(i.R.DETAIL_WIDTH - 24, 152, Cmp.VALUE_W, Cmp.DIFF_W)
-    check(440, 176, Cmp.VALUE_W, Cmp.DIFF_W)
-    -- A 1200 px collapsed detail (1176 of content): the name at its most, the figures grown to their caps,
-    -- the rest back to the name.
-    check(1176, 1166 - 2 * Cmp.VALUE_MAX - Cmp.DIFF_MAX, Cmp.VALUE_MAX, Cmp.DIFF_MAX)
-    -- Between: the figures grow alike past the name's most.
+    -- The expanded minimum's detail (440 less its pads): the name its share (the owner's 2026-10-27
+    -- call: P11's 152 px was too wide), the figures a little past their least.
+    check(i.R.DETAIL_WIDTH - 24, 134, Cmp.VALUE_W + 6, Cmp.DIFF_W + 6)
+    check(440, 140, Cmp.VALUE_W + 12, Cmp.DIFF_W + 12)
+    -- A spell's name there keeps about 115 px of text past its icon (Cell's x less the icon and its pads).
+    local text = Cmp.Columns(i.R.DETAIL_WIDTH - 24)[1] - (i.NS.HudBreakdown.RowHeight() - 2) - 8
+    assertTrue(text >= 110 and text <= 120, "the expanded view's name text: " .. text)
+    -- A 1200 px collapsed detail (1176 of content): the name at its cap (and the rounding's pixel), the
+    -- figures every other pixel, grown alike.
+    check(1176, Cmp.NAME_MAX + 1, Cmp.VALUE_W + 237, Cmp.DIFF_W + 237)
+    -- Between: the name at its cap, the figures grown alike.
     local c = Cmp.Columns(700)
     assertTrue(c.name >= Cmp.NAME_MAX and c.name < Cmp.NAME_MAX + 3, "the name at its most (and the rounding's pixels)")
     assertEqual(c.value - Cmp.VALUE_W, c.diff - Cmp.DIFF_W, "the figure columns grow alike")
-    assertTrue(c.value > Cmp.VALUE_W and c.value < Cmp.VALUE_MAX)
+    assertTrue(c.value > Cmp.VALUE_W)
+    -- Too narrow for the share: the figures keep their least and the name what they leave.
+    check(340, 340 - Cmp.GAP - Cmp.NAME_GAP - 2 * Cmp.VALUE_W - Cmp.DIFF_W, Cmp.VALUE_W, Cmp.DIFF_W)
 end)
 
 test("compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs", function()
@@ -586,6 +593,9 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         assertEqual(row.texts[1].__width, cols[1] - (i.NS.HudBreakdown.RowHeight() - 2) - 8, case.view .. ": a spell's name column")
         -- The separator: one per table, the same x, through every line at full height.
         local sx = Cmp.SeparatorX(cw)
+        -- One pixel and faint (the owner's 2026-10-27 call: P11's line read too heavy).
+        assertEqual(Cmp.SEP_W, 1)
+        assertTrue(Cmp.SEP_COLOR[4] >= 0.15 and Cmp.SEP_COLOR[4] <= 0.2, "the separator's alpha, dim")
         for _, t in ipairs({ { x.scoreSep, x.score, 3 * Cmp.ROW_H }, { x.spellSep, x.spellHost,
                 Cmp.ROW_H + #x.data * i.NS.HudBreakdown.Pitch() } }) do
             local sep, parent, h = t[1], t[2], t[3]
@@ -595,6 +605,7 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
             assertEqual(sep.__width, Cmp.SEP_W)
             assertEqual(sep.__height, h, case.view .. ": the separator's height")
             assertEqual(sep.__vertex[1], Cmp.SEP_COLOR[1], case.view .. ": the separator's gray")
+            assertEqual(sep.__vertex[4], Cmp.SEP_COLOR[4], case.view .. ": the separator's alpha")
         end
         local thisRight = x.spellHead[2].__points[1][4] + x.spellHead[2].__width + Cmp.PAD
         assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.spellHead[3].__points[1][4] - Cmp.PAD,

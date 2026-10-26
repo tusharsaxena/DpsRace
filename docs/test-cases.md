@@ -513,7 +513,7 @@ Total.
 - compare: the row menu's pick, the different-board note and Clear Pick
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
 - compare: the collapsed view draws the compare in the list's place; no number is read off a frame
-- compare: the columns flex with the width: the name column first, then the figures up to their caps
+- compare: the columns flex with the width: the name column a share of it up to its cap, the figures the rest
 - compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs
 - compare: every spell row alternates the Results list's stripe, compared and plain
 
