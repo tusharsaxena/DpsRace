@@ -69,12 +69,21 @@ NS.RegisterSchemaRows({
 })
 
 -- The damage chart (#2) and the pace bar (#3) on the running HUD: read on every redraw, so a redraw is
--- the whole reaction. Their look is HUD Appearance > Damage chart, Chart background and Pace bar.
+-- the whole reaction. Their look is HUD Appearance > Damage chart, Chart background and Pace bar. The
+-- cooldown dots (#14) ride on the chart, there and in the Results window, so theirs redraws both.
+local function redrawDots()
+    redraw()
+    if NS.Results and NS.Results.Refresh then NS.Results.Refresh() end
+end
 NS.RegisterSchemaRows({
     { path = "live.chart", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show damage chart"], default = LIVE.chart,
       tooltip = L["Draw your damage over the race as columns under the live figures, scaled to the best on this board (with its average pace as a faint line) or, with no best yet, to your damage so far. Hidden when the pull carried an earlier fight's session. The result card and the Results window show it again for races run since your last reload or login."],
       onChange = redraw },
+    { path = "live.castDots", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
+      label = L["Show cooldown dots"], default = LIVE.castDots,
+      tooltip = L["Mark each cast of an ability with a cooldown over 15 seconds (your big cooldowns, trinkets and potions) with a gold dot along the top of the damage chart: live on the HUD, on the result card and in the Results window."],
+      onChange = redrawDots },
     { path = "live.paceBar", page = PAGE, group = L["Race HUD"], subgroup = L["Chart and pace"], type = "bool",
       label = L["Show pace bar"], default = LIVE.paceBar,
       tooltip = L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."],

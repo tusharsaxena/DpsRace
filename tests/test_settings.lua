@@ -53,6 +53,7 @@ local STORED = {
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
     ["live.chart"]           = { "bool",   true },
     ["live.paceBar"]         = { "bool",   true },
+    ["live.castDots"]        = { "bool",   true },
     ["live.paceRange"]       = { "number", 1.5,     1.1,  2.0,   0.05 },
     ["race.defaultLength"]   = { "number", 120 },
     ["race.countdownCue"]    = { "bool",   true },
@@ -360,7 +361,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps M
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 9 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's nine rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 10 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's ten rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -384,6 +385,7 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",
         "live.chart|Chart and pace|Show damage chart|false",
+        "live.castDots|Chart and pace|Show cooldown dots|false",
         "live.paceBar|Chart and pace|Show pace bar|false",
         "live.paceRange|Chart and pace|Pace bar range|true",
     }, "\n"))

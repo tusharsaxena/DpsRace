@@ -298,7 +298,19 @@ end
 function DETAIL.chart()
     return { L["Damage profile"],
         L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."],
+        L["A gold dot along the top marks each cast of an ability with a cooldown over 15 seconds."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
+end
+
+--- A cooldown dot's tooltip on the detail's chart (#14): the spell (the pet's marked) and the time it
+--- was cast on the race clock; nil for anything but a cast.
+--- @param cast table  { t, id, pet }
+--- @return table|nil
+function Tips.Dot(cast)
+    if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
+    local name = NS.HudBreakdown.SpellName(cast.id)
+    if cast.pet then name = L["%s (pet)"]:format(name) end
+    return { name, L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
 end
 
 local LEGEND = {

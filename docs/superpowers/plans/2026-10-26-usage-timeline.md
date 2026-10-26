@@ -215,7 +215,16 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P5: #14 chart dots
 
-- [ ] Dots for important abilities on the live chart, the result card and the Results detail.
+- [x] Dots for important abilities on the live chart, the result card and the Results detail.
+- P5 notes: the view carries `dots` (`Chart.DotsOf(run)` after the race, `Casts.Filter(Casts.Live(),
+  Casts.LiveSpells())` live, re-read only when `Casts.Size()` or the run changed); `Strip:drawDots` lays
+  them again only when the list, its size, the length or the geometry changed. The disc is the client's
+  round portrait mask tinted gold, 6 px, centered `INSET + 3` px under the plot's top. The Results
+  detail's dots get a pooled 10 px hover frame each (`Strip:SetDotTip`; `ResultsTips.Dot`: the spell,
+  *(pet)* for a pet's, and *Cast at m:ss*); the HUD's take no mouse. *Show cooldown dots* hides them in
+  the Results detail as well as on the HUD (the design names only the HUD page for the row; the chart
+  itself shows in the detail whatever *Show damage chart* says), and its change refreshes both windows.
+  `/dr test` draws the sample run's dots (live up to the still moment).
 
 ### P6: #14 timeline window
 

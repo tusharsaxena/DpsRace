@@ -151,6 +151,14 @@ function Casts.Live()
     return out
 end
 
+--- How many casts the current race holds on its clock (0 before the clock started): what the HUD's
+--- cooldown dots compare to tell the list grew, without building it.
+--- @return number
+function Casts.Size()
+    if not origin then return 0 end
+    return #raw
+end
+
 --- The current race's base cooldowns, { [id] = ms } (a spell whose cooldown is unknown is absent).
 function Casts.LiveSpells()
     local out = {}

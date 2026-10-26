@@ -132,14 +132,15 @@ end
 
 -- A sample run's chart: its record scaled to its plain final damage, as HudChart.ResultView draws a
 -- stored run's in-session slices (none for a lost run or a shared session), against the sample's best
--- before it (HudChart.WithBest: the diagonal and the shared max).
+-- before it (HudChart.WithBest: the diagonal and the shared max), with its cooldown dots.
 local function mockChart(run)
     local rec = type(run) == "table" and mock.slices[run.id]
     if type(rec) ~= "table" or run.status == "lost" then return nil end
     if type(run.flags) == "table" and run.flags.sharedSession then return nil end
     local damage = type(run.result) == "table" and run.result.damage
     if type(damage) ~= "number" or damage <= 0 then return nil end
-    local view = { count = rec.count, values = rec.values, length = rec.length, max = damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = damage, note = "",
+                   dots = NS.HudChart.DotsOf(run) }
     return NS.HudChart.WithBest(view, run, NS.Bests.Before(run, mock.runs))
 end
 

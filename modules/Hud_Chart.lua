@@ -40,6 +40,15 @@ local _, NS = ...
 -- each column's edges are whole pixels, x_i = floor(i * inner / count + 0.5), so no column is a
 -- fraction wide and no seam shows between two. The diagonal is plain geometry (Line regions) on an
 -- overlay frame one band over the columns (core/Constants.lua LAYERS.LEVEL.CHART_OVERLAY).
+--
+-- THE COOLDOWN DOTS (#14, 2026-10-26): a small gold disc along the top of the plot at each cast of an
+-- important ability (a base cooldown over 15 s, modules/Casts.lua), at x = INSET + clamp(t, 0, length)
+-- / length x (width - 2 x INSET): the cast's plain race-clock time over the plain length, across the
+-- width Place() was handed. Pooled textures on the overlay, moved only when the list, the length or
+-- the geometry changed. Live from Casts.Live() (re-read only when the race heard another cast), and
+-- after the race from the run's record; *Show cooldown dots* (live.castDots) turns them off
+-- everywhere. A strip given a dot tooltip (the Results detail, SetDotTip) lays a pooled hover frame
+-- over each dot.
 
 local Chart = {}
 NS.HudChart = Chart
@@ -56,6 +65,8 @@ Chart.INSET = 2         -- the plot's inner padding
 Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
 Chart.PACE_LABEL_W = 78
+Chart.DOT = 6           -- a cooldown dot's size (#14)
+Chart.DOT_HIT = 10      -- its hover frame's size, where the strip has a dot tooltip
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local PLOT_EDGE = { 1, 1, 1, 0.10 }
@@ -65,6 +76,8 @@ local TICK = { 1, 1, 1, 0.85 }
 local AHEAD = { 0.36, 0.86, 0.46, 0.85 }    -- the KPI's green: past the tick
 local BEHIND = { 1.0, 0.32, 0.32, 0.85 }    -- the KPI's red: the shortfall to the tick
 local WHITE = "Interface\\Buttons\\WHITE8x8"
+local DOT = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3], 0.95 }
+local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted gold
 
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
@@ -179,13 +192,45 @@ function Chart.TickX(barW)
     return math.floor(barW / 2 + 0.5)
 end
 
+--- A cooldown dot's x, in pixels from the plot's left edge: INSET + clamp(t, 0, length) / length x
+--- (width - 2 x INSET), so a pre-pull cast sits on 0:00 and a cast after the buzzer on the end. Plain
+--- config math on the width Place() was handed; nil without a plain time and length.
+--- @param t number  the cast's seconds on the race clock
+--- @param length number
+--- @param width number
+--- @return number|nil
+function Chart.DotX(t, length, width)
+    if type(t) ~= "number" or type(length) ~= "number" or length <= 0 then return nil end
+    local inner = (tonumber(width) or 0) - 2 * Chart.INSET
+    return Chart.INSET + math.max(0, math.min(t, length)) / length * inner
+end
+
+--- Whether the charts draw cooldown dots (live.castDots).
+--- @return boolean
+function Chart.ShowDots()
+    return not (NS.GetSetting and NS.GetSetting("live.castDots") == false)
+end
+
+--- A run's cooldown dots after the race (its important casts, Casts.Important), or nil when the
+--- setting is off or the run has none.
+--- @param run table
+--- @return table|nil dots  { { t, id, pet }, ... }
+function Chart.DotsOf(run)
+    if not Chart.ShowDots() or not NS.Casts then return nil end
+    local dots = NS.Casts.Important(run)
+    if #dots == 0 then return nil end
+    return dots
+end
+
 --- What the running body draws: the chart's view and the pace bar's, each nil when hidden. Both hide
---- on a shared session; the pace bar also with no best.
+--- on a shared session; the pace bar also with no best. The chart's `dots` are the race's important
+--- casts so far, with `showDots`.
 --- @param run table
 --- @param elapsed number|nil
 --- @param showChart boolean  live.chart
 --- @param showPace boolean  live.paceBar
---- @return table|nil chart  { count, values, length, max, best, note }  (max nil: scale B, the live total)
+--- @param showDots boolean|nil  live.castDots
+--- @return table|nil chart  { count, values, length, max, best, note, dots }  (max nil: scale B, the live total)
 --- @return table|nil pace  { lo, hi }
 -- THE LIVE VIEWS ARE CACHED (the 20 Hz tick, performance-§3): the chart's view and the best behind it
 -- are rebuilt only when what decides them changes. The best is looked up again only when the run or
@@ -222,11 +267,27 @@ local function liveChart(run, best)
     return chart
 end
 
-function Chart.LiveViews(run, elapsed, showChart, showPace)
+-- The race's important casts so far: read again (Casts.Live, a new list) only when the race heard
+-- another cast or a new race began, so the 20 Hz tick reuses one list.
+local function liveDots(run)
+    local Casts = NS.Casts
+    if not Casts then return nil end
+    local n = Casts.Size()
+    if live.dotsRun ~= run or live.dotsN ~= n or not live.dots then
+        live.dotsRun, live.dotsN = run, n
+        live.dots = Casts.Filter(Casts.Live(), Casts.LiveSpells())
+    end
+    return live.dots
+end
+
+function Chart.LiveViews(run, elapsed, showChart, showPace, showDots)
     if type(run) ~= "table" or type(run.race) ~= "table" or shared(run) then return nil, nil end
     local best = liveBest(run)
     local chart, pace
-    if showChart then chart = liveChart(run, best) end
+    if showChart then
+        chart = liveChart(run, best)
+        chart.dots = showDots and liveDots(run) or nil
+    end
     if showPace and best then
         pace = live.pace
         pace.lo, pace.hi = Chart.PaceBounds(best, elapsed)
@@ -274,13 +335,14 @@ end
 
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
 --- its slices scaled to its plain final damage, against the best before it when there is one
---- (Chart.WithBest).
+--- (Chart.WithBest), with its cooldown dots (Chart.DotsOf).
 --- @param run table
 --- @return table|nil
 function Chart.ResultView(run)
     local rec = NS.Slices.Drawable(run)
     if not rec then return nil end
-    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "",
+                   dots = Chart.DotsOf(run) }
     return Chart.WithBest(view, run, NS.Bests and NS.Bests.Before(run) or nil)
 end
 
@@ -314,7 +376,8 @@ end
 --- @param headH number|nil
 --- @return table chart
 function Chart.New(parent, titleFont, headH)
-    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H }, Strip)
+    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H,
+                             dotPool = NS.Pool.New(), hitPool = NS.Pool.New(), dots = {} }, Strip)
     s.title = Style.Text(parent, titleFont or FONT.SECTION)
     s.title:SetText(L["Damage profile"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
@@ -476,11 +539,80 @@ function Strip:Draw(view, max)
     end
     for i = count + 1, #self.cols do self.cols[i]:Hide() end
     self:drawPace(view.best, view.max)
-    self.note:SetText(view.note or "")
     local length = view.length or 0
+    self:drawDots(view.dots, length)
+    self.note:SetText(view.note or "")
     self.axis[1]:SetText(NS.Format.Length(0))
     self.axis[2]:SetText(NS.Format.Length(math.floor(length / 2)))
     self.axis[3]:SetText(NS.Format.Length(length))
+end
+
+-- ── the cooldown dots ───────────────────────────────────────────────────────────────────────────
+
+--- Give each dot a hover (the Results detail): `enter(frame, cast)` on entering one, `leave()` on
+--- leaving it. Without it the dots take no mouse (the HUD).
+--- @param enter function|nil
+--- @param leave function|nil
+function Strip:SetDotTip(enter, leave)
+    self.dotEnter, self.dotLeave = enter, leave
+    self.dotList = nil   -- laid again on the next Draw
+end
+
+local function newDot(over)
+    local d = over:CreateTexture(nil, "OVERLAY")
+    d:SetTexture(DISC)
+    d:SetVertexColor(DOT[1], DOT[2], DOT[3], DOT[4])
+    d:SetSize(Chart.DOT, Chart.DOT)
+    return d
+end
+
+local function newHit(s)
+    local h = CreateFrame("Frame", nil, s.over)
+    h:SetSize(Chart.DOT_HIT, Chart.DOT_HIT)
+    h:EnableMouse(true)
+    h:SetScript("OnEnter", function(self)
+        if s.dotEnter and self.cast then s.dotEnter(self, self.cast) end
+    end)
+    h:SetScript("OnLeave", function()
+        if s.dotLeave then s.dotLeave() end
+    end)
+    return h
+end
+
+-- One dot at `x` along the top of the plot, and its hover frame when the strip has a dot tooltip.
+function Strip:placeDot(cast, x)
+    local y = -(Chart.INSET + Chart.DOT / 2)
+    local d = NS.Pool.Acquire(self.dotPool, function() return newDot(self.over) end)
+    d:ClearAllPoints()
+    d:SetPoint("CENTER", self.over, "TOPLEFT", x, y)
+    self.dots[#self.dots + 1] = { tex = d, cast = cast, x = x }
+    if not self.dotEnter then return end
+    local h = NS.Pool.Acquire(self.hitPool, function() return newHit(self) end)
+    h.cast = cast
+    h:ClearAllPoints()
+    h:SetPoint("CENTER", self.over, "TOPLEFT", x, y)
+end
+
+-- The dots for `dots` (plain times) over `length`, laid again only when the list, its size, the
+-- length or the geometry changed: compared field by field, so the 20 Hz tick builds nothing.
+function Strip:drawDots(dots, length)
+    local n = dots and #dots or 0
+    if self.dotList == dots and self.dotN == n and self.dotLen == length and self.dotGeom == self.geometry then
+        return
+    end
+    self.dotList, self.dotN, self.dotLen, self.dotGeom = dots, n, length, self.geometry
+    NS.Pool.ReleaseAll(self.dotPool)
+    NS.Pool.ReleaseAll(self.hitPool, function(h) h.cast = nil end)
+    self.dots = {}
+    for i = 1, n do
+        local x = Chart.DotX(dots[i].t, length, self.width)
+        if x then self:placeDot(dots[i], x) end
+    end
+end
+
+--- The dots drawn now, for the suites: { { tex, cast, x }, ... }.
+function Strip:Dots()
+    return self.dots
 end
 
 --- The columns drawn now, for the suites.

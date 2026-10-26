@@ -379,6 +379,17 @@ local function runningChart(sample, elapsed)
     return chart
 end
 
+-- The running chart's cooldown dots (#14): the sample run's important casts heard by `elapsed`.
+local function runningDots(run, elapsed)
+    local all = NS.HudChart.DotsOf(run)
+    if not all then return nil end
+    local out = {}
+    for _, c in ipairs(all) do
+        if c.t <= elapsed then out[#out + 1] = c end
+    end
+    return out
+end
+
 --- A sample race for the HUD against `runs` (the sample history): the run, the best before it on
 --- its board, and its delta, as the race and the result card would work them out.
 --- @param spec table  { id, category?, dps, status?, endAt?, late?, died?, shared? }
@@ -411,7 +422,10 @@ local FIGURES = {
     running = function(s, t)
         local elapsed = math.min(t, s.stopAt)
         local f = { timeLeft = MockRuns.LENGTH - elapsed, elapsed = elapsed, live = liveAt(s, elapsed) }
-        if not s.shared then f.chart = runningChart(s, elapsed) end
+        if not s.shared then
+            f.chart = runningChart(s, elapsed)
+            f.chart.dots = runningDots(s.run, elapsed)
+        end
         if s.best then
             local lo, hi = NS.HudChart.PaceBounds(s.best, elapsed)
             f.pace = { lo = lo, hi = hi }
@@ -431,14 +445,15 @@ local FIGURES = {
                  hint = L["Combat is holding. Walk out of range. Your score is safe: it waits for combat to end, however long that takes."] }
     end,
     -- The result card: the delta, the run's chart scaled to its final damage (against the best before
-    -- it, HudChart.WithBest), and the pace bar (its final damage against that best at the buzzer), as
+    -- it, HudChart.WithBest) with its cooldown dots, and the pace bar (its final damage against that best at the buzzer), as
     -- Hud.lua's result view draws them.
     result = function(s)
         local f = { isNew = s.isNew, delta = s.delta, icons = true }
         if not s.shared then
             local rec = MockRuns.Slices(s.run, s.stopAt)
             f.chart = rec and NS.HudChart.WithBest({ count = rec.count, values = rec.values, length = rec.length,
-                                max = s.run.result.damage, note = "" }, s.run, s.best)
+                                max = s.run.result.damage, note = "", dots = NS.HudChart.DotsOf(s.run) },
+                                s.run, s.best)
         end
         if s.best then
             local lo, hi = NS.HudChart.PaceBounds(s.best, MockRuns.LENGTH)

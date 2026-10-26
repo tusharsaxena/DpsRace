@@ -571,6 +571,21 @@ Total.
 - results usage: a sample run's edit changes it in memory only; the store never hears it
 - results usage: a row's hover is the item's own tooltip with its detail and source after it
 
+### test_chart_dots.lua (12)
+
+- chart dots: a dot's x is INSET + t / length across the width less both insets
+- chart dots: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no dot
+- chart dots: only casts of an ability whose base cooldown is over 15 s get one
+- chart dots: drawn live on the running HUD, along the top, with no geometry read back
+- chart dots: the live list is read again only when the race heard another cast
+- chart dots: Show cooldown dots off draws none on the running HUD; on again brings them back
+- chart dots: the result card and the Results detail draw the run's from its record
+- chart dots: a detail dot's tooltip names the spell and when it was cast
+- chart dots: the HUD's dots take no mouse
+- chart dots: Show cooldown dots off hides them on the card and in the detail too
+- chart dots: a run recorded before casts were (format 2) draws its chart with none
+- chart dots: test mode draws the sample's, live up to its still moment and all on the card
+
 ### test_schema.lua (15)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -881,6 +896,7 @@ Total.
 | test_casts.lua | 9 |
 | test_usage.lua | 17 |
 | test_results_usage.lua | 16 |
+| test_chart_dots.lua | 12 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -900,4 +916,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **710** |
+| **Total** | **722** |
