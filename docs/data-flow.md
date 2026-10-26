@@ -367,7 +367,11 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown of 29 s or more
   first, longest first, then by this run's count, then the other's, the player's before the pet's),
   each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
-  count at its right, over an axis to the longer of the two races (`Span`, `Ticks`). The compared run
+  count just past its right end (`COUNT_GAP`), over an axis to the longer of the two races (`Span`, `Ticks`).
+  Above the lanes (under a *Casts* heading; the lanes under *By ability*) two strips on the same axis,
+  this run's over the compared run's, draw every cast (`CastsOf`, the pet's too) as its ability's icon,
+  stacked onto extra rows where icons would overlap (`Stack`; this run's upward, the other's downward,
+  each strip `StripHeight` tall for its rows, at most `MAX_STACK`); `Sections` places the parts. The compared run
   is `ResultsDetail.CompareTarget(true)` (the best, the runner-up or the picked run, whether or not
   the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
   position is `MarkX` on the window's stored size. The detail calls `ResultsTimeline.DetailChanged`

@@ -659,7 +659,7 @@ Total.
 - chart icons: the sim's running chart keeps one cooldown list until another cast is heard
 - chart icons: test mode's chart follows Show cooldown icons while it is on screen
 
-### test_results_timeline.lua (13)
+### test_results_timeline.lua (20)
 
 - results timeline: one row per ability and caster across both runs, each run's times and counts
 - results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's
@@ -667,6 +667,13 @@ Total.
 - results timeline: the detail's Timeline button is live for a run with casts and disabled without
 - results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts
 - results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run
+- results timeline: each lane's count sits just past the lane's right end, not out at the window's edge
+- results timeline: overlapping icons stack onto extra rows and the strip grows to fit them all
+- results timeline: the Casts strips show every cast of both runs as its icon on the lanes' time axis
+- results timeline: a strip grows with the casts stacked at one time; the lanes start under it
+- results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets
+- results timeline: a strip with no casts shows a dim note in place of its icons
+- results timeline: its minimum width is 640, so the icons get room; the default opens wider
 - results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
 - results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
 - results timeline: a run with no casts or no run at all shows a message in place of the lanes
@@ -685,7 +692,7 @@ Total.
 - results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
 - results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
 - results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
-- timeline sizing: a 30-frame drag moves the ticks and re-pools nothing until the release
+- timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
 - hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
 - hud sizing: locked, the grip starts no drag
 
@@ -1014,7 +1021,7 @@ Total.
 | test_results_usage.lua | 24 |
 | test_results_sections.lua | 9 |
 | test_chart_icons.lua | 29 |
-| test_results_timeline.lua | 13 |
+| test_results_timeline.lua | 20 |
 | test_sizing.lua | 11 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
@@ -1036,4 +1043,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **818** |
+| **Total** | **825** |

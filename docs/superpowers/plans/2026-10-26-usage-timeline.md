@@ -326,8 +326,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   sections), the yellow box below it; inside, the main line in the current font size (e.g. "2 late casts"), then a
   second line in a distinct format (e.g. "+1.4s Disengage, +2.5s Disengage End") unlike both the main line and the
   explanation text under it.
-- [ ] **Timeline counts:** the per-lane counts sit flush against the lanes' right edge.
-- [ ] **Timeline icon strips:** a new section above the lanes, under its own header, with two strips (this run, the
+- [x] **Timeline counts:** the per-lane counts sit flush against the lanes' right edge.
+- [x] **Timeline icon strips:** a new section above the lanes, under its own header, with two strips (this run, the
   compared run) showing every cast's ability icon on the time axis, each strip's height growing with how many icons
   stack; each icon's tooltip is the ability's own tooltip plus the cast time; the lanes get their own header; the
   window's minimum width rises if the icons get cramped. (The timeline's smooth resize is P10's.)

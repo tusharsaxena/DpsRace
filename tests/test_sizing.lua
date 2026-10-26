@@ -255,7 +255,7 @@ local function timelineRun(NS, id, dps, list, ago)
     }
 end
 
-test("timeline sizing: a 30-frame drag moves the ticks and re-pools nothing until the release", function()
+test("timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release", function()
     local i = resultsInst()
     local NS = i.NS
     NS.db.global.runs.this = timelineRun(NS, "this", 100, { { 1, 1122 }, { 2, 29722 }, { 30, 29722 } }, 1)
@@ -264,10 +264,11 @@ test("timeline sizing: a 30-frame drag moves the ticks and re-pools nothing unti
     i.R.ShowRun("this")
     i.R.__ui().detail.w.timeline:__fire("OnClick")
     local u = NS.ResultsTimeline.__ui()
-    local churn = { n = 0 }
+    local churn, iconChurn = { n = 0 }, { n = 0 }
     local release = NS.Pool.ReleaseAll
     rawset(NS.Pool, "ReleaseAll", function(pool, ...)
         if pool == u.markPool then churn.n = churn.n + 1 end
+        if pool == u.iconPool then iconChurn.n = iconChurn.n + 1 end
         return release(pool, ...)
     end)
     local grip = u.frame.resizeGrip
@@ -277,10 +278,13 @@ test("timeline sizing: a 30-frame drag moves the ticks and re-pools nothing unti
     assertEqual(churn.n, 0, "the ticks re-pooled while the grip is held")
     assertEqual(u.width, 1000)
     local TL = NS.ResultsTimeline
-    local laneX = TL.NAME_W + TL.GAP
-    local laneW = 1000 - 2 * TL.PAD - laneX - TL.GAP - TL.COUNT_W
+    local _, laneX, laneW = TL.LaneGeometry(1000)
     local mark = NS.ResultsTimeline.Marks()[1]
     assertEqual(mark.x, laneX + TL.MarkX(mark.cast.t, u.span, laneW), "each tick moved along its stretched lane")
+    -- The cast icons too: moved along their strip on the rows they had, none re-pooled.
+    local icon = TL.Icons()[1]
+    assertEqual(icon.x, laneX + TL.MarkX(icon.cast.t, u.span, laneW), "each icon moved along its stretched strip")
+    assertEqual(iconChurn.n, 0, "the icons re-pooled while the grip is held")
     rawset(NS.Pool, "ReleaseAll", function(pool, ...)
         if pool == u.markPool then churn.n = churn.n + 1 end
         return release(pool, ...)
@@ -289,6 +293,7 @@ test("timeline sizing: a 30-frame drag moves the ticks and re-pools nothing unti
     grip:__fire("OnMouseUp")
     rawset(NS.Pool, "ReleaseAll", release)
     assertEqual(churn.n, 1, "one full redraw on release")
+    assertEqual(#NS.ResultsTimeline.Icons(), 5, "the icons rebuilt on release, every cast of both runs")
     assertEqual(NS.db.profile.windows.timeline.width, 1000)
 end)
 

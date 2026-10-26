@@ -54,11 +54,11 @@ What `layout` does per frame now:
 | Window | Per frame while dragging | Once on release |
 |---|---|---|
 | Results | the list's `Table:Resize`: the columns and headers re-anchored and, when the width moved, the shown rows' cells re-placed (anchors only); a row the new height adds bound alone, one it drops hidden and kept spare; the offset held; the scroll range. The detail's `Resize`: its scroll frame sized and the scroll clamped, its content as it was. The filter bar not touched (only the view changes its plan) | `layout()`: every row rebound, the detail laid out and drawn, the size stored |
-| Ability timeline | the legend, the axis and the scroll frame; when the width moved, each pair's lanes re-anchored and each tick moved along its lane (two anchors a tick), nothing pooled, filled or colored | `layout()`: every pair and tick re-pooled, the size stored |
+| Ability timeline | the legend, the axis and the scroll frame; when the width moved, each pair's lanes re-anchored, each tick moved along its lane (two anchors a tick) and each *Casts* icon along its strip on the row it had (one anchor an icon), nothing pooled, filled, colored or restacked | `layout()`: every pair, tick and cast icon re-pooled, the icons restacked for the new width, the size stored |
 | Race HUD | the body on screen's `Layout` alone | every body's `Layout`, the shown body drawn again (`render(true)`: the result card's rows fit the new height, the chips wrap at the new width), the size stored |
 
 `tests/test_sizing.lua` pins it: a 30-frame drag of each window runs its expensive path (the Runs and
-Bests lists' `Bind`, the detail's `Layout`, the timeline's tick pool, the HUD bodies' `Update` and the
+Bests lists' `Bind`, the detail's `Layout`, the timeline's tick and icon pools, the HUD bodies' `Update` and the
 hidden bodies' `Layout`) zero times, and the release runs it once. The offline runner
 (`tests/perf.lua`) measures bytes per call of the bracketed hot paths and has no grip to drag, so the
 pattern is pinned by those counts rather than by a scenario.

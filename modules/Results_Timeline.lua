@@ -4,13 +4,20 @@ local _, NS = ...
 -- compares it with (the owner's pick of the mock, version 2, 2026-10-26).
 --
 -- THE LAYOUT. A legend bar (this run's date in gold, the compared run's in blue and what it is: the
--- best, the runner-up or the picked run), then one pair of lanes per ability: its name cell (icon,
+-- best, the runner-up or the picked run), then two sections under their own headings in the Results
+-- detail's heading style (FONT.SECTION). *Casts* (P11, the owner's call, 2026-10-26): two icon strips on
+-- the lanes' time axis, this run's above the compared run's, every cast (the pet's too) its ability's
+-- icon at its time; icons too close to sit apart stack onto extra rows, this run's upward and the
+-- compared run's downward (away from the line between them), and each strip grows to the most rows it
+-- needs (every icon shown; past MAX_STACK rows the rest overlap the row that frees first and say so in
+-- their tooltip). An icon's tooltip is the client's spell tooltip, then the cast's time and its run.
+-- *By ability*: one pair of lanes per ability: its name cell (icon,
 -- name, "(pet)" for a pet's, and under the name its cooldown when 29 s or more) beside two lanes, the top
 -- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
--- (blue), each lane's cast count at its right. Nothing sits between the name cell and the lanes but
+-- (blue), each lane's cast count just past its right end. Nothing sits between the name cell and the lanes but
 -- the gap (the owner's call, 2026-10-26: a cooldown beside the lanes read as part of them). Abilities
 -- with a cooldown of 29 s or more come first, longest first; the rest follow by count. The time axis (0,
--- the quarters, the end) is pinned under the lanes, which scroll (the mouse wheel). A tick's tooltip
+-- the quarters, the end) is pinned under both sections, which scroll together (the mouse wheel). A tick's tooltip
 -- names the spell and its time; a name's shows the client's spell tooltip and both counts.
 --
 -- WHICH RUNS. The detail's: its run, and its compare target resolved whether or not the compare is on
@@ -26,7 +33,7 @@ local _, NS = ...
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
 -- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, MarkX,
--- CooldownText, CooldownLine and Legend are pure.
+-- LaneGeometry, Stack, Sections, CooldownText, CooldownLine, IconLines and Legend are pure.
 
 local Timeline = { wanted = false }
 NS.ResultsTimeline = Timeline
@@ -40,15 +47,19 @@ local C = Tbl.COLORS
 local DW = NS.defaults.profile.windows.timeline
 Timeline.FRAME_NAME = "DpsRaceTimeline"
 Timeline.WIDTH, Timeline.HEIGHT = DW.width, DW.height
-Timeline.MIN_WIDTH = 540
+-- 640 (was 540, P11): at 540 a 1:00 race gave the cast icons about 5 px a second, two rows for every
+-- global cooldown's worth of casts; 640 gives them 7.
+Timeline.MIN_WIDTH = 640
 Timeline.MIN_HEIGHT = 240
 
 -- The geometry: a 150 px name cell (the icon and the name on the top lane's line, the cooldown under
--- it), the lanes, a count cell, 10 px between them; each lane 16 px, 2 px between a pair's lanes and
--- 10 px between pairs.
+-- it), 10 px, the lanes, then each lane's count 5 px past its right end (P11: flush with the lane, not
+-- out at the window's edge) in a 30 px cell; each lane 16 px, 2 px between a pair's lanes and 10 px
+-- between pairs.
 Timeline.PAD = 12
 Timeline.NAME_W = 150
-Timeline.COUNT_W = 40
+Timeline.COUNT_W = 30
+Timeline.COUNT_GAP = 5
 Timeline.GAP = 10
 Timeline.LANE_H = 16
 Timeline.LANE_GAP = 2
@@ -61,6 +72,12 @@ Timeline.INSET = 1          -- half a tick: one at 0:00 or at the end stays insi
 Timeline.LEGEND_H = 26
 Timeline.NOTE_H = 16
 Timeline.AXIS_H = 20
+-- The *Casts* strips: 14 px icons on a 15 px row pitch, 4 px between the two strips, at most
+-- MAX_STACK rows a strip.
+Timeline.CAST_ICON = 14
+Timeline.CAST_STEP = 15
+Timeline.STRIP_GAP = 4
+Timeline.MAX_STACK = 12
 
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
@@ -158,6 +175,84 @@ function Timeline.MarkX(t, span, width)
     if type(t) ~= "number" or type(span) ~= "number" or span <= 0 then return nil end
     local inset = Timeline.INSET
     return inset + math.max(0, math.min(span, t)) / span * math.max(0, width - 2 * inset)
+end
+
+--- The lanes' geometry in a window `width` wide: the content's width, the lanes' left (past the name
+--- cell and the gap) and their width (all but the count cell after them, COUNT_GAP past their end).
+--- @return number cw, number laneX, number laneW
+function Timeline.LaneGeometry(width)
+    local cw = math.max(100, (tonumber(width) or Timeline.MIN_WIDTH) - 2 * Timeline.PAD)
+    local laneX = Timeline.NAME_W + Timeline.GAP
+    return cw, laneX, math.max(40, cw - laneX - Timeline.COUNT_GAP - Timeline.COUNT_W)
+end
+
+-- The row whose last icon sits furthest left: the one an icon past the cap overlaps.
+local function soonest(last)
+    local best = 1
+    for r = 2, #last do
+        if last[r] < last[best] then best = r end
+    end
+    return best
+end
+
+--- The rows the icons at `xs` (their middles, left to right) stack onto: each on the first row whose
+--- last icon is `pitch` or more to its left; past `cap` rows, on the row that frees first, overlapping.
+--- @return table rows  { [n] = row (1 = the strip's base row) }
+--- @return number count  the rows used (0 for no icons)
+--- @return table over  { [n] = true } for each icon placed past the cap
+function Timeline.Stack(xs, pitch, cap)
+    local rows, last, over = {}, {}, {}
+    for n, x in ipairs(xs) do
+        local r = 1
+        while last[r] and x - last[r] < pitch do r = r + 1 end
+        if r > cap then r, over[n] = soonest(last), true end
+        rows[n], last[r] = r, x
+    end
+    return rows, #last, over
+end
+
+--- A strip's height for `rows` rows of icons: one row at the least (an empty strip holds its note).
+function Timeline.StripHeight(rows)
+    return math.max(1, rows or 0) * Timeline.CAST_STEP
+end
+
+--- Where each part of the scrolling content starts, in px down from its top, for strips of `rowsA`
+--- and `rowsB` rows: the *Casts* heading at 0, this run's strip, the compared run's, the *By ability*
+--- heading SECTION_GAP under them and the first pair of lanes under it.
+--- @return table  { stripA, heightA, stripB, heightB, lanesHead, lanes }
+function Timeline.Sections(rowsA, rowsB)
+    local s = { stripA = Style.SECTION_H, heightA = Timeline.StripHeight(rowsA), heightB = Timeline.StripHeight(rowsB) }
+    s.stripB = s.stripA + s.heightA + Timeline.STRIP_GAP
+    s.lanesHead = s.stripB + s.heightB + Style.SECTION_GAP
+    s.lanes = s.lanesHead + Style.SECTION_H
+    return s
+end
+
+--- What follows the client's spell tooltip on a cast icon: its time on the race clock ("(pet)" after a
+--- pet's), which run it is, and, for an icon past the row cap, that it overlaps others. Nil for anything
+--- but a cast.
+--- @param cast table  { t, id, pet }
+--- @param label string|nil  the run's label (the legend's)
+--- @param over boolean|nil  placed past MAX_STACK rows
+--- @return table|nil
+function Timeline.IconLines(cast, label, over)
+    if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
+    local at = L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
+    local lines = { cast.pet and L["%s (pet)"]:format(at) or at }
+    if label then lines[#lines + 1] = { label, 0.62, 0.62, 0.68 } end
+    if over then
+        lines[#lines + 1] = { L["Too many casts here for %d rows: this icon overlaps others."]:format(Timeline.MAX_STACK), 1, 0.82, 0 }
+    end
+    return lines
+end
+
+--- A run's casts in time order (a copy), or an empty list when it has none.
+function Timeline.CastsOf(run)
+    local list = NS.Casts.Of(run) or {}
+    local out = {}
+    for n, c in ipairs(list) do out[n] = c end
+    table.sort(out, function(a, b) return (tonumber(a.t) or 0) < (tonumber(b.t) or 0) end)
+    return out
 end
 
 --- A row's cooldown: m:ss when 29 s or more, else nothing.
@@ -289,6 +384,17 @@ local function buildLegend(f)
     ui.legendLine:SetColorTexture(1, 1, 1, 0.08)
 end
 
+-- One *Casts* strip: its track (the lanes' faint fill), its run's name in the name cell in its color,
+-- and the dim note it shows with no casts.
+local function buildStrip(color)
+    local s = { track = ui.content:CreateTexture(nil, "BACKGROUND") }
+    s.track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], TRACK[4])
+    s.label = Style.Text(ui.content, FONT.TEXT, color)
+    s.label:SetWidth(Timeline.NAME_W)
+    s.note = Style.Text(ui.content, FONT.CAPTION)
+    return s
+end
+
 local function buildBody(f)
     ui.scroll = CreateFrame("ScrollFrame", nil, f)
     ui.content = CreateFrame("Frame", nil, ui.scroll)
@@ -309,6 +415,12 @@ local function buildBody(f)
     ui.pairs = NS.Pool.New()
     ui.markPool = NS.Pool.New()
     ui.hitPool = NS.Pool.New()
+    ui.iconPool = NS.Pool.New()
+    ui.castsHead = Style.Text(ui.content, FONT.SECTION)
+    ui.castsHead:SetText(L["Casts"])
+    ui.lanesHead = Style.Text(ui.content, FONT.SECTION)
+    ui.lanesHead:SetText(L["By ability"])
+    ui.strips = { a = buildStrip(Timeline.THIS), b = buildStrip(Timeline.OTHER) }
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
     ui.axis = {}
@@ -342,7 +454,7 @@ end
 local function ensureWindow()
     if ui then return ui end
     local f = CreateFrame("Frame", Timeline.FRAME_NAME, UIParent, "BackdropTemplate")
-    ui = { frame = f, rows = {}, offset = 0 }
+    ui = { frame = f, rows = {}, castsA = {}, castsB = {}, offset = 0 }
     f:Hide()
     f:SetFrameStrata(NS.Constants.LAYERS.STRATA.WINDOW)
     f:SetClampedToScreen(true)
@@ -397,8 +509,8 @@ local function newPair()
     pair.cd:SetPoint("LEFT", pair, "TOPLEFT", Timeline.ICON + 6, -(1.5 * Timeline.LANE_H + Timeline.LANE_GAP))
     pair.cd:SetWidth(Timeline.NAME_W - Timeline.ICON - 6)
     pair.laneA, pair.laneB = track(pair), track(pair)
-    pair.countA = Style.Text(pair, FONT.TEXT, Timeline.THIS, "RIGHT")
-    pair.countB = Style.Text(pair, FONT.TEXT, Timeline.OTHER, "RIGHT")
+    pair.countA = Style.Text(pair, FONT.TEXT, Timeline.THIS)
+    pair.countB = Style.Text(pair, FONT.TEXT, Timeline.OTHER)
     pair.hit = CreateFrame("Frame", nil, pair)
     pair.hit:SetPoint("TOPLEFT", pair, "TOPLEFT", 0, 0)
     pair.hit:SetSize(Timeline.NAME_W, 2 * Timeline.LANE_H + Timeline.LANE_GAP)
@@ -413,7 +525,7 @@ local function placeLane(pair, lane, count, y, laneX, laneW)
     lane:SetPoint("TOPLEFT", pair, "TOPLEFT", laneX, y)
     lane:SetWidth(laneW)
     count:ClearAllPoints()
-    count:SetPoint("RIGHT", pair, "TOPLEFT", laneX + laneW + Timeline.GAP + Timeline.COUNT_W, y - Timeline.LANE_H / 2)
+    count:SetPoint("LEFT", pair, "TOPLEFT", laneX + laneW + Timeline.COUNT_GAP, y - Timeline.LANE_H / 2)
     count:SetWidth(Timeline.COUNT_W)
 end
 
@@ -482,13 +594,109 @@ local function laneMarks(row, side, top, g)
     end
 end
 
+-- ── the cast icons (*Casts*) ────────────────────────────────────────────────────────────────────
+
+-- An icon's hover: the client's spell tooltip beside the window, then the cast's time and its run.
+local function iconTip(self)
+    if not (self.cast and ui) then return end
+    Tbl.SpellTip(ui.frame, self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
+end
+
+-- An icon: a plain frame on the ticks' layer (it takes the mouse for its tooltip) holding the art.
+local function newIcon()
+    local f = CreateFrame("Frame", nil, ui.marks)
+    f:SetSize(Timeline.CAST_ICON, Timeline.CAST_ICON)
+    f:EnableMouse(true)
+    f.tex = f:CreateTexture(nil, "OVERLAY")
+    f.tex:SetAllPoints(f)
+    f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    f:SetScript("OnEnter", iconTip)
+    f:SetScript("OnLeave", Tbl.HideTip)
+    return f
+end
+
+-- Each strip's rows at this geometry: the icons' x (content coordinates) and the row each stacks onto.
+local function stackOf(list, g)
+    local xs = {}
+    for n, c in ipairs(list) do xs[n] = g.laneX + (Timeline.MarkX(c.t, g.span, g.laneW) or 0) end
+    local rows, count, over = Timeline.Stack(xs, Timeline.CAST_STEP, Timeline.MAX_STACK)
+    return { xs = xs, rows = rows, count = count, over = over }
+end
+
+-- Row `r`'s middle, px down from the content's top: this run's strip stacks up from its bottom row,
+-- the compared run's down from its top row (both away from the line between them).
+local function rowMid(side, r)
+    local s = ui.sections
+    if side == "a" then return s.stripA + s.heightA - (r - 0.5) * Timeline.CAST_STEP end
+    return s.stripB + (r - 0.5) * Timeline.CAST_STEP
+end
+
+-- The strip's track, its run's name level with its base row, and its note when it has no casts.
+local function placeStrip(side, g, label, note)
+    local st, top = ui.strips[side], ui.sections["strip" .. (side == "a" and "A" or "B")]
+    st.track:ClearAllPoints()
+    st.track:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX, -top)
+    st.track:SetSize(g.laneW, ui.sections["height" .. (side == "a" and "A" or "B")])
+    st.label:ClearAllPoints()
+    st.label:SetPoint("LEFT", ui.content, "TOPLEFT", 0, -rowMid(side, 1))
+    st.label:SetText(label or "")
+    st.note:ClearAllPoints()
+    st.note:SetPoint("LEFT", ui.content, "TOPLEFT", g.laneX + 6, -rowMid(side, 1))
+    st.note:SetText(note or "")
+    st.note:SetShown(note ~= nil)
+end
+
+-- One strip's icons, from its stack.
+local function stripIcons(side, list, stack, label)
+    for n, cast in ipairs(list) do
+        local f = NS.Pool.Acquire(ui.iconPool, newIcon)
+        f.cast, f.label, f.over = cast, label, stack.over[n] == true
+        f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
+        local y = -rowMid(side, stack.rows[n])
+        f:ClearAllPoints()
+        f:SetPoint("CENTER", ui.marks, "TOPLEFT", stack.xs[n], y)
+        ui.icons[#ui.icons + 1] = { frame = f, cast = cast, x = stack.xs[n], y = y, row = stack.rows[n], side = side }
+    end
+end
+
+-- The note a strip shows with no casts: none for one with casts.
+local function stripNote(list, side)
+    if #list > 0 then return nil end
+    if side == "b" and not ui.other then return L["No run to compare with"] end
+    return L["No casts recorded"]
+end
+
+-- Both strips and the two headings, re-pooling every icon (a draw, a release).
+local function layoutStrips(g)
+    NS.Pool.ReleaseAll(ui.iconPool, function(f) f.cast, f.label, f.over = nil, nil, nil end)
+    ui.icons = {}
+    ui.castsHead:ClearAllPoints()
+    ui.castsHead:SetPoint("TOPLEFT", ui.content, "TOPLEFT", 0, 0)
+    ui.lanesHead:ClearAllPoints()
+    ui.lanesHead:SetPoint("TOPLEFT", ui.content, "TOPLEFT", 0, -ui.sections.lanesHead)
+    local otherName = ui.other and NS.ResultsCompare.OtherLabel(ui.kind) or nil
+    placeStrip("a", g, L["This run"], stripNote(ui.castsA, "a"))
+    placeStrip("b", g, otherName, stripNote(ui.castsB, "b"))
+    stripIcons("a", ui.castsA, ui.stackA, ui.thisLabel)
+    stripIcons("b", ui.castsB, ui.stackB, ui.otherLabel)
+end
+
+-- While the window is being sized: the strips' tracks to the new lane width and each icon moved along
+-- its strip on the row it has (the stacking is redone on release).
+local function stretchStrips(g)
+    for _, side in ipairs({ "a", "b" }) do ui.strips[side].track:SetWidth(g.laneW) end
+    for _, d in ipairs(ui.icons or {}) do
+        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.laneW) or 0)
+        d.frame:ClearAllPoints()
+        d.frame:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
+    end
+end
+
 -- ── drawing ─────────────────────────────────────────────────────────────────────────────────────
 
 -- The geometry for the window's stored size: the content's width, the lanes' left and width, the span.
 local function geometry()
-    local cw = math.max(100, ui.width - 2 * Timeline.PAD)
-    local laneX = Timeline.NAME_W + Timeline.GAP
-    local laneW = math.max(40, cw - laneX - Timeline.GAP - Timeline.COUNT_W)
+    local cw, laneX, laneW = Timeline.LaneGeometry(ui.width)
     return { cw = cw, laneX = laneX, laneW = laneW, span = ui.span or 1 }
 end
 
@@ -517,7 +725,8 @@ local function layoutAxis(g, shown)
     for i, line in ipairs(ui.grid) do
         line:SetShown(shown)
         line:ClearAllPoints()
-        line:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW), 0)
+        line:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW),
+            -(ui.sections and ui.sections.stripA or 0))
         line:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW), 0)
     end
 end
@@ -528,7 +737,7 @@ local function layoutRows(g)
     NS.Pool.ReleaseAll(ui.hitPool, function(h) h.cast, h.label = nil, nil end)
     ui.drawn = {}
     for i, row in ipairs(ui.rows) do
-        local y = -(i - 1) * Timeline.PAIR_H
+        local y = -ui.sections.lanes - (i - 1) * Timeline.PAIR_H
         fillPair(NS.Pool.Acquire(ui.pairs, newPair), row, y, g)
         laneMarks(row, "a", y, g)
         laneMarks(row, "b", y - Timeline.LANE_H - Timeline.LANE_GAP, g)
@@ -578,9 +787,12 @@ function layout()
     if not ui then return end
     local g = geometry()
     ui.laidW = g.cw
+    ui.stackA, ui.stackB = stackOf(ui.castsA, g), stackOf(ui.castsB, g)
+    ui.sections = Timeline.Sections(ui.stackA.count, ui.stackB.count)
     layoutFrame(g)
+    layoutStrips(g)
     layoutRows(g)
-    ui.contentH = math.max(1, #ui.rows * Timeline.PAIR_H - Timeline.PAIR_GAP)
+    ui.contentH = math.max(1, ui.sections.lanes + #ui.rows * Timeline.PAIR_H - Timeline.PAIR_GAP)
     ui.content:SetHeight(ui.contentH)
     Timeline.Scroll(0)
 end
@@ -593,7 +805,10 @@ function resize()
     local widthMoved = g.cw ~= ui.laidW
     ui.laidW = g.cw
     layoutFrame(g)
-    if widthMoved then stretchRows(g) end
+    if widthMoved then
+        stretchStrips(g)
+        stretchRows(g)
+    end
     Timeline.Scroll(0)
 end
 
@@ -606,6 +821,7 @@ local function draw()
     ui.run, ui.other, ui.kind = run, other, kind
     ui.otherHas = Timeline.Has(other)
     ui.rows = Timeline.Has(run) and Timeline.Rows(run, other) or {}
+    ui.castsA, ui.castsB = Timeline.CastsOf(run), Timeline.CastsOf(other)
     ui.span = Timeline.Span(run, other)
     if run then
         local this, label, note = Timeline.Legend(run, other, kind)
@@ -682,6 +898,16 @@ end
 --- The cast ticks drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.
 function Timeline.Marks()
     return ui and ui.drawn or {}
+end
+
+--- The cast icons drawn now, for the suites: { { frame, cast, x, y, row, side = "a" | "b" }, ... }.
+function Timeline.Icons()
+    return ui and ui.icons or {}
+end
+
+--- Where each part of the content starts now (Timeline.Sections), for the suites.
+function Timeline.Layout()
+    return ui and ui.sections or nil
 end
 
 --- The built window, for the suites (nil until first opened).

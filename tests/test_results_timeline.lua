@@ -2,7 +2,9 @@
 -- rows (one per ability and caster across both runs, each run's times and counts, the order: cooldowns
 -- over 15 s first, longest first, then by count), the axis and a cast tick's x; the detail's Timeline
 -- button (disabled for a run with no casts); the window's lanes (this run's gold ticks on top, the
--- compared run's blue below, the counts, the pet suffix, the cooldown under the name), its legend, the
+-- compared run's blue below, the counts just past the lanes, the pet suffix, the cooldown under the name),
+-- the Casts strips above them (every cast's icon on the lanes' axis, stacked onto as many rows as
+-- overlapping casts need, their tooltips, the empty note, the two headings), its legend, the
 -- compare target followed as the detail's run, pick and Clear Pick change, the none and empty cases,
 -- the tick tooltip, Escape,
 -- closing with the Results window, the stored position, Master scale and the stand-down.
@@ -216,9 +218,8 @@ test("results timeline: two lanes per ability, this run's gold ticks on top and 
     assertEqual(#marksIn(i, "b"), #BEST)
     assertEqual(#marksIn(i, "b", INFERNAL), 0)
     -- Laid from the geometry: the lanes after the name cell, the top lane's middle and the bottom one's.
-    local laneX = TL.NAME_W + TL.GAP
-    local laneW = u.width - 2 * TL.PAD - laneX - TL.GAP - TL.COUNT_W
-    local pairTop = -2 * TL.PAIR_H   -- Incinerate is the third pair
+    local _, laneX, laneW = TL.LaneGeometry(u.width)
+    local pairTop = -TL.Layout().lanes - 2 * TL.PAIR_H   -- Incinerate is the third pair, under the strips
     for _, d in ipairs(marksIn(i, "a", INCINERATE)) do
         assertEqual(d.x, laneX + TL.MarkX(d.cast.t, 60, laneW))
         assertEqual(d.y, pairTop - TL.LANE_H / 2)
@@ -265,6 +266,192 @@ test("results timeline: the legend names both runs; a tick's tooltip names the s
     assertEqual(lines[1][1], "Cooldown 3:00")
     assertEqual(lines[2], "This run: 1 cast")
     assertEqual(lines[3], u.legendB.__text .. ": 0 casts")
+end)
+
+-- ── the counts and the cast icons (P11) ─────────────────────────────────────────────────────────
+
+test("results timeline: each lane's count sits just past the lane's right end, not out at the window's edge", function()
+    local i = inst()
+    local TL = i.TL
+    board(i)
+    local u = open(i, "this")
+    assertTrue(TL.COUNT_GAP >= 4 and TL.COUNT_GAP <= 6, "a small gap")
+    local _, laneX, laneW = TL.LaneGeometry(u.width)
+    for _, pair in ipairs(pairsOf(i)) do
+        for _, count in ipairs({ pair.countA, pair.countB }) do
+            local at = count.__points[#count.__points]
+            assertEqual(at[1], "LEFT", "left-aligned on the lane's end")
+            assertEqual(at[4], laneX + laneW + TL.COUNT_GAP)
+        end
+    end
+    -- The lanes take the width the count cell leaves.
+    assertEqual(laneX + laneW + TL.COUNT_GAP + TL.COUNT_W, u.width - 2 * TL.PAD)
+end)
+
+test("results timeline: overlapping icons stack onto extra rows and the strip grows to fit them all", function()
+    local i = inst()
+    local TL = i.TL
+    local function same(n)
+        local xs = {}
+        for k = 1, n do xs[k] = 100 end
+        return xs
+    end
+    for _, n in ipairs({ 1, 3, 6 }) do
+        local rows, count, over = TL.Stack(same(n), TL.CAST_STEP, TL.MAX_STACK)
+        assertEqual(count, n, n .. " casts at one time need " .. n .. " rows")
+        assertEqual(rows[n], n)
+        assertNil(next(over), "none past the cap")
+        assertEqual(TL.StripHeight(count), n * TL.CAST_STEP)
+    end
+    -- Icons a full pitch apart share a row; closer ones do not, and a freed row is reused.
+    local rows, count = TL.Stack({ 0, 15, 20, 30, 45 }, TL.CAST_STEP, TL.MAX_STACK)
+    assertEqual(table.concat(rows, ","), "1,1,2,1,1")
+    assertEqual(count, 2)
+    -- Past the cap: every icon still drawn, the rest on the row that frees first, flagged.
+    local capped, used, over = TL.Stack(same(TL.MAX_STACK + 2), TL.CAST_STEP, TL.MAX_STACK)
+    assertEqual(used, TL.MAX_STACK)
+    assertEqual(#capped, TL.MAX_STACK + 2)
+    assertTrue(over[TL.MAX_STACK + 1] and over[TL.MAX_STACK + 2])
+    assertNil(over[TL.MAX_STACK])
+    assertEqual(TL.StripHeight(0), TL.CAST_STEP, "an empty strip keeps a row for its note")
+    -- The sections: the Casts heading, this run's strip, the compared run's, the By ability heading.
+    local Style = i.NS.Style
+    local s = TL.Sections(3, 1)
+    assertEqual(s.stripA, Style.SECTION_H, "under the Casts heading")
+    assertEqual(s.heightA, 3 * TL.CAST_STEP)
+    assertEqual(s.stripB, s.stripA + s.heightA + TL.STRIP_GAP)
+    assertEqual(s.lanesHead, s.stripB + s.heightB + Style.SECTION_GAP)
+    assertEqual(s.lanes, s.lanesHead + Style.SECTION_H)
+end)
+
+test("results timeline: the Casts strips show every cast of both runs as its icon on the lanes' time axis", function()
+    local i = inst()
+    local TL = i.TL
+    board(i)
+    local u = open(i, "this")
+    local a, b = {}, {}
+    for _, d in ipairs(TL.Icons()) do
+        local list = d.side == "a" and a or b
+        list[#list + 1] = d
+    end
+    assertEqual(#a, #THIS, "every cast of this run, the pet's too")
+    assertEqual(#b, #BEST, "every cast of the best")
+    local _, laneX, laneW = TL.LaneGeometry(u.width)
+    local s = TL.Layout()
+    local pets = 0
+    for _, d in ipairs(a) do
+        assertEqual(d.x, laneX + TL.MarkX(d.cast.t, 60, laneW), "on the lanes' axis")
+        assertEqual(d.frame.tex.__texture, i.NS.HudBreakdown.SpellIcon(d.cast.id))
+        assertTrue(d.frame.__mouse, "it takes the mouse")
+        -- This run's strip stacks up from its bottom row.
+        assertEqual(d.y, -(s.stripA + s.heightA - (d.row - 0.5) * TL.CAST_STEP))
+        if d.cast.pet then pets = pets + 1 end
+    end
+    assertEqual(pets, 2, "the pet's Firebolts")
+    for _, d in ipairs(b) do
+        -- The compared run's strip stacks down from its top row.
+        assertEqual(d.y, -(s.stripB + (d.row - 0.5) * TL.CAST_STEP))
+    end
+    -- The headings: Casts over the strips, By ability over the lanes, in the section style.
+    assertEqual(u.castsHead.__text, "Casts")
+    assertEqual(u.castsHead.__fontObject, i.NS.Style.FONT.SECTION)
+    assertEqual(u.lanesHead.__text, "By ability")
+    assertEqual(u.lanesHead.__fontObject, i.NS.Style.FONT.SECTION)
+    local at = u.lanesHead.__points[#u.lanesHead.__points]
+    assertEqual(at[5], -s.lanesHead)
+    assertTrue(s.lanesHead > s.stripB + s.heightB, "under both strips")
+    -- Each strip names its run in the name cell; neither shows its empty note.
+    assertEqual(u.strips.a.label.__text, "This run")
+    assertEqual(u.strips.b.label.__text, "Best run")
+    assertFalse(u.strips.a.note:IsShown())
+    assertFalse(u.strips.b.note:IsShown())
+    assertEqual(#pairsOf(i), 5, "the lanes still drawn under them")
+end)
+
+test("results timeline: a strip grows with the casts stacked at one time; the lanes start under it", function()
+    local i = inst()
+    local TL = i.TL
+    for _, n in ipairs({ 1, 3, 6 }) do
+        local list = {}
+        for k = 1, n do list[k] = { 10, 100000 + k } end
+        seed(i, { mkRun(i.NS, "stack" .. n, 100, list) })
+        open(i, "stack" .. n)
+        local s = TL.Layout()
+        assertEqual(s.heightA, n * TL.CAST_STEP, n .. " overlapping casts")
+        local rows = {}
+        for _, d in ipairs(TL.Icons()) do if d.side == "a" then rows[#rows + 1] = d.row end end
+        table.sort(rows)
+        assertEqual(#rows, n)
+        assertEqual(rows[n], n, "one row each")
+        local pair = pairsOf(i)[1]
+        assertEqual(pair.__points[#pair.__points][5], -s.lanes, "the first pair under the By ability heading")
+        assertEqual(win(i).contentH, s.lanes + n * TL.PAIR_H - TL.PAIR_GAP, "the content scrolls over both")
+    end
+end)
+
+test("results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets", function()
+    local i = inst()
+    local TL = i.TL
+    board(i)
+    local u = open(i, "this")
+    local shown
+    local real = i.NS.ResultsTable.SpellTip
+    i.NS.ResultsTable.SpellTip = function(window, owner, id, lines) shown = { window = window, owner = owner, id = id, lines = lines } end
+    local function hover(side, id)
+        for _, d in ipairs(TL.Icons()) do
+            if d.side == side and d.cast.id == id then
+                d.frame:GetScript("OnEnter")(d.frame)
+                return d
+            end
+        end
+    end
+    local d = hover("a", INFERNAL)
+    assertTrue(shown.window == u.frame and shown.owner == d.frame)
+    assertEqual(shown.id, INFERNAL, "the plain stored ID")
+    assertEqual(shown.lines[1], "Cast at 0:01")
+    assertEqual(shown.lines[2][1], u.legendA.__text, "which run")
+    hover("a", FIREBOLT)
+    assertEqual(shown.lines[1], "Cast at 0:06 (pet)")
+    hover("b", CONFLAG)
+    assertEqual(shown.lines[1], "Cast at 0:03")
+    assertEqual(shown.lines[2][1], u.legendB.__text)
+    i.NS.ResultsTable.SpellTip = real
+    -- Two lines or more go on bullets (the addon's rule, Style.TipBullet); past the cap a third says
+    -- the icon overlaps others.
+    local lines = TL.IconLines({ t = 5, id = INFERNAL }, "This run", true)
+    assertEqual(#lines, 3)
+    assertEqual(lines[3][1], "Too many casts here for " .. TL.MAX_STACK .. " rows: this icon overlaps others.")
+    assertEqual(i.NS.Style.TipBullet(lines, 1), i.NS.Style.BULLET)
+    assertNil(TL.IconLines(nil, "x"))
+end)
+
+test("results timeline: a strip with no casts shows a dim note in place of its icons", function()
+    local i = inst()
+    seed(i, { mkRun(i.NS, "alone", 100, THIS) })
+    local u = open(i, "alone")
+    assertTrue(u.strips.b.note:IsShown())
+    assertEqual(u.strips.b.note.__text, "No run to compare with")
+    assertEqual(u.strips.b.note.__fontObject, i.NS.Style.FONT.CAPTION)
+    assertEqual(u.strips.b.label.__text, "")
+    assertFalse(u.strips.a.note:IsShown())
+    assertEqual(i.TL.Layout().heightB, i.TL.CAST_STEP, "one row's height for its note")
+    seed(i, { mkRun(i.NS, "oldBest", 500, nil, { schema = 2, date = NOW - 2 * HOUR }) })
+    i.R.ShowRun("alone")
+    assertEqual(u.strips.b.note.__text, "No casts recorded")
+    assertEqual(u.strips.b.label.__text, "Best run")
+    for _, d in ipairs(i.TL.Icons()) do assertEqual(d.side, "a") end
+end)
+
+test("results timeline: its minimum width is 640, so the icons get room; the default opens wider", function()
+    local i = inst()
+    local TL = i.TL
+    assertEqual(TL.MIN_WIDTH, 640)
+    local W = i.NS.defaults.profile.windows.timeline
+    assertEqual(W.width, 860)
+    assertEqual(W.height, 560)
+    assertTrue(W.width >= TL.MIN_WIDTH and W.height >= TL.MIN_HEIGHT)
+    local _, _, laneW = TL.LaneGeometry(TL.MIN_WIDTH)
+    assertTrue(laneW / 60 >= 7, "a 1:00 race gets 7 px a second at the minimum")
 end)
 
 -- ── the compare target, followed ────────────────────────────────────────────────────────────────
