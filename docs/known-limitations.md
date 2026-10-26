@@ -9,7 +9,7 @@ and the smoke row that measures it where one exists.
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
   and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current
-  character*, *Current spec*, grouped *Full* (character, class, spec, target and time) and newest first; *Reset* deletes the saved view and
+  character*, *All specs*, grouped *Full* (character, class, spec, target and time) and newest first; *Reset* deletes the saved view and
   *Clear* returns to it. They are view state, not settings: no schema row, and the profile reset
   takes them with the profile.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on

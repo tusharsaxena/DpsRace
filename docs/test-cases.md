@@ -425,7 +425,7 @@ Total.
 - results: bests tab groups by spec x category x length with clean-only toggle
 - results: the Bests board shows one category at a time, so a spec and length is one row
 - results: list refreshes on RUN_SAVED
-- results: Runs opens on the current character and spec, each a choice of its own
+- results: Runs opens on the current character in every spec; current character and spec are each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
 - results: position, size and Master scale persist; Reset position restores them
 - results: collapsed, the detail replaces the list, with a back control

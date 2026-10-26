@@ -10,9 +10,8 @@ local _, NS = ...
 -- its status (late casts, a restart, a reload, a session matched by list, a death).
 --
 -- The filters are the session's: they are view state, not settings. Each login starts on the
--- logged-in character and their current spec (the owner's call, 2026-10-24: "current" is a value of
--- its own, resolved when the filter runs, so a spec swap with the window open follows at the next
--- redraw); everything else starts at "all".
+-- logged-in character in every spec (the owner's call, 2026-10-26; "current" is a value of its own,
+-- resolved when the filter runs), grouped by Full; everything else starts at "all".
 -- Filter, Options and the columns are pure over stored run records, so the suites drive them bare.
 
 local Runs = {}
@@ -23,7 +22,7 @@ local Tbl = NS.ResultsTable
 
 Runs.RESOLVED = { complete = true, incomplete = true, lost = true }
 Runs.DEFAULTS = {
-    char = "current", spec = "current", category = "all", length = "all", date = "all",
+    char = "current", spec = "all", category = "all", length = "all", date = "all",
     hideFlagged = false, includeIncomplete = true, onlyBest = false,
     -- Not a filter: the list's grouping (Runs.GROUPS), view state like the filters. Runs.Filter
     -- reads no predicate for it. A new profile groups by Full: character, class, spec, target and
@@ -49,7 +48,7 @@ local VIEW_BUTTONS = {
     { key = "save", label = "Save", act = "SaveView",
       tip = "Save these filters, the grouping and the sort as this profile's default view of Runs." },
     { key = "reset", label = "Reset", act = "ResetView",
-      tip = "Delete the saved view and go back to the stock one: your character and spec, newest first." },
+      tip = "Delete the saved view and go back to the stock one: your character in every spec, grouped by Full, newest first." },
     { key = "clear", label = "Clear", act = "ClearView",
       tip = "Go back to the saved view (the stock one when none is saved). The saved view is kept." },
 }
