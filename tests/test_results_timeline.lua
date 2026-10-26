@@ -245,7 +245,7 @@ test("results timeline: the legend names both runs; a tick's tooltip names the s
     local u = open(i, "this")
     local best = i.NS.Recorder.Get("best")
     assertEqual(u.legendA.__text, "This run \194\183 " .. os.date("%d %b %H:%M", NOW - HOUR))
-    assertEqual(u.legendB.__text, "Best \194\183 " .. os.date("%d %b %H:%M", best.date))
+    assertEqual(u.legendB.__text, "Best run \194\183 " .. os.date("%d %b %H:%M", best.date))
     assertFalse(u.note:IsShown(), "nothing to note")
     local dot = marksIn(i, "a", INFERNAL)[1]
     assertTrue(dot.hit.__mouse, "its hover frame takes the mouse")
@@ -307,7 +307,7 @@ test("results timeline: with no run to compare with, or one with no casts, the b
     -- A better run on the board with no casts recorded (stored before format 3).
     seed(i, { mkRun(i.NS, "oldBest", 500, nil, { schema = 2, date = NOW - 2 * HOUR }) })
     i.R.ShowRun("alone")
-    assertEqual(u.note.__text, "Best has no casts recorded: the blue lanes stay empty.")
+    assertEqual(u.note.__text, "Best run has no casts recorded: the blue lanes stay empty.")
     assertEqual(#marksIn(i, "b"), 0)
     assertEqual(#marksIn(i, "a"), #THIS)
 end)

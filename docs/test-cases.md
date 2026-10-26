@@ -484,7 +484,7 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (12)
+### test_compare.lua (14)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
@@ -494,6 +494,8 @@ Total.
 - compare: the default is the best on the run's board; for the best itself, the runner-up
 - compare: a picked run wins while it is stored and not the run itself
 - compare: the toggle sets the run beside the best: the score table and the compared breakdown
+- compare: This run right, Best run left; each header at its column's x, width and justify
+- compare: one bar per row, on the higher run's side, its length the row's difference against the table's
 - compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
 - compare: the row menu's pick, the different-board note and Clear Pick
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
@@ -930,7 +932,7 @@ Total.
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 11 |
-| test_compare.lua | 12 |
+| test_compare.lua | 14 |
 | test_loadout.lua | 27 |
 | test_casts.lua | 10 |
 | test_usage.lua | 22 |
@@ -956,4 +958,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **754** |
+| **Total** | **756** |

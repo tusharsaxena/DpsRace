@@ -619,7 +619,7 @@ L["Clear Pick"] = "Clear Pick"
 L["Different board: the spec, target type or race length differ."] =
     "Different board: the spec, target type or race length differ."
 L["This run"] = "This run"
-L["Best"] = "Best"
+L["Best run"] = "Best run"
 L["Runner-up"] = "Runner-up"
 L["Picked"] = "Picked"
 L["Difference"] = "Difference"

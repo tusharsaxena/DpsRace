@@ -196,7 +196,7 @@ test("compare: the toggle sets the run beside the best: the score table and the 
     assertEqual(kind, "best")
     assertTrue(x.score:IsShown())
     assertFalse(d.w.list.parent:IsShown(), "the plain breakdown still shows under the compared one")
-    assertEqual(x.head[3].__text, "Best")
+    assertEqual(x.head[3].__text, "Best run")
     assertEqual(x.lines[1][2].__text, "18.0K", "this run's damage")
     assertEqual(x.lines[1][3].__text, "54.0K", "the best's damage")
     assertEqual(x.lines[2][4].__text, "-66.7%", "the DPS difference")
@@ -214,6 +214,71 @@ test("compare: the toggle sets the run beside the best: the score table and the 
     assertTrue(d.w.list.parent:IsShown(), "the plain breakdown is back")
     _, active = i.NS.Pool.Counts(x.rows)
     assertEqual(active, 0, "the compared rows were left drawn")
+end)
+
+test("compare: This run right, Best run left; each header at its column's x, width and justify", function()
+    local i = inst()
+    seed(i, { mkRun("best", 300), mkRun("low", 100) })
+    i.R.ShowRun("low")
+    local d = detail(i)
+    d:SetComparing(true)
+    local x = d.cmp
+    assertEqual(x.head[3].__text, "Best run", "the compared column's name")
+    assertEqual(x.spellHead[3].__text, "Best run")
+    local justify = { "LEFT", "RIGHT", "LEFT", "RIGHT" }
+    local function same(head, cell, j, what)
+        assertEqual(head.__justifyH, justify[j], what .. " header " .. j .. "'s justify")
+        assertEqual(cell.__justifyH, justify[j], what .. " column " .. j .. "'s justify")
+        assertEqual(head.__points[1][4], cell.__points[1][4], what .. " column " .. j .. ": the header's x")
+        assertEqual(head.__width, cell.__width, what .. " column " .. j .. ": the header's width")
+    end
+    for j = 2, 4 do
+        same(x.head[j], x.lines[1][j], j, "score")
+        same(x.head[j], x.lines[2][j], j, "score")
+        same(x.spellHead[j], x.rows.active[1].texts[j], j, "spell")
+    end
+    local thisX, thisW = x.spellHead[2].__points[1][4], x.spellHead[2].__width
+    assertTrue(x.spellHead[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
+end)
+
+test("compare: one bar per row, on the higher run's side, its length the row's difference against the table's", function()
+    local i = inst()
+    local low = mkRun("low", 100, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 500 } } })
+    local best = mkRun("best", 300, { spells = { { id = 1, dmg = 30000 }, { id = 2, dmg = 24000 }, { id = 3, dmg = 500 } } })
+    seed(i, { best, low })
+    i.R.ShowRun("low")
+    local d = detail(i)
+    d:SetComparing(true)
+    local x, Cmp, vw = d.cmp, i.Cmp, i.Cmp.VALUE_W
+    local byID = {}
+    for _, row in ipairs(x.rows.active) do byID[row.data.id] = row end
+    -- The spell table: 30000 vs 24000 (+6000), 10000 vs 30000 (-20000, the largest), 500 vs 500.
+    local up, down, even = byID[2].bar, byID[1].bar, byID[3].bar
+    assertEqual(up.side, "this", "this run is higher: the bar sits in its column")
+    assertEqual(down.side, "other", "the best is higher: the bar sits in its column")
+    assertFalse(even:IsShown(), "a bar for an equal row")
+    assertTrue(up:IsShown() and down:IsShown())
+    assertEqual(down.__width, vw, "the largest difference fills its column")
+    assertTrue(math.abs(up.__width - vw * 6000 / 20000) < 1e-9, "the length is the difference's share of the largest")
+    -- This run's bar ends at its column's right edge; the other's starts at its column's left edge.
+    local tx, tw = byID[2].texts[2].__points[1][4], byID[2].texts[2].__width
+    assertEqual(up.__points[1][4] + up.__width, tx + tw + Cmp.PAD, "this run's bar grows left from its right edge")
+    assertEqual(down.__points[1][4], byID[1].texts[3].__points[1][4] - Cmp.PAD,
+        "the best's bar grows right from its left edge")
+    -- The score table: its own scale, each figure against the larger of the two.
+    local dmg = x.lines[1].bar
+    assertEqual(dmg.side, "other")
+    assertTrue(math.abs(dmg.__width - vw * 2 / 3) < 1e-9, "100 against 300: two thirds of the column")
+    assertEqual(x.lines[2].bar.side, "other")
+    -- The pure parts.
+    assertEqual(Cmp.Bar(0, 5, vw), nil, "equal runs draw no bar")
+    assertEqual(Cmp.Bar(5, 0, vw), nil)
+    local side, len = Cmp.Bar(-9, 3, vw)
+    assertEqual(side, "other")
+    assertEqual(len, vw, "a bar never runs past its column")
+    assertTrue(math.abs(Cmp.ScoreDiff(300, 100) - 2 / 3) < 1e-9)
+    assertEqual(Cmp.ScoreDiff(nil, 5), nil)
+    assertEqual(Cmp.MaxDelta({ { delta = 3 }, { delta = -7 }, {} }), 7)
 end)
 
 test("compare: the best compares with the runner-up; a run alone on its board has the toggle disabled", function()
@@ -301,7 +366,7 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     local row = i.Cmp.Spells(low, best)[1]
     local lines = Tips.CompareSpell(row, "best")
     assertEqual(lines[1][1], "This run: 10,000 damage (55.6%)")
-    assertEqual(lines[2], "Best: 30,000 damage (55.6%)")
+    assertEqual(lines[2], "Best run: 30,000 damage (55.6%)")
     assertEqual(lines[3], "Difference: -20,000")
     assertEqual(Tips.CompareSpell({ id = 1, dmgB = 5, delta = -5 }, "picked")[1][1], "This run: not cast")
 
