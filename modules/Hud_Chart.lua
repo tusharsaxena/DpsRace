@@ -46,8 +46,13 @@ local _, NS = ...
 -- icon, ICON px square, along the top of the plot at each cast of an important ability (a base
 -- cooldown over 15 s, modules/Casts.lua), centered at x = INSET + clamp(t, 0, length) / length x
 -- (width - 2 x INSET), the cast's plain race-clock time over the plain length across the width Place()
--- was handed, held inside the plot. An icon that would overlap the one before it on the top row drops
--- to a second row just below (Chart.IconRows). Pooled frames on the overlay, each with its icon and a
+-- was handed, held inside the plot. An icon that would overlap the one placed last on its row drops to
+-- the first row below with room, on as many rows as the configured plot height holds (Chart.IconRowCount:
+-- 5 on the default 80 px plot, 2 on the 40 px minimum). The last row takes a cast with no room above as
+-- an icon when it stands alone there, and a crowd of them as one *+n* mark at the first one's place, n
+-- the casts it stands for, its hover listing each with its time (ResultsTips.CastCrowd): nothing is
+-- dropped (the owner's second test round, 2026-10-26: a potion, a trinket and Bestial Wrath in one second
+-- showed two icons). Pooled frames on the overlay, each icon with its art and a
 -- hover (the spell and its time, ResultsTips.Cast) everywhere the chart is drawn, the running HUD
 -- included (a plain frame); moved only when the list, the length or the geometry changed. The icon is
 -- C_Spell's for the cast's plain stored ID. Live from Casts.Live() (re-read only when the race heard
@@ -69,7 +74,7 @@ Chart.INSET = 2         -- the plot's inner padding
 Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
 Chart.ICON = 12         -- a cooldown icon's size (#14)
-Chart.ICON_GAP = 1      -- between the top row of icons and the second
+Chart.ICON_GAP = 1      -- between two rows of icons
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local PLOT_EDGE = { 1, 1, 1, 0.10 }
@@ -80,6 +85,7 @@ local AHEAD = { 0.36, 0.86, 0.46, 0.85 }    -- the KPI's green: past the tick
 local BEHIND = { 1.0, 0.32, 0.32, 0.85 }    -- the KPI's red: the shortfall to the tick
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }   -- the icon art without its baked-in border
+local MARK_BG = { 0, 0, 0, 0.75 }              -- a +n mark's square, dark under its white count
 
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
@@ -220,25 +226,71 @@ function Chart.IconX(t, length, width)
     return math.max(half, math.min(x, (tonumber(width) or 0) - half))
 end
 
---- Each icon's row for centers `xs` (in time order): the top row (1) unless the icon would overlap the
---- last one placed there (closer than an icon's width), then the second row (2) just below it. Two rows
---- only: a third crowded cast still takes the second row, drawn over the one before it.
---- @param xs table  numbers
---- @return table rows
-function Chart.IconRows(xs)
-    local rows, last = {}, nil
-    for i, x in ipairs(xs) do
-        if last == nil or x - last >= Chart.ICON then
-            rows[i], last = 1, x
-        else
-            rows[i] = 2
-        end
-    end
-    return rows
+--- How many rows of icons a plot `plotH` tall holds: an icon and ICON_GAP each inside both insets, at
+--- least one. Config math on the configured height, never a measured size.
+--- @param plotH number
+--- @return number
+function Chart.IconRowCount(plotH)
+    local inner = (tonumber(plotH) or 0) - 2 * Chart.INSET
+    return math.max(1, math.floor((inner + Chart.ICON_GAP) / (Chart.ICON + Chart.ICON_GAP)))
 end
 
---- A row's center y, from the plot's top (negative): the top row INSET under the edge, the second
---- an icon and ICON_GAP below it.
+-- The first of rows 1..n whose last icon is an icon's width or more left of `x`, or nil.
+local function freeRow(last, x, n)
+    for r = 1, n do
+        if last[r] == nil or x - last[r] >= Chart.ICON then return r end
+    end
+    return nil
+end
+
+-- The indices in `spill` (in time order) in crowds: a crowd starts at its first cast and takes each
+-- later one closer than an icon's width to that first.
+local function crowds(xs, spill)
+    local out, cur = {}, nil
+    for _, i in ipairs(spill) do
+        if cur and xs[i] - xs[cur[1]] < Chart.ICON then
+            cur[#cur + 1] = i
+        else
+            cur = { i }
+            out[#out + 1] = cur
+        end
+    end
+    return out
+end
+
+--- Each icon's row for centers `xs` (in time order) on `maxRows` rows (default 2): the first row from
+--- the top where the icon would not overlap the last one placed there (closer than an icon's width).
+--- The last row is the overflow's: a cast with no room on the rows above sits there as an icon when no
+--- other such cast is within an icon's width of it, and a crowd of them becomes one mark at the first
+--- one's x, standing for every cast in it. Nothing is dropped: each index is in `rows` or in a mark.
+--- @param xs table  numbers
+--- @param maxRows number|nil
+--- @return table rows  { [i] = row }, nil for a cast under a mark
+--- @return table marks  { { x, row, members = { i, ... } }, ... }
+function Chart.IconRows(xs, maxRows)
+    maxRows = math.max(1, math.floor(tonumber(maxRows) or 2))
+    local rows, last, spill = {}, {}, {}
+    for i, x in ipairs(xs) do
+        local r = freeRow(last, x, maxRows - 1)
+        if r then
+            rows[i], last[r] = r, x
+        else
+            spill[#spill + 1] = i
+        end
+    end
+    local marks = {}
+    for _, crowd in ipairs(crowds(xs, spill)) do
+        if #crowd == 1 then
+            rows[crowd[1]] = maxRows
+        else
+            marks[#marks + 1] = { x = xs[crowd[1]], row = maxRows, members = crowd }
+        end
+    end
+    return rows, marks
+end
+
+--- A row's center y, from the plot's top (negative): the top row INSET under the edge, each next
+--- an icon and ICON_GAP below the one before.
 --- @param row number
 --- @return number
 function Chart.IconY(row)
@@ -417,7 +469,8 @@ end
 --- @return table chart
 function Chart.New(parent, titleFont, headH)
     local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H,
-                             iconPool = NS.Pool.New(), icons = {} }, Strip)
+                             iconPool = NS.Pool.New(), icons = {}, markPool = NS.Pool.New(), marks = {} },
+                           Strip)
     s.title = Style.Text(parent, titleFont or FONT.SECTION)
     s.title:SetText(L["Damage profile"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
@@ -600,6 +653,12 @@ local function iconLeave()
     if NS.ResultsTable then NS.ResultsTable.HideTip() end
 end
 
+-- A +n mark's hover: every cast it stands for, each with its time, on bullets.
+local function markEnter(mark)
+    local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
+    if mark.casts and Tbl and Tips then Tbl.BelowTip(mark, Tips.CastCrowd(mark.casts)) end
+end
+
 -- An icon: a plain frame on the overlay (it takes the mouse for its tooltip) holding the spell's art.
 local function newIcon(over)
     local f = CreateFrame("Frame", nil, over)
@@ -611,6 +670,31 @@ local function newIcon(over)
     f:SetScript("OnEnter", iconEnter)
     f:SetScript("OnLeave", iconLeave)
     return f
+end
+
+-- A +n mark: a plain frame an icon's size on the overlay, a dark square holding the count.
+local function newMark(over)
+    local f = CreateFrame("Frame", nil, over)
+    f:SetSize(Chart.ICON, Chart.ICON)
+    f:EnableMouse(true)
+    f.bg = f:CreateTexture(nil, "ARTWORK")
+    f.bg:SetAllPoints(f)
+    f.bg:SetColorTexture(MARK_BG[1], MARK_BG[2], MARK_BG[3], MARK_BG[4])
+    f.text = Style.Text(f, FONT.TEXT, nil, "CENTER")
+    f.text:SetPoint("CENTER", f, "CENTER", 0, 0)
+    f:SetScript("OnEnter", markEnter)
+    f:SetScript("OnLeave", iconLeave)
+    return f
+end
+
+-- One +n mark for `casts` centered at (x, y) from the plot's top left.
+function Strip:placeMark(casts, x, y, row)
+    local f = NS.Pool.Acquire(self.markPool, function() return newMark(self.over) end)
+    f.casts = casts
+    f.text:SetText(L["+%d"]:format(#casts))
+    f:ClearAllPoints()
+    f:SetPoint("CENTER", self.over, "TOPLEFT", x, y)
+    self.marks[#self.marks + 1] = { frame = f, casts = casts, x = x, row = row }
 end
 
 -- One icon for `cast` centered at (x, y) from the plot's top left.
@@ -632,7 +716,8 @@ function Strip:drawIcons(casts, length)
     end
     self.iconList, self.iconN, self.iconLen, self.iconGeom = casts, n, length, self.geometry
     NS.Pool.ReleaseAll(self.iconPool, function(f) f.cast = nil end)
-    self.icons = {}
+    NS.Pool.ReleaseAll(self.markPool, function(f) f.casts = nil end)
+    self.icons, self.marks = {}, {}
     local placed, xs = {}, {}
     for i = 1, n do
         local x = Chart.IconX(casts[i].t, length, self.width)
@@ -640,13 +725,25 @@ function Strip:drawIcons(casts, length)
             placed[#placed + 1], xs[#xs + 1] = casts[i], x
         end
     end
-    local rows = Chart.IconRows(xs)
-    for i, cast in ipairs(placed) do self:placeIcon(cast, xs[i], Chart.IconY(rows[i]), rows[i]) end
+    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(self.plotH))
+    for i, cast in ipairs(placed) do
+        if rows[i] then self:placeIcon(cast, xs[i], Chart.IconY(rows[i]), rows[i]) end
+    end
+    for _, m in ipairs(marks) do
+        local members = {}
+        for k, i in ipairs(m.members) do members[k] = placed[i] end
+        self:placeMark(members, m.x, Chart.IconY(m.row), m.row)
+    end
 end
 
 --- The icons drawn now, for the suites: { { frame, cast, x, row }, ... }.
 function Strip:Icons()
     return self.icons
+end
+
+--- The +n marks drawn now, for the suites: { { frame, casts, x, row }, ... }.
+function Strip:Marks()
+    return self.marks
 end
 
 --- The columns drawn now, for the suites.

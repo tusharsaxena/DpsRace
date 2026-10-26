@@ -1,7 +1,8 @@
 -- tests/test_chart_icons.lua — the damage chart's cooldown icons (#14, modules/Hud_Chart.lua): the
 -- ability's icon along the top of the plot at each cast of an ability whose base cooldown is over
--- 15 s, a later icon that would overlap the one before it on a second row. The pure positions
--- (Chart.TimeX, IconX, IconRows, IconY) and selection, then the icons drawn live on the running HUD
+-- 15 s, a later icon that would overlap the one before it on the first row below with room, as many
+-- rows as the plot's height holds, then a +n mark for a crowd on the last row. The pure positions
+-- (Chart.TimeX, IconX, IconRowCount, IconRows, IconY) and selection, then the icons drawn live on the running HUD
 -- from the race's casts (no geometry read back while the columns hold secrets), on the result card and
 -- in the Results detail from the run's record, each icon's tooltip (the spell and its time) in all
 -- three, test mode, and *Show cooldown icons* (live.castDots) turning them off everywhere.
@@ -127,12 +128,95 @@ end)
 
 test("chart icons: an icon that would overlap the one before it on the top row takes the second", function()
     local Chart = T.NS.HudChart
-    local rows = Chart.IconRows({ 6, 10, 18, 30, 41, 44, 70 })
+    local rows, marks = Chart.IconRows({ 6, 10, 18, 30, 41, 44, 70 }, 2)
     -- 10 is 4 from 6: second row; 18 is 12 from 6: top; 30 top; 41 is 11 from 30: second;
     -- 44 is 14 from 30: top; 70 top.
     assertEqual(table.concat(rows, ","), "1,2,1,1,2,1,1")
-    assertEqual(table.concat(Chart.IconRows({ 50, 52, 54 }), ","), "1,2,2", "a third crowded one stays on the second")
-    assertEqual(#Chart.IconRows({}), 0)
+    assertEqual(#marks, 0, "each spilled cast alone on the last row: an icon, no mark")
+    assertEqual(#Chart.IconRows({}, 5), 0)
+end)
+
+-- The rows of `rows` (nil as "-") for `n` casts, and each mark as "x:row:members".
+local function layout(rows, marks, n)
+    local r, m = {}, {}
+    for i = 1, n do r[i] = rows[i] and tostring(rows[i]) or "-" end
+    for i, mk in ipairs(marks) do m[i] = ("%g:%d:%s"):format(mk.x, mk.row, table.concat(mk.members, "/")) end
+    return table.concat(r, ","), table.concat(m, " ")
+end
+
+-- Every index once, in a row or in a mark: nothing dropped.
+local function accounted(rows, marks, n)
+    local seen = 0
+    for i = 1, n do if rows[i] then seen = seen + 1 end end
+    for _, mk in ipairs(marks) do
+        for _, i in ipairs(mk.members) do
+            assertNil(rows[i], "a cast under a mark has no icon row")
+            seen = seen + 1
+        end
+    end
+    assertEqual(seen, n, "every cast drawn as an icon or counted in a mark")
+end
+
+test("chart icons: the rows the plot holds follow its configured height, at least one", function()
+    local Chart = T.NS.HudChart
+    assertEqual(Chart.IconRowCount(80), 5, "the default plot: (80 - 4 + 1) / 13")
+    assertEqual(Chart.IconRowCount(40), 2, "the 40 px minimum")
+    assertEqual(Chart.IconRowCount(160), 12, "the 160 px maximum")
+    assertEqual(Chart.IconRowCount(10), 1, "never none")
+    assertEqual(Chart.IconRowCount(nil), 1)
+    near(Chart.IconY(5), -(Chart.INSET + Chart.ICON / 2 + 4 * (Chart.ICON + Chart.ICON_GAP)), "the fifth row")
+    assertTrue(-Chart.IconY(Chart.IconRowCount(80)) + Chart.ICON / 2 <= 80 - Chart.INSET, "the last row inside the plot")
+end)
+
+test("chart icons: three casts in one second stack on three rows of the 80 px plot", function()
+    local Chart = T.NS.HudChart
+    local xs = { 20, 21, 22 }
+    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(80))
+    local r, m = layout(rows, marks, 3)
+    assertEqual(r, "1,2,3", "the potion, the trinket and Bestial Wrath each in sight")
+    assertEqual(m, "")
+    accounted(rows, marks, 3)
+end)
+
+test("chart icons: three casts in one second on the short plot: one icon and a +2 mark", function()
+    local Chart = T.NS.HudChart
+    local rows, marks = Chart.IconRows({ 20, 21, 22 }, Chart.IconRowCount(40))
+    local r, m = layout(rows, marks, 3)
+    assertEqual(r, "1,-,-")
+    assertEqual(m, "21:2:2/3", "the mark on the last row at the first crowded cast's place, for both")
+    accounted(rows, marks, 3)
+end)
+
+test("chart icons: six casts in one second: four rows and a +2 on the 80 px plot, a +5 on the short one", function()
+    local Chart = T.NS.HudChart
+    local xs = { 20, 20.2, 20.4, 20.6, 20.8, 21 }
+    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(80))
+    local r, m = layout(rows, marks, 6)
+    assertEqual(r, "1,2,3,4,-,-")
+    assertEqual(m, "20.8:5:5/6")
+    accounted(rows, marks, 6)
+    rows, marks = Chart.IconRows(xs, Chart.IconRowCount(40))
+    r, m = layout(rows, marks, 6)
+    assertEqual(r, "1,-,-,-,-,-")
+    assertEqual(m, "20.2:2:2/3/4/5/6")
+    accounted(rows, marks, 6)
+    rows, marks = Chart.IconRows(xs, 1)
+    r, m = layout(rows, marks, 6)
+    assertEqual(r, "-,-,-,-,-,-", "one row: the whole crowd is the mark")
+    assertEqual(m, "20:1:1/2/3/4/5/6")
+    accounted(rows, marks, 6)
+end)
+
+test("chart icons: crowds an icon's width apart on the last row get a mark each, never overlapping", function()
+    local Chart = T.NS.HudChart
+    -- Two rows: 10, 25, 40, 53 and 70 take the top; 11 and 12 crowd at 11, 41 and 50 at 41 (9 apart);
+    -- 71 has no room above and is alone on the last row: an icon there.
+    local xs = { 10, 11, 12, 25, 40, 41, 50, 53, 70, 71 }
+    local rows, marks = Chart.IconRows(xs, 2)
+    local r, m = layout(rows, marks, #xs)
+    assertEqual(r, "1,-,-,1,1,-,-,1,1,2")
+    assertEqual(m, "11:2:2/3 41:2:6/7")
+    accounted(rows, marks, #xs)
 end)
 
 test("chart icons: only casts of an ability whose base cooldown is over 15 s get one", function()
@@ -188,6 +272,106 @@ test("chart icons: two casts close together on the running HUD stagger onto the 
     assertEqual(icons[4].row, 2, "the later one drops a row")
     near(icons[4].frame.__points[#icons[4].frame.__points][5], f.NS.HudChart.IconY(2))
     assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+-- Three (or `n`) long cooldowns cast in the same second, at 6 s: a potion, a trinket, Bestial Wrath
+-- and more. Answers their spell IDs.
+local CROWD = { 307192, 377453, 19574, 1122, 6353, 205180 }
+local function crowded(f, n)
+    local cds = f.M.__baseCooldowns
+    for i = 1, n do cds[CROWD[i]] = 120000 end
+    racing(f)
+    pump(f, 1)
+    for i = 1, n do cast(f, "Crowd-" .. i, CROWD[i]) end
+    pump(f, 0.5)
+end
+
+-- The casts a strip draws: its icons' and every mark's members.
+local function drawn(chart)
+    local n = #chart:Icons()
+    for _, m in ipairs(chart:Marks()) do n = n + #m.casts end
+    return n
+end
+
+test("chart icons: three casts in one second are all captured and all drawn on the 80 px running chart", function()
+    local f = hud()
+    crowded(f, 3)
+    local live = f.NS.Casts.Live()
+    local heard = 0
+    for _, c in ipairs(live) do
+        if c.id == CROWD[1] or c.id == CROWD[2] or c.id == CROWD[3] then heard = heard + 1 end
+    end
+    assertEqual(heard, 3, "the capture keeps all three")
+    local chart = body(f).w.chart
+    assertEqual(chart.plotH, 80)
+    local icons = chart:Icons()
+    assertEqual(#icons, 6, "the three from before and the three in one second")
+    assertEqual(#chart:Marks(), 0)
+    local rows = {}
+    for i = 4, 6 do rows[#rows + 1] = tostring(icons[i].row) end
+    assertEqual(table.concat(rows, ","), "1,2,3", "one row each")
+    for i = 4, 6 do near(icons[i].frame.__points[#icons[i].frame.__points][5], f.NS.HudChart.IconY(icons[i].row)) end
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart icons: on the short plot the crowd's overflow is a +n mark whose tooltip lists each cast", function()
+    local f = hud()
+    assertTrue(f.NS.SetByPath("appearance.chart.height", 40))
+    crowded(f, 3)
+    local chart = body(f).w.chart
+    assertEqual(chart.plotH, 40)
+    local marks = chart:Marks()
+    assertEqual(#marks, 1)
+    local m = marks[1]
+    assertEqual(m.row, 2, "on the last row")
+    assertEqual(#m.casts, 2)
+    assertEqual(m.frame.text:GetText(), "+2")
+    assertTrue(m.frame:IsShown() and m.frame.__mouse, "shown, and it takes the mouse")
+    local p = m.frame.__points[#m.frame.__points]
+    assertTrue(p[1] == "CENTER" and p[2] == chart.over and p[3] == "TOPLEFT", "on the overlay")
+    near(p[4], m.x)
+    near(p[5], f.NS.HudChart.IconY(2))
+    assertEqual(drawn(chart), #f.NS.Casts.Live() - 2, "every cooldown drawn (the two rotational casts have none)")
+    local shown = hover(f, m.frame)
+    assertTrue(shown ~= nil and shown.owner == m.frame, "the tooltip under the mark")
+    assertEqual(shown.lines[1], "2 cooldowns here")
+    assertEqual(#shown.lines, 3)
+    assertEqual(shown.lines[2], f.NS.HudBreakdown.SpellName(m.casts[1].id) .. " at 0:06")
+    assertEqual(shown.lines[3], f.NS.HudBreakdown.SpellName(m.casts[2].id) .. " at 0:06")
+    assertEqual(f.NS.Style.TipBullet(shown.lines, 2), f.NS.Style.BULLET, "on bullets")
+    m.frame:GetScript("OnEnter")(m.frame)
+    m.frame:GetScript("OnLeave")(m.frame)
+    m.frame.casts = nil
+    assertNil(hover(f, m.frame), "a released mark hovers to nothing")
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart icons: six casts in one second: nothing dropped on the 80 px plot or the short one", function()
+    local f = hud()
+    crowded(f, 6)
+    local chart = body(f).w.chart
+    local cooldowns = 3 + 6
+    assertEqual(drawn(chart), cooldowns, "the 80 px plot")
+    assertEqual(#chart:Marks(), 1)
+    assertEqual(chart:Marks()[1].frame.text:GetText(), "+2")
+    assertEqual(chart:Marks()[1].row, 5)
+    assertTrue(f.NS.SetByPath("appearance.chart.height", 40))
+    pump(f, 0.5)
+    assertEqual(chart.plotH, 40)
+    assertEqual(drawn(chart), cooldowns, "the short plot")
+    assertEqual(chart:Marks()[1].frame.text:GetText(), "+5")
+    for _, d in ipairs(chart.markPool.free or {}) do assertFalse(d:IsShown(), "a released mark stays hidden") end
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
+test("chart icons: the crowd's tooltip marks a pet's cast and takes nothing but a list", function()
+    local Tips = T.NS.ResultsTips
+    local lines = Tips.CastCrowd({ { t = 1, id = 3110, pet = true }, { t = -1.6, id = 6353 } })
+    assertEqual(lines[1], "2 cooldowns here")
+    assertEqual(lines[2], T.NS.HudBreakdown.SpellName(3110) .. " (pet) at 0:01")
+    assertEqual(lines[3], T.NS.HudBreakdown.SpellName(6353) .. " at -0:02")
+    assertNil(Tips.CastCrowd(nil))
+    assertNil(Tips.CastCrowd({}))
 end)
 
 test("chart icons: a running HUD icon's tooltip names the spell and its time", function()

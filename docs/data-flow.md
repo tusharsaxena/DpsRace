@@ -260,8 +260,12 @@ race.
   spell's icon (`HudBreakdown.SpellIcon` on the cast's plain ID) along the top of the plot, centered
   at `HudChart.IconX(t, length, width)`: `TimeX` = INSET + clamp(t, 0, length) / length x (width - 2
   x INSET), held half an icon inside either edge. `HudChart.IconRows` drops an icon closer than its
-  width to the last one on the top row to a second row just below (`IconY`). Plain numbers on the
-  configured width, laid again only when the list, its size, the length or the geometry changed.
+  width to the last one on its row to the first row below with room (`IconY`), on as many rows as
+  the configured plot height holds (`IconRowCount`: 5 at 80 px, 2 at the 40 px minimum); a cast
+  with no room above sits on the last row, alone as an icon, or with others crowded there as one
+  pooled *+n* mark at the first one's x, its hover (`ResultsTips.CastCrowd`) listing each cast and
+  its time on bullets, so no cast is dropped. Plain numbers on the configured width and height,
+  laid again only when the list, its size, the length or the geometry changed.
   After the race the result card and the Results detail draw `HudChart.CooldownsOf(run)`
   (`Casts.Important` on the stored record). Every icon takes the mouse, on the running HUD too, and
   shows `ResultsTips.Cast` under it (the spell and *Cast at m:ss*). With the setting off no chart

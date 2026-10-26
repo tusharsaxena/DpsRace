@@ -336,8 +336,15 @@ end
 function DETAIL.chart()
     return { L["Damage profile"],
         L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."],
-        L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time."],
+        L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
+end
+
+-- A cast's spell name, the pet's marked.
+local function castName(cast)
+    local name = NS.HudBreakdown.SpellName(cast.id)
+    if cast.pet then name = L["%s (pet)"]:format(name) end
+    return name
 end
 
 --- A cast's tooltip: a cooldown icon on the damage chart and a timeline tick (#14): the spell (the pet's marked) and the time it
@@ -346,9 +353,22 @@ end
 --- @return table|nil
 function Tips.Cast(cast)
     if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
-    local name = NS.HudBreakdown.SpellName(cast.id)
-    if cast.pet then name = L["%s (pet)"]:format(name) end
-    return { name, L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
+    return { castName(cast), L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
+end
+
+--- A +n mark's tooltip on the damage chart: how many casts it stands for, then each one's spell and
+--- time on the race clock, on bullets. Nil for anything but a list of casts.
+--- @param casts table  { { t, id, pet }, ... }
+--- @return table|nil
+function Tips.CastCrowd(casts)
+    if type(casts) ~= "table" or not casts[1] then return nil end
+    local lines = { L["%d cooldowns here"]:format(#casts) }
+    for _, cast in ipairs(casts) do
+        if type(cast) == "table" and type(cast.id) == "number" then
+            lines[#lines + 1] = L["%s at %s"]:format(castName(cast), NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
+        end
+    end
+    return lines
 end
 
 -- How many casts `label`'s lane holds.

@@ -597,15 +597,24 @@ Total.
 - results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
 - results usage: a sample run hides the same items
 
-### test_chart_icons.lua (18)
+### test_chart_icons.lua (27)
 
 - chart icons: a cast's x is INSET + t / length across the width less both insets
 - chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
 - chart icons: an icon is centered on its cast's time, held inside the plot at either end
 - chart icons: an icon that would overlap the one before it on the top row takes the second
+- chart icons: the rows the plot holds follow its configured height, at least one
+- chart icons: three casts in one second stack on three rows of the 80 px plot
+- chart icons: three casts in one second on the short plot: one icon and a +2 mark
+- chart icons: six casts in one second: four rows and a +2 on the 80 px plot, a +5 on the short one
+- chart icons: crowds an icon's width apart on the last row get a mark each, never overlapping
 - chart icons: only casts of an ability whose base cooldown is over 15 s get one
 - chart icons: drawn live on the running HUD, the spell's icon along the top, no geometry read back
 - chart icons: two casts close together on the running HUD stagger onto the second row
+- chart icons: three casts in one second are all captured and all drawn on the 80 px running chart
+- chart icons: on the short plot the crowd's overflow is a +n mark whose tooltip lists each cast
+- chart icons: six casts in one second: nothing dropped on the 80 px plot or the short one
+- chart icons: the crowd's tooltip marks a pet's cast and takes nothing but a list
 - chart icons: a running HUD icon's tooltip names the spell and its time
 - chart icons: the live list is read again only when the race heard another cast
 - chart icons: Show cooldown icons off draws none on the running HUD; on again brings them back
@@ -956,7 +965,7 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 22 |
-| test_chart_icons.lua | 18 |
+| test_chart_icons.lua | 27 |
 | test_results_timeline.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
@@ -978,4 +987,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **772** |
+| **Total** | **781** |

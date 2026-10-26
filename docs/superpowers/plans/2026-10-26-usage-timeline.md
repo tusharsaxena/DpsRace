@@ -282,7 +282,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P10: The owner's second test round (2026-10-26)
 
-- [ ] **Chart icons capture everything:** three long cooldowns in one second (potion, trinket, Bestial Wrath) showed
+- [x] **Chart icons capture everything:** three long cooldowns in one second (potion, trinket, Bestial Wrath) showed
   two; the third row was dropped. Stack as many rows as the plot's height allows, then a *+n* mark whose tooltip lists
   every cast it stands for.
 - [ ] **Timeline compare target:** a compared run with no casts (raced before cast recording) left the blue lanes

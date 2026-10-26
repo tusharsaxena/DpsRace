@@ -670,11 +670,15 @@ L["Your damage so far at each step of the race, captured live. With a best befor
     "Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
-L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time."] =
-    "An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time."
+L["An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."] =
+    "An icon along the top marks each cast of an ability with a cooldown over 15 seconds. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."
 -- A cast's tooltip: a cooldown icon on the damage chart, a timeline tick (#14)
 L["%s (pet)"] = "%s (pet)"
 L["Cast at %s"] = "Cast at %s"
+-- A +n mark on the damage chart (casts too crowded to show apart) and its tooltip
+L["+%d"] = "+%d"
+L["%d cooldowns here"] = "%d cooldowns here"
+L["%s at %s"] = "%s at %s"
 
 -- The ability timeline (#14, modules/Results_Timeline.lua), its button in the run detail and their tooltips
 L["Ability timeline"] = "Ability timeline"
