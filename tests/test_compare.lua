@@ -613,6 +613,35 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
     end
 end)
 
+test("compare: the separator draws one physical pixel wide at any UI scale, not one UI unit", function()
+    local i = inst()
+    seed(i, { mkRun("best", 300), mkRun("low", 100) })
+    i.R.ShowRun("low")
+    local d = detail(i)
+    d:SetComparing(true)
+    local x, Cmp = d.cmp, i.Cmp
+    -- No PixelUtil (or no numeric scale): the config's SEP_W as it stands.
+    assertEqual(Cmp.SepWidth(0.64), Cmp.SEP_W)
+    -- A 1440p screen: one physical pixel is 768 / 1440 UI units at scale 1, more at a smaller scale.
+    local factor = 768 / 1440
+    i.mocks.PixelUtil = { GetPixelToUIUnitFactor = function() return factor end }
+    assertEqual(Cmp.SepWidth(nil), Cmp.SEP_W, "a missing scale")
+    for _, scale in ipairs({ 0.64, 1, 1.15 }) do
+        assertTrue(math.abs(Cmp.SepWidth(scale) * scale / factor - Cmp.SEP_W) < 1e-9, scale .. ": not one pixel")
+        for _, sep in ipairs({ x.scoreSep, x.spellSep }) do
+            rawset(sep, "GetEffectiveScale", function() return scale end)
+        end
+        i.R.ShowRun("low")
+        assertTrue(d:Comparing())
+        for _, sep in ipairs({ x.scoreSep, x.spellSep }) do
+            assertTrue(sep:IsShown())
+            -- The drawn width in physical pixels: the UI width times the scale, over the factor.
+            local px = sep.__width * scale / factor
+            assertTrue(math.abs(px - 1) < 1e-9, scale .. ": the separator draws " .. px .. " physical pixels")
+        end
+    end
+end)
+
 test("compare: every spell row alternates the Results list's stripe, compared and plain", function()
     local i = inst()
     local spells = {}

@@ -105,6 +105,8 @@ files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
+-- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
+files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }
 -- The detail's loadout (#6): the item data, the item tooltip and its modified click, the Dressing
 -- Room, the client's loadout serialization version, and View's SetItemRef (it opens the tree).
 files["modules/Results_Loadout.lua"] = {

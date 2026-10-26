@@ -452,11 +452,20 @@ function Compare.Cell(j, width)
     return cols[3], cols.diff, justify
 end
 
--- A table's separator at `x` in `parent`, `h` tall from its top.
+--- The separator's width at effective scale `scale`: SEP_W physical pixels in UI units (the client's
+--- PixelUtil factor over the scale), so no UI scale draws it two or three pixels wide; SEP_W itself
+--- where PixelUtil or a numeric scale is missing.
+function Compare.SepWidth(scale)
+    if not (PixelUtil and type(scale) == "number" and scale > 0) then return Compare.SEP_W end
+    return Compare.SEP_W * PixelUtil.GetPixelToUIUnitFactor() / scale
+end
+
+-- A table's separator at `x` in `parent`, `h` tall from its top, one physical pixel wide. The scale is
+-- the window's, not a geometry read: the width stays the config's SEP_W in physical pixels.
 local function placeSep(sep, parent, x, h)
     sep:ClearAllPoints()
     sep:SetPoint("TOPLEFT", parent, "TOPLEFT", x, 0)
-    sep:SetWidth(Compare.SEP_W)
+    sep:SetWidth(Compare.SepWidth(sep:GetEffectiveScale()))
     sep:SetHeight(h)
     sep:Show()
 end

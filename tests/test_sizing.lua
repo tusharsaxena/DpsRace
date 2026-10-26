@@ -322,6 +322,41 @@ test("results sizing: the Bests tab's first drag after opening leaves no row beh
     firstDrag(i, u, list, 1344, 560, "bests")
 end)
 
+-- The drag's own half of the guard: the cheap layout's fitRows adds the rows a taller list fits, and a
+-- full rebind run inside the first added row's Show (the client draws on Show) has drawn the slice
+-- already; the fit stops there instead of laying a second set of rows over the rebind's.
+test("results sizing: a rebind inside a row the drag adds leaves no second row behind", function()
+    local i, u = seeded()
+    local NS, list = i.NS, u.panes.runs.list
+    local shown, nested = #list:Visible(), 0
+    local acquire = NS.Pool.Acquire
+    rawset(NS.Pool, "Acquire", function(pool, ...)
+        local row = acquire(pool, ...)
+        if pool == list.pool and nested == 0 then
+            local show = row.Show
+            rawset(row, "Show", function(...)
+                rawset(row, "Show", show)
+                show(...)
+                nested = nested + 1
+                list:Bind()
+            end)
+        end
+        return row
+    end)
+    local grip = u.frame.resizeGrip
+    grip:__fire("OnMouseDown", "LeftButton")
+    -- One frame's jump of 180 px: several rows added in one fit, the rebind inside the first.
+    drag(i.mocks, u.frame, 1, function() return 1344, 740 end)
+    rawset(NS.Pool, "Acquire", acquire)
+    assertEqual(nested, 1, "the rebind ran inside an added row's Show")
+    assertTrue(#list:Visible() > shown + 1, "the taller list shows several more rows")
+    assertEqual(#list:Visible(), list:visibleCount(), "as many as fit")
+    assertPlaced(list, "dragged")
+    released(u.frame, 1344, 740)
+    grip:__fire("OnMouseUp")
+    assertPlaced(list, "released")
+end)
+
 -- ── the ability timeline ────────────────────────────────────────────────────────────────────────
 
 local SPELLS = { [1122] = 180000, [29722] = 0 }
