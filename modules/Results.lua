@@ -281,6 +281,7 @@ local function ensureWindow()
         saveNote = function(r, text) return Results.SetNote(r.id, text) end,
         canShare = canShare,
         clearPick = function() Results.ClearPick() end,
+        timeline = function(p) NS.ResultsTimeline.Open(p) end,
     })
     NS.ApplySkin(f)
     f:SetScript("OnHide", function() onHide() end)
@@ -444,7 +445,9 @@ local function applySampleMarker()
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
 end
 
+-- The ability timeline (#14) follows the detail, so it closes with the window.
 local function hideWindow()
+    NS.ResultsTimeline.Hide()
     if windowShown() then
         hiding = true
         ui.frame:Hide()

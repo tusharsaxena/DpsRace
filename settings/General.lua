@@ -61,6 +61,7 @@ local masterRows, masterTail = H.MasterControls({
     onResetPosition  = function()
         NS.Hud.ResetPosition()
         NS.Results.ResetPosition()
+        NS.ResultsTimeline.ResetPosition()
     end,
     onResetAll       = function() NS.ShowResetAll() end,
 })

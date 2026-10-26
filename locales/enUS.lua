@@ -652,6 +652,23 @@ L["A gold dot along the top marks each cast of an ability with a cooldown over 1
 L["%s (pet)"] = "%s (pet)"
 L["Cast at %s"] = "Cast at %s"
 
+-- The ability timeline (#14, modules/Results_Timeline.lua), its button in the run detail and their tooltips
+L["Ability timeline"] = "Ability timeline"
+L["Timeline"] = "Timeline"
+L["Right: casts in each lane"] = "Right: casts in each lane"
+L["No run to compare with"] = "No run to compare with"
+L["No run to compare with: the blue lanes stay empty."] = "No run to compare with: the blue lanes stay empty."
+L["%s has no casts recorded: the blue lanes stay empty."] = "%s has no casts recorded: the blue lanes stay empty."
+L["Select a run in the Results window to see its timeline."] = "Select a run in the Results window to see its timeline."
+L["No casts recorded for this run."] = "No casts recorded for this run."
+L["Cooldown %s"] = "Cooldown %s"
+L["%s: 1 cast"] = "%s: 1 cast"
+L["%s: %d casts"] = "%s: %d casts"
+L["Open the ability timeline: every cast of this run beside the run it is compared with."] =
+    "Open the ability timeline: every cast of this run beside the run it is compared with."
+L["No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."] =
+    "No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."
+
 -- The run detail's gear and talents (modules/Results_Loadout.lua, #6) and their tooltips
 L["Gear"] = "Gear"
 L["Talents"] = "Talents"

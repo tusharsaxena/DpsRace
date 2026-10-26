@@ -313,6 +313,26 @@ function Tips.Dot(cast)
     return { name, L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
 end
 
+-- How many casts `label`'s lane holds.
+local function castsLine(label, n)
+    if n == 1 then return L["%s: 1 cast"]:format(label) end
+    return L["%s: %d casts"]:format(label, n)
+end
+
+--- What follows the client's spell tooltip on a timeline row's name (#14): the ability's cooldown when
+--- over 15 s, then each run's cast count (the compared run's only when there is one).
+--- @param row table  one of ResultsTimeline.Rows' rows
+--- @param otherLabel string|nil  the compared run's label, or nil with none
+--- @return table
+function Tips.TimelineRow(row, otherLabel)
+    local lines = {}
+    local cd = NS.ResultsTimeline.CooldownText(row)
+    if cd ~= "" then lines[1] = { L["Cooldown %s"]:format(cd), 1, 0.82, 0 } end
+    lines[#lines + 1] = castsLine(L["This run"], row.countA or 0)
+    if otherLabel then lines[#lines + 1] = castsLine(otherLabel, row.countB or 0) end
+    return lines
+end
+
 local LEGEND = {
     "The race, from the start to the buzzer (to the end of combat for an incomplete run).",
     "Damage still landing after the buzzer (DoTs, travel time). It counts.",
@@ -359,6 +379,14 @@ end
 
 function DETAIL.back()
     return { L["Back"], L["Back to the list; the run stays selected."] }
+end
+
+function DETAIL.timeline()
+    return { L["Timeline"], L["Open the ability timeline: every cast of this run beside the run it is compared with."] }
+end
+
+function DETAIL.timelineOff()
+    return { L["Timeline"], dimLine(L["No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."]) }
 end
 
 --- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`), or nil.

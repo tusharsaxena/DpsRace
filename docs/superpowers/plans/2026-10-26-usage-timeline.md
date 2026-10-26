@@ -228,7 +228,22 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P6: #14 timeline window
 
-- [ ] The pop-out window from the Results detail: two lanes per ability, this run vs best or picked, counts, tooltips.
+- [x] The pop-out window from the Results detail: two lanes per ability, this run vs best or picked, counts, tooltips.
+- P6 notes: `modules/Results_Timeline.lua` (`NS.ResultsTimeline`); its pure parts are `Rows`, `Span`, `Ticks`,
+  `DotX`, `CooldownText`, `Name` and `Legend`. The *Timeline* button (72 px) sits after *Share* in the
+  detail's bottom row, clear of *Delete* on the 360 px pane; its tooltip says why when it is grayed (a run
+  with no casts list, or an empty one). The detail tells the window on every draw and every compare change
+  (`DetailChanged`), and the window reads `CompareTarget(true)`, so the compare toggle itself changes
+  nothing. Beyond the design: the window is resizable as well as movable (`windows.timeline` keeps its
+  size too, default 860 x 480, minimum 600 x 240) and General > *Reset position* resets it; it closes with
+  the Results window; the axis runs to the longer of the two races (a picked run may be on another board);
+  a row's cooldown is this run's, else the compared run's (for an ability only that run cast); the rest
+  order by this run's count, then the compared run's, the player's before the pet's; a dot's tooltip adds
+  a third line naming its run, and a name's hover shows the client's spell tooltip with the cooldown and
+  both counts (`ResultsTips.TimelineRow`). With no compared run the blue lanes carry no count. The axis is
+  pinned under the scrolling lanes, the quarter lines drawn once over the whole content. No run in the
+  detail reads *Select a run in the Results window to see its timeline.*; a run with no casts *No casts
+  recorded for this run.*
 
 ### P7: Docs, smoke rows, inventory
 

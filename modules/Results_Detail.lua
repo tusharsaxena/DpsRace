@@ -31,6 +31,10 @@ local _, NS = ...
 -- THE USAGE (#13) sits under the talents: what the run used, ticked as detected and editable, drawn
 -- by modules/Results_Usage.lua.
 --
+-- THE TIMELINE (#14): the *Timeline* button, live for a run with casts, opens the ability timeline
+-- (modules/Results_Timeline.lua) on this pane; every draw and every compare change tells it, so it
+-- follows the run shown and its compare target while it is open.
+--
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
@@ -47,6 +51,7 @@ Detail.NOTE_MAX = 200       -- characters (spec §6.2)
 Detail.STRIP_GAP = 3        -- the gap between the race and the after-the-buzzer segments
 Detail.STRIP_RATIO = 1.2    -- the race segment's share against the after-buzzer one's 1 (mockup)
 Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this, at least two steps
+Detail.TIMELINE_W = 72      -- the Timeline button
 
 local PADX = 12
 local BUTTON_H = 20
@@ -407,6 +412,10 @@ local function buildButtons(p)
         b:SetSize(84, BUTTON_H)
         b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + (i - 1) * 90, 8)
     end
+    -- The ability timeline (#14), after Share: 72 px, so it clears Delete on the 360 px pane.
+    w.timeline = Button(f, L["Timeline"], function() if p.run and p.hooks.timeline then p.hooks.timeline(p) end end)
+    w.timeline:SetSize(Detail.TIMELINE_W, BUTTON_H)
+    w.timeline:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + 2 * 90, 8)
     w.delete:SetSize(78, BUTTON_H)
     w.delete:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PADX, 8)
 end
@@ -443,6 +452,7 @@ local function wireTips(p)
     hover(p, w.back, "back")
     hover(p, w.addNote, "addNote")
     hover(p, w.share, function() return w.share:IsEnabled() and "share" or "shareOff" end)
+    hover(p, w.timeline, function() return w.timeline:IsEnabled() and "timeline" or "timelineOff" end)
     hover(p, w.delete, "delete")
 end
 
@@ -455,7 +465,7 @@ end
 --- The detail pane in `parent`.
 --- @param parent table
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
----                       clearPick() }
+---                       clearPick(), timeline(pane) }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
@@ -557,8 +567,8 @@ function Pane:Show(run)
     local has = type(run) == "table"
     self.scrollFrame:SetShown(has)
     self.w.empty:SetShown(not has)
-    for _, key in ipairs({ "addNote", "share", "delete" }) do self.w[key]:SetShown(has) end
-    if not has then return end
+    for _, key in ipairs({ "addNote", "share", "delete", "timeline" }) do self.w[key]:SetShown(has) end
+    if not has then return NS.ResultsTimeline.DetailChanged(self) end
     self:fillHeader(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
@@ -574,8 +584,10 @@ function Pane:Show(run)
     self.w.note:SetText(self.noteText)
     self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["Edit Note"] or L["Add Note"])
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
+    NS.HudStates.SetEnabled(self.w.timeline, NS.ResultsTimeline.Has(run))
     if not same then self.scroll = 0 end
     self:Layout(self.width, self.height, self.narrow)
+    NS.ResultsTimeline.DetailChanged(self)
 end
 
 -- ── the compare ─────────────────────────────────────────────────────────────────────────────────
@@ -601,6 +613,7 @@ function Pane:refreshCompare()
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
     self:Layout(self.width, self.height, self.narrow)
+    NS.ResultsTimeline.DetailChanged(self)
 end
 
 --- The toggle: compare on or off (view state for the session, never stored).

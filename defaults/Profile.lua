@@ -107,6 +107,8 @@ NS.defaults = {
             -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
             results = { view = "expanded", expanded = { width = 1340, height = 560 },
                         collapsed = { width = 980, height = 560 } },
+            -- The ability timeline (#14, modules/Results_Timeline.lua): the pop-out from the run detail.
+            timeline = { width = 860, height = 480 },
         },
     },
     global = {

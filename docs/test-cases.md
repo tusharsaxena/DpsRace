@@ -586,6 +586,20 @@ Total.
 - chart dots: a run recorded before casts were (format 2) draws its chart with none
 - chart dots: test mode draws the sample's, live up to its still moment and all on the card
 
+### test_results_timeline.lua (11)
+
+- results timeline: one row per ability and caster across both runs, each run's times and counts
+- results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's
+- results timeline: the axis runs to the longer race, in quarters; a dot's x is clamped inside its lane
+- results timeline: the detail's Timeline button is live for a run with casts and disabled without
+- results timeline: two lanes per ability, this run's gold dots on top and the best's blue below, with counts
+- results timeline: the legend names both runs; a dot's tooltip names the spell, its time and its run
+- results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
+- results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
+- results timeline: a run with no casts or no run at all shows a message in place of the lanes
+- results timeline: Escape and its close control close it, as does the Results window closing
+- results timeline: it scrolls by a pair per notch; its position and size persist; Reset position restores them
+
 ### test_schema.lua (15)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -897,6 +911,7 @@ Total.
 | test_usage.lua | 17 |
 | test_results_usage.lua | 16 |
 | test_chart_dots.lua | 12 |
+| test_results_timeline.lua | 11 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -916,4 +931,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **722** |
+| **Total** | **733** |
