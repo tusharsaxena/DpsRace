@@ -335,11 +335,10 @@ L["What the HUD's clock shows while the race runs: the time elapsed in green, th
 L["Length"] = "Length"
 L["Time"] = "Time"
 L["Status"] = "Status"
-L["Max"] = "Max"
 L["Spec best"] = "Spec best"
 L["%+.1f%%"] = "%+.1f%%"
 L["%.1f%%"] = "%.1f%%"
-L["v/s Max"] = "v/s Max"
+L["Delta"] = "Delta"
 L["Complete"] = "Complete"
 L["Flagged"] = "Flagged"
 L["Incomplete"] = "Incomplete"
@@ -529,26 +528,27 @@ L["Equipped item level when the race was armed."] = "Equipped item level when th
 L["The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."] =
     "The dummy type the race was against, from the dummy catalog. Unlisted targets are Other."
 L["The race length the best was set at. Each preset length has its own color."] = "The race length the best was set at. Each preset length has its own color."
-L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."] =
-    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in view to the largest."
-L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."] =
-    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in view to the largest."
-L["How far this run's DPS is from the highest complete run in view on the same target type."] =
-    "How far this run's DPS is from the highest complete run in view on the same target type."
-L["Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
-    "Max: the top run on its target type in view (when more than one spec is in view). Spec best: the best for its spec, target type and length. Both name that target type and length after the tag. Complete, Flagged, Incomplete, Died or Lost otherwise."
+L["Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."] =
+    "Your damage for the run, read from Blizzard's meter after combat. The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."
+L["Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."] =
+    "Damage over the race length (over the time in combat for an incomplete run). The bar runs from the smallest run in its group to the largest (with no grouping, the whole view)."
+L["How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change."] =
+    "How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change."
+L["Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise."] =
+    "Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise."
 L["What happened on the run that its result should mention: late casts, a restart, a reload."] =
     "What happened on the run that its result should mention: late casts, a restart, a reload."
 L["A lost run has no DPS to compare."] = "A lost run has no DPS to compare."
-L["No complete run on this target type in view to compare with."] =
-    "No complete run on this target type in view to compare with."
+L["No complete run in this group to compare with."] =
+    "No complete run in this group to compare with."
+L["No complete run in view to compare with."] = "No complete run in view to compare with."
 L["%+.1f%% vs the max"] = "%+.1f%% vs the max"
-L["The max for %s in this view: %s DPS."] = "The max for %s in this view: %s DPS."
-L["This run is the max for %s in view."] = "This run is the max for %s in view."
+L["The max in this group: %s DPS."] = "The max in this group: %s DPS."
+L["The max in view: %s DPS."] = "The max in view: %s DPS."
+L["This run is the max in its group."] = "This run is the max in its group."
+L["This run is the max in view."] = "This run is the max in view."
 L["An incomplete run is compared, but never sets the max."] =
     "An incomplete run is compared, but never sets the max."
-L["The top DPS on its target type among the runs in view, which hold more than one spec."] =
-    "The top DPS on its target type among the runs in view, which hold more than one spec."
 L["The best run for its spec, target type and race length."] =
     "The best run for its spec, target type and race length."
 L["A complete run that holds no best."] = "A complete run that holds no best."

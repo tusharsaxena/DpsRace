@@ -172,18 +172,17 @@ test("preview: the sample history covers every status, target type, preset lengt
     assertTrue(f.Preview.Start())
     local Runs, data = f.NS.ResultsRuns, f.Preview.Dataset()
     local runs = f.NS.ResultsSource.All()
-    local top = Runs.MaxDps(runs)
     local statuses, cats, lengths, notes, loadouts = {}, {}, {}, 0, 0
     local specs = {}
     for _, run in ipairs(runs) do
-        statuses[(Runs.Status(run, top))] = true
+        statuses[(Runs.Status(run))] = true
         cats[run.target.category] = true
         lengths[run.race.length] = true
         specs[run.char.specID or "?"] = true
         if run.note ~= "" then notes = notes + 1 end
         if run.loadout then loadouts = loadouts + 1 end
     end
-    for _, key in ipairs({ "max", "best", "complete", "flagged", "incomplete", "died", "lost" }) do
+    for _, key in ipairs({ "best", "complete", "flagged", "incomplete", "died", "lost" }) do
         assertTrue(statuses[key], "no sample run with the status " .. key)
     end
     for _, cat in ipairs({ "single", "cleave", "dungeoneer", "boss", "pvp" }) do assertTrue(cats[cat], cat) end
