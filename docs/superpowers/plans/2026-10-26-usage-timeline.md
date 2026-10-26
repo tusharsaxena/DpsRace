@@ -371,6 +371,14 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Delta 0.0% in green:** the top run's 0.0% in the Delta column (and the detail's Delta box) is a green from
   the same palette as the column's red.
 
+### P15: Timeline scrolling controls (2026-10-27)
+
+- [ ] **Wheel:** the plain mouse wheel scrolls up and down (zoomed or not); Shift+wheel scrolls left and right while
+  zoomed; a horizontal (tilt) wheel scrolls left and right too, if the client delivers it to addons (check; do not fake
+  it). This replaces P14's zoomed-wheel-pans rule.
+- [ ] **Scroll buttons:** left and right buttons next to the zoom controls (`1x + - reset`), disabled at 1x.
+- [ ] **Control sizes:** the +, - and reset controls at one size, between today's small +/- and large reset.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
