@@ -137,14 +137,16 @@ local function setHot(b, on)
     paintButton(b)
 end
 
--- A button's tooltip (b.tip = { title, text }), shown under the pointer, disabled or not.
+-- A button's tooltip (b.tip = { title, text, ... }), shown under the pointer, disabled or not. The
+-- text is in the header gold (the client's normal tooltip color, NORMAL_FONT_COLOR); two or more
+-- lines of it go on bullets (Style).
 local function showTip(b)
     local tip = b.tip
     if not (tip and GameTooltip) then return end
     if type(tip) ~= "table" then tip = { tostring(tip) } end
     GameTooltip:SetOwner(b, "ANCHOR_TOP")
     GameTooltip:SetText(tip[1], 1, 1, 1)
-    if tip[2] then GameTooltip:AddLine(tip[2], nil, nil, nil, true) end
+    Style.AddTipLines(GameTooltip, tip, 2, Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
     GameTooltip:Show()
 end
 

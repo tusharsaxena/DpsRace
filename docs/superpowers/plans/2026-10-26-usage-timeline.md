@@ -272,7 +272,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   - a hidden-items list (item IDs; a settings row, and *Never show this item* on a right-click in edit mode) whose
     items never appear in the section, the *Used* column or its tooltip;
   - the *Used* column's tooltip shows each item's icon.
-- [ ] **Tooltips:** every multi-line tooltip the addon draws itself puts each line after the title on a bullet
+- [x] **Tooltips:** every multi-line tooltip the addon draws itself puts each line after the title on a bullet
   (the vendored LibKa0s settings tooltips keep their format).
 - [x] **Compare vs best:** *This run* right-aligned, *Best run* (renamed from *Best*) left-aligned, the headers aligned
   with their columns; one bar per row, in the column of whichever run is higher, growing outward from the edge the two

@@ -102,6 +102,7 @@ local SUITES = {
     "test_results_usage",
     "test_chart_icons",
     "test_results_timeline",
+    "test_tooltips",
     "test_schema",
     "test_settings",
     "test_slash",

@@ -409,8 +409,9 @@ test("results usage: a row's hover is the item's own tooltip with its detail and
     local x = section(i)
     x.items[1]:__fire("OnEnter")
     assertEqual(shown.item, TRINKET)
-    assertEqual(shown.lines[2], "x2 at 0:09, 1:12")
-    assertEqual(shown.lines[3], "Detected from its cast during the race.")
+    -- Two lines of its own after the client's: each on a bullet (modules/Style.lua).
+    assertEqual(shown.lines[2], "\226\128\162 x2 at 0:09, 1:12")
+    assertEqual(shown.lines[3], "\226\128\162 Detected from its cast during the race.")
     shown = { lines = {} }
     x.items[6].check:__fire("OnEnter")
     assertNil(shown.item, "food has no item")

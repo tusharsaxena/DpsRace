@@ -624,6 +624,13 @@ Total.
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
 
+### test_tooltips.lua (4)
+
+- tooltips: one line under the title stays plain; the title never takes a bullet
+- tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them
+- tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
+- tooltips: a shared button's { title, text, ... } follows the same rule
+
 ### test_schema.lua (16)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -939,6 +946,7 @@ Total.
 | test_results_usage.lua | 16 |
 | test_chart_icons.lua | 17 |
 | test_results_timeline.lua | 13 |
+| test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -958,4 +966,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **756** |
+| **Total** | **760** |

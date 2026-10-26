@@ -250,7 +250,7 @@ local function itemTip(p, cell)
     local note = cell.changed and NS.ResultsTips.Loadout("changed", p.run, p:CompareTarget(), cell.slot)
     if note then
         tt:AddLine(" ")
-        for _, l in ipairs(note) do tt:AddLine(type(l) == "table" and l[1] or l, 1, 0.72, 0.29, true) end
+        NS.Style.AddTipLines(tt, note, 1, 1, 0.72, 0.29)
     end
     tt:Show()
 end

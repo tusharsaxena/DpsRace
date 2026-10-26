@@ -230,10 +230,7 @@ local function rowTip(p, row)
     end
     if not shown then return Tbl.BelowTip(row, lines) end
     tt:AddLine(" ")
-    for i = 2, #(lines or {}) do
-        local l = lines[i]
-        if type(l) == "table" then tt:AddLine(l[1], l[2], l[3], l[4], true) else tt:AddLine(l, 0.9, 0.9, 0.9, true) end
-    end
+    NS.Style.AddTipLines(tt, lines or {}, 2)
     tt:Show()
 end
 

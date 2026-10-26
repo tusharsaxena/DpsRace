@@ -222,14 +222,9 @@ end
 
 Tbl.WindowOf = windowOf
 
--- Lines from `first` on, each a string (light gray) or { text, r, g, b }.
-local function addLines(tip, lines, first)
-    for i = first, #lines do
-        local l = lines[i]
-        if type(l) == "table" then tip:AddLine(l[1], l[2] or 1, l[3] or 1, l[4] or 1, true)
-        else tip:AddLine(l, 0.9, 0.9, 0.9, true) end
-    end
-end
+-- Lines from `first` on, each a string (light gray) or { text, r, g, b }, on bullets from two lines
+-- on (modules/Style.lua).
+local addLines = Style.AddTipLines
 
 -- The shown tooltip beside `window`, level with `row`: its right, or its left without the room.
 local function placeSide(tip, window, row)

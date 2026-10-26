@@ -1044,8 +1044,8 @@ test("results: every detail element has a tooltip; spells show the client's spel
     assertEqual(tip.spell, 29722, "the row did not show its spell's tooltip")
     assertEqual(tip.anchor, "ANCHOR_NONE")
     assertEqual(tip.placed[1], "TOPLEFT", "the spell tooltip sits beside the window")
-    assertTrue(tip.lines[2] == "7,330,000 damage", "the exact damage follows the spell")
-    assertEqual(tip.lines[4], "#1 of 2 spells")
+    assertTrue(tip.lines[2] == "\226\128\162 7,330,000 damage", "the exact damage follows the spell, on a bullet")
+    assertEqual(tip.lines[4], "\226\128\162 #1 of 2 spells")
     -- Anything else: under itself.
     d.w.dps.frame:__fire("OnEnter")
     assertEqual(tip.anchor, "ANCHOR_BOTTOM")
