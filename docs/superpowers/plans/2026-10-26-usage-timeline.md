@@ -332,6 +332,18 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   stack; each icon's tooltip is the ability's own tooltip plus the cast time; the lanes get their own header; the
   window's minimum width rises if the icons get cramped. (The timeline's smooth resize is P10's.)
 
+### P12: The owner's fourth test round (2026-10-27)
+
+- [ ] **Compare name column:** narrower in the expanded view (P11's 152 px was too wide) and capped in the collapsed
+  view; the figure columns take the room.
+- [ ] **Compare separator:** thinner (1 px) and dimmer, in both views and in the score table.
+- [ ] **Timeline casts and zoom:** the *Casts* section a bit taller (less cramped); a time axis under the compared
+  run's strip too; zoom in / zoom out / reset buttons at the right of the *Casts* heading line, zooming *Casts* and
+  *By ability* together (horizontal scroll when zoomed); a wider default window.
+- [ ] **Timeline counts:** a little more space between the lanes' end and the counts.
+- [ ] **First-drag glitch:** on the first drag of the Results window after it opens, row cells stay where they were
+  while others move (overlapping text); later drags are fine. Reproduce in a test, fix.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
