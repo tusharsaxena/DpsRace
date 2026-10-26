@@ -96,7 +96,7 @@ local function deltaBox(i)
     return w.deltaBox.value.__text, w.deltaBox.value.__color, w.badge:IsShown()
 end
 
-test("results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete or lost run", function()
+test("results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run", function()
     local i = inst()
     seed(i, {
         mkRun("top", { result = { damage = 1, dps = 150000 } }),
@@ -124,13 +124,20 @@ test("results: the detail's Delta box: a best's lead, a non-best's Delta cell, a
     assertEqual(text, DASH, "alone in its group: no runner-up to lead")
     assertEqual(color[1], C.dim[1])
     assertTrue(badge, "still its group's top")
-    for _, id in ipairs({ "inc", "lost" }) do
-        i.R.ShowRun(id)
-        text, color, badge = deltaBox(i)
-        assertEqual(text, DASH, id)
-        assertEqual(color[1], C.dim[1], id .. ": the Delta cell's muted color")
-        assertFalse(badge, id)
-    end
+    i.R.ShowRun("inc")
+    text, color, badge = deltaBox(i)
+    assertEqual(text, "+20.0%", "an incomplete run: its Delta cell's figure, above the max it never sets")
+    assertEqual(color[1], C.dim[1], "the Delta cell's muted color")
+    assertFalse(badge, "an incomplete run never sets the max")
+    local d = ui(i).detail
+    local tip = i.NS.ResultsTips.Detail("delta", d.run, d.deltaCtx)
+    assertEqual(tip[2], "Against the max DPS in its group in the Runs list.")
+    assertEqual(tip[4], "An incomplete run is compared, but never sets the max.")
+    i.R.ShowRun("lost")
+    text, color, badge = deltaBox(i)
+    assertEqual(text, DASH, "a lost run: no DPS to compare")
+    assertEqual(color[1], C.dim[1])
+    assertFalse(badge)
     -- One of the three figures' size and look, captioned Delta; the badge beside it, as tall, no box.
     local w, D = ui(i).detail.w, i.NS.ResultsDetail
     assertEqual(w.delta, nil, "the old line is gone")

@@ -572,7 +572,6 @@ L["The runner-up: %s DPS."] = "The runner-up: %s DPS."
 L["No complete run in %s to compare with."] = "No complete run in %s to compare with."
 L["Against the max DPS in %s."] = "Against the max DPS in %s."
 L["The max: %s DPS."] = "The max: %s DPS."
-L["An incomplete run never ranks: it has no delta."] = "An incomplete run never ranks: it has no delta."
 L["The Runs list's filters leave this run out, so it is measured on its board."] =
     "The Runs list's filters leave this run out, so it is measured on its board."
 L["Recomputed whenever the Runs list's filters or grouping change."] =

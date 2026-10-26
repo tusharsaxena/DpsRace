@@ -315,8 +315,9 @@ Taint Notes, B4.1).
   (`View:DeltaContext`); a run the filters leave out (opened from the HUD, a Bests row) gets its board
   among every run the source holds (`BoardContext`: spec x target type x length, `Bests.Key`), the
   sample history's in test mode. `DeltaBox` answers the figure: the group's top complete run's lead
-  over the runner-up in green (a dash with none), any other complete run's own *Delta* cell, a muted
-  dash for an incomplete or lost run; the top run alone gets the *New best* badge beside the box.
+  over the runner-up in green (a dash with none), any other run's own *Delta* cell (an incomplete
+  run's figure muted, as the column shows it, and a lost run's a muted dash); the top complete run
+  alone gets the *New best* badge beside the box.
   Every `View:Refresh` (a filter, *Group by*, a saved view applied, a store change) calls the view's
   `changed` hook, and the shell redraws the box and the badge (`Pane:RefreshDelta`).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →

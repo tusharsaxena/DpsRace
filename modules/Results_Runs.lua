@@ -548,11 +548,11 @@ function Runs.IsTop(run, ctx)
 end
 
 --- The detail's Delta box for `run` in `ctx`: its text and color, and whether the run is its group's
---- top. Not the top: the run's Delta cell. The top: its lead over the runner-up, green, or a dash with
---- no runner-up. An incomplete or lost run: a dash, muted.
+--- top. Not the top: the run's Delta cell (an incomplete run's figure muted, a lost run's a muted dash,
+--- as the column shows them). The top: its lead over the runner-up, green, or a dash with no runner-up.
 --- @return string text, table color, boolean top
 function Runs.DeltaBox(run, ctx)
-    if type(ctx) ~= "table" or run.status ~= "complete" then return DASH, C.dim, false end
+    if type(ctx) ~= "table" then return DASH, C.dim, false end
     if not Runs.IsTop(run, ctx) then
         local text, color = deltaText(run, ctx.top)
         return text, color, false

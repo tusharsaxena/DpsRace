@@ -457,7 +457,7 @@ Total.
 
 ### test_results_delta.lua (4)
 
-- results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete or lost run
+- results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run
 - results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0%
 - results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
 - results: a run the Runs filters leave out falls back to its board among every stored run

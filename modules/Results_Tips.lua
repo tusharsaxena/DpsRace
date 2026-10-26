@@ -299,10 +299,9 @@ function DETAIL.delta(run, ctx)
     local lines = { L["Delta"] }
     if run.status == "lost" then
         lines[2] = L["A lost run has no DPS to compare."]
-    elseif run.status ~= "complete" then
-        lines[2] = L["An incomplete run never ranks: it has no delta."]
     else
         for _, line in ipairs(deltaAgainst(run, ctx, scopeOf(ctx))) do lines[#lines + 1] = line end
+        if run.status ~= "complete" then lines[#lines + 1] = L["An incomplete run is compared, but never sets the max."] end
     end
     lines[#lines + 1] = ctx.scope == "board"
         and L["The Runs list's filters leave this run out, so it is measured on its board."]
