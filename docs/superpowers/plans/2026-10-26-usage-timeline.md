@@ -311,6 +311,27 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Chart border:** the plot's faint gray edge is removed on the HUD, the result card and the Results detail (the
   owner, 2026-10-26; this reverses the 2026-10-25 note that the chart border stays).
 
+### P11: The owner's third test round and the timeline backlog (2026-10-26)
+
+- [ ] **Cooldown threshold:** an important cast is one whose base cooldown is 29 s or more (was over 15 s): chart
+  icons and the timeline's cooldown ordering and lines follow it.
+- [ ] **Chart headroom:** the plot is taller by one icon row (plus a small gap) on top; the columns and the best-pace
+  line scale below that row, so a single row of icons never covers them. Icons still stack into more rows as today.
+- [ ] **Spell breakdown width:** the expanded view's detail is wider (360 -> 440; the expanded minimum and the new
+  profile default follow); the spell-name column is wider; a thin dim-gray vertical line separates *This run* from
+  *Best run*; every row of the spell breakdown (the plain list and the compare) alternates its row color.
+- [ ] **Compare fills its width:** in the collapsed view (and any wide detail) the *This run* and *Best run* columns
+  grow to fill the width instead of hugging the right edge.
+- [ ] **Flags box:** its title in the section-header format (gold heading with the fold arrow, like the other
+  sections), the yellow box below it; inside, the main line in the current font size (e.g. "2 late casts"), then a
+  second line in a distinct format (e.g. "+1.4s Disengage, +2.5s Disengage End") unlike both the main line and the
+  explanation text under it.
+- [ ] **Timeline counts:** the per-lane counts sit flush against the lanes' right edge.
+- [ ] **Timeline icon strips:** a new section above the lanes, under its own header, with two strips (this run, the
+  compared run) showing every cast's ability icon on the time axis, each strip's height growing with how many icons
+  stack; each icon's tooltip is the ability's own tooltip plus the cast time; the lanes get their own header; the
+  window's minimum width rises if the icons get cramped. (The timeline's smooth resize is P10's.)
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
