@@ -133,16 +133,18 @@ local function keepLoadout(run)
     if not UnitAffectingCombat("player") then NS.Loadouts.Attach(run, NS.Recorder.SnapshotLoadout()) end
 end
 
---- The run's casts and usage (#13, #14), at the result: the cast list heard since the arm, and what
---- was used, from the arm's snapshot, those casts and the bag counts now. A run resumed after a
---- /reload heard neither (both lists were in memory): it keeps none, and reads as not recorded.
+--- The run's casts and usage (#13, #14), at the result: the cast list heard since the arm (its last
+--- Casts.PREPULL seconds before the pull on), and what was used, from the arm's snapshot, those casts,
+--- the bag counts now and the casts before that window. A run resumed after a /reload heard neither
+--- (both lists were in memory): it keeps none, and reads as not recorded.
 local function keepUsage(run)
     local Casts = NS.Casts
     if not Casts.Collecting() then return end
     Casts.Stop()
     run.casts = Casts.Record()
     if cur.usageSnap and run.casts then
-        run.usage = NS.Usage.Build(cur.usageSnap, Casts.Decode(run.casts.list), NS.Usage.BagCounts())
+        run.usage = NS.Usage.Build(cur.usageSnap, Casts.Decode(run.casts.list), NS.Usage.BagCounts(),
+            Casts.Early())
     end
 end
 

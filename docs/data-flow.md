@@ -69,7 +69,7 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   session held at the arm (read then, out of combat, `race.baseline`) is netted off the total and
   each spell at the read, and the meter's own rate is dropped. A fresh session heard later replaces
   the shared one. The start time is `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
-  the run is written to SavedVariables as `running`; `Casts.Start(t)` makes it the cast list's zero. A `C_Timer.NewTimer` is the
+  the run is written to SavedVariables as `running`; `Casts.Start(t)` makes it the cast list's zero and drops every cast heard more than `Casts.PREPULL` (10) s before it. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
   the target (`Recorder.SnapshotTarget("target", armTimeTarget)`); that read is the one stored. A
@@ -136,15 +136,19 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   counted once, and while a player channel is open (its `CHANNEL_START` to `CHANNEL_STOP`) only that
   channel's first success kept. Each cast is held at its `GetTime()` and measured from the clock's
   start, so one heard while armed is negative; the first cast of a spell asks
-  `GetSpellBaseCooldown` once. The running HUD reads `Casts.Live()` and `LiveSpells()`; at the result
-  `Casts.Record()` is stored as `run.casts` (`{ v, list, spells, dropped }`, [schema.md](schema.md)).
+  `GetSpellBaseCooldown` once. At the clock's start (and again at the record) only the casts of the
+  last `Casts.PREPULL` (10) s before it are kept, so the usage, the chart and the timeline read one
+  list; the player's earlier ones are counted by spell (`Casts.Early()`, in memory) for the usage's bag
+  compare. The running HUD reads `Casts.Live()` and `LiveSpells()`; at the result `Casts.Record()` is
+  stored as `run.casts` (`{ v, list, spells, dropped }`, [schema.md](schema.md)).
 - **What was used** (#13, `modules/Usage.lua`): `Usage.Snapshot()` at the arm (out of combat) holds
   the equipped slots with a use spell, the bag consumables with one and their counts, the helpful
   auras and the weapon enchants on the race (`cur.usageSnap`). At the result (the record path is out
-  of combat) `Usage.Build(snap, Casts.Decode(list), Usage.BagCounts())` is stored as `run.usage`. It
-  detects, in order: a cast of an on-use slot's or a consumable's spell (`cast`, at each cast's time),
-  a consumable whose count dropped with no cast (`bag`, time unknown; nothing when the bags could not
-  be read whole), an aura at the arm that is a bag consumable's own spell (a flask or phial: `buff`)
+  of combat) `Usage.Build(snap, Casts.Decode(list), Usage.BagCounts(), Casts.Early())` is stored as `run.usage`
+  (a lost run too, at its loss). It detects, in order: a cast of an on-use slot's or a consumable's
+  spell (`cast`, at each cast's time), a consumable whose count dropped with no cast (`bag`, time
+  unknown; nothing when the bags could not be read whole, and a drop the early casts of its spell
+  explain given back first), an aura at the arm that is a bag consumable's own spell (a flask or phial: `buff`)
   or *Well Fed* (food, no item: `buff`), and each weapon enchant (`enchant`, by its enchant ID and
   slot). The candidates are every on-use item and bag consumable at the arm. The item-cooldown compare
   is not used (a shared cooldown gave the probe a false positive). A run resumed after a `/reload` or

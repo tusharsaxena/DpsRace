@@ -4,7 +4,7 @@
 -- (disabled for a run with no casts); the window's lanes (this run's gold dots on top, the compared
 -- run's blue below, the counts, the pet suffix, the cooldown), its legend, the compare target followed
 -- as the detail's run, pick and Clear Pick change, the none and empty cases, the dot tooltip, Escape,
--- closing with the Results window, and the stored position.
+-- closing with the Results window, the stored position, Master scale and the stand-down.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -371,4 +371,30 @@ test("results timeline: it scrolls by a pair per notch; its position and size pe
     assertNil(w.point)
     assertNil(w.width)
     assertEqual(u.width, i.NS.defaults.profile.windows.timeline.width)
+end)
+
+test("results timeline: it follows Master scale while open", function()
+    local i = inst()
+    board(i)
+    local u = open(i, "this")
+    assertTrue(i.NS.SetByPath("scale", 1.25))
+    assertEqual(u.frame.__scale, 1.25)
+    -- On the Bests tab the detail draws nothing, so the scale reaction itself must reach the window.
+    assertTrue(i.R.ShowTab("bests"))
+    assertTrue(i.TL.IsShown(), "it stays open over the other tab")
+    assertTrue(i.NS.SetByPath("scale", 0.8))
+    assertEqual(u.frame.__scale, 0.8)
+    i.NS.SetByPath("scale", 1.0)
+end)
+
+test("results timeline: a stand-down hides it, and nothing opens it while stood down", function()
+    local i = inst()
+    board(i)
+    local u = open(i, "this")
+    assertTrue(i.TL.IsShown())
+    assertTrue(i.NS.SetByPath("enabled", false))
+    assertFalse(i.TL.IsShown(), "the stand-down (Results.Suspend) closed it")
+    assertFalse(u.frame:IsShown())
+    assertFalse(i.TL.Open(detail(i)), "no open while stood down")
+    assertFalse(u.frame:IsShown())
 end)

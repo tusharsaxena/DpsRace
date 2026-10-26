@@ -10,7 +10,9 @@ local _, NS = ...
 --   during the race the cast list (modules/Casts.lua): a cast of an on-use slot's or a consumable's
 --                   spell is a use, at its time.
 --   at the result   the bag counts again (the record path is out of combat): a consumable whose count
---                   dropped with no cast was used, its time unknown.
+--                   dropped with no cast was used, its time unknown. A drop the player's own casts
+--                   before the pre-pull window explain (Casts.Early: a potion drunk minutes before the
+--                   pull) is given back first, so it is not read as a use.
 -- An aura at the arm whose spell is a bag consumable's (a flask, a phial) was used before the pull;
 -- the Well Fed aura is food; an active weapon enchant is listed by its enchant ID (it does not name the
 -- oil, so the player ticks that). The item-cooldown compare is NOT used: a shared cooldown (a potion
@@ -268,11 +270,31 @@ local function ordered(snap, used, extra)
     return list
 end
 
---- What was used, detected from the arm's snapshot, the race's casts (Casts.Decode's shape) and the
---- bag counts at the result (nil when unreadable: no bag detection).
+-- The counts at the result with the drops `early` explains given back: each early cast of a
+-- consumable's spell returns one to the first item sharing it whose count dropped. A copy.
+local function giveBack(snap, after, early)
+    if type(after) ~= "table" or type(early) ~= "table" then return after end
+    local out = {}
+    for itemID, n in pairs(after) do out[itemID] = n end
+    local bagBy = bagsBySpell(snap.bags)
+    for _, spellID in ipairs(sortedKeys(early)) do
+        local left = early[spellID]
+        for _, itemID in ipairs(bagBy[spellID] or {}) do
+            local back = math.min(left, drop(snap, out, itemID))
+            out[itemID] = (out[itemID] or 0) + back
+            left = left - back
+        end
+    end
+    return out
+end
+
+--- What was used, detected from the arm's snapshot, the race's casts (Casts.Decode's shape), the bag
+--- counts at the result (nil when unreadable: no bag detection) and the player's casts before the
+--- pre-pull window by spell (Casts.Early; nil: none).
 --- @return table used  { { itemID?, kind, slot?, times?, n, src, enchantID? }, ... }
-function Usage.Detect(snap, casts, after)
+function Usage.Detect(snap, casts, after, early)
     local used, extra = {}, {}
+    after = giveBack(snap, after, early)
     detectCasts(snap, castTimes(snap, casts, after), used)
     detectBags(snap, after, used)
     detectAuras(snap, used, extra)
@@ -292,18 +314,19 @@ end
 
 --- The record Race stores as run.usage, or nil without a snapshot.
 --- @return table|nil record  { v, used, candidates, edited }
-function Usage.Build(snap, casts, after)
+function Usage.Build(snap, casts, after, early)
     if type(snap) ~= "table" then return nil end
-    return { v = Usage.VERSION, used = Usage.Detect(snap, casts, after), candidates = Usage.Candidates(snap),
+    return { v = Usage.VERSION, used = Usage.Detect(snap, casts, after, early), candidates = Usage.Candidates(snap),
              edited = false }
 end
 
 -- ── the player's edit ───────────────────────────────────────────────────────────────────────────
 
 -- Whether a detected entry is the one a tick names: by item, else by enchant, else food by kind; in
--- each case in the same slot when both say one (the same oil on both hands, a pair of one trinket).
+-- each case in the tick's slot when it names one (the same oil on both hands shares one enchant ID, a
+-- pair of one trinket one item ID), so an entry with no slot or another never answers it.
 local function same(e, tick)
-    if e.slot ~= nil and tick.slot ~= nil and e.slot ~= tick.slot then return false end
+    if tick.slot ~= nil and e.slot ~= tick.slot then return false end
     if tick.itemID then return e.itemID == tick.itemID end
     if tick.enchantID then return e.enchantID == tick.enchantID end
     return e.itemID == nil and e.enchantID == nil and e.kind == tick.kind

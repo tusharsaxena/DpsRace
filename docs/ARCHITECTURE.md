@@ -206,7 +206,7 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 | `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
 | `PLAYER_DEAD` | ARMED, RUNNING, STOPPING | `Race.OnDeath` | the `died` flag; incomplete before the buzzer |
-| `UNIT_SPELLCAST_SUCCEEDED` (`player` and `pet`), `_CHANNEL_START` / `_CHANNEL_STOP` (`player`), on the unit-filter frame | ARMED, RUNNING, STOPPING | `Casts.Hear` for every cast, then `Race.OnCast` (with the castGUID) for the player's | the cast list (#14): a pre-pull cast is heard while armed, and an open channel's ticks are deduped; from RUNNING `Race.OnCast` also judges them (it ignores a cast while armed) |
+| `UNIT_SPELLCAST_SUCCEEDED` (`player` and `pet`), `_CHANNEL_START` / `_CHANNEL_STOP` (`player`), on the unit-filter frame | ARMED, RUNNING, STOPPING | `Casts.Hear` for every cast, then `Race.OnCast` (with the castGUID) for the player's | the cast list (#14): a pre-pull cast is heard while armed (only the last 10 s before the clock starts are kept), and an open channel's ticks are deduped; from RUNNING `Race.OnCast` also judges them (it ignores a cast while armed) |
 | `UNIT_SPELLCAST_START` / `_EMPOWER_START` / `_INTERRUPTED` (`player`, the unit-filter frame) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an empowered cast is in flight from its start; an interrupt or a channel's stop closes the cast in flight |
 
 `modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
@@ -364,9 +364,11 @@ shape the design most:
   on-demand browser at `HIGH` and the tree a `MEDIUM` UI panel, so the tree cannot draw over it;
   the window hides while the tree is up and comes back when it closes (the owner's call).
 - **Casts and usage were measured in the open world only, and part of the usage is a rule** (#13,
-  #14): a channel's ticks are deduped defensively, food is the *Well Fed* aura's name, a weapon
-  enchant does not name its oil, and a run from before format 3 (or resumed after a `/reload`) has
-  neither list.
+  #14): a channel's ticks are deduped defensively, only the last 10 s before the pull are kept, food
+  is the *Well Fed* aura's enUS name (never detected on another client language), a consumable that
+  leaves the bags while armed reads as used, a pair of one on-use item is detected on its first slot
+  only, a weapon enchant does not name its oil, and a run from before format 3 (or resumed after a
+  `/reload`) has neither list.
 
 ## Documentation map
 

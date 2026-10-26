@@ -560,8 +560,7 @@ local function draw()
         ui.thisLabel, ui.otherLabel, ui.noteText = this, Timeline.OtherLabel(other, kind), note
         ui.note:SetText(note or "")
     end
-    local scale = tonumber(NS.GetSetting("scale"))
-    if scale then ui.frame:SetScale(scale) end
+    Timeline.ApplyScale()
     layout()
     debug("drawn: %d abilities", #ui.rows)
 end
@@ -607,6 +606,13 @@ function Timeline.Scroll(delta)
     local top = math.max(0, (ui.contentH or 0) - (ui.viewH or 0))
     ui.offset = math.max(0, math.min(top, (ui.offset or 0) - (delta or 0) * Timeline.PAIR_H))
     ui.scroll:SetVerticalScroll(ui.offset)
+end
+
+--- Master scale on the window (a draw, and the scale row's reaction in settings/General.lua). Nothing
+--- before the window is built: the first open applies it.
+function Timeline.ApplyScale()
+    local scale = tonumber(NS.GetSetting("scale"))
+    if ui and scale then ui.frame:SetScale(scale) end
 end
 
 --- Back to the default place and size (the Master controls' Reset position).

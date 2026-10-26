@@ -267,3 +267,20 @@ test("chart dots: test mode draws the sample's, live up to its still moment and 
     assertTrue(f.NS.Preview.Start({ mode = "test", state = "result" }))
     assertEqual(#body(f).w.chart:Dots(), 0, "the setting holds in test mode")
 end)
+
+test("chart dots: test mode's chart follows Show cooldown dots while it is on screen", function()
+    local f = hud()
+    assertTrue(f.NS.Preview.Start())
+    local chart = body(f).w.chart
+    local n = #chart:Dots()
+    assertTrue(n > 0, "the sample's cooldowns so far")
+    local pushed = f.Hud.View().chart
+    assertTrue(f.NS.SetByPath("live.castDots", false))
+    f.Hud.Refresh()
+    assertEqual(#chart:Dots(), 0, "the sample's dots go with the setting")
+    assertTrue(chart.shown, "the chart itself stays")
+    assertTrue(pushed.dots ~= nil, "the preview's own chart is not changed")
+    assertTrue(f.NS.SetByPath("live.castDots", true))
+    f.Hud.Refresh()
+    assertEqual(#chart:Dots(), n, "on again brings them back")
+end)

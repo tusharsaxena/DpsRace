@@ -86,6 +86,23 @@ and the smoke row that measures it where one exists.
 - **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, over 15 s). Talents
   and haste that shorten it are not seen, and a spell with charges can report a short one (Kill
   Command read 500 ms in the probe), so it gets no dot and sorts with the rotation on the timeline.
+- **A cast more than 10 s before the pull is not the race's** (#13, #14; `Casts.PREPULL`). While
+  armed every cast is heard, but when the clock starts only the last 10 s are kept: an earlier one is
+  in neither the cast list, the chart's dots, the timeline nor the usage, and the player's earlier
+  casts of a consumable's spell explain its bag count's drop, so a potion drunk minutes before the
+  pull is not read as used. A pre-pull opener cast 11 s out is dropped with it.
+- **A consumable that leaves the bags while armed reads as used, its time unknown** (#13). The bag
+  compare sees only the count at the arm and at the result, so a consumable sold, destroyed, traded or
+  moved to the bank (or the warband bank) between the two, with no cast of its spell heard, is listed
+  with `src = "bag"` and no time. The player unticks it in the detail's *Usage*.
+- **Two copies of one on-use item: only the first slot's use is detected** (#13). The cast of the use
+  spell names no slot, so a pair of one trinket (one item ID, one spell) counts every cast on the
+  first of the two slots (slot order); the second slot's row stays unticked. The player ticks it in
+  the detail's *Usage*, and each slot's row is then its own.
+- **Food is detected only on an English client** (#13). The *Well Fed* aura is found by its name, the
+  enUS string (`L["Well Fed"]`, which the aura's localized name never equals on another client
+  language), so on a German, French or any other non-English client food is never detected, and the
+  detail's *Usage* has no *Well Fed* row to tick for it.
 - **Food and augment runes are detected by rule, not by measurement** (#13). No food buff or rune
   was active in the probe. Food is the *Well Fed* aura found by its name at the arm (the enUS
   string, `L["Well Fed"]`), listed with no item; a rune or any other consumable counts only through a

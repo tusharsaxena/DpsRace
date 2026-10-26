@@ -92,6 +92,7 @@ local reactions = {
     scale      = function()
         NS.Hud.Refresh()
         NS.Results.Refresh()
+        NS.ResultsTimeline.ApplyScale()
     end,
     locked     = function(v) NS.Hud.SetLocked(v) end,
 }

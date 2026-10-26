@@ -1,7 +1,8 @@
 -- tests/test_usage.lua — modules/Usage.lua, what the player used (#13): the arm snapshot over the
 -- client's item, bag, aura and enchant reads; detection from a snapshot, the casts and the after
 -- counts (pure); the player's edit; the race end to end (arm to the stored record, casts and usage,
--- nothing secret); the run record's format 3 migration; and the sample history's casts and usage.
+-- nothing secret; the pre-pull window, a lost race, a stand-down); the run record's format 3
+-- migration; and the sample history's casts and usage.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -139,6 +140,22 @@ test("usage: a cast item's count drop is not counted again; unknown after counts
     assertEqual(used[1].n, 2)
 end)
 
+test("usage: a drop the casts before the pre-pull window explain is given back, never read as a use", function()
+    local Usage = T.NS.Usage
+    local snap = snapOf()
+    snap.auras, snap.enchants = {}, {}
+    local after = { [POTION] = 2, [FLASK] = 2, [STONE] = 1 }
+    assertEqual(kinds(Usage.Detect(snap, {}, after)), "potion:bag", "without the early casts")
+    assertEqual(#Usage.Detect(snap, {}, after, { [POTION_SPELL] = 1 }), 0, "the potion drunk minutes before")
+    -- Two gone, one drunk early: the other is still a use; more early casts than the drop give back no more.
+    local used = Usage.Detect(snap, {}, { [POTION] = 1, [FLASK] = 2, [STONE] = 1 }, { [POTION_SPELL] = 1 })
+    assertEqual(kinds(used), "potion:bag")
+    assertEqual(used[1].n, 1)
+    assertEqual(#Usage.Detect(snap, {}, after, { [POTION_SPELL] = 5, [1122] = 1 }), 0)
+    assertEqual(after[POTION], 2, "the counts given are not changed")
+    assertEqual(kinds(Usage.Detect(snap, {}, nil, { [POTION_SPELL] = 1 })), "", "unknown counts stay unknown")
+end)
+
 test("usage: of two items with one use spell, a cast is the one whose count dropped", function()
     local Usage = T.NS.Usage
     local snap = { gear = {}, auras = {}, enchants = {},
@@ -228,6 +245,31 @@ test("usage: SetUsed matches each tick to its own entry by slot, never one entry
     run.usage.used = { used[3], used[4] }
     NS.Usage.SetUsed(run, { { kind = "enchant", enchantID = ENCHANT }, { kind = "enchant", enchantID = ENCHANT } })
     assertTrue(run.usage.used[1] == used[3] and run.usage.used[2] == used[4], "one entry each")
+end)
+
+test("usage: a tick with a slot answers only an entry in that slot, enchants sharing an ID and gear alike", function()
+    local NS = T.load().NS
+    -- One oil on both hands (one enchant ID), the main hand's entry with no slot; a trinket in 13.
+    local used = {
+        { kind = "enchant", enchantID = ENCHANT, n = 1, src = "enchant" },
+        { kind = "enchant", slot = 16, enchantID = ENCHANT, n = 1, src = "enchant" },
+        { itemID = TRINKET, kind = "gear", slot = 13, times = { 5 }, n = 1, src = "cast" },
+    }
+    local run = { id = "s1", sample = true, usage = { v = 1, candidates = {}, used = { used[1], used[2], used[3] } } }
+    NS.Usage.SetUsed(run, {
+        { kind = "enchant", slot = 17, enchantID = ENCHANT }, { kind = "enchant", slot = 16, enchantID = ENCHANT },
+        { itemID = TRINKET, kind = "gear", slot = 14 },
+    })
+    local out = run.usage.used
+    assertEqual(#out, 3)
+    assertFalse(out[1] == used[1] or out[1] == used[2], "the off hand's tick took no other entry")
+    assertEqual(out[1].slot, 17)
+    assertEqual(out[1].enchantID, ENCHANT)
+    assertTrue(out[2] == used[2], "the main hand's tick is its own entry")
+    assertFalse(out[3] == used[3], "the trinket in 14 is not the one used in 13")
+    assertEqual(out[3].src, "manual")
+    assertEqual(out[3].slot, 14)
+    assertNil(out[3].times)
 end)
 
 test("usage: an unticked food or enchant joins the candidates, once, and ticked again keeps its source", function()
@@ -335,6 +377,71 @@ test("usage: a race stores its casts and usage at the result, and nothing secret
     assertEqual(u.used[6].enchantID, ENCHANT)
     assertEqual(#u.candidates, 4)
     assertNil(F.findSecret(run), "a secret reached the stored run at " .. tostring(F.findSecret(run)))
+end)
+
+test("usage: a cast heard more than 10 s before the pull is not this race's, in the list or the usage", function()
+    local f = F.new({ mutate = stock })
+    local M = f.M
+    assertTrue(f:arm(30))
+    f:to(110)
+    M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-0", POTION_SPELL)   -- a potion, 40 s before
+    M.__bags[0][5] = nil
+    f:to(145)
+    M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", 29722)          -- inside the window
+    f:to(150)
+    f:start(25)
+    local run = f.Race.Current()
+    f:to(152)
+    M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-2", TRINKET_SPELL)
+    f:to(184)
+    f:combatEnd()
+    f:advance(3)
+    assertEqual(f.Race.State(), "result")
+    assertEqual(run.casts.list, "-500:29722,200:" .. TRINKET_SPELL)
+    assertNil(run.casts.spells[POTION_SPELL])
+    assertEqual(kinds(run.usage.used), "gear:cast,flask:buff,food:buff,enchant:enchant",
+        "the early potion is neither a cast use nor a bag drop")
+end)
+
+test("usage: a lost race stores its casts and usage too, and nothing secret", function()
+    local f = F.new({ mutate = stock })
+    local M = f.M
+    local function cast(guid, id) M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", guid, id) end
+    assertTrue(f:arm(30))
+    f:to(101)
+    f:start(25)
+    local run = f.Race.Current()
+    f:to(103)
+    cast("Cast-1", TRINKET_SPELL)
+    f:to(104)
+    cast(T.secret("Cast-2"), POTION_SPELL)
+    cast("Cast-3", T.secret(1122))
+    M.__bags[0][4] = nil                              -- the Healthstone, with no cast
+    M.__bags[0][1] = { POTION, T.secret(1) }          -- a count the bag read cannot trust
+    f:to(110)
+    f.Race.OnMeterReset()
+    assertEqual(run.status, "lost")
+    assertTrue(f:stored(run.id) == run, "kept")
+    assertEqual(run.casts.list, "200:" .. TRINKET_SPELL .. ",300:" .. POTION_SPELL)
+    assertEqual(run.casts.dropped, 1)
+    assertEqual(kinds(run.usage.used), "gear:cast,potion:cast,flask:buff,food:buff,enchant:enchant",
+        "a sealed stack count reads the bags as unknown: no bag drop")
+    assertEqual(#run.usage.candidates, 4)
+    assertFalse(f.NS.Casts.Collecting())
+    assertNil(F.findSecret(run), "a secret reached the stored run at " .. tostring(F.findSecret(run)))
+end)
+
+test("usage: a stand-down stops the cast list and drops it", function()
+    local f = F.new()
+    assertTrue(f:arm(30))
+    f.M.__fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", 1122)
+    assertTrue(f.NS.Casts.Collecting())
+    assertTrue(f.NS.SetByPath("enabled", false))
+    assertFalse(f.NS.Casts.Collecting(), "Race.Suspend resets the casts")
+    f.NS.Casts.Hear("succeeded", "player", 1122, "Cast-2", f:now())
+    f.NS.Casts.Start(f:now())
+    assertEqual(f.NS.Casts.Size(), 0, "nothing heard or kept after it")
+    assertNil(f.NS.Casts.Record())
 end)
 
 test("usage: a canceled race keeps nothing; the next arm starts a fresh list", function()

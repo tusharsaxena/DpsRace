@@ -1,7 +1,7 @@
 -- tests/test_casts.lua — modules/Casts.lua, the race's cast list (#14): the stored format (Encode,
 -- Decode), the important-ability selection and the grouping (pure), and the capture: what is heard,
--- filtered (auto-repeat, a castGUID heard twice, a channel's ticks, a sealed spell ID) and timed on the
--- race clock.
+-- filtered (auto-repeat, a castGUID heard twice, a channel's ticks, a sealed spell ID), timed on the
+-- race clock and kept from 10 s before the clock's start.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -129,6 +129,36 @@ test("casts: times are on the race clock; a cast heard while armed is negative",
     assertEqual(rec.spells[29722], 0)
     assertNil(rec.spells[3110], "an unknown cooldown is left out")
     assertEqual(rec.dropped, 0)
+end)
+
+test("casts: only the last 10 s before the clock starts are kept; the player's earlier casts are counted", function()
+    local Casts = fresh({ [1122] = 180000, [431932] = 300000, [29722] = 0 })
+    assertEqual(Casts.PREPULL, 10)
+    Casts.Begin()
+    Casts.Hear("succeeded", "player", 431932, "Cast-1", 20)     -- a potion, minutes before the pull
+    Casts.Hear("succeeded", "pet", 3110, "Cast-2", 50)
+    Casts.Hear("succeeded", "player", 1122, "Cast-3", 89.99)    -- just outside the window
+    Casts.Hear("succeeded", "player", 29722, "Cast-4", 90)      -- exactly at its edge: kept
+    Casts.Hear("succeeded", "player", 29722, "Cast-5", 98.5)
+    Casts.Start(100)
+    Casts.Hear("succeeded", "player", 1122, "Cast-6", 101)
+    assertEqual(Casts.Size(), 3, "the running chart reads the trimmed list")
+    local rec = Casts.Record()
+    assertEqual(rec.list, "-1000:29722,-150:29722,100:1122")
+    assertNil(rec.spells[431932], "a cooldown only a dropped cast named is left out")
+    assertEqual(rec.spells[1122], 180000)
+    local early = Casts.Early()
+    assertEqual(early[431932], 1)
+    assertEqual(early[1122], 1)
+    assertNil(early[3110], "a pet cast is no use of the player's")
+    early[431932] = 9
+    assertEqual(Casts.Early()[431932], 1, "a copy")
+    assertEqual(Casts.Record().list, rec.list, "the record applies the same window again")
+    Casts.Begin()
+    assertNil(next(Casts.Early()), "a new arm starts with none")
+    Casts.Hear("succeeded", "player", 431932, "Cast-7", 1)
+    Casts.Reset()
+    assertNil(next(Casts.Early()), "nor after a reset")
 end)
 
 test("casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered", function()

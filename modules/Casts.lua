@@ -15,7 +15,10 @@ local _, NS = ...
 --
 -- TIME. Each cast is heard at GetTime() and kept raw until Race starts the clock (Casts.Start); the
 -- stored `t` is seconds from that start in whole centiseconds, negative for a pre-pull cast heard while
--- armed.
+-- armed. Only the last Casts.PREPULL seconds before the start are kept: a potion drunk minutes before
+-- the pull was not this race's, and the usage detection, the chart and the timeline all read this one
+-- list, so they agree on what was. The player's casts dropped so are counted by spell (Casts.Early),
+-- so the usage's bag compare does not read that potion's missing count as a use either.
 --
 -- THE RECORD: { v = 1, list = "<cs>:<id>,<cs>:p<id>,...", spells = { [id] = cdMs }, dropped = n },
 -- `p` marking a pet cast. Every value is plain. Encode and Decode are pure; no cap on the list.
@@ -31,12 +34,15 @@ Casts.VERSION = 1
 Casts.AUTO = { [75] = true, [6603] = true, [5019] = true }
 -- An important ability's base cooldown is MORE than this (ms): what the chart marks with a dot.
 Casts.IMPORTANT_MS = 15000
+-- How many seconds before the clock's start a cast heard while armed still counts (the pre-pull).
+Casts.PREPULL = 10
 
 -- The race's capture: on (between Begin and Stop), the raw casts { at, id, pet }, the castGUIDs seen,
--- the open player channel ({ id, counted }), each spell's base cooldown, the dropped count and the
--- clock's start (nil until Start).
+-- the open player channel ({ id, counted }), each spell's base cooldown, the dropped count, the
+-- clock's start (nil until Start) and the player's casts before the pre-pull window ({ [id] = n }).
 local on = false
 local raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
+local early = {}
 
 local function debug(fmt, ...)
     if NS.Debug then NS.Debug("Casts", fmt, ...) end
@@ -61,11 +67,38 @@ end
 function Casts.Begin()
     on = true
     raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
+    early = {}
 end
 
---- The race clock started at `t` (GetTime()): the zero every stored time is measured from.
+-- Whether a cast heard at `at` falls inside the pre-pull window (or after the start).
+local function inWindow(at)
+    return at >= origin - Casts.PREPULL
+end
+
+-- Drop the casts heard before the pre-pull window (counting the player's in `early`), and the
+-- cooldowns only they named.
+local function trim()
+    local kept, ids = {}, {}
+    for _, c in ipairs(raw) do
+        if inWindow(c.at) then
+            kept[#kept + 1] = c
+            ids[c.id] = true
+        elseif not c.pet then
+            early[c.id] = (early[c.id] or 0) + 1
+        end
+    end
+    for id in pairs(cooldowns) do
+        if not ids[id] then cooldowns[id] = nil end
+    end
+    raw = kept
+end
+
+--- The race clock started at `t` (GetTime()): the zero every stored time is measured from. A cast
+--- heard more than Casts.PREPULL seconds before it is dropped.
 function Casts.Start(t)
-    if on then origin = t end
+    if not on then return end
+    origin = t
+    trim()
 end
 
 --- The capture ends (the result is read); the list stays readable until the next Begin or Reset.
@@ -77,6 +110,7 @@ end
 function Casts.Reset()
     on = false
     raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
+    early = {}
 end
 
 --- Whether casts are being heard now.
@@ -159,6 +193,15 @@ function Casts.Size()
     return #raw
 end
 
+--- The player's casts heard while armed but before the pre-pull window, by spell: { [id] = n }. Held
+--- in memory only, for the usage's bag compare (Usage.Build).
+--- @return table early
+function Casts.Early()
+    local out = {}
+    for id, n in pairs(early) do out[id] = n end
+    return out
+end
+
 --- The current race's base cooldowns, { [id] = ms } (a spell whose cooldown is unknown is absent).
 function Casts.LiveSpells()
     local out = {}
@@ -169,9 +212,11 @@ function Casts.LiveSpells()
 end
 
 --- The record for the current race (nil before the clock started): what Race stores as run.casts.
+--- The pre-pull window is applied again, so the record holds only what the race's own list holds.
 --- @return table|nil record  { v, list, spells, dropped }
 function Casts.Record()
     if not origin then return nil end
+    trim()
     local rec = { v = Casts.VERSION, list = Casts.Encode(Casts.Live()), spells = Casts.LiveSpells(),
                   dropped = dropped }
     debug("%d cast(s) kept, %d dropped", #raw, dropped)

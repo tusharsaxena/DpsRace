@@ -521,7 +521,7 @@ Total.
 - loadout: the share line takes the talents link only with Include talents link on
 - loadout: Include talents link sits under Sharing on the History tab, before Storage
 
-### test_casts.lua (9)
+### test_casts.lua (10)
 
 - casts: Encode writes centiseconds, a p before a pet cast, comma-joined
 - casts: Decode reads the stored string back, skipping what does not parse
@@ -530,23 +530,29 @@ Total.
 - casts: Group puts cooldowns first, longest first, then the rest by count
 - casts: nothing is heard before Begin or after Stop; other units are never heard
 - casts: times are on the race clock; a cast heard while armed is negative
+- casts: only the last 10 s before the clock starts are kept; the player's earlier casts are counted
 - casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
 - casts: a channel counts once, whether its success comes before or after the channel start
 
-### test_usage.lua (17)
+### test_usage.lua (22)
 
 - usage: the arm snapshot reads the on-use slots, the bag consumables, the auras and the enchants
 - usage: an unreadable bag stack makes the after counts unknown, never a false drop
 - usage: a client without the APIs snapshots nothing and raises nothing
 - usage: detection stacks casts, the bag drop, the arm's auras and the enchant, in that order
 - usage: a cast item's count drop is not counted again; unknown after counts detect no drop
+- usage: a drop the casts before the pre-pull window explain is given back, never read as a use
 - usage: of two items with one use spell, a cast is the one whose count dropped
 - usage: the candidates are the on-use gear, then every bag consumable by item
 - usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
 - usage: SetUsed matches each tick to its own entry by slot, never one entry twice
+- usage: a tick with a slot answers only an entry in that slot, enchants sharing an ID and gear alike
 - usage: an unticked food or enchant joins the candidates, once, and ticked again keeps its source
 - usage: Watchers hears the casts from the arm, for the player and the pet
 - usage: a race stores its casts and usage at the result, and nothing secret
+- usage: a cast heard more than 10 s before the pull is not this race's, in the list or the usage
+- usage: a lost race stores its casts and usage too, and nothing secret
+- usage: a stand-down stops the cast list and drops it
 - usage: a canceled race keeps nothing; the next arm starts a fresh list
 - usage: a run resumed after a /reload keeps no casts and no usage
 - usage: the format 3 migration raises the stamp and rewrites no run
@@ -572,7 +578,7 @@ Total.
 - results usage: a sample run's edit changes it in memory only; the store never hears it
 - results usage: a row's hover is the item's own tooltip with its detail and source after it
 
-### test_chart_dots.lua (12)
+### test_chart_dots.lua (13)
 
 - chart dots: a dot's x is INSET + t / length across the width less both insets
 - chart dots: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no dot
@@ -586,8 +592,9 @@ Total.
 - chart dots: Show cooldown dots off hides them on the card and in the detail too
 - chart dots: a run recorded before casts were (format 2) draws its chart with none
 - chart dots: test mode draws the sample's, live up to its still moment and all on the card
+- chart dots: test mode's chart follows Show cooldown dots while it is on screen
 
-### test_results_timeline.lua (11)
+### test_results_timeline.lua (13)
 
 - results timeline: one row per ability and caster across both runs, each run's times and counts
 - results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's
@@ -600,6 +607,8 @@ Total.
 - results timeline: a run with no casts or no run at all shows a message in place of the lanes
 - results timeline: Escape and its close control close it, as does the Results window closing
 - results timeline: it scrolls by a pair per notch; its position and size persist; Reset position restores them
+- results timeline: it follows Master scale while open
+- results timeline: a stand-down hides it, and nothing opens it while stood down
 
 ### test_schema.lua (15)
 
@@ -908,11 +917,11 @@ Total.
 | test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
-| test_casts.lua | 9 |
-| test_usage.lua | 17 |
+| test_casts.lua | 10 |
+| test_usage.lua | 22 |
 | test_results_usage.lua | 16 |
-| test_chart_dots.lua | 12 |
-| test_results_timeline.lua | 11 |
+| test_chart_dots.lua | 13 |
+| test_results_timeline.lua | 13 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -932,4 +941,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **734** |
+| **Total** | **743** |
