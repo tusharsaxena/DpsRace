@@ -523,7 +523,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x560")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 260x560")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()

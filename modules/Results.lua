@@ -34,7 +34,8 @@ local DW = NS.defaults.profile.windows.results
 -- the boxed Target and Time chips and the Status tag alone: 756 px of fixed columns, the Character
 -- column's 60 and the gaps, pads and scrollbar, and the window's border) and its two-row filter bar;
 -- expanded adds the 360 px detail beside that same list (1264; its one-row filter bar, 1196 px, fits
--- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198.
+-- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198. Each view's default
+-- width (defaults/Profile.lua) is its minimum (the owner's call, 2026-10-26; tests/test_schema.lua).
 Results.VIEWS = {
     expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1264 },
     collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 904 },

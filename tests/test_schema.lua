@@ -164,3 +164,25 @@ test("panel: the landing page is the library's, with the logo and one row per ve
     assertEqual(#NSs.LANDING.sections[1].rows(), #NSs.COMMANDS)
     assertTrue(NSs.LANDING.notes():find("training dummies", 1, true) ~= nil)
 end)
+
+test("schema: a new profile and Reset all settings open each window at its minimum width", function()
+    local inst = T.load()
+    local NSi = inst.NS
+    local W = NSi.defaults.profile.windows
+    -- defaults/Profile.lua loads before the modules, so it keeps numbers; these pin them together.
+    assertEqual(W.hud.width, NSi.Hud.MIN_WIDTH, "the HUD")
+    assertEqual(W.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth, "Results, expanded")
+    assertEqual(W.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth, "Results, collapsed")
+    assertEqual(W.hud.height, 560, "heights stay as they were")
+    assertEqual(W.results.expanded.height, 560)
+    assertEqual(W.results.collapsed.height, 560)
+    -- Wider windows, then /dr resetall's reset: back to the minimum widths.
+    local p = NSi.db.profile
+    p.windows.hud.width = 400
+    p.windows.results.expanded.width, p.windows.results.collapsed.width = 1500, 1100
+    NSi.Helpers.RestoreAllDefaults()
+    p = NSi.db.profile
+    assertEqual(p.windows.hud.width, NSi.Hud.MIN_WIDTH)
+    assertEqual(p.windows.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth)
+    assertEqual(p.windows.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth)
+end)

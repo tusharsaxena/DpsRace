@@ -96,17 +96,20 @@ NS.defaults = {
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
-        -- moved. The Results window follows Master scale like the HUD.
+        -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
+        -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and
+        -- Results.VIEWS[view].minWidth, pinned equal by tests/test_schema.lua.
         windows = {
             -- Tall enough for all 8 live rows under the Damage profile heading (the pace bar and the
             -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C).
-            hud = { width = 300, height = 560 },
+            -- 300 wide before 2026-10-26.
+            hud = { width = 260, height = 560 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
             -- the title bar's toggle switches them.
-            -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
-            results = { view = "expanded", expanded = { width = 1340, height = 560 },
-                        collapsed = { width = 980, height = 560 } },
+            -- 1340 and 980 wide before 2026-10-26 (1220 and 900 before the Note column, 2026-10-25).
+            results = { view = "expanded", expanded = { width = 1264, height = 560 },
+                        collapsed = { width = 904, height = 560 } },
             -- The ability timeline (#14, modules/Results_Timeline.lua): the pop-out from the run detail.
             timeline = { width = 860, height = 480 },
         },

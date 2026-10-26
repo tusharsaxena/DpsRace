@@ -160,7 +160,7 @@ end)
 
 test("chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last", function()
     local C = T.NS.HudChart
-    -- The HUD's default width (300, the body's 12 px pads each side): 272 px of plot, 268 inside.
+    -- A 300-wide HUD (the body's 12 px pads each side): 272 px of plot, 268 inside.
     local xs, ws = C.ColumnEdges(268, 60, 0)
     assertEqual(#xs, 60)
     local total = 0

@@ -610,7 +610,7 @@ Total.
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
 
-### test_schema.lua (15)
+### test_schema.lua (16)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
@@ -627,6 +627,7 @@ Total.
 - schema: a migration runs once and stamps the stored version
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
+- schema: a new profile and Reset all settings open each window at its minimum width
 
 ### test_settings.lua (29)
 
@@ -922,7 +923,7 @@ Total.
 | test_results_usage.lua | 16 |
 | test_chart_dots.lua | 13 |
 | test_results_timeline.lua | 13 |
-| test_schema.lua | 15 |
+| test_schema.lua | 16 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
@@ -941,4 +942,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **743** |
+| **Total** | **744** |
