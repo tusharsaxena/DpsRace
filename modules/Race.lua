@@ -331,7 +331,6 @@ end
 
 --- Arm a race of `length` seconds against the current target.
 --- @param length number  10-900
---- @param targetCount number|nil  the target count picked before arming (nil keeps the catalog's)
 --- @return boolean ok
 --- @return string|nil reason  "in_combat" | "meter_unavailable" | "pending" | "busy" |
 ---                            "bad_length" | "disabled"
@@ -359,13 +358,13 @@ local function baselineOf(id)
     return { session = id, damage = data.damage, spells = spells }
 end
 
-function Race.Arm(length, targetCount)
+function Race.Arm(length)
     local refusal, detail = armRefusal(length)
     if refusal then
         debug("arm refused: %s", refusal)
         return false, refusal, detail
     end
-    newRace(NS.Recorder.NewRun(length, targetCount))
+    newRace(NS.Recorder.NewRun(length))
     cur.armTarget = cur.run.target
     -- The fallback loadout (#6), held in memory: gear can still change before the pull, so the one
     -- stored is the combat-end snapshot (OnCombatEnd), and this only when there is none.
@@ -445,13 +444,11 @@ function Race.OnSessionCreated(t)
     cur.sessionAt = t
 end
 
--- The armed count survives the combat-start re-read when it is the same creature; another target
--- takes its own catalog count.
+-- The target re-read when combat starts: the one fought, over the one armed against.
 local function rereadTarget()
     local run = cur.run
     local prior = cur.armTarget or run.target or {}
     local fresh = NS.Recorder.SnapshotTarget("target", prior)
-    if fresh.npcID ~= nil and fresh.npcID == prior.npcID then fresh.count = prior.count or fresh.count end
     run.target = fresh
     cur.reread = true
 end

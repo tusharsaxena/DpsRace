@@ -224,7 +224,7 @@ function Detail.SortedSpells(run)
 end
 
 --- The header's three meta lines, and the target line's two chips (the owner's call, 2026-10-25):
---- the target type in its category color (Tbl.Badge, the count included) and the race length in its
+--- the target type in its category color (Tbl.Badge) and the race length in its
 --- length color (Tbl.LengthChip), boxed as the Runs list draws them, before the line's text (the
 --- tail or when combat ended, then the target's name).
 --- @return string realmLine, string targetLine, string stampLine, table chips  { { text, color } x2 }

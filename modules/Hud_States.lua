@@ -309,7 +309,7 @@ end
 
 local CARD_HEIGHT = 46
 
-local function targetCard(parent, y, stepper)
+local function targetCard(parent, y)
     local f = panel(parent)
     f:SetHeight(CARD_HEIGHT)
     f:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
@@ -323,41 +323,18 @@ local function targetCard(parent, y, stepper)
     card.badge:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
     card.badgeText = Style.Text(card.badge, FONT.TEXT, C.amber, "CENTER")
     card.badgeText:SetPoint("CENTER", card.badge, "CENTER", 0, 0)
-    card.meta = Style.Text(f, FONT.TEXT, C.dim)
-    card.meta:SetPoint("LEFT", card.badge, "RIGHT", 8, 0)
     card.npc = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
     card.npc:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 8)
-    if stepper then
-        card.minus = button(f, "-", function() act("stepCount", -1) end)
-        card.minus:SetSize(18, 18)
-        card.minus:SetPoint("LEFT", card.meta, "RIGHT", 6, 0)
-        card.count = Style.Text(f, FONT.HEADING, C.text, "CENTER")
-        card.count:SetWidth(22)
-        card.count:SetPoint("LEFT", card.minus, "RIGHT", 2, 0)
-        card.plus = button(f, "+", function() act("stepCount", 1) end)
-        card.plus:SetSize(18, 18)
-        card.plus:SetPoint("LEFT", card.count, "RIGHT", 2, 0)
-    end
     return card
 end
 
-local function setTarget(card, target, count)
+local function setTarget(card, target)
     target = target or {}
     card.name:SetText(target.name or L["No target"])
     local badge = NS.Dummies.Label(target.category or "other")
     card.badgeText:SetText(badge)
     card.badge:SetWidth(math.floor(textWidth(card.badgeText, badge) + 12))
     card.npc:SetText(type(target.npcID) == "number" and ("#%d"):format(target.npcID) or "")
-    count = count or 1
-    if card.count then
-        card.meta:SetText(L["Targets"])
-        card.count:SetText(tostring(count))
-        setEnabled(card.minus, count > 1)
-    elseif count == 1 then
-        card.meta:SetText(L["1 target"])
-    else
-        card.meta:SetText(L["%d targets"]:format(count))
-    end
 end
 
 -- ── bodies ──────────────────────────────────────────────────────────────────────────────────────
@@ -449,7 +426,7 @@ function Builders.idle(parent)
     w.customBox:SetScript("OnEscapePressed", function() act("closeCustom") end)
     w.customBox:Hide()
     w.targetCap = caption(f, L["Target"], -IDLE_TARGET_Y)
-    w.card = targetCard(f, -IDLE_CARD_Y, true)
+    w.card = targetCard(f, -IDLE_CARD_Y)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
@@ -490,7 +467,7 @@ function Builders.idle(parent)
         self.w.custom.label:SetText(isPreset and L["Custom"] or NS.Format.Length(v.length))
         self.w.customBox:SetShown(v.editing == true)
         self.w.custom:SetShown(v.editing ~= true)
-        setTarget(self.w.card, v.target, v.count)
+        setTarget(self.w.card, v.target)
         self.w.warn:SetText(v.warning or "")
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
@@ -518,7 +495,7 @@ function Builders.armed(parent)
     function body.Update(self, v)
         local run = v.run or {}
         self.w.clock:SetText(NS.Format.Clock(run.race and run.race.length or 0))
-        setTarget(self.w.card, run.target, run.target and run.target.count)
+        setTarget(self.w.card, run.target)
     end
     return body
 end

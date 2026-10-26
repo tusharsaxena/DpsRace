@@ -101,9 +101,6 @@ function CELL.target(run)
     if type(t.level) == "number" then meta[#meta + 1] = L["Level %d"]:format(t.level) end
     if type(t.npcID) == "number" then meta[#meta + 1] = L["creature %d"]:format(t.npcID) end
     if #meta > 0 then lines[#lines + 1] = table.concat(meta, " \194\183 ") end
-    if type(t.count) == "number" then
-        lines[#lines + 1] = t.count == 1 and L["1 target (your pick)"] or L["%d targets (your pick)"]:format(t.count)
-    end
     return lines
 end
 

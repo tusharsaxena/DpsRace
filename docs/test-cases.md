@@ -149,7 +149,7 @@ Total.
 - race: arm refuses when meter unavailable
 - race: arm refuses a length outside 10s-15:00 and arms a valid one
 - race: session created starts the clock and persists the run as running
-- race: the target is re-read at combat start and the arm-time count is kept
+- race: the target is re-read at combat start
 - race: sessionID captured from first DamageDone update with non-zero id
 - race: a DamageDone update heard just before the session event is adopted at the start
 - race: a session event heard out of combat does not start the clock
@@ -236,12 +236,12 @@ Total.
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
 - hud: idle arm button disabled with reason in combat
-- hud: idle Arm uses the picked length and target count; a refusal prints its line
+- hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line
 - hud: a custom length is parsed, range-checked and selected
 - hud: an unknown target is allowed and said so
 - hud: a changed Default race length takes effect over the remembered pick
 - hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own
-- hud: a target changed while the HUD is closed is never armed with the old count
+- hud: a target changed while the HUD is closed is never armed as the old one
 - hud: reopening the HUD offers the target of the moment, not the one cached at close
 - hud: running render raises nothing with secret values
 - hud: running body shows no percentage text
@@ -606,7 +606,7 @@ Total.
 ### test_share.lua (13)
 
 - share: Share.Line matches the mockup format
-- share: one target drops the count; an uncataloged target is named; incomplete is said
+- share: the target type is named; an uncataloged target by its own name; incomplete is said
 - share: a lost run has no line, and the prompt says so
 - share: no chat escape survives into the line
 - share: Share refuses in combat

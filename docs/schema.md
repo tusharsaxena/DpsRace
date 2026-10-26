@@ -102,7 +102,7 @@ plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 | top | `id` (`time()-NNNN`), `schema`, `status`, `addon`, `build`, `date` (arm, restamped at the start) | `Recorder.NewRun`; `Race` |
 | `race` | `length`, `grace`, `restartGap` (frozen at arm), `startSource`, `startedAt` (`GetTime()` at the start), `sessionID`, `armMaxSession` (the highest session ID at arm), `lastDamage` (s after the start of the last damage update) | `Recorder.NewRun`; `Race` at arm, start, capture and each update |
 | `char`, `where` | the player and place snapshots | `Recorder.NewRun` (at arm) |
-| `target` | `npcID`, `name`, `category`, `count`, `level`, `classification` | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
+| `target` | `npcID`, `name`, `category`, `level`, `classification` (a run from before 2026-10-26 may still carry `count`, which nothing reads) | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
 | `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
 | `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
 | `spells` | `{ id, dmg, dps }`, highest first | `Race`, from `Meter.ReadSession` |

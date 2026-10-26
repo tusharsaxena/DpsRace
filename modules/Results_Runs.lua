@@ -550,7 +550,7 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
-Runs.TARGET_W = 98
+Runs.TARGET_W = 92
 Runs.TIME_W = 84
 Runs.STATUS_W = 92
 Runs.NOTE_CHARS = 10
@@ -623,8 +623,7 @@ function Runs.Columns()
         { key = "ilvl", label = L["iLvl"], width = 40, desc = true,
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
-        -- Boxed in the category color; wide enough for "Single target" and any type with a count
-        -- ("Dungeoneer ×20").
+        -- Boxed in the category color; wide enough for the widest type, "Single target".
         { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },

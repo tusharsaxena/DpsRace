@@ -51,7 +51,7 @@ local function mkRun(id, fields)
         id = id, schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = NOW - HOUR,
         race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
         char = copy(CHARS.lan),
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
         where = { mapID = 2393, zone = "Silvermoon City", subzone = "Falconwing Square", instanceType = "none" },
         result = { damage = 26560000, dps = 147555.6, meterDps = 134100, sessionDuration = 190, tail = 9.17,
                    combatEnd = 7.34 },

@@ -150,16 +150,12 @@ function Tbl.Hex(color)
         math.floor(color[3] * 255 + 0.5))
 end
 
---- The category badge: "Cleave", or "Cleave ×5" for a counted group, and its color.
+--- The category badge, "Cleave", and its color.
 --- @return string text, table color
 function Tbl.Badge(target)
     target = type(target) == "table" and target or {}
     local category = target.category or "other"
-    local text = NS.Dummies.Label(category)
-    if type(target.count) == "number" and target.count > 1 then
-        text = L["%s \195\151%d"]:format(text, target.count)
-    end
-    return text, Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other
+    return NS.Dummies.Label(category), Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other
 end
 
 -- The flags a run carries beyond its status: incomplete and lost are what the DPS column says.

@@ -56,7 +56,7 @@ local function mkRun(id, fields)
         id = id, schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = NOW - HOUR,
         race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
         char = copy(CHARS.lan),
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
         where = { mapID = 2393, zone = "Silvermoon City", subzone = "Falconwing Square", instanceType = "none" },
         result = { damage = 26560000, dps = 147555.6, meterDps = 134100, sessionDuration = 190, tail = 9.17,
                    combatEnd = 7.34 },
@@ -122,7 +122,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.char.fs.__text, "Lanfear")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
-    assertEqual(c.target.fs.__text, "Cleave \195\1515")
+    assertEqual(c.target.fs.__text, "Cleave", "no target count (DpsRace#15)")
     assertEqual(c.time.fs.__text .. "|" .. c.time.trail.__text, "3:00|+9.2s", "the length's chip, then the tail")
     assertEqual(c.damage.fs.__text, "26.56M")
     assertEqual(c.dps.fs.__text, "147.5K")

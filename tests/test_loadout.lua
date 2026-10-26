@@ -306,7 +306,7 @@ local function uiRun(NS, id, dps, loadout, fields)
         race = { length = 180, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
                  level = 80 },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 180, dps = dps, tail = 2 },
         flags = { lateCasts = {} }, spells = { { id = 29722, dmg = dps * 100 } }, note = "", loadout = loadout,
     }

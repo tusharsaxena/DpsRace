@@ -44,7 +44,7 @@ local function mkRun(id, fields)
         id = id, schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = NOW - HOUR,
         race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
         char = copy(CHARS.lan),
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
         where = { mapID = 2393, zone = "Silvermoon City", subzone = "Falconwing Square", instanceType = "none" },
         result = { damage = 26560000, dps = 147555.6, meterDps = 134100, sessionDuration = 190, tail = 9.17,
                    combatEnd = 7.34 },
@@ -106,12 +106,12 @@ test("badges: the Target cell is a boxed chip in its category color, the count i
     end
     pane:Refresh()
     local cells = cellsById(pane)
-    assertEqual(cells.a.target.fs.__text, "Cleave \195\1515", "the count stays inside the box")
+    assertEqual(cells.a.target.fs.__text, "Cleave", "the type alone in the box")
     sameColor(cells.a.target.fs.__color, Tbl.CATEGORY_COLORS.cleave, "Cleave's word")
     sameColor(edges.a, Tbl.CATEGORY_COLORS.cleave, "Cleave's box")
     assertEqual(cells.b.target.fs.__text, "Boss-level")
     sameColor(edges.b, Tbl.CATEGORY_COLORS.boss, "Boss-level's box")
-    assertEqual(cells.a.target.box.__width, Tbl.BadgeWidth("Cleave \195\1515", true), "the box is BadgeWidth's")
+    assertEqual(cells.a.target.box.__width, Tbl.BadgeWidth("Cleave", true), "the box is BadgeWidth's")
 end)
 
 test("badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray", function()
@@ -162,11 +162,11 @@ end)
 test("badges: a chip never runs past its column: a too-long word is cut to the box", function()
     local i = inst()
     local Tbl, Runs = i.NS.ResultsTable, i.NS.ResultsRuns
-    seed(i, { mkRun("wide", { target = { category = "single", count = 20 } }) })
+    seed(i, { mkRun("wide", { target = { category = "single" } }) })
     i.R.Show()
     local cells = cellsById(runsPane(i))
-    assertEqual(cells.wide.target.fs.__text, "Single target \195\15120")
-    assertEqual(cells.wide.target.box.__width, Runs.TARGET_W, "capped at the column")
+    assertEqual(cells.wide.target.fs.__text, "Single target")
+    assertEqual(cells.wide.target.box.__width, Runs.TARGET_W, "the widest type fills the column exactly")
     local chip = Tbl.Chip(ui(i).frame)
     assertEqual(Tbl.SetChip(chip, "Single target", { 1, 1, 1 }, 40), 40)
     assertEqual(chip.__width, 40)
@@ -181,14 +181,10 @@ test("badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)", 
     local NS = i.NS
     local Tbl, Runs, L = NS.ResultsTable, NS.ResultsRuns, NS.L
     local gap = Tbl.CHIP_GAP
-    -- Target: every type, and every type but Single target with a two-digit count (Hud.MAX_TARGETS).
+    -- Target: every type (there is no count after it: DpsRace#15).
     for key in pairs(NS.Dummies.LABELS) do
         local label = NS.Dummies.Label(key)
         assertTrue(Tbl.BadgeWidth(label, true) <= Runs.TARGET_W, label .. " overflows Target")
-        if key ~= "single" then
-            local counted = Tbl.Badge({ category = key, count = NS.Hud.MAX_TARGETS })
-            assertTrue(Tbl.BadgeWidth(counted, true) <= Runs.TARGET_W, counted .. " overflows Target")
-        end
     end
     -- Time: each preset's chip, then the longest tail or an early end, after the gap.
     for _, len in ipairs(NS.HudStates.PRESETS) do
@@ -243,12 +239,12 @@ test("badges: the detail's target line leads with the type and length chips, lai
     i.R.ShowRun("a")
     local d = ui(i).detail
     local a, b = d.w.metaChips[1], d.w.metaChips[2]
-    assertEqual(a.fs.__text, "Cleave \195\1515")
+    assertEqual(a.fs.__text, "Cleave")
     sameColor(a.color, Tbl.CATEGORY_COLORS.cleave, "the detail's type chip")
     assertEqual(b.fs.__text, "3:00")
     sameColor(b.color, Tbl.LengthColor(180), "the detail's length chip")
     assertEqual(d.w.meta[2].__text, "+15.9s \194\183 Cleave Training Dummy", "the tail, then the target's name")
-    local wa, wb = Tbl.BadgeWidth("Cleave \195\1515", true), Tbl.BadgeWidth("3:00", true)
+    local wa, wb = Tbl.BadgeWidth("Cleave", true), Tbl.BadgeWidth("3:00", true)
     assertEqual(b.__points[1][4], wa + Tbl.CHIP_GAP, "the length chip after the type chip, from config")
     assertEqual(d.w.meta[2].__points[1][4], wa + wb + 2 * Tbl.CHIP_GAP, "the text after both chips")
     local Detail = i.NS.ResultsDetail

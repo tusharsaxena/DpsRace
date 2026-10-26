@@ -238,7 +238,7 @@ race.
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
-  one is remembered as `race.lastLength`) and the target count from the stepper go to `Race.Arm`; a
+  one is remembered as `race.lastLength`) go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
   while a run is pending, in combat or with the meter unavailable.
 
@@ -286,12 +286,12 @@ Taint Notes, B4.1).
   right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
   the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
-  sends `Share.Line(run)` (*DPS Race 3:00 · Cleave ×5 · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
+  sends `Share.Line(run)` (*DPS Race 3:00 · Cleave · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
   DPS Race)*) through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`); Whisper asks for a name first
   (`DPSRACE_SHARE_WHISPER`, the player target's name offered). The line is plain text, every `|`
   replaced.
 - **The race's own lines**, in the player's chat only: `RACE_STATE_CHANGED` to armed prints
-  `Share.ArmedLine(run)` (*Armed: 3:00 on Cleave Training Dummy ×5. First hit starts the clock.*), so
+  `Share.ArmedLine(run)` (*Armed: 3:00 on Cleave Training Dummy. First hit starts the clock.*), so
   every surface that arms says so once; `RACE_RESULT` prints `Share.ResultLine(run, Bests.Delta(run))`
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.

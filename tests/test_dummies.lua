@@ -7,11 +7,11 @@ local test, assertEqual, assertTrue, assertNil =
 
 -- Spec §4.6, verbatim. A row is added from a measurement, never guessed.
 local CATALOG = {
-    { 243167, "Dungeoneer's Training Dummy", "dungeoneer", 1 },
-    { 243168, "Dungeoneer's Training Dummy", "dungeoneer", 1 },
-    { 243208, "Cleave Training Dummy",       "cleave",     1 },
-    { 243205, "Reinforced Golem",            "boss",       1 },
-    { 243211, "PvP Training Dummy",          "pvp",        1 },
+    { 243167, "Dungeoneer's Training Dummy", "dungeoneer" },
+    { 243168, "Dungeoneer's Training Dummy", "dungeoneer" },
+    { 243208, "Cleave Training Dummy",       "cleave" },
+    { 243205, "Reinforced Golem",            "boss" },
+    { 243211, "PvP Training Dummy",          "pvp" },
 }
 
 test("dummies: Lookup known and unknown npcID", function()
@@ -21,7 +21,7 @@ test("dummies: Lookup known and unknown npcID", function()
         assertTrue(d ~= nil, "cataloged: " .. row[1])
         assertEqual(d.name, row[2])
         assertEqual(d.category, row[3])
-        assertEqual(d.count, row[4])
+        assertNil(d.count, "no target count (DpsRace#15)")
     end
     assertNil(D.Lookup(1))
     assertNil(D.Lookup(nil))
@@ -37,8 +37,8 @@ end)
 test("dummies: Lookup answers a copy, so a caller cannot edit the catalog", function()
     local D = T.NS.Dummies
     local d = D.Lookup(243205)
-    d.count = 9
-    assertEqual(D.Lookup(243205).count, 1)
+    d.name = "Edited"
+    assertEqual(D.Lookup(243205).name, "Reinforced Golem")
 end)
 
 test("dummies: six categories in order, each with an enUS label", function()

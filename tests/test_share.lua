@@ -12,7 +12,7 @@ local function sampleRun(fields)
         id = "1792758447-4429", status = "complete",
         race = { length = 180, grace = 1.0 },
         char = { name = "Lanfear", spec = "Destruction", ilvl = 313.2, class = "WARLOCK" },
-        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave", count = 5 },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 26560000, dps = 147600, tail = 3.1 },
         flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false },
         spells = {}, note = "",
@@ -42,14 +42,14 @@ end
 test("share: Share.Line matches the mockup format", function()
     local NS = T.NS
     assertEqual(NS.Share.Line(sampleRun()),
-        "DPS Race 3:00 \194\183 Cleave \195\1515 \194\183 Destruction 313 \194\183 26.56M \194\183 147.6K DPS (Ka0s DPS Race)")
+        "DPS Race 3:00 \194\183 Cleave \194\183 Destruction 313 \194\183 26.56M \194\183 147.6K DPS (Ka0s DPS Race)")
 end)
 
-test("share: one target drops the count; an uncataloged target is named; incomplete is said", function()
+test("share: the target type is named; an uncataloged target by its own name; incomplete is said", function()
     local NS = T.NS
-    local single = sampleRun({ target = { category = "single", count = 1 } })
+    local single = sampleRun({ target = { category = "single" } })
     assertTrue(NS.Share.Line(single):find("\194\183 Single target \194\183", 1, true) ~= nil)
-    local other = sampleRun({ target = { category = "other", count = 1, name = "Angry Boar" } })
+    local other = sampleRun({ target = { category = "other", name = "Angry Boar" } })
     assertTrue(NS.Share.Line(other):find("\194\183 Angry Boar \194\183", 1, true) ~= nil)
     local incomplete = sampleRun({ status = "incomplete" })
     incomplete.result.endedAt = 120
@@ -146,14 +146,14 @@ test("share: arming prints the armed line with the length and the target", funct
     f.M.__resetPrinted()
     assertTrue(f.Race.Arm(180, 5))
     assertEqual(bare(f.M)[1],
-        "Armed: 3:00 on Cleave Training Dummy \195\1515. First hit starts the clock.")
+        "Armed: 3:00 on Cleave Training Dummy. First hit starts the clock.")
 end)
 
 test("share: a result prints the score line with the delta, the flags and the tail", function()
     local NS = T.NS
     local run = sampleRun()
     local line = NS.Share.ResultLine(run, 2.4, true)
-    assertEqual(line, "26.56M damage \194\183 147.6K DPS in 3:00 on Cleave Training Dummy \195\1515"
+    assertEqual(line, "26.56M damage \194\183 147.6K DPS in 3:00 on Cleave Training Dummy"
         .. " \226\128\148 new best (+2.4%) \194\183 1 late cast \194\183 tail +3.1s")
     local slower = NS.Share.ResultLine(sampleRun({ flags = { lateCasts = {} } }), -3.2, false)
     assertTrue(slower:find("\226\128\148 -3.2% vs best \194\183 tail +3.1s", 1, true) ~= nil, slower)
