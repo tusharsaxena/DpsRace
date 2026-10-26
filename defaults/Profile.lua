@@ -132,6 +132,9 @@ NS.defaults = {
         -- pruned, 0 = never, and a run holding a best is always kept (modules/Recorder.lua Prune).
         -- Global like the store it bounds. Its row is the History page's (settings/History.lua).
         history = { keepDays = 90 },
+        -- The items the Usage lists never show (P9, modules/Usage.lua): item IDs as one plain string,
+        -- "12345,67890". Global like the run store it filters. Its row is the History page's Usage tab.
+        usage = { hidden = "" },
         -- LibDBIcon's own table, handed straight to :Register (launcher-§3). Global, because the
         -- button belongs to the installation and a profile switch must not move it.
         minimap = { hide = false },

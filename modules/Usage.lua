@@ -5,8 +5,8 @@ local _, NS = ...
 --
 -- THE SIGNALS, STACKED (the plan's design, from the probe of 2026-10-26):
 --   at the arm      a snapshot, out of combat so every value is plain: the equipped slots whose item has
---                   a use spell, the bag consumables with a use spell and their counts, the player's
---                   helpful auras and the weapon enchants. Held on the race in memory until the result.
+--                   a use spell, the bag consumables with a use spell and their counts, and the player's
+--                   helpful auras. Held on the race in memory until the result.
 --   during the race the cast list (modules/Casts.lua): a cast of an on-use slot's or a consumable's
 --                   spell is a use, at its time.
 --   at the result   the bag counts again (the record path is out of combat): a consumable whose count
@@ -14,15 +14,21 @@ local _, NS = ...
 --                   before the pre-pull window explain (Casts.Early: a potion drunk minutes before the
 --                   pull) is given back first, so it is not read as a use.
 -- An aura at the arm whose spell is a bag consumable's (a flask, a phial) was used before the pull;
--- the Well Fed aura is food; an active weapon enchant is listed by its enchant ID (it does not name the
--- oil, so the player ticks that). The item-cooldown compare is NOT used: a shared cooldown (a potion
--- and an engineering belt) made the probe's false positive.
+-- the Well Fed aura is food. No enchant is listed (the owner's call, 2026-10-26): a weapon oil has no
+-- on-use, and a run stored before then that carries an "enchant" entry simply does not show it
+-- (Usage.Shown). The item-cooldown compare is NOT used: a shared cooldown (a potion and an
+-- engineering belt) made the probe's false positive.
 --
--- THE RECORD: { v = 1, used = { { itemID?, kind, slot?, times?, n, src, enchantID? } },
--- candidates = { { itemID, kind, slot? } }, edited = bool }, where src is "cast", "bag", "buff",
--- "enchant" or "manual" (a tick the player added). Every value is plain: each client value passes
--- through NS.Secrets on its way in. Detection (Usage.Build) is pure over the snapshot, the casts and
--- the after counts; only Snapshot and BagCounts read the client, each call bare at CALL time and pcall'd.
+-- THE RECORD: { v = 1, used = { { itemID?, kind, slot?, times?, n, src } }, candidates = { { itemID,
+-- kind, slot? } }, edited = bool }, where src is "cast", "bag", "buff" or "manual" (a tick the player
+-- added). Every value is plain: each client value passes through NS.Secrets on its way in. Detection
+-- (Usage.Build) is pure over the snapshot, the casts and the after counts; only Snapshot and BagCounts
+-- read the client, each call bare at CALL time and pcall'd.
+--
+-- THE HIDDEN ITEMS (P9): item IDs the player never wants listed, written whole through the schema seam
+-- at Usage.HIDDEN_PATH as one plain string ("12345,67890"; settings/History.lua's row, its Usage tab's
+-- ID list, and the detail's right-click). Account-wide, like the run store it filters. Detection still
+-- records a hidden item, so taking it off the list brings it back on every run that used it.
 
 local Usage = {}
 NS.Usage = Usage
@@ -39,9 +45,9 @@ Usage.BAGS = { 0, 1, 2, 3, 4, 5 }
 -- Consumable (item class 0) subclasses by kind; any other is "other" (8 and 0 among them).
 Usage.KIND_BY_SUBCLASS = { [1] = "potion", [2] = "flask", [3] = "flask", [5] = "food" }
 -- Every kind an entry may carry.
-Usage.KINDS = { gear = true, potion = true, flask = true, food = true, other = true, enchant = true }
--- The main and off hand: the weapon enchants' slots.
-local MAIN_HAND, OFF_HAND = 16, 17
+Usage.KINDS = { gear = true, potion = true, flask = true, food = true, other = true }
+-- The hidden items' setting (global: the run store it filters is).
+Usage.HIDDEN_PATH = "global.usage.hidden"
 -- How many helpful auras an arm-time walk reads at most.
 local AURA_LIMIT = 255
 
@@ -144,20 +150,11 @@ local function snapshotAuras()
     return auras
 end
 
-local function snapshotEnchants()
-    local hasMain, _, _, mainID, hasOff, _, _, offID = ask(GetWeaponEnchantInfo)
-    local out = {}
-    mainID, offID = Secrets.PlainNumber(mainID), Secrets.PlainNumber(offID)
-    if Secrets.PlainTruth(hasMain) and mainID then out[#out + 1] = { slot = MAIN_HAND, enchantID = mainID } end
-    if Secrets.PlainTruth(hasOff) and offID then out[#out + 1] = { slot = OFF_HAND, enchantID = offID } end
-    return out
-end
-
 --- What the player could use and has on, read at the arm (out of combat). Held in memory, never stored.
 --- @return table snap  { gear = { { slot, itemID, spellID } }, bags = { [itemID] = { count, subclass,
----                     spellID } }, auras = { { spellID?, name? } }, enchants = { { slot, enchantID } } }
+---                     spellID } }, auras = { { spellID?, name? } } }
 function Usage.Snapshot()
-    return { gear = snapshotGear(), bags = snapshotBags(), auras = snapshotAuras(), enchants = snapshotEnchants() }
+    return { gear = snapshotGear(), bags = snapshotBags(), auras = snapshotAuras() }
 end
 
 -- ── detection (pure) ────────────────────────────────────────────────────────────────────────────
@@ -250,7 +247,7 @@ local function detectAuras(snap, used, list)
     end
 end
 
--- The detected entries in order: gear, consumables cast, bag drops, then the arm's auras and enchants.
+-- The detected entries in order: gear, consumables cast, bag drops, then the arm's auras.
 local function ordered(snap, used, extra)
     local list = {}
     for _, g in ipairs(snap.gear) do
@@ -264,9 +261,6 @@ local function ordered(snap, used, extra)
         end
     end
     for _, e in ipairs(extra) do list[#list + 1] = e end
-    for _, e in ipairs(snap.enchants) do
-        list[#list + 1] = { kind = "enchant", slot = e.slot, enchantID = e.enchantID, n = 1, src = "enchant" }
-    end
     return list
 end
 
@@ -291,7 +285,7 @@ end
 --- What was used, detected from the arm's snapshot, the race's casts (Casts.Decode's shape), the bag
 --- counts at the result (nil when unreadable: no bag detection) and the player's casts before the
 --- pre-pull window by spell (Casts.Early; nil: none).
---- @return table used  { { itemID?, kind, slot?, times?, n, src, enchantID? }, ... }
+--- @return table used  { { itemID?, kind, slot?, times?, n, src }, ... }
 function Usage.Detect(snap, casts, after, early)
     local used, extra = {}, {}
     after = giveBack(snap, after, early)
@@ -322,14 +316,13 @@ end
 
 -- ── the player's edit ───────────────────────────────────────────────────────────────────────────
 
--- Whether a detected entry is the one a tick names: by item, else by enchant, else food by kind; in
--- each case in the tick's slot when it names one (the same oil on both hands shares one enchant ID, a
--- pair of one trinket one item ID), so an entry with no slot or another never answers it.
+-- Whether a detected entry is the one a tick names: by item, else food by kind; in each case in the
+-- tick's slot when it names one (a pair of one trinket shares one item ID), so an entry with no slot or
+-- another never answers it.
 local function same(e, tick)
     if tick.slot ~= nil and e.slot ~= tick.slot then return false end
     if tick.itemID then return e.itemID == tick.itemID end
-    if tick.enchantID then return e.enchantID == tick.enchantID end
-    return e.itemID == nil and e.enchantID == nil and e.kind == tick.kind
+    return e.itemID == nil and e.kind == tick.kind
 end
 
 -- The first entry of `list` the tick names that `taken` has not had yet; marks it taken.
@@ -343,22 +336,24 @@ local function find(list, tick, taken)
     return nil
 end
 
--- What a re-ticked entry with no item had been detected as: only detection lists food or an enchant.
-local RETICKED = { food = "buff", enchant = "enchant" }
+-- What a re-ticked entry with no item had been detected as: only detection lists food.
+local RETICKED = { food = "buff" }
 
 -- A ticked entry nothing detected: used once, no time.
 local function fresh(tick)
     local src = tick.itemID == nil and RETICKED[tick.kind] or "manual"
-    return { itemID = tick.itemID, kind = tick.kind, slot = tick.slot, enchantID = tick.enchantID, n = 1, src = src }
+    return { itemID = tick.itemID, kind = tick.kind, slot = tick.slot, n = 1, src = src }
 end
 
--- An unticked entry with no item (food, a weapon enchant) has no candidate to stand for it: it joins
--- the candidates, so its row stays in the list and can be ticked again.
+-- An unticked food (no item) has no candidate to stand for it: it joins the candidates, so its row
+-- stays in the list and can be ticked again. An old record's enchant entry is never listed, so it
+-- simply goes.
 local function keepRows(u, taken)
     if type(u.candidates) ~= "table" then u.candidates = {} end
     for i, e in ipairs(type(u.used) == "table" and u.used or {}) do
-        if not taken[i] and type(e) == "table" and e.itemID == nil and not find(u.candidates, e, {}) then
-            u.candidates[#u.candidates + 1] = { kind = e.kind, slot = e.slot, enchantID = e.enchantID }
+        if not taken[i] and type(e) == "table" and e.itemID == nil and RETICKED[e.kind]
+                and not find(u.candidates, e, {}) then
+            u.candidates[#u.candidates + 1] = { kind = e.kind, slot = e.slot }
         end
     end
 end
@@ -368,18 +363,17 @@ local function clean(tick)
     if type(tick) ~= "table" then return nil end
     local kind = Secrets.PlainString(tick.kind)
     local out = { itemID = Secrets.PlainNumber(tick.itemID), slot = Secrets.PlainNumber(tick.slot),
-                  enchantID = Secrets.PlainNumber(tick.enchantID), kind = Usage.KINDS[kind] and kind or "other" }
+                  kind = Usage.KINDS[kind] and kind or "other" }
     return out
 end
 
 --- Replace a run's used list with the player's ticks: an entry already detected keeps its times and
---- source (each detected entry answers one tick, matched by item or enchant and by slot); a newly
---- ticked one is "manual", used once, no time, except food or an enchant ticked again, which keeps
---- what it was detected as. An unticked food or enchant joins the candidates, so its row stays. Marks
---- the record edited and announces RUNS_CHANGED; a sample run (test mode, the sim) changes in memory
---- only, as its note does.
+--- source (each detected entry answers one tick, matched by item and by slot); a newly ticked one is
+--- "manual", used once, no time, except food ticked again, which keeps what it was detected as. An
+--- unticked food joins the candidates, so its row stays. Marks the record edited and announces
+--- RUNS_CHANGED; a sample run (test mode, the sim) changes in memory only, as its note does.
 --- @param run table
---- @param list table  { { itemID?, kind, slot?, enchantID? }, ... }
+--- @param list table  { { itemID?, kind, slot? }, ... }
 --- @return boolean stored
 function Usage.SetUsed(run, list)
     local u = type(run) == "table" and run.usage
@@ -397,4 +391,118 @@ function Usage.SetUsed(run, list)
         NS.SendBus(NS.MSG.RUNS_CHANGED)
     end
     return true
+end
+
+-- ── the hidden items ────────────────────────────────────────────────────────────────────────────
+
+--- The hidden items' IDs in `text` ("12345, 67890"), ascending and each once; nil when `text` is not
+--- a string or holds anything but positive whole numbers between the commas. Pure.
+--- @return table|nil ids
+function Usage.ParseHidden(text)
+    if type(text) ~= "string" then return nil end
+    local ids, seen = {}, {}
+    for token in (text .. ","):gmatch("([^,]*),") do
+        local word = token:match("^%s*(.-)%s*$")
+        if word ~= "" then
+            local id = word:match("^%d+$") and tonumber(word)
+            if not id or id < 1 then return nil end
+            if not seen[id] then seen[id], ids[#ids + 1] = true, id end
+        end
+    end
+    table.sort(ids)
+    return ids
+end
+
+-- The parsed list of the last stored text, so a redraw of the Runs list parses it once.
+local hiddenText, hiddenList, hiddenSet
+
+local function readHidden()
+    local text = NS.GetSetting(Usage.HIDDEN_PATH)
+    if text ~= hiddenText or not hiddenList then
+        hiddenText, hiddenList, hiddenSet = text, Usage.ParseHidden(text) or {}, {}
+        for _, id in ipairs(hiddenList) do hiddenSet[id] = true end
+    end
+    return hiddenList, hiddenSet
+end
+
+--- The hidden items' IDs, ascending. A copy.
+function Usage.HiddenList()
+    local out = {}
+    for i, id in ipairs((readHidden())) do out[i] = id end
+    return out
+end
+
+--- The hidden items as a set, { [itemID] = true }. Read only.
+function Usage.HiddenSet()
+    local _, set = readHidden()
+    return set
+end
+
+--- Whether a used entry or a candidate is listed: never an old record's enchant, never a hidden item.
+--- @param e table
+--- @param hidden table|nil  Usage.HiddenSet() (read now when nil)
+function Usage.Shown(e, hidden)
+    if type(e) ~= "table" or e.kind == "enchant" then return false end
+    return not (e.itemID and (hidden or Usage.HiddenSet())[e.itemID])
+end
+
+--- The stored text for `ids`: ascending, comma-separated ("201,6948"). Sorts `ids` in place.
+function Usage.JoinHidden(ids)
+    table.sort(ids)
+    local words = {}
+    for i, id in ipairs(ids) do words[i] = tostring(id) end
+    return table.concat(words, ",")
+end
+
+--- The row's normalize: `text` as Usage.JoinHidden writes it, or nil (refused) when it does not parse.
+function Usage.NormalizeHidden(text)
+    local ids = Usage.ParseHidden(text)
+    return ids and Usage.JoinHidden(ids) or nil
+end
+
+local function writeHidden(ids)
+    return NS.SetByPath(Usage.HIDDEN_PATH, Usage.JoinHidden(ids))
+end
+
+--- Hide an item everywhere the usage is shown (the setting, written whole through the seam).
+--- @return boolean changed
+function Usage.Hide(itemID)
+    itemID = Secrets.PlainNumber(itemID)
+    if not itemID or itemID < 1 or itemID % 1 ~= 0 or Usage.HiddenSet()[itemID] then return false end
+    local ids = Usage.HiddenList()
+    ids[#ids + 1] = itemID
+    return writeHidden(ids) and true or false
+end
+
+--- Show a hidden item again.
+--- @return boolean changed
+function Usage.Unhide(itemID)
+    if not Usage.HiddenSet()[itemID] then return false end
+    local ids = {}
+    for _, id in ipairs(Usage.HiddenList()) do
+        if id ~= itemID then ids[#ids + 1] = id end
+    end
+    return writeHidden(ids) and true or false
+end
+
+--- Every item the stored runs list (used or a candidate), each once, newest run first: the names the
+--- settings' ID list can resolve and suggest (the client has no item-name search).
+--- @return table ids
+function Usage.KnownItems()
+    local runs = NS.db and NS.db.global and NS.db.global.runs
+    local list = {}
+    for _, run in pairs(type(runs) == "table" and runs or {}) do
+        if type(run) == "table" and type(run.usage) == "table" then list[#list + 1] = run end
+    end
+    table.sort(list, function(a, b) return (tonumber(a.date) or 0) > (tonumber(b.date) or 0) end)
+    local out, seen = {}, {}
+    for _, run in ipairs(list) do
+        for _, key in ipairs({ "used", "candidates" }) do
+            for _, e in ipairs(type(run.usage[key]) == "table" and run.usage[key] or {}) do
+                local id = type(e) == "table" and e.itemID
+                if type(id) == "number" and not seen[id] then seen[id], out[#out + 1] = true, id end
+            end
+        end
+    end
+    return out
 end

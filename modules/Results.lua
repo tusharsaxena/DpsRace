@@ -765,6 +765,8 @@ do
         bus:RegisterMessage(NS.MSG.RUNS_CHANGED, onStoreChanged)
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
             if windowShown() and path == "global.history.keepDays" then footer() end
+            -- A hidden item leaves (or rejoins) every run's usage: the Used column and the detail.
+            if path == NS.Usage.HIDDEN_PATH then onStoreChanged() end
         end)
     end
 end

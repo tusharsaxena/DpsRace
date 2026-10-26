@@ -544,20 +544,23 @@ Total.
 - casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
 - casts: a channel counts once, whether its success comes before or after the channel start
 
-### test_usage.lua (22)
+### test_usage.lua (25)
 
-- usage: the arm snapshot reads the on-use slots, the bag consumables, the auras and the enchants
+- usage: the arm snapshot reads the on-use slots, the bag consumables and the auras, never the enchants
 - usage: an unreadable bag stack makes the after counts unknown, never a false drop
 - usage: a client without the APIs snapshots nothing and raises nothing
-- usage: detection stacks casts, the bag drop, the arm's auras and the enchant, in that order
+- usage: detection stacks casts, the bag drop and the arm's auras, in that order
 - usage: a cast item's count drop is not counted again; unknown after counts detect no drop
 - usage: a drop the casts before the pre-pull window explain is given back, never read as a use
 - usage: of two items with one use spell, a cast is the one whose count dropped
 - usage: the candidates are the on-use gear, then every bag consumable by item
 - usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
 - usage: SetUsed matches each tick to its own entry by slot, never one entry twice
-- usage: a tick with a slot answers only an entry in that slot, enchants sharing an ID and gear alike
-- usage: an unticked food or enchant joins the candidates, once, and ticked again keeps its source
+- usage: a tick with a slot answers only an entry in that slot
+- usage: an unticked food joins the candidates, once, and ticked again keeps its source; an old enchant goes
+- usage: the hidden items parse from their setting, sorted and once each, and refuse anything else
+- usage: Hide and Unhide write the whole list through the seam; Shown leaves out hidden items and enchants
+- usage: the known items are every item the stored runs list, newest run first, each once
 - usage: Watchers hears the casts from the arm, for the player and the pet
 - usage: a race stores its casts and usage at the result, and nothing secret
 - usage: a cast heard more than 10 s before the pull is not this race's, in the list or the usage
@@ -569,24 +572,30 @@ Total.
 - usage: the sample history and the sim's race carry casts and usage
 - usage: a player with no consumables gets the sample Healthstone, used with no cast
 
-### test_results_usage.lua (16)
+### test_results_usage.lua (22)
 
-- results usage: entries list the gear first; a run stored before format 3 has none
+- results usage: entries list the gear first, never an old enchant; a run stored before format 3 has none
 - results usage: each entry's detail says how many times and when, or why there is no time
-- results usage: names and icons come from the item data; food and an enchant have their own
+- results usage: names and icons come from the item data; food has its own
 - results usage: one row per candidate, then each detected entry no candidate stands for
 - results usage: the ticks follow the rows, and a change is any row ticked against what was stored
+- results usage: a save keeps the used entries the edit does not list, a hidden item's
 - results usage: an items cell draws what fits, or one fewer and +n
 - results usage: the Used column draws the icons gear first, then +n; a dash for nothing or no record
-- results usage: the Used tooltip names each entry with when, or says why there is none
+- results usage: the Used tooltip names each entry with its icon and when, or says why there is none
 - results usage: the Used column sorts by how many entries, a run with no record last either way
-- results usage: the detail lists every candidate and the extras, detected ones ticked, Save off
-- results usage: Save is live only while the ticks differ, and writes them through SetUsed
-- results usage: an unticked Well Fed or enchant stays listed and can be ticked again
-- results usage: a redraw of the same run keeps the ticks not saved yet, and the scroll
-- results usage: a run stored before format 3 says Not recorded, with no rows and no Save
+- results usage: the detail shows what was used, each with its icon and when, Edit and no Save
+- results usage: a run with nothing used says so in a dim line, and Edit still opens the list
+- results usage: Edit lists every candidate and the extras, used ones ticked; Edit again leaves unsaved
+- results usage: Save is live only while the ticks differ, writes them through SetUsed and leaves the edit
+- results usage: an unticked Well Fed stays listed in the edit and can be ticked again
+- results usage: a redraw of the same run keeps the edit and its ticks not saved yet, and the scroll
+- results usage: a run stored before format 3 says Not recorded, with no rows, no Edit and no Save
 - results usage: a sample run's edit changes it in memory only; the store never hears it
 - results usage: a row's hover is the item's own tooltip with its detail and source after it
+- results usage: a right-click in the edit offers Never show; the item leaves the edit, its ticks kept
+- results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
+- results usage: a sample run hides the same items
 
 ### test_chart_icons.lua (17)
 
@@ -650,7 +659,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (29)
+### test_settings.lua (30)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -678,6 +687,7 @@ Total.
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
 - settings: History ends with Purge history…, after the stored count, under no heading of its own
+- settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
 - settings: Days to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
@@ -942,13 +952,13 @@ Total.
 | test_compare.lua | 14 |
 | test_loadout.lua | 27 |
 | test_casts.lua | 10 |
-| test_usage.lua | 22 |
-| test_results_usage.lua | 16 |
+| test_usage.lua | 25 |
+| test_results_usage.lua | 22 |
 | test_chart_icons.lua | 17 |
 | test_results_timeline.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
-| test_settings.lua | 29 |
+| test_settings.lua | 30 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
 | test_preview.lua | 23 |
@@ -966,4 +976,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **760** |
+| **Total** | **770** |

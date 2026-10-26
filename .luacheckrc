@@ -57,10 +57,10 @@ files["modules/Recorder.lua"] = {
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 -- The cast list (#14): each spell's base cooldown, the first time it is cast.
 files["modules/Casts.lua"] = { read_globals = { "GetSpellBaseCooldown" } }
--- What was used (#13): the on-use slots, the bags, the item data, the helpful auras and the weapon
--- enchants, read at the arm (out of combat) and the bag counts again at the result.
+-- What was used (#13): the on-use slots, the bags, the item data and the helpful auras, read at the
+-- arm (out of combat) and the bag counts again at the result.
 files["modules/Usage.lua"] = {
-    read_globals = { "GetInventoryItemID", "C_Item", "C_Container", "C_UnitAuras", "GetWeaponEnchantInfo" },
+    read_globals = { "GetInventoryItemID", "C_Item", "C_Container", "C_UnitAuras" },
 }
 
 -- The compat family (compat): the version-variant client calls, and the only file that may name them.
@@ -114,8 +114,9 @@ files["modules/Results_Loadout.lua"] = {
     },
 }
 
--- What a run used (#13): the item names and icons, and the client's item tooltip.
-files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item" } }
+-- What a run used (#13): the item names and icons, the client's item tooltip, and an item row's
+-- right-click menu in the edit (Never show, P9).
+files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item", "MenuUtil" } }
 
 -- The sample history (B5) dates its runs back from now.
 files["modules/MockRuns.lua"] = { read_globals = { "time" } }

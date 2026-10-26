@@ -161,7 +161,8 @@ function CELL.flags(run)
     return lines
 end
 
--- What a run used (#13): each entry's name and when (modules/Results_Usage.lua).
+-- What a run used (#13): each entry's icon, name and when (modules/Results_Usage.lua); a hidden item
+-- is not listed.
 function CELL.used(run)
     local U = NS.ResultsUsage
     local entries = U.Entries(run)
@@ -172,7 +173,9 @@ function CELL.used(run)
         return { L["Nothing used"], L["No on-use item or consumable was detected or ticked for this run."] }
     end
     local lines = { #entries == 1 and L["1 item used"] or L["%d items used"]:format(#entries) }
-    for _, e in ipairs(entries) do lines[#lines + 1] = L["%s: %s"]:format(U.Name(e), U.Detail(e)) end
+    for _, e in ipairs(entries) do
+        lines[#lines + 1] = U.InlineIcon(e) .. " " .. L["%s: %s"]:format(U.Name(e), U.Detail(e))
+    end
     lines[#lines + 1] = { L["Edit the list in the run's detail."], 0.62, 0.62, 0.68 }
     return lines
 end
@@ -636,22 +639,30 @@ function Tips.Loadout(key, run, other, extra)
 end
 
 -- ── the usage ───────────────────────────────────────────────────────────────────────────────────
--- The detail's Usage section (modules/Results_Usage.lua, #13): its heading, Save and Not recorded under
--- themselves; a row after the client's item tooltip (or alone, for food and an enchant).
+-- The detail's Usage section (modules/Results_Usage.lua, #13): its heading, Edit, Save and the empty
+-- line under themselves; a row after the client's item tooltip (or alone, for food).
 
 local SOURCE = {
     cast = "Detected from its cast during the race.",
     bag = "Detected from the bag count after the race.",
     buff = "Its buff was on when the race was armed.",
-    enchant = "On the weapon when the race was armed.",
     manual = "Ticked by you.",
 }
 
 local USAGE = {}
 
 function USAGE.title()
-    return { L["Usage"], L["Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."],
-             dimLine(L["Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."]) }
+    return { L["Usage"], L["What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."],
+             dimLine(L["Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."]) }
+end
+
+function USAGE.unused()
+    return { L["Nothing used"], L["No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."] }
+end
+
+function USAGE.edit(_, editing)
+    if editing then return { L["Edit"], L["Leave the edit without saving."] } end
+    return { L["Edit"], L["Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."] }
 end
 
 function USAGE.none()
@@ -676,14 +687,14 @@ function USAGE.row(_, row)
     end
     lines[#lines + 1] = { U.Detail(e), 1, 0.82, 0 }
     if SOURCE[e.src] then lines[#lines + 1] = dimLine(L[SOURCE[e.src]]) end
-    if e.enchantID then lines[#lines + 1] = dimLine(L["Enchant %d"]:format(e.enchantID)) end
     return lines
 end
 
---- A Usage part's tooltip lines (`key`: title, none, empty, save, row with `extra` the row), or nil.
+--- A Usage part's tooltip lines (`key`: title, none, empty, unused, save, edit with `extra` whether the
+--- section is editing, row with `extra` the row), or nil.
 --- @param key string
 --- @param run table  the run shown
---- @param extra any  `row`: one of ResultsUsage.Rows' rows
+--- @param extra any  `row`: one of ResultsUsage.Rows' rows; `edit`: whether editing
 --- @return table|nil
 function Tips.Usage(key, run, extra)
     local fn = USAGE[key]

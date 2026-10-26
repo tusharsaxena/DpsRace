@@ -64,10 +64,12 @@ The 2026-10-26 pass ([`superpowers/plans/2026-10-26-usage-timeline.md`](superpow
 records each race's casts and what it used (#13, #14, run-record format 3). From the arm to the
 result `modules/Watchers.lua` hands every `UNIT_SPELLCAST_SUCCEEDED` of the player and the pet (and
 the player's channel edges) to `modules/Casts.lua`, which keeps the cast list on the race clock and
-each spell's base cooldown; `modules/Usage.lua` reads the on-use gear, the bag consumables, the
-helpful auras and the weapon enchants at the arm, and at the result works out what was used from the
-casts, the bag counts and that snapshot. The Runs list gained a *Used* column and the detail an
-editable *Usage* section (`modules/Results_Usage.lua`); the damage chart marks each cast of an
+each spell's base cooldown; `modules/Usage.lua` reads the on-use gear, the bag consumables and the
+helpful auras at the arm, and at the result works out what was used from the casts, the bag counts
+and that snapshot (no weapon enchant: an oil has no on-use). The Runs list gained a *Used* column
+and the detail a *Usage* section of what was used, with *Edit* to tick or untick every candidate
+(`modules/Results_Usage.lua`), and a list of hidden items (`global.usage.hidden`, History > Usage)
+that none of them ever shows; the damage chart marks each cast of an
 ability whose base cooldown is over 15 s with that ability's icon (*Show cooldown icons*), live and
 after the race; and the detail's *Timeline* button opens the ability timeline (`modules/Results_Timeline.lua`),
 every ability's casts in two lanes, this run's above the compared run's. The same pass replaced *Runs
@@ -338,7 +340,7 @@ each frame's strata, level and toplevel.
   player and the pet, in the open world); a sealed ID is dropped and counted in `casts.dropped`. A
   spell's base cooldown comes from `GetSpellBaseCooldown` (pcall'd, through `PlainNumber`; plain in
   and out of combat per the probe); `C_Spell.GetSpellCooldown`, secret in combat, is never called.
-  `modules/Usage.lua` reads the gear, the bags, the auras and the weapon enchants only at the arm
+  `modules/Usage.lua` reads the gear, the bags and the auras only at the arm
   (which is refused in combat) and the bag counts again on the record path after combat, each client
   call bare at call time and pcall'd, every value through `NS.Secrets`; it does not compare item
   cooldowns. The chart's cooldown icons and the timeline's lanes are plain geometry: a cast's plain
@@ -368,8 +370,7 @@ shape the design most:
   #14): a channel's ticks are deduped defensively, only the last 10 s before the pull are kept, food
   is the *Well Fed* aura's enUS name (never detected on another client language), a consumable that
   leaves the bags while armed reads as used, a pair of one on-use item is detected on its first slot
-  only, a weapon enchant does not name its oil, and a run from before format 3 (or resumed after a
-  `/reload`) has neither list.
+  only, and a run from before format 3 (or resumed after a `/reload`) has neither list.
 
 ## Documentation map
 

@@ -109,10 +109,16 @@ and the smoke row that measures it where one exists.
   cast of its use spell or a bag count that dropped. A flask or phial is matched by its buff's spell
   ID against a bag consumable's use spell, so one whose last copy was drunk (none left in the bags at
   the arm) is not found. Smoke row SM-DR-UT2.
-- **A weapon enchant does not name its oil** (#13). `GetWeaponEnchantInfo` gives an enchant ID that
-  maps to no item, so the run lists *Weapon enchant (main hand)* (or off hand) and the player ticks
-  the oil among the candidates. A consumable used with no cast heard is listed from its bag count with
-  no time, and one used and then restocked before the result reads no drop.
+- **A weapon oil is not listed** (#13; the owner's call, 2026-10-26). An oil has no on-use, and
+  `GetWeaponEnchantInfo` gives an enchant ID that maps to no item, so no enchant is read at the arm; a
+  run stored before then that recorded one never shows it. An oil still in the bags is a candidate
+  (a consumable with a use spell): the player can tick it in the detail's *Usage* edit. A consumable
+  used with no cast heard is listed from its bag count with no time, and one used and then restocked
+  before the result reads no drop.
+- **A hidden item is hidden on every run** (P9). The hidden list (History > *Usage*) is one
+  account-wide set of item IDs, not per run or per character, and it hides by item: food (*Well Fed*,
+  no item) cannot be hidden. A hidden item a run used stays in its record, so it is back on every run
+  once taken off the list.
 - **Runs raced before format 3 have no casts and no usage**, and neither does a run resumed after a
   `/reload` or a stand-down (both lists are held in memory until the result). Their *Used* cell is a
   dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no

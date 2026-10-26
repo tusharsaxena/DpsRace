@@ -87,9 +87,8 @@ local CASTS = {
 }
 
 -- What a sample run used (#13): its first on-use gear item at GEAR_AT and every GEAR_EVERY seconds
--- after, its first potion at POTION_AT, a flask's buff and Well Fed on at the start, and the weapon
--- enchants the player has on. A player with no consumable in the bags gets a Healthstone, used once
--- with no cast (a bag count drop).
+-- after, its first potion at POTION_AT, and a flask's buff and Well Fed on at the start. A player with
+-- no consumable in the bags gets a Healthstone, used once with no cast (a bag count drop).
 MockRuns.GEAR_AT, MockRuns.GEAR_EVERY, MockRuns.POTION_AT = 0.4, 120, 1.2
 local HEALTHSTONE = { itemID = 5512, spellID = 6262 }
 -- The sample base cooldowns of an on-use item's and a potion's spells (ms).
@@ -199,10 +198,10 @@ local function firstOf(bags, kind)
     return best
 end
 
--- The arm snapshot a sample is detected from: the player's gear, bags and enchants, with a flask's
--- buff (when the bags hold one) and Well Fed on, and a Healthstone when the bags hold no consumable.
+-- The arm snapshot a sample is detected from: the player's gear and bags, with a flask's buff (when
+-- the bags hold one) and Well Fed on, and a Healthstone when the bags hold no consumable.
 local function sampleSnap(snap)
-    local s = { gear = snap.gear or {}, bags = copy(snap.bags), auras = {}, enchants = snap.enchants or {} }
+    local s = { gear = snap.gear or {}, bags = copy(snap.bags), auras = {} }
     if next(s.bags) == nil then
         s.bags[HEALTHSTONE.itemID] = { count = 1, subclass = 0, spellID = HEALTHSTONE.spellID }
         s.healthstone = true

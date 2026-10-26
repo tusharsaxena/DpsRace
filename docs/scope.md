@@ -46,9 +46,10 @@ in the spec, sections 1, 2 and 13
   it, reads it later, or settles it as lost (spec §4.5).
 - **What each run cast and used** (#13, #14; run-record format 3). Every cast of the player and the
   pet from the arm to the result is kept on the race clock with each spell's base cooldown, and the
-  on-use gear and consumables used are worked out from those casts, the bag counts and the buffs and
-  weapon enchants at the arm. The Runs list's *Used* column shows them as icons, the detail lists
-  every candidate for the player to correct and *Save*, the damage chart marks each cast of an ability
+  on-use gear and consumables used are worked out from those casts, the bag counts and the buffs at
+  the arm. The Runs list's *Used* column shows them as icons, the detail lists what was used and,
+  under *Edit*, every candidate for the player to correct and *Save*; items the player never wants
+  listed go on a hidden list (History > *Usage*). The damage chart marks each cast of an ability
   with a cooldown over 15 s with its icon, and the detail's *Timeline* opens every ability's casts
   in two lanes, this run's beside the compared run's.
 - **Account-wide history**, so bests span alts. Runs older than *Days to keep* (90 by default, 0
@@ -73,7 +74,7 @@ in the spec, sections 1, 2 and 13
 | A damage-activity strip in the Results detail | Dropped by the owner, 2026-10-25 (#2's board C). |
 | A node-by-node talent diff, or a flag for a run raced on another loadout | The owner's call, 2026-10-25 (#6): talents are compared only as a *Different loadout* mark, and a loadout is not a run-quality problem. |
 | Detect usage from item cooldowns | A shared cooldown starts on items that were never used (the probe, 2026-10-26: a potion started an engineering belt's), so casts, bag counts and buffs are the signals (#13). |
-| Name the oil behind a weapon enchant | `GetWeaponEnchantInfo` gives an enchant ID that maps to no item; the enchant is listed and the player ticks the oil (#13). |
+| List a weapon enchant (an oil) as used | An oil has no on-use, and `GetWeaponEnchantInfo` gives an enchant ID that maps to no item; the owner's call (2026-10-26) is to list an enchant only with an on-use, and none has one (#13). |
 | Share runs between players | Phase 2. The run record already stores what it would need. Comparing two of your own runs side by side shipped in the Results detail (#7). |
 | Classic or any non-Retail client | Retail only: one `## Interface:` line (toc-file-§3). |
 | *Show results* or *Arm last race* on the launcher's menu | The menu is `LibKa0s-Launcher-1.0`'s fixed set (launcher-§2). Both are on the HUD, a slash verb and a key binding (spec §6.4). |

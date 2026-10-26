@@ -65,6 +65,7 @@ local STORED = {
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
+    ["global.usage.hidden"]  = { "string", "" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -500,6 +501,38 @@ test("settings: History ends with Purge history…, after the stored count, unde
     assertEqual(drawn[#drawn - 1], "text", "the stored count does not come just before the button")
     assertEqual(button.text, "Purge history\226\128\166")
     assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
+end)
+
+test("settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local H = NS.Helpers
+    local spec
+    local realList = H.IdList
+    H.IdList = function(ctx, s, ...) spec = s return realList(ctx, s, ...) end
+    local panel = M.__subcategories["History"]
+    panel:Show()
+    panel:__fire("OnShow")
+    local ctx = assert(NS.pageCtx.history, "the History page drew no ctx")
+    ctx.activeTab = "Usage"
+    ctx._renderFn(ctx)
+    H.IdList = realList
+    assertTrue(spec ~= nil, "the Usage tab drew no ID list")
+    assertEqual(spec.kind, "item")
+    assertEqual(#spec.entries(), 0, "nothing hidden")
+    spec.onAdd(6948)
+    spec.onAdd(201)
+    assertEqual(NS.db.global.usage.hidden, "201,6948", "written whole, ascending")
+    local ids = {}
+    for i, e in ipairs(spec.entries()) do ids[i] = e.id end
+    assertEqual(table.concat(ids, ","), "201,6948")
+    spec.onRemove(201)
+    assertEqual(NS.db.global.usage.hidden, "6948")
+    local hidden = row(NS, "global.usage.hidden")
+    assertTrue(hidden.skipRender, "the list draws the row")
+    assertEqual(hidden.subgroup, "Hidden items")
+    assertTrue(hidden.tooltip:sub(1, #"Account-wide: shared by every profile. ")
+        == "Account-wide: shared by every profile. ", hidden.tooltip)
 end)
 
 test("settings: Days to keep says it is account-wide, and its label carries no suffix", function()

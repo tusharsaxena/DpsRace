@@ -1,7 +1,7 @@
 local _, NS = ...
 -- settings/History.lua — the History page (spec §6.3): Include talents link (the share line's, #6),
 -- Days to keep (0 = never prune), how many runs are stored, and Purge history… last (asks first;
--- options-ui-§21's History family).
+-- options-ui-§21's History family); the Results table's bars; and the Usage tab's hidden items (P9).
 
 local L = NS.L
 local PAGE = "history"
@@ -101,6 +101,43 @@ for _, r in ipairs(tableRows) do
 end
 NS.RegisterSchemaRows(tableRows)
 
+-- ── Usage ── the hidden items (P9, modules/Usage.lua): item IDs the Results window's Usage never
+-- lists, in the section, the Used column or its tooltip, on any run. One plain string of IDs written
+-- WHOLE through the seam (a value, architecture-§5: the set has no rows of its own), so the CLI's
+-- get/set/reset and the page's Defaults reach it like any row. Global like the run store it filters.
+-- The row carries skipRender: the tab draws it as the library's ID list (afterUsage).
+local USAGE = L["Usage"]
+NS.RegisterSchemaRows({
+    { path = NS.Usage.HIDDEN_PATH, page = PAGE, group = USAGE, subgroup = L["Hidden items"], type = "string",
+      label = L["Hidden items"], default = NS.defaults.global.usage.hidden, skipRender = true,
+      validate = function(v) return NS.Usage.ParseHidden(v) ~= nil end,
+      normalize = function(v) return NS.Usage.NormalizeHidden(v) end,
+      tooltip = L["Account-wide: shared by every profile. Item IDs, comma-separated, that the Results window's Usage never lists (the section, the Used column and its tooltip), on every run. A run that used one still records it, so taking it off the list brings it back."] },
+})
+
+-- The Usage tab's list: a blurb, then the library's ID list (an add box over one line per hidden item,
+-- each with its X). The widget never writes: Usage.Hide and Usage.Unhide write the whole value.
+local function afterUsage(ctx)
+    local H = NS.Helpers
+    H.TextRow(ctx, L["Items the Results window's Usage never lists, on any run. Right-click an item in a run's Usage edit to add it here."])
+    H.IdList(ctx, {
+        kind        = "item",
+        label       = L["Hide an item"],
+        tooltip     = L["An item ID, a shift-clicked item link, or the name of an item a run listed."],
+        emptyText   = L["No item is hidden."],
+        entries     = function()
+            local out = {}
+            for i, id in ipairs(NS.Usage.HiddenList()) do out[i] = { id = id } end
+            return out
+        end,
+        candidates  = function() return NS.Usage.KnownItems() end,
+        onAdd       = function(id) NS.Usage.Hide(id) end,
+        onRemove    = function(id) NS.Usage.Unhide(id) end,
+        removeStyle = "icon",
+        columns     = 2,
+    })
+end
+
 -- After the group's rows: the stored count, then Purge history… as the tab's last act. No heading
 -- over it: a heading is declared by a row, never drawn by a builder over an act (options-ui-§7, §21).
 local function afterHistory(ctx)
@@ -117,8 +154,8 @@ NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["History"],
     panelName       = "DpsRaceHistoryPanel",
-    defaultsTooltip = L["Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."],
-    afterGroup      = { [GROUP] = afterHistory },
+    defaultsTooltip = L["Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."],
+    afterGroup      = { [GROUP] = afterHistory, [USAGE] = afterUsage },
 })
 
 -- The stored count repaints when the store changes; a hidden page is only flagged, and repaints on

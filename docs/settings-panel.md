@@ -13,7 +13,7 @@ built on first show (options-ui-§1, §5).
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown dots and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
-| History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
+| History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
 The pages register in that order (the order the panel lists them): General first, Profiles last.
@@ -187,7 +187,16 @@ Every row's reaction is `NS.Results.Refresh()`.
 The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
 own.
 
-The page's Defaults button restores *Days to keep* and the Results table tab's rows; it never touches a stored run.
+#### Tab: Usage
+
+The hidden items (P9): items the Results window's usage never lists, on any run.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Hidden items* heading | | | |
+| Hidden items | `global.usage.hidden` | the library's ID list (`H.IdList`, `kind = "item"`, two columns, the X at the left), drawn by the tab's `afterGroup` under a one-line blurb; the row itself is `skipRender` | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). Empty by default. *Hide an item* takes an item ID, a shift-clicked link or the name of an item a stored run listed (`Usage.KnownItems`, the add box's suggestions); each line is the item's icon, name and gray ID with an X that takes it off. Writes go through `Usage.Hide` / `Usage.Unhide` (the whole value through the seam); the `SETTINGS_CHANGED` redraws the Results window. The detail's right-click *Never show <item>* (in its *Usage* edit) adds to the same list. *No item is hidden.* when empty |
+
+The page's Defaults button restores *Days to keep*, the Results table tab's rows and the hidden items; it never touches a stored run.
 
 ### Profiles
 

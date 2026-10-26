@@ -275,8 +275,17 @@ L["Class & spec: %s"] = "Class & spec: %s"
 L["Target: %s"] = "Target: %s"
 L["Time: %s"] = "Time: %s"
 L["Spec: %s"] = "Spec: %s"
-L["Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
-    "Restore Days to keep and the Results table's look to their addon defaults. Stored runs are not touched."
+L["Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."] =
+    "Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."
+L["Hidden items"] = "Hidden items"
+L["Account-wide: shared by every profile. Item IDs, comma-separated, that the Results window's Usage never lists (the section, the Used column and its tooltip), on every run. A run that used one still records it, so taking it off the list brings it back."] =
+    "Account-wide: shared by every profile. Item IDs, comma-separated, that the Results window's Usage never lists (the section, the Used column and its tooltip), on every run. A run that used one still records it, so taking it off the list brings it back."
+L["Items the Results window's Usage never lists, on any run. Right-click an item in a run's Usage edit to add it here."] =
+    "Items the Results window's Usage never lists, on any run. Right-click an item in a run's Usage edit to add it here."
+L["Hide an item"] = "Hide an item"
+L["An item ID, a shift-clicked item link, or the name of an item a run listed."] =
+    "An item ID, a shift-clicked item link, or the name of an item a run listed."
+L["No item is hidden."] = "No item is hidden."
 L["Results table"] = "Results table"
 L["Damage bar"] = "Damage bar"
 L["DPS bar"] = "DPS bar"
@@ -748,8 +757,6 @@ L["active at the start"] = "active at the start"
 L["x%d, time unknown"] = "x%d, time unknown"
 L["time unknown"] = "time unknown"
 L["Item %d"] = "Item %d"
-L["Weapon enchant (main hand)"] = "Weapon enchant (main hand)"
-L["Weapon enchant (off hand)"] = "Weapon enchant (off hand)"
 L["Usage"] = "Usage"
 L["Nothing to list: no on-use item or consumable was found at the arm."] =
     "Nothing to list: no on-use item or consumable was found at the arm."
@@ -768,15 +775,21 @@ L["What the run used: on-use gear (trinkets first), then potions, flasks, food a
 L["Detected from its cast during the race."] = "Detected from its cast during the race."
 L["Detected from the bag count after the race."] = "Detected from the bag count after the race."
 L["Its buff was on when the race was armed."] = "Its buff was on when the race was armed."
-L["On the weapon when the race was armed."] = "On the weapon when the race was armed."
 L["Ticked by you."] = "Ticked by you."
-L["Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."] =
-    "Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."
-L["Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."] =
-    "Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."
+L["What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."] =
+    "What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."
+L["Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."] =
+    "Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."
+L["No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."] =
+    "No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."
+L["Edit"] = "Edit"
+L["Leave the edit without saving."] = "Leave the edit without saving."
+L["Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."] =
+    "Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."
+L["Right-click: never show this item."] = "Right-click: never show this item."
+L["Never show %s"] = "Never show %s"
 L["No on-use item or consumable was found at the arm, and nothing was detected."] =
     "No on-use item or consumable was found at the arm, and nothing was detected."
 L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] =
     "Keep the ticks as this run's usage. An entry the addon detected keeps its times."
 L["Not used: tick it if you did use it."] = "Not used: tick it if you did use it."
-L["Enchant %d"] = "Enchant %d"

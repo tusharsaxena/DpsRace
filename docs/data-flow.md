@@ -142,15 +142,15 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   compare. The running HUD reads `Casts.Live()` and `LiveSpells()`; at the result `Casts.Record()` is
   stored as `run.casts` (`{ v, list, spells, dropped }`, [schema.md](schema.md)).
 - **What was used** (#13, `modules/Usage.lua`): `Usage.Snapshot()` at the arm (out of combat) holds
-  the equipped slots with a use spell, the bag consumables with one and their counts, the helpful
-  auras and the weapon enchants on the race (`cur.usageSnap`). At the result (the record path is out
+  the equipped slots with a use spell, the bag consumables with one and their counts, and the helpful
+  auras on the race (`cur.usageSnap`). At the result (the record path is out
   of combat) `Usage.Build(snap, Casts.Decode(list), Usage.BagCounts(), Casts.Early())` is stored as `run.usage`
   (a lost run too, at its loss). It detects, in order: a cast of an on-use slot's or a consumable's
   spell (`cast`, at each cast's time), a consumable whose count dropped with no cast (`bag`, time
   unknown; nothing when the bags could not be read whole, and a drop the early casts of its spell
   explain given back first), an aura at the arm that is a bag consumable's own spell (a flask or phial: `buff`)
-  or *Well Fed* (food, no item: `buff`), and each weapon enchant (`enchant`, by its enchant ID and
-  slot). The candidates are every on-use item and bag consumable at the arm. The item-cooldown compare
+  or *Well Fed* (food, no item: `buff`). No weapon enchant is read (an oil has no on-use; the owner's
+  call, 2026-10-26). The candidates are every on-use item and bag consumable at the arm. The item-cooldown compare
   is not used (a shared cooldown gave the probe a false positive). A run resumed after a `/reload` or
   the stand-down has neither list: both were in memory.
 
@@ -330,15 +330,25 @@ Taint Notes, B4.1).
 - **What was used** (#13, `modules/Results_Usage.lua`): the Runs list's *Used* column draws
   `ResultsUsage.Icons(run)` (the gear first, as many 16 px icons as the 70 px column holds, else one
   fewer and *+n*; a dash for nothing or no record), sorts by `Count` (a run with no record last) and
-  names each entry and when in its tooltip (`CELL.used`). The detail's *Usage* section, under
-  *Talents*, lists `Rows` (each candidate with the entry it stands for, then each detected entry no
-  candidate stands for: food, an enchant), the detected ones ticked. *Save*, live only while the ticks
-  differ from the stored list, calls `Usage.SetUsed(run, ticks)`: each tick keeps the detected entry
-  it matches (by item or enchant, and by slot, never one entry twice), a new tick is `manual` (used
-  once, no time; a food or enchant ticked again keeps its detected source), an unticked food or
-  enchant joins the candidates so its row stays, and the record is marked `edited`; a sample run
-  changes in memory only (`ResultsSource.Touched`). A redraw of the same run keeps the scroll and the
-  ticks not saved yet. A run with no `usage` reads *Not recorded*.
+  names each entry, its icon first, and when in its tooltip (`CELL.used`). The detail's *Usage*
+  section, under *Talents*, lists `UsedRows` (what was used, gear first; *Nothing used* when empty).
+  *Edit* switches it to `Rows` (each candidate with the entry it stands for, then each used entry no
+  candidate stands for: food), the used ones ticked, with *Save* beside *Edit*. *Save*, live only
+  while the ticks differ from the stored list, calls `Usage.SetUsed(run, ResultsUsage.Edits(...))`
+  (the ticks, then each used entry the edit does not list: a hidden item's) and leaves the edit: each
+  tick keeps the detected entry it matches (by item, and by slot, never one entry twice), a new tick
+  is `manual` (used once, no time; food ticked again keeps its detected source), an unticked food
+  joins the candidates so its row stays, and the record is marked `edited`; a sample run changes in
+  memory only (`ResultsSource.Touched`). *Edit* again, or another run, leaves the edit unsaved; a
+  redraw of the same run keeps the scroll, the edit and its ticks not saved yet (`ResultsUsage.Carry`,
+  by each row's item). A run with no `usage` reads *Not recorded*.
+- **The hidden items** (P9, `global.usage.hidden`): `Usage.Shown(e)` leaves out a hidden item and an
+  old record's `enchant` entry everywhere `ResultsUsage` lists (`Entries`, so the Used column, its
+  tooltip and its sort; `Rows`; `UsedRows`). The list is written whole through `NS.SetByPath` by
+  `Usage.Hide` / `Usage.Unhide`: from the History page's *Usage* tab (the library's ID list) and from
+  a right-click on an item's row in the edit (*Never show <item>*, `ResultsUsage.RowMenu`). The
+  `SETTINGS_CHANGED` it sends redraws the Results window (`Results.lua`'s bus receiver). Detection
+  still records a hidden item, so un-hiding it brings it back on every run.
 - **The ability timeline** (#14, `modules/Results_Timeline.lua`): the detail's *Timeline* button,
   live for a run with a non-empty cast list, opens a pop-out window on the detail pane. It draws
   `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown over 15 s
