@@ -448,7 +448,7 @@ local CHROME, PITCH = 40 + 28, 20
 -- and the 6px that, with the GAP above, makes the shared 14px of clear space.
 local BREAKDOWN = 6 + 22
 local RUNNING_TOP, RUNNING_BOTTOM = 106 + BREAKDOWN, 42
-local RESULT_TOP, RESULT_BOTTOM = 104 + BREAKDOWN, 28
+local RESULT_TOP, RESULT_BOTTOM = 80 + BREAKDOWN, 28   -- under one chip line (Chips:Bottom)
 
 local function fits(height, top, bottom)
     return math.floor((height - CHROME - top - bottom + 2) / PITCH)

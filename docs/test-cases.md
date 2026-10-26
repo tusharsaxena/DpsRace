@@ -337,7 +337,7 @@ Total.
 - chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
 
-### test_pace.lua (12)
+### test_pace.lua (13)
 
 - pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
 - pace: the tick sits in the middle of the bar's width, in whole pixels
@@ -351,6 +351,7 @@ Total.
 - pace: the sim's result card shows the pace bar against the sample best, and honors the setting
 - pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown
 - pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
+- pace: the result card's stack starts under the chips it draws, as the running body's under its boxes
 
 ### test_countdown.lua (20)
 
@@ -815,7 +816,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
 | test_chart.lua | 29 |
-| test_pace.lua | 12 |
+| test_pace.lua | 13 |
 | test_countdown.lua | 20 |
 | test_layers.lua | 6 |
 | test_results.lua | 50 |
@@ -844,4 +845,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **666** |
+| **Total** | **667** |

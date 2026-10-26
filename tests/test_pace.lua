@@ -139,7 +139,9 @@ local function resolved(f)
     return f.Race.Current()
 end
 
-local RESULT_ROWS_TOP = 104   -- the KPIs, the gap and two chip lines (modules/Hud_States.lua)
+-- The KPIs, the gap, the one chip line these cases draw and the GAP under it, as the running body's
+-- boxes leave theirs (modules/Hud_States.lua Chips:Bottom).
+local RESULT_ROWS_TOP = 80
 local BREAKDOWN = 6 + 22      -- the Spell breakdown heading and the space above it (Round C)
 
 test("pace: Bests.Before is the best on the run's board raced before it, whatever the run scored", function()
@@ -319,5 +321,22 @@ test("pace: the result card stacks the same, and keeps Damage profile over the p
     f.Hud.Refresh()
     assertFalse(b.w.chart.title:IsShown(), "nothing to head")
     assertEqual(b.rowsTop, RESULT_ROWS_TOP + BREAKDOWN, "Spell breakdown right under the chips")
+end)
+
+test("pace: the result card's stack starts under the chips it draws, as the running body's under its boxes", function()
+    local f = hud()
+    seedBest(f, 1e12, 30)
+    resolved(f)
+    local b = body(f)
+    local chips = b.w.chips
+    assertEqual(chips.lines, 1, "the delta and time chips share a line")
+    local top = chips:Bottom()
+    assertEqual(top, 46 + 8 + 18 + 8, "the boxes, the gap, one chip line and the GAP under it: no second line held")
+    assertStack(f, b, top)
+    -- Chips that wrap to a second line push the stack down by that line alone.
+    chips.width = 40
+    chips:Set(f.NS.HudStates.ResultChips(f.Hud.View()))
+    assertEqual(chips.lines, 2)
+    assertEqual(chips:Bottom(), top + 18 + 5)
 end)
 

@@ -235,7 +235,8 @@ end
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 
 local CHIP_HEIGHT, CHIP_GAP = 18, 5
--- The result card's rows sit under two lines of chips and above its row of buttons.
+-- The result card's stack sits under the chips it draws (Chips:Bottom) and above its row of buttons.
+-- RESULT_ROWS_TOP is the most room they take, two lines: the lost line's place and the minimum height.
 local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
 local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
@@ -259,13 +260,15 @@ local Chips = {}
 Chips.__index = Chips
 
 local function chips(parent, y)
-    return setmetatable({ parent = parent, y = y, pool = NS.Pool.New(), width = 260, shown = {} }, Chips)
+    return setmetatable({ parent = parent, y = y, pool = NS.Pool.New(), width = 260, shown = {}, lines = 0 },
+        Chips)
 end
 
 --- Lay out `list` ({ text, color, tip }) left to right, wrapping at the body's width.
 function Chips:Set(list)
     NS.Pool.ReleaseAll(self.pool)
     self.shown = {}
+    self.lines = 0
     local x, y, parent = 0, self.y, self.parent
     for i, item in ipairs(list or {}) do
         local chip = NS.Pool.Acquire(self.pool, function() return newChip(parent) end)
@@ -277,12 +280,22 @@ function Chips:Set(list)
         chip.tip, chip.text = item.tip, s
         local w = math.floor(textWidth(chip.label, s) + 14)
         if x > 0 and x + w > self.width then x, y = 0, y - CHIP_HEIGHT - CHIP_GAP end
+        self.lines = math.floor((self.y - y) / (CHIP_HEIGHT + CHIP_GAP) + 0.5) + 1
         chip:SetWidth(w)
         chip:ClearAllPoints()
         chip:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
         x = x + w + CHIP_GAP
         self.shown[i] = chip
     end
+end
+
+--- How far below the body's top the chips end, plus the GAP under them, as the running body's KPI
+--- boxes leave theirs (body.kpiBottom); with no chip, the GAP under the row's top. Config only.
+--- @return number
+function Chips:Bottom()
+    local n = self.lines
+    local h = n > 0 and n * CHIP_HEIGHT + (n - 1) * CHIP_GAP + GAP or 0
+    return -self.y + h
 end
 
 --- The chip texts drawn now, in order (the suites read these).
@@ -979,13 +992,14 @@ function Builders.result(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
+        -- The chips first: the stack under them starts where they end.
+        self.w.chips:Set(States.ResultChips(v))
         Builders.resultExtras(self, v)
         local run = v.run or {}
         local result = run.result or {}
         local lost = run.status == "lost"
         setKpi(self.w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
         setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
-        self.w.chips:Set(States.ResultChips(v))
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         self.w.spellsTitle:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
@@ -1013,10 +1027,11 @@ function Builders.resultExtras(body, v)
     local w, f = body.w, body.frame
     local pace = v.pace ~= nil
     local plotH = NS.HudChart.PlotHeight()
+    local top = w.chips:Bottom()
     local on = v.chart ~= nil
-        and roomForRows(body, RESULT_ROWS_TOP + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
+        and roomForRows(body, top + profileH(pace, true, plotH) + BREAKDOWN_H, RESULT_ROWS_BOTTOM)
     w.pace:SetShown(pace)
-    body.rowsTop = placeStack(body, RESULT_ROWS_TOP, pace, on, plotH)
+    body.rowsTop = placeStack(body, top, pace, on, plotH)
     if pace then
         w.pace:SetRange(v.pace.lo, v.pace.hi)
         w.pace:SetValue(v.pace.value)
