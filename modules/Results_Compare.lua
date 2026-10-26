@@ -43,7 +43,7 @@ Compare.NAME_GAP = 4        -- between the name column and this run's
 -- the gap between the two columns.
 Compare.SEP_W = 1
 Compare.SEP_COLOR = { 0.5, 0.5, 0.5, 0.18 }
-Compare.ROW_H = 15          -- one line of the score table
+Compare.ROW_H = 15          -- the score table's header line (a figure line: Compare.ScoreLineH)
 Compare.RULE_GAP = 4        -- the space above and below the rule between the two tables
 Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
@@ -53,6 +53,11 @@ Compare.PAD = 4             -- a figure's inset from the edge its column's bar g
 -- figures read over them; the Results window's soft green and soft red (the 3:00 and 0:30 length hues).
 Compare.BAR_UP = { 0.56, 0.80, 0.58, 0.40 }     -- this run is higher
 Compare.BAR_DOWN = { 0.86, 0.52, 0.52, 0.40 }   -- the other run is higher
+-- The score lines' labels (the owner's call, 2026-10-27): each starts with a built-in game icon at the
+-- spell icons' size and x, so *Damage* and *DPS* line up with the spell names under them. Plain
+-- textures from the client's icon set, no media of the addon's own.
+Compare.DAMAGE_ICON = "Interface\\Icons\\Ability_DualWield"      -- crossed swords
+Compare.DPS_ICON = "Interface\\Icons\\INV_Misc_PocketWatch_01"   -- a pocket watch
 local DASH = "\226\128\148"
 local MUTED = "|cff9e9ead%s|r"   -- the caption gray inside a figure (the Time column's tail)
 
@@ -351,10 +356,13 @@ local function buildScore(p, c, x)
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
     x.lines = {}
-    for i, label in ipairs({ L["Damage"], L["DPS"] }) do
-        local line = heads(f, FONT.TEXT, { nil, C.text, C.text, C.dim })
-        line[1]:SetFontObject(FONT.CAPTION)
-        line[1]:SetText(label)
+    -- Each label in the spell names' white and font, after its icon (the spell icons' size and x).
+    local labels = { { L["Damage"], Compare.DAMAGE_ICON }, { L["DPS"], Compare.DPS_ICON } }
+    for i, def in ipairs(labels) do
+        local line = heads(f, FONT.TEXT, { C.text, C.text, C.text, C.dim })
+        line[1]:SetText(def[1])
+        line.icon = f:CreateTexture(nil, "ARTWORK")
+        line.icon:SetTexture(def[2])
         line.bar = newBar(f)
         x.lines[i] = line
     end
@@ -452,6 +460,18 @@ function Compare.Cell(j, width)
     return cols[3], cols.diff, justify
 end
 
+--- A spell icon's side in the compared rows, and the score labels' icons with them: the configured
+--- spell row height less 2 (config, never a measured size).
+function Compare.IconSize()
+    return NS.HudBreakdown.RowHeight() - 2
+end
+
+--- A figure line of the score table: Compare.ROW_H, or taller where the labels' icons (the spell
+--- icons' size) need it, so the two never overlap.
+function Compare.ScoreLineH()
+    return math.max(Compare.ROW_H, Compare.IconSize() + 1)
+end
+
 --- The separator's width at effective scale `scale`: SEP_W physical pixels in UI units (the client's
 --- PixelUtil factor over the scale), so no UI scale draws it two or three pixels wide; SEP_W itself
 --- where PixelUtil or a numeric scale is missing.
@@ -516,25 +536,35 @@ function Compare.LayoutBar(p, y, cw)
     return y - 2
 end
 
+-- A score line's label past its icon, as a spell row's name past its: the icon at the line's left
+-- edge, the spell icons' size, centered on the label's text.
+local function placeLabel(line, parent, y, cols)
+    local icon = Compare.IconSize()
+    place(line[1], parent, icon + 4, y, math.max(20, cols[1] - icon - 8))
+    line.icon:SetSize(icon, icon)
+    line.icon:ClearAllPoints()
+    line.icon:SetPoint("RIGHT", line[1], "LEFT", -4, 0)
+end
+
 -- The score table at `y`: its header and two lines in the spell table's columns, the rule under them.
 local function layoutScore(p, y, cw)
-    local x, rowH, gap = p.cmp, Compare.ROW_H, Compare.RULE_GAP
-    local ruleY = -3 * rowH - gap
+    local x, rowH, lineH, gap = p.cmp, Compare.ROW_H, Compare.ScoreLineH(), Compare.RULE_GAP
+    local height = rowH + 2 * lineH
+    local ruleY = -height - gap
     place(x.score, p.content, 0, y)
     x.score:SetSize(cw, -ruleY + 1)
     local cols = columns(cw)
     local diffs = Compare.ScoreRows(x.other and Compare.Kpis(p.run, x.other))
     local maxPct = Compare.MaxPct(diffs)
-    for line = 0, 2 do
-        local set = line == 0 and x.head or x.lines[line]
-        local ly = -line * rowH
+    placeLine(x.head, x.score, 0, cw)
+    for n, set in ipairs(x.lines) do
+        local ly = -rowH - (n - 1) * lineH
         placeLine(set, x.score, ly, cw)
-        if line > 0 then
-            local d = diffs[line]
-            placeBar(set.bar, x.score, "TOPLEFT", ly + 1, rowH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
-        end
+        placeLabel(set, x.score, ly, cols)
+        local d = diffs[n]
+        placeBar(set.bar, x.score, "TOPLEFT", ly + 1, lineH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
     end
-    placeSep(x.scoreSep, x.score, Compare.SeparatorX(cw), 3 * rowH)
+    placeSep(x.scoreSep, x.score, Compare.SeparatorX(cw), height)
     place(x.rule, x.score, 0, ruleY, cw)
     x.rule:SetHeight(1)
     return y + ruleY - 1 - gap
@@ -561,7 +591,7 @@ local function newRow(host)
 end
 
 local function fillRow(row, data, index, cw, rowH, maxPct)
-    local cols, icon = columns(cw), rowH - 2
+    local cols, icon = columns(cw), Compare.IconSize()
     row:SetSize(cw, rowH)
     row.bg:SetVertexColor(1, 1, 1, Tbl.StripeAlpha(index))
     row.icon:SetSize(icon, icon)

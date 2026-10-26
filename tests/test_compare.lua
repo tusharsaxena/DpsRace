@@ -596,7 +596,7 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         -- One pixel and faint (the owner's 2026-10-27 call: P11's line read too heavy).
         assertEqual(Cmp.SEP_W, 1)
         assertTrue(Cmp.SEP_COLOR[4] >= 0.15 and Cmp.SEP_COLOR[4] <= 0.2, "the separator's alpha, dim")
-        for _, t in ipairs({ { x.scoreSep, x.score, 3 * Cmp.ROW_H }, { x.spellSep, x.spellHost,
+        for _, t in ipairs({ { x.scoreSep, x.score, Cmp.ROW_H + 2 * Cmp.ScoreLineH() }, { x.spellSep, x.spellHost,
                 Cmp.ROW_H + #x.data * i.NS.HudBreakdown.Pitch() } }) do
             local sep, parent, h = t[1], t[2], t[3]
             assertTrue(sep:IsShown(), case.view .. ": no separator")
@@ -639,6 +639,52 @@ test("compare: the separator draws one physical pixel wide at any UI scale, not 
             local px = sep.__width * scale / factor
             assertTrue(math.abs(px - 1) < 1e-9, scale .. ": the separator draws " .. px .. " physical pixels")
         end
+    end
+end)
+
+test("compare: Damage and DPS in the spell names' white, each after a game icon at the spell icons' size and x", function()
+    for _, case in ipairs({ { view = "expanded" }, { view = "collapsed" }, { view = "expanded", rowHeight = 26 } }) do
+        local i = inst()
+        seed(i, { mkRun("best", 300), mkRun("low", 100) })
+        i.NS.db.profile.windows.results = { view = case.view }
+        if case.rowHeight then i.NS.db.profile.appearance.bars.rowHeight = case.rowHeight end
+        i.R.ShowRun("low")
+        local d = detail(i)
+        d:SetComparing(true)
+        local x, Cmp = d.cmp, i.Cmp
+        local what = case.view .. (case.rowHeight and " at a " .. case.rowHeight .. " px row" or "")
+        local row = x.rows.active[1]
+        local name, side = row.texts[1], i.NS.HudBreakdown.RowHeight() - 2
+        assertEqual(Cmp.IconSize(), side, what .. ": the spell icons' size")
+        assertEqual(row.icon.__width, side)
+        assertEqual(row.icon.__points[1][4], 0, what .. ": a spell icon's x")
+        local icons = { "Interface\\Icons\\Ability_DualWield", "Interface\\Icons\\INV_Misc_PocketWatch_01" }
+        assertEqual(Cmp.DAMAGE_ICON, icons[1], "crossed swords for Damage")
+        assertEqual(Cmp.DPS_ICON, icons[2], "a pocket watch for DPS")
+        for n, label in ipairs({ "Damage", "DPS" }) do
+            local line = x.lines[n]
+            local fs, icon = line[1], line.icon
+            assertEqual(fs.__text, label)
+            -- The spell names' white and font, not the caption gray.
+            assertEqual(fs.__fontObject, name.__fontObject, what .. ": " .. label .. "'s font")
+            for c = 1, 3 do assertEqual(fs.__color[c], name.__color[c], what .. ": " .. label .. "'s color") end
+            assertEqual(fs.__color[1], i.NS.ResultsTable.COLORS.text[1], label .. " is not the spell names' white")
+            -- The icon: a plain built-in texture, the spell icons' size, its right edge 4 px before the
+            -- label, so its left edge is the spell icons' x and the label starts where a spell's name does.
+            assertEqual(icon.__texture, icons[n], what .. ": " .. label .. "'s icon")
+            assertTrue(icon:IsShown(), what .. ": " .. label .. "'s icon is hidden")
+            assertEqual(icon.__width, side, what .. ": " .. label .. "'s icon width")
+            assertEqual(icon.__height, side, what .. ": " .. label .. "'s icon height")
+            local pt = icon.__points[1]
+            assertEqual(pt[1], "RIGHT"); assertEqual(pt[2], fs); assertEqual(pt[3], "LEFT"); assertEqual(pt[4], -4)
+            assertEqual(fs.__points[1][4] - 4 - side, row.icon.__points[1][4], what .. ": " .. label .. "'s icon x")
+            assertEqual(fs.__points[1][4], name.__points[1][4], what .. ": " .. label .. " starts where a spell's name does")
+            assertEqual(fs.__width, name.__width, what .. ": " .. label .. "'s width")
+        end
+        -- The lines make room for the icons: one line's icon never reaches into the next.
+        local lineH = Cmp.ScoreLineH()
+        assertTrue(lineH >= side + 1 and lineH >= Cmp.ROW_H, what .. ": the score lines overlap their icons")
+        assertEqual(x.lines[1][2].__points[1][5] - x.lines[2][2].__points[1][5], lineH, what .. ": the line pitch")
     end
 end)
 

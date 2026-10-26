@@ -20,6 +20,7 @@
 --                  its mouse-wheel flag
 --   __shadow / __barTexture / __barColor / __height   a font string's shadow offset, a status bar's
 --                  fill texture and color, a frame's last SetHeight
+--   __width        a region's last SetWidth (SetSize sets __width and __height both)
 --   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
 --                         SetTexture answer false for that path (a texture the client cannot load)
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
@@ -126,6 +127,7 @@ return function(T)
             rawset(o, "SetStatusBarColor", function(self, r, g, b, a) self.__barColor = { r, g, b, a }; return self end)
             rawset(o, "SetHeight", function(self, h) self.__height = h; return self end)
             rawset(o, "SetWidth", function(self, w) self.__width = w; return self end)
+            rawset(o, "SetSize", function(self, w, h) self.__width, self.__height = w, h; return self end)
             rawset(o, "SetShown", function(self, on) self.__shown = on and true or false
                 if on then self:Show() else self:Hide() end
                 return self end)

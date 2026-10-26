@@ -351,7 +351,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   Results window (per the standard's frame-layering tiers), a dim cover over the Results window that takes its clicks
   and hovers while the timeline is open (the owner's screenshot showed a Results tooltip through the timeline),
   Escape closes the timeline first, and the timeline's background is fully opaque (no bleed-through).
-- [ ] **Compare score labels:** *Damage* and *DPS* in the score table in the same white as the spell names, each with
+- [x] **Compare score labels:** *Damage* and *DPS* in the score table in the same white as the spell names, each with
   a built-in game icon at the spell icons' size: crossed swords for Damage, a clock (pocket watch) for DPS.
 
 ### P8: Finalize (only on the owner's go-ahead)
