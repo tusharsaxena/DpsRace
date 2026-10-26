@@ -1102,13 +1102,23 @@ function Table:syncScrollbar()
 end
 
 --- Redraw the visible slice from the pool.
+---
+--- A redraw can run inside another (the owner's first-drag overlap, 2026-10-27): the first row an open
+--- shows can resolve the window's rect, and the client runs its OnSizeChanged right there, a full
+--- layout and a Bind inside this one's Acquire. That inner Bind released this one's rows and drew the
+--- whole slice; carrying on would draw a second set over it that the list does not hold, which the
+--- next drag leaves where it was. So each Bind counts itself, and one that finds a newer Bind ran
+--- inside it stops: the newer one's rows stand.
 function Table:Bind()
+    local pass = (self.binds or 0) + 1
+    self.binds = pass
     self.offset = math.max(0, math.min(self.offset, self:maxOffset()))
     NS.Pool.ReleaseAll(self.pool, function(row) row.run, row.group = nil, nil end)
     self.shown, self.spare = {}, {}
     local count = math.min(self:visibleCount(), #self.rows - self.offset)
     for i = 1, count do
         local row = NS.Pool.Acquire(self.pool, function() return newRow(self) end)
+        if self.binds ~= pass then return end
         self:placeRow(row, i)
         self:bindRow(row, self.rows[self.offset + i], self.offset + i)
         self.shown[i] = row
@@ -1150,9 +1160,12 @@ function Table:fitRows()
         row:Hide()
         self.spare[#self.spare + 1] = row
     end
+    local pass = self.binds
     for i = #self.shown + 1, count do
         local row = table.remove(self.spare) or NS.Pool.Acquire(self.pool, function() return newRow(self) end)
         row:Show()
+        -- A Bind that ran inside the Show (Table:Bind's note) drew the slice already.
+        if self.binds ~= pass then return end
         self:placeRow(row, i)
         self:bindRow(row, self.rows[self.offset + i], self.offset + i)
         self.shown[i] = row

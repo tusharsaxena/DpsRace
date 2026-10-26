@@ -692,7 +692,7 @@ Total.
 - timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
 - timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
 
-### test_sizing.lua (11)
+### test_sizing.lua (13)
 
 - sizing: a size change the grip did not start redraws at once
 - sizing: while the grip is held, one cheap layout a frame; one redraw on release
@@ -702,6 +702,8 @@ Total.
 - results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
 - results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
 - results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
+- results sizing: the first drag after opening moves every row's cells, none left behind
+- results sizing: the Bests tab's first drag after opening leaves no row behind
 - timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
 - hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
 - hud sizing: locked, the grip starts no drag
@@ -1033,7 +1035,7 @@ Total.
 | test_chart_icons.lua | 29 |
 | test_results_timeline.lua | 20 |
 | test_results_timeline_zoom.lua | 7 |
-| test_sizing.lua | 11 |
+| test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
 | test_settings.lua | 31 |
@@ -1054,4 +1056,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **832** |
+| **Total** | **834** |

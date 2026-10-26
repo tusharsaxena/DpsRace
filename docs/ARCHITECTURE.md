@@ -247,7 +247,12 @@ change runs the window's cheap layout (re-anchor and resize what the new size ne
 or redrawn) at most once a frame, a second change in one frame waiting for a single
 `C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
 stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before. What runs per frame, before and
-after: [performance.md](performance.md#window-sizing). `modules/Casts.lua` and `modules/Usage.lua`
+after: [performance.md](performance.md#window-sizing). A size change can also arrive in the middle of a
+draw: the first row an open shows can resolve the window's rect and run its OnSizeChanged right there,
+a full layout nested in the list's row loop. The Results lists' `Table:Bind` counts itself and stops
+when a newer Bind ran inside it (and `fitRows` likewise), so no second set of rows is left shown that
+the list does not hold, which the first drag after opening used to leave behind at the old column
+positions (2026-10-27). `modules/Casts.lua` and `modules/Usage.lua`
 register nothing: Watchers feeds the cast list, and Usage reads the client only at the arm and on the
 record path after combat.
 
@@ -447,8 +452,9 @@ Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band
 `test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`, `test_results_delta` and
 `test_results_sections` did)
 and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
-six addon files, `modules/Results_Timeline.lua` at 1189 lines (the zoom, 2026-10-27; its suite's
-P12 cases went to a new `test_results_timeline_zoom`), `modules/Results_Table.lua` at 1178, `modules/Results_Detail.lua` at 1176
+six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1189 (the zoom, 2026-10-27; its suite's
+P12 cases went to a new `test_results_timeline_zoom`), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,

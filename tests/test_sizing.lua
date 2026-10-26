@@ -237,6 +237,91 @@ test("results sizing: the Bests tab and the collapsed view's open detail resize 
     assertEqual(details.n, 1)
 end)
 
+-- The first drag after the window opens (the owner's fourth round, 2026-10-27). In the client a
+-- size change can reach the window while a list is drawing its rows: the first row the open shows can
+-- resolve the window's rect and run its OnSizeChanged right there, a full layout nested inside the
+-- outer one's pool loop. Modeled here as that size change fired from inside the list's first Acquire
+-- of the open's layout. The drag then re-places the rows the list holds: a row the nested draw left
+-- shown but the list no longer holds stays where it was, its cells over the moved ones.
+
+-- The x each cell was placed at (the bar column's text sits 2 px in from its column).
+local function cellX(cell, col)
+    local kind = col.kind or "text"
+    local part = (kind == "icons" and cell.class) or (kind == "badge" and cell.box)
+        or (kind == "items" and cell.dash) or cell.fs
+    local p = part.__points and part.__points[1]
+    if not p then return nil end
+    return (kind == "text" and cell.bar) and p[4] - 2 or p[4]
+end
+
+--- Every shown row is one the list holds, and every cell it holds sits at its column's x now.
+local function assertPlaced(list, label)
+    local held = {}
+    for n, row in ipairs(list:Visible()) do
+        held[row] = true
+        for c, col in ipairs(list.columns) do
+            assertEqual(cellX(row.cells[c], col), list.place[c].x, ("%s: row %d, %s"):format(label, n, col.key))
+        end
+    end
+    for _, row in ipairs(list.pool.active) do
+        assertTrue(held[row] or not row:IsShown(), label .. ": a shown row the list does not hold")
+    end
+end
+
+--- Reopen the window with a size change fired from inside `list`'s first Acquire of the layout.
+local function reopenWithNestedSize(i, u, list)
+    i.R.Hide()
+    local NS, orig, armed, fired = i.NS, list.Layout, false, false
+    rawset(list, "Layout", function(...)
+        if not fired then armed = true end
+        return orig(...)
+    end)
+    local acquire = NS.Pool.Acquire
+    rawset(NS.Pool, "Acquire", function(pool, ...)
+        local o = acquire(pool, ...)
+        if armed and pool == list.pool then
+            armed, fired = false, true
+            u.frame:__fire("OnSizeChanged", u.width, u.height)
+        end
+        return o
+    end)
+    i.R.Show()
+    rawset(NS.Pool, "Acquire", acquire)
+    rawset(list, "Layout", nil)
+    assertTrue(fired, "the nested size change fired")
+end
+
+local function firstDrag(i, u, list, w0, h0, label)
+    assertPlaced(list, label .. " opened")
+    local grip = u.frame.resizeGrip
+    grip:__fire("OnMouseDown", "LeftButton")
+    drag(i.mocks, u.frame, 30, function(k) return w0 + 6 * k, h0 + 6 * k end)
+    assertPlaced(list, label .. " dragged")
+    released(u.frame, w0 + 180, h0 + 180)
+    grip:__fire("OnMouseUp")
+    assertPlaced(list, label .. " released")
+end
+
+test("results sizing: the first drag after opening moves every row's cells, none left behind", function()
+    local i, u = seeded()
+    u.panes.runs:SetFilter("group", "full")
+    local list = u.panes.runs.list
+    reopenWithNestedSize(i, u, list)
+    firstDrag(i, u, list, 1344, 560, "runs")
+end)
+
+test("results sizing: the Bests tab's first drag after opening leaves no row behind", function()
+    local i, u = seeded()
+    -- A board of ten rows: one best per race length.
+    for n = 1, 10 do i.NS.db.global.runs["r" .. n].race.length = 30 * n end
+    i.NS.Bests.Invalidate()
+    assertTrue(i.R.ShowTab("bests"))
+    local list = u.panes.bests.list
+    assertTrue(#list:Visible() >= 10, "the board shows ten rows")
+    reopenWithNestedSize(i, u, list)
+    firstDrag(i, u, list, 1344, 560, "bests")
+end)
+
 -- ── the ability timeline ────────────────────────────────────────────────────────────────────────
 
 local SPELLS = { [1122] = 180000, [29722] = 0 }

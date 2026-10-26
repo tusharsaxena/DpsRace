@@ -341,7 +341,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   run's strip too; zoom in / zoom out / reset buttons at the right of the *Casts* heading line, zooming *Casts* and
   *By ability* together (horizontal scroll when zoomed); a wider default window.
 - [x] **Timeline counts:** a little more space between the lanes' end and the counts.
-- [ ] **First-drag glitch:** on the first drag of the Results window after it opens, row cells stay where they were
+- [x] **First-drag glitch:** on the first drag of the Results window after it opens, row cells stay where they were
   while others move (overlapping text); later drags are fine. Reproduce in a test, fix.
 
 ### P8: Finalize (only on the owner's go-ahead)
