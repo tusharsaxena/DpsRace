@@ -378,10 +378,17 @@ local function savePosition()
     w.x, w.y = math.floor(x + 0.5), math.floor(y + 0.5)
 end
 
-local function onResized(width, height)
+-- Every size change, the grip's or not: the tracked size the bodies lay out from, never under the minimums.
+local function trackSize(width, height)
     if type(width) == "number" then ui.width = math.max(Hud.MIN_WIDTH, width) end
     if type(height) == "number" then ui.height = math.max(Hud.MIN_HEIGHT, height) end
-    layoutBodies()
+end
+
+-- The cheap half of a resize (modules/Sizing.lua): the body on screen alone; the others, and the
+-- redraw that re-fits the rows and re-wraps the chips to the new size, wait for the release.
+local function layoutCurrent()
+    local body = ui.current and ui.body[ui.current]
+    if body and body.Layout then body:Layout(contentWidth(), contentHeight()) end
 end
 
 local function saveSize(width, height)
@@ -445,7 +452,7 @@ local function buildFooter(f)
     ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
 end
 
-local onHide
+local onHide, resized
 
 local function ensureWindow()
     if ui then return ui end
@@ -467,11 +474,12 @@ local function ensureWindow()
     f:SetScript("OnHide", function() onHide() end)
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Hud.FRAME_NAME) end
-    NS.MakeResizable(f, {
+    -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only the body on screen is laid
+    -- out, once a frame; on release every body is, and the shown one is drawn again.
+    NS.Sizing.MakeResizable(f, {
         minWidth = Hud.MIN_WIDTH, minHeight = Hud.MIN_HEIGHT,
         canResize = function() return not Hud.locked end,
-        onResize = onResized,
-        onResizeStop = saveSize,
+        size = trackSize, layout = layoutCurrent, redraw = layoutBodies, done = resized,
     })
     applyPlacement()
     debug("window built")
@@ -587,6 +595,13 @@ end
 
 local function windowShown()
     return ui ~= nil and ui.frame:IsShown() == true
+end
+
+-- The release of a resize: the size stored, and the body on screen drawn again at it (the result
+-- card's rows fit the new height, the chips wrap at the new width).
+function resized(width, height)
+    saveSize(width, height)
+    if windowShown() then render(true) end
 end
 
 local function liveWanted()

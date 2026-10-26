@@ -233,7 +233,7 @@ end
 
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
 
-local layout
+local layout, resize
 
 local function disc(parent, color, size, layer)
     local t = parent:CreateTexture(nil, layer or "OVERLAY")
@@ -326,10 +326,10 @@ local function onHide()
     Timeline.wanted = false
 end
 
-local function onResized(width, height)
+-- Every size change, the grip's or not: the tracked size the layouts read, never under the minimums.
+local function trackSize(width, height)
     if type(width) == "number" then ui.width = math.max(Timeline.MIN_WIDTH, width) end
     if type(height) == "number" then ui.height = math.max(Timeline.MIN_HEIGHT, height) end
-    layout()
 end
 
 local function applyPlacement()
@@ -356,9 +356,11 @@ local function ensureWindow()
     NS.ApplySkin(f)
     f:SetScript("OnHide", onHide)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Timeline.FRAME_NAME) end
-    NS.MakeResizable(f, {
+    -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
+    -- the full `layout` (every pair and tick re-pooled) runs once on release.
+    NS.Sizing.MakeResizable(f, {
         minWidth = Timeline.MIN_WIDTH, minHeight = Timeline.MIN_HEIGHT,
-        onResize = onResized, onResizeStop = saveSize,
+        size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
     })
     applyPlacement()
     debug("window built")
@@ -534,6 +536,23 @@ local function layoutRows(g)
     end
 end
 
+-- While the window is being sized: the pairs drawn now to the new lane width and each tick drawn now
+-- moved along its lane, with nothing re-pooled, refilled or recolored.
+local function stretchRows(g)
+    for _, pair in ipairs(ui.pairs.active) do
+        pair:SetWidth(g.cw)
+        placeLane(pair, pair.laneA, pair.countA, 0, g.laneX, g.laneW)
+        placeLane(pair, pair.laneB, pair.countB, -(Timeline.LANE_H + Timeline.LANE_GAP), g.laneX, g.laneW)
+    end
+    for _, d in ipairs(ui.drawn or {}) do
+        d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.laneW) or 0)
+        d.tex:ClearAllPoints()
+        d.tex:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
+        d.hit:ClearAllPoints()
+        d.hit:SetPoint("CENTER", ui.marks, "TOPLEFT", d.x, d.y)
+    end
+end
+
 -- The empty message for what is missing, or nil when there are rows to draw.
 local function emptyText()
     if not ui.run then return L["Select a run in the Results window to see its timeline."] end
@@ -541,9 +560,8 @@ local function emptyText()
     return nil
 end
 
-function layout()
-    if not ui then return end
-    local g = geometry()
+-- Everything but the lanes: the legend, the empty message, the axis and the scroll frame.
+local function layoutFrame(g)
     local top = layoutLegend(g)
     local empty = emptyText()
     ui.empty:SetText(empty or "")
@@ -555,9 +573,28 @@ function layout()
     ui.viewH = math.max(1, ui.height - top - 8 - Timeline.AXIS_H - 8)
     ui.scroll:SetSize(g.cw, ui.viewH)
     ui.content:SetWidth(g.cw)
+end
+
+function layout()
+    if not ui then return end
+    local g = geometry()
+    ui.laidW = g.cw
+    layoutFrame(g)
     layoutRows(g)
     ui.contentH = math.max(1, #ui.rows * Timeline.PAIR_H - Timeline.PAIR_GAP)
     ui.content:SetHeight(ui.contentH)
+    Timeline.Scroll(0)
+end
+
+-- The cheap half of a resize (modules/Sizing.lua): the frame laid out at the tracked size, the lanes
+-- stretched only when the width moved; layout re-pools them once, on release.
+function resize()
+    if not ui then return end
+    local g = geometry()
+    local widthMoved = g.cw ~= ui.laidW
+    ui.laidW = g.cw
+    layoutFrame(g)
+    if widthMoved then stretchRows(g) end
     Timeline.Scroll(0)
 end
 

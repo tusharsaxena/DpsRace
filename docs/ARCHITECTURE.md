@@ -99,7 +99,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -238,7 +238,15 @@ after a close from Blizzard's close-all-windows step (`CloseSpecialWindows`), an
 a `C_Timer.NewTicker` polling it every `Results.TREE_POLL` (0.25) seconds, canceled when the tree closes
 or the player opens or closes the window, so the window comes back once the tree is down (Taint Notes, B4.1).
 `modules/Results_Timeline.lua` (the ability timeline) registers no game event, no `OnUpdate` and no
-timer: it draws when opened and when the detail tells it. `modules/Casts.lua` and `modules/Usage.lua`
+timer of its own: it draws when opened and when the detail tells it.
+
+**Window sizing.** All three windows (the Results window, the timeline and the HUD) are resized from
+the library's corner grip through one pattern, `modules/Sizing.lua`: while the grip is held each size
+change runs the window's cheap layout (re-anchor and resize what the new size needs, nothing rebound
+or redrawn) at most once a frame, a second change in one frame waiting for a single
+`C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
+stores the size. The minimums and the stored sizes are as before. What runs per frame, before and
+after: [performance.md](performance.md#window-sizing). `modules/Casts.lua` and `modules/Usage.lua`
 register nothing: Watchers feeds the cast list, and Usage reads the client only at the arm and on the
 record path after combat.
 

@@ -986,6 +986,14 @@ function View:Layout(width, height, listWidth, oneRow)
     self.list:Layout(listWidth or width, math.max(1, height - barH))
 end
 
+--- While the window is being sized (modules/Sizing.lua): the list `listWidth` wide beneath the bar,
+--- nothing rebound. The bar keeps its plan: only the view switches it between one row and two.
+function View:Resize(width, height, listWidth)
+    local h = math.max(1, height - (self.barH or 0))
+    self.listHost:SetSize(listWidth or width, h)
+    self.list:Resize(listWidth or width, h)
+end
+
 --- The bar's height now (the detail pane sits beneath it).
 function View:BarHeight()
     return self.barH

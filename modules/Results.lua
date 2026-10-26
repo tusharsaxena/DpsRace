@@ -123,7 +123,7 @@ local function share(r)
     if r and canShare() then NS.Share.Prompt(r) end
 end
 
-local layout, renderTab, renderDetail
+local layout, resize, renderTab, renderDetail
 
 local function selectRun(r)
     selected = r and r.id or nil
@@ -229,10 +229,10 @@ end
 
 local onHide
 
-local function onResized(width, height)
+-- Every size change, the grip's or not: the tracked size the layouts read, never under the minimums.
+local function trackSize(width, height)
     if type(width) == "number" then ui.width = math.max(Results.VIEWS[Results.View()].minWidth, width) end
     if type(height) == "number" then ui.height = math.max(Results.MIN_HEIGHT, height) end
-    layout()
 end
 
 -- The toggle's icon and tooltip for the view shown.
@@ -293,9 +293,11 @@ local function ensureWindow()
     f:SetScript("OnHide", function() onHide() end)
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Results.FRAME_NAME) end
-    NS.MakeResizable(f, {
+    -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
+    -- the full `layout` (every row rebound, the detail redrawn) runs once on release.
+    NS.Sizing.MakeResizable(f, {
         minWidth = Results.VIEWS[Results.View()].minWidth, minHeight = Results.MIN_HEIGHT,
-        onResize = onResized, onResizeStop = saveSize,
+        size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
     })
     applyPlacement()
     debug("window built")
@@ -377,6 +379,34 @@ function layout()
     if tab == "runs" then return layoutRuns(pane, width, height) end
     ui.detail.frame:Hide()
     pane:Layout(width, height)
+end
+
+-- The cheap half of a resize (modules/Sizing.lua): what layout places, at the tracked size, with
+-- nothing rebound or redrawn. The filter bar keeps its plan (only the view changes it), the list its
+-- rows, the detail its content; the release's layout redraws all three.
+local function resizeRuns(pane, width, height)
+    local detail = ui.detail
+    if Results.Mode() == "wide" then
+        local dw = math.min(Results.DETAIL_WIDTH, math.floor(width * 0.38))
+        pane:Resize(width, height, width - dw)
+        local h = height - pane:BarHeight()
+        detail.frame:SetSize(dw, h)
+        detail:Resize(dw, h)
+    elseif detailOpen then
+        detail.frame:SetSize(width, height)
+        detail:Resize(width, height)
+    else
+        pane:Resize(width, height, width)
+    end
+end
+
+function resize()
+    if not ui then return end
+    local width, height = bodySize()
+    local pane = ui.panes[tab]
+    if not pane then return end
+    if tab == "runs" then return resizeRuns(pane, width, height) end
+    pane:Resize(width, height)
 end
 
 local function paintTabs()

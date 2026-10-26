@@ -103,6 +103,8 @@ modules\Watchers.lua
 modules\Format.lua
 # LOAD-BEARING: the shared look. The HUD's and the Results window's files capture NS.Style at FILE SCOPE.
 modules\Style.lua
+# Smooth resizing, the one pattern all three windows size by; they reach NS.Sizing at CALL time.
+modules\Sizing.lua
 # The HUD's configured look (HUD > HUD Appearance). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua)
 # at FILE SCOPE; the HUD's and the Results window's files reach it at CALL time.
 modules\Hud_Appearance.lua

@@ -293,8 +293,14 @@ The window reads stored run records only: every number on one went through `NS.S
 into the store, so sorting, percentages and the timing strip are plain Lua. It holds no game event
 or `OnUpdate`; its only timers are the talent tree's step-aside (a one-frame `C_Timer.After(0)`
 look after a close-stack close, then a `Results.TREE_POLL` ticker while the tree is up; ARCHITECTURE.md
-Taint Notes, B4.1).
+Taint Notes, B4.1) and, only while its grip is dragged, the one-frame `C_Timer.After(0)` that
+coalesces a second size change in a frame (`modules/Sizing.lua`).
 
+- **Resizing** (`modules/Sizing.lua`, [performance.md](performance.md#window-sizing)): while the grip
+  is held the window lays out cheaply at most once a frame (the list's `Table:Resize`: columns,
+  headers, the rows the new height adds or drops, the scroll range; the detail's `Resize`: its
+  scroll frame), from the size `OnSizeChanged` hands it, never a frame read; the release runs the
+  full layout once (every row rebound, the detail drawn again) and stores the view's size.
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
   (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first

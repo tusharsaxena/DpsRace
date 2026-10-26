@@ -667,6 +667,19 @@ Total.
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
 
+### test_sizing.lua (10)
+
+- sizing: a size change the grip did not start redraws at once
+- sizing: while the grip is held, one cheap layout a frame; one redraw on release
+- sizing: changes inside one frame coalesce into one layout now and one next frame
+- sizing: a right press or a refused gate starts no drag
+- results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
+- results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
+- results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
+- timeline sizing: a 30-frame drag moves the ticks and re-pools nothing until the release
+- hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
+- hud sizing: locked, the grip starts no drag
+
 ### test_tooltips.lua (4)
 
 - tooltips: one line under the title stays plain; the title never takes a bullet
@@ -993,6 +1006,7 @@ Total.
 | test_results_sections.lua | 7 |
 | test_chart_icons.lua | 27 |
 | test_results_timeline.lua | 13 |
+| test_sizing.lua | 10 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
 | test_settings.lua | 31 |
@@ -1013,4 +1027,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **799** |
+| **Total** | **809** |

@@ -1103,6 +1103,17 @@ function Pane:Layout(width, height, narrow)
     self:Scroll(0)
 end
 
+--- While the window is being sized (modules/Sizing.lua): the scroll frame to `width` x `height` and the
+--- scroll clamped to it. The content keeps its width and every block in it as they were: Layout redraws
+--- them once, when the grip is released (the chart, the loadout and the usage are what cost).
+function Pane:Resize(width, height)
+    self.width, self.height = width, height
+    local top = self.narrow and (BUTTON_H + 16) or 10
+    self.viewH = math.max(1, height - top - BUTTON_H - 18)
+    self.scrollFrame:SetSize(math.max(100, width - 2 * PADX), self.viewH)
+    self:Scroll(0)
+end
+
 --- One mouse-wheel notch (`delta` > 0 scrolls up), clamped to the content.
 function Pane:Scroll(delta)
     local top = math.max(0, (self.contentH or 0) - (self.viewH or 0))

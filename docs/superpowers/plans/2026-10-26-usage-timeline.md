@@ -299,7 +299,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
   Talents, Usage, Note and any other headed section) has an expand/collapse arrow beside its heading (the LibKa0s
   chevron icons); collapsed sections are remembered in the profile.
-- [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. The owner widened it to every window the
+- [x] **Smooth resize:** dragging the Results window's resize grip is laggy. The owner widened it to every window the
   addon owns (Results, the timeline, the HUD), with one shared pattern, and asked for it as an upstream standard rule. Lay out cheaply while sizing (no full
   table rebind or detail redraw per frame) and redraw fully once on release, keeping the minimums.
 - [x] **Waiting hint box: sized to its text:** the waiting screen's sticky-combat hint box was a fixed 64 px with an

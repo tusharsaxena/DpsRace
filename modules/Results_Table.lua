@@ -1098,7 +1098,7 @@ end
 function Table:Bind()
     self.offset = math.max(0, math.min(self.offset, self:maxOffset()))
     NS.Pool.ReleaseAll(self.pool, function(row) row.run, row.group = nil, nil end)
-    self.shown = {}
+    self.shown, self.spare = {}, {}
     local count = math.min(self:visibleCount(), #self.rows - self.offset)
     for i = 1, count do
         local row = NS.Pool.Acquire(self.pool, function() return newRow(self) end)
@@ -1110,9 +1110,9 @@ function Table:Bind()
     self:syncScrollbar()
 end
 
---- Lay the header and the rows out for `width` x `height`.
-function Table:Layout(width, height)
-    self.width, self.height = width, height
+-- The columns at `width` and the header's labels on them; a row's cells follow on its next placeRow.
+function Table:placeColumns(width)
+    self.width = width
     self.place = Tbl.Columns(self.columns, width)
     self.layoutVersion = (self.layoutVersion or 0) + 1
     for i, b in ipairs(self.heads) do
@@ -1123,7 +1123,46 @@ function Table:Layout(width, height)
         b.label:ClearAllPoints()
         b.label:SetAllPoints(b)
     end
+end
+
+--- Lay the header and the rows out for `width` x `height`.
+function Table:Layout(width, height)
+    self.height = height
+    self:placeColumns(width)
     self:Bind()
+end
+
+-- The rows shown to the count that fits now, from the offset held: a row past it hidden and kept
+-- spare, a row the new height adds taken from the spares (or the pool) and bound alone.
+function Table:fitRows()
+    local count = math.max(0, math.min(self:visibleCount(), #self.rows - self.offset))
+    self.spare = self.spare or {}
+    for i = #self.shown, count + 1, -1 do
+        local row = self.shown[i]
+        self.shown[i] = nil
+        row:Hide()
+        self.spare[#self.spare + 1] = row
+    end
+    for i = #self.shown + 1, count do
+        local row = table.remove(self.spare) or NS.Pool.Acquire(self.pool, function() return newRow(self) end)
+        row:Show()
+        self:placeRow(row, i)
+        self:bindRow(row, self.rows[self.offset + i], self.offset + i)
+        self.shown[i] = row
+    end
+end
+
+--- While the window is being sized (modules/Sizing.lua): the columns at `width`, the rows that fit
+--- `height` and the scroll range, with nothing rebound. The rows shown keep what they draw, their
+--- cells re-placed when the width moved; the offset holds. The release's Layout rebinds them all.
+function Table:Resize(width, height)
+    if width ~= self.width then
+        self:placeColumns(width)
+        for i, row in ipairs(self.shown) do self:placeRow(row, i) end
+    end
+    self.height = height
+    self:fitRows()
+    self:syncScrollbar()
 end
 
 --- The rows drawn now, top down (the suites read these).
