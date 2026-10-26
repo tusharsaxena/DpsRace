@@ -394,6 +394,25 @@ test("loadout: an item's hover is the client's own tooltip; a modified click goe
     assertEqual(M.__modClicks[1], M.__gear[1], "Shift-click never reached the client's handler")
 end)
 
+test("loadout: the Gear heading carries the run's item level as caption subtext on its line", function()
+    local i, NS = ui()
+    uiRun(NS, "r", 100, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    NS.db.global.runs.r.char.ilvl = 326.84
+    NS.Results.ShowRun("r")
+    local lo = pane(i).lo
+    assertEqual(lo.ilvl.__text, "ilvl 326.8", "one decimal, as the Runs list shows it")
+    assertEqual(lo.ilvl.__color[1], NS.ResultsTable.COLORS.dim[1], "the light gray")
+    local pt = lo.ilvl.__points[1]
+    assertEqual(pt[1], "BOTTOMLEFT")
+    assertEqual(pt[2], lo.title, "right after the Gear heading, on its line")
+    assertEqual(pt[3], "BOTTOMRIGHT")
+    NS.db.global.runs.r.char.ilvl = nil
+    NS.Results.ShowRun("r")
+    assertEqual(lo.ilvl.__text, "", "nothing for a run with no item level")
+    assertEqual(NS.ResultsLoadout.IlvlText(nil), "")
+    assertEqual(NS.ResultsLoadout.IlvlText({ char = { ilvl = 639 } }), "ilvl 639.0")
+end)
+
 test("loadout: a run stored before #6 says Not recorded, with nothing to view or copy", function()
     local i, NS = ui()
     uiRun(NS, "old", 100, nil, { schema = 1 })

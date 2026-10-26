@@ -499,7 +499,7 @@ Total.
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
 - compare: the collapsed view draws the compare in the list's place; no number is read off a frame
 
-### test_loadout.lua (26)
+### test_loadout.lua (27)
 
 - loadout: SnapshotLoadout reads every equipped link but the shirt and the tabard
 - loadout: SnapshotLoadout reads the talents: the saved loadout's name, the hero tree, the string
@@ -519,6 +519,7 @@ Total.
 - loadout: a run resumed after a /reload whose combat ended unheard still takes a loadout
 - loadout: the detail draws the gear grid in the character frame's order, and the talents line
 - loadout: an item's hover is the client's own tooltip; a modified click goes to the client
+- loadout: the Gear heading carries the run's item level as caption subtext on its line
 - loadout: a run stored before #6 says Not recorded, with nothing to view or copy
 - loadout: View is grayed with a reason once the client's serialization version moved; Copy still works
 - loadout: under the compare the changed slots are highlighted and a different loadout is marked
@@ -926,7 +927,7 @@ Total.
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
-| test_loadout.lua | 26 |
+| test_loadout.lua | 27 |
 | test_casts.lua | 10 |
 | test_usage.lua | 22 |
 | test_results_usage.lua | 16 |
@@ -951,4 +952,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **749** |
+| **Total** | **750** |

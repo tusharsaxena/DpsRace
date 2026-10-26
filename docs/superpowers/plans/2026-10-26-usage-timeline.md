@@ -264,7 +264,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   narrowed to fit.
 - [ ] **Chart marks:** the important casts on the damage chart (live, result card, detail) as small ability icons
   along the top of the plot, a second row when two would overlap, with a tooltip (spell and time) instead of dots.
-- [ ] **Gear header:** the run's item level as light-gray subtext right after the *Gear* heading.
+- [x] **Gear header:** the run's item level as light-gray subtext right after the *Gear* heading.
 - [ ] **Usage:**
   - no weapon enchants (or any enchant) unless the enchant has an on-use effect;
   - the section shows only what was used; an *Edit* button next to *Save* switches to every candidate with ticks,

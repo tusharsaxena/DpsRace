@@ -1,19 +1,20 @@
 local _, NS = ...
 -- modules/Results_Loadout.lua — the run detail's loadout (#6): what the run was raced with, read from
--- the loadout store (modules/Loadouts.lua). A *Gear* section draws the equipped items in two columns
--- in the character frame's order, each with its quality border and item level; hovering one shows the
--- client's own item tooltip from the stored link, Shift-click links it in chat, and *Dressing Room*
--- tries the whole set on. A *Talents* line names the loadout and its hero tree, with *View* (the
--- `talentbuild` link posted to the player's own chat window, where a click opens Blizzard's talent tree,
--- read-only) and *Copy* (the import string in the copy window). A run stored before #6 says *Not
--- recorded*.
+-- the loadout store (modules/Loadouts.lua). A *Gear* section (its heading followed by the run's item
+-- level in the caption gray) draws the equipped items in two columns in the character frame's order,
+-- each with its quality border and item level; hovering one shows the client's own item tooltip from
+-- the stored link, Shift-click links it in chat, and *Dressing Room* tries the whole set on. A
+-- *Talents* line names the loadout and its hero tree, with *View* (the `talentbuild` link posted to
+-- the player's own chat window, where a click opens Blizzard's talent tree, read-only) and *Copy* (the
+-- import string in the copy window). A run stored before #6 says *Not recorded*.
 --
 -- UNDER THE COMPARE (#7, the pane's CompareTarget): the gear slots whose link differs from the other
 -- run's are highlighted, and a *Different loadout* line shows when the two import strings differ. No
 -- talent is compared node by node (the owner's call, 2026-10-25).
 --
 -- PLAIN DATA ONLY: links, names and strings stored out of combat. The grid is laid out from the
--- constants here, never from a size read back; ChangedSlots, Grid, LinkData and CanView are pure.
+-- constants here, never from a size read back; ChangedSlots, Grid, LinkData, CanView and IlvlText are
+-- pure.
 
 local Loadout = {}
 NS.ResultsLoadout = Loadout
@@ -41,6 +42,14 @@ local EMPTY_BG = { 0.07, 0.07, 0.1, 1 }
 local SEP = " \194\183 "
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
+
+--- The Gear heading's subtext: the run's equipped item level to one decimal, or "" without one.
+function Loadout.IlvlText(run)
+    local char = type(run) == "table" and run.char or nil
+    local ilvl = type(char) == "table" and char.ilvl or nil
+    if type(ilvl) ~= "number" then return "" end
+    return L["ilvl %s"]:format(Tbl.Ilvl(ilvl))
+end
 
 --- The cells the grid draws for `gear`: { slot, col, row } in the character frame's order.
 --- @return table cells, number rows
@@ -290,6 +299,10 @@ function Loadout.Build(p, c)
     local Button = NS.HudStates.Button
     x.title = Tbl.Text(c, FONT.SECTION)
     x.title:SetText(L["Gear"])
+    -- The run's item level as caption subtext right after the heading, on its line: anchored to the
+    -- heading's right edge, so nothing is measured.
+    x.ilvl = Tbl.Text(c, FONT.CAPTION, C.dim)
+    x.ilvl:SetPoint("BOTTOMLEFT", x.title, "BOTTOMRIGHT", 6, 0)
     x.dress = Button(c, L["Dressing Room"], function() Loadout.DressUp(x.gear) end)
     x.dress:SetSize(Loadout.DRESS_W, Loadout.BUTTON_H)
     x.none = Tbl.Text(c, FONT.TEXT, C.dim)
@@ -348,6 +361,7 @@ function Loadout.Fill(p)
     local x = p.lo
     local gear, talents = NS.ResultsSource.LoadoutOf(p.run)
     x.gear, x.talentsData = gear, talents
+    x.ilvl:SetText(Loadout.IlvlText(p.run))
     local other = p:CompareTarget()
     local otherGear, otherTalents = NS.ResultsSource.LoadoutOf(other)
     local changed = other and Loadout.ChangedSlots(gear, otherGear) or {}
