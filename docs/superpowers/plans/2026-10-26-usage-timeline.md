@@ -42,6 +42,91 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - `GetSpellBaseCooldown` is not in the generated docs: its secrecy is unknown.
 - `modules/Timeline.lua` already exists (the damage-update timeline): the cast store needs another name (`Casts`).
 
+## Design (binding for P3 to P6; decided 2026-10-26 from the findings)
+
+### Capture: `modules/Casts.lua` (`NS.Casts`)
+
+- **Source:** `UNIT_SPELLCAST_SUCCEEDED` for units `player` and `pet`, from **ARMED** through STOPPING (the
+  existing late-cast path in `Race.OnCast` / `modules/Watchers.lua` keeps its own behavior; casts are routed to
+  `Casts` in addition). `UNIT_SPELLCAST_CHANNEL_START` / `_STOP` for `player` only feed a dedupe: a SUCCEEDED for the
+  spell of an open channel is ignored until its CHANNEL_STOP.
+- **Filter:** the spell ID through `Secrets.PlainNumber` (a non-plain ID is dropped and counted in
+  `run.casts.dropped`); auto-repeat attacks dropped (`Casts.AUTO = { [75] Auto Shot, [6603] Auto Attack, [5019]
+  Shoot }`); a castGUID heard twice is counted once.
+- **Time:** each cast's `GetTime()`; stored as seconds from the race clock's start (`t`, negative for a pre-pull cast
+  heard while ARMED), rounded to 0.01 s.
+- **Base cooldown:** the first time a spell ID is seen, `GetSpellBaseCooldown(id)` through `Secrets.PlainNumber`
+  (ms, plain in combat per the probe); kept per spell.
+- **Stored:** `run.casts = { v = 1, list = "<cs>:<id>,<cs>:p<id>,...", spells = { [id] = cdMs }, dropped = n }`,
+  where `<cs>` is `t` in integer centiseconds and a `p` marks a pet cast. `Casts.Encode` / `Casts.Decode` (pure)
+  turn the list into `{ { t = seconds, id = n, pet = bool }, ... }`. No cap on the list (the owner's call).
+- **Important:** `Casts.IMPORTANT_MS = 15000`; an important cast is one whose spell's base cooldown is **more than**
+  15 s. `Casts.Important(run)` answers the decoded important casts.
+- **Live:** `Casts.Live()` answers the current race's in-memory list (same shape as Decode) for the HUD chart.
+
+### Usage: `modules/Usage.lua` (`NS.Usage`)
+
+- **Snapshot at ARMED** (out of combat, everything plain): equipped slots 1-19 whose item has a use spell
+  (`GetInventoryItemID`, `C_Item.GetItemSpell`); bag consumables (`C_Container`, bags 0-5, `C_Item.GetItemInfoInstant`
+  class 0) with their total count, subclass and use spell; the helpful auras' spell IDs and names
+  (`C_UnitAuras.GetAuraDataByIndex(..., "HELPFUL")`); the weapon enchants (`GetWeaponEnchantInfo`). Held in memory on
+  the race until the result.
+- **After the result** (the record path, out of combat): bag counts again.
+- **Detection** (in order; each entry records its source):
+  - a cast whose spell is an on-use slot's spell -> that gear item used at each cast's `t` (`src = "cast"`);
+  - a cast whose spell is a bag consumable's spell -> that item used at each `t` (`src = "cast"`);
+  - a bag consumable whose count dropped with no matching cast -> used `n` times, time unknown (`src = "bag"`);
+  - an aura at the arm whose spell ID equals a bag consumable's spell (a flask or phial) -> used, active at the
+    start (`src = "buff"`);
+  - an aura at the arm named `L["Well Fed"]` -> a food entry with no item, active at the start (`src = "buff"`);
+  - an active weapon enchant -> an enchant entry with its enchant ID, no item (`src = "enchant"`).
+  - The item-cooldown compare is NOT used (false positives, per the probe).
+- **Kinds:** `gear`, `potion` (subclass 1), `flask` (subclasses 2 and 3), `food` (5), `other` (8, 0 and the rest),
+  `enchant`.
+- **Stored:** `run.usage = { v = 1, used = { { itemID?, kind, slot?, times = { t, ... }?, n, src, enchantID? } },
+  candidates = { { itemID, kind, slot? } }, edited = bool }`. Candidates are every on-use gear item and every bag
+  consumable with a use spell, at the arm.
+- **Edit:** `Usage.SetUsed(run, list)` replaces `used` with the player's ticks (an untouched detected entry keeps its
+  times and source; a newly ticked one is `src = "manual"`, `n = 1`, no time), sets `edited = true`, and fires
+  `RUNS_CHANGED`. On the sample history it changes the sample in memory only (as notes do).
+
+### Record format
+
+- `Recorder.RUN_SCHEMA` 3; a schema step 2 -> 3 that only raises `global.schema` (no stored run is rewritten). A run
+  without `casts` / `usage` reads as *Not recorded*. Only plain values are stored.
+- `modules/MockRuns.lua` / the sim carry sample casts and usage, so `/dr test` and `/dr sim` show every new view.
+
+### #13 UI
+
+- **Runs table column** `used` (*Used*), before *Note*: up to as many item icons as fit (gear first, then
+  consumables), then *+n*; a dash when nothing. Its tooltip lists each entry: name, how many times, and the times
+  (`m:ss`), *active at the start*, or *time unknown*. Sorted by the number of entries.
+- **Results detail** *Usage* section (a FONT.SECTION heading like the others): one row per candidate and per detected
+  entry with no candidate (food, enchant): checkbox (clickable label, `Tbl.SetCheckLabel`), icon, name, a dim detail
+  (`x2 at 0:09, 1:12`, *active at the start*, *time unknown*), detected ones pre-ticked; *Save* (enabled only when the
+  ticks changed) writes `Usage.SetUsed`. *Not recorded* for an older run.
+
+### #14 chart dots
+
+- `Hud_Chart`'s Strip draws a small round gold dot per important cast along the top of the plot at
+  `x = INSET + clamp(t, 0, length) / length * (width - 2 * INSET)`: plain geometry only (`t` and `length` plain, the
+  width from config). Live on the running HUD (`Casts.Live()`), on the result card and in the Results detail
+  (`run.casts`). A new setting `live.castDots` (bool, default on; HUD page, with the chart rows): *Show cooldown dots*.
+  In the Results detail a dot's tooltip names the spell and its time.
+
+### #14 timeline window: `modules/Results_Timeline.lua`
+
+- A pop-out window (the Ka0s window skin like the Results window; movable, Escape closes, its position saved under
+  `profile.windows.timeline`) titled *Ability timeline*, opened by a *Timeline* button in the Results detail (disabled
+  for a run without casts) and redrawn when the detail's run or compare target changes.
+- Layout: the mock's version 2: a legend bar (this run's date in gold, the compared run's in blue and what it is:
+  best, runner-up or picked), then per ability one name cell (icon, name, its cooldown when over 15 s, *(pet)* for a
+  pet ability) beside **two lanes**: the top lane this run's casts (gold dots), the bottom lane the compared run's
+  (blue), each lane's cast count at the right, then a time axis (0, quarters, the end). Abilities over 15 s first (by
+  cooldown, longest first), then the rest by count. A scroll for many abilities. A dot's tooltip names the spell and
+  its time. The compared run is the detail's compare target (`CompareTarget(true)`); with none, or one with no casts,
+  its lanes stay empty under a note.
+
 ## Steps
 
 ### P0: Plan and branch
