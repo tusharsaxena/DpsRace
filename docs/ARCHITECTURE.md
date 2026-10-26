@@ -27,12 +27,13 @@ setup file per module, each a descriptor plus a degradation stub (anti-pattern #
   `modules/Scoring.lua` are pure timing and scoring; `modules/Race.lua` is the state machine
   (idle, armed, running, stopping, result) driven by `modules/Watchers.lua`'s events and
   `GetTime()`; `modules/Recorder.lua` snapshots and stores runs, with the gear and talents raced
-  (`modules/Loadouts.lua` keeps each distinct set once); `modules/Slices.lua` holds the damage
-  chart's buckets for this session only; `modules/Bests.lua` works out personal bests and protects
-  them from pruning.
+  (`modules/Loadouts.lua` keeps each distinct set once), what was cast (`modules/Casts.lua`) and
+  what was used (`modules/Usage.lua`); `modules/Slices.lua` holds the damage chart's buckets for this
+  session only; `modules/Bests.lua` works out personal bests and protects them from pruning.
 - **The UI** draws. The Race HUD (`modules/Hud*.lua`, numbers through `modules/Format.lua`, with
   the live damage chart and pace bar in `modules/Hud_Chart.lua`), the Results window
-  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout), the chat share (`modules/Share.lua`), and test mode and the sim
+  (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout and what the
+  run used, with the ability timeline as its pop-out window), the chat share (`modules/Share.lua`), and test mode and the sim
   (`modules/Preview.lua`, `modules/Sim.lua`, drawing `modules/MockRuns.lua`'s in-memory sample data;
   the Results window reads it through its source seam, `modules/Results_Source.lua`). None of them
   decides anything from a meter value.
@@ -59,6 +60,20 @@ text in the class, category and length colors. The talent tree step-aside branch
 cell the tag alone (its board in the tooltip), brought the window minimums to 834 collapsed and 1198
 expanded, and added Group by *Spec + target + time* and *Full* (a new profile's default), renaming
 *Duration* to *Time*.
+The 2026-10-26 pass ([`superpowers/plans/2026-10-26-usage-timeline.md`](superpowers/plans/2026-10-26-usage-timeline.md))
+records each race's casts and what it used (#13, #14, run-record format 3). From the arm to the
+result `modules/Watchers.lua` hands every `UNIT_SPELLCAST_SUCCEEDED` of the player and the pet (and
+the player's channel edges) to `modules/Casts.lua`, which keeps the cast list on the race clock and
+each spell's base cooldown; `modules/Usage.lua` reads the on-use gear, the bag consumables, the
+helpful auras and the weapon enchants at the arm, and at the result works out what was used from the
+casts, the bag counts and that snapshot. The Runs list gained a *Used* column and the detail an
+editable *Usage* section (`modules/Results_Usage.lua`); the damage chart marks each cast of an
+ability whose base cooldown is over 15 s with a gold dot (*Show cooldown dots*), live and after the
+race; and the detail's *Timeline* button opens the ability timeline (`modules/Results_Timeline.lua`),
+every ability's casts in two lanes, this run's above the compared run's. The same pass replaced *Runs
+to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores is plain: the spell
+IDs and castGUIDs pass through `NS.Secrets` (the probe measured both plain in combat), and the usage
+snapshot is read out of combat.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -81,7 +96,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -112,13 +127,17 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
-| `RUNS_CHANGED` | `modules/Recorder.lua` | none: a delete, a prune or a note changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone; `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*), and redraws the card on any other store change; `settings/History.lua`: repaints the stored count |
+| `RUNS_CHANGED` | `modules/Recorder.lua`; `modules/Usage.lua` (`SetUsed`: a run's usage ticks saved) | none: a delete, a prune, a note or a usage edit changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone (the detail's redraw also redraws an open ability timeline); `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*), and redraws the card on any other store change; `settings/History.lua`: repaints the stored count |
 | `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays` |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
 watchers are the race's event wiring, and their registration set must follow the state on the same
-call, with or without the bus library.
+call, with or without the bus library. The cast list (`modules/Casts.lua`) is fed the same way:
+Watchers calls `Casts.Hear` and Race calls `Casts.Begin` / `Start` / `Stop` / `Reset`. The ability
+timeline (`modules/Results_Timeline.lua`) holds no bus receiver: the detail pane tells it on every
+draw and compare change (`ResultsTimeline.DetailChanged`). *Show cooldown dots* redraws through its
+row's `onChange` (`Hud.Refresh`, `Results.Refresh`), not the bus.
 
 ## Slash Commands
 
@@ -175,8 +194,8 @@ from current settings on every stand-up (slash-commands-§7).
 
 `modules/Watchers.lua` registers, through the same `SafeRegister*` family, only while a race needs
 it: the non-unit events on its own AceEvent target (keyed apart from the addon object, so the shared
-`PLAYER_REGEN_*` never clobber one another's handler), and the player's casts on a unit-filter frame
-whose only job is `RegisterUnitEvent(..., "player")` (events-frames-taint-§1's carve-out). Nothing is registered while the race is idle or showing a result, and nothing
+`PLAYER_REGEN_*` never clobber one another's handler), and the casts on a unit-filter frame whose
+only job is `RegisterUnitEvent(..., "player"[, "pet"])` (events-frames-taint-§1's carve-out). Nothing is registered while the race is idle or showing a result, and nothing
 while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and the stand-up's
 `Watchers.Resume()` rebuilds the set from the race's current state.
 
@@ -187,7 +206,8 @@ while the addon is stood down: the stand-down calls `Watchers.Suspend()`, and th
 | `DAMAGE_METER_RESET` | ARMED, RUNNING, STOPPING | `Race.OnMeterReset` | a run in progress becomes `lost` |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | ARMED, RUNNING, STOPPING | `Race.OnCombatStart` / `OnCombatEnd` | the target re-read; incomplete before the buzzer; the read's combat gate |
 | `PLAYER_DEAD` | ARMED, RUNNING, STOPPING | `Race.OnDeath` | the `died` flag; incomplete before the buzzer |
-| `UNIT_SPELLCAST_START` / `_CHANNEL_START` / `_EMPOWER_START` / `_SUCCEEDED` / `_INTERRUPTED` / `_CHANNEL_STOP` (`player`, the unit-filter frame) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an empowered cast is in flight from its start; an interrupt or a channel's stop closes the cast in flight |
+| `UNIT_SPELLCAST_SUCCEEDED` (`player` and `pet`), `_CHANNEL_START` / `_CHANNEL_STOP` (`player`), on the unit-filter frame | ARMED, RUNNING, STOPPING | `Casts.Hear` for every cast, then `Race.OnCast` (with the castGUID) for the player's | the cast list (#14): a pre-pull cast is heard while armed, and an open channel's ticks are deduped; from RUNNING `Race.OnCast` also judges them (it ignores a cast while armed) |
+| `UNIT_SPELLCAST_START` / `_EMPOWER_START` / `_INTERRUPTED` (`player`, the unit-filter frame) | RUNNING, STOPPING | `Race.OnCast` (with the castGUID) | late casts after the grace (spec §5.2); an empowered cast is in flight from its start; an interrupt or a channel's stop closes the cast in flight |
 
 `modules/Hud.lua` registers on its own AceEvent target only while the HUD window is on screen; hidden,
 stood down or in test mode it holds nothing (spec §10). Its other timed work is not an event: the
@@ -214,6 +234,10 @@ is on screen. Its only timers are the talent tree's: a one-frame `C_Timer.After(
 after a close from Blizzard's close-all-windows step (`CloseSpecialWindows`), and, while the tree is up,
 a `C_Timer.NewTicker` polling it every `Results.TREE_POLL` (0.25) seconds, canceled when the tree closes
 or the player opens or closes the window, so the window comes back once the tree is down (Taint Notes, B4.1).
+`modules/Results_Timeline.lua` (the ability timeline) registers no game event, no `OnUpdate` and no
+timer: it draws when opened and when the detail tells it. `modules/Casts.lua` and `modules/Usage.lua`
+register nothing: Watchers feeds the cast list, and Usage reads the client only at the arm and on the
+record path after combat.
 
 `modules/Preview.lua` (test mode and the sim) registers no game event either; combat ends it through
 `NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays its script
@@ -228,10 +252,10 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 `core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
-Results window, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+Results window and the ability timeline, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
 mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
 which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
-which lifts the damage chart's pace diagonal over its columns. The StaticPopups, the debug console,
+which lifts the damage chart's pace diagonal (and its cooldown dots) over its columns. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
 each frame's strata, level and toplevel.
 
@@ -308,6 +332,21 @@ each frame's strata, level and toplevel.
   read of a Blizzard frame is `PlayerSpellsFrame:IsShown()`; `test_results_tree` pins the close
   paths and the wait, and `test_results` scans the module for `UIPanelWindows`, `UIPanelLayout`,
   `ShowUIPanel(` and `hooksecurefunc`.
+- **The cast list and the usage (#13, #14) read only the player's own data, and store only plain
+  values.** `modules/Casts.lua` takes each `UNIT_SPELLCAST_*` spell ID and castGUID through
+  `Secrets.PlainNumber` / `PlainString` (the probe of 2026-10-26 measured both plain in combat for the
+  player and the pet, in the open world); a sealed ID is dropped and counted in `casts.dropped`. A
+  spell's base cooldown comes from `GetSpellBaseCooldown` (pcall'd, through `PlainNumber`; plain in
+  and out of combat per the probe); `C_Spell.GetSpellCooldown`, secret in combat, is never called.
+  `modules/Usage.lua` reads the gear, the bags, the auras and the weapon enchants only at the arm
+  (which is refused in combat) and the bag counts again on the record path after combat, each client
+  call bare at call time and pcall'd, every value through `NS.Secrets`; it does not compare item
+  cooldowns. The chart's cooldown dots and the timeline's lanes are plain geometry: a cast's plain
+  time over the plain length across the configured width (`HudChart.DotX`, `ResultsTimeline.DotX`),
+  never read back off a frame. The HUD's dots take no mouse; the Results detail's and the timeline's
+  hover frames show tooltips built from the stored record (the timeline's name cell the client's
+  spell tooltip by its stored ID). The timeline window is plain and non-secure like the Results
+  window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop.
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -324,6 +363,10 @@ shape the design most:
 - **The Results window steps aside while the talent tree is open** (B4.1): the window is an
   on-demand browser at `HIGH` and the tree a `MEDIUM` UI panel, so the tree cannot draw over it;
   the window hides while the tree is up and comes back when it closes (the owner's call).
+- **Casts and usage were measured in the open world only, and part of the usage is a rule** (#13,
+  #14): a channel's ticks are deduped defensively, food is the *Well Fed* aura's name, a weapon
+  enchant does not name its oil, and a run from before format 3 (or resumed after a `/reload`) has
+  neither list.
 
 ## Documentation map
 
@@ -385,9 +428,11 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Five files are in the 1000–1500 on-notice band: two test files,
-`tests/test_results.lua` at 1433 lines (the next Results suite goes in a new file, as
-`test_results_group`, `test_results_fit`, `test_results_tree` and `test_results_badges` did) and
-`tests/test_hud.lua` at 1416, and three addon files, `modules/Hud_States.lua` at 1075 lines,
-`modules/Results_Table.lua` at 1056 and `modules/Hud.lua` at 1023 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
-`Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`)
-rather than grow these.
+`tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
+`test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
+`test_results_usage` and `test_results_timeline` did) and `tests/test_hud.lua` at 1412, and three
+addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at 1067 and
+`modules/Hud.lua` at 1011 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
+and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than
+grow these.

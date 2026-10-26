@@ -12,7 +12,7 @@ built on first show (options-ui-§1, §5).
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
-| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
+| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown dots and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
@@ -53,12 +53,12 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 |---|---|---|---|
 | Enable Ka0s DPS Race | `enabled` | checkbox | Off takes the latch's `disabled` hold: every event, message, timer and window goes down (slash-commands-§7) |
 | General visibility | `visibility` | dropdown | `always`, `inCombat`, `outOfCombat`, `never`; also decides whether `PLAYER_REGEN_ENABLED` is registered |
-| Master scale | `scale` | slider | The Race HUD's and the Results window's scale (`Hud.Refresh`, `Results.Refresh`) |
+| Master scale | `scale` | slider | The Race HUD's and the Results window's scale (`Hud.Refresh`, `Results.Refresh`), and the ability timeline's (it redraws with the Results detail) |
 | Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
 | Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while `/dr sim` plays too, and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
-| Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`) |
+| Reset position | — | button | Puts the HUD, the Results window and the ability timeline back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`, `ResultsTimeline.ResetPosition`) |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
 The *Test mode* row is the composer's, with `default = false` stamped by `settings/General.lua`, so

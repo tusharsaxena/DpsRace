@@ -73,5 +73,33 @@ and the smoke row that measures it where one exists.
   so the result cannot be read there; the press waives the 2.5 s of quiet after the combat end, not
   the combat end itself, so damage dealt between the press and the combat end counts (the tooltip says
   so). Damage that lands after the read (a DoT still ticking out of combat) is not counted.
+- **Casts were measured plain in the open world only** (#14; the probe of 2026-10-26, a Beast
+  Mastery Hunter on client 12.1.5). The client documents the cast events as secret only for units
+  other than the player and the pet, and instances were not tested (the owner's call). A spell ID that
+  arrives sealed is dropped and counted in `run.casts.dropped`, so that cast is missing from the
+  cooldown dots and the timeline, and an item it used falls back to the bag count (smoke rows C10,
+  SM-DR-UT1).
+- **A channel's ticks are deduped defensively.** No channel was cast in the probe, so whether every
+  tick fires `UNIT_SPELLCAST_SUCCEEDED` is unmeasured. While a player channel is open (its
+  `CHANNEL_START` to its `CHANNEL_STOP`) only its first success counts; a pet's channel is not deduped,
+  as only the player's channel edges are heard (`Casts.Hear`; smoke row SM-DR-UT3).
+- **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, over 15 s). Talents
+  and haste that shorten it are not seen, and a spell with charges can report a short one (Kill
+  Command read 500 ms in the probe), so it gets no dot and sorts with the rotation on the timeline.
+- **Food and augment runes are detected by rule, not by measurement** (#13). No food buff or rune
+  was active in the probe. Food is the *Well Fed* aura found by its name at the arm (the enUS
+  string, `L["Well Fed"]`), listed with no item; a rune or any other consumable counts only through a
+  cast of its use spell or a bag count that dropped. A flask or phial is matched by its buff's spell
+  ID against a bag consumable's use spell, so one whose last copy was drunk (none left in the bags at
+  the arm) is not found. Smoke row SM-DR-UT2.
+- **A weapon enchant does not name its oil** (#13). `GetWeaponEnchantInfo` gives an enchant ID that
+  maps to no item, so the run lists *Weapon enchant (main hand)* (or off hand) and the player ticks
+  the oil among the candidates. A consumable used with no cast heard is listed from its bag count with
+  no time, and one used and then restocked before the result reads no drop.
+- **Runs raced before format 3 have no casts and no usage**, and neither does a run resumed after a
+  `/reload` or a stand-down (both lists are held in memory until the result). Their *Used* cell is a
+  dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
+  cooldown dots and their *Timeline* button is grayed. Stored runs are never rewritten
+  ([schema.md](schema.md), migration 2 → 3).
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).

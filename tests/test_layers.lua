@@ -1,7 +1,7 @@
 -- tests/test_layers.lua — where every DpsRace frame sits in the client's draw order (frame-layering,
 -- standard v2.88.0): the one layers table in core/Constants.lua, the Race HUD (MEDIUM, toplevel), the
--- Results window (HIGH, toplevel) with its detail pane in its own band over the list pane, and the
--- center-screen countdown (FULLSCREEN, mouse-disabled, below every menu).
+-- Results window (HIGH, toplevel) with its detail pane in its own band over the list pane, the ability
+-- timeline (HIGH, toplevel), and the center-screen countdown (FULLSCREEN, mouse-disabled, below every menu).
 --
 -- Every case runs on a fresh instance. tests/wow_mock.lua installs the kit's frame-layer recorder
 -- (tests/_kit/mock_layers.lua) on every mock, so a frame's strata, level and toplevel read back.
@@ -58,6 +58,16 @@ test("layers: the Results window is HIGH, toplevel and clamped", function()
     local i = inst()
     i.NS.Results.Show()
     local l = i.mocks.__layers(i.NS.Results.__ui().frame)
+    assertEqual(l.strata, "HIGH")
+    assertTrue(l.toplevel)
+    assertTrue(l.clamped)
+end)
+
+test("layers: the ability timeline is HIGH, toplevel and clamped, like the Results window", function()
+    local i = inst()
+    i.NS.Results.Show()
+    assertTrue(i.NS.ResultsTimeline.Open(i.NS.Results.__ui().detail), "the timeline opens on the detail")
+    local l = i.mocks.__layers(i.NS.ResultsTimeline.__ui().frame)
     assertEqual(l.strata, "HIGH")
     assertTrue(l.toplevel)
     assertTrue(l.clamped)

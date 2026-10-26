@@ -247,7 +247,15 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P7: Docs, smoke rows, inventory
 
-- [ ] ARCHITECTURE, data-flow, schema, module map, known limitations, smoke rows, test inventory and README badge.
+- [x] ARCHITECTURE, data-flow, schema, module map, known limitations, smoke rows, test inventory and README badge.
+- P7 notes: also scope.md (the new *What it does* bullet, *Days to keep* in place of *Runs to keep*,
+  two *not done* rows: the item-cooldown compare and naming a weapon enchant's oil), settings-panel.md
+  (*Reset position* and Master scale reach the timeline), debug.md (the `Casts` and `Timeline` tags)
+  and testing.md (the five new suites). One test was added so the hub's frame-layering claim holds:
+  `test_layers` pins the ability timeline at HIGH, toplevel and clamped (734 cases). The README's
+  stale cleave target-count sentence (the count was removed on 2026-10-26) and *it keeps every run*
+  were corrected with the usage paragraph. Smoke row SM-DR-UT22 (new) checks *Days to keep*; UT1 now
+  also checks the `[Casts]` debug line.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

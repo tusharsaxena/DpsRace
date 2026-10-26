@@ -377,12 +377,13 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
-### test_layers.lua (6)
+### test_layers.lua (7)
 
 - layers: one table names the addon's tiers by the standard's keys
 - layers: no strata string and no bare level number at a call site
 - layers: the Race HUD is MEDIUM, toplevel and clamped
 - layers: the Results window is HIGH, toplevel and clamped
+- layers: the ability timeline is HIGH, toplevel and clamped, like the Results window
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
@@ -899,7 +900,7 @@ Total.
 | test_chart.lua | 29 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
-| test_layers.lua | 6 |
+| test_layers.lua | 7 |
 | test_results.lua | 50 |
 | test_results_fit.lua | 3 |
 | test_results_group.lua | 6 |
@@ -931,4 +932,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **733** |
+| **Total** | **734** |
