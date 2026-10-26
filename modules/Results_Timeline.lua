@@ -22,14 +22,18 @@ local _, NS = ...
 -- name's shows the client's spell tooltip and both counts.
 --
 -- ZOOM (P12, the owner's call, 2026-10-27). Three controls at the right of the *Casts* heading line
--- (zoom out, zoom in, reset) step the time axis through ZOOMS for the strips and the lanes together:
+-- (zoom in, zoom out, reset) step the time axis through ZOOMS for the strips and the lanes together:
 -- the time area is laid out ZOOMS[i] times the lanes' width and shown through clipping scroll frames
 -- (one over the strips and their axis, one over the lanes, one over the pinned axis) that pan
 -- together, the name cells and the counts staying put. Zoomed in (P14, the owner's call, 2026-10-27),
 -- a scrollbar along the window's bottom under the pinned axis, the lanes' width, its thumb the view's
 -- share of the axis (the lanes' width over the zoomed width), scrolls both sections: drag the thumb or
--- click the track; and the mouse wheel anywhere in the window scrolls left and right (up toward 0:00),
--- Shift+wheel up and down. At 1x there is no scrollbar and the wheel scrolls up and down. The view is
+-- click the track. P15 (the owner's call, 2026-10-27): the mouse wheel anywhere in the window scrolls up
+-- and down at any zoom, and Shift+wheel left and right while zoomed in (up toward 0:00; at 1x it does
+-- nothing); two arrows after the reset control pan a quarter of the view (PAN) left or right, each
+-- disabled and dimmed at 1x and at its end of the axis. The client has no horizontal (tilt) wheel for
+-- addons: OnMouseWheel's one delta is up or down, and no other script takes the wheel. The five controls
+-- are one size (CONTROL, CONTROL_ICON, CONTROL_FONT). At 1x there is no scrollbar. The view is
 -- kept as the fraction of the axis at its left edge (`pos`), so a resize keeps the same moment at the
 -- left; a zoom keeps the view's middle. Zoom and pan go back to 1x on another run or compare target.
 --
@@ -107,14 +111,22 @@ Timeline.STRIP_GAP = 8
 Timeline.CASTS_AXIS_H = 16
 Timeline.MAX_STACK = 12
 Timeline.CLIP_PAD = 8
--- The zoom steps (the time axis's width over the lanes'), and a wheel notch while zoomed: a quarter of
--- the view. The scrollbar (zoomed only): 10 px tall, 6 px off the window's bottom, 4 px under the
+-- The zoom steps (the time axis's width over the lanes'), and a Shift+wheel notch or an arrow's click
+-- while zoomed: a quarter of the view. The scrollbar (zoomed only): 10 px tall, 6 px off the window's bottom, 4 px under the
 -- pinned axis, which moves up by SCROLL_H + SCROLL_GAP to make room.
 Timeline.ZOOMS = { 1, 1.5, 2, 3, 4, 6, 8 }
 Timeline.PAN = 0.25
 Timeline.SCROLL_H = 10
 Timeline.SCROLL_GAP = 4
 Timeline.BOTTOM = 6         -- the pinned axis's (or the scrollbar's) gap to the window's bottom
+-- The *Casts* heading line's controls (P15: the 10 px +/- glyphs read small beside the 12 px reset
+-- mark): each a 16 px box, an icon 11 px, a glyph in a 16 px font (a "+" about as wide as the icon),
+-- 2 px apart and SCROLL_SEP between the zoom controls and the arrows. DIM: a control that cannot act.
+Timeline.CONTROL = 16
+Timeline.CONTROL_ICON = 11
+Timeline.CONTROL_FONT = "GameFontHighlightLarge"
+Timeline.SCROLL_SEP = 8
+Timeline.DIM = 0.4
 -- The line between the two *Casts* strips (P14): a light gray, one physical pixel tall.
 Timeline.DIVIDER = { 0.6, 0.6, 0.6, 0.15 }
 
@@ -487,22 +499,33 @@ local function clipLayer(parent)
     return clip, layer
 end
 
--- The zoom controls at the right end of the *Casts* heading line, right to left: reset, zoom out,
--- zoom in; the zoom level left of them. Over the strips' clip (a higher frame level).
+-- The controls at the right end of the *Casts* heading line, right to left: scroll right, scroll left,
+-- then SCROLL_SEP apart reset, zoom out, zoom in; the zoom level left of them (read left to right:
+-- "1x + - reset < >", the zoom group whole and the arrows apart). Over the strips' clip (a higher frame
+-- level). Each one size: a CONTROL box, its icon CONTROL_ICON, its glyph in CONTROL_FONT.
 local function buildZoom()
     ui.zoomStrip = Style.NewStrip()
     local level = ui.content:GetFrameLevel() + 10
     local function control(name, glyph, tip, onClick)
         local b = Style.AddToStrip(ui.zoomStrip, Style.ControlButton(ui.content, name, glyph, tip, onClick))
         b:SetFrameLevel(level)
+        b:SetSize(Timeline.CONTROL, Timeline.CONTROL)
+        b.icon:SetSize(Timeline.CONTROL_ICON, Timeline.CONTROL_ICON)
+        b.glyph:SetFontObject(Timeline.CONTROL_FONT)
         return b
     end
+    ui.scrollRight = control("chevron-right", ">", L["Scroll right, toward the end (or Shift+mouse wheel down)"],
+        function() Timeline.Pan(-1) end)
+    ui.scrollRight:SetPoint("TOPRIGHT", ui.content, "TOPRIGHT", 0, 0)
+    ui.scrollLeft = control("chevron-left", "<", L["Scroll left, toward 0:00 (or Shift+mouse wheel up)"],
+        function() Timeline.Pan(1) end)
+    ui.scrollLeft:SetPoint("RIGHT", ui.scrollRight, "LEFT", -2, 0)
     ui.zoomReset = control("reset", "R", L["Reset zoom"], function() Timeline.ResetZoom() end)
-    ui.zoomReset:SetPoint("TOPRIGHT", ui.content, "TOPRIGHT", 0, 0)
-    ui.zoomOut = control(nil, "-", L["Zoom out (at 1x the mouse wheel scrolls up and down)"],
+    ui.zoomReset:SetPoint("RIGHT", ui.scrollLeft, "LEFT", -Timeline.SCROLL_SEP, 0)
+    ui.zoomOut = control(nil, "-", L["Zoom out (the mouse wheel scrolls up and down)"],
         function() Timeline.ZoomBy(-1) end)
     ui.zoomOut:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
-    ui.zoomIn = control(nil, "+", L["Zoom in (the mouse wheel then scrolls left and right, Shift+wheel up and down)"],
+    ui.zoomIn = control(nil, "+", L["Zoom in (then Shift+mouse wheel scrolls left and right; the mouse wheel scrolls up and down)"],
         function() Timeline.ZoomBy(1) end)
     ui.zoomIn:SetPoint("RIGHT", ui.zoomOut, "LEFT", -2, 0)
     ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
@@ -927,6 +950,17 @@ local function placeBar(g, shown)
     ui.syncing = false
 end
 
+-- The arrows at this pan: each live only zoomed in and short of its end of the axis, else disabled
+-- and dimmed.
+local function placeArrows(g)
+    local left = g.zoom > 1 and ui.pos > 0
+    local right = g.zoom > 1 and ui.pos < Timeline.PosRange(g.zoom)
+    ui.scrollLeft:SetEnabled(left)
+    ui.scrollLeft:SetAlpha(left and 1 or Timeline.DIM)
+    ui.scrollRight:SetEnabled(right)
+    ui.scrollRight:SetAlpha(right and 1 or Timeline.DIM)
+end
+
 -- The view's left edge (`pos`) kept on the axis, and every clip panned to it together.
 local function applyPan(g)
     ui.pos = Timeline.ClampPos(ui.pos, g.zoom)
@@ -935,15 +969,16 @@ local function applyPan(g)
     ui.lanesClip:SetHorizontalScroll(ui.hoff)
     ui.axisClip:SetHorizontalScroll(ui.hoff)
     placeBar(g, not ui.isEmpty)
+    placeArrows(g)
 end
 
 -- The zoom level beside the controls, and the controls dimmed at the ends of the steps.
 local function placeZoom(g)
     ui.zoomText:SetText(L["%sx"]:format(("%g"):format(g.zoom)))
     local i = ui.zoomI or 1
-    ui.zoomIn:SetAlpha(i < #Timeline.ZOOMS and 1 or 0.4)
-    ui.zoomOut:SetAlpha(i > 1 and 1 or 0.4)
-    ui.zoomReset:SetAlpha(i > 1 and 1 or 0.4)
+    ui.zoomIn:SetAlpha(i < #Timeline.ZOOMS and 1 or Timeline.DIM)
+    ui.zoomOut:SetAlpha(i > 1 and 1 or Timeline.DIM)
+    ui.zoomReset:SetAlpha(i > 1 and 1 or Timeline.DIM)
 end
 
 -- ── drawing ─────────────────────────────────────────────────────────────────────────────────────
@@ -1192,12 +1227,11 @@ function Timeline.DetailChanged(p)
     if p == pane and Timeline.IsShown() then draw() end
 end
 
---- One mouse-wheel notch anywhere in the window (`delta` > 0: the wheel up). Zoomed in, along the time
---- axis (up toward 0:00) and with Shift up and down; at 1x, up and down.
+--- One mouse-wheel notch anywhere in the window (`delta` > 0: the wheel up): up and down at any zoom;
+--- with Shift, along the time axis while zoomed in (up toward 0:00), and nothing at 1x (P15).
 function Timeline.Wheel(delta)
-    local shift = IsShiftKeyDown and IsShiftKeyDown()
-    if Timeline.Zoom() > 1 and not shift then return Timeline.Pan(delta) end
-    Timeline.Scroll(delta)
+    if not (IsShiftKeyDown and IsShiftKeyDown()) then return Timeline.Scroll(delta) end
+    if Timeline.Zoom() > 1 then Timeline.Pan(delta) end
 end
 
 --- One vertical notch (`delta` > 0 scrolls up), clamped to the lanes.
@@ -1208,7 +1242,8 @@ function Timeline.Scroll(delta)
     ui.scroll:SetVerticalScroll(ui.offset)
 end
 
---- One wheel notch along the time axis (`delta` > 0 pans toward 0:00): PAN of the view, clamped to it.
+--- One step along the time axis (`delta` > 0 pans toward 0:00): PAN of the view, clamped to it (a
+--- Shift+wheel notch, an arrow's click).
 function Timeline.Pan(delta)
     if not ui then return end
     local zoom = Timeline.ZoomAt(ui.zoomI)

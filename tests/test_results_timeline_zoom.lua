@@ -1,7 +1,7 @@
 -- tests/test_results_timeline_zoom.lua — the ability timeline's P12 round (modules/Results_Timeline.lua):
 -- the taller *Casts* section and its own time axis under the compared run's strip; the zoom controls
 -- at the right of the *Casts* heading line (in, out, reset) scaling the strips and the lanes together,
--- the zoomed ticks, the pan (the mouse wheel while zoomed) clamped to the axis and shared by every
+-- the zoomed ticks, the pan (Shift+wheel while zoomed, UT-P15) clamped to the axis and shared by every
 -- clip, the scrollbar (P14); the zoom kept across a redraw of the same runs and back to 1x on another run or compare target;
 -- a drag of the grip while zoomed in keeping the view and re-pooling nothing.
 
@@ -110,9 +110,11 @@ test("timeline zoom: the controls sit at the right end of the Casts heading line
     local i, u = opened()
     local TL = i.TL
     assertEqual(TL.Zoom(), 1)
-    local at = last(u.zoomReset)
+    -- The scroll arrows end the line (UT-P15); reset, out and in before them, in a row.
+    local at = last(u.scrollRight)
     assertEqual(at[1], "TOPRIGHT")
     assertTrue(at[2] == u.content and at[3] == "TOPRIGHT", "the content's right end, on the heading line")
+    assertTrue(last(u.zoomReset)[2] == u.scrollLeft, "reset before the arrows")
     assertTrue(last(u.zoomOut)[2] == u.zoomReset and last(u.zoomIn)[2] == u.zoomOut, "in, out, reset in a row")
     assertEqual(u.zoomIn.glyph.__text, "+")
     assertEqual(u.zoomOut.glyph.__text, "-")
@@ -181,7 +183,7 @@ test("timeline zoom: zoomed in, the strips and the lanes widen together and the 
     assertFalse(u.bar:IsShown(), "no scrollbar at 1x")
 end)
 
-test("timeline zoom: a zoom keeps the view's middle; zoomed in, the wheel pans and Shift+wheel scrolls", function()
+test("timeline zoom: a zoom keeps the view's middle; zoomed in, Shift+wheel pans and the wheel scrolls", function()
     local i, u = opened()
     local TL = i.TL
     assertEqual(TL.Rezoom(0, 1, 2), 0.25, "1x to 2x about the middle")
@@ -193,13 +195,13 @@ test("timeline zoom: a zoom keeps the view's middle; zoomed in, the wheel pans a
     u.zoomIn:__fire("OnClick")
     u.zoomIn:__fire("OnClick")   -- 2x, through 1.5x, from the middle of 1x
     near(u.pos, 0.25, "the middle kept")
-    u.scroll:GetScript("OnMouseWheel")(u.scroll, 1)
-    near(u.pos, 0.25 - TL.PAN / 2, "the wheel up pans toward 0:00")
-    assertEqual(u.offset, 0, "and does not scroll")
     i.mocks.__modifiers.shift = true
     u.scroll:GetScript("OnMouseWheel")(u.scroll, 1)
-    near(u.pos, 0.25 - TL.PAN / 2, "Shift+wheel leaves the pan")
+    near(u.pos, 0.25 - TL.PAN / 2, "Shift+wheel up pans toward 0:00")
+    assertEqual(u.offset, 0, "and does not scroll")
     i.mocks.__modifiers.shift = false
+    u.scroll:GetScript("OnMouseWheel")(u.scroll, 1)
+    near(u.pos, 0.25 - TL.PAN / 2, "the plain wheel leaves the pan (UT-P15)")
     -- The zoomed axis's steps: a round step leaving about a quarter of the lanes between labels.
     assertEqual(table.concat(TL.Ticks(60, 8), ","), "0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60")
     assertEqual(table.concat(TL.Ticks(180, 3), ","), "0,15,30,45,60,75,90,105,120,135,150,165,180")

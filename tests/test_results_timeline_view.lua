@@ -1,8 +1,7 @@
 -- tests/test_results_timeline_view.lua — the ability timeline's P14 round (modules/Results_Timeline.lua,
 -- with Results.Placement in modules/Results.lua): the scrollbar along the window's bottom while zoomed
--- in (its thumb the view's share, a drag or a track click scrolling both sections, none at 1x); the
--- mouse wheel anywhere in the window (left and right zoomed in, Shift+wheel and the 1x wheel up and
--- down) and the zoom controls' tooltips saying so; the strips' labels on their middles; the light line
+-- in (its thumb the view's share, a drag or a track click scrolling both sections, none at 1x; the
+-- wheel's P15 rule is test_results_timeline_scroll's); the strips' labels on their middles; the light line
 -- between the two strips, the time area's width, in *Casts* only; and every open exactly over the
 -- Results window in either view, a move or a resize never stored.
 
@@ -75,7 +74,6 @@ local function opened()
 end
 
 local function last(region) return region.__points[#region.__points] end
-local function wheel(frame, delta) frame:GetScript("OnMouseWheel")(frame, delta) end
 local function near(a, b, msg) assertTrue(math.abs(a - b) < 1e-9, (msg or "") .. ": " .. a .. " vs " .. b) end
 
 -- ── the scrollbar ───────────────────────────────────────────────────────────────────────────────
@@ -148,47 +146,8 @@ test("timeline view: a drag of the thumb or a click on the track scrolls Casts a
     end)
     TL.Pan(-1)
     assertEqual(fired, 1)
-    assertEqual(u.bar.__value, u.hoff, "the slider follows the wheel's pan")
+    assertEqual(u.bar.__value, u.hoff, "the slider follows a pan")
     assertEqual(u.hoff, TL.PAN * laneW, "a notch: a quarter of the view")
-end)
-
--- ── the mouse wheel ─────────────────────────────────────────────────────────────────────────────
-
-test("timeline view: zoomed in, the wheel scrolls left and right and Shift+wheel up and down; at 1x it scrolls up and down", function()
-    local i = seeded()
-    local list = {}
-    for n = 1, 30 do list[n] = { n, 100000 + n } end
-    i.NS.db.global.runs.many = mkRun(i.NS, "many", 1000, list)
-    i.NS.Bests.Invalidate()
-    i.R.ShowRun("many")
-    local u = press(i)
-    local TL = i.TL
-    -- 1x: up and down, anywhere in the window.
-    assertTrue(u.frame.__wheel, "the window takes the wheel")
-    wheel(u.frame, -1)
-    assertEqual(u.offset, TL.PAIR_H, "the wheel down scrolls down a pair")
-    wheel(u.scroll, 1)
-    assertEqual(u.offset, 0)
-    -- Zoomed in: the wheel down goes later (right), up earlier (left); the vertical scroll stays.
-    TL.ZoomBy(4)
-    TL.Pan(1000)
-    wheel(u.frame, -1)
-    near(u.pos, TL.PAN / 4, "the wheel down: later")
-    wheel(u.scroll, -1)
-    near(u.pos, 2 * TL.PAN / 4, "over the lanes too")
-    wheel(u.bar, 1)
-    near(u.pos, TL.PAN / 4, "the wheel up over the scrollbar: earlier")
-    assertEqual(u.offset, 0, "no vertical scroll")
-    i.mocks.__modifiers.shift = true
-    wheel(u.frame, -1)
-    assertEqual(u.offset, TL.PAIR_H, "Shift+wheel down scrolls down")
-    near(u.pos, TL.PAN / 4, "and leaves the view")
-    wheel(u.scroll, 1)
-    assertEqual(u.offset, 0)
-    i.mocks.__modifiers.shift = false
-    -- The zoom controls say so.
-    assertEqual(u.zoomIn.tip, "Zoom in (the mouse wheel then scrolls left and right, Shift+wheel up and down)")
-    assertEqual(u.zoomOut.tip, "Zoom out (at 1x the mouse wheel scrolls up and down)")
 end)
 
 -- ── the strips ──────────────────────────────────────────────────────────────────────────────────

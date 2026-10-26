@@ -126,3 +126,8 @@ and the smoke row that measures it where one exists.
   ([schema.md](schema.md), migration 2 → 3).
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
+- **The ability timeline does not scroll sideways on a tilt wheel or a touchpad's sideways swipe**
+  (UT-P15, checked 2026-10-27). The client gives addons one wheel script, `OnMouseWheel(self, delta)`,
+  whose delta is up (1) or down (-1) only; no script, event or binding reports a horizontal wheel
+  (warcraft.wiki.gg's widget script handlers list none). Shift+wheel, the scroll arrows and the
+  scrollbar move the zoomed timeline left and right instead.

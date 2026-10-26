@@ -688,10 +688,13 @@ L["Timeline"] = "Timeline"
 L["Right: casts in each lane"] = "Right: casts in each lane"
 L["Casts"] = "Casts"
 L["By ability"] = "By ability"
-L["Zoom in (the mouse wheel then scrolls left and right, Shift+wheel up and down)"] =
-    "Zoom in (the mouse wheel then scrolls left and right, Shift+wheel up and down)"
-L["Zoom out (at 1x the mouse wheel scrolls up and down)"] = "Zoom out (at 1x the mouse wheel scrolls up and down)"
+L["Zoom in (then Shift+mouse wheel scrolls left and right; the mouse wheel scrolls up and down)"] =
+    "Zoom in (then Shift+mouse wheel scrolls left and right; the mouse wheel scrolls up and down)"
+L["Zoom out (the mouse wheel scrolls up and down)"] = "Zoom out (the mouse wheel scrolls up and down)"
 L["Reset zoom"] = "Reset zoom"
+L["Scroll left, toward 0:00 (or Shift+mouse wheel up)"] = "Scroll left, toward 0:00 (or Shift+mouse wheel up)"
+L["Scroll right, toward the end (or Shift+mouse wheel down)"] =
+    "Scroll right, toward the end (or Shift+mouse wheel down)"
 L["%sx"] = "%sx"
 L["No casts recorded"] = "No casts recorded"
 L["Too many casts here for %d rows: this icon overlaps others."] =

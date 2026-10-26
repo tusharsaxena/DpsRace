@@ -107,6 +107,7 @@ local SUITES = {
     "test_results_timeline_zoom",
     "test_results_timeline_modal",
     "test_results_timeline_view",
+    "test_results_timeline_scroll",
     "test_sizing",
     "test_tooltips",
     "test_schema",

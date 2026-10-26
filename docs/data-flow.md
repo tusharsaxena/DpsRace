@@ -377,8 +377,8 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
   position is `MarkX` on the window's tracked size and the zoom: the controls at the right of the *Casts*
   heading line step `ZOOMS` (1x to 8x), which lays the strips' and the lanes' time area out that many
-  times the lanes' width in clipping scroll frames that pan together (zoomed in, the mouse wheel, `Pan`,
-  and the scrollbar along the window's bottom, `ScrollTo`, whose thumb is the view's share), kept
+  times the lanes' width in clipping scroll frames that pan together (zoomed in, Shift+wheel and the scroll
+  arrows after the zoom controls, `Pan`, a quarter of the view a step, and the scrollbar along the window's bottom, `ScrollTo`, whose thumb is the view's share), kept
   as the fraction of the axis at the view's left (`ClampPos`, `Rezoom`); another run or compare target
   goes back to 1x. The detail calls `ResultsTimeline.DetailChanged`
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
