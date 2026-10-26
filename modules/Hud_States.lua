@@ -854,6 +854,43 @@ function Builders.stop(parent)
     return body
 end
 
+-- The waiting body's hint box (the owner's call, 2026-10-26: the fixed 64 px left an empty band
+-- under three lines): its text's lines at the box's inner width, HINT_PADY above and below. The
+-- lines are estimated, never measured: a greedy word wrap at HINT_ADVANCE px a character (the
+-- Results detail's estimate for the same font, a little over its real average, so a line too many
+-- rather than one too few), each line FONT.TEXT's HINT_LINE_H.
+local HINT_PADX, HINT_PADY = 8, 6
+local HINT_ADVANCE, HINT_LINE_H = 5.4, 12
+States.HINT_PADY, States.HINT_LINE_H = HINT_PADY, HINT_LINE_H
+
+--- How many lines `s` wraps to in `width` pixels at HINT_ADVANCE a character (plain copy, config math).
+--- @param s string
+--- @param width number
+--- @return number
+function States.HintLines(s, width)
+    local perLine = math.max(1, math.floor(width / HINT_ADVANCE))
+    local lines, len = 1, 0
+    for word in tostring(s):gmatch("%S+") do
+        local n = #word
+        if len == 0 then
+            len = n
+        elseif len + 1 + n <= perLine then
+            len = len + 1 + n
+        else
+            lines, len = lines + 1, n
+        end
+    end
+    return lines
+end
+
+--- The hint box's height for `s` across a body `width` wide: its lines and the padding above and below.
+--- @param s string
+--- @param width number
+--- @return number
+function States.HintHeight(s, width)
+    return States.HintLines(s, width - 2 * HINT_PADX) * HINT_LINE_H + 2 * HINT_PADY
+end
+
 -- WAITING: combat is holding; the hint, Stop Now and Cancel (screen 06; Round C).
 function Builders.waiting(parent)
     local body = newBody(parent, "waiting")
@@ -864,13 +901,21 @@ function Builders.waiting(parent)
     w.hint = panel(f, { 1, 0.72, 0.29, 0.07 }, { 1, 0.72, 0.29, 0.35 })
     w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -40 - KPI_HEIGHT - GAP)
     w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -40 - KPI_HEIGHT - GAP)
-    w.hint:SetHeight(64)
     w.hintText = text(w.hint, FONT.TEXT, { 0.95, 0.85, 0.67 })
-    w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", 8, -7)
-    w.hintText:SetPoint("BOTTOMRIGHT", w.hint, "BOTTOMRIGHT", -8, 7)
+    w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", HINT_PADX, -HINT_PADY)
+    w.hintText:SetPoint("TOPRIGHT", w.hint, "TOPRIGHT", -HINT_PADX, -HINT_PADY)
     w.hintText:SetJustifyV("TOP")
     stopButtons(body)
-    function body.Layout(self, width) layoutRow(self.footer, self.frame, width) end
+    body.width = 236
+    -- The hint box sized to its text at the body's width (States.HintHeight), never read off the label.
+    function body.SizeHint(self)
+        self.w.hint:SetHeight(States.HintHeight(self.hintShown or "", self.width))
+    end
+    function body.Layout(self, width)
+        self.width = width
+        layoutRow(self.footer, self.frame, width)
+        self:SizeHint()
+    end
     function body.Update(self, v)
         local title = L["Waiting for combat to end"]
         if not v.inCombat then
@@ -884,6 +929,10 @@ function Builders.waiting(parent)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         self.w.hint:SetShown(v.hint ~= nil)
         self.w.hintText:SetText(v.hint or "")
+        if v.hint ~= self.hintShown then
+            self.hintShown = v.hint
+            self:SizeHint()
+        end
     end
     return body
 end

@@ -302,6 +302,9 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. The owner widened it to every window the
   addon owns (Results, the timeline, the HUD), with one shared pattern, and asked for it as an upstream standard rule. Lay out cheaply while sizing (no full
   table rebind or detail redraw per frame) and redraw fully once on release, keeping the minimums.
+- [x] **Waiting hint box: sized to its text:** the waiting screen's sticky-combat hint box was a fixed 64 px with an
+  empty band under three lines. Size it from config to the hint's estimated lines at the body's width, 6 px above and
+  below, at the minimum width and wider, with and without a drop-combat ability named.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

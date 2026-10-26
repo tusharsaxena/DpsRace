@@ -305,6 +305,15 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
+### test_hud_hint.lua (6)
+
+- hud hint: the line estimate wraps whole words at the width
+- hud hint: at the minimum width the plain hint is three lines and 6 px above and below
+- hud hint: a named drop-combat ability takes the line it needs, and a wider body fewer
+- hud hint: the text is inset from the box's top, never pinned to a fixed bottom
+- hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
+- hud hint: the box resizes when the hint's text changes, and not on every redraw
+
 ### test_chart.lua (29)
 
 - chart: the bucket count is the length in whole seconds, at most 60
@@ -965,6 +974,7 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
+| test_hud_hint.lua | 6 |
 | test_chart.lua | 29 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
@@ -1003,4 +1013,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **793** |
+| **Total** | **799** |

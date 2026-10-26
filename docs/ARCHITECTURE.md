@@ -436,8 +436,8 @@ Nothing is over the cap today. Six files are in the 1000–1500 on-notice band: 
 `tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline` and `test_results_delta` did) and `tests/test_hud.lua`
-at 1412, and four addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at
-1068, `modules/Results_Runs.lua` at 1039 (the detail's Delta box contexts, 2026-10-26) and
+at 1412 (the waiting hint box's cases went to a new `test_hud_hint`), and four addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at
+1119, `modules/Results_Runs.lua` at 1039 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1021 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than
