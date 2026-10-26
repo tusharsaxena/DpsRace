@@ -342,7 +342,7 @@ each frame's strata, level and toplevel.
   (which is refused in combat) and the bag counts again on the record path after combat, each client
   call bare at call time and pcall'd, every value through `NS.Secrets`; it does not compare item
   cooldowns. The chart's cooldown dots and the timeline's lanes are plain geometry: a cast's plain
-  time over the plain length across the configured width (`HudChart.DotX`, `ResultsTimeline.DotX`),
+  time over the plain length across the configured width (`HudChart.DotX`, `ResultsTimeline.MarkX`),
   never read back off a frame. The HUD's dots take no mouse; the Results detail's and the timeline's
   hover frames show tooltips built from the stored record (the timeline's name cell the client's
   spell tooltip by its stored ID). The timeline window is plain and non-secure like the Results

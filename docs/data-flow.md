@@ -340,11 +340,11 @@ Taint Notes, B4.1).
   live for a run with a non-empty cast list, opens a pop-out window on the detail pane. It draws
   `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown over 15 s
   first, longest first, then by this run's count, then the other's, the player's before the pet's),
-  each with two lanes, this run's casts as gold dots above the compared run's as blue, each lane's
+  each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
   count at its right, over an axis to the longer of the two races (`Span`, `Ticks`). The compared run
   is `ResultsDetail.CompareTarget(true)` (the best, the runner-up or the picked run, whether or not
   the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
-  position is `DotX` on the window's stored size. The detail calls `ResultsTimeline.DetailChanged`
+  position is `MarkX` on the window's stored size. The detail calls `ResultsTimeline.DetailChanged`
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
   with the Results window, and its position and size are `profile.windows.timeline`.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the

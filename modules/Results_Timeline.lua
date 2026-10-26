@@ -5,11 +5,13 @@ local _, NS = ...
 --
 -- THE LAYOUT. A legend bar (this run's date in gold, the compared run's in blue and what it is: the
 -- best, the runner-up or the picked run), then one pair of lanes per ability: its name cell (icon,
--- name, its cooldown when over 15 s, "(pet)" for a pet's) beside two lanes, the top one this run's
--- casts (gold dots), the bottom one the compared run's (blue), each lane's cast count at its right.
--- Abilities with a cooldown over 15 s come first, longest first; the rest follow by count. The time
--- axis (0, the quarters, the end) is pinned under the lanes, which scroll (the mouse wheel). A dot's
--- tooltip names the spell and its time; a name's shows the client's spell tooltip and both counts.
+-- name, "(pet)" for a pet's, and under the name its cooldown when over 15 s) beside two lanes, the top
+-- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
+-- (blue), each lane's cast count at its right. Nothing sits between the name cell and the lanes but
+-- the gap (the owner's call, 2026-10-26: a cooldown beside the lanes read as part of them). Abilities
+-- with a cooldown over 15 s come first, longest first; the rest follow by count. The time axis (0,
+-- the quarters, the end) is pinned under the lanes, which scroll (the mouse wheel). A tick's tooltip
+-- names the spell and its time; a name's shows the client's spell tooltip and both counts.
 --
 -- WHICH RUNS. The detail's: its run, and its compare target resolved whether or not the compare is on
 -- (CompareTarget(true)). Every detail draw and every compare change (a pick, Clear Pick, the toggle)
@@ -23,8 +25,8 @@ local _, NS = ...
 -- Master scale acts on it. It closes with the Results window. Built on first open.
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
--- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, DotX,
--- CooldownText and Legend are pure.
+-- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, MarkX,
+-- CooldownText, CooldownLine and Legend are pure.
 
 local Timeline = { wanted = false }
 NS.ResultsTimeline = Timeline
@@ -38,13 +40,14 @@ local C = Tbl.COLORS
 local DW = NS.defaults.profile.windows.timeline
 Timeline.FRAME_NAME = "DpsRaceTimeline"
 Timeline.WIDTH, Timeline.HEIGHT = DW.width, DW.height
-Timeline.MIN_WIDTH = 600
+Timeline.MIN_WIDTH = 540
 Timeline.MIN_HEIGHT = 240
 
--- The mock's geometry: a 170 px name cell, the lanes, a count cell, 10 px between them; each lane 16 px,
--- 2 px between a pair's lanes and 10 px between pairs.
+-- The geometry: a 150 px name cell (the icon and the name on the top lane's line, the cooldown under
+-- it), the lanes, a count cell, 10 px between them; each lane 16 px, 2 px between a pair's lanes and
+-- 10 px between pairs.
 Timeline.PAD = 12
-Timeline.NAME_W = 170
+Timeline.NAME_W = 150
 Timeline.COUNT_W = 40
 Timeline.GAP = 10
 Timeline.LANE_H = 16
@@ -52,9 +55,9 @@ Timeline.LANE_GAP = 2
 Timeline.PAIR_GAP = 10
 Timeline.PAIR_H = 2 * Timeline.LANE_H + Timeline.LANE_GAP + Timeline.PAIR_GAP
 Timeline.ICON = 16
-Timeline.DOT = 8            -- a cast's dot
-Timeline.DOT_HIT = 12       -- its hover frame
-Timeline.INSET = 4          -- a dot's radius: one at 0:00 or at the end stays inside its lane
+Timeline.MARK_W = 2         -- a cast's tick, the lane's full height
+Timeline.MARK_HIT = 8       -- its hover frame's width (the lane's height)
+Timeline.INSET = 1          -- half a tick: one at 0:00 or at the end stays inside its lane
 Timeline.LEGEND_H = 26
 Timeline.NOTE_H = 16
 Timeline.AXIS_H = 20
@@ -62,7 +65,8 @@ Timeline.AXIS_H = 20
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
 Timeline.OTHER = { 0.35, 0.66, 1.0 }
-local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted
+local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted (the legend's swatches)
+local WHITE = "Interface\\Buttons\\WHITE8x8"                      -- a cast's tick, tinted
 local TRACK = { 1, 1, 1, 0.06 }
 local GRID = { 1, 1, 1, 0.08 }
 local HEADER_H = Style.TITLE_BAR_H
@@ -149,18 +153,24 @@ function Timeline.Ticks(span)
     return { 0, span / 4, span / 2, span * 3 / 4, span }
 end
 
---- A dot's x in a lane `width` wide: INSET + clamp(t, 0, span) / span x (width - 2 x INSET). A
---- pre-pull cast sits at 0:00, one after the buzzer at the end. nil without a time or a span.
-function Timeline.DotX(t, span, width)
+--- A cast tick's middle x in a lane `width` wide: INSET + clamp(t, 0, span) / span x (width - 2 x INSET).
+--- A pre-pull cast sits at 0:00, one after the buzzer at the end. nil without a time or a span.
+function Timeline.MarkX(t, span, width)
     if type(t) ~= "number" or type(span) ~= "number" or span <= 0 then return nil end
     local inset = Timeline.INSET
     return inset + math.max(0, math.min(span, t)) / span * math.max(0, width - 2 * inset)
 end
 
---- A row's cooldown as the name cell shows it: m:ss when over 15 s, else nothing.
+--- A row's cooldown: m:ss when over 15 s, else nothing.
 function Timeline.CooldownText(row)
     if not (row and row.cd > NS.Casts.IMPORTANT_MS) then return "" end
     return NS.Format.Length(row.cd / 1000)
+end
+
+--- The line under a row's name in its name cell: "1:30 cooldown" when over 15 s, else nothing.
+function Timeline.CooldownLine(row)
+    local cd = Timeline.CooldownText(row)
+    return cd ~= "" and L["%s cooldown"]:format(cd) or ""
 end
 
 --- A row's name: the spell's, "(pet)" after a pet's.
@@ -286,19 +296,19 @@ local function buildBody(f)
     ui.scroll:SetScrollChild(ui.content)
     ui.scroll:EnableMouseWheel(true)
     ui.scroll:SetScript("OnMouseWheel", function(_, delta) Timeline.Scroll(delta) end)
-    -- The dots' own layer over the lanes (a child frame draws over its parent's textures); the
-    -- quarter lines under the dots on it.
-    ui.dots = CreateFrame("Frame", nil, ui.content)
-    ui.dots:SetAllPoints(ui.content)
-    ui.dots:SetFrameLevel(ui.content:GetFrameLevel() + 5)
+    -- The ticks' own layer over the lanes (a child frame draws over its parent's textures); the
+    -- quarter lines under the ticks on it.
+    ui.marks = CreateFrame("Frame", nil, ui.content)
+    ui.marks:SetAllPoints(ui.content)
+    ui.marks:SetFrameLevel(ui.content:GetFrameLevel() + 5)
     ui.grid = {}
     for i = 1, 3 do
-        ui.grid[i] = ui.dots:CreateTexture(nil, "BACKGROUND")
+        ui.grid[i] = ui.marks:CreateTexture(nil, "BACKGROUND")
         ui.grid[i]:SetColorTexture(GRID[1], GRID[2], GRID[3], GRID[4])
         ui.grid[i]:SetWidth(1)
     end
     ui.pairs = NS.Pool.New()
-    ui.dotPool = NS.Pool.New()
+    ui.markPool = NS.Pool.New()
     ui.hitPool = NS.Pool.New()
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
@@ -380,7 +390,11 @@ local function newPair()
     pair.icon:SetPoint("LEFT", pair, "TOPLEFT", 0, -Timeline.LANE_H / 2)
     pair.name = Style.Text(pair, FONT.TEXT, C.text)
     pair.name:SetPoint("LEFT", pair.icon, "RIGHT", 6, 0)
-    pair.cd = Style.Text(pair, FONT.CAPTION, nil, "RIGHT")
+    pair.name:SetWidth(Timeline.NAME_W - Timeline.ICON - 6)
+    -- The cooldown on the bottom lane's line, under the name.
+    pair.cd = Style.Text(pair, FONT.CAPTION, C.dim)
+    pair.cd:SetPoint("LEFT", pair, "TOPLEFT", Timeline.ICON + 6, -(1.5 * Timeline.LANE_H + Timeline.LANE_GAP))
+    pair.cd:SetWidth(Timeline.NAME_W - Timeline.ICON - 6)
     pair.laneA, pair.laneB = track(pair), track(pair)
     pair.countA = Style.Text(pair, FONT.TEXT, Timeline.THIS, "RIGHT")
     pair.countB = Style.Text(pair, FONT.TEXT, Timeline.OTHER, "RIGHT")
@@ -409,57 +423,61 @@ local function fillPair(pair, row, y, g)
     pair:SetWidth(g.cw)
     pair.icon:SetTexture(NS.HudBreakdown.SpellIcon(row.id))
     pair.name:SetText(Timeline.Name(row))
-    pair.cd:SetText(Timeline.CooldownText(row))
-    pair.cd:ClearAllPoints()
-    pair.cd:SetPoint("RIGHT", pair, "TOPLEFT", Timeline.NAME_W, -Timeline.LANE_H / 2)
-    pair.cd:SetWidth(44)
-    pair.name:SetWidth(Timeline.NAME_W - Timeline.ICON - 6 - 46)
+    pair.cd:SetText(Timeline.CooldownLine(row))
     placeLane(pair, pair.laneA, pair.countA, 0, g.laneX, g.laneW)
     placeLane(pair, pair.laneB, pair.countB, -(Timeline.LANE_H + Timeline.LANE_GAP), g.laneX, g.laneW)
     pair.countA:SetText(tostring(row.countA))
     pair.countB:SetText(ui.otherHas and tostring(row.countB) or "")
 end
 
--- ── the dots ────────────────────────────────────────────────────────────────────────────────────
+-- ── the cast ticks ──────────────────────────────────────────────────────────────────────────────
 
 local function newHit()
-    local h = CreateFrame("Frame", nil, ui.dots)
-    h:SetSize(Timeline.DOT_HIT, Timeline.DOT_HIT)
+    local h = CreateFrame("Frame", nil, ui.marks)
+    h:SetSize(Timeline.MARK_HIT, Timeline.LANE_H)
     h:EnableMouse(true)
     h:SetScript("OnEnter", function(self)
-        if self.cast then Tbl.BelowTip(self, Timeline.DotLines(self.cast, self.label)) end
+        if self.cast then Tbl.BelowTip(self, Timeline.MarkLines(self.cast, self.label)) end
     end)
     h:SetScript("OnLeave", Tbl.HideTip)
     return h
 end
 
---- A dot's tooltip: the spell and its time (ResultsTips.Dot), then which run it is.
-function Timeline.DotLines(cast, label)
+local function newMark()
+    local t = ui.marks:CreateTexture(nil, "OVERLAY")
+    t:SetTexture(WHITE)
+    t:SetWidth(Timeline.MARK_W)
+    t:SetHeight(Timeline.LANE_H)
+    return t
+end
+
+--- A tick's tooltip: the spell and its time (ResultsTips.Dot), then which run it is.
+function Timeline.MarkLines(cast, label)
     local lines = NS.ResultsTips.Dot(cast)
     if lines and label then lines[#lines + 1] = { label, 0.62, 0.62, 0.68 } end
     return lines
 end
 
--- One dot at `x` along the lane whose middle is `y` (content coordinates).
-local function placeDot(cast, x, y, color, label)
-    local d = NS.Pool.Acquire(ui.dotPool, function() return disc(ui.dots, color, Timeline.DOT) end)
-    d:SetVertexColor(color[1], color[2], color[3], 0.95)
-    d:ClearAllPoints()
-    d:SetPoint("CENTER", ui.dots, "TOPLEFT", x, y)
+-- One tick at `x` along the lane whose middle is `y` (content coordinates), the lane's full height.
+local function placeMark(cast, x, y, color, label)
+    local m = NS.Pool.Acquire(ui.markPool, newMark)
+    m:SetVertexColor(color[1], color[2], color[3], 0.95)
+    m:ClearAllPoints()
+    m:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
     local h = NS.Pool.Acquire(ui.hitPool, newHit)
     h.cast, h.label = cast, label
     h:ClearAllPoints()
-    h:SetPoint("CENTER", ui.dots, "TOPLEFT", x, y)
-    ui.drawn[#ui.drawn + 1] = { tex = d, hit = h, cast = cast, x = x, y = y, lane = color == Timeline.THIS and "a" or "b" }
+    h:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
+    ui.drawn[#ui.drawn + 1] = { tex = m, hit = h, cast = cast, x = x, y = y, lane = color == Timeline.THIS and "a" or "b" }
 end
 
-local function laneDots(row, side, top, g)
+local function laneMarks(row, side, top, g)
     local times = row[side]
     local color = side == "a" and Timeline.THIS or Timeline.OTHER
     local label = side == "a" and ui.thisLabel or ui.otherLabel
     for _, t in ipairs(times) do
-        local x = Timeline.DotX(t, g.span, g.laneW)
-        if x then placeDot({ t = t, id = row.id, pet = row.pet }, g.laneX + x, top - Timeline.LANE_H / 2, color, label) end
+        local x = Timeline.MarkX(t, g.span, g.laneW)
+        if x then placeMark({ t = t, id = row.id, pet = row.pet }, g.laneX + x, top - Timeline.LANE_H / 2, color, label) end
     end
 end
 
@@ -489,7 +507,7 @@ local function layoutAxis(g, shown)
     local ticks = Timeline.Ticks(g.span)
     for i, fs in ipairs(ui.axis) do
         fs:SetShown(shown)
-        local x = Timeline.PAD + g.laneX + Timeline.DotX(ticks[i], g.span, g.laneW)
+        local x = Timeline.PAD + g.laneX + Timeline.MarkX(ticks[i], g.span, g.laneW)
         local point = i == 1 and "BOTTOMLEFT" or (i == 5 and "BOTTOMRIGHT" or "BOTTOM")
         fs:ClearAllPoints()
         fs:SetPoint(point, ui.frame, "BOTTOMLEFT", x, 8)
@@ -498,21 +516,21 @@ local function layoutAxis(g, shown)
     for i, line in ipairs(ui.grid) do
         line:SetShown(shown)
         line:ClearAllPoints()
-        line:SetPoint("TOPLEFT", ui.dots, "TOPLEFT", g.laneX + Timeline.DotX(ticks[i + 1], g.span, g.laneW), 0)
-        line:SetPoint("BOTTOMLEFT", ui.dots, "BOTTOMLEFT", g.laneX + Timeline.DotX(ticks[i + 1], g.span, g.laneW), 0)
+        line:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW), 0)
+        line:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", g.laneX + Timeline.MarkX(ticks[i + 1], g.span, g.laneW), 0)
     end
 end
 
 local function layoutRows(g)
     NS.Pool.ReleaseAll(ui.pairs, function(pair) pair.row = nil end)
-    NS.Pool.ReleaseAll(ui.dotPool)
+    NS.Pool.ReleaseAll(ui.markPool)
     NS.Pool.ReleaseAll(ui.hitPool, function(h) h.cast, h.label = nil, nil end)
     ui.drawn = {}
     for i, row in ipairs(ui.rows) do
         local y = -(i - 1) * Timeline.PAIR_H
         fillPair(NS.Pool.Acquire(ui.pairs, newPair), row, y, g)
-        laneDots(row, "a", y, g)
-        laneDots(row, "b", y - Timeline.LANE_H - Timeline.LANE_GAP, g)
+        laneMarks(row, "a", y, g)
+        laneMarks(row, "b", y - Timeline.LANE_H - Timeline.LANE_GAP, g)
     end
 end
 
@@ -625,8 +643,8 @@ function Timeline.ResetPosition()
     end
 end
 
---- The dots drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.
-function Timeline.Dots()
+--- The cast ticks drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.
+function Timeline.Marks()
     return ui and ui.drawn or {}
 end
 

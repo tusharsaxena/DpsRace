@@ -111,7 +111,7 @@ NS.defaults = {
             results = { view = "expanded", expanded = { width = 1264, height = 560 },
                         collapsed = { width = 904, height = 560 } },
             -- The ability timeline (#14, modules/Results_Timeline.lua): the pop-out from the run detail.
-            timeline = { width = 860, height = 480 },
+            timeline = { width = 760, height = 480 },
         },
     },
     global = {

@@ -259,7 +259,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P9: The owner's first test round (2026-10-26)
 
-- [ ] **Timeline window:** casts as thin vertical ticks (the lane's full height; gold this run, blue the compared
+- [x] **Timeline window:** casts as thin vertical ticks (the lane's full height; gold this run, blue the compared
   run) instead of dots; an ability's cooldown as a small gray line under its name, not beside the lanes; the window
   narrowed to fit.
 - [ ] **Chart marks:** the important casts on the damage chart (live, result card, detail) as small ability icons

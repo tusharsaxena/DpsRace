@@ -1,9 +1,10 @@
 -- tests/test_results_timeline.lua — the ability timeline (#14, modules/Results_Timeline.lua): the pure
 -- rows (one per ability and caster across both runs, each run's times and counts, the order: cooldowns
--- over 15 s first, longest first, then by count), the axis and a dot's x; the detail's Timeline button
--- (disabled for a run with no casts); the window's lanes (this run's gold dots on top, the compared
--- run's blue below, the counts, the pet suffix, the cooldown), its legend, the compare target followed
--- as the detail's run, pick and Clear Pick change, the none and empty cases, the dot tooltip, Escape,
+-- over 15 s first, longest first, then by count), the axis and a cast tick's x; the detail's Timeline
+-- button (disabled for a run with no casts); the window's lanes (this run's gold ticks on top, the
+-- compared run's blue below, the counts, the pet suffix, the cooldown under the name), its legend, the
+-- compare target followed as the detail's run, pick and Clear Pick change, the none and empty cases,
+-- the tick tooltip, Escape,
 -- closing with the Results window, the stored position, Master scale and the stand-down.
 
 local T = _G.DPSRACE_TEST
@@ -83,9 +84,9 @@ end
 -- The pairs drawn now, in order.
 local function pairsOf(i) return win(i).pairs.active end
 
-local function dotsIn(i, lane, id)
+local function marksIn(i, lane, id)
     local out = {}
-    for _, d in ipairs(i.TL.Dots()) do
+    for _, d in ipairs(i.TL.Marks()) do
         if d.lane == lane and (id == nil or d.cast.id == id) then out[#out + 1] = d end
     end
     return out
@@ -137,20 +138,22 @@ test("results timeline: cooldowns over 15 s first, the longest first; then by co
     assertEqual(#i.TL.Rows(mkRun(NS, "a", 1, nil), nil), 0, "a run with no casts has no rows")
 end)
 
-test("results timeline: the axis runs to the longer race, in quarters; a dot's x is clamped inside its lane", function()
+test("results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane", function()
     local i = inst()
     local NS, TL = i.NS, i.TL
     assertEqual(TL.Span(mkRun(NS, "a", 1), nil), 60)
     assertEqual(TL.Span(mkRun(NS, "a", 1), mkRun(NS, "b", 1, nil, { race = { length = 180 } })), 180)
     assertEqual(table.concat(TL.Ticks(60), ","), "0,15,30,45,60")
-    assertEqual(TL.DotX(0, 60, 408), TL.INSET)
-    assertEqual(TL.DotX(30, 60, 408), TL.INSET + 200)
-    assertEqual(TL.DotX(-2, 60, 408), TL.INSET, "a pre-pull cast sits at 0:00")
-    assertEqual(TL.DotX(64, 60, 408), 408 - TL.INSET, "a cast after the buzzer sits at the end")
-    assertNil(TL.DotX(nil, 60, 408))
-    assertNil(TL.DotX(5, 0, 408))
+    assertEqual(TL.MarkX(0, 60, 402), TL.INSET)
+    assertEqual(TL.MarkX(30, 60, 402), TL.INSET + 200)
+    assertEqual(TL.MarkX(-2, 60, 402), TL.INSET, "a pre-pull cast sits at 0:00")
+    assertEqual(TL.MarkX(64, 60, 402), 402 - TL.INSET, "a cast after the buzzer sits at the end")
+    assertNil(TL.MarkX(nil, 60, 402))
+    assertNil(TL.MarkX(5, 0, 402))
     assertEqual(TL.CooldownText({ cd = 180000 }), "3:00")
     assertEqual(TL.CooldownText({ cd = 15000 }), "", "15 s is not over 15 s")
+    assertEqual(TL.CooldownLine({ cd = 90000 }), "1:30 cooldown", "the line under the name")
+    assertEqual(TL.CooldownLine({ cd = 13000 }), "")
     assertEqual(TL.Name({ id = FIREBOLT, pet = true }), "Spell 3110 (pet)")
     assertEqual(TL.Name({ id = INCINERATE }), "Incinerate")
 end)
@@ -185,7 +188,7 @@ end)
 
 -- ── the lanes ───────────────────────────────────────────────────────────────────────────────────
 
-test("results timeline: two lanes per ability, this run's gold dots on top and the best's blue below, with counts", function()
+test("results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts", function()
     local i = inst()
     local TL = i.TL
     board(i)
@@ -193,39 +196,50 @@ test("results timeline: two lanes per ability, this run's gold dots on top and t
     local drawn = pairsOf(i)
     assertEqual(#drawn, 5)
     assertEqual(drawn[1].name.__text, "Spell 1122")
-    assertEqual(drawn[1].cd.__text, "3:00", "its cooldown, over 15 s")
+    assertEqual(drawn[1].cd.__text, "3:00 cooldown", "its cooldown, over 15 s")
     assertEqual(drawn[3].name.__text, "Incinerate")
     assertEqual(drawn[3].cd.__text, "", "no cooldown shown under 15 s")
+    -- The cooldown sits under the name in the name cell, on the bottom lane's line: nothing between
+    -- the name cell and the lanes but the gap.
+    local cdAt = drawn[1].cd.__points[#drawn[1].cd.__points]
+    assertEqual(cdAt[1], "LEFT")
+    assertEqual(cdAt[4], TL.ICON + 6, "aligned with the name")
+    assertEqual(cdAt[5], -(1.5 * TL.LANE_H + TL.LANE_GAP), "the bottom lane's middle")
+    assertTrue(TL.ICON + 6 + drawn[1].cd.__width <= TL.NAME_W, "inside the name cell")
     assertEqual(drawn[4].name.__text, "Spell 3110 (pet)")
     assertEqual(drawn[3].countA.__text, "3")
     assertEqual(drawn[3].countB.__text, "1")
     assertEqual(drawn[1].countB.__text, "0", "the best never cast the Infernal")
-    -- Every cast is a dot: nine on top, four below.
-    assertEqual(#dotsIn(i, "a"), #THIS)
-    assertEqual(#dotsIn(i, "b"), #BEST)
-    assertEqual(#dotsIn(i, "b", INFERNAL), 0)
+    -- Every cast is a tick: nine on top, four below.
+    assertEqual(#marksIn(i, "a"), #THIS)
+    assertEqual(#marksIn(i, "b"), #BEST)
+    assertEqual(#marksIn(i, "b", INFERNAL), 0)
     -- Laid from the geometry: the lanes after the name cell, the top lane's middle and the bottom one's.
     local laneX = TL.NAME_W + TL.GAP
     local laneW = u.width - 2 * TL.PAD - laneX - TL.GAP - TL.COUNT_W
     local pairTop = -2 * TL.PAIR_H   -- Incinerate is the third pair
-    for _, d in ipairs(dotsIn(i, "a", INCINERATE)) do
-        assertEqual(d.x, laneX + TL.DotX(d.cast.t, 60, laneW))
+    for _, d in ipairs(marksIn(i, "a", INCINERATE)) do
+        assertEqual(d.x, laneX + TL.MarkX(d.cast.t, 60, laneW))
         assertEqual(d.y, pairTop - TL.LANE_H / 2)
         assertEqual(d.tex.__vertex[1], TL.THIS[1])
+        -- A thin tick the lane's full height, with a hover frame a few px wider.
+        assertEqual(d.tex.__texture, "Interface\\Buttons\\WHITE8x8")
+        assertEqual(d.tex.__width, TL.MARK_W)
+        assertEqual(d.tex.__height, TL.LANE_H)
     end
-    local below = dotsIn(i, "b", INCINERATE)[1]
+    local below = marksIn(i, "b", INCINERATE)[1]
     assertEqual(below.y, pairTop - TL.LANE_H - TL.LANE_GAP - TL.LANE_H / 2)
     assertEqual(below.tex.__vertex[3], TL.OTHER[3])
     -- The pre-pull Soul Fire clamps to 0:00.
-    assertEqual(dotsIn(i, "a", SOUL_FIRE)[1].x, laneX + TL.INSET)
+    assertEqual(marksIn(i, "a", SOUL_FIRE)[1].x, laneX + TL.INSET)
     -- The axis: 0, the quarters and the end.
     local axis = {}
     for n, fs in ipairs(u.axis) do axis[n] = fs.__text end
     assertEqual(table.concat(axis, ","), "0:00,0:15,0:30,0:45,1:00")
-    assertEqual(#i.TL.Dots(), #THIS + #BEST)
+    assertEqual(#i.TL.Marks(), #THIS + #BEST)
 end)
 
-test("results timeline: the legend names both runs; a dot's tooltip names the spell, its time and its run", function()
+test("results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run", function()
     local i = inst()
     board(i)
     local u = open(i, "this")
@@ -233,8 +247,9 @@ test("results timeline: the legend names both runs; a dot's tooltip names the sp
     assertEqual(u.legendA.__text, "This run \194\183 " .. os.date("%d %b %H:%M", NOW - HOUR))
     assertEqual(u.legendB.__text, "Best \194\183 " .. os.date("%d %b %H:%M", best.date))
     assertFalse(u.note:IsShown(), "nothing to note")
-    local dot = dotsIn(i, "a", INFERNAL)[1]
+    local dot = marksIn(i, "a", INFERNAL)[1]
     assertTrue(dot.hit.__mouse, "its hover frame takes the mouse")
+    assertTrue(i.TL.MARK_HIT > i.TL.MARK_W, "the hover frame is wider than the tick")
     local shown
     local real = i.NS.ResultsTable.BelowTip
     i.NS.ResultsTable.BelowTip = function(owner, lines) shown = { owner = owner, lines = lines } end
@@ -259,24 +274,24 @@ test("results timeline: it follows the detail: another run, a pick and Clear Pic
     local other = mkRun(i.NS, "other", 900, { { 1, CONFLAG } }, { race = { length = 180, grace = 1 }, date = NOW - 5 * HOUR })
     seed(i, { other })
     local u = open(i, "this")
-    assertEqual(#dotsIn(i, "b"), #BEST, "the best on the board")
+    assertEqual(#marksIn(i, "b"), #BEST, "the best on the board")
     -- The row menu's pick: the picked run's lanes, its label, the longer axis.
     assertTrue(i.R.CompareWith("other"))
     assertEqual(u.legendB.__text, "Picked \194\183 " .. os.date("%d %b %H:%M", other.date))
-    assertEqual(#dotsIn(i, "b"), 1)
+    assertEqual(#marksIn(i, "b"), 1)
     assertEqual(u.axis[5].__text, "3:00", "the picked run's race is longer")
     -- Clear Pick: back to the best.
     detail(i).cmp.clear:__fire("OnClick")
-    assertEqual(#dotsIn(i, "b"), #BEST)
+    assertEqual(#marksIn(i, "b"), #BEST)
     assertEqual(u.axis[5].__text, "1:00")
     -- The toggle does not change the target (it is resolved either way).
     detail(i):SetComparing(true)
-    assertEqual(#dotsIn(i, "b"), #BEST)
+    assertEqual(#marksIn(i, "b"), #BEST)
     -- The detail moves to the best: it compares with the runner-up, this run.
     i.R.ShowRun("best")
     assertEqual(u.legendB.__text, "Runner-up \194\183 " .. os.date("%d %b %H:%M", NOW - HOUR))
-    assertEqual(#dotsIn(i, "a"), #BEST)
-    assertEqual(#dotsIn(i, "b"), #THIS)
+    assertEqual(#marksIn(i, "a"), #BEST)
+    assertEqual(#marksIn(i, "b"), #THIS)
 end)
 
 test("results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note", function()
@@ -286,15 +301,15 @@ test("results timeline: with no run to compare with, or one with no casts, the b
     assertEqual(u.legendB.__text, "No run to compare with")
     assertTrue(u.note:IsShown())
     assertEqual(u.note.__text, "No run to compare with: the blue lanes stay empty.")
-    assertEqual(#dotsIn(i, "b"), 0)
+    assertEqual(#marksIn(i, "b"), 0)
     assertEqual(pairsOf(i)[1].countB.__text, "", "no count for a lane with no run")
     assertEqual(#pairsOf(i), 5, "this run's lanes still drawn")
     -- A better run on the board with no casts recorded (stored before format 3).
     seed(i, { mkRun(i.NS, "oldBest", 500, nil, { schema = 2, date = NOW - 2 * HOUR }) })
     i.R.ShowRun("alone")
     assertEqual(u.note.__text, "Best has no casts recorded: the blue lanes stay empty.")
-    assertEqual(#dotsIn(i, "b"), 0)
-    assertEqual(#dotsIn(i, "a"), #THIS)
+    assertEqual(#marksIn(i, "b"), 0)
+    assertEqual(#marksIn(i, "a"), #THIS)
 end)
 
 test("results timeline: a run with no casts or no run at all shows a message in place of the lanes", function()
@@ -308,7 +323,7 @@ test("results timeline: a run with no casts or no run at all shows a message in 
     assertTrue(u.empty:IsShown())
     assertEqual(u.empty.__text, "No casts recorded for this run.")
     assertEqual(#pairsOf(i), 0)
-    assertEqual(#i.TL.Dots(), 0)
+    assertEqual(#i.TL.Marks(), 0)
     assertFalse(u.scroll:IsShown())
     i.R.DeleteRun("old")
     assertEqual(u.empty.__text, "Select a run in the Results window to see its timeline.")

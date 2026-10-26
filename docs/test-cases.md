@@ -606,10 +606,10 @@ Total.
 
 - results timeline: one row per ability and caster across both runs, each run's times and counts
 - results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's
-- results timeline: the axis runs to the longer race, in quarters; a dot's x is clamped inside its lane
+- results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane
 - results timeline: the detail's Timeline button is live for a run with casts and disabled without
-- results timeline: two lanes per ability, this run's gold dots on top and the best's blue below, with counts
-- results timeline: the legend names both runs; a dot's tooltip names the spell, its time and its run
+- results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts
+- results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run
 - results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
 - results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
 - results timeline: a run with no casts or no run at all shows a message in place of the lanes

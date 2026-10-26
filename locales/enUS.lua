@@ -677,6 +677,7 @@ L["%s has no casts recorded: the blue lanes stay empty."] = "%s has no casts rec
 L["Select a run in the Results window to see its timeline."] = "Select a run in the Results window to see its timeline."
 L["No casts recorded for this run."] = "No casts recorded for this run."
 L["Cooldown %s"] = "Cooldown %s"
+L["%s cooldown"] = "%s cooldown"
 L["%s: 1 cast"] = "%s: 1 cast"
 L["%s: %d casts"] = "%s: %d casts"
 L["Open the ability timeline: every cast of this run beside the run it is compared with."] =
