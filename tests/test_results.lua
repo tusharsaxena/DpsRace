@@ -928,16 +928,23 @@ test("results: detail flags name late-cast spells and the session matched by lis
     local keys = {}
     for n, line in ipairs(d.flagLines) do keys[n] = line.key end
     assertEqual(table.concat(keys, ","), "lateCasts,sessionFromList")
-    assertEqual(d.w.flagTitle.__text, "Flags \194\183 2")
-    local body = d.w.flagBody.__text
+    assertEqual(d.w.flagTitle.__text, "Flags")
+    local rows = d.w.flagRows
+    assertEqual(rows[1].main.__text, "1 late cast")
+    assertEqual(rows[1].sub.__text, "+1.4s Incinerate")
+    local body = rows[1].body.__text
     assertTrue(body:find("Incinerate started +1.4s after the buzzer (grace 1.0s).", 1, true) ~= nil, body)
-    assertTrue(body:find("Session matched by list", 1, true) ~= nil, body)
     assertTrue(body:find("The run still counts", 1, true) ~= nil, body)
+    assertEqual(rows[2].main.__text, "Session matched by list")
+    assertFalse(rows[2].sub:IsShown(), "a flag with no detail line")
+    assertTrue(rows[2].body.__text:find("found by its place in Blizzard's list", 1, true) ~= nil, rows[2].body.__text)
 
     seed(i, { mkRun("b", { status = "incomplete", result = { damage = 1, dps = 1, endedAt = 60 } }) })
     i.R.ShowRun("b")
-    assertTrue(d.w.flagTitle.__text:find("Incomplete", 1, true) ~= nil, d.w.flagTitle.__text)
-    assertTrue(d.w.flagBody.__text:find("does not count toward bests", 1, true) ~= nil)
+    assertEqual(rows[1].main.__text, "Incomplete: combat ended before the buzzer")
+    assertEqual(rows[1].body.__text, "It does not count toward bests.")
+    assertFalse(rows[2].main:IsShown(), "the second row left from the run before is hidden")
+    assertFalse(rows[2].body:IsShown())
     assertEqual(d.w.dps.label.__text, "DPS \194\183 Incomplete")
 end)
 

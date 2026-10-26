@@ -13,7 +13,7 @@ local _, NS = ...
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
 -- SECTION HEADINGS (the owner's call, 2026-10-25): Spell breakdown (over the compare's toggle and the
--- spell list), the chart's title, Timing, Gear, Talents, Usage, the flags box's title and Note are all
+-- spell list), the chart's title, Timing, Gear, Talents, Usage, Flags (over the flags box) and Note are all
 -- FONT.SECTION, a step above GameFontNormal, each on a SECTION_H line with SECTION_GAP of clear space
 -- above it (the header is the only block above the first heading, so no heading sits at the very top).
 --
@@ -102,6 +102,17 @@ local VIOLET = { 0.78, 0.5, 1.0 }
 local LINE_W = 2
 local LINE_INSET = 4
 local RACE = { 0.53, 0.53, 0.93 }
+-- The flags box (the owner's call, 2026-10-27, UT-P11): under its Flags heading, each flag's main line
+-- in FONT.SECTION pale amber, its detail (the late casts' offsets) in FONT.CAPTION amber, then what it
+-- means in FONT.TEXT; the three read apart by size and hue.
+local FLAG_MAIN = { 0.95, 0.84, 0.65 }
+local FLAG_BODY = { 0.94, 0.84, 0.65 }
+local FLAG_PADX, FLAG_PADY = 9, 7   -- inside the box
+local FLAG_GAP = 6                  -- between two flags
+Detail.FLAG_MAIN_H = 18             -- a main line (the 16px font)
+Detail.FLAG_SUB_H = 12              -- a detail line (the 10px caption)
+Detail.FLAG_PADX, Detail.FLAG_PADY, Detail.FLAG_GAP = FLAG_PADX, FLAG_PADY, FLAG_GAP
+Detail.FLAG_MAIN, Detail.FLAG_BODY = FLAG_MAIN, FLAG_BODY
 
 -- ── pure: the note ──────────────────────────────────────────────────────────────────────────────
 
@@ -217,29 +228,32 @@ local function lateLine(run)
         .. " " .. L[STILL_COUNTS]
 end
 
+-- What each flag means, under its own line in the flags box (so none repeats that line); a flag
+-- missing here (died) says it all on its line.
 local EXPLAIN = {
     lateCasts = lateLine,
-    restarted = function(_, text) return L["%s, after the quiet gap."]:format(text) .. " " .. L[STILL_COUNTS] end,
-    reloaded = function(_, text) return text .. ". " .. L[STILL_COUNTS] end,
+    restarted = function() return L["After the quiet gap past the buzzer: a new pull."] .. " " .. L[STILL_COUNTS] end,
+    reloaded = function() return L[STILL_COUNTS] end,
     sessionFromList = function()
-        return L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."]
+        return L["The meter session was found by its place in Blizzard's list, not by its ID."] .. " " .. L[STILL_COUNTS]
+    end,
+    sharedSession = function()
+        return L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
             .. " " .. L[STILL_COUNTS]
     end,
-    sharedSession = function(_, text)
-        return text .. ". " .. L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
-            .. " " .. L[STILL_COUNTS]
-    end,
-    died = function(_, text) return text .. "." end,
-    incomplete = function(_, text) return text .. ". " .. L["It does not count toward bests."] end,
-    lost = function(_, text) return text .. ". " .. L["There is no score."] end,
+    incomplete = function() return L["It does not count toward bests."] end,
+    lost = function() return L["There is no score."] end,
 }
 
---- The run's flags with what each means, in Scoring's order: { key, short, text }.
+--- The run's flags with what each means, in Scoring's order: { key, main, sub, text, full }. `main` is
+--- the flag's own line ("2 late casts"), `sub` its detail or "" (the late casts' offsets), `text` what
+--- it means or "", `full` Scoring's one-line text (the tooltip's).
 function Detail.FlagLines(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
         local explain = EXPLAIN[flag.key]
-        out[#out + 1] = { key = flag.key, text = explain and explain(run, flag.text) or flag.text, full = flag.text }
+        out[#out + 1] = { key = flag.key, main = flag.main or flag.text, sub = flag.sub or "",
+                          text = explain and explain(run) or "", full = flag.text }
     end
     return out
 end
@@ -484,14 +498,24 @@ local function buildTiming(p, c)
     }
 end
 
+-- One flag's three lines in the flags box, made the first time a run has that many flags.
+local function flagRow(p, i)
+    local w = p.w
+    local row = w.flagRows[i]
+    if row then return row end
+    row = { main = wrapText(w.flags, FONT.SECTION, FLAG_MAIN), sub = wrapText(w.flags, FONT.CAPTION, C.amber),
+            body = wrapText(w.flags, FONT.TEXT, FLAG_BODY) }
+    w.flagRows[i] = row
+    return row
+end
+
 local function buildFlags(p, c)
     local w = p.w
+    -- The heading, like every other section's; the yellow box under it holds the flags.
+    w.flagTitle = Tbl.Text(c, FONT.SECTION)
+    w.flagTitle:SetText(L["Flags"])
     w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
-    w.flagTitle = Tbl.Text(w.flags, FONT.SECTION, { 0.95, 0.84, 0.65 })
-    w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9 + Detail.INDENT, -7)
-    w.flagBody = wrapText(w.flags, FONT.TEXT, { 0.94, 0.84, 0.65 })
-    w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -(7 + SECTION_H))
-    w.flagBody:SetPoint("BOTTOMRIGHT", w.flags, "BOTTOMRIGHT", -9, 6)
+    w.flagRows = {}
     w.noteTitle = Tbl.Text(c, FONT.SECTION)
     w.noteTitle:SetText(L["Note"])
     w.note = wrapText(c, FONT.TEXT, C.dim)
@@ -567,10 +591,7 @@ local function wireTips(p)
         th[#th + 1] = hoverOver(p, item.fs, "legend", i)
     end
     hover(p, w.flags, "flags")
-    -- The flags box's title takes its own click (it folds the box), so it carries the box's hover too.
-    w.flagTitleHover = CreateFrame("Frame", nil, w.flags)
-    w.flagTitleHover:SetAllPoints(w.flagTitle)
-    hover(p, w.flagTitleHover, "flags")
+    w.flagTitleHover = hoverOver(p, w.flagTitle, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
     w.noteTitleHover = hoverOver(p, w.noteTitle, function() return p.editing and "noteBox" or "note" end)
@@ -624,7 +645,7 @@ function Detail.Build(parent, hooks)
     p:AddHeading("spells", w.spellsTitle, w.spellsTitleHover)
     p:AddHeading("chart", w.chart.title, w.chartTitleHover)
     p:AddHeading("timing", w.timingLabel, w.timingTitleHover)
-    p:AddHeading("flags", w.flagTitle, w.flagTitleHover, w.flags)
+    p:AddHeading("flags", w.flagTitle, w.flagTitleHover)
     p:AddHeading("note", w.noteTitle, w.noteTitleHover)
     return p
 end
@@ -682,19 +703,19 @@ function Pane:fillScore(run)
     self:fillDelta(run)
 end
 
+-- Each flag's main line, its detail and what it means; a row left from a run with more flags hides.
 function Pane:fillFlags(run)
     local w = self.w
     local lines = Detail.FlagLines(run)
     self.flagLines = lines
-    w.flags:SetShown(#lines > 0)
-    self.flagText = ""
-    if #lines == 0 then return end
-    local title = #lines == 1 and L["Flag \194\183 %s"]:format(lines[1].full) or L["Flags \194\183 %d"]:format(#lines)
-    w.flagTitle:SetText(title)
-    local texts = {}
-    for i, line in ipairs(lines) do texts[i] = line.text end
-    self.flagText = table.concat(texts, "\n")
-    w.flagBody:SetText(self.flagText)
+    for i = 1, math.max(#lines, #w.flagRows) do
+        local row, line = flagRow(self, i), lines[i] or {}
+        for _, part in ipairs({ "main", "sub", "text" }) do
+            local fs = part == "text" and row.body or row[part]
+            fs:SetText(line[part] or "")
+            fs:SetShown((line[part] or "") ~= "")
+        end
+    end
 end
 
 --- Draw `run` (nil clears the pane to its prompt). The same run drawn again (a saved note or usage
@@ -1038,15 +1059,44 @@ local function wrappedLines(text, width, charW)
     return n
 end
 
--- The flags box (folded: its title line alone), then the note.
+-- One line of the flags box at `dy` under its top, `width` wide: the y under it (unmoved when empty).
+local function placeFlagPart(box, fs, text, dy, width, lineH, charW)
+    if text == "" then return dy end
+    fs:ClearAllPoints()
+    fs:SetPoint("TOPLEFT", box, "TOPLEFT", FLAG_PADX, -dy)
+    fs:SetWidth(width)
+    return dy + wrappedLines(text, width, charW) * lineH
+end
+
+--- The flags box's height for `cw`: each flag's main line, its detail and what it means, from config.
+function Pane:layoutFlagRows(cw)
+    local w, inner, dy = self.w, cw - 2 * FLAG_PADX, FLAG_PADY
+    for i, line in ipairs(self.flagLines) do
+        local row = w.flagRows[i]
+        if i > 1 then dy = dy + FLAG_GAP end
+        dy = placeFlagPart(w.flags, row.main, line.main, dy, inner, Detail.FLAG_MAIN_H, 8)
+        dy = placeFlagPart(w.flags, row.sub, line.sub, dy, inner, Detail.FLAG_SUB_H, 4.8)
+        dy = placeFlagPart(w.flags, row.body, line.text, dy, inner, LINE_H, 5.4)
+    end
+    return dy + FLAG_PADY - 1
+end
+
+-- The Flags heading and the box under it (folded: the heading alone), then the note.
 function Pane:layoutFlags(y, cw)
     local w = self.w
-    local has = (self.flagText or "") ~= ""
+    local has = #(self.flagLines or {}) > 0
     local folded = self:Heading("flags", has)
-    w.flagBody:SetShown(not folded)
+    w.flagTitle:SetShown(has)
+    w.flagTitleHover:SetShown(has)
+    w.flags:SetShown(has and not folded)
     if has then
         y = y - SECTION_GAP
-        local h = 7 + SECTION_H + (folded and 0 or 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H)
+        w.flagTitle:ClearAllPoints()
+        w.flagTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
+        y = y - SECTION_H
+    end
+    if has and not folded then
+        local h = self:layoutFlagRows(cw)
         w.flags:ClearAllPoints()
         w.flags:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
         w.flags:SetSize(cw, h)

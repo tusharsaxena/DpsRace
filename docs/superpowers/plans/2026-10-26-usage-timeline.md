@@ -322,7 +322,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   *Best run*; every row of the spell breakdown (the plain list and the compare) alternates its row color.
 - [x] **Compare fills its width:** in the collapsed view (and any wide detail) the *This run* and *Best run* columns
   grow to fill the width instead of hugging the right edge.
-- [ ] **Flags box:** its title in the section-header format (gold heading with the fold arrow, like the other
+- [x] **Flags box:** its title in the section-header format (gold heading with the fold arrow, like the other
   sections), the yellow box below it; inside, the main line in the current font size (e.g. "2 late casts"), then a
   second line in a distinct format (e.g. "+1.4s Disengage, +2.5s Disengage End") unlike both the main line and the
   explanation text under it.

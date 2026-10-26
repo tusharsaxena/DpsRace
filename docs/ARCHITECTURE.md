@@ -441,12 +441,12 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Seven files are in the 1000–1500 on-notice band: two test files,
-`tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
+`tests/test_results.lua` at 1481 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline`, `test_results_delta` and `test_results_sections` did)
 and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
-five addon files, `modules/Results_Table.lua` at 1178 lines, `modules/Results_Detail.lua` at 1126
-(the detail's collapsible sections, 2026-10-26), `modules/Hud_States.lua` at 1119,
+five addon files, `modules/Results_Table.lua` at 1178 lines, `modules/Results_Detail.lua` at 1176
+(the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),

@@ -74,7 +74,7 @@ local function parts(d)
         gear = { d.lo.title, d.lo.none },
         talents = { d.lo.talentsTitle, d.lo.talents },
         usage = { d.usage.title, d.usage.edit },
-        flags = { w.flagTitle, w.flagBody },
+        flags = { w.flagTitle, w.flags },
         note = { w.noteTitle, w.note },
     }
 end
@@ -100,10 +100,9 @@ test("sections: every section heading has an arrow left of its text, open and ch
         assertEqual(pt[4], -2, key)
         assertTrue(p[key][2]:IsShown(), key .. "'s body is hidden")
     end
-    for _, key in ipairs({ "spells", "chart", "timing", "gear", "talents", "usage", "note" }) do
+    for _, key in ipairs(D.SECTIONS) do
         assertEqual(x(p[key][1]), D.INDENT, key .. "'s heading text is not after its arrow")
     end
-    assertEqual(x(d.w.flagTitle), 9 + D.INDENT, "the flags box's title, inside the box")
 end)
 
 test("sections: the arrow and the heading's text each fold and open every section, the arrow's icon following", function()
@@ -183,10 +182,12 @@ test("sections: a folded section's body is hidden, and the sections under it mov
     d.heads.usage:__fire("OnClick")
     assertFalse(d.usage.edit:IsShown())
     for _, row in ipairs(d.usage.items) do assertFalse(row:IsShown(), "a usage row still shows") end
-    -- The flags box folded to its title line.
+    -- Flags folded: its heading alone, the box under it hidden, Note under the heading.
     d.heads.flags:__fire("OnClick")
-    assertEqual(y(w.noteTitle), y(w.flags) - (7 + H) - 8 - GAP, "the box holds its title line alone")
-    assertFalse(w.flagBody:IsShown())
+    assertTrue(w.flagTitle:IsShown())
+    assertFalse(w.flags:IsShown(), "the box went with the folded section")
+    assertTrue(w.flagTitleHover:IsShown(), "the heading keeps its tooltip")
+    assertEqual(y(w.noteTitle), y(w.flagTitle) - H - GAP, "Note under the Flags heading")
     -- The note folded: its text and its hover hidden.
     d.heads.note:__fire("OnClick")
     assertFalse(w.note:IsShown())
@@ -273,4 +274,60 @@ test("sections: a lost run after a drawn one hides Timing's heading hover, so it
     assertFalse(d.w.timingLabel:IsShown(), "a lost run draws no Timing")
     assertFalse(hover:IsShown(), "Timing's heading hover was left over the sections under it")
     assertFalse(d.heads.timing:IsShown(), "no Timing, no arrow")
+end)
+
+test("sections: Flags is a section heading over the yellow box; each flag's main line, detail and meaning read apart", function()
+    local i = inst()
+    seed(i, { mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 }, { t = 2.5, spellID = 116858 } },
+                                     died = true } }) })
+    i.R.Show()
+    i.R.ShowRun("a")
+    local d = ui(i).detail
+    local D, w, F = i.D, d.w, i.NS.Style.FONT
+    local H, GAP = D.SECTION_H, D.SECTION_GAP
+    -- The heading: the plain word in FONT.SECTION (gold), its arrow beside it, on the content.
+    assertEqual(w.flagTitle.__text, "Flags")
+    assertEqual(w.flagTitle.__fontObject, F.SECTION)
+    assertEqual(w.flagTitle.__color, nil, "the heading keeps the font's own gold")
+    assertEqual(x(w.flagTitle), D.INDENT)
+    assertTrue(d.heads.flags:IsShown())
+    -- The box one heading line under it, across the content's width.
+    assertEqual(y(w.flags), y(w.flagTitle) - H, "the box sits under the heading")
+    assertEqual(x(w.flags), 0)
+    -- The late casts: their count, then their offsets in the caption font and amber, then what they mean.
+    local r1, r2 = w.flagRows[1], w.flagRows[2]
+    assertEqual(r1.main.__text, "2 late casts")
+    assertEqual(r1.main.__fontObject, F.SECTION, "the main line keeps the box title's size")
+    assertEqual(r1.sub.__text, "+1.4s Incinerate, +2.5s Chaos Bolt")
+    assertEqual(r1.sub.__fontObject, F.CAPTION)
+    assertEqual(r1.body.__fontObject, F.TEXT)
+    local C = i.NS.ResultsTable.COLORS
+    local function rgb(fs) return table.concat({ fs.__color[1], fs.__color[2], fs.__color[3] }, ",") end
+    assertEqual(rgb(r1.sub), table.concat(C.amber, ","), "the detail's own hue")
+    assertTrue(rgb(r1.sub) ~= rgb(r1.main) and rgb(r1.sub) ~= rgb(r1.body), "the detail reads apart from both")
+    assertTrue(r1.body.__text:find("Incinerate started +1.4s after the buzzer", 1, true) ~= nil, r1.body.__text)
+    -- The three lines stacked inside the box from config.
+    local P = D.FLAG_PADY
+    assertEqual(y(r1.main), -P)
+    assertEqual(y(r1.sub), -(P + D.FLAG_MAIN_H))
+    assertEqual(y(r1.body), -(P + D.FLAG_MAIN_H + D.FLAG_SUB_H))
+    assertEqual(x(r1.main), D.FLAG_PADX)
+    -- Died says it all on its line: no detail, no meaning, the box's next flag FLAG_GAP down.
+    assertEqual(r2.main.__text, "Died during the run")
+    assertFalse(r2.sub:IsShown())
+    assertFalse(r2.body:IsShown())
+    assertTrue(y(r2.main) < y(r1.body) - D.FLAG_GAP, "the second flag under the first's meaning")
+    -- The tooltip on the heading and on the box: Scoring's one-line texts.
+    local tip = i.NS.ResultsTips.Detail("flags", i.NS.Recorder.Get("a"))
+    assertEqual(tip[1], "2 flags")
+    assertEqual(tip[2], "2 late casts (+1.4s Incinerate, +2.5s Chaos Bolt)")
+    assertTrue(w.flagTitleHover.__mouse == true, "the heading takes the mouse")
+    -- Note under the box, the gap above its heading.
+    assertTrue(y(w.noteTitle) < y(w.flags) - GAP, "Note clear of the box")
+    -- A run with no flags: no heading, no arrow, no box.
+    seed(i, { mkRun("c", { flags = {} }) })
+    i.R.ShowRun("c")
+    assertFalse(w.flagTitle:IsShown())
+    assertFalse(d.heads.flags:IsShown())
+    assertFalse(w.flags:IsShown())
 end)

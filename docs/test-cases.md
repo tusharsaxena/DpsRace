@@ -615,7 +615,7 @@ Total.
 - results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
 - results usage: a sample run hides the same items
 
-### test_results_sections.lua (8)
+### test_results_sections.lua (9)
 
 - sections: every section heading has an arrow left of its text, open and chevron-down by default
 - sections: the arrow and the heading's text each fold and open every section, the arrow's icon following
@@ -625,6 +625,7 @@ Total.
 - sections: Add Note opens a folded Note; folding the Note while writing closes the box unsaved
 - sections: a heading the run does not draw hides its arrow
 - sections: a lost run after a drawn one hides Timing's heading hover, so it takes no click
+- sections: Flags is a section heading over the yellow box; each flag's main line, detail and meaning read apart
 
 ### test_chart_icons.lua (29)
 
@@ -1011,7 +1012,7 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
-| test_results_sections.lua | 8 |
+| test_results_sections.lua | 9 |
 | test_chart_icons.lua | 29 |
 | test_results_timeline.lua | 13 |
 | test_sizing.lua | 11 |
@@ -1035,4 +1036,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **817** |
+| **Total** | **818** |
