@@ -45,7 +45,9 @@ window hands it its bounds and five functions: `size` (track the clamped size, o
 `layout` (cheap), `redraw` (the full layout it had before), `done` (on release: store the size) and the
 HUD's `canResize` gate. While the grip is held, a size change runs `layout` at most once a frame:
 `GetTime()` names the frame, and a second change in the same frame waits for one `C_Timer.After(0)`,
-which a release overtakes. The release runs `redraw` once, then `done`. A size change the grip did not
+which a release overtakes. The release runs `redraw` once, then `done`; so does the window's hide while
+the grip is held (Escape, Alt-Z, a stand-down), which no mouse-up follows, `done` handed the last size
+the drag reached. A size change the grip did not
 start (the stored size at build, a view switch, *Reset position*) runs `redraw` at once, as before.
 What `layout` does per frame now:
 

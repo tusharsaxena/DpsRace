@@ -16,8 +16,9 @@ local _, NS = ...
 --   canResize()  optional, the grip's gate (the HUD's Lock frame)
 -- While the grip is held a size change runs `layout`, at most once a frame: GetTime() names the frame,
 -- and a second change in the same frame waits for one C_Timer.After(0). The release runs `redraw` once,
--- then `done`. A size change the grip did not start (the stored size at build, a view switch, Reset
--- position) runs `redraw` at once, as every change did before.
+-- then `done`; so does a hide while the grip is held, which no mouse-up follows. A size change the
+-- grip did not start (the stored size at build, a view switch, Reset position) runs `redraw` at once,
+-- as every change did before.
 --
 -- PLAIN DATA ONLY. Nothing here reads a frame's geometry: the sizes are the ones OnSizeChanged hands
 -- the library, and every window lays out from what `size` tracked.
@@ -25,8 +26,8 @@ local _, NS = ...
 local Sizing = {}
 NS.Sizing = Sizing
 
--- What each window's grip is doing, by frame: { dragging, pending, stamp }. Weak: a window is never
--- freed, but a suite's instances are.
+-- What each window's grip is doing, by frame: { dragging, pending, stamp, w, h } (w, h: the last size
+-- OnSizeChanged handed on). Weak: a window is never freed, but a suite's instances are.
 local states = setmetatable({}, { __mode = "k" })
 
 -- The frame's name for "this frame": GetTime() answers one value for the whole of a client frame.
@@ -64,6 +65,20 @@ local function hookGrip(grip, frame, s, canResize)
     grip:HookScript("OnMouseUp", function() s.dragging, s.pending = false, false end)
 end
 
+-- A window hidden while its grip is held (Escape, Alt-Z, the HUD's visibility rung or a stand-down)
+-- never sees the grip's mouse-up. The hide ends the drag instead, as a release would: sizing stopped,
+-- the full redraw, and the last size the drag reached handed on to be stored.
+local function hookHide(frame, s, opts)
+    if type(frame.HookScript) ~= "function" then return end
+    frame:HookScript("OnHide", function()
+        if not s.dragging then return end
+        s.dragging, s.pending = false, false
+        if type(frame.StopMovingOrSizing) == "function" then frame:StopMovingOrSizing() end
+        opts.redraw()
+        if opts.done then opts.done(s.w, s.h) end
+    end)
+end
+
 --- Make `frame` resizable from the library's grip, laid out cheaply while the grip is dragged and in
 --- full once when it is released. Answers the grip (nil with no library, as NS.MakeResizable does).
 --- @param frame table
@@ -73,6 +88,7 @@ function Sizing.MakeResizable(frame, opts)
     local s = { dragging = false, pending = false }
     states[frame] = s
     local function changed(w, h)
+        s.w, s.h = w, h
         opts.size(w, h)
         if s.dragging then return whileDragging(s, opts) end
         opts.redraw()
@@ -87,6 +103,7 @@ function Sizing.MakeResizable(frame, opts)
         onResize = changed, onResizeStop = released,
     })
     hookGrip(grip, frame, s, opts.canResize)
+    if grip then hookHide(frame, s, opts) end
     return grip
 end
 

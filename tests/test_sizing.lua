@@ -118,6 +118,26 @@ test("sizing: a right press or a refused gate starts no drag", function()
     assertEqual(c.done, 0, "a release that ends no drag stores nothing")
 end)
 
+test("sizing: a hide while the grip is held ends the drag as a release would", function()
+    local i, f, c = bare()
+    local M = i.mocks
+    f.resizeGrip:__fire("OnMouseDown", "LeftButton")
+    drag(M, f, 5, function(k) return 400 + k, 300 + k end)
+    assertEqual(c.redraw, 0)
+    f:Hide()
+    f:__fire("OnHide")
+    assertFalse(i.NS.Sizing.IsSizing(f), "the drag outlived the hide")
+    assertEqual(c.redraw, 1, "the hide redraws in full")
+    assertEqual(c.done, 1)
+    assertEqual(c.w, 405, "the last size the drag reached is stored")
+    assertEqual(c.h, 305)
+    assertEqual(f.__stopCount, 1, "sizing stopped")
+    -- A plain hide, with no drag under way, does nothing.
+    f:__fire("OnHide")
+    assertEqual(c.redraw, 1)
+    assertEqual(c.done, 1)
+end)
+
 -- ── the Results window ──────────────────────────────────────────────────────────────────────────
 
 local function resultsInst()

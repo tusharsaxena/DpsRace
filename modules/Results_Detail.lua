@@ -986,8 +986,11 @@ end
 function Pane:layoutTiming(y, cw)
     local w, model = self.w, self.model
     local on = model ~= nil
-    local body = on and not self:Heading("timing", on)
+    -- Heading runs either way: with no model it hides the arrow, as the heading's hover is hidden.
+    local folded = self:Heading("timing", on)
+    local body = on and not folded
     w.timingLabel:SetShown(on)
+    w.timingTitleHover:SetShown(on)
     for _, key in ipairs({ "strip", "axisLeft", "axisMid", "axisRight", "axisRace", "tailLine" }) do
         w[key]:SetShown(body)
     end

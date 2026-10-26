@@ -305,6 +305,8 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Waiting hint box: sized to its text:** the waiting screen's sticky-combat hint box was a fixed 64 px with an
   empty band under three lines. Size it from config to the hint's estimated lines at the body's width, 6 px above and
   below, at the minimum width and wider, with and without a drop-combat ability named.
+- [x] **Review fixes:** a window hidden while its grip is held ends the drag as a release would (redraw, size
+  stored); a lost run hides the Timing heading's hover and arrow; the on-notice file sizes in ARCHITECTURE.md.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

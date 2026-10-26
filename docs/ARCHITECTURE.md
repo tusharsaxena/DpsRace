@@ -245,7 +245,7 @@ the library's corner grip through one pattern, `modules/Sizing.lua`: while the g
 change runs the window's cheap layout (re-anchor and resize what the new size needs, nothing rebound
 or redrawn) at most once a frame, a second change in one frame waiting for a single
 `C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
-stores the size. The minimums and the stored sizes are as before. What runs per frame, before and
+stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before. What runs per frame, before and
 after: [performance.md](performance.md#window-sizing). `modules/Casts.lua` and `modules/Usage.lua`
 register nothing: Watchers feeds the cast list, and Usage reads the client only at the arm and on the
 record path after combat.
@@ -440,13 +440,15 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. Six files are in the 1000–1500 on-notice band: two test files,
+Nothing is over the cap today. Seven files are in the 1000–1500 on-notice band: two test files,
 `tests/test_results.lua` at 1474 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
-`test_results_usage`, `test_results_timeline` and `test_results_delta` did) and `tests/test_hud.lua`
-at 1412 (the waiting hint box's cases went to a new `test_hud_hint`), and four addon files, `modules/Results_Table.lua` at 1136 lines, `modules/Hud_States.lua` at
-1119, `modules/Results_Runs.lua` at 1039 (the detail's Delta box contexts, 2026-10-26) and
-`modules/Hud.lua` at 1021 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`test_results_usage`, `test_results_timeline`, `test_results_delta` and `test_results_sections` did)
+and `tests/test_hud.lua` at 1412 (the waiting hint box's cases went to a new `test_hud_hint`), and
+five addon files, `modules/Results_Table.lua` at 1171 lines, `modules/Results_Detail.lua` at 1125
+(the detail's collapsible sections, 2026-10-26), `modules/Hud_States.lua` at 1119,
+`modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
+`modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than
 grow these.

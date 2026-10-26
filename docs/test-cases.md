@@ -611,7 +611,7 @@ Total.
 - results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
 - results usage: a sample run hides the same items
 
-### test_results_sections.lua (7)
+### test_results_sections.lua (8)
 
 - sections: every section heading has an arrow left of its text, open and chevron-down by default
 - sections: the arrow and the heading's text each fold and open every section, the arrow's icon following
@@ -620,6 +620,7 @@ Total.
 - sections: Reset position keeps the folded sections; a profile reset and Reset all settings clear them
 - sections: Add Note opens a folded Note; folding the Note while writing closes the box unsaved
 - sections: a heading the run does not draw hides its arrow
+- sections: a lost run after a drawn one hides Timing's heading hover, so it takes no click
 
 ### test_chart_icons.lua (27)
 
@@ -667,12 +668,13 @@ Total.
 - results timeline: it follows Master scale while open
 - results timeline: a stand-down hides it, and nothing opens it while stood down
 
-### test_sizing.lua (10)
+### test_sizing.lua (11)
 
 - sizing: a size change the grip did not start redraws at once
 - sizing: while the grip is held, one cheap layout a frame; one redraw on release
 - sizing: changes inside one frame coalesce into one layout now and one next frame
 - sizing: a right press or a refused gate starts no drag
+- sizing: a hide while the grip is held ends the drag as a release would
 - results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
 - results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
 - results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
@@ -1003,10 +1005,10 @@ Total.
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
-| test_results_sections.lua | 7 |
+| test_results_sections.lua | 8 |
 | test_chart_icons.lua | 27 |
 | test_results_timeline.lua | 13 |
-| test_sizing.lua | 10 |
+| test_sizing.lua | 11 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
 | test_settings.lua | 31 |
@@ -1027,4 +1029,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **809** |
+| **Total** | **811** |
