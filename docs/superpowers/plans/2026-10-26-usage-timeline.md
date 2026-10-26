@@ -317,10 +317,10 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   icons and the timeline's cooldown ordering and lines follow it.
 - [x] **Chart headroom:** the plot is taller by one icon row (plus a small gap) on top; the columns and the best-pace
   line scale below that row, so a single row of icons never covers them. Icons still stack into more rows as today.
-- [ ] **Spell breakdown width:** the expanded view's detail is wider (360 -> 440; the expanded minimum and the new
+- [x] **Spell breakdown width:** the expanded view's detail is wider (360 -> 440; the expanded minimum and the new
   profile default follow); the spell-name column is wider; a thin dim-gray vertical line separates *This run* from
   *Best run*; every row of the spell breakdown (the plain list and the compare) alternates its row color.
-- [ ] **Compare fills its width:** in the collapsed view (and any wide detail) the *This run* and *Best run* columns
+- [x] **Compare fills its width:** in the collapsed view (and any wide detail) the *This run* and *Best run* columns
   grow to fill the width instead of hugging the right edge.
 - [ ] **Flags box:** its title in the section-header format (gold heading with the fold arrow, like the other
   sections), the yellow box below it; inside, the main line in the current font size (e.g. "2 late casts"), then a

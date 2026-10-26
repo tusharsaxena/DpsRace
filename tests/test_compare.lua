@@ -375,7 +375,7 @@ test("compare: the Difference column fits the detail at both views' minimum widt
         local cw = d.content.__width
         assertTrue(cw and cw > 0, view .. ": the detail's content width")
         if view == "expanded" then
-            assertEqual(cw, i.R.DETAIL_WIDTH - 24, "expanded: the 360 px detail less its pads")
+            assertEqual(cw, i.R.DETAIL_WIDTH - 24, "expanded: the 440 px detail less its pads")
         end
         assertTrue(Tbl.BadgeWidth(W) <= Cmp.DIFF_W, view .. ": the widest Difference runs past its column")
         local function fits(fs, right, what)
@@ -529,4 +529,105 @@ test("compare: the collapsed view draws the compare in the list's place; no numb
     assertTrue(d:Comparing(), "the view switch turned the compare off")
     _, active = i.NS.Pool.Counts(d.cmp.rows)
     assertEqual(active, 2)
+end)
+
+-- ── the flex columns, the separator and the stripes ─────────────────────────────────────────────
+
+test("compare: the columns flex with the width: the name column first, then the figures up to their caps", function()
+    local i = inst()
+    local Cmp = i.Cmp
+    assertEqual(i.R.DETAIL_WIDTH, 440, "the expanded view's detail")
+    local function check(width, name, value, diff)
+        local c = Cmp.Columns(width)
+        assertEqual(c.name, name, width .. ": the name column")
+        assertEqual(c.value, value, width .. ": each run's column")
+        assertEqual(c.diff, diff, width .. ": the Difference column")
+        assertEqual(c[1], name + Cmp.NAME_GAP, width .. ": this run's x")
+        assertEqual(c[2], c[1] + value + Cmp.GAP, width .. ": the other run's x")
+        assertEqual(c[3], c[2] + value, width .. ": the Difference's x")
+        assertEqual(c[3] + diff, width, width .. ": the table fills its width")
+        assertEqual(Cmp.SeparatorX(width), c[1] + value + 2, width .. ": the separator, centered in the gap")
+    end
+    -- The expanded minimum's detail (440 less its pads): the figures at their least, the name the rest.
+    check(i.R.DETAIL_WIDTH - 24, 152, Cmp.VALUE_W, Cmp.DIFF_W)
+    check(440, 176, Cmp.VALUE_W, Cmp.DIFF_W)
+    -- A 1200 px collapsed detail (1176 of content): the name at its most, the figures grown to their caps,
+    -- the rest back to the name.
+    check(1176, 1166 - 2 * Cmp.VALUE_MAX - Cmp.DIFF_MAX, Cmp.VALUE_MAX, Cmp.DIFF_MAX)
+    -- Between: the figures grow alike past the name's most.
+    local c = Cmp.Columns(700)
+    assertTrue(c.name >= Cmp.NAME_MAX and c.name < Cmp.NAME_MAX + 3, "the name at its most (and the rounding's pixels)")
+    assertEqual(c.value - Cmp.VALUE_W, c.diff - Cmp.DIFF_W, "the figure columns grow alike")
+    assertTrue(c.value > Cmp.VALUE_W and c.value < Cmp.VALUE_MAX)
+end)
+
+test("compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs", function()
+    for _, case in ipairs({ { view = "expanded", cw = 416 }, { view = "collapsed", cw = 1176 } }) do
+        local i = inst()
+        seed(i, { mkRun("best", 300), mkRun("low", 100) })
+        i.NS.db.profile.windows.results = { view = case.view, collapsed = { width = 1202, height = 560 } }
+        i.R.ShowRun("low")
+        local d = detail(i)
+        d:SetComparing(true)
+        local x, Cmp = d.cmp, i.Cmp
+        local cw = d.content.__width
+        assertEqual(cw, case.cw, case.view .. ": the detail's content width")
+        local cols = Cmp.Columns(cw)
+        local row = x.rows.active[1]
+        for j = 2, 4 do
+            local cx, w = Cmp.Cell(j, cw)
+            assertEqual(x.spellHead[j].__points[1][4], cx, case.view .. ": column " .. j .. "'s x")
+            assertEqual(x.spellHead[j].__width, w, case.view .. ": column " .. j .. "'s width")
+            assertEqual(row.texts[j].__points[1][4], cx, case.view .. ": a row's column " .. j)
+            assertEqual(x.lines[1][j].__points[1][4], cx, case.view .. ": the score table shares column " .. j)
+        end
+        assertEqual(row.texts[4].__points[1][4] + row.texts[4].__width, cw, case.view .. ": Difference at the right edge")
+        assertEqual(x.head[1].__width, cols.name, case.view .. ": the score table's name column")
+        assertEqual(row.texts[1].__width, cols[1] - (i.NS.HudBreakdown.RowHeight() - 2) - 8, case.view .. ": a spell's name column")
+        -- The separator: one per table, the same x, through every line at full height.
+        local sx = Cmp.SeparatorX(cw)
+        for _, t in ipairs({ { x.scoreSep, x.score, 3 * Cmp.ROW_H }, { x.spellSep, x.spellHost,
+                Cmp.ROW_H + #x.data * i.NS.HudBreakdown.Pitch() } }) do
+            local sep, parent, h = t[1], t[2], t[3]
+            assertTrue(sep:IsShown(), case.view .. ": no separator")
+            assertEqual(sep.__points[1][2], parent)
+            assertEqual(sep.__points[1][4], sx, case.view .. ": the separator's x")
+            assertEqual(sep.__width, Cmp.SEP_W)
+            assertEqual(sep.__height, h, case.view .. ": the separator's height")
+            assertEqual(sep.__vertex[1], Cmp.SEP_COLOR[1], case.view .. ": the separator's gray")
+        end
+        local thisRight = x.spellHead[2].__points[1][4] + x.spellHead[2].__width + Cmp.PAD
+        assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.spellHead[3].__points[1][4] - Cmp.PAD,
+            case.view .. ": the separator sits between the runs' columns")
+    end
+end)
+
+test("compare: every spell row alternates the Results list's stripe, compared and plain", function()
+    local i = inst()
+    local spells = {}
+    for n = 1, 5 do spells[n] = { id = 1000 + n, dmg = 6000 - n * 1000 } end
+    seed(i, { mkRun("best", 300), mkRun("low", 100, { spells = spells }) })
+    i.R.ShowRun("low")
+    local d = detail(i)
+    local alpha = i.NS.ResultsTable.STRIPE_ALPHA
+    assertTrue(alpha > 0)
+    -- Plain: the breakdown list's rows, top down.
+    assertTrue(d.w.list.parent:IsShown())
+    assertEqual(d.w.list:Count(), 5)
+    for n, row in ipairs(d.w.list.rows) do
+        assertEqual(row.stripe.__vertex[4], n % 2 == 0 and alpha or 0, "plain row " .. n .. "'s stripe")
+    end
+    -- Compared: the matched rows, top down (by y).
+    d:SetComparing(true)
+    local rows = {}
+    for _, row in ipairs(d.cmp.rows.active) do rows[#rows + 1] = row end
+    table.sort(rows, function(a, b) return a.__points[1][5] > b.__points[1][5] end)
+    assertEqual(#rows, 7, "the run's five spells and the best's two")
+    for n, row in ipairs(rows) do
+        assertEqual(row.bg.__vertex[4], n % 2 == 0 and alpha or 0, "compared row " .. n .. "'s stripe")
+    end
+    -- The HUD's list draws none.
+    local hudList = i.NS.HudBreakdown.New(i.mocks.CreateFrame("Frame"))
+    hudList:ShowResult({ spells = spells, result = { damage = 20000 } }, 5, true)
+    for _, row in ipairs(hudList.rows) do assertEqual(row.stripe, nil, "a HUD row has a stripe") end
 end)

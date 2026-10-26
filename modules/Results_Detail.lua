@@ -528,7 +528,7 @@ local function buildButtons(p)
         b:SetSize(84, BUTTON_H)
         b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + (i - 1) * 90, 8)
     end
-    -- The ability timeline (#14), after Share: 72 px, so it clears Delete on the 360 px pane.
+    -- The ability timeline (#14), after Share: 72 px, so it clears Delete on the 440 px pane.
     w.timeline = Button(f, L["Timeline"], function() if p.run and p.hooks.timeline then p.hooks.timeline(p) end end)
     w.timeline:SetSize(Detail.TIMELINE_W, BUTTON_H)
     w.timeline:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + 2 * 90, 8)
@@ -610,7 +610,8 @@ function Detail.Build(parent, hooks)
     local c = p.content
     buildHeader(p, c)
     NS.ResultsCompare.Build(p, c)
-    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
+    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end,
+        NS.ResultsTable.StripeAlpha)
     p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
     p.w.chart:SetShown(false)
     buildTiming(p, c)

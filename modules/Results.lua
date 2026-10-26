@@ -33,15 +33,16 @@ local DW = NS.defaults.profile.windows.results
 -- Each view's minimum: collapsed holds the Runs list's columns (904 px with the Used and Note columns,
 -- the boxed Target and Time chips and the Status tag alone: 756 px of fixed columns, the Character
 -- column's 60 and the gaps, pads and scrollbar, and the window's border) and its two-row filter bar;
--- expanded adds the 360 px detail beside that same list (1264; its one-row filter bar, 1196 px, fits
--- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198. Each view's default
+-- expanded adds the 440 px detail beside that same list (1344; its one-row filter bar, 1196 px, fits
+-- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198; the wider detail
+-- (2026-10-27, from 360 px: the spell names were cramped) raised expanded from 1264. Each view's default
 -- width (defaults/Profile.lua) is its minimum (the owner's call, 2026-10-26; tests/test_schema.lua).
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1264 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1344 },
     collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 904 },
 }
 Results.MIN_HEIGHT = 420
-Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
+Results.DETAIL_WIDTH = 440      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
 Results.TABS = { "runs", "bests" }
 

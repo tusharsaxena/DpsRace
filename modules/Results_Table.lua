@@ -33,6 +33,14 @@ Tbl.WHEEL_ROWS = 3          -- rows one notch of the mouse wheel moves
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local WHITE = "Interface\\Buttons\\WHITE8x8"
+Tbl.WHITE = WHITE
+-- The list's stripe: every other row faintly tinted; the detail's spell rows share it.
+Tbl.STRIPE_ALPHA = 0.025
+
+--- The stripe's alpha for the row at `index` (1-based): the tint on every even row, none on the odd.
+function Tbl.StripeAlpha(index)
+    return index % 2 == 0 and Tbl.STRIPE_ALPHA or 0
+end
 local CLASS_ATLAS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 
 local C = {
@@ -1075,8 +1083,7 @@ local function bindHeader(row, g)
 end
 
 function Table:bindRow(row, run, index)
-    local alt = self.stripe and index % 2 == 0
-    row.bg:SetVertexColor(1, 1, 1, alt and 0.025 or 0)
+    row.bg:SetVertexColor(1, 1, 1, self.stripe and Tbl.StripeAlpha(index) or 0)
     if run.group then return bindHeader(row, run.group) end
     row.run, row.index, row.group = run, index, nil
     row.groupLabel:Hide()

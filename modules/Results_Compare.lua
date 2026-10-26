@@ -25,11 +25,22 @@ local Tbl = NS.ResultsTable
 local C = Tbl.COLORS
 local FONT = NS.Style.FONT
 
-Compare.VALUE_W = 80        -- each figure column, in the score table and the compared breakdown
--- The Difference column: the amount and the % ("-710.2K -100.0%", 15 characters at Tbl.BadgeWidth's
--- 6 px and its 4 px pad), at the right of both tables; it fits the 360 px detail of the expanded
--- view at its 1264 px minimum (tests/test_compare.lua).
+Compare.VALUE_W = 80        -- each figure column's least width, in the score table and the compared breakdown
+-- The Difference column's least width: the amount and the % ("-710.2K -100.0%", 15 characters at
+-- Tbl.BadgeWidth's 6 px and its 4 px pad), at the right of both tables; it fits the 440 px detail of
+-- the expanded view at its 1344 px minimum (tests/test_compare.lua).
 Compare.DIFF_W = 94
+-- The flex layout (the owner's call, 2026-10-27): the tables fill the detail at any width. The name
+-- column takes what the figures leave, up to NAME_MAX; past that the three figure columns grow alike,
+-- each up to its cap so a bar stays readable; past the caps the name column takes the rest.
+Compare.NAME_MAX = 180
+Compare.VALUE_MAX = 240
+Compare.DIFF_MAX = Compare.VALUE_MAX + Compare.DIFF_W - Compare.VALUE_W
+Compare.NAME_GAP = 4        -- between the name column and this run's
+-- The line between This run and the other run, through both tables at full row height: one pixel,
+-- a dim gray, centered in the gap between the two columns.
+Compare.SEP_W = 1
+Compare.SEP_COLOR = { 0.42, 0.42, 0.46, 0.8 }
 Compare.ROW_H = 15          -- one line of the score table
 Compare.RULE_GAP = 4        -- the space above and below the rule between the two tables
 Compare.BAR_H = 22          -- the toggle's line
@@ -316,6 +327,15 @@ local function newBar(f)
     return bar
 end
 
+-- The line between the two runs' columns (Compare.SEP_COLOR), one per table.
+local function newSep(f)
+    local sep = f:CreateTexture(nil, "ARTWORK")
+    sep:SetTexture(Tbl.WHITE)
+    local c = Compare.SEP_COLOR
+    sep:SetVertexColor(c[1], c[2], c[3], c[4])
+    return sep
+end
+
 -- The score table (the owner's call, 2026-10-26): no box, its columns the spell table's (Compare.Cell),
 -- and a faint rule under it, the window's divider gray, between its lines and the spell table's header.
 local function buildScore(p, c, x)
@@ -324,6 +344,7 @@ local function buildScore(p, c, x)
     local f = x.score
     x.rule = f:CreateTexture(nil, "ARTWORK")
     x.rule:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    x.scoreSep = newSep(f)
     x.head = heads(f, FONT.HEADER)
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
@@ -343,6 +364,7 @@ local function buildSpells(_, c, x)
     x.spellHead[1]:SetText(L["Spell"])
     x.spellHead[2]:SetText(L["This run"])
     x.spellHead[4]:SetText(L["Difference"])
+    x.spellSep = newSep(x.spellHost)
     x.rows = NS.Pool.New()
 end
 
@@ -390,12 +412,26 @@ local function place(fs, parent, x, y, width)
     if width then fs:SetWidth(width) end
 end
 
--- The figure columns' left edges across `width`: this run, the other run (a gap between them), and
--- the difference (Compare.DIFF_W wide) at the right.
-local function columns(width)
-    local vw = Compare.VALUE_W
-    local diff = width - Compare.DIFF_W
-    return { diff - 2 * vw - Compare.GAP, diff - vw, diff }
+--- The columns across `width` (the flex layout, from config): `name`, `value` (this run's and the
+--- other's) and `diff` wide, and the figure columns' left edges in order, this run, the other run
+--- (Compare.GAP after it) and the difference, which ends at `width`.
+--- @return table { name, value, diff, [1] this x, [2] other x, [3] difference x }
+function Compare.Columns(width)
+    local vw, dw = Compare.VALUE_W, Compare.DIFF_W
+    local avail = width - Compare.GAP - Compare.NAME_GAP
+    local name = math.min(Compare.NAME_MAX, avail - 2 * vw - dw)
+    local grow = math.max(0, math.floor((avail - name - 2 * vw - dw) / 3))
+    vw, dw = math.min(Compare.VALUE_MAX, vw + grow), math.min(Compare.DIFF_MAX, dw + grow)
+    name = avail - 2 * vw - dw
+    local this = name + Compare.NAME_GAP
+    return { name = name, value = vw, diff = dw, this, this + vw + Compare.GAP, width - dw }
+end
+local columns = Compare.Columns
+
+--- The line between this run's column and the other's: its x across `width`, centered in the gap.
+function Compare.SeparatorX(width)
+    local cols = columns(width)
+    return cols[1] + cols.value + math.floor((Compare.GAP - Compare.SEP_W) / 2)
 end
 
 --- Column `j`'s text box across `width`: its left x, width and justify, the one geometry of both
@@ -405,12 +441,21 @@ end
 --- into its column: each sits off the edge its bar grows from.
 --- @return number x, number width, string justify
 function Compare.Cell(j, width)
-    local cols, vw, pad = columns(width), Compare.VALUE_W, Compare.PAD
-    local justify = Compare.JUSTIFY[j]
-    if j == 1 then return 0, cols[1] - 4, justify end
+    local cols, pad = columns(width), Compare.PAD
+    local vw, justify = cols.value, Compare.JUSTIFY[j]
+    if j == 1 then return 0, cols.name, justify end
     if j == 2 then return cols[1], vw - pad, justify end
     if j == 3 then return cols[2] + pad, vw - pad, justify end
-    return cols[3], Compare.DIFF_W, justify
+    return cols[3], cols.diff, justify
+end
+
+-- A table's separator at `x` in `parent`, `h` tall from its top.
+local function placeSep(sep, parent, x, h)
+    sep:ClearAllPoints()
+    sep:SetPoint("TOPLEFT", parent, "TOPLEFT", x, 0)
+    sep:SetWidth(Compare.SEP_W)
+    sep:SetHeight(h)
+    sep:Show()
 end
 
 -- A header or line of four FontStrings at `y` in `parent`, each in its column's box (Compare.Cell).
@@ -424,7 +469,7 @@ end
 -- A line's difference bar, at `y` from `point` of `parent`: in this run's column it grows left from
 -- the column's right edge, in the other's right from its left edge; hidden when the runs are equal.
 local function placeBar(bar, parent, point, y, h, cols, diff, maxDiff)
-    local vw = Compare.VALUE_W
+    local vw = cols.value
     local side, len = Compare.Bar(diff, maxDiff, vw)
     bar.side = side
     bar:SetShown(side ~= nil)
@@ -477,6 +522,7 @@ local function layoutScore(p, y, cw)
             placeBar(set.bar, x.score, "TOPLEFT", ly + 1, rowH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
         end
     end
+    placeSep(x.scoreSep, x.score, Compare.SeparatorX(cw), 3 * rowH)
     place(x.rule, x.score, 0, ruleY, cw)
     x.rule:SetHeight(1)
     return y + ruleY - 1 - gap
@@ -484,6 +530,11 @@ end
 
 local function newRow(host)
     local row = CreateFrame("Frame", nil, host)
+    -- The stripe: the Results list's tint on every other row, down through the gap under it.
+    row.bg = row:CreateTexture(nil, "BACKGROUND")
+    row.bg:SetTexture(Tbl.WHITE)
+    row.bg:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -NS.HudBreakdown.ROW_GAP)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.bar = newBar(row)
     row.texts = heads(row, FONT.TEXT, { C.text, C.text, C.text, C.dim })
@@ -497,9 +548,10 @@ local function newRow(host)
     return row
 end
 
-local function fillRow(row, data, cw, rowH, maxPct)
+local function fillRow(row, data, index, cw, rowH, maxPct)
     local cols, icon = columns(cw), rowH - 2
     row:SetSize(cw, rowH)
+    row.bg:SetVertexColor(1, 1, 1, Tbl.StripeAlpha(index))
     row.icon:SetSize(icon, icon)
     row.icon:ClearAllPoints()
     row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
@@ -533,6 +585,7 @@ local function layoutSpells(p, y, cw)
     place(host, p.content, 0, y)
     host:SetSize(cw, Compare.ROW_H + math.max(1, #data * pitch))
     placeLine(x.spellHead, host, 0, cw)
+    placeSep(x.spellSep, host, Compare.SeparatorX(cw), Compare.ROW_H + #data * pitch)
     local maxPct = Compare.MaxPct(data)
     NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
     for i, d in ipairs(data) do
@@ -540,7 +593,7 @@ local function layoutSpells(p, y, cw)
         row.pane = p
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -Compare.ROW_H - (i - 1) * pitch)
-        fillRow(row, d, cw, rowH, maxPct)
+        fillRow(row, d, i, cw, rowH, maxPct)
     end
     return y - Compare.ROW_H - #data * pitch - 8
 end

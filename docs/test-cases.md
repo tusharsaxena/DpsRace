@@ -494,7 +494,7 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (17)
+### test_compare.lua (20)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
@@ -513,6 +513,9 @@ Total.
 - compare: the row menu's pick, the different-board note and Clear Pick
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
 - compare: the collapsed view draws the compare in the list's place; no number is read off a frame
+- compare: the columns flex with the width: the name column first, then the figures up to their caps
+- compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs
+- compare: every spell row alternates the Results list's stripe, compared and plain
 
 ### test_loadout.lua (27)
 
@@ -1003,7 +1006,7 @@ Total.
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 11 |
-| test_compare.lua | 17 |
+| test_compare.lua | 20 |
 | test_loadout.lua | 27 |
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
@@ -1032,4 +1035,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **814** |
+| **Total** | **817** |
