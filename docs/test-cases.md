@@ -532,7 +532,7 @@ Total.
 - casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
 - casts: a channel counts once, whether its success comes before or after the channel start
 
-### test_usage.lua (15)
+### test_usage.lua (17)
 
 - usage: the arm snapshot reads the on-use slots, the bag consumables, the auras and the enchants
 - usage: an unreadable bag stack makes the after counts unknown, never a false drop
@@ -542,6 +542,8 @@ Total.
 - usage: of two items with one use spell, a cast is the one whose count dropped
 - usage: the candidates are the on-use gear, then every bag consumable by item
 - usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
+- usage: SetUsed matches each tick to its own entry by slot, never one entry twice
+- usage: an unticked food or enchant joins the candidates, once, and ticked again keeps its source
 - usage: Watchers hears the casts from the arm, for the player and the pet
 - usage: a race stores its casts and usage at the result, and nothing secret
 - usage: a canceled race keeps nothing; the next arm starts a fresh list
@@ -550,7 +552,7 @@ Total.
 - usage: the sample history and the sim's race carry casts and usage
 - usage: a player with no consumables gets the sample Healthstone, used with no cast
 
-### test_results_usage.lua (14)
+### test_results_usage.lua (16)
 
 - results usage: entries list the gear first; a run stored before format 3 has none
 - results usage: each entry's detail says how many times and when, or why there is no time
@@ -563,6 +565,8 @@ Total.
 - results usage: the Used column sorts by how many entries, a run with no record last either way
 - results usage: the detail lists every candidate and the extras, detected ones ticked, Save off
 - results usage: Save is live only while the ticks differ, and writes them through SetUsed
+- results usage: an unticked Well Fed or enchant stays listed and can be ticked again
+- results usage: a redraw of the same run keeps the ticks not saved yet, and the scroll
 - results usage: a run stored before format 3 says Not recorded, with no rows and no Save
 - results usage: a sample run's edit changes it in memory only; the store never hears it
 - results usage: a row's hover is the item's own tooltip with its detail and source after it
@@ -875,8 +879,8 @@ Total.
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
 | test_casts.lua | 9 |
-| test_usage.lua | 15 |
-| test_results_usage.lua | 14 |
+| test_usage.lua | 17 |
+| test_results_usage.lua | 16 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -896,4 +900,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **706** |
+| **Total** | **710** |

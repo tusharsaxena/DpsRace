@@ -300,18 +300,44 @@ end
 
 -- ── the player's edit ───────────────────────────────────────────────────────────────────────────
 
--- Whether a detected entry is the one a tick names: by item, else by enchant, else food by kind.
+-- Whether a detected entry is the one a tick names: by item, else by enchant, else food by kind; in
+-- each case in the same slot when both say one (the same oil on both hands, a pair of one trinket).
 local function same(e, tick)
+    if e.slot ~= nil and tick.slot ~= nil and e.slot ~= tick.slot then return false end
     if tick.itemID then return e.itemID == tick.itemID end
     if tick.enchantID then return e.enchantID == tick.enchantID end
     return e.itemID == nil and e.enchantID == nil and e.kind == tick.kind
 end
 
-local function find(list, tick)
-    for _, e in ipairs(list or {}) do
-        if same(e, tick) then return e end
+-- The first entry of `list` the tick names that `taken` has not had yet; marks it taken.
+local function find(list, tick, taken)
+    for i, e in ipairs(list or {}) do
+        if not taken[i] and type(e) == "table" and same(e, tick) then
+            taken[i] = true
+            return e
+        end
     end
     return nil
+end
+
+-- What a re-ticked entry with no item had been detected as: only detection lists food or an enchant.
+local RETICKED = { food = "buff", enchant = "enchant" }
+
+-- A ticked entry nothing detected: used once, no time.
+local function fresh(tick)
+    local src = tick.itemID == nil and RETICKED[tick.kind] or "manual"
+    return { itemID = tick.itemID, kind = tick.kind, slot = tick.slot, enchantID = tick.enchantID, n = 1, src = src }
+end
+
+-- An unticked entry with no item (food, a weapon enchant) has no candidate to stand for it: it joins
+-- the candidates, so its row stays in the list and can be ticked again.
+local function keepRows(u, taken)
+    if type(u.candidates) ~= "table" then u.candidates = {} end
+    for i, e in ipairs(type(u.used) == "table" and u.used or {}) do
+        if not taken[i] and type(e) == "table" and e.itemID == nil and not find(u.candidates, e, {}) then
+            u.candidates[#u.candidates + 1] = { kind = e.kind, slot = e.slot, enchantID = e.enchantID }
+        end
+    end
 end
 
 -- A tick from the UI with its plain fields only, or nil.
@@ -324,22 +350,23 @@ local function clean(tick)
 end
 
 --- Replace a run's used list with the player's ticks: an entry already detected keeps its times and
---- source; a newly ticked one is "manual", used once, no time. Marks the record edited and announces
---- RUNS_CHANGED; a sample run (test mode, the sim) changes in memory only, as its note does.
+--- source (each detected entry answers one tick, matched by item or enchant and by slot); a newly
+--- ticked one is "manual", used once, no time, except food or an enchant ticked again, which keeps
+--- what it was detected as. An unticked food or enchant joins the candidates, so its row stays. Marks
+--- the record edited and announces RUNS_CHANGED; a sample run (test mode, the sim) changes in memory
+--- only, as its note does.
 --- @param run table
 --- @param list table  { { itemID?, kind, slot?, enchantID? }, ... }
 --- @return boolean stored
 function Usage.SetUsed(run, list)
     local u = type(run) == "table" and run.usage
     if type(u) ~= "table" or type(list) ~= "table" then return false end
-    local out = {}
+    local out, taken = {}, {}
     for _, raw in ipairs(list) do
         local tick = clean(raw)
-        if tick then
-            out[#out + 1] = find(u.used, tick) or { itemID = tick.itemID, kind = tick.kind, slot = tick.slot,
-                                                    enchantID = tick.enchantID, n = 1, src = "manual" }
-        end
+        if tick then out[#out + 1] = find(u.used, tick, taken) or fresh(tick) end
     end
+    keepRows(u, taken)
     u.used, u.edited = out, true
     if run.sample then
         if NS.ResultsSource and NS.ResultsSource.Touched then NS.ResultsSource.Touched() end

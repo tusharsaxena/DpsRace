@@ -546,7 +546,8 @@ function Pane:fillFlags(run)
 end
 
 --- Draw `run` (nil clears the pane to its prompt). The same run drawn again (a saved note or usage
---- edit, a store change) keeps the scroll; another run starts at the top.
+--- edit, a store change) keeps the scroll and the usage ticks not saved yet; another run starts at
+--- the top.
 function Pane:Show(run)
     local same = run ~= nil and run == self.run
     self.run = run
@@ -560,7 +561,7 @@ function Pane:Show(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
-    NS.ResultsUsage.Fill(self)
+    NS.ResultsUsage.Fill(self, same)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)

@@ -203,6 +203,57 @@ test("usage: SetUsed keeps a detected entry, adds a manual one and announces RUN
     assertFalse(NS.Usage.SetUsed({ id = "old" }, {}), "a run without usage")
 end)
 
+test("usage: SetUsed matches each tick to its own entry by slot, never one entry twice", function()
+    local NS = T.load().NS
+    -- The same oil on both hands, and a pair of one trinket, each used at its own time.
+    local used = {
+        { itemID = TRINKET, kind = "gear", slot = 13, times = { 5 }, n = 1, src = "cast" },
+        { itemID = TRINKET, kind = "gear", slot = 14, times = { 9 }, n = 1, src = "cast" },
+        { kind = "enchant", slot = 16, enchantID = ENCHANT, n = 1, src = "enchant" },
+        { kind = "enchant", slot = 17, enchantID = ENCHANT, n = 1, src = "enchant" },
+    }
+    local run = { id = "s1", sample = true, usage = { v = 1, used = { used[1], used[2], used[3], used[4] },
+        candidates = { { itemID = TRINKET, kind = "gear", slot = 13 }, { itemID = TRINKET, kind = "gear", slot = 14 } } } }
+    assertTrue(NS.Usage.SetUsed(run, {
+        { itemID = TRINKET, kind = "gear", slot = 14 }, { itemID = TRINKET, kind = "gear", slot = 13 },
+        { kind = "enchant", slot = 17, enchantID = ENCHANT }, { kind = "enchant", slot = 16, enchantID = ENCHANT },
+    }))
+    local out = run.usage.used
+    assertEqual(#out, 4)
+    assertTrue(out[1] == used[2], "the slot 14 trinket keeps its own time")
+    assertTrue(out[2] == used[1], "the slot 13 trinket keeps its own time")
+    assertTrue(out[3] == used[4], "the off-hand enchant is its own entry")
+    assertTrue(out[4] == used[3], "the main-hand enchant is its own entry")
+    -- Ticks with no slot still take each entry once.
+    run.usage.used = { used[3], used[4] }
+    NS.Usage.SetUsed(run, { { kind = "enchant", enchantID = ENCHANT }, { kind = "enchant", enchantID = ENCHANT } })
+    assertTrue(run.usage.used[1] == used[3] and run.usage.used[2] == used[4], "one entry each")
+end)
+
+test("usage: an unticked food or enchant joins the candidates, once, and ticked again keeps its source", function()
+    local NS = T.load().NS
+    local run = { id = "s1", sample = true, usage = { v = 1, candidates = {}, used = {
+        { kind = "food", n = 1, src = "buff" },
+        { kind = "enchant", slot = 16, enchantID = ENCHANT, n = 1, src = "enchant" },
+        { kind = "enchant", slot = 17, enchantID = ENCHANT, n = 1, src = "enchant" },
+    } } }
+    NS.Usage.SetUsed(run, { { kind = "enchant", slot = 16, enchantID = ENCHANT } })
+    local c = run.usage.candidates
+    assertEqual(#c, 2, "Well Fed and the off-hand enchant")
+    assertEqual(c[1].kind, "food")
+    assertNil(c[1].itemID)
+    assertEqual(c[2].kind, "enchant")
+    assertEqual(c[2].slot, 17)
+    assertEqual(c[2].enchantID, ENCHANT)
+    NS.Usage.SetUsed(run, {})
+    assertEqual(#run.usage.candidates, 3, "the main-hand enchant joins; the others are not listed twice")
+    NS.Usage.SetUsed(run, { { kind = "food" }, { kind = "enchant", slot = 17, enchantID = ENCHANT } })
+    assertEqual(run.usage.used[1].src, "buff", "food ticked again was active at the start")
+    assertEqual(run.usage.used[2].src, "enchant")
+    assertEqual(run.usage.used[2].slot, 17)
+    assertEqual(#run.usage.candidates, 3)
+end)
+
 -- ── the race, end to end ────────────────────────────────────────────────────────────────────────
 
 test("usage: Watchers hears the casts from the arm, for the player and the pet", function()

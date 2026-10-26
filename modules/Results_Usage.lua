@@ -10,6 +10,8 @@ local _, NS = ...
 -- live only while the ticks differ from the stored list, and writes them through Usage.SetUsed
 -- (modules/Usage.lua), which keeps a detected entry's times and source. A sample run (test mode, the
 -- sim) changes in memory only, as its note does. A run stored before format 3 says *Not recorded*.
+-- An unticked food or enchant stays listed (SetUsed keeps it as a candidate), so the untick can be
+-- undone; a redraw of the same run keeps the ticks not saved yet.
 --
 -- PLAIN DATA ONLY: the stored run.usage record (plain numbers and strings). Item names and icons are
 -- the client's item data, read at call time and pcall'd. Rows are laid out from the constants here,
@@ -69,11 +71,12 @@ function ResultsUsage.Count(run)
     return entries and #entries or nil
 end
 
---- A time on the race clock as m:ss, a pre-pull one (negative) with its minus sign.
+--- A time on the race clock as m:ss, a pre-pull one (negative) with its minus sign; one that rounds
+--- to the pull itself is 0:00, never -0:00.
 function ResultsUsage.Clock(t)
     if type(t) ~= "number" then return "?" end
-    if t < 0 then return "-" .. NS.Format.Length(-t) end
-    return NS.Format.Length(t)
+    if math.floor(t + 0.5) < 0 then return "-" .. NS.Format.Length(-t) end
+    return NS.Format.Length(math.max(0, t))
 end
 
 local START = { buff = true, enchant = true }
@@ -93,14 +96,21 @@ function ResultsUsage.Detail(e)
     return n > 1 and L["x%d, time unknown"]:format(n) or L["time unknown"]
 end
 
--- The used entry a candidate stands for: the first not yet matched with its item (a gear candidate
--- also by its slot, when the entry has one). Answers it and its index.
+-- Whether used entry `e` is the one candidate `c` stands for: by its item (a gear candidate also by
+-- its slot, when the entry has one); a candidate with no item (food or an enchant the player unticked,
+-- kept by Usage.SetUsed) by its kind, an enchant also by its enchant ID and slot.
+local function stands(c, e)
+    if c.itemID ~= nil then
+        return e.itemID == c.itemID and (c.kind ~= "gear" or e.slot == nil or e.slot == c.slot)
+    end
+    if e.itemID ~= nil or e.kind ~= c.kind then return false end
+    return c.kind ~= "enchant" or (e.enchantID == c.enchantID and e.slot == c.slot)
+end
+
+-- The used entry a candidate stands for: the first not yet matched. Answers it and its index.
 local function matchOf(used, c, matched)
     for i, e in ipairs(used) do
-        local slotOK = c.kind ~= "gear" or e.slot == nil or e.slot == c.slot
-        if not matched[i] and type(e) == "table" and e.itemID ~= nil and e.itemID == c.itemID and slotOK then
-            return e, i
-        end
+        if not matched[i] and type(e) == "table" and stands(c, e) then return e, i end
     end
     return nil
 end
@@ -117,7 +127,7 @@ function ResultsUsage.Rows(run)
         if type(c) == "table" then
             local e, i = matchOf(u.used, c, matched)
             if i then matched[i] = true end
-            rows[#rows + 1] = { itemID = c.itemID, kind = c.kind, slot = c.slot, entry = e }
+            rows[#rows + 1] = { itemID = c.itemID, kind = c.kind, slot = c.slot, enchantID = c.enchantID, entry = e }
         end
     end
     for i, e in ipairs(u.used) do
@@ -285,12 +295,23 @@ local function fillRow(row, data, ticked)
     row.nameW = Tbl.BadgeWidth(name, false)
 end
 
---- Read `p.run`'s usage and paint the section: every row as stored, Save off.
-function ResultsUsage.Fill(p)
+-- Whether a redraw of the same run keeps the ticks the player has not saved yet: the rows are the
+-- same rows (nothing was saved since) and the ticks differ from them.
+local function pending(x, rows, keep)
+    if not (keep and not x.saving and x.rows and rows and #rows == #x.rows) then return false end
+    return ResultsUsage.Changed(x.rows, x.state)
+end
+
+--- Read `p.run`'s usage and paint the section: every row as stored, Save off. `keep` (the same run
+--- drawn again: another run recorded, a note saved) keeps the ticks not saved yet, Save still live.
+function ResultsUsage.Fill(p, keep)
     local x = p.usage
-    x.rows, x.state = ResultsUsage.Rows(p.run), {}
+    local rows = ResultsUsage.Rows(p.run)
+    local held = pending(x, rows, keep)
+    x.rows, x.saving = rows, nil
+    if not held then x.state = {} end
     for i, data in ipairs(x.rows or {}) do
-        x.state[i] = data.entry ~= nil or nil
+        if not held then x.state[i] = data.entry ~= nil or nil end
         x.items[i] = x.items[i] or newRow(p, x, i)
         fillRow(x.items[i], data, x.state[i] == true)
     end
@@ -305,7 +326,11 @@ end
 function ResultsUsage.Save(p)
     local x = p.usage
     if not (p.run and x.rows and ResultsUsage.Changed(x.rows, x.state)) then return false end
-    return NS.Usage.SetUsed(p.run, ResultsUsage.Ticks(x.rows, x.state))
+    -- The redraw this save causes starts from the new list, not from the ticks it just wrote.
+    x.saving = true
+    local stored = NS.Usage.SetUsed(p.run, ResultsUsage.Ticks(x.rows, x.state))
+    if not stored then x.saving = nil end
+    return stored
 end
 
 local function place(region, parent, px, py)

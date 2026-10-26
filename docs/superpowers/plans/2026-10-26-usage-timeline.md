@@ -205,6 +205,13 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   are Well Fed's (`Spell_Misc_Food`) and the enchanting trade's (`Trade_Engraving`). The detail now
   keeps its scroll when the same run is redrawn (a Save, a note, a store change), so Save does not jump
   the pane to the top.
+- [x] P4 review fixes: `Usage.SetUsed` matches each tick to its own detected entry (by slot too, never one
+  entry twice), so the same oil on both hands or a pair of one on-use item stay two entries. An unticked
+  food or weapon enchant joins `candidates` with no item (`{ kind, slot?, enchantID? }`), so its row
+  stays and the untick can be undone; ticked again it keeps the source it was detected with (`buff`,
+  `enchant`) rather than `manual`, since only detection ever lists one (a deviation from "a newly
+  ticked one is manual", in its spirit). A same-run redraw keeps the ticks not saved yet; a time that
+  rounds to the pull reads 0:00, not -0:00.
 
 ### P5: #14 chart dots
 

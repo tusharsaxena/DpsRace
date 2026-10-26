@@ -72,8 +72,9 @@ and W1, W5 and W7 again (the boxed cells, the detail's header line, the wider mi
 default).
 
 Rows for the 2026-10-26 usage and ability-timeline build (branch `feat/2026-10-26-usage-timeline`), not
-yet run: SM-DR-UT1 to SM-DR-UT6 (new: the cast list and the usage stored on a run, run format 3). Until
-the build's UI lands they are checked by dumping the newest run (section 19).
+yet run: SM-DR-UT1 to SM-DR-UT6 (new: the cast list and the usage stored on a run, run format 3; checked
+by dumping the newest run) and SM-DR-UT7 to SM-DR-UT12 (new: the Runs list's *Used* column and the
+detail's *Usage* section) (section 19).
 
 ## How to run it
 
@@ -439,7 +440,7 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 ## 19. The 2026-10-26 build: usage and the ability timeline
 
 Run format 3 stores each run's casts (`run.casts`) and what it used (`run.usage`); the Runs list's
-*Used* column and the detail's *Usage* section show the usage (UT7 to UT11); the timeline views come
+*Used* column and the detail's *Usage* section show the usage (UT7 to UT12); the timeline views come
 later in the build. Read the newest run's raw record with:
 `/run local n,r for _,x in pairs(DpsRaceDB.global.runs) do if not n or (x.date or 0)>n then n,r=x.date,x end end DevTools_Dump(r.casts) DevTools_Dump(r.usage)`
 
@@ -456,3 +457,4 @@ later in the build. Read the newest run's raw record with:
 | SM-DR-UT9 | Open the new run's detail and scroll to *Usage* (under *Talents*) | A *Usage* heading with *Save* (grayed) at its right; one row per on-use item and bag consumable you had at the arm, then *Well Fed* and the weapon enchant: a checkbox, the item's icon, its name and a gray detail (*x2 at 0:09, 1:12*, *active at the start*, *time unknown*); what was detected is ticked. Hovering a row shows the item's own tooltip, then the detail and how it was detected | A screenshot of the section |
 | SM-DR-UT10 | In UT9's section, click an unticked item's name (not the box), then click it again; tick it once more and untick a ticked one; press *Save*; close and reopen the window and the run | Clicking the name toggles the box as clicking the box does. *Save* turns live on the first change and grays again when the ticks are back as stored. After *Save* the detail keeps its scroll, the new item shows *time unknown*, the unticked one is gone from the *Used* cell and its tooltip, and the edit survives the reopen and a `/reload` (`usage.edited` is true in the dump) | The dump after the `/reload` |
 | SM-DR-UT11 | `/dr test`, open a sample run's *Usage*, change a tick and *Save*; then open a run raced before this build in the real history | The sample run's ticks change in the window only (`DpsRaceDB`'s run count and runs do not move; `/dr test` again starts fresh). The older run's *Usage* says *Not recorded* with no rows and no *Save* | A screenshot of each |
+| SM-DR-UT12 | On a dual-wield spec with the same oil on both weapons (or wearing two copies of one on-use item), race, then open the run's *Usage*; untick *Well Fed* and one weapon enchant, tick an unticked item, and press *Save*; before saving again, tick *Well Fed* back and let another race finish (or add a note to this run); then *Save*; close and reopen the run | Both hands' enchants are listed (*main hand* and *off hand*) and stay two separate rows after every *Save*, never one shown twice. After the first *Save* the unticked *Well Fed* and enchant rows are still there, unticked. The tick not yet saved survives the other race's redraw or the note save, *Save* still live. After the last *Save* *Well Fed* is ticked again and reads *active at the start* | A screenshot of the section after each step, and the `usage.used` dump |
