@@ -280,6 +280,27 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
   the spell rows. A spell row's bar is its difference against the table's largest; a score row's is the figure's gap
   as a share of the larger of the two runs.
 
+### P10: The owner's second test round (2026-10-26)
+
+- [ ] **Chart icons capture everything:** three long cooldowns in one second (potion, trinket, Bestial Wrath) showed
+  two; the third row was dropped. Stack as many rows as the plot's height allows, then a *+n* mark whose tooltip lists
+  every cast it stands for.
+- [ ] **Timeline compare target:** a compared run with no casts (raced before cast recording) left the blue lanes
+  empty. Compare instead against the best run in the same group or board that has casts, with a note naming both;
+  the best run itself compares against its runner-up (with casts), as the detail's compare does.
+- [ ] **Compare bars and Difference:** each bar's length is the row's percentage difference against the table's
+  largest percentage difference (not the absolute amount); the Difference column reads `+78.3K +2.3%`, the
+  percentage in the bar's muted green or red.
+- [ ] **Compare score table:** no box; its columns at exactly the spell table's x positions; a thin separator line
+  between the score rows and the spell rows.
+- [ ] **Usage rows:** the time follows the name inline, as the Runs list's group headers do (`name · at 0:01`, the
+  part after the dot in the dim color), so nothing has to line up in a column.
+- [ ] **Collapsible sections:** every section of the Results detail (Damage profile, Spell breakdown, Timing, Gear,
+  Talents, Usage, Note and any other headed section) has an expand/collapse arrow beside its heading (the LibKa0s
+  chevron icons); collapsed sections are remembered in the profile.
+- [ ] **Smooth resize:** dragging the Results window's resize grip is laggy. Lay out cheaply while sizing (no full
+  table rebind or detail redraw per frame) and redraw fully once on release, keeping the minimums.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
