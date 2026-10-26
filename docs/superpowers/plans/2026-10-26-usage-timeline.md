@@ -194,8 +194,17 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P4: #13 UI
 
-- [ ] Runs table *Used* column (icons, *+n*, tooltip).
-- [ ] Results detail: the usage list (pre-ticked, editable, Save).
+- [x] Runs table *Used* column (icons, *+n*, tooltip).
+- [x] Results detail: the usage list (pre-ticked, editable, Save).
+- P4 notes: the column (`used`, 70 px: four 16 px icons, or three and *+n*) raised the window minimums
+  to 904 collapsed and 1264 expanded (from 834 and 1198); the defaults (980, 1340) still clear them. A
+  cell tooltip is no longer cut at eight lines (a run may list more entries). The *Usage* section sits
+  under *Talents*; its pure parts and its rows live in `modules/Results_Usage.lua`, its tooltips in
+  `Results_Tips` (`CELL.used`, `Tips.Usage`). `Tbl.SetCheckLabel` takes an `extra` width so the icon
+  between the box and the name is clickable too. Food and a weapon enchant have no item: their icons
+  are Well Fed's (`Spell_Misc_Food`) and the enchanting trade's (`Trade_Engraving`). The detail now
+  keeps its scroll when the same run is redrawn (a Save, a note, a store change), so Save does not jump
+  the pane to the top.
 
 ### P5: #14 chart dots
 

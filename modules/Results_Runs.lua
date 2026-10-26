@@ -550,6 +550,8 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
+-- The Used column (#13): four icons (Tbl.IconSlots), or three and "+n".
+Runs.USED_W = 70
 Runs.TARGET_W = 92
 Runs.TIME_W = 84
 Runs.STATUS_W = 92
@@ -602,7 +604,8 @@ function Runs.TimeCell(run)
 end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length's chip and the tail), damage, DPS, delta, status (the flags are its tooltip's).
+--- time (the length's chip and the tail), damage, DPS, delta, status (the flags are its tooltip's),
+--- what was used (#13: its icons, modules/Results_Usage.lua) and the note.
 --- The Delta column reads each group's max off the whole list the table is handed (its `scan`: every
 --- run the filters pass, with the grouping's key), and the bars scale within each group too
 --- (Results_Table's measure). A flat list is one group.
@@ -662,6 +665,11 @@ function Runs.Columns()
               return text, color, icon
           end,
           tip = Runs.StatusTip },
+        -- What the run used (#13): the gear first, "+n" past what fits, a dash for nothing; sorted
+        -- by how many, a run stored before format 3 last either way.
+        { key = "used", label = L["Used"], width = Runs.USED_W, kind = "items", desc = true,
+          sort = function(run) return NS.ResultsUsage.Count(run) end,
+          items = function(run) return NS.ResultsUsage.Icons(run) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
           sort = Runs.NoteSort, text = function(run) return Runs.NoteCell(run), C.dim end,
           tip = Runs.NoteTip },

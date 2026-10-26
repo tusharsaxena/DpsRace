@@ -98,6 +98,7 @@ local SUITES = {
     "test_loadout",
     "test_casts",
     "test_usage",
+    "test_results_usage",
     "test_schema",
     "test_settings",
     "test_slash",

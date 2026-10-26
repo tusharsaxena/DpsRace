@@ -388,7 +388,7 @@ Total.
 
 ### test_results.lua (50)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
 - results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
@@ -549,6 +549,23 @@ Total.
 - usage: the format 3 migration raises the stamp and rewrites no run
 - usage: the sample history and the sim's race carry casts and usage
 - usage: a player with no consumables gets the sample Healthstone, used with no cast
+
+### test_results_usage.lua (14)
+
+- results usage: entries list the gear first; a run stored before format 3 has none
+- results usage: each entry's detail says how many times and when, or why there is no time
+- results usage: names and icons come from the item data; food and an enchant have their own
+- results usage: one row per candidate, then each detected entry no candidate stands for
+- results usage: the ticks follow the rows, and a change is any row ticked against what was stored
+- results usage: an items cell draws what fits, or one fewer and +n
+- results usage: the Used column draws the icons gear first, then +n; a dash for nothing or no record
+- results usage: the Used tooltip names each entry with when, or says why there is none
+- results usage: the Used column sorts by how many entries, a run with no record last either way
+- results usage: the detail lists every candidate and the extras, detected ones ticked, Save off
+- results usage: Save is live only while the ticks differ, and writes them through SetUsed
+- results usage: a run stored before format 3 says Not recorded, with no rows and no Save
+- results usage: a sample run's edit changes it in memory only; the store never hears it
+- results usage: a row's hover is the item's own tooltip with its detail and source after it
 
 ### test_schema.lua (15)
 
@@ -859,6 +876,7 @@ Total.
 | test_loadout.lua | 26 |
 | test_casts.lua | 9 |
 | test_usage.lua | 15 |
+| test_results_usage.lua | 14 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -878,4 +896,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **692** |
+| **Total** | **706** |

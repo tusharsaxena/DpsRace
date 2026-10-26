@@ -13,7 +13,7 @@ local _, NS = ...
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
 -- SECTION HEADINGS (the owner's call, 2026-10-25): Spell breakdown (over the compare's toggle and the
--- spell list), the chart's title, Timing, Gear, Talents, the flags box's title and Note are all
+-- spell list), the chart's title, Timing, Gear, Talents, Usage, the flags box's title and Note are all
 -- FONT.SECTION, a step above GameFontNormal, each on a SECTION_H line with SECTION_GAP of clear space
 -- above it (the header is the only block above the first heading, so no heading sits at the very top).
 --
@@ -27,6 +27,9 @@ local _, NS = ...
 --
 -- THE LOADOUT (#6) sits under the timing strip: the run's gear and talents, drawn by
 -- modules/Results_Loadout.lua, which highlights what changed while the compare is on.
+--
+-- THE USAGE (#13) sits under the talents: what the run used, ticked as detected and editable, drawn
+-- by modules/Results_Usage.lua.
 --
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
@@ -475,6 +478,7 @@ function Detail.Build(parent, hooks)
     p.w.chart:SetShown(false)
     buildTiming(p, c)
     NS.ResultsLoadout.Build(p, c)
+    NS.ResultsUsage.Build(p, c)
     buildFlags(p, c)
     buildButtons(p)
     wireTips(p)
@@ -541,8 +545,10 @@ function Pane:fillFlags(run)
     w.flagBody:SetText(self.flagText)
 end
 
---- Draw `run` (nil clears the pane to its prompt).
+--- Draw `run` (nil clears the pane to its prompt). The same run drawn again (a saved note or usage
+--- edit, a store change) keeps the scroll; another run starts at the top.
 function Pane:Show(run)
+    local same = run ~= nil and run == self.run
     self.run = run
     self.editing = false
     local has = type(run) == "table"
@@ -554,6 +560,7 @@ function Pane:Show(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
+    NS.ResultsUsage.Fill(self)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
@@ -564,7 +571,7 @@ function Pane:Show(run)
     self.w.note:SetText(self.noteText)
     self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["Edit Note"] or L["Add Note"])
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
-    self.scroll = 0
+    if not same then self.scroll = 0 end
     self:Layout(self.width, self.height, self.narrow)
 end
 
@@ -895,6 +902,7 @@ function Pane:Layout(width, height, narrow)
     y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
     y = NS.ResultsLoadout.Layout(self, y, cw)
+    y = NS.ResultsUsage.Layout(self, y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y
     self.content:SetHeight(math.max(1, self.contentH))

@@ -700,3 +700,42 @@ L["Add the run's talent loadout to the shared line as a link others can click to
 -- What was used (#13): the food buff's name, matched against the helpful auras at the arm
 -- (modules/Usage.lua).
 L["Well Fed"] = "Well Fed"
+
+-- The Runs list's Used column and the run detail's Usage section (#13, modules/Results_Usage.lua)
+L["x%d %s"] = "x%d %s"
+L["active at the start"] = "active at the start"
+L["x%d, time unknown"] = "x%d, time unknown"
+L["time unknown"] = "time unknown"
+L["Item %d"] = "Item %d"
+L["Weapon enchant (main hand)"] = "Weapon enchant (main hand)"
+L["Weapon enchant (off hand)"] = "Weapon enchant (off hand)"
+L["Usage"] = "Usage"
+L["Nothing to list: no on-use item or consumable was found at the arm."] =
+    "Nothing to list: no on-use item or consumable was found at the arm."
+L["Used"] = "Used"
+L["This run was raced before the addon recorded what was used."] =
+    "This run was raced before the addon recorded what was used."
+L["Nothing used"] = "Nothing used"
+L["No on-use item or consumable was detected or ticked for this run."] =
+    "No on-use item or consumable was detected or ticked for this run."
+L["1 item used"] = "1 item used"
+L["%d items used"] = "%d items used"
+L["%s: %s"] = "%s: %s"
+L["Edit the list in the run's detail."] = "Edit the list in the run's detail."
+L["What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many."] =
+    "What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many."
+L["Detected from its cast during the race."] = "Detected from its cast during the race."
+L["Detected from the bag count after the race."] = "Detected from the bag count after the race."
+L["Its buff was on when the race was armed."] = "Its buff was on when the race was armed."
+L["On the weapon when the race was armed."] = "On the weapon when the race was armed."
+L["Ticked by you."] = "Ticked by you."
+L["Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."] =
+    "Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."
+L["Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."] =
+    "Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."
+L["No on-use item or consumable was found at the arm, and nothing was detected."] =
+    "No on-use item or consumable was found at the arm, and nothing was detected."
+L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] =
+    "Keep the ticks as this run's usage. An entry the addon detected keeps its times."
+L["Not used: tick it if you did use it."] = "Not used: tick it if you did use it."
+L["Enchant %d"] = "Enchant %d"

@@ -317,6 +317,21 @@ function Cells.icons(row, col)
     return cell
 end
 
+-- A row of small icons (the Runs list's Used column, #13): as many as the column's configured width
+-- holds (Tbl.IconsFit), each its own part (cell.icon1, ...) so a group header's showCells hides it,
+-- then "+n" for the rest, or a dash when there is nothing.
+function Cells.items(row, col)
+    local cell = { more = Tbl.Text(row, FONT.TEXT, C.dim), dash = Tbl.Text(row, FONT.TEXT, C.dim) }
+    cell.dash:SetText("\226\128\148")
+    cell.slots = Tbl.IconSlots(col.width)
+    for i = 1, cell.slots do
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(Tbl.ICON, Tbl.ICON)
+        cell["icon" .. i] = icon
+    end
+    return cell
+end
+
 -- A tag: its icon (where the column names one) before its word, both in the tag's color. A `boxed`
 -- column draws it in a 1px box tinted the tag's color, its icon inside (the Status, Target and Time
 -- columns: the owner's calls, 2026-10-25); any other is the colored word on no box (the Bests Flags).
@@ -446,6 +461,40 @@ function Bind.text(cell, col, run)
     if cell.bar then bindBar(cell, col, run) end
 end
 
+Tbl.ICON_GAP = 2            -- between two icons of an items cell
+
+--- How many icons an items cell `width` px wide holds (at least one). Pure.
+function Tbl.IconSlots(width)
+    return math.max(1, math.floor(((width or 0) + Tbl.ICON_GAP) / (Tbl.ICON + Tbl.ICON_GAP)))
+end
+
+--- How many of `count` icons an items cell `width` px wide draws, and the "+n" after them: all of
+--- them when they fit, else one slot fewer than fit and the rest counted in the last slot. Pure.
+--- @return number shown, number more
+function Tbl.IconsFit(count, width)
+    local slots = Tbl.IconSlots(width)
+    if count <= slots then return count, 0 end
+    return slots - 1, count - (slots - 1)
+end
+
+-- The column's `items(run)` answers the icons ({ texture, ... }), or nil: a dash for none.
+function Bind.items(cell, col, run)
+    local list = col.items(run) or {}
+    local shown, more = Tbl.IconsFit(#list, col.width)
+    for i = 1, cell.slots do
+        local icon = cell["icon" .. i]
+        icon:SetShown(i <= shown)
+        if i <= shown then icon:SetTexture(list[i]) end
+    end
+    cell.dash:SetShown(#list == 0)
+    cell.more:SetShown(more > 0)
+    cell.more:SetText(more > 0 and ("+" .. more) or "")
+    if more > 0 then
+        cell.more:ClearAllPoints()
+        cell.more:SetPoint("LEFT", cell.icon1 or cell.dash, "LEFT", shown * (Tbl.ICON + Tbl.ICON_GAP), 0)
+    end
+end
+
 function Bind.icons(cell, col, run)
     local char = run.char or {}
     local specName, specIcon = Tbl.SpecInfo(char.specID, char.spec)
@@ -474,11 +523,12 @@ end
 
 --- Set a checkbox's label (`check.label`, 1px right of the box) and widen its click area over it, so
 --- a click on the words toggles it too (the owner's call, 2026-10-26). The width is the label's
---- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one.
-function Tbl.SetCheckLabel(check, text)
+--- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one. `extra` px more lie between
+--- the box and its words (the detail's Usage rows: an item's icon), and are clickable too.
+function Tbl.SetCheckLabel(check, text, extra)
     text = text or ""
     check.label:SetText(text)
-    check:SetHitRectInsets(0, -(1 + Tbl.BadgeWidth(text, false)), 0, 0)
+    check:SetHitRectInsets(0, -(1 + (extra or 0) + Tbl.BadgeWidth(text, false)), 0, 0)
 end
 
 -- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
@@ -561,6 +611,14 @@ local function placeCell(row, cell, col, x, w)
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.w = w
+    elseif kind == "items" then
+        for i = 1, cell.slots do
+            cell["icon" .. i]:ClearAllPoints()
+            cell["icon" .. i]:SetPoint("LEFT", row, "LEFT", x + (i - 1) * (Tbl.ICON + Tbl.ICON_GAP), 0)
+        end
+        cell.dash:ClearAllPoints()
+        cell.dash:SetPoint("LEFT", row, "LEFT", x, 0)
+        cell.more:SetWidth(math.max(10, Tbl.ICON + 8))
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -703,7 +761,8 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail), width | flex+min, tip = fn(run) -> lines, about = header text,
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail)|"items" (items =
+---                         fn(run) -> textures), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run),
 ---                         scan = fn(list, groupOf) on SetData and SetGroup (Table:measure) }

@@ -136,6 +136,9 @@ modules\Results_Detail.lua
 modules\Results_Compare.lua
 # The detail's gear and talents (#6); the detail builds, fills and lays it out at CALL time.
 modules\Results_Loadout.lua
+# The detail's usage (#13) and the Runs list's Used column: captures NS.ResultsTable and NS.Style at
+# file scope; the detail builds it and Results_Runs reaches it at call time.
+modules\Results_Usage.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.

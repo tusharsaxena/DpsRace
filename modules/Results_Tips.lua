@@ -161,6 +161,33 @@ function CELL.flags(run)
     return lines
 end
 
+-- What a run used (#13): each entry's name and when (modules/Results_Usage.lua).
+function CELL.used(run)
+    local U = NS.ResultsUsage
+    local entries = U.Entries(run)
+    if not entries then
+        return { L["Not recorded"], L["This run was raced before the addon recorded what was used."] }
+    end
+    if #entries == 0 then
+        return { L["Nothing used"], L["No on-use item or consumable was detected or ticked for this run."] }
+    end
+    local lines = { #entries == 1 and L["1 item used"] or L["%d items used"]:format(#entries) }
+    for _, e in ipairs(entries) do lines[#lines + 1] = L["%s: %s"]:format(U.Name(e), U.Detail(e)) end
+    lines[#lines + 1] = { L["Edit the list in the run's detail."], 0.62, 0.62, 0.68 }
+    return lines
+end
+
+-- A builder's lines with any hole (an absent role) closed up, however many there are.
+local function compact(lines)
+    local top = 0
+    for k in pairs(lines) do
+        if type(k) == "number" and k > top then top = k end
+    end
+    local out = {}
+    for i = 1, top do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
+    return out
+end
+
 --- A cell's tooltip lines: the column's own `tip`, else the builder for its key, else nil.
 --- @param col table
 --- @param run table
@@ -170,10 +197,7 @@ function Tips.Cell(col, run)
     if not fn then return nil end
     local ok, lines = pcall(fn, run)
     if not ok or type(lines) ~= "table" then return nil end
-    -- A builder may leave holes (an absent role): close them up.
-    local out = {}
-    for i = 1, 8 do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
-    return out
+    return compact(lines)
 end
 
 --- A group header's tooltip.
@@ -197,6 +221,7 @@ local ABOUT = {
     delta = "How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change.",
     status = "Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
+    used = "What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many.",
     note = "The note you kept with the run. Click to sort.",
 }
 
@@ -530,6 +555,64 @@ function Tips.Loadout(key, run, other, extra)
     local fn = LOADOUT[key]
     if type(run) ~= "table" or not fn then return nil end
     local ok, lines = pcall(fn, run, other, extra)
+    if not ok or type(lines) ~= "table" then return nil end
+    return lines
+end
+
+-- ── the usage ───────────────────────────────────────────────────────────────────────────────────
+-- The detail's Usage section (modules/Results_Usage.lua, #13): its heading, Save and Not recorded under
+-- themselves; a row after the client's item tooltip (or alone, for food and an enchant).
+
+local SOURCE = {
+    cast = "Detected from its cast during the race.",
+    bag = "Detected from the bag count after the race.",
+    buff = "Its buff was on when the race was armed.",
+    enchant = "On the weapon when the race was armed.",
+    manual = "Ticked by you.",
+}
+
+local USAGE = {}
+
+function USAGE.title()
+    return { L["Usage"], L["Every on-use item and consumable you had at the arm. What was detected starts ticked; tick or untick, then Save."],
+             dimLine(L["Casts, bag counts and the buffs at the arm are the clues; a weapon oil shows as its enchant."]) }
+end
+
+function USAGE.none()
+    return { L["Not recorded"], L["This run was raced before the addon recorded what was used."] }
+end
+
+function USAGE.empty()
+    return { L["Usage"], L["No on-use item or consumable was found at the arm, and nothing was detected."] }
+end
+
+function USAGE.save()
+    return { L["Save"], L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] }
+end
+
+function USAGE.row(_, row)
+    local U = NS.ResultsUsage
+    local lines = { U.Name(row) }
+    local e = row.entry
+    if not e then
+        lines[#lines + 1] = dimLine(L["Not used: tick it if you did use it."])
+        return lines
+    end
+    lines[#lines + 1] = { U.Detail(e), 1, 0.82, 0 }
+    if SOURCE[e.src] then lines[#lines + 1] = dimLine(L[SOURCE[e.src]]) end
+    if e.enchantID then lines[#lines + 1] = dimLine(L["Enchant %d"]:format(e.enchantID)) end
+    return lines
+end
+
+--- A Usage part's tooltip lines (`key`: title, none, empty, save, row with `extra` the row), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param extra any  `row`: one of ResultsUsage.Rows' rows
+--- @return table|nil
+function Tips.Usage(key, run, extra)
+    local fn = USAGE[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, extra)
     if not ok or type(lines) ~= "table" then return nil end
     return lines
 end

@@ -114,6 +114,9 @@ files["modules/Results_Loadout.lua"] = {
     },
 }
 
+-- What a run used (#13): the item names and icons, and the client's item tooltip.
+files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item" } }
+
 -- The sample history (B5) dates its runs back from now.
 files["modules/MockRuns.lua"] = { read_globals = { "time" } }
 

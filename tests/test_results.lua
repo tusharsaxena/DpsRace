@@ -103,7 +103,7 @@ end
 
 -- ── the run list ────────────────────────────────────────────────────────────────────────────────
 
-test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note", function()
+test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note", function()
     local i = inst()
     local run = mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false } })
     seed(i, { run })
@@ -111,7 +111,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Delta|Status|Note", "no flag column: the Status cell carries the flags")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Delta|Status|Used|Note", "no flag column: the Status cell carries the flags")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -1265,7 +1265,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
     assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1198)
+    assertEqual(minW, 1264)
     assertEqual(minH, 420)
     assertEqual(u.width, 1340)
     assertEqual(u.height, 560)
@@ -1274,7 +1274,7 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 834)
+    assertEqual((u.frame:GetResizeBounds()), 904)
     assertEqual(u.width, 980)
     assertEqual(u.viewToggle.iconName, "chevron-right")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
@@ -1303,7 +1303,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     u.frame:__fire("OnSizeChanged", 1400, 600)
     assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1198, "expanded never goes under its minimum")
+    assertEqual(u.width, 1264, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)

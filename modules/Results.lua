@@ -30,14 +30,14 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 834 px with the Note column,
--- the boxed Target and Time chips and the Status tag alone: 692 px of fixed columns, the Character
--- column's 60 and the gaps, pads and scrollbar) and its two-row filter bar; expanded adds the 360 px
--- detail and lays the filter bar in one row, which sets its minimum (1198: the bar's 1196 px and
--- the window's border).
+-- Each view's minimum: collapsed holds the Runs list's columns (904 px with the Used and Note columns,
+-- the boxed Target and Time chips and the Status tag alone: 756 px of fixed columns, the Character
+-- column's 60 and the gaps, pads and scrollbar, and the window's border) and its two-row filter bar;
+-- expanded adds the 360 px detail beside that same list (1264; its one-row filter bar, 1196 px, fits
+-- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198.
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1198 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 834 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1264 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 904 },
 }
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
