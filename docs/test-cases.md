@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 2, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 3, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -520,6 +520,36 @@ Total.
 - loadout: the share line takes the talents link only with Include talents link on
 - loadout: Include talents link sits under Sharing on the History tab, before Storage
 
+### test_casts.lua (9)
+
+- casts: Encode writes centiseconds, a p before a pet cast, comma-joined
+- casts: Decode reads the stored string back, skipping what does not parse
+- casts: an important ability's base cooldown is more than 15 s
+- casts: Important and Of read a run's record; a run without one has none
+- casts: Group puts cooldowns first, longest first, then the rest by count
+- casts: nothing is heard before Begin or after Stop; other units are never heard
+- casts: times are on the race clock; a cast heard while armed is negative
+- casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
+- casts: a channel counts once, whether its success comes before or after the channel start
+
+### test_usage.lua (15)
+
+- usage: the arm snapshot reads the on-use slots, the bag consumables, the auras and the enchants
+- usage: an unreadable bag stack makes the after counts unknown, never a false drop
+- usage: a client without the APIs snapshots nothing and raises nothing
+- usage: detection stacks casts, the bag drop, the arm's auras and the enchant, in that order
+- usage: a cast item's count drop is not counted again; unknown after counts detect no drop
+- usage: of two items with one use spell, a cast is the one whose count dropped
+- usage: the candidates are the on-use gear, then every bag consumable by item
+- usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
+- usage: Watchers hears the casts from the arm, for the player and the pet
+- usage: a race stores its casts and usage at the result, and nothing secret
+- usage: a canceled race keeps nothing; the next arm starts a fresh list
+- usage: a run resumed after a /reload keeps no casts and no usage
+- usage: the format 3 migration raises the stamp and rewrites no run
+- usage: the sample history and the sim's race carry casts and usage
+- usage: a player with no consumables gets the sample Healthstone, used with no cast
+
 ### test_schema.lua (15)
 
 - schema: the load-time shape check finds no error and every stored path resolves
@@ -827,6 +857,8 @@ Total.
 | test_results_badges.lua | 11 |
 | test_compare.lua | 12 |
 | test_loadout.lua | 26 |
+| test_casts.lua | 9 |
+| test_usage.lua | 15 |
 | test_schema.lua | 15 |
 | test_settings.lua | 29 |
 | test_slash.lua | 30 |
@@ -846,4 +878,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **668** |
+| **Total** | **692** |

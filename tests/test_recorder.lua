@@ -148,7 +148,7 @@ test("recorder: NewRun copies grace and restartGap from the profile", function()
     NS.db.profile.race.restartGap = 9
     local r = NS.Recorder.NewRun(180)
     assertEqual(r.status, "armed")
-    assertEqual(r.schema, 2, "run format 2 (#6)")
+    assertEqual(r.schema, 3, "run format 3 (#13, #14)")
     assertEqual(r.race.length, 180)
     assertEqual(r.race.grace, 2.5)
     assertEqual(r.race.restartGap, 9)

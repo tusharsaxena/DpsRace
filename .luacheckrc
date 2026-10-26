@@ -55,6 +55,13 @@ files["modules/Recorder.lua"] = {
 
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
+-- The cast list (#14): each spell's base cooldown, the first time it is cast.
+files["modules/Casts.lua"] = { read_globals = { "GetSpellBaseCooldown" } }
+-- What was used (#13): the on-use slots, the bags, the item data, the helpful auras and the weapon
+-- enchants, read at the arm (out of combat) and the bag counts again at the result.
+files["modules/Usage.lua"] = {
+    read_globals = { "GetInventoryItemID", "C_Item", "C_Container", "C_UnitAuras", "GetWeaponEnchantInfo" },
+}
 
 -- The compat family (compat): the version-variant client calls, and the only file that may name them.
 files["core/Compat.lua"] = {

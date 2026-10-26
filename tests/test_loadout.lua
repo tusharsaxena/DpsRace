@@ -203,8 +203,8 @@ test("loadout: the format 2 migration leaves old runs as they were, without a lo
     NS:InitDB()
     NS:RunMigrations()
     local g = NS.db.global
-    assertEqual(g.schemaVersion, 2)
-    assertEqual(g.schema, 2, "the format stamp answers 2")
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
+    assertEqual(g.schema, NS.Recorder.RUN_SCHEMA, "the format stamp answers the current format")
     local run = g.runs.old
     assertEqual(run.schema, 1, "an old run was rewritten")
     assertNil(run.loadout)
@@ -212,7 +212,7 @@ test("loadout: the format 2 migration leaves old runs as they were, without a lo
     assertNil(NS.Loadouts.Of(run))
     assertEqual(NS.Recorder.All()[1].id, "old", "a format-1 run is still listed")
     NS:RunMigrations()
-    assertEqual(g.schemaVersion, 2, "the step ran twice")
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION, "the step ran twice")
 end)
 
 -- ── the race ────────────────────────────────────────────────────────────────────────────────────

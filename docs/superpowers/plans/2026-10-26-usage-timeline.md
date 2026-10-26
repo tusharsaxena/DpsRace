@@ -180,11 +180,17 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P3: Capture
 
-- [ ] `modules/Casts.lua` (pure): the cast list per race (time, spell ID), channel-tick and hidden-spell filtering,
+- [x] `modules/Casts.lua` (pure): the cast list per race (time, spell ID), channel-tick and hidden-spell filtering,
   compact encoding, important-ability selection (base cooldown over 15 s), grouping.
-- [ ] `modules/Usage.lua`: the arm snapshot, matching casts, the after-combat deltas, the candidate list.
-- [ ] `Race.OnCast` / Watchers route casts (player and pet) from ARMED; the run record gains `casts` and `usage`
+- [x] `modules/Usage.lua`: the arm snapshot, matching casts, the after-combat deltas, the candidate list.
+- [x] `Race.OnCast` / Watchers route casts (player and pet) from ARMED; the run record gains `casts` and `usage`
   (`RUN_SCHEMA` 3, no rewrite of older runs).
+- P3 notes: an open channel's FIRST SUCCEEDED counts (the rest until CHANNEL_STOP are ticks), so a channel whose
+  SUCCEEDED follows its CHANNEL_START is still recorded once; a SUCCEEDED heard on the CHANNEL_START's own frame
+  counts as that first one. A run resumed after a `/reload` stores neither list (both are in memory until the
+  result). The armed set registers SUCCEEDED (`player`, `pet`) and the player's CHANNEL_START / _STOP; START,
+  EMPOWER_START and INTERRUPTED join from RUNNING, as before. `Casts.Group`, `Casts.Live` / `LiveSpells` and
+  `ResultsSource.Touched` (a sample run's usage edit) are in place for P4 to P6.
 
 ### P4: #13 UI
 

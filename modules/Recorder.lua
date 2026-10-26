@@ -24,8 +24,10 @@ NS.Recorder = Recorder
 local Secrets = NS.Secrets
 
 -- The run record format (spec §7). A stored run carries its own copy; db.global.schema is the same.
--- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one.
-Recorder.RUN_SCHEMA = 2
+-- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one. Format 3 (#13, #14)
+-- adds run.casts and run.usage (modules/Casts.lua, modules/Usage.lua); an older run has neither and
+-- reads as not recorded.
+Recorder.RUN_SCHEMA = 3
 
 -- An id is time() .. "-" .. a four-digit random; a clash with a stored run is redrawn this many times.
 local ID_ATTEMPTS = 32

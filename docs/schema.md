@@ -59,7 +59,7 @@ Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.
 | Path | Default | What it is |
 |---|---|---|
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
-| `schema` | `2` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout` |
+| `schema` | `3` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout`; format 3 (#13, #14) adds `casts` and `usage` |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
 | `loadouts` | `{ gear = {}, talents = {} }` | The loadout store (#6, `modules/Loadouts.lua`): each distinct gear set (`{ [slot] = link }`) and talent loadout (`{ specID, configID, name, heroSpecID, heroName, importString, serialVersion }`) once, keyed by a djb2 hash of its canonical form (`<hash>-<n>` for a different set with the same hash). A run holds only the keys (`run.loadout`); a set no run refers to is dropped on every removal |
 | `history.keepDays` | `90` | *Days to keep* (spec §6.3; the owner's call, 2026-10-26, replacing the run count `history.keep`): 0 = never prune. Above 0, `Recorder.Prune` removes every resolved run older than that many days at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. Its row is *Days to keep* on the History page (0-3650); a change prunes nothing on the spot. No migration: a stored `history.keep` is left unread |
@@ -86,16 +86,20 @@ profile-scoped step sets `perProfile = true` and runs once per stored profile.
 |---|---|---|
 | 0 → 1 | pre-versioning | Nothing: a fresh install and the first release share one shape |
 | 1 → 2 | the run record's format 2 (#6) | Raises a stored `global.schema` below 2 to 2. No stored run is rewritten: format 2 only adds the optional `loadout`, so a format-1 run (keeping its own `schema = 1`) reads as one with no loadout, *Not recorded* |
+| 2 → 3 | the run record's format 3 (#13, #14) | Raises a stored `global.schema` below 3 to 3. No stored run is rewritten: format 3 only adds the optional `casts` and `usage`, so an older run (keeping its own `schema`) reads as one with neither, *Not recorded* |
 
 Adding a step: [common-tasks.md](common-tasks.md#add-a-saved-variables-migration).
 
 ## The run record
 
-Format 2: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
-`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6). A run
-stored before format 2 keeps `schema = 1` and has no `loadout`. `status` is one of
-`armed` (never stored), `running`, `stopping`, `complete`, `incomplete` or `lost`. Every value is
-plain: each client value went through `NS.Secrets`, and a sealed one is absent.
+Format 3: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
+`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6, format 2)
+and the optional `casts` and `usage` (#13, #14, format 3). A run stored before format 2 keeps
+`schema = 1` and has no `loadout`; one stored before format 3 keeps its `schema` and has no `casts`
+or `usage`. So does a format-3 run resumed after a `/reload` (both lists are held in memory until
+the result). `status` is one of `armed` (never stored), `running`, `stopping`, `complete`,
+`incomplete` or `lost`. Every value is plain: each client value went through `NS.Secrets`, and a
+sealed one is absent.
 
 | Part | Fields | Written by |
 |---|---|---|
@@ -107,15 +111,19 @@ plain: each client value went through `NS.Secrets`, and a sealed one is absent.
 | `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
 | `spells` | `{ id, dmg, dps }`, highest first | `Race`, from `Meter.ReadSession` |
 | `loadout` | `gear`, `talents`: the keys of the run's gear set and talent loadout in `global.loadouts`; either may be absent (not readable), and the whole field is absent on a format-1 run | `Loadouts.Attach`, from `Race`: the snapshot at the race's combat end, else the one taken at arm |
+| `casts` | `v` (1), `list` (`"<cs>:<id>,<cs>:p<id>,..."`: each cast's time in whole centiseconds from the clock's start, negative for a pre-pull cast heard while armed, `p` before a pet's spell ID; no cap), `spells` (`{ [id] = base cooldown in ms }`, from `GetSpellBaseCooldown`; a spell whose cooldown could not be read is absent), `dropped` (successes whose spell ID was sealed). Auto-repeat attacks, a castGUID heard twice and a channel's ticks are not in the list. `Casts.Decode` reads it as `{ { t, id, pet } }`; an *important* cast is one whose base cooldown is over 15 s (`Casts.Important`) | `Race` at the result, from `Casts.Record` (`modules/Casts.lua`, fed by `modules/Watchers.lua` from the arm) |
+| `usage` | `v` (1), `used` (`{ itemID?, kind, slot?, times?, n, src, enchantID? }`: `kind` is `gear`, `potion`, `flask`, `food`, `other` or `enchant`; `src` is `cast` (at each `times` entry, s on the race clock), `bag` (a count drop with no cast, time unknown), `buff` (an aura at the arm: a flask's, or *Well Fed* for food with no item), `enchant` (a weapon enchant at the arm, by its enchant ID and slot) or `manual` (ticked by the player)), `candidates` (`{ itemID, kind, slot? }`: every on-use gear item and every bag consumable with a use spell at the arm), `edited` (the player saved their ticks) | `Race` at the result, from `Usage.Build` (`modules/Usage.lua`: the arm's snapshot, the casts and the bag counts at the result); `Usage.SetUsed` (the player's ticks) |
 | `note` | trimmed, control characters as spaces, `\|` as `/`, at most 200 UTF-8 characters (`ResultsDetail.ClampNote`) | `Recorder.SetNote` |
 
 The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
-old one. Spell names and icons are resolved for display and never stored. About 1 to 1.5 KB per run.
+old one. Spell and item names and icons are resolved for display and never stored. About 1 to 1.5 KB
+per run before format 3; the cast list adds about 10 bytes a cast (a 2:00 race at one cast a second,
+about 1.2 KB more).
 
 A change to the record's shape raises `global.schema` and adds a migration step. The step rewrites
-stored runs only when the old shape cannot be read as the new one; format 2 only adds an optional
-field, so its step (1 → 2) rewrites none. A reader that meets a run with a higher `schema` than it
-knows leaves it alone.
+stored runs only when the old shape cannot be read as the new one; formats 2 and 3 only add
+optional fields, so their steps (1 → 2, 2 → 3) rewrite none. A reader that meets a run with a
+higher `schema` than it knows leaves it alone.
 
 ## Named non-setting state
 
@@ -124,7 +132,7 @@ and a closed list of writers.
 
 | Storage key | Owner | Writers |
 |---|---|---|
-| `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Purge history…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
+| `global.runs` | `modules/Recorder.lua` | `Recorder.Save` (Race, at the start, the session capture, the buzzer and the result), `Recorder.SetNote` (the Results detail's note), `Usage.SetUsed` (a run's usage ticks, `modules/Usage.lua`), `Recorder.Delete` (the detail's *Delete*), `Recorder.DeleteAll` (the History page's *Purge history…*), `Recorder.Prune` (through `Bests.PruneToSetting`, at login and after each saved run) |
 | `global.loadouts` (`gear`, `talents`) | `modules/Loadouts.lua` | `Loadouts.Store` / `Loadouts.Attach` (Race, at the race's combat end and, with no combat-end snapshot, at the result), `Loadouts.Sweep` (after `Recorder.Delete`, `Recorder.DeleteAll`, a `Recorder.Prune` that removed any run, and an `Attach` that replaced a run's loadout) |
 | `global.schemaVersion` | `core/Database.lua` | `NS:RunMigrations` |
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |

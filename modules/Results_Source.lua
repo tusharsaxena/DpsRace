@@ -160,6 +160,11 @@ function Source.SetNote(id, note)
     return true
 end
 
+--- A sample run changed in memory (its usage ticks, modules/Usage.lua SetUsed): redraw, as a note does.
+function Source.Touched()
+    if mock then changed(false) end
+end
+
 --- Delete a run. A sample run leaves the sample history only.
 --- @return boolean removed
 function Source.Delete(id)

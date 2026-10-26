@@ -111,8 +111,8 @@ NS.defaults = {
         -- would backfill it onto a legacy account (savedvariables-§1).
         schemaVersion = 0,
         -- The run record format (spec §7). Not a migration stamp: a stored run carries its own copy.
-        -- Format 2 (#6) adds the run's loadout keys.
-        schema = 2,
+        -- Format 2 (#6) adds the run's loadout keys; format 3 (#13, #14) its casts and usage.
+        schema = 3,
         -- The run store, keyed by run id (modules/Recorder.lua). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},

@@ -697,3 +697,6 @@ L["Sharing"] = "Sharing"
 L["Include talents link"] = "Include talents link"
 L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] =
     "Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."
+-- What was used (#13): the food buff's name, matched against the helpful auras at the arm
+-- (modules/Usage.lua).
+L["Well Fed"] = "Well Fed"

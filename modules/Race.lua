@@ -44,7 +44,8 @@ local state = STATE.IDLE
 -- during the loading screen is unknown, so no restart gap spans it), timeline, inFlight (the cast
 -- begun and not yet finished: its plain spell ID and castGUID, either nil when sealed), buzzer,
 -- ticker, sealedTries, reread, baseline (what the newest earlier session held at the arm: see
--- baselineOf), stopNow (Race.StopNow was pressed: the read waives the quiet).
+-- baselineOf), stopNow (Race.StopNow was pressed: the read waives the quiet), usageSnap (the arm's
+-- usage snapshot, #13: modules/Usage.lua; nil for a run resumed after a /reload).
 local cur = {}
 
 local function debug(fmt, ...)
@@ -132,9 +133,23 @@ local function keepLoadout(run)
     if not UnitAffectingCombat("player") then NS.Loadouts.Attach(run, NS.Recorder.SnapshotLoadout()) end
 end
 
+--- The run's casts and usage (#13, #14), at the result: the cast list heard since the arm, and what
+--- was used, from the arm's snapshot, those casts and the bag counts now. A run resumed after a
+--- /reload heard neither (both lists were in memory): it keeps none, and reads as not recorded.
+local function keepUsage(run)
+    local Casts = NS.Casts
+    if not Casts.Collecting() then return end
+    Casts.Stop()
+    run.casts = Casts.Record()
+    if cur.usageSnap and run.casts then
+        run.usage = NS.Usage.Build(cur.usageSnap, Casts.Decode(run.casts.list), NS.Usage.BagCounts())
+    end
+end
+
 local function lose(why)
     local run = cur.run
     keepLoadout(run)
+    keepUsage(run)
     debug("run %s lost: %s", tostring(run.id), tostring(why))
     run.status = "lost"
     run.result = nil
@@ -229,6 +244,7 @@ local function complete(data)
     run.spells = data.spells
     result.dps = NS.Scoring.Dps(result.damage, run)
     keepLoadout(run)
+    keepUsage(run)
     debug("read session: %s, damage %s", run.status, result.damage ~= nil and "present" or "absent")
     NS.Recorder.Save(run)
     finish()
@@ -369,6 +385,10 @@ function Race.Arm(length)
     -- The fallback loadout (#6), held in memory: gear can still change before the pull, so the one
     -- stored is the combat-end snapshot (OnCombatEnd), and this only when there is none.
     cur.armLoadout = NS.Recorder.SnapshotLoadout()
+    -- The cast list (#14) is heard from now (a pre-pull cast counts), and what could be used (#13) is
+    -- read now, out of combat, and held until the result.
+    NS.Casts.Begin()
+    cur.usageSnap = NS.Usage.Snapshot()
     -- Every session the client holds now belongs to an earlier fight: never this run's. The newest of
     -- them is kept on the run, so a /reload (which loses the set) still knows.
     cur.armSet = NS.Meter.SessionIDs()
@@ -424,6 +444,7 @@ local function begin(t)
     run.date = time()
     run.race.startedAt = t
     cur.startedAt = t
+    NS.Casts.Start(t)
     -- Only an update heard in combat, or on this frame, is this pull's (see stashUpdate).
     if cur.stash and (cur.stashHeld or cur.stashAt == t) then
         adopt(cur.stash)
@@ -657,6 +678,7 @@ function Race.Cancel()
     cancelTimers()
     local run = cur.run
     if state ~= STATE.ARMED and state ~= STATE.RESULT then NS.Recorder.Delete(run.id) end
+    NS.Casts.Reset()
     setState(STATE.IDLE)
     cur = {}
     return true
@@ -668,6 +690,7 @@ end
 --- stays as it is, and Resume carries it on at the stand-up.
 function Race.Suspend()
     cancelTimers()
+    NS.Casts.Reset()
     cur = {}
     state = STATE.IDLE
 end

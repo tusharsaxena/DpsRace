@@ -96,6 +96,8 @@ local SUITES = {
     "test_results_badges",
     "test_compare",
     "test_loadout",
+    "test_casts",
+    "test_usage",
     "test_schema",
     "test_settings",
     "test_slash",

@@ -71,6 +71,10 @@ values in the class, target and length colors) and SM-DR-BL18 (new: the detail's
 and W1, W5 and W7 again (the boxed cells, the detail's header line, the wider minimums and the 1340
 default).
 
+Rows for the 2026-10-26 usage and ability-timeline build (branch `feat/2026-10-26-usage-timeline`), not
+yet run: SM-DR-UT1 to SM-DR-UT6 (new: the cast list and the usage stored on a run, run format 3). Until
+the build's UI lands they are checked by dumping the newest run (section 19).
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -431,3 +435,18 @@ on, and `/console taintLog 1` for SM-DR-LO4.
 | SM-DR-DL6 | Race a board with a best; fall behind its pace early, then catch up and pass it; let it finish to the result card | Behind: the pace bar's fill stops short of the tick and the gap from the fill to the tick is red. Level: no red, no green. Ahead: the left half is full and green grows right of the tick. The colors follow at the live redraw rate with no Lua error, and the result card's bar shows the same colors from the final damage | A screenshot of each state, and any error |
 | SM-DR-DL7 | Look at the Damage profile's best-pace line on the running chart, the result card and the Results detail | One solid, faint line (2px, about 40% opaque) from the bottom-left corner to the best's level at the buzzer: no dashes, and the stair steps barely show | A close-up screenshot |
 | SM-DR-DL8 | Click the words *Compare vs best* (not the box) in a run's detail; then *Hide flagged*, *Include incomplete* and *Only best* on the Runs bar, and *Clean runs only* on the Bests tab, each on its words | Each click on the words toggles its checkbox and does what the box does; a click just past the end of the words does nothing | Which label did not toggle |
+
+## 19. The 2026-10-26 build: usage and the ability timeline
+
+Run format 3 stores each run's casts (`run.casts`) and what it used (`run.usage`); the Results views
+that show them come later in the build. Until then, read the newest run with:
+`/run local n,r for _,x in pairs(DpsRaceDB.global.runs) do if not n or (x.date or 0)>n then n,r=x.date,x end end DevTools_Dump(r.casts) DevTools_Dump(r.usage)`
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-UT1 | On a pet class (a Beast Mastery Hunter), arm a 0:30 race; while armed, cast one ability at the dummy as the pull; race with Auto Shot on, the pet attacking and one ability with a long cooldown (Bestial Wrath); let it finish; dump the newest run | `casts.list` starts with the pull's cast at a negative time (a `-` entry, `-0.5` s reads `-50`), holds the pet's casts with a `p` before the spell ID, and holds no Auto Shot (75); `casts.spells` gives Bestial Wrath 90000; `casts.dropped` is 0. No Lua error, and the race's score and late-cast flags read as before | The dump |
+| SM-DR-UT2 | Drink a flask or phial and eat food (*Well Fed* on), put an oil on the weapon, then arm a race; during it use an on-use trinket and drink a combat potion; finish and dump the newest run | `usage.used` lists the trinket (`kind = "gear"`, its slot, `src = "cast"`, one time), the potion (`potion`, `cast`, its time), the flask (`flask`, `buff`), food (`food`, `buff`, no item) and the oil as a weapon enchant (`enchant`, its enchant ID, slot 16); `usage.candidates` lists every on-use slot and every bag consumable with a use; `edited` is false | The dump, and which entry is missing or extra |
+| SM-DR-UT3 | On a channeling spec, arm and race 0:30, casting one channeled spell (Mind Flay, Rain of Fire's channel or similar) to its end twice; dump the newest run | The channel's spell ID shows exactly once per channel in `casts.list`, not once per tick | The count, and each entry's time |
+| SM-DR-UT4 | Arm a race, use a consumable from a bag in a way that fires no cast of its item spell (a second potion stack's item through a macro, or a Healthstone) and race; finish and dump the newest run | If its count dropped with no cast it is listed with `src = "bag"`, its count `n`, and no time; a potion whose cast was heard is listed once with `src = "cast"`, never again as `bag` | The dump |
+| SM-DR-UT5 | Arm a race, pull, `/reload` mid-race; let the resumed run finish; dump it. Then arm and *Cancel* a race, and arm and race another to the end | The resumed run has no `casts` and no `usage` (both were in memory) and no Lua error; the next full race has both, its list starting fresh (nothing from the canceled arm) | The dumps |
+| SM-DR-UT6 | `/dr test`, open the Results window and a few runs; then `/dr sim` to the Results window | No Lua error from the sample runs or the sim's run (they carry sample casts and usage built from your own gear and bags); nothing reaches `DpsRaceDB` (its run count does not move) | The error text |

@@ -56,6 +56,45 @@ local SPELLS = {
 -- always has).
 MockRuns.SPELLS = SPELLS.WARLOCK
 
+-- Each class's sample casts (#14): { id, cd = base cooldown (ms), from = the first cast (s; negative
+-- is a pre-pull cast, heard while armed), every = s, pet? }, cast from `from` every `every` seconds to
+-- the end. The player's own runs cast the Destruction pattern, as they draw its breakdown.
+local CASTS = {
+    WARLOCK = {
+        { id = 6353, cd = 45000, from = -1.6, every = 45 },     -- Soul Fire
+        { id = 1122, cd = 120000, from = 0.4, every = 120 },    -- Summon Infernal
+        { id = 445468, cd = 0, from = 0.9, every = 12 },        -- Wither
+        { id = 29722, cd = 0, from = 1.8, every = 2.5 },        -- Incinerate
+        { id = 17962, cd = 13000, from = 2.2, every = 10 },     -- Conflagrate
+        { id = 116858, cd = 0, from = 3.1, every = 6 },         -- Chaos Bolt
+        { id = 3110, cd = 0, from = 0.6, every = 2, pet = true }, -- Firebolt (the imp)
+    },
+    PALADIN = {
+        { id = 31884, cd = 120000, from = 0.3, every = 120 },   -- Avenging Wrath
+        { id = 255937, cd = 30000, from = 1.2, every = 30 },    -- Wake of Ashes
+        { id = 184575, cd = 12000, from = 0.8, every = 7 },     -- Blade of Justice
+        { id = 20271, cd = 0, from = 2.0, every = 6 },          -- Judgment
+        { id = 35395, cd = 0, from = 1.5, every = 4 },          -- Crusader Strike
+        { id = 85256, cd = 0, from = 2.6, every = 3 },          -- Templar's Verdict
+    },
+    MAGE = {
+        { id = 133, cd = 0, from = -2.0, every = 2.6 },         -- Fireball
+        { id = 190319, cd = 120000, from = 0.5, every = 120 },  -- Combustion
+        { id = 257541, cd = 25000, from = 6.0, every = 25 },    -- Phoenix Flames
+        { id = 108853, cd = 12000, from = 1.0, every = 10 },    -- Fire Blast
+        { id = 11366, cd = 0, from = 3.2, every = 4 },          -- Pyroblast
+    },
+}
+
+-- What a sample run used (#13): its first on-use gear item at GEAR_AT and every GEAR_EVERY seconds
+-- after, its first potion at POTION_AT, a flask's buff and Well Fed on at the start, and the weapon
+-- enchants the player has on. A player with no consumable in the bags gets a Healthstone, used once
+-- with no cast (a bag count drop).
+MockRuns.GEAR_AT, MockRuns.GEAR_EVERY, MockRuns.POTION_AT = 0.4, 120, 1.2
+local HEALTHSTONE = { itemID = 5512, spellID = 6262 }
+-- The sample base cooldowns of an on-use item's and a potion's spells (ms).
+local GEAR_CD, POTION_CD = 120000, 300000
+
 -- The two made-up characters beside the player, on the player's realm.
 local ALTS = {
     ret  = { name = "Sampleblade", class = "PALADIN", specID = 70, spec = "Retribution", ilvl = 312.4 },
@@ -71,6 +110,8 @@ local TARGETS = {
 -- The history: every target type, all five preset lengths and every Status the Runs list draws (Max,
 -- Spec best, Complete, Flagged, Incomplete, Died, Lost), with notes, loadouts and charts on some.
 -- `ago` is hours before now; `loadout` names a sample set ("a", or "b": "a" with one slot changed).
+-- Every run carries its casts and usage (#13, #14) but one: `old` is a format-2 run, raced before
+-- they were recorded.
 local HISTORY = {
     { who = "me", cat = "single", len = 30, dps = 151200, ago = 26, loadout = "a", chart = true,
       note = "Sample note: opener with every cooldown" },
@@ -83,7 +124,7 @@ local HISTORY = {
     { who = "me", cat = "dungeoneer", len = 300, dps = 135100, ago = 96, loadout = "a", chart = true },
     { who = "me", cat = "single", len = 60, dps = 120500, ago = 3, status = "incomplete", endAt = 41, died = true },
     { who = "me", cat = "single", len = 30, ago = 2, status = "lost" },
-    { who = "me", cat = "pvp", len = 120, dps = 118200, ago = 120, restartedAt = 47.5 },
+    { who = "me", cat = "pvp", len = 120, dps = 118200, ago = 120, restartedAt = 47.5, old = true },
     { who = "ret", cat = "single", len = 30, dps = 163400, ago = 12, note = "Sample note: another character's best" },
     { who = "ret", cat = "cleave", len = 120, dps = 198600, ago = 60 },
     { who = "ret", cat = "boss", len = 180, dps = 141000, ago = 84, shared = true },
@@ -137,6 +178,76 @@ function MockRuns.Spells(list, damage, dps)
     return out
 end
 
+-- ── the sample casts and usage (#13, #14) ───────────────────────────────────────────────────────
+
+-- `class`'s cast pattern to `secs` seconds: the casts (unsorted) and each spell's base cooldown.
+local function castList(class, secs)
+    local list, spells = {}, {}
+    for _, p in ipairs(CASTS[class] or CASTS.WARLOCK) do
+        spells[p.id] = p.cd
+        for t = p.from, secs, p.every do list[#list + 1] = { t = t, id = p.id, pet = p.pet == true } end
+    end
+    return list, spells
+end
+
+-- The bag consumable of `kind` with the lowest item ID, or nil.
+local function firstOf(bags, kind)
+    local best
+    for itemID, b in pairs(bags) do
+        if NS.Usage.KindOf(b.subclass) == kind and (best == nil or itemID < best) then best = itemID end
+    end
+    return best
+end
+
+-- The arm snapshot a sample is detected from: the player's gear, bags and enchants, with a flask's
+-- buff (when the bags hold one) and Well Fed on, and a Healthstone when the bags hold no consumable.
+local function sampleSnap(snap)
+    local s = { gear = snap.gear or {}, bags = copy(snap.bags), auras = {}, enchants = snap.enchants or {} }
+    if next(s.bags) == nil then
+        s.bags[HEALTHSTONE.itemID] = { count = 1, subclass = 0, spellID = HEALTHSTONE.spellID }
+        s.healthstone = true
+    end
+    local flask = firstOf(s.bags, "flask")
+    if flask then s.auras[1] = { spellID = s.bags[flask].spellID } end
+    s.auras[#s.auras + 1] = { name = L["Well Fed"] }
+    return s
+end
+
+-- The gear's and the potion's uses as casts of their spells, into `list` and `spells`.
+local function useCasts(s, secs, list, spells)
+    local gear = s.gear[1]
+    if gear then
+        spells[gear.spellID] = GEAR_CD
+        for t = MockRuns.GEAR_AT, secs, MockRuns.GEAR_EVERY do list[#list + 1] = { t = t, id = gear.spellID, pet = false } end
+    end
+    local potion = firstOf(s.bags, "potion")
+    if potion and MockRuns.POTION_AT <= secs then
+        spells[s.bags[potion].spellID] = POTION_CD
+        list[#list + 1] = { t = MockRuns.POTION_AT, id = s.bags[potion].spellID, pet = false }
+    end
+end
+
+local function earlierFirst(a, b)
+    if a.t ~= b.t then return a.t < b.t end
+    return a.id < b.id
+end
+
+--- A sample run's cast record and usage record (the stored shapes, modules/Casts.lua and
+--- modules/Usage.lua): `class`'s cast pattern for `secs` seconds, and what it used, detected by
+--- Usage.Build from `snap` (a Usage.Snapshot, the player's own; read now when nil).
+--- @return table casts, table usage
+function MockRuns.Usage(class, secs, snap)
+    local s = sampleSnap(snap or NS.Usage.Snapshot())
+    local list, spells = castList(class, secs)
+    useCasts(s, secs, list, spells)
+    table.sort(list, earlierFirst)
+    local after = {}
+    for itemID, b in pairs(s.bags) do after[itemID] = b.count end
+    if s.healthstone then after[HEALTHSTONE.itemID] = 0 end
+    local casts = { v = NS.Casts.VERSION, list = NS.Casts.Encode(list), spells = spells, dropped = 0 }
+    return casts, NS.Usage.Build(s, NS.Casts.Decode(casts.list), after)
+end
+
 -- The result of a run at `dps` for `secs` seconds (the length, or the time in combat for an
 -- incomplete run): plain numbers in the stored shape.
 local function resultOf(status, dps, length, endAt)
@@ -150,7 +261,8 @@ end
 
 --- A sample run in the stored shape (spec §7), never stored.
 --- @param spec table  { id, char, category, length, dps, date, status?, endAt?, late?, died?, restartedAt?,
----                    shared?, note?, spells? }
+---                    shared?, note?, spells?, castClass? (the cast pattern, default the player's
+---                    Destruction one), snap? (MockRuns.Usage's), old? (format 2: no casts or usage) }
 --- @return table run
 function MockRuns.Run(spec)
     local status = spec.status or "complete"
@@ -166,6 +278,12 @@ function MockRuns.Run(spec)
     if status ~= "lost" then
         run.result = resultOf(status, spec.dps, spec.length, spec.endAt)
         run.spells = MockRuns.Spells(spec.spells or MockRuns.SPELLS, run.result.damage, spec.dps)
+    end
+    if spec.old then
+        run.schema = 2
+    else
+        local secs = status == "incomplete" and spec.endAt or spec.length
+        run.casts, run.usage = MockRuns.Usage(spec.castClass, secs, spec.snap)
     end
     return run
 end
@@ -215,7 +333,7 @@ end
 --- @return table dataset
 function MockRuns.Dataset()
     local me, now = MockRuns.Player(), time()
-    local sets = loadouts()
+    local sets, snap = loadouts(), NS.Usage.Snapshot()
     local data = { runs = {}, loadouts = sets, slices = {} }
     for i, h in ipairs(HISTORY) do
         local char = charFor(h.who, me)
@@ -223,7 +341,8 @@ function MockRuns.Dataset()
             id = ("sample-%02d"):format(i), char = char, category = h.cat, length = h.len, dps = h.dps,
             date = now - h.ago * HOUR, status = h.status, endAt = h.endAt, late = h.late, died = h.died,
             restartedAt = h.restartedAt, shared = h.shared, note = h.note and L[h.note] or nil,
-            spells = spellsFor(h.who, char.class),
+            spells = spellsFor(h.who, char.class), castClass = h.who ~= "me" and char.class or nil, snap = snap,
+            old = h.old,
         })
         run.loadout = refFor(h.loadout, sets)
         data.runs[i] = run
