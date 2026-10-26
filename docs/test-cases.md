@@ -662,7 +662,7 @@ Total.
 ### test_results_timeline.lua (20)
 
 - results timeline: one row per ability and caster across both runs, each run's times and counts
-- results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's
+- results timeline: cooldowns of 29 s or more first, the longest first; then by count, the player's before the pet's
 - results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane
 - results timeline: the detail's Timeline button is live for a run with casts and disabled without
 - results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts

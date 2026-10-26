@@ -1,6 +1,6 @@
 -- tests/test_results_timeline.lua — the ability timeline (#14, modules/Results_Timeline.lua): the pure
 -- rows (one per ability and caster across both runs, each run's times and counts, the order: cooldowns
--- over 15 s first, longest first, then by count), the axis and a cast tick's x; the detail's Timeline
+-- of 29 s or more first, longest first, then by count), the axis and a cast tick's x; the detail's Timeline
 -- button (disabled for a run with no casts); the window's lanes (this run's gold ticks on top, the
 -- compared run's blue below, the counts just past the lanes, the pet suffix, the cooldown under the name),
 -- the Casts strips above them (every cast's icon on the lanes' axis, stacked onto as many rows as
@@ -124,11 +124,11 @@ test("results timeline: one row per ability and caster across both runs, each ru
     assertEqual(only[1].cd, 180000)
 end)
 
-test("results timeline: cooldowns over 15 s first, the longest first; then by count, the player's before the pet's", function()
+test("results timeline: cooldowns of 29 s or more first, the longest first; then by count, the player's before the pet's", function()
     local i = inst()
     local NS = i.NS
     local rows = i.TL.Rows(mkRun(NS, "a", 1, THIS), mkRun(NS, "b", 1, BEST))
-    -- Conflagrate's 13 s is not over 15 s: it ranks by count (1 here, 2 in the best) after Incinerate's 3
+    -- Conflagrate's 13 s is short of 29 s: it ranks by count (1 here, 2 in the best) after Incinerate's 3
     -- and the pet's 2.
     assertEqual(keys(rows), table.concat({ INFERNAL, SOUL_FIRE, INCINERATE, "p" .. FIREBOLT, CONFLAG }, ","))
     -- With no compared run the order stands on this run alone.
@@ -138,6 +138,21 @@ test("results timeline: cooldowns over 15 s first, the longest first; then by co
         mkRun(NS, "b", 1, { { 1, CONFLAG }, { 2, CONFLAG } }))
     assertEqual(keys(tie), CONFLAG .. "," .. INCINERATE)
     assertEqual(#i.TL.Rows(mkRun(NS, "a", 1, nil), nil), 0, "a run with no casts has no rows")
+    -- The 29 s line: a 25 s cooldown ranks by count after Conflagrate (a tie on 1, the best's 0 under its
+    -- 2), a 29 s one sorts with the long cooldowns after Soul Fire.
+    local SHORT, EDGE = 900025, 900029
+    local list, spells = { { 1, SHORT }, { 2, EDGE } }, { [SHORT] = 25000, [EDGE] = 29000 }
+    for _, c in ipairs(THIS) do list[#list + 1] = c end
+    for id, cd in pairs(SPELLS) do spells[id] = cd end
+    local edge = mkRun(NS, "a", 1, list)
+    edge.casts.spells = spells
+    local ranked = i.TL.Rows(edge, mkRun(NS, "b", 1, BEST))
+    assertEqual(keys(ranked),
+        table.concat({ INFERNAL, SOUL_FIRE, EDGE, INCINERATE, "p" .. FIREBOLT, CONFLAG, SHORT }, ","))
+    for _, row in ipairs(ranked) do
+        if row.id == SHORT then assertEqual(i.TL.CooldownLine(row), "", "25 s shows no cooldown") end
+        if row.id == EDGE then assertEqual(i.TL.CooldownLine(row), "0:29 cooldown", "29 s shows one") end
+    end
 end)
 
 test("results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane", function()
@@ -199,9 +214,9 @@ test("results timeline: two lanes per ability, this run's gold ticks on top and 
     local drawn = pairsOf(i)
     assertEqual(#drawn, 5)
     assertEqual(drawn[1].name.__text, "Spell 1122")
-    assertEqual(drawn[1].cd.__text, "3:00 cooldown", "its cooldown, over 15 s")
+    assertEqual(drawn[1].cd.__text, "3:00 cooldown", "its cooldown, 29 s or more")
     assertEqual(drawn[3].name.__text, "Incinerate")
-    assertEqual(drawn[3].cd.__text, "", "no cooldown shown under 15 s")
+    assertEqual(drawn[3].cd.__text, "", "no cooldown shown under 29 s")
     -- The cooldown sits under the name in the name cell, on the bottom lane's line: nothing between
     -- the name cell and the lanes but the gap.
     local cdAt = drawn[1].cd.__points[#drawn[1].cd.__points]

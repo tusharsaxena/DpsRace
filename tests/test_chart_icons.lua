@@ -1,6 +1,6 @@
 -- tests/test_chart_icons.lua — the damage chart's cooldown icons (#14, modules/Hud_Chart.lua): the
--- ability's icon along the top of the plot at each cast of an ability whose base cooldown is over
--- 15 s, a later icon that would overlap the one before it on the first row below with room, as many
+-- ability's icon along the top of the plot at each cast of an ability whose base cooldown is 29 s
+-- or more, a later icon that would overlap the one before it on the first row below with room, as many
 -- rows as the plot's height holds, then a +n mark for a crowd on the last row. The pure positions
 -- (Chart.TimeX, IconX, IconRowCount, IconRows, IconY) and selection, then the icons drawn live on the running HUD
 -- from the race's casts (no geometry read back while the columns hold secrets), on the result card and
@@ -21,8 +21,8 @@ local function near(got, want, msg)
         (msg or "value") .. ": expected " .. tostring(want) .. ", got " .. tostring(got))
 end
 
--- A HUD fixture whose client knows the base cooldowns: the Infernal and Soul Fire over 15 s,
--- Conflagrate under it, Incinerate none.
+-- A HUD fixture whose client knows the base cooldowns: the Infernal and Soul Fire at 29 s or
+-- more, Conflagrate under it, Incinerate none.
 local function hud()
     local W
     local f = RaceClock.new{ mutate = function(m) W = Widgets.install(m) end }
