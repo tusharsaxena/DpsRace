@@ -238,8 +238,10 @@ is on screen. Its only timers are the talent tree's: a one-frame `C_Timer.After(
 after a close from Blizzard's close-all-windows step (`CloseSpecialWindows`), and, while the tree is up,
 a `C_Timer.NewTicker` polling it every `Results.TREE_POLL` (0.25) seconds, canceled when the tree closes
 or the player opens or closes the window, so the window comes back once the tree is down (Taint Notes, B4.1).
-`modules/Results_Timeline.lua` (the ability timeline) registers no game event, no `OnUpdate` and no
-timer of its own: it draws when opened and when the detail tells it.
+`modules/Results_Timeline.lua` (the ability timeline) registers no game event and no `OnUpdate`: it
+draws when opened and when the detail tells it. Its one timer is a one-frame `C_Timer.After(0)` armed by
+its `OnHide` after a close-stack close (Escape), which lifts the Results window's dim cover once the
+close stack is done and lets a talent tree that close made way for send the Results window aside.
 
 **Window sizing.** All three windows (the Results window, the timeline and the HUD) are resized from
 the library's corner grip through one pattern, `modules/Sizing.lua`: while the grip is held each size
@@ -269,12 +271,21 @@ The pipeline from event to screen: [data-flow.md](data-flow.md).
 Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 `core/Constants.lua` (frame-layering-§5); its header comment is the addon's whole stack, so it is not
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
-Results window and the ability timeline, HIGH, toplevel) and `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
-mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with two level bands: `LEVEL.DETAIL`,
-which lifts the Results detail pane over the Runs pane it sits inside, and `LEVEL.CHART_OVERLAY`,
-which lifts the damage chart's pace diagonal (and its cooldown icons) over its columns. The StaticPopups, the debug console,
-the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` pins
-each frame's strata, level and toplevel.
+Results window, HIGH, toplevel), `MODAL` (the ability timeline, DIALOG, toplevel: opened from the Results
+window, so one strata above it, and it re-raises a shown StaticPopup when it opens, frame-layering-§4) and
+`SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with three level bands: `LEVEL.DETAIL`,
+which lifts the Results detail pane over the Runs pane it sits inside, `LEVEL.CHART_OVERLAY`,
+which lifts the damage chart's pace diagonal (and its cooldown icons) over its columns, and
+`LEVEL.COVER` (W+30, the standard's popover band), the Results window's dim cover while the timeline is
+open: a black texture at 0.45 alpha over the whole window whose frame takes the mouse and the wheel over
+the grip and every content level, so nothing behind the timeline answers a hover or a click (a click on
+it does nothing). Escape closes the timeline first: the close stack hides both, and the Results window's
+`OnHide` shows it again while the cover is up; the cover goes a frame later. The timeline wears the
+shared skin made opaque (`ResultsTimeline.SKIN`: the fill at alpha 1, the inner border and divider
+blended over it to alpha 1). The StaticPopups, the debug console,
+the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
+`test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover.
 
 ## Taint Notes
 
@@ -364,7 +375,11 @@ each frame's strata, level and toplevel.
   take the mouse wherever the chart is drawn, the running HUD included (a plain, non-secure frame),
   and like the timeline's hover frames show tooltips built from plain cast records (the timeline's name cell and cast icons the client's
   spell tooltip by the stored ID). The timeline window is plain and non-secure like the Results
-  window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop.
+  window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop. Neither
+  window's `UISpecialFrames` entry is ever removed or rewritten for the modal's Escape order (a write to
+  that shared table from addon code would taint Blizzard's own entries): the Results window shows
+  itself again from its own `OnHide` instead. Its re-raise of a shown StaticPopup is the library's
+  `RaiseStaticPopups` (`Raise` only, pcall'd).
 - The diagnostics report is read-only and runs in combat; every value goes through `SafeToString`.
 
 ## Known Limitations
@@ -449,12 +464,13 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: two test files,
 `tests/test_results.lua` at 1481 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
-`test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`, `test_results_delta` and
+`test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`,
+`test_results_timeline_modal`, `test_results_delta` and
 `test_results_sections` did)
 and `tests/test_hud.lua` at 1413 (the waiting hint box's cases went to a new `test_hud_hint`), and
 six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1189 (the zoom, 2026-10-27; its suite's
-P12 cases went to a new `test_results_timeline_zoom`), `modules/Results_Detail.lua` at 1176
+first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1226 (the zoom and the modal, 2026-10-27; its suite's
+P12 and P13 cases went to new `test_results_timeline_zoom` and `test_results_timeline_modal` suites), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1119,
 `modules/Results_Runs.lua` at 1047 (the detail's Delta box contexts, 2026-10-26) and
 `modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,

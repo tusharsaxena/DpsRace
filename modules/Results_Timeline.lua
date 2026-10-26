@@ -41,6 +41,14 @@ local _, NS = ...
 -- movable by its title bar and resizable, its position and size in db.profile.windows.timeline;
 -- Master scale acts on it. It closes with the Results window. Built on first open.
 --
+-- A MODAL (P13, the owner's call, 2026-10-27: a Results tooltip showed through it). Opened from the
+-- Results window, it sits one strata above it (LAYERS.STRATA.MODAL, frame-layering-§1), toplevel, and
+-- re-raises a shown StaticPopup when it opens (frame-layering-§4). While it is open the Results
+-- window wears its dim cover (Results.SetCovered), which takes that window's mouse; Escape closes this
+-- window first (the Results window's onHide shows itself again while covered), and the cover goes
+-- when this one closes. Its skin is SKIN: the shared one made fully opaque, so nothing of the Results
+-- window shows through.
+--
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
 -- constants here and the window's stored size, never read back off a frame; Rows, Span, Ticks, MarkX,
 -- LaneGeometry, Stack, Sections, ClampPos, Rezoom, CooldownText, CooldownLine, IconLines and Legend are pure.
@@ -110,6 +118,22 @@ local TRACK = { 1, 1, 1, 0.06 }
 local GRID = { 1, 1, 1, 0.08 }
 local HEADER_H = Style.TITLE_BAR_H
 local SEP = " \194\183 "
+
+-- The shared skin made opaque: its fill at alpha 1, and its inner border and divider blended over that
+-- fill to alpha 1, so they read as they do on the other windows and nothing behind shows through.
+local function opaque(c, under)
+    if type(c) ~= "table" then return c end
+    local a = c[4] or 1
+    return { c[1] * a + under[1] * (1 - a), c[2] * a + under[2] * (1 - a), c[3] * a + under[3] * (1 - a), 1 }
+end
+Timeline.SKIN = {}
+for k, v in pairs(NS.SKIN or {}) do Timeline.SKIN[k] = v end
+if type(Timeline.SKIN.bg) == "table" then
+    local bg = Timeline.SKIN.bg
+    Timeline.SKIN.bg = { bg[1], bg[2], bg[3], 1 }
+    Timeline.SKIN.innerBorder = opaque(Timeline.SKIN.innerBorder, bg)
+    Timeline.SKIN.divider = opaque(Timeline.SKIN.divider, bg)
+end
 
 local ui        -- the built window
 local pane      -- the detail pane the window follows
@@ -529,11 +553,21 @@ local function buildBody(f)
     buildAxis(f)
 end
 
+-- A close-stack close, a frame later: the Results window's cover goes unless the timeline is open
+-- again, and a talent tree that close made way for sends the Results window aside (its own rule).
+local function settle()
+    if Timeline.IsShown() then return end
+    NS.Results.SetCovered(false)
+    NS.Results.StepAsideForTree()
+end
+
 local function onHide()
     Tbl.HideTip()
     if hiding or (ui and ui.frame:IsShown()) then return end
-    -- Escape (UISpecialFrames): the player closed it.
+    -- Escape (UISpecialFrames): the player closed it. The cover stays until the close stack is done,
+    -- so the Results window, hidden by the same Escape, still sees it and shows again.
     Timeline.wanted = false
+    if C_Timer and C_Timer.After then C_Timer.After(0, settle) else settle() end
 end
 
 -- Every size change, the grip's or not: the tracked size the layouts read, never under the minimums.
@@ -555,7 +589,7 @@ local function ensureWindow()
     local f = CreateFrame("Frame", Timeline.FRAME_NAME, UIParent, "BackdropTemplate")
     ui = { frame = f, rows = {}, castsA = {}, castsB = {}, offset = 0, zoomI = 1, pos = 0 }
     f:Hide()
-    f:SetFrameStrata(NS.Constants.LAYERS.STRATA.WINDOW)
+    f:SetFrameStrata(NS.Constants.LAYERS.STRATA.MODAL)
     f:SetClampedToScreen(true)
     f:SetMovable(true)
     f:EnableMouse(true)
@@ -563,7 +597,7 @@ local function ensureWindow()
     buildChrome(f)
     buildLegend(f)
     buildBody(f)
-    NS.ApplySkin(f)
+    NS.ApplySkin(f, Timeline.SKIN)
     f:SetScript("OnHide", onHide)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Timeline.FRAME_NAME) end
     -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
@@ -1084,11 +1118,13 @@ function Timeline.Open(p)
     ensureWindow()
     ui.frame:Show()
     if ui.frame.Raise then ui.frame:Raise() end
+    NS.RaiseStaticPopups()
+    NS.Results.SetCovered(true)
     draw()
     return true
 end
 
---- Close the window (its close control, the Results window closing).
+--- Close the window (its close control, the Results window closing): the Results window's cover goes.
 function Timeline.Hide()
     Timeline.wanted = false
     if ui and ui.frame:IsShown() then
@@ -1096,6 +1132,7 @@ function Timeline.Hide()
         ui.frame:Hide()
         hiding = false
     end
+    NS.Results.SetCovered(false)
 end
 
 --- Whether the window is open.

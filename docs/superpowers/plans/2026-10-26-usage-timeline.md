@@ -347,7 +347,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 
 ### P13: Timeline as a modal, compare score labels (2026-10-27)
 
-- [ ] **Timeline modal:** the Ability timeline opens as a modal above the Results window: a higher layer than the
+- [x] **Timeline modal:** the Ability timeline opens as a modal above the Results window: a higher layer than the
   Results window (per the standard's frame-layering tiers), a dim cover over the Results window that takes its clicks
   and hovers while the timeline is open (the owner's screenshot showed a Results tooltip through the timeline),
   Escape closes the timeline first, and the timeline's background is fully opaque (no bleed-through).

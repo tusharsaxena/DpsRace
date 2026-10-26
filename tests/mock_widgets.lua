@@ -15,6 +15,9 @@
 --   __texCoord / __font / __strata / __mouse   a region's texcoords, font, strata and mouse flag
 --   __fontObject   the Blizzard font object a font string was made with or handed (SetFontObject)
 --   __vertex       a texture's last SetVertexColor, { r, g, b, a }
+--   __colorTex / __backdropColor / __borderColor / __wheel   a texture's last SetColorTexture, a
+--                  frame's last SetBackdropColor and SetBackdropBorderColor ({ r, g, b, a } each), and
+--                  its mouse-wheel flag
 --   __shadow / __barTexture / __barColor / __height   a font string's shadow offset, a status bar's
 --                  fill texture and color, a frame's last SetHeight
 --   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
@@ -136,6 +139,13 @@ return function(T)
             rawset(o, "ClearAllPoints", function(self) self.__points = {}; return self end)
             rawset(o, "SetJustifyH", function(self, j) self.__justifyH = j; return self end)
             rawset(o, "SetVertexColor", function(self, r, g, b, a) self.__vertex = { r, g, b, a }; return self end)
+            rawset(o, "SetColorTexture", function(self, r, g, b, a) self.__colorTex = { r, g, b, a }; return self end)
+            rawset(o, "SetBackdropColor", function(self, r, g, b, a) self.__backdropColor = { r, g, b, a }; return self end)
+            rawset(o, "SetBackdropBorderColor", function(self, r, g, b, a)
+                self.__borderColor = { r, g, b, a }
+                return self
+            end)
+            rawset(o, "EnableMouseWheel", function(self, on) self.__wheel = on and true or false; return self end)
             rawset(o, "CreateFontString", function(self, _, _, template) return region(self, template) end)
             rawset(o, "CreateTexture", function(self) return region(self) end)
             for _, name in ipairs(GEOMETRY) do

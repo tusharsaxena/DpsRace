@@ -393,7 +393,7 @@ Total.
 - layers: no strata string and no bare level number at a call site
 - layers: the Race HUD is MEDIUM, toplevel and clamped
 - layers: the Results window is HIGH, toplevel and clamped
-- layers: the ability timeline is HIGH, toplevel and clamped, like the Results window
+- layers: the ability timeline is DIALOG, one strata above the Results window, toplevel and clamped
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
@@ -692,6 +692,17 @@ Total.
 - timeline zoom: a zoom keeps the view's middle; Shift+mouse wheel pans and the plain wheel scrolls
 - timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
 - timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
+
+### test_results_timeline_modal.lua (8)
+
+- timeline modal: the timeline sits one strata above the Results window, the cover over its every level
+- timeline modal: opening it re-raises a shown StaticPopup (frame-layering-§4)
+- timeline modal: the cover dims the Results window and takes its mouse and wheel while the timeline is open
+- timeline modal: putting the cover up closes the window's menu and tooltip
+- timeline modal: the cover goes with the Results window, at stand-down and on a source switch
+- timeline modal: Escape closes the timeline before the Results window, in either close-stack order
+- timeline modal: the talent tree's panel open closes the timeline and sends the window aside
+- timeline modal: the timeline's skin is opaque, nothing of the Results window shows through
 
 ### test_sizing.lua (14)
 
@@ -1037,6 +1048,7 @@ Total.
 | test_chart_icons.lua | 29 |
 | test_results_timeline.lua | 20 |
 | test_results_timeline_zoom.lua | 7 |
+| test_results_timeline_modal.lua | 8 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 16 |
@@ -1058,4 +1070,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **836** |
+| **Total** | **844** |

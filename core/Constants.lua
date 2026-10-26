@@ -25,6 +25,9 @@ C.LOGO = ("Interface\\AddOns\\%s\\media\\logos\\dpsrace.logo.tga"):format(addonN
 --   HIGH               WINDOW        the Results window (modules/Results.lua): the on-demand browser,
 --                                    toplevel; Blizzard's Settings panel shares this strata, and the
 --                                    last one clicked is in front
+--   DIALOG             MODAL         the ability timeline (modules/Results_Timeline.lua): opened from the
+--                                    Results window, so one strata above it (P13), toplevel and clamped;
+--                                    it re-raises a shown StaticPopup when it opens (frame-layering-§4)
 --   DIALOG             (library)     Blizzard StaticPopups (reset, delete, whisper share), the LibKa0s
 --                                    debug console and perf panel (toplevel from LibKa0s v1.77.0)
 --   FULLSCREEN         SCREEN_ALERT  the center-screen countdown (modules/Countdown.lua): mouse-disabled,
@@ -39,9 +42,12 @@ C.LOGO = ("Interface\\AddOns\\%s\\media\\logos\\dpsrace.logo.tga"):format(addonN
 -- moment it is built, before its children, instead of tying the empty Runs pane (body + 1) by
 -- creation order. Its deepest child then sits at W+8, still under the grip. The damage chart's overlay
 -- (modules/Hud_Chart.lua: the best line and the pace diagonal) is set to its plot + LEVEL.CHART_OVERLAY,
--- one band over the plot's columns, which a line on the plot itself would sit under. The binding buttons and
--- the event frame draw nothing and set no layer (exempt).
+-- one band over the plot's columns, which a line on the plot itself would sit under. While the timeline
+-- is open, the Results window's dim cover (modules/Results.lua) sits at W + LEVEL.COVER (W+30, the
+-- standard's popover band over a window's own content), over the grip and every content level, so it
+-- takes the window's mouse. The binding buttons and the event frame draw nothing and set no layer
+-- (exempt).
 C.LAYERS = {
-    STRATA = { HUD = "MEDIUM", WINDOW = "HIGH", SCREEN_ALERT = "FULLSCREEN" },
-    LEVEL  = { DETAIL = 2, CHART_OVERLAY = 2 },
+    STRATA = { HUD = "MEDIUM", WINDOW = "HIGH", MODAL = "DIALOG", SCREEN_ALERT = "FULLSCREEN" },
+    LEVEL  = { DETAIL = 2, CHART_OVERLAY = 2, COVER = 30 },
 }

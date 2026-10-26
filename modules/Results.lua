@@ -44,6 +44,7 @@ Results.VIEWS = {
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 440      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
+Results.COVER_ALPHA = 0.45      -- the dim cover over the window while the ability timeline is open
 Results.TABS = { "runs", "bests" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
@@ -561,13 +562,63 @@ local function closedByPlayer()
 end
 
 -- The frame went away by Escape (UISpecialFrames): the player closed it. A frame still shown in its
--- own right was hidden with its parent (Alt-Z), which is not the player closing it.
+-- own right was hidden with its parent (Alt-Z), which is not the player closing it. With the ability
+-- timeline open over it (the cover up), the close stack's hide was the timeline's: the timeline is the
+-- modal, so Escape closes it first and the window shows again at once (the cover goes once the
+-- timeline's own hide settles, modules/Results_Timeline.lua).
 function onHide()
     NS.CloseMenu()
     if hiding or (ui and ui.frame:IsShown()) then return end
+    if Results.wanted and Results.IsCovered() then
+        ui.frame:Show()
+        debug("Escape went to the timeline first")
+        return
+    end
     Results.wanted = false
     closedByPlayer()
     if not talentTreeShown() and C_Timer and C_Timer.After then C_Timer.After(0, reopenUnderTree) end
+end
+
+-- THE MODAL COVER (P13, the owner's call, 2026-10-27). While the ability timeline is open over the
+-- window (one strata above it, core/Constants.lua LAYERS), a black texture at COVER_ALPHA dims the
+-- whole window and its frame takes the mouse and the wheel at W + LEVEL.COVER, over the grip and
+-- every content level: no hover, click or scroll reaches the window behind, so no Results tooltip
+-- shows through. A click on it does nothing (the timeline's close control and Escape close the
+-- timeline). A child of the window, so it hides with it; the timeline shows and hides it. Built on
+-- the first open; its level set again on each show (a click raises the toplevel window's level).
+local function ensureCover()
+    if ui.cover then return ui.cover end
+    local c = CreateFrame("Frame", nil, ui.frame)
+    c:Hide()
+    c:SetAllPoints(ui.frame)
+    c:EnableMouse(true)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function() end)
+    c.dim = c:CreateTexture(nil, "BACKGROUND")
+    c.dim:SetAllPoints(c)
+    c.dim:SetColorTexture(0, 0, 0, Results.COVER_ALPHA)
+    ui.cover = c
+    return c
+end
+
+--- The ability timeline opened (`on`) or closed over the window: the dim cover up or down. An open
+--- closes a filter menu and the window's tooltip, which would act on or speak for the window behind.
+function Results.SetCovered(on)
+    if not ui then return end
+    if not on then
+        if ui.cover then ui.cover:Hide() end
+        return
+    end
+    local c = ensureCover()
+    c:SetFrameLevel(ui.frame:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.COVER)
+    c:Show()
+    NS.CloseMenu()
+    NS.ResultsTable.HideTip()
+end
+
+--- Whether the dim cover is up (the ability timeline open over the window).
+function Results.IsCovered()
+    return ui ~= nil and ui.cover ~= nil and ui.cover:IsShown() == true
 end
 
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
@@ -751,6 +802,8 @@ end
 --- sim's run). A hidden window redraws in full on its next show.
 function Results.OnSourceChanged(swapped)
     if swapped then
+        -- The timeline followed a run the other source does not hold: it closes, and its cover goes.
+        NS.ResultsTimeline.Hide()
         selected, detailOpen = nil, false
         if ui then
             ui.detail:SetPick(nil)
