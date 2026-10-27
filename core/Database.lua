@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 4
+NS.SCHEMA_VERSION = 5
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
 -- `perProfile = true` and runs once for every stored profile.
@@ -31,6 +31,12 @@ local STEPS = {
         if type(w) ~= "table" then return end
         if type(w.results) == "table" and w.results.view == nil then w.results.view = "expanded" end
         w.timeline = nil
+    end },
+    -- 4 -> 5: the run record's format 4 (#17) adds run.stats, which an older run is simply without
+    -- (the gear view shows dashes), so only the format stamp moves.
+    { to = 5, run = function(sv)
+        local g = type(sv) == "table" and sv.global
+        if type(g) == "table" and type(g.schema) == "number" and g.schema < 4 then g.schema = 4 end
     end },
 }
 NS.__migrationSteps = STEPS   -- test seam only

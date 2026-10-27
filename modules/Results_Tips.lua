@@ -602,8 +602,8 @@ function LOADOUT.empty()
     return { L["Empty"], L["Nothing was equipped in this slot."] }
 end
 
-function LOADOUT.dressUp()
-    return { L["Dressing Room"], L["Try the run's gear on in the Dressing Room."] }
+function LOADOUT.gearView()
+    return { L["Gear view"], L["The run's gear and stats, laid out as the character panel does, against the run the detail compares with."] }
 end
 
 function LOADOUT.talents(run)
@@ -643,7 +643,7 @@ function LOADOUT.changed(_, other, slot)
     return { L["Changed: the other run wore %s."]:format(name) }
 end
 
---- A loadout part's tooltip lines (`key`: gear, none, empty, dressUp, talents, view, viewOff, copy,
+--- A loadout part's tooltip lines (`key`: gear, none, empty, gearView, talents, view, viewOff, copy,
 --- differs, changed), or nil.
 --- @param key string
 --- @param run table  the run shown

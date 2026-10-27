@@ -156,7 +156,7 @@ test("schema: migration 4 keeps an old profile's expanded view and drops the tim
     inst.mocks._G.DpsRaceDB = _G.DpsRaceDB
     NSi:InitDB()
     NSi:RunMigrations()
-    assertEqual(NSi.db.global.schemaVersion, 4)
+    assertEqual(NSi.db.global.schemaVersion, NSi.SCHEMA_VERSION)
     assertEqual(old.windows.results.view, "expanded", "the old default's stripped view is written")
     assertEqual(old.windows.results.expanded.width, 1400, "its size kept")
     assertEqual(old.windows.timeline, nil, "the timeline's unread place dropped")

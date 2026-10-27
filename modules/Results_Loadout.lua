@@ -3,7 +3,8 @@ local _, NS = ...
 -- the loadout store (modules/Loadouts.lua). A *Gear* section (its heading followed by the run's item
 -- level in the caption gray) draws the equipped items in two columns in the character frame's order,
 -- each with its quality border and item level; hovering one shows the client's own item tooltip from
--- the stored link, Shift-click links it in chat, and *Dressing Room* tries the whole set on. A
+-- the stored link, Shift-click links it in chat, and *Gear view* opens the run's gear and stats laid out
+-- as the character panel does (modules/Results_Gear.lua, #17). A
 -- *Talents* line names the loadout and its hero tree, with *View* (the `talentbuild` link posted to
 -- the player's own chat window, where a click opens Blizzard's talent tree, read-only) and *Copy* (the
 -- import string in the copy window). A run stored before #6 says *Not recorded*.
@@ -28,7 +29,7 @@ Loadout.PITCH = 28          -- one gear row
 Loadout.ICON = 24           -- an item's icon, inside its 1px quality border
 Loadout.GAP = 10            -- between the two columns
 Loadout.BUTTON_H = 18
-Loadout.DRESS_W = 104       -- the Dressing Room button
+Loadout.GEAR_W = 84        -- the Gear view button
 Loadout.TALENT_W = 56       -- View and Copy
 Loadout.LINE_H = 14
 
@@ -164,18 +165,6 @@ end
 
 -- ── the acts ────────────────────────────────────────────────────────────────────────────────────
 
---- Try every item of `gear` on in the Dressing Room. Answers how many were sent.
-function Loadout.DressUp(gear)
-    if type(gear) ~= "table" or type(DressUpItemLink) ~= "function" then return 0 end
-    local n = 0
-    for _, slots in ipairs({ Loadout.LEFT, Loadout.RIGHT }) do
-        for _, slot in ipairs(slots) do
-            if gear[slot] and pcall(DressUpItemLink, gear[slot]) then n = n + 1 end
-        end
-    end
-    return n
-end
-
 --- Open the loadout's talent tree, read-only, through SetItemRef with its talentbuild link, and post
 --- the same link to the player's own chat window to open again later.
 ---
@@ -303,8 +292,8 @@ function Loadout.Build(p, c)
     -- heading's right edge, so nothing is measured.
     x.ilvl = Tbl.Text(c, FONT.CAPTION, C.text)
     x.ilvl:SetPoint("BOTTOMLEFT", x.title, "BOTTOMRIGHT", 6, 0)
-    x.dress = Button(c, L["Dressing Room"], function() Loadout.DressUp(x.gear) end)
-    x.dress:SetSize(Loadout.DRESS_W, Loadout.BUTTON_H)
+    x.gearView = Button(c, L["Gear view"], function() NS.ResultsGear.Open(p) end)
+    x.gearView:SetSize(Loadout.GEAR_W, Loadout.BUTTON_H)
     x.none = Tbl.Text(c, FONT.TEXT, C.dim)
     x.none:SetText(L["Not recorded"])
     x.grid = CreateFrame("Frame", nil, c)
@@ -318,7 +307,7 @@ function Loadout.Build(p, c)
     x.differs:SetText(L["Different loadout"])
     local titleHover = hoverOver(p, x.title, function() return x.gear and "gear" or "none" end)
     x.noneHover = hoverOver(p, x.none, "none")
-    hover(p, x.dress, "dressUp")
+    hover(p, x.gearView, "gearView")
     local talentsTitleHover = hoverOver(p, x.talentsTitle, function() return x.talentsData and "talents" or "none" end)
     x.talentsHover = hoverOver(p, x.talents, function() return x.talentsData and "talents" or "none" end)
     hover(p, x.view, function() return (Loadout.CanView(x.talentsData)) and "view" or "viewOff" end)
@@ -435,8 +424,8 @@ function Loadout.Layout(p, y, cw)
     place(x.title, p.content, NS.ResultsDetail.INDENT, y)
     local body = not p:Heading("gear", true)
     local has = x.gear ~= nil
-    x.dress:SetShown(has and body)
-    if has then place(x.dress, p.content, cw - Loadout.DRESS_W, y) end
+    x.gearView:SetShown(has and body)
+    if has then place(x.gearView, p.content, cw - Loadout.GEAR_W, y) end
     y = y - math.max(NS.Style.SECTION_H, Loadout.BUTTON_H) - 2
     x.none:SetShown(body and not has)
     x.noneHover:SetShown(body and not has)

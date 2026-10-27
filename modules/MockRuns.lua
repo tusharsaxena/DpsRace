@@ -320,6 +320,21 @@ local function loadouts()
     return out
 end
 
+-- The sample stats (#17): the player's own for the runs in loadout a, and for loadout b (one slot
+-- fewer) the same less what that slot might have given, so the gear view shows its deltas. A run with
+-- no loadout, or an old one, has none.
+MockRuns.STATS_B = { primary = -310, stamina = -820, armor = -260, critRating = -140, crit = -1.17 }
+
+local function statsFor(name, stats)
+    if not (name and stats) then return nil end
+    if name ~= "b" then return stats end
+    local out = copy(stats)
+    for k, d in pairs(MockRuns.STATS_B) do
+        if type(out[k]) == "number" then out[k] = out[k] + d end
+    end
+    return out
+end
+
 local function refFor(name, sets)
     if not name then return nil end
     local ref = { gear = sets.gear["sample-" .. name] and "sample-" .. name or nil,
@@ -332,7 +347,7 @@ end
 --- @return table dataset
 function MockRuns.Dataset()
     local me, now = MockRuns.Player(), time()
-    local sets, snap = loadouts(), NS.Usage.Snapshot()
+    local sets, snap, stats = loadouts(), NS.Usage.Snapshot(), NS.Stats.Snapshot()
     local data = { runs = {}, loadouts = sets, slices = {} }
     for i, h in ipairs(HISTORY) do
         local char = charFor(h.who, me)
@@ -344,6 +359,7 @@ function MockRuns.Dataset()
             old = h.old,
         })
         run.loadout = refFor(h.loadout, sets)
+        run.stats = not h.old and statsFor(h.loadout, stats) or nil
         data.runs[i] = run
         if h.chart then data.slices[run.id] = MockRuns.Slices(run) end
     end

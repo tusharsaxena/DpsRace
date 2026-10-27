@@ -483,9 +483,10 @@ local function applySampleMarker()
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
 end
 
--- The ability timeline (#14) follows the detail, so it closes with the window.
+-- The ability timeline (#14) and the gear view (#17) follow the detail, so they close with the window.
 local function hideWindow()
     NS.ResultsTimeline.Hide()
+    NS.ResultsGear.Hide()
     if windowShown() then
         hiding = true
         ui.frame:Hide()
@@ -821,8 +822,10 @@ end
 --- sim's run). A hidden window redraws in full on its next show.
 function Results.OnSourceChanged(swapped)
     if swapped then
-        -- The timeline followed a run the other source does not hold: it closes, and its cover goes.
+        -- The timeline and the gear view followed a run the other source does not hold: they close, and
+        -- the cover goes.
         NS.ResultsTimeline.Hide()
+        NS.ResultsGear.Hide()
         selected, detailOpen = nil, false
         if ui then
             ui.detail:SetPick(nil)

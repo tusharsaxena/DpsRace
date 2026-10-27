@@ -62,6 +62,7 @@ local masterRows, masterTail = H.MasterControls({
         NS.Hud.ResetPosition()
         NS.Results.ResetPosition()
         NS.ResultsTimeline.ResetPosition()
+        NS.ResultsGear.ResetPosition()
     end,
     onResetAll       = function() NS.ShowResetAll() end,
 })
@@ -93,6 +94,7 @@ local reactions = {
         NS.Hud.Refresh()
         NS.Results.Refresh()
         NS.ResultsTimeline.ApplyScale()
+        NS.ResultsGear.ApplyScale()
     end,
     locked     = function(v) NS.Hud.SetLocked(v) end,
 }

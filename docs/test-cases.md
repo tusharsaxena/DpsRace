@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 3, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 4, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -593,6 +593,17 @@ Total.
 - loadout: the share line takes the talents link only with Include talents link on
 - loadout: Include talents link sits under Sharing on the History tab, before Storage
 
+### test_stats.lua (8)
+
+- stats: Snapshot reads the primary stat, stamina, armor and every rating with its percent
+- stats: a secret value is stored as absent, never compared or kept
+- stats: a client without the APIs, or one that raises, yields absent fields; nothing readable is nil
+- stats: a new run carries the arm's stats; a run without any reads as none
+- stats: the format 4 migration raises the stamp and rewrites no run
+- stats: Groups lays out Primary, Secondary and Tertiary with each value's text
+- stats: a run without stats shows dashes in every row
+- stats: deltas against the compared run, signed, the percent deciding a rated row
+
 ### test_casts.lua (10)
 
 - casts: Encode writes centiseconds, a p before a pet cast, comma-joined
@@ -784,6 +795,21 @@ Total.
 - timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it
 - timeline controls: every corridor wears its run's dark, translucent color
 - timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
+
+### test_results_gear.lua (12)
+
+- gear view: ParseLink reads the item, its enchant and its gems from the stored link
+- gear view: the cells follow the character panel, from the constants, the optional slots only when filled
+- gear view: SlotDiff tells an item change, the item level, the enchant and the gems apart
+- gear view: a slot's marks, a missing enchant or gem the compared run had, and its notes
+- gear view: CenterOver centers the view over the Results window from its anchor
+- gear view: a modal over the Results window: its strata, the cover, the opaque skin
+- gear view: Escape closes the view first and the Results window stays
+- gear view: it closes with the Results window
+- gear view: each slot's item, item level and marks; Shift-click and the tooltip go to the client
+- gear view: against the compared run, changed items tinted, item levels colored, enchant and gems edged
+- gear view: the stats column with deltas against the compared run, dashes for a run with none
+- gear view: a run without a compared run marks nothing and says so
 
 ### test_sizing.lua (14)
 
@@ -1125,6 +1151,7 @@ Total.
 | test_results_badges.lua | 11 |
 | test_compare.lua | 22 |
 | test_loadout.lua | 27 |
+| test_stats.lua | 8 |
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
@@ -1136,6 +1163,7 @@ Total.
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
+| test_results_gear.lua | 12 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 17 |
@@ -1157,4 +1185,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **911** |
+| **Total** | **931** |

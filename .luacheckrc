@@ -53,6 +53,15 @@ files["modules/Recorder.lua"] = {
     },
 }
 
+-- The stats a run was raced with (#17), read at the arm: the primary stat, stamina and armor, and
+-- each rating with its percent.
+files["modules/Stats.lua"] = {
+    read_globals = {
+        "UnitStat", "UnitArmor", "GetCombatRating", "GetCombatRatingBonus", "GetVersatilityBonus",
+        "GetCritChance", "GetHaste", "GetMasteryEffect", "GetLifesteal", "GetAvoidance", "GetSpeed",
+    },
+}
+
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 -- The cast list (#14): each spell's base cooldown, the first time it is cast.
@@ -111,13 +120,17 @@ files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }
--- The detail's loadout (#6): the item data, the item tooltip and its modified click, the Dressing
--- Room, the client's loadout serialization version, and View's SetItemRef (it opens the tree).
+-- The detail's loadout (#6): the item data, the item tooltip and its modified click, the client's
+-- loadout serialization version, and View's SetItemRef (it opens the tree).
 files["modules/Results_Loadout.lua"] = {
     read_globals = {
-        "GameTooltip", "C_Item", "C_Traits", "DressUpItemLink", "HandleModifiedItemClick",
+        "GameTooltip", "C_Item", "C_Traits", "HandleModifiedItemClick",
         "IsShiftKeyDown", "ChatEdit_InsertLink", "SetItemRef",
     },
+}
+-- The gear view (#17): the item data and icons, the item tooltip and its modified click.
+files["modules/Results_Gear.lua"] = {
+    read_globals = { "GameTooltip", "C_Item", "HandleModifiedItemClick", "IsShiftKeyDown", "ChatEdit_InsertLink" },
 }
 
 -- What a run used (#13): the item names and icons, the client's item tooltip, and an item row's

@@ -295,8 +295,7 @@ local function ui()
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
-        m.__dressed, m.__itemRefs, m.__modClicks = {}, {}, {}
-        m.DressUpItemLink = function(link) m.__dressed[#m.__dressed + 1] = link end
+        m.__itemRefs, m.__modClicks = {}, {}
         m.SetItemRef = function(data, text, button) m.__itemRefs[#m.__itemRefs + 1] = { data, text, button } end
         m.HandleModifiedItemClick = function(link) m.__modClicks[#m.__modClicks + 1] = link end
     end }
@@ -348,9 +347,10 @@ test("loadout: the detail draws the gear grid in the character frame's order, an
     assertEqual(lo.talents.__text, "Raid ST \194\183 Diabolist")
     assertTrue(lo.view:IsEnabled())
     assertTrue(lo.copy:IsEnabled())
-    assertTrue(lo.dress:IsShown())
-    lo.dress:__fire("OnClick")
-    assertEqual(#M.__dressed, 3, "every equipped item tried on")
+    assertTrue(lo.gearView:IsShown())
+    lo.gearView:__fire("OnClick")
+    assertTrue(NS.ResultsGear.IsShown(), "Gear view opens the gear view")
+    NS.ResultsGear.Hide()
     -- View opens the tree through SetItemRef with the talentbuild link (the owner's call: the taint
     -- risk is accepted) and also posts the same link to the player's own chat window.
     local printed = {}
@@ -421,7 +421,7 @@ test("loadout: a run stored before #6 says Not recorded, with nothing to view or
     assertTrue(lo.none:IsShown())
     assertEqual(lo.none.__text, "Not recorded")
     assertFalse(lo.grid:IsShown())
-    assertFalse(lo.dress:IsShown())
+    assertFalse(lo.gearView:IsShown())
     assertEqual(lo.talents.__text, "Not recorded")
     assertFalse(lo.view:IsEnabled())
     assertFalse(lo.copy:IsEnabled())

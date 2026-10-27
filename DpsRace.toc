@@ -88,6 +88,8 @@ modules\Meter.lua
 modules\Recorder.lua
 # The loadout store (#6): reached by Recorder and Race at CALL time.
 modules\Loadouts.lua
+# The stats a run was raced with (#17): read by Recorder at CALL time (the arm).
+modules\Stats.lua
 modules\Timeline.lua
 modules\Scoring.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED) at FILE SCOPE through core\Bus.lua.
@@ -147,6 +149,10 @@ modules\Results_Usage.lua
 # The ability timeline window (#14): reads NS.defaults (defaults\Profile.lua) and captures NS.Style and
 # NS.ResultsTable at FILE SCOPE; the detail and the shell reach it at CALL time.
 modules\Results_Timeline.lua
+# The gear view window (#17). LOAD-BEARING: takes NS.ResultsTimeline.SKIN (the opaque modal skin) and
+# captures NS.Style and NS.ResultsTable at FILE SCOPE, so it follows modules\Results_Timeline.lua; the
+# detail and the shell reach it at CALL time.
+modules\Results_Gear.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
