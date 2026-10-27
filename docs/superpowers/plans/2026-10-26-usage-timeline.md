@@ -379,6 +379,24 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Scroll buttons:** left and right buttons next to the zoom controls (`1x + - reset`), disabled at 1x.
 - [x] **Control sizes:** the +, - and reset controls at one size, between today's small +/- and large reset.
 
+### P16: The owner's sixth test round (2026-10-28)
+
+- [ ] **Casts tooltip at the cursor:** in the timeline's *Casts* strips only, a cast icon's tooltip anchors at the
+  cursor, below it, the way the *By ability* ticks' tooltips do.
+- [ ] **Keybinds help:** a `?` glyph at the right end of the zoom and scroll controls; hovering it shows the timeline's
+  mouse keybinds as bullet points: the wheel scrolls up and down; Shift+wheel scrolls left and right (when zoomed; the
+  owner wrote "shift mouseclick", read as the existing Shift+wheel); Ctrl+wheel zooms in and out (new).
+- [ ] **Ctrl+wheel zoom (new):** Ctrl+wheel up zooms in, down zooms out, through the same zoom steps as the buttons,
+  keeping the time under the cursor in place where it can.
+- [ ] **Zoom button order:** `- +` instead of `+ -`.
+- [ ] **Strip spacing:** more vertical space between the *This run* and *Best run* strips in *Casts*.
+- [ ] **Controls aligned:** the zoom and scroll controls' right edge on the *This run* strip's right edge.
+- [ ] **Corridor colors:** every timeline corridor (the *Casts* strips and the *By ability* lanes) on a fairly dark,
+  translucent shade of its run's color: gold for this run, blue for the compared run. The colors live in one table the
+  owner can change from a `/run` script command, with a function that repaints an open window; report the commands.
+- [ ] **Results filter bar fills the window:** the dropdowns stretch so the bar spans the window's width: collapsed,
+  Group's right edge and Clear's right edge at the right edge; expanded (one row), Clear's right edge at the right edge.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
