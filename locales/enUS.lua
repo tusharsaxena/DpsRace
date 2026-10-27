@@ -36,8 +36,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default: Master controls."] =
-    "Restore every General setting on this profile to its addon default: Master controls."
+L["Restore every General setting on this profile to its addon default: Master controls and the new-best toast."] =
+    "Restore every General setting on this profile to its addon default: Master controls and the new-best toast."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -461,6 +461,24 @@ L["Deleted %d runs."] = "Deleted %d runs."
 -- Share and the race's chat lines (modules/Share.lua, mockup screen 12)
 L["DPS Race %s"] = "DPS Race %s"
 L["%s DPS"] = "%s DPS"
+-- The new-best toast (#5, modules/BestToast.lua; General > New-best toast).
+L["New best: %s (%s)"] = "New best: %s (%s)"
+L["%s DPS, %s over %s"] = "%s DPS, %s over %s"
+L["New-best toast"] = "New-best toast"
+L["Show a toast for a new best"] = "Show a toast for a new best"
+L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."] =
+    "When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."
+L["Play a sound"] = "Play a sound"
+L["Play an alert sound as the toast appears."] = "Play an alert sound as the toast appears."
+L["Toast duration (seconds)"] = "Toast duration (seconds)"
+L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] =
+    "How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."
+L["Toast scale"] = "Toast scale"
+L["The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."] =
+    "The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."
+L["Test toast"] = "Test toast"
+L["Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."] =
+    "Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."
 L["(Ka0s DPS Race)"] = "(Ka0s DPS Race)"
 L["Share to"] = "Share to"
 L["Say"] = "Say"

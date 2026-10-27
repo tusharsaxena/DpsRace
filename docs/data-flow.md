@@ -439,6 +439,16 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   every surface that arms says so once; `RACE_RESULT` prints `Share.ResultLine(run, Bests.Delta(run))`
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.
+- **The new-best toast** (#5, `modules/BestToast.lua`): `RACE_RESULT` with a `complete` run asks
+  `Bests.Delta(run)`; only a new best with a gain (a previous best on the board, so never a board's
+  first run) queues one toast under the run's id, through LibKa0s-Toast-1.0 (`core/ToastSetup.lua`),
+  whatever the HUD shows. Its payload is plain text off the stored run and the previous best (Delta's
+  third return): *New best: Destruction (Single target)*, *1:00 · 104.2K DPS, +4.2% over 100.0K*, and
+  the run's flags as the result card's chips word them. The shell shows one at a time for
+  `toast.duration` seconds (paused under the pointer), plays the alert with `toast.sound`, and closes on
+  its X or a right-click. Test mode holds the sample race's toast (`BestToast.ShowPreview`, from
+  `modules/Preview.lua`) until it ends; only that toast and *Test toast*'s sample move, and a drag
+  stores `profile.toast.point`. The stand-down clears it (`BestToast.Suspend`).
 
 ## Test mode and the sim (spec §6.5, preview-mode; B5)
 

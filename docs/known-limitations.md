@@ -133,6 +133,16 @@ and the smoke row that measures it where one exists.
   dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
   cooldown icons and their *Timeline* button is grayed. Stored runs are never rewritten
   ([schema.md](schema.md), migration 2 → 3).
+- **A board's first run never toasts, and the toast judges the all-runs board** (#5, the owner's call
+  on the issue, 2026-10-25). A first run is a new best with nothing to beat, so it gets the result
+  card's *New best* chip but no toast. A flagged run that beats the best still toasts (flags inform,
+  never void), its flags on the toast's last line; the clean-only board is not consulted. The sim's
+  results do not toast either: only a real `RACE_RESULT` does, and test mode shows its sample instead.
+- **The toast is LibKa0s-Toast-1.0 vendored alone, ahead of the rest of LibKa0s** (a documented
+  deviation in [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations), until the next full
+  re-vendor). On v1.77.0's Core it wears Core's own window skin and close mark, not a skin owner's;
+  the diagnostics report's library header does not list the Toast module until the re-vendor
+  (smoke rows SM-DR-TA17 to SM-DR-TA23).
 - **The gear view's stats are the ones read at the arm** (#17). They are what the character sheet said
   when the race was armed, with whatever buffs were up then (a flask, a food buff, a temporary proc);
   a buff gained or lost between the arm and the pull, or a gear change before the pull (the gear is

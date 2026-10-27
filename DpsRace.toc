@@ -63,6 +63,9 @@ core\Bus.lua
 core\PoolSetup.lua
 # Reads LibStub (LibKa0s-Widgets-1.0) at FILE SCOPE and NS.Icon at CALL time only.
 core\WidgetsSetup.lua
+# The new-best toast's shell (#5): reads LibStub (LibKa0s-Toast-1.0) at FILE SCOPE and publishes
+# NS.NewToast, which modules\BestToast.lua calls at FILE SCOPE.
+core\ToastSetup.lua
 # LOAD-BEARING: core\PerfSetup.lua hands NS.lifecycle to LibKa0s-Perf-1.0, which RAISES at :New
 # without it, so the latch is built first.
 core\LifecycleSetup.lua
@@ -164,6 +167,10 @@ modules\Results.lua
 # Share (T9): the one-line share and the race's own chat lines. LOAD-BEARING: builds its bus receiver
 # (RACE_STATE_CHANGED / RACE_RESULT) at FILE SCOPE through core\Bus.lua.
 modules\Share.lua
+# The new-best toast (#5). LOAD-BEARING: builds its toast through NS.NewToast (core\ToastSetup.lua) and
+# its bus receiver (RACE_RESULT / SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua; reaches the
+# HUD's flag chips, the style and the settings at CALL time.
+modules\BestToast.lua
 # The sample data test mode and the sim draw (B5): a made-up run history and HUD race, never stored.
 # Reached at CALL time only.
 modules\MockRuns.lua

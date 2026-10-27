@@ -10,7 +10,7 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
@@ -39,10 +39,10 @@ the 300 px logo `media/logos/dpsrace.logo.tga`, the notes, and a *Slash Commands
 
 The header **Defaults** button restores every General row on the current profile, except the
 minimap row (launcher-§3). It never touches a key binding: its tooltip reads *Restore every General
-setting on this profile to its addon default: Master controls. Key bindings are not changed.*
-(`O.KEYBINDS_UNCHANGED`, options-ui-§20).
+setting on this profile to its addon default: Master controls and the new-best toast. Key bindings
+are not changed.* (`O.KEYBINDS_UNCHANGED`, options-ui-§20).
 
-Tabs, in order: *Master controls*, *Keybindings*.
+Tabs, in order: *Master controls*, *New-best toast*, *Keybindings*.
 
 #### Tab: Master controls
 
@@ -58,11 +58,29 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
 | Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while `/dr sim` plays too, and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
-| Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`), and an open ability timeline back over the Results window (`ResultsTimeline.ResetPosition`; it stores no place of its own); the run detail's folded sections (`windows.results.collapsedSections`) stay folded |
+| Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`), an open ability timeline and gear view back over the Results window (`ResultsTimeline.ResetPosition`, `ResultsGear.ResetPosition`; they store no place of their own), and the new-best toast back under the top of the screen (`BestToast.ResetPosition` clears `profile.toast.point`); the run detail's folded sections (`windows.results.collapsedSections`) stay folded |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
 The *Test mode* row is the composer's, with `default = false` stamped by `settings/General.lua`, so
 *Reset all settings* ends test mode (options-ui-§15); the composer emits the row without one.
+
+#### Tab: New-best toast
+
+The new-best toast (#5, `modules/BestToast.lua`): a toast near the top of the screen when a race sets
+a new best on its board over an earlier run. One subsection heading, the tab's own name; a sentence-
+case act after the rows.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| Show a toast for a new best | `toast.enabled` | checkbox | On by default. Off drops a toast on screen and every one waiting (`BestToast.Sync`); on again while test mode is on brings its sample back |
+| Play a sound | `toast.sound` | checkbox | On by default: the shell's alert sound (`SOUNDKIT.UI_EPICLOOT_TOAST`, else `RAID_WARNING`) as each toast appears; read as each shows |
+| Toast duration (seconds) | `toast.duration` | slider, 3-30, step 1 | 8 by default (the shell's `DURATION`): seconds on screen, paused while the pointer is over it; starts its own line |
+| Toast scale | `toast.scale` | slider, 0.5-2.0, step 0.05 | 1 by default; the toast grows and shrinks about its stored place (`BestToast.Refresh`). Not multiplied by Master scale |
+| Test toast | — | button, after the rows | A sample toast (*Test <thing>*, options-ui-§21), run as a real one is: its duration, sound and scale; movable while it shows. A second click replaces it (`BestToast.Test`) |
+
+The place is not a row: test mode shows a sample toast held still, and a drag stores it in
+`profile.toast.point` (schema.md, named non-setting state); *Reset position* on Master controls clears
+it.
 
 #### Tab: Keybindings
 

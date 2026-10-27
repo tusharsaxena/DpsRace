@@ -67,6 +67,10 @@ local STORED = {
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
+    ["toast.enabled"]        = { "bool",   true },
+    ["toast.sound"]          = { "bool",   true },
+    ["toast.duration"]       = { "number", 8,       3,    30,    1 },
+    ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
     ["global.usage.hidden"]  = { "string", "" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
@@ -360,10 +364,11 @@ local function tabsOf(NS, page)
     return table.concat(out, "|")
 end
 
-test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone", function()
+test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast", function()
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
-    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
+    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast",
+        "Keybindings is a host tab, not a schema one")
     assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's eleven rows and HUD Appearance's")
 end)
 
@@ -422,9 +427,10 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults names Master controls, and not the keys or the HUD", function()
+test("settings: General's Defaults names Master controls and the toast, and not the keys or the HUD", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
-    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls. "
+    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls and the "
+        .. "new-best toast. "
         .. T.NS.Helpers.KEYBINDS_UNCHANGED)
     assertTrue(tip:find("live breakdown", 1, true) == nil and tip:find("HUD Appearance", 1, true) == nil, tip)
 end)

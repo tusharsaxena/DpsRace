@@ -16,6 +16,9 @@ local _, NS = ...
 -- while either is on and back to the store when it ends; each window lays its test-mode strip over
 -- itself meanwhile.
 --
+-- Test mode also shows the sample race's new-best toast, held still to be dragged into place
+-- (modules/BestToast.lua, #5); the sim and the end of test mode take it down.
+--
 -- Session-only and on until turned off. It ENDS on combat (core/DpsRace.lua's PLAYER_REGEN_DISABLED),
 -- on arming a real race, on its own switch, on Reset all settings (the row's default), on closing the
 -- HUD or its sample Cancel (modules/Hud.lua's acts, which never touch the real race), and silently on
@@ -111,6 +114,8 @@ local function startTest(want)
     sample = NS.Sim.Sample("newbest", dataset.runs)
     drawStill()
     Preview.OpenResults()
+    -- The sample race's new-best toast, held for placing (#5).
+    NS.BestToast.ShowPreview(sample)
 end
 
 --- Hold `word`'s body still on the HUD (test mode only).
@@ -164,7 +169,12 @@ function Preview.Start(opts)
     end
     dataset = NS.MockRuns.Dataset()
     NS.ResultsSource.Use(dataset)
-    if mode == "sim" then NS.Sim.Begin(opts.scenario, dataset) else startTest(opts.state) end
+    if mode == "sim" then
+        NS.BestToast.EndPreview()
+        NS.Sim.Begin(opts.scenario, dataset)
+    else
+        startTest(opts.state)
+    end
     repaintPanel()
     debug("%s on (%s)", mode, tostring(mode == "sim" and NS.Sim.Scenario() or state))
     return true
@@ -196,6 +206,7 @@ function Preview.Stop(reason)
     if reason == "combat" then NS.SayTestModeEnded() end
     local was = mode
     mode, sample, dataset = nil, nil, nil
+    NS.BestToast.EndPreview()
     release(reason)
     repaintPanel()
     debug("%s off (%s)", tostring(was), reason or "switch")
@@ -212,6 +223,7 @@ function Preview.Suspend()
     if resultsOpened and NS.Results then NS.Results.wanted = false end
     mode, sample, dataset, opened, resultsOpened = nil, nil, nil, false, false
     NS.ResultsSource.Restore()
+    NS.BestToast.EndPreview()
     if was then repaintPanel() end
 end
 

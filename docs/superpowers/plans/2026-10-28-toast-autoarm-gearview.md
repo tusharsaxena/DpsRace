@@ -50,7 +50,7 @@ finishes it; a run that stops resumes at the first unticked box.
   smoke rows.
 - [x] **D3 Vendor Toast-1.0 only:** copy the LibKa0s branch's Toast file into `libs/LibKa0s/`, TOC line,
   provenance note in `CLAUDE.md`, the deviation row.
-- [ ] **D4 #5 toast:** the trigger on `RACE_RESULT`, the content builder, the settings group (enable,
+- [x] **D4 #5 toast:** the trigger on `RACE_RESULT`, the content builder, the settings group (enable,
   duration, sound, scale, preview), position in the profile, test-mode placement. Tests, docs, smoke rows.
 - [ ] **D5 Review and fixes** across the batch.
 

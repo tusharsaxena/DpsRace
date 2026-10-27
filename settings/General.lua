@@ -1,6 +1,7 @@
 local _, NS = ...
--- settings/General.lua — the General page (its first tab is `Master controls`, options-ui-§15, and
--- its last `Keybindings`, options-ui-§20) and the landing page's spec, NS.LANDING (options-ui-§5).
+-- settings/General.lua — the General page (its first tab is `Master controls`, options-ui-§15, then
+-- `New-best toast` (#5), and its last `Keybindings`, options-ui-§20) and the landing page's spec,
+-- NS.LANDING (options-ui-§5).
 
 local L = NS.L
 local H = NS.Helpers
@@ -63,6 +64,7 @@ local masterRows, masterTail = H.MasterControls({
         NS.Results.ResetPosition()
         NS.ResultsTimeline.ResetPosition()
         NS.ResultsGear.ResetPosition()
+        NS.BestToast.ResetPosition()
     end,
     onResetAll       = function() NS.ShowResetAll() end,
 })
@@ -110,6 +112,38 @@ for _, row in ipairs(masterRows) do
 end
 NS.RegisterSchemaRows(masterRows)
 
+-- ── New-best toast ── (#5, modules/BestToast.lua) the alert for a race that sets a new best: on or
+-- off and its sound on the first line, then how long it stays and its scale; *Test toast* after the
+-- rows. Duration and sound are read as each toast shows, so they need no reaction; the scale
+-- re-anchors a shown toast. Its place is test mode's (drag it there), stored outside the seam.
+local TOAST = L["New-best toast"]
+local TD = D.toast
+NS.RegisterSchemaRows({
+    { path = "toast.enabled", page = PAGE, group = TOAST, subgroup = TOAST, type = "bool",
+      label = L["Show a toast for a new best"], default = TD.enabled,
+      tooltip = L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."],
+      onChange = function() NS.BestToast.Sync() end },
+    { path = "toast.sound", page = PAGE, group = TOAST, subgroup = TOAST, type = "bool",
+      label = L["Play a sound"], default = TD.sound,
+      tooltip = L["Play an alert sound as the toast appears."] },
+    { path = "toast.duration", page = PAGE, group = TOAST, subgroup = TOAST, type = "number",
+      min = 3, max = 30, step = 1, label = L["Toast duration (seconds)"], default = TD.duration, startsLine = true,
+      tooltip = L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] },
+    { path = "toast.scale", page = PAGE, group = TOAST, subgroup = TOAST, type = "number",
+      min = 0.5, max = 2.0, step = 0.05, label = L["Toast scale"], default = TD.scale,
+      tooltip = L["The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."],
+      onChange = function() NS.BestToast.Refresh() end },
+})
+
+-- After the toast's rows: a sample toast, run as a real one is (one-shot, options-ui-§21's *Test <thing>*).
+local function afterToast(ctx)
+    H.InlineButtonPair(ctx, {
+        text    = L["Test toast"],
+        tooltip = L["Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."],
+        onClick = function() NS.BestToast.Test() end,
+    })
+end
+
 -- ── The page ────────────────────────────────────────────────────────────────────────────────────
 local function build(mainCategory)
     if not (Settings and Settings.RegisterCanvasLayoutSubcategory) then return nil end
@@ -118,7 +152,7 @@ local function build(mainCategory)
         defaultsButton  = true,
         -- A page reset (options-ui-§13). Defaults never reaches a key: the game keeps them, not the
         -- profile (options-ui-§20).
-        defaultsTooltip = L["Restore every General setting on this profile to its addon default: Master controls."]
+        defaultsTooltip = L["Restore every General setting on this profile to its addon default: Master controls and the new-best toast."]
             .. " " .. H.KEYBINDS_UNCHANGED,
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
@@ -128,7 +162,7 @@ local function build(mainCategory)
     local tabs = { H.KeybindingsTab({ bindings = NS.BINDINGS }) }
     H.SetRenderer(ctx, function(c)
         H.ClearScroll(c)
-        H.RenderTabbedSchema(c, PAGE, { [H.MASTER_GROUP] = masterTail }, nil, { tabs = tabs })
+        H.RenderTabbedSchema(c, PAGE, { [H.MASTER_GROUP] = masterTail, [TOAST] = afterToast }, nil, { tabs = tabs })
     end)
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["General"])
 end

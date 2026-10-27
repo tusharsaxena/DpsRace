@@ -872,12 +872,12 @@ Total.
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone
+- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is a one-tab page along the race's timeline, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults names Master controls, and not the keys or the HUD
+- settings: General's Defaults names Master controls and the toast, and not the keys or the HUD
 - settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
@@ -937,6 +937,19 @@ Total.
 - share: a result prints the score line with the delta, the flags and the tail
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
+
+### test_toast.lua (10)
+
+- toast: a complete run that beats the board's best toasts once, whatever the HUD shows
+- toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
+- toast: the payload names the spec, the board, the time, the DPS and the gain over the old best
+- toast: a flagged run may toast, its flags on the last line as the result card words them
+- toast: it closes after Toast duration, plays its sound only with Play a sound on
+- toast: test mode holds the sample race's toast, and its end takes it down
+- toast: Test toast queues a sample that runs its course, and a second click replaces it
+- toast: a real toast never moves; in test mode or as a sample it drags
+- toast: a drag stores the place in the profile in UIParent units; Reset position clears it
+- toast: the stand-down takes the toast down and drops what waits; a result while down shows none
 
 ### test_preview.lua (23)
 
@@ -1021,7 +1034,7 @@ Total.
 - Disabled (race): an armed race is dropped by the stand-down and not resumed
 - Disabled (race): a disabled login resumes nothing until the addon is enabled
 
-### test_surface_parity.lua (15)
+### test_surface_parity.lua (16)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
@@ -1037,6 +1050,7 @@ Total.
 - parity: the Widgets seam answers on both arms, nil being a real answer
 - parity: the Media seam answers on both arms, nil being a real answer
 - parity: the Env seam answers the TOC's version on both arms
+- parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing
 - parity: the hollow composers cost the library-absent load exactly the composed rows
 
 ### test_perf_harness.lua (4)
@@ -1171,12 +1185,13 @@ Total.
 | test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
+| test_toast.lua | 10 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
-| test_surface_parity.lua | 15 |
+| test_surface_parity.lua | 16 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
 | test_vendor_sync.lua | 4 |
@@ -1186,4 +1201,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **932** |
+| **Total** | **943** |

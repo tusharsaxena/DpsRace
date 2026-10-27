@@ -19,8 +19,9 @@ local function standDown()
     NS.BusStandDown()
     -- Each feature module stands down on its own terms: the race (its timers and in-memory run), the
     -- race watchers (every registration), and the HUD, auto-show and auto-arm, the countdown, Results
-    -- window and preview.
-    for _, name in ipairs({ "Race", "Watchers", "Preview", "Hud", "AutoArm", "Countdown", "Results" }) do
+    -- window, preview and the new-best toast (nothing on screen, nothing waiting).
+    for _, name in ipairs({ "Race", "Watchers", "Preview", "Hud", "AutoArm", "Countdown", "Results",
+                            "BestToast" }) do
         local m = NS[name]
         if m and m.Suspend then m.Suspend() end
     end

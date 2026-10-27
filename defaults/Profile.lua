@@ -102,6 +102,11 @@ NS.defaults = {
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
+        -- The new-best toast (#5, modules/BestToast.lua; General > New-best toast, settings/General.lua):
+        -- on, 8 s on screen (LibKa0s-Toast-1.0's own DURATION), with its sound, at scale 1. `point`
+        -- (no default): where test mode's drag put it, { point, relativePoint, x, y } in UIParent's
+        -- units, written by the shell's drag stop; absent, the shell's own place under the top.
+        toast = { enabled = true, duration = 8, sound = true, scale = 1.0 },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
         -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and

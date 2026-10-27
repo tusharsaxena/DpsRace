@@ -39,6 +39,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
+| `Toast` | `modules/BestToast.lua`: each new best that toasts (its run id and gain), and the shell's own lines (`TOAST`: queued, shown, expired, a builder that failed) |
 
 The library writes the latch's stand-down and stand-up edges with their holds, and the launcher's
 registration lines, through the same sink.
@@ -70,7 +71,7 @@ alias reaches both). There is no `diag` or `dump`; those are ordinary unknown wo
 - **settings**: every setting that differs from its default as `path = value (default)`, plus
   `enabled` always.
 - **state**: the stored run count, the loadout store's gear sets and talent loadouts with the races
-  holding a damage chart this session (`loadouts gear=<n> talents=<n> chart races=<n>`), and whether the HUD, the Results window and test mode are showing, with the preview's mode (`test` or `sim`), its still state or script phase, its scenario and its ticker.
+  holding a damage chart this session (`loadouts gear=<n> talents=<n> chart races=<n>`), and whether the HUD, the Results window and test mode are showing, with the preview's mode (`test` or `sim`), its still state or script phase, its scenario and its ticker, and the new-best toast (`toast shown=<b> waiting=<n> key=<run id, sample or the preview's key> preview=<b>`).
 - **rejected**: event names the client refused at registration (`NS.rejectedEvents`).
 - The end marker, `[Diag] ==== Ka0s DPS Race diagnostics end: N line(s) ====`.
 

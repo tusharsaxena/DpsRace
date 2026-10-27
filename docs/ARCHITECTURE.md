@@ -90,6 +90,13 @@ dummies before the pull. Neither acts in an instance. Each GUID is read through 
 level, enchant and gem marks from the stored link) and its stats in the middle, against the run the
 detail compares with. The stats are read at arm (`modules/Stats.lua`, run-record format 4: the primary
 stat, stamina, armor and every rating with its percent, each through `NS.Secrets`).
+The same pass added the new-best toast (#5, `modules/BestToast.lua`, on LibKa0s-Toast-1.0 through
+`core/ToastSetup.lua`, the one LibKa0s file vendored ahead of the rest: Documented deviations): a
+complete run that beats an earlier best on its board (`Bests.Delta` names a gain; a board's first run
+does not toast) shows a toast near the top of the screen with the spec, the board, the time, the DPS
+and the gain over the old best, whether or not the HUD is open; the shell queues, times, pauses under
+the pointer and closes it. Its rows are General > *New-best toast* (`toast.*`), test mode shows a
+sample to drag into place (`profile.toast.point`), and *Test toast* plays one through.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -110,9 +117,9 @@ annotated (toc-file-§5).
 | Folder | Holds |
 |---|---|
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
-| `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
+| `core/` | the namespace, constants, session state, the ten `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -141,10 +148,10 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 |---|---|---|---|
 | `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
-| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
+| `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat; `modules/BestToast.lua`: the new-best toast, for a complete run that beats an earlier best |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
 | `RUNS_CHANGED` | `modules/Recorder.lua`; `modules/Usage.lua` (`SetUsed`: a run's usage ticks saved) | none: a delete, a prune, a note or a usage edit changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone (the detail's redraw also redraws an open ability timeline); `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*), and redraws the card on any other store change; `settings/History.lua`: repaints the stored count |
-| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden` |
+| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden`; `modules/BestToast.lua`: re-reads the toast's scale and place on a profile change |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
@@ -289,7 +296,10 @@ record path after combat.
 `NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays its script
 (`modules/Sim.lua`) it holds one `C_Timer` ticker at 10 Hz, canceled when the script opens the Results
 window, when the sim ends or switches and at the stand-down. `modules/Share.lua`
-and `settings/History.lua` hold only their bus receivers.
+and `settings/History.lua` hold only their bus receivers, and so does `modules/BestToast.lua` (#5):
+its toast's countdown is the shell's `C_Timer.NewTimer` (LibKa0s-Toast-1.0), one at a time, paused
+under the pointer (with a 0.2 s check after the pointer leaves onto the close mark) and canceled when
+the toast closes; the stand-down's `BestToast.Suspend()` clears it.
 
 The pipeline from event to screen: [data-flow.md](data-flow.md).
 
@@ -301,7 +311,9 @@ copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, topl
 Results window, HIGH, toplevel), `MODAL` (the ability timeline and the gear view, DIALOG, toplevel: each opened from the Results
 window, so one strata above it, and it re-raises a shown StaticPopup when it opens, frame-layering-§4) and
 `SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
-mouse-disabled, below the library's FULLSCREEN_DIALOG menus), with three level bands: `LEVEL.DETAIL`,
+mouse-disabled, below the library's FULLSCREEN_DIALOG menus), and the library's own `ALERT` tier for the
+new-best toast (LibKa0s-Toast-1.0 sets it: HIGH, toplevel, mouse-enabled, clamped; frame-layering's
+T5 interactive toast), with three level bands: `LEVEL.DETAIL`,
 which lifts the Results detail pane over the Runs pane it sits inside, `LEVEL.CHART_OVERLAY`,
 which lifts the damage chart's pace diagonal (and its cooldown icons) over its columns, and
 `LEVEL.COVER` (W+30, the standard's popover band), the Results window's dim cover while the timeline or
@@ -507,9 +519,9 @@ and `tests/test_hud.lua` at 1415 (the waiting hint box's cases went to a new `te
 six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
 first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1457 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27, then Ctrl+wheel, the `?` and the corridor colors, then the controls at one size and the zoom level's color, 2026-10-28; its suite's
 P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1182
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, and the gear view told on each draw, 2026-10-28), `modules/Hud_States.lua` at 1142 (the Stop! and waiting tiles' caption row, 2026-10-28),
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, and the gear view told on each draw, 2026-10-28), `modules/Hud_States.lua` at 1157 (the Stop! and waiting tiles' caption row, 2026-10-28, and the flag chips the toast shares),
 `modules/Results_Runs.lua` at 1085 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28) and
 `modules/Hud.lua` at 1076 (layout-§1; auto-show's hooks, 2026-10-28, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
-2026-10-28 pass its own (`AutoArm`, `Stats`, `Results_Gear`), rather than grow these.
+2026-10-28 pass its own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`), rather than grow these.

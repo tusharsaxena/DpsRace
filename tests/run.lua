@@ -131,6 +131,7 @@ local SUITES = {
     "test_settings",
     "test_slash",
     "test_share",
+    "test_toast",
     "test_preview",
     "test_sim",
     "test_launcher",
