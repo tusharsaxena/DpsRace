@@ -262,9 +262,12 @@ function Tbl.SideTip(window, row, lines)
     placeSide(tip, window, row)
 end
 
--- The client's own tooltip for spell `id` on the owned `tip`, then `lines`, and shown. A spell the
--- client cannot show gets its name instead.
-local function spellBody(tip, id, lines)
+--- The client's own tooltip for spell `id`, then `lines` (each a string or { text, r, g, b }), placed
+--- as SideTip places its. A spell the client cannot show gets its name instead.
+function Tbl.SpellTip(window, row, id, lines)
+    local tip = GameTooltip
+    if not tip then return end
+    tip:SetOwner(window, "ANCHOR_NONE")
     local shown = type(id) == "number" and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
     if shown and tip.NumLines then shown = (tip:NumLines() or 0) > 0 end
     if not shown then tip:SetText(NS.HudBreakdown.SpellName(id), 1, 1, 1, 1, true) end
@@ -273,25 +276,7 @@ local function spellBody(tip, id, lines)
         addLines(tip, lines, 1)
     end
     tip:Show()
-end
-
---- The client's own tooltip for spell `id`, then `lines` (each a string or { text, r, g, b }), placed
---- as SideTip places its. A spell the client cannot show gets its name instead.
-function Tbl.SpellTip(window, row, id, lines)
-    local tip = GameTooltip
-    if not tip then return end
-    tip:SetOwner(window, "ANCHOR_NONE")
-    spellBody(tip, id, lines)
     placeSide(tip, window, row)
-end
-
---- SpellTip's body under `owner`, BelowTip's way (the ability timeline's cast icons, UT-P16: at the
---- cursor, as its ticks' tooltips are).
-function Tbl.SpellBelowTip(owner, id, lines)
-    local tip = GameTooltip
-    if not tip then return end
-    tip:SetOwner(owner, "ANCHOR_BOTTOM")
-    spellBody(tip, id, lines)
 end
 
 --- `lines` (a title, then strings or { text, r, g, b }) under `owner`, the column headers' way.

@@ -2,7 +2,8 @@
 -- the mouse wheel anywhere in the window scrolling up and down at any zoom and Shift+wheel left and
 -- right while zoomed in (nothing at 1x); the scroll-left and scroll-right arrows after the reset
 -- control, each panning a quarter of the view and disabled and dimmed at 1x and at its end of the axis;
--- the five heading-line controls one size; and the tooltips saying so.
+-- the six heading-line controls and the zoom level one size (P17: `-` and `+` strokes, the `?` and the
+-- level in their own font sizes); and the tooltips saying so.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse =
@@ -228,16 +229,49 @@ end)
 
 -- ── the control sizes ───────────────────────────────────────────────────────────────────────────
 
-test("timeline scroll: the six heading-line controls are one size, icons and glyphs alike", function()
+test("timeline scroll: the six heading-line controls and the zoom level read one size", function()
     local i, u = opened()
     local TL = i.TL
     for _, key in ipairs({ "zoomIn", "zoomOut", "zoomReset", "scrollLeft", "scrollRight", "help" }) do
         local b = u[key]
         assertEqual(b.__width, TL.CONTROL, key .. ": the box's width")
         assertEqual(b.__height, TL.CONTROL, key .. ": the box's height")
-        assertEqual(b.icon.__width, TL.CONTROL_ICON, key .. ": the icon's size")
-        assertEqual(b.icon.__height, TL.CONTROL_ICON)
-        assertEqual(b.glyph.__fontObject, TL.CONTROL_FONT, key .. ": the glyph's font")
+    end
+    -- The icons 11 px, a fallback glyph in CONTROL_FONT.
+    for _, key in ipairs({ "zoomReset", "scrollLeft", "scrollRight", "help" }) do
+        assertEqual(u[key].icon.__width, TL.CONTROL_ICON, key .. ": the icon's size")
+        assertEqual(u[key].icon.__height, TL.CONTROL_ICON)
+        assertEqual(u[key].glyph.__fontObject, TL.CONTROL_FONT, key .. ": the glyph's font")
     end
     assertTrue(TL.CONTROL_ICON < 12 and TL.CONTROL_ICON > 10, "between the old 10 px glyphs and the 12 px reset icon")
+    -- `-` and `+` (UT-P17): strokes, not glyphs, BAR long (about the icons' size) and BAR thick.
+    local len, thick = TL.BAR[1], TL.BAR[2]
+    assertTrue(len >= TL.CONTROL_ICON - 2 and len <= TL.CONTROL_ICON, "about the icons' size")
+    assertTrue(thick >= 1 and thick <= 2)
+    for _, key in ipairs({ "zoomOut", "zoomIn" }) do
+        local b = u[key]
+        assertTrue(b.icon:IsShown() and not b.glyph:IsShown(), key .. ": drawn, not typed")
+        assertEqual(b.icon.__width, len, key .. ": across")
+        assertEqual(b.icon.__height, thick)
+    end
+    assertTrue(u.zoomOut.stroke == nil, "- is one stroke")
+    assertEqual(u.zoomIn.stroke.__width, thick, "+ has a second, down through it")
+    assertEqual(u.zoomIn.stroke.__height, len)
+    -- The `?` a size smaller than the old 16 px glyph, the level larger than its 10 px caption.
+    assertEqual(u.help.glyph.__font.size, TL.HELP_SIZE)
+    assertEqual(u.zoomText.__font.size, TL.LEVEL_SIZE)
+    assertTrue(TL.HELP_SIZE < 16 and TL.HELP_SIZE >= 12, "the ? smaller than it was")
+    assertTrue(TL.LEVEL_SIZE > 10 and TL.LEVEL_SIZE <= 16, "the level larger than it was")
+    -- The strokes turn gold under the pointer with the rest, and dim with their control.
+    local GOLD, REST = i.NS.Style.GOLD, i.NS.Style.REST
+    u.zoomIn:__fire("OnEnter")
+    assertEqual(u.zoomIn.icon.__vertex[2], GOLD[2], "gold across")
+    assertEqual(u.zoomIn.stroke.__vertex[2], GOLD[2], "gold down")
+    u.zoomIn:__fire("OnLeave")
+    assertEqual(u.zoomIn.stroke.__vertex[2], REST[2], "back at rest")
+    -- Dimmed with their control (the button's alpha, which the strokes are drawn on).
+    rawset(u.zoomOut, "SetAlpha", function(self, a) self.__alpha = a end)
+    TL.ZoomBy(1)
+    TL.ResetZoom()
+    assertEqual(u.zoomOut.__alpha, TL.DIM, "- dim at 1x")
 end)

@@ -268,11 +268,13 @@ test("results timeline: the legend names both runs; a tick's tooltip names the s
     assertTrue(dot.hit.__mouse, "its hover frame takes the mouse")
     assertTrue(i.TL.MARK_HIT > i.TL.MARK_W, "the hover frame is wider than the tick")
     local shown
-    local real = i.NS.ResultsTable.BelowTip
-    i.NS.ResultsTable.BelowTip = function(owner, lines) shown = { owner = owner, lines = lines } end
+    -- Beside the window, level with the tick (UT-P17), not under it.
+    local real, below = i.NS.ResultsTable.SideTip, i.NS.ResultsTable.BelowTip
+    i.NS.ResultsTable.SideTip = function(window, row, lines) shown = { window = window, row = row, lines = lines } end
+    i.NS.ResultsTable.BelowTip = function() error("a tick's tooltip went under it") end
     dot.hit:GetScript("OnEnter")(dot.hit)
-    i.NS.ResultsTable.BelowTip = real
-    assertTrue(shown ~= nil and shown.owner == dot.hit)
+    i.NS.ResultsTable.SideTip, i.NS.ResultsTable.BelowTip = real, below
+    assertTrue(shown ~= nil and shown.window == u.frame and shown.row == dot.hit)
     assertEqual(shown.lines[1], "Spell 1122")
     assertEqual(shown.lines[2], "Cast at 0:01")
     assertEqual(shown.lines[3][1], u.legendA.__text, "which run")
@@ -412,10 +414,9 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
     board(i)
     local u = open(i, "this")
     local shown
-    -- Under the icon at the cursor, a tick's way (UT-P16), not beside the window.
-    local real, beside = i.NS.ResultsTable.SpellBelowTip, i.NS.ResultsTable.SpellTip
-    i.NS.ResultsTable.SpellBelowTip = function(owner, id, lines) shown = { owner = owner, id = id, lines = lines } end
-    i.NS.ResultsTable.SpellTip = function() error("an icon's tooltip went beside the window") end
+    -- Beside the window, level with the icon, a tick's way (UT-P17), not under the cursor.
+    local real = i.NS.ResultsTable.SpellTip
+    i.NS.ResultsTable.SpellTip = function(window, row, id, lines) shown = { window = window, owner = row, id = id, lines = lines } end
     local function hover(side, id)
         for _, d in ipairs(TL.Icons()) do
             if d.side == side and d.cast.id == id then
@@ -425,7 +426,7 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
         end
     end
     local d = hover("a", INFERNAL)
-    assertTrue(shown.owner == d.frame, "owned by the icon")
+    assertTrue(shown.window == u.frame and shown.owner == d.frame, "beside the window, level with the icon")
     assertEqual(shown.id, INFERNAL, "the plain stored ID")
     assertEqual(shown.lines[1], "Cast at 0:01")
     assertEqual(shown.lines[2][1], u.legendA.__text, "which run")
@@ -434,7 +435,7 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
     hover("b", CONFLAG)
     assertEqual(shown.lines[1], "Cast at 0:03")
     assertEqual(shown.lines[2][1], u.legendB.__text)
-    i.NS.ResultsTable.SpellBelowTip, i.NS.ResultsTable.SpellTip = real, beside
+    i.NS.ResultsTable.SpellTip = real
     -- Two lines or more go on bullets (the addon's rule, Style.TipBullet); past the cap a third says
     -- the icon overlaps others.
     local lines = TL.IconLines({ t = 5, id = INFERNAL }, "This run", true)

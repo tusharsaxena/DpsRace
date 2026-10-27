@@ -713,7 +713,7 @@ Total.
 - timeline view: the scrollbar shows only zoomed in, its thumb the view's share of the lanes' width
 - timeline view: a drag of the thumb or a click on the track scrolls Casts and By ability together
 - timeline view: This run and Best run sit on their strips' middles, however many rows each grew to
-- timeline view: a light 1 px line between the strips, the time area's width, in Casts only
+- timeline view: nothing between the strips but a lane pair's gap, through a resize (UT-P17)
 - timeline view: it opens exactly over the Results window, expanded or collapsed, never stored
 - timeline view: over a Results window smaller than its minimums, it keeps its minimums
 
@@ -726,11 +726,12 @@ Total.
 - timeline scroll: the arrows are disabled and dimmed at 1x and each at its end of the axis
 - timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off
 - timeline scroll: zoomed in on a run with no casts, the arrows stay off
-- timeline scroll: the six heading-line controls are one size, icons and glyphs alike
+- timeline scroll: the six heading-line controls and the zoom level read one size
 
-### test_results_timeline_controls.lua (11)
+### test_results_timeline_controls.lua (13)
 
-- timeline controls: a Casts icon's tooltip sits under the icon at the cursor, the ticks' way
+- timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them
+- timeline controls: against the screen's right edge the tooltips open left of the window instead
 - timeline controls: Ctrl+wheel up zooms in a step and down out a step, the buttons' steps
 - timeline controls: Ctrl wins over Shift; off the time area the zoom keeps the view's middle
 - timeline controls: Ctrl+wheel keeps the time under the cursor where it was, clamped to the axis
@@ -738,7 +739,8 @@ Total.
 - timeline controls: read left to right the line is the zoom level, -, +, reset, <, >, ?
 - timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets
 - timeline controls: the controls end on the lanes' right edge, the strips' too, through a resize
-- timeline controls: twice the room between the strips, the line centered, the labels on their strips
+- timeline controls: the strips sit a lane pair's gap apart, no line between, the labels on their strips
+- timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it
 - timeline controls: every corridor wears its run's dark, translucent color
 - timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
 
@@ -1090,7 +1092,7 @@ Total.
 | test_results_timeline_modal.lua | 8 |
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
-| test_results_timeline_controls.lua | 11 |
+| test_results_timeline_controls.lua | 13 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 17 |
@@ -1112,4 +1114,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **874** |
+| **Total** | **876** |

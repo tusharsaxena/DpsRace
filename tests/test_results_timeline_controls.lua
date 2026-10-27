@@ -1,8 +1,9 @@
--- tests/test_results_timeline_controls.lua — the ability timeline's P16 round (modules/Results_Timeline.lua):
--- a Casts icon's tooltip under the icon at the cursor; Ctrl+wheel zooming a step about the cursor
--- (ahead of Shift); the zoom controls read "- +"; the `?` control's mouse-controls tooltip; the controls
--- ending on the lanes' right edge; the wider gap between the two strips; and every corridor on its
--- run's dark, translucent CORRIDOR color, repainted from a /run change.
+-- tests/test_results_timeline_controls.lua — the ability timeline's P16 and P17 rounds
+-- (modules/Results_Timeline.lua): a Casts icon's and a tick's tooltips beside the window (P17);
+-- Ctrl+wheel zooming a step about the cursor (ahead of Shift); the zoom controls read "- +"; the `?`
+-- control's mouse-controls tooltip; the controls ending on the lanes' right edge; the strips a lane
+-- pair's gap apart (P17); the zoom level's color (P17); and every corridor on its run's dark,
+-- translucent CORRIDOR color, repainted from a /run change.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse =
@@ -76,28 +77,56 @@ local function cursor(i, u, at, x, left, scale)
     i.mocks.GetCursorPosition = function() return x, 0 end
 end
 
--- ── the Casts tooltip ───────────────────────────────────────────────────────────────────────────
+-- ── the tooltips beside the window ─────────────────────────────────────────────────────────────
 
-test("timeline controls: a Casts icon's tooltip sits under the icon at the cursor, the ticks' way", function()
-    local i, u = opened()
+-- A recording GameTooltip, the window's right edge at `right` on a 1920 px screen, its top at 800.
+local function besideTip(i, u, right)
     local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetPoint", "SetText" }) do tip[m] = function() end end
-    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetText" }) do tip[m] = function() end end
+    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines, tip.placed = owner, anchor, {}, nil end
     function tip.SetSpellByID(_, id) tip.spell, tip.lines[1] = id, "the client's spell text" end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
     function tip.NumLines() return #tip.lines end
+    function tip.SetPoint(_, ...) tip.placed = { ... } end
+    function tip.GetWidth() return 300 end
+    function tip.GetEffectiveScale() return 1 end
     i.mocks.GameTooltip = tip
+    i.mocks.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
+    rawset(u.frame, "GetRight", function() return right end)
+    rawset(u.frame, "GetTop", function() return 800 end)
+    rawset(u.frame, "GetEffectiveScale", function() return 1 end)
+    return tip
+end
+
+test("timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them", function()
+    local i, u = opened()
+    local tip = besideTip(i, u, 1200)
     local d = i.TL.Icons()[1]
+    rawset(d.frame, "GetTop", function() return 700 end)
     d.frame:GetScript("OnEnter")(d.frame)
-    assertTrue(tip.owner == d.frame, "owned by the icon, not the window")
-    assertEqual(tip.anchor, "ANCHOR_BOTTOM", "under it, as a tick's")
+    assertTrue(tip.owner == u.frame and tip.anchor == "ANCHOR_NONE", "owned by the window, not the icon or the cursor")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[2] == u.frame and tip.placed[3] == "TOPRIGHT", "right of the window")
+    assertEqual(tip.placed[5], -100, "level with the icon")
     assertEqual(tip.spell, d.cast.id, "the client's spell tooltip first")
     assertEqual(tip.lines[#tip.lines - 1], i.NS.Style.BULLET .. "Cast at 0:01", "then its time on a bullet")
-    -- A tick's tooltip anchors the same way (BelowTip), so the two read alike.
+    local mark = i.TL.Marks()[1]
+    rawset(mark.hit, "GetTop", function() return 640 end)
+    mark.hit:GetScript("OnEnter")(mark.hit)
+    assertTrue(tip.owner == u.frame and tip.anchor == "ANCHOR_NONE", "a tick's too")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[3] == "TOPRIGHT", "right of the window")
+    assertEqual(tip.placed[5], -160, "level with the tick")
+    assertTrue(i.NS.ResultsTable.SpellBelowTip == nil, "the under-the-cursor path is gone")
+end)
+
+test("timeline controls: against the screen's right edge the tooltips open left of the window instead", function()
+    local i, u = opened()
+    local tip = besideTip(i, u, 1800)
+    local d = i.TL.Icons()[1]
+    d.frame:GetScript("OnEnter")(d.frame)
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[2] == u.frame and tip.placed[3] == "TOPLEFT", "left of it")
     local mark = i.TL.Marks()[1]
     mark.hit:GetScript("OnEnter")(mark.hit)
-    assertTrue(tip.owner == mark.hit and tip.anchor == "ANCHOR_BOTTOM")
-    assertTrue(u.frame ~= nil)
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[3] == "TOPLEFT", "a tick's too")
 end)
 
 -- ── Ctrl+wheel ──────────────────────────────────────────────────────────────────────────────────
@@ -256,15 +285,48 @@ end)
 
 -- ── the strips ──────────────────────────────────────────────────────────────────────────────────
 
-test("timeline controls: twice the room between the strips, the line centered, the labels on their strips", function()
+test("timeline controls: the strips sit a lane pair's gap apart, no line between, the labels on their strips", function()
     local i, u = opened()
     local TL = i.TL
-    assertEqual(TL.STRIP_GAP, 16, "8 until P16")
+    assertEqual(TL.STRIP_GAP, TL.LANE_GAP, "the gap between a By ability pair's two lanes")
+    assertEqual(TL.LANE_GAP, 2)
     local s = TL.Layout()
-    assertEqual(s.stripB - (s.stripA + s.heightA), 16)
-    assertEqual(-last(u.divider)[5], s.stripA + s.heightA + 8, "the line in the gap's middle")
+    assertEqual(s.stripB - (s.stripA + s.heightA), TL.LANE_GAP)
+    assertTrue(u.divider == nil, "no line between them (UT-P17)")
     assertEqual(-last(u.strips.a.label)[5], TL.StripMid(s, "a"))
     assertEqual(-last(u.strips.b.label)[5], TL.StripMid(s, "b"))
+    -- The two tracks meet the gap: this run's ends where it starts, the compared run's starts where it ends.
+    assertEqual(-last(u.strips.a.track)[5] + u.strips.a.track.__height, s.stripB - TL.LANE_GAP)
+    assertEqual(-last(u.strips.b.track)[5], s.stripB)
+end)
+
+-- ── the zoom level's color ──────────────────────────────────────────────────────────────────────
+
+test("timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it", function()
+    local i, u = opened()
+    local TL = i.TL
+    local GOLD, RED, n = i.NS.Style.GOLD, i.NS.ResultsTable.COLORS.red, #TL.ZOOMS
+    local function is(c, want, msg)
+        for k = 1, 3 do near(c[k], want[k], msg) end
+    end
+    is(TL.ZoomColor(1), TL.LEVEL_REST, "1x")
+    is(TL.LEVEL_REST, { 0.5, 0.5, 0.5 }, "the caption gray it always had")
+    is(TL.ZoomColor(2), GOLD, "the lowest step above 1x")
+    is(TL.ZoomColor(n), RED, "the highest, 8x")
+    assertEqual(TL.ZOOMS[n], 8)
+    assertTrue(TL.HOT == RED, "the Delta column's red")
+    local mid = TL.ZoomColor(4)   -- 3x: two steps of five past the first
+    for k = 1, 3 do near(mid[k], GOLD[k] + (RED[k] - GOLD[k]) * 0.4, "3x") end
+    assertTrue(TL.ZoomColor(3)[2] > mid[2] and mid[2] > TL.ZoomColor(5)[2], "redder at every step")
+    is(TL.ZoomColor(99), RED, "clamped")
+    -- On the window: the level's text color follows each step.
+    is(u.zoomText.__color, TL.LEVEL_REST, "drawn at 1x")
+    TL.ZoomBy(1)
+    is(u.zoomText.__color, GOLD, "1.5x")
+    TL.ZoomBy(20)
+    is(u.zoomText.__color, RED, "8x")
+    TL.ResetZoom()
+    is(u.zoomText.__color, TL.LEVEL_REST, "back at 1x")
 end)
 
 -- ── the corridors ───────────────────────────────────────────────────────────────────────────────

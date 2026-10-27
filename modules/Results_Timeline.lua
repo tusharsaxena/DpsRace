@@ -8,10 +8,12 @@ local _, NS = ...
 -- detail's heading style (FONT.SECTION). *Casts* (P11, the owner's call, 2026-10-26): two icon strips on
 -- the lanes' time axis, this run's above the compared run's, every cast (the pet's too) its ability's
 -- icon at its time; icons too close to sit apart stack onto extra rows, this run's upward and the
--- compared run's downward (away from the line between them), and each strip grows to the most rows it
+-- compared run's downward (away from each other), and each strip grows to the most rows it
 -- needs (every icon shown; past MAX_STACK rows the rest overlap the row that frees first and say so in
--- their tooltip). An icon's tooltip is the client's spell tooltip, then the cast's time and its run,
--- under the icon at the cursor as a tick's is (P16, the owner's call, 2026-10-28).
+-- their tooltip). The two strips sit a lane pair's gap apart with nothing between them (P17, the owner's
+-- call, 2026-10-28: the corridor colors tell them apart). An icon's tooltip is the client's spell
+-- tooltip, then the cast's time and its run, beside the window level with the icon, as every tooltip of
+-- the window's but the controls' is (P17: under the cursor, P16's, covered the strips).
 -- *By ability*: one pair of lanes per ability: its name cell (icon,
 -- name, "(pet)" for a pet's, and under the name its cooldown when 29 s or more) beside two lanes, the top
 -- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
@@ -20,7 +22,7 @@ local _, NS = ...
 -- with a cooldown of 29 s or more come first, longest first; the rest follow by count. The time axis (0,
 -- the quarters, the end) is pinned under both sections, which scroll together (the mouse wheel), and
 -- drawn again under the compared run's strip (P12). A tick's tooltip names the spell and its time; a
--- name's shows the client's spell tooltip and both counts.
+-- name's shows the client's spell tooltip and both counts; both beside the window, level with them.
 --
 -- ZOOM (P12, the owner's call, 2026-10-27). Three controls at the right of the *Casts* heading line
 -- (zoom out, zoom in, reset: `- +` since P16) step the time axis through ZOOMS for the strips and the
@@ -38,7 +40,9 @@ local _, NS = ...
 -- call, 2026-10-28): Ctrl+wheel zooms a step (up in, down out; Ctrl wins over Shift), keeping the time
 -- under the cursor where it was when the cursor is over the time area; a `?` after the arrows shows
 -- the mouse controls; the controls end on the strips' right edge (the lanes'), not the window's. The
--- six controls are one size (CONTROL, CONTROL_ICON, CONTROL_FONT). At 1x there is no scrollbar. The
+-- six controls and the zoom level read one size (P17: CONTROL, CONTROL_ICON, `-` and `+` drawn as BAR
+-- strokes, the `?` and the level in their own font sizes), and the level runs from gold to red as the
+-- zoom goes up (ZoomColor). At 1x there is no scrollbar. The
 -- view is kept as the fraction of the axis at its left edge (`pos`), so a resize keeps the same moment
 -- at the left; a button's zoom keeps the view's middle. Zoom and pan go back to 1x on another run or
 -- compare target.
@@ -69,7 +73,7 @@ local _, NS = ...
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
 -- constants here and the window's tracked size, never read back off a frame; Rows, Span, Ticks, MarkX,
--- LaneGeometry, Stack, Sections, StripMid, DividerY, ClampPos, Rezoom, CursorAt, PosRange, BarBand,
+-- LaneGeometry, Stack, Sections, StripMid, ClampPos, Rezoom, CursorAt, PosRange, BarBand, ZoomColor,
 -- CooldownText, CooldownLine, IconLines, HelpLines and Legend are pure. The one geometry read is the
 -- window's left edge, for where a Ctrl+wheel's cursor is (no meter value is anywhere near it).
 
@@ -110,15 +114,15 @@ Timeline.LEGEND_H = 26
 Timeline.NOTE_H = 16
 Timeline.AXIS_H = 20
 -- The *Casts* strips: 14 px icons, closer than 15 px apart they stack, on an 18 px row pitch (P12: 15
--- read as cramped), 4 px above this run's strip, 16 px between the two strips (8 until P16: the owner
--- wanted more room between them) and 4 px over their own
+-- read as cramped), 4 px above this run's strip, a lane pair's LANE_GAP between the two strips (P17,
+-- the owner's call, 2026-10-28: as By ability's lanes; 16 in P16, 8 before) and 4 px over their own
 -- axis (CASTS_AXIS_H), at most MAX_STACK rows a strip. The strips' clip reaches CLIP_PAD past the lanes
 -- at each end, so an icon at 0:00 or at the end shows whole.
 Timeline.CAST_ICON = 14
 Timeline.CAST_PITCH = 15
 Timeline.CAST_STEP = 18
 Timeline.CASTS_PAD = 4
-Timeline.STRIP_GAP = 16
+Timeline.STRIP_GAP = Timeline.LANE_GAP
 Timeline.CASTS_AXIS_H = 16
 Timeline.MAX_STACK = 12
 Timeline.CLIP_PAD = 8
@@ -131,16 +135,25 @@ Timeline.SCROLL_H = 10
 Timeline.SCROLL_GAP = 4
 Timeline.BOTTOM = 6         -- the pinned axis's (or the scrollbar's) gap to the window's bottom
 -- The *Casts* heading line's controls (P15: the 10 px +/- glyphs read small beside the 12 px reset
--- mark): each a 16 px box, an icon 11 px, a glyph in a 16 px font (a "+" about as wide as the icon),
--- 2 px apart and SCROLL_SEP between the zoom controls and the arrows and between the arrows and the
--- `?` (P16). DIM: a control that cannot act.
+-- mark): each a 16 px box, an icon 11 px, 2 px apart and SCROLL_SEP between the zoom controls and the
+-- arrows and between the arrows and the `?` (P16). P17 (the owner's call, 2026-10-28: the level and
+-- `-` read small, the `?` large, beside the reset and arrow icons): `-` and `+` are BAR strokes, 9 px
+-- by 2 (a font's minus is short and thin at any size), the `?` a 13 px glyph and the zoom level 14 px
+-- (each about the icons' 11 px tall); a fallback glyph (no catalog icon) in CONTROL_FONT. DIM: a
+-- control that cannot act.
 Timeline.CONTROL = 16
 Timeline.CONTROL_ICON = 11
 Timeline.CONTROL_FONT = "GameFontHighlightLarge"
+Timeline.BAR = { 9, 2 }
+Timeline.HELP_SIZE = 13
+Timeline.LEVEL_SIZE = 14
 Timeline.SCROLL_SEP = 8
 Timeline.DIM = 0.4
--- The line between the two *Casts* strips (P14): a light gray, one physical pixel tall.
-Timeline.DIVIDER = { 0.6, 0.6, 0.6, 0.15 }
+-- The zoom level's color (P17, the owner's call, 2026-10-28): at 1x the caption gray it always had
+-- (GameFontDisableSmall's); above it from GOLD at the first step to HOT (the Delta column's red) at
+-- the last, by the step's place in ZOOMS.
+Timeline.LEVEL_REST = { 0.5, 0.5, 0.5 }
+Timeline.HOT = C.red
 
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
@@ -315,6 +328,17 @@ function Timeline.BarBand(zoom)
     return (tonumber(zoom) or 1) > 1 and Timeline.SCROLL_H + Timeline.SCROLL_GAP or 0
 end
 
+--- The zoom level's color at step `i` of ZOOMS: LEVEL_REST at 1x; above it GOLD at the first step to
+--- HOT at the last, in even steps between.
+--- @return table  { r, g, b }
+function Timeline.ZoomColor(i)
+    local n = #Timeline.ZOOMS
+    i = math.max(1, math.min(n, tonumber(i) or 1))
+    if i <= 1 then return Timeline.LEVEL_REST end
+    local f, from, to = n > 2 and (i - 2) / (n - 2) or 1, Style.GOLD, Timeline.HOT
+    return { from[1] + (to[1] - from[1]) * f, from[2] + (to[2] - from[2]) * f, from[3] + (to[3] - from[3]) * f }
+end
+
 --- A cast tick's middle x in a lane `width` wide: INSET + clamp(t, 0, span) / span x (width - 2 x INSET).
 --- A pre-pull cast sits at 0:00, one after the buzzer at the end. nil without a time or a span.
 function Timeline.MarkX(t, span, width)
@@ -382,11 +406,6 @@ end
 function Timeline.StripMid(s, side)
     if side == "a" then return s.stripA + s.heightA / 2 end
     return s.stripB + s.heightB / 2
-end
-
---- The line between the strips: its middle, px down from the content's top (the middle of the gap).
-function Timeline.DividerY(s)
-    return s.stripA + s.heightA + Timeline.STRIP_GAP / 2
 end
 
 --- What follows the client's spell tooltip on a cast icon: its time on the race clock ("(pet)" after a
@@ -552,11 +571,35 @@ local function helpTip(self)
     tip:Show()
 end
 
+-- The client's font face at `size` px on `fs` (its font object's color kept): the `?` and the level.
+local function sizeFont(fs, size)
+    fs:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size, "")
+end
+
+-- `-` or `+` drawn as strokes (P17): the control's icon a BAR across, and for `+` a `stroke` down
+-- through it, which the strip tints with the icon (Style.PaintStrip); the glyph stays the hidden text.
+local function strokes(b, plus)
+    local w, h = Timeline.BAR[1], Timeline.BAR[2]
+    b.icon:SetTexture(WHITE)
+    b.icon:SetSize(w, h)
+    b.icon:Show()
+    b.glyph:Hide()
+    if plus then
+        b.stroke = b:CreateTexture(nil, "OVERLAY")
+        b.stroke:SetTexture(WHITE)
+        b.stroke:SetPoint("CENTER", b, "CENTER", 0, 0)
+        b.stroke:SetSize(h, w)
+    end
+    Style.PaintStrip(ui.zoomStrip)
+    return b
+end
+
 -- The controls at the right end of the *Casts* heading line, right to left: the `?` (on the lanes'
 -- right edge, placeControls), SCROLL_SEP apart scroll right and scroll left, then SCROLL_SEP apart
 -- reset, zoom in, zoom out; the zoom level left of them (read left to right: "1x - + reset < > ?",
 -- P16). Over the strips' clip (a higher frame level). Each one size: a CONTROL box, its icon
--- CONTROL_ICON, its glyph in CONTROL_FONT.
+-- CONTROL_ICON (a fallback glyph in CONTROL_FONT); `-` and `+` strokes, the `?` HELP_SIZE, the level
+-- LEVEL_SIZE (P17).
 local function buildZoom()
     ui.zoomStrip = Style.NewStrip()
     local level = ui.content:GetFrameLevel() + 10
@@ -574,6 +617,7 @@ local function buildZoom()
     end
     -- Always live; a click does nothing (its tooltip is the point).
     ui.help = control(nil, "?", nil, function() end, helpTip)
+    sizeFont(ui.help.glyph, Timeline.HELP_SIZE)
     ui.scrollRight = control("chevron-right", ">", L["Scroll right, toward the end (or Shift+mouse wheel down)"],
         function() Timeline.Pan(-1) end)
     ui.scrollRight:SetPoint("RIGHT", ui.help, "LEFT", -Timeline.SCROLL_SEP, 0)
@@ -582,11 +626,12 @@ local function buildZoom()
     ui.scrollLeft:SetPoint("RIGHT", ui.scrollRight, "LEFT", -2, 0)
     ui.zoomReset = control("reset", "R", L["Reset zoom"], function() Timeline.ResetZoom() end)
     ui.zoomReset:SetPoint("RIGHT", ui.scrollLeft, "LEFT", -Timeline.SCROLL_SEP, 0)
-    ui.zoomIn = control(nil, "+", L["Zoom in (or Ctrl+mouse wheel up)"], function() Timeline.ZoomBy(1) end)
+    ui.zoomIn = strokes(control(nil, "+", L["Zoom in (or Ctrl+mouse wheel up)"], function() Timeline.ZoomBy(1) end), true)
     ui.zoomIn:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
-    ui.zoomOut = control(nil, "-", L["Zoom out (or Ctrl+mouse wheel down)"], function() Timeline.ZoomBy(-1) end)
+    ui.zoomOut = strokes(control(nil, "-", L["Zoom out (or Ctrl+mouse wheel down)"], function() Timeline.ZoomBy(-1) end))
     ui.zoomOut:SetPoint("RIGHT", ui.zoomIn, "LEFT", -2, 0)
     ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
+    sizeFont(ui.zoomText, Timeline.LEVEL_SIZE)
     ui.zoomText:SetPoint("RIGHT", ui.zoomOut, "LEFT", -6, 0)
 end
 
@@ -655,10 +700,6 @@ local function buildBody(f)
     ui.lanesHead = Style.Text(ui.content, FONT.SECTION)
     ui.lanesHead:SetText(L["By ability"])
     ui.strips = { a = buildStrip(Timeline.THIS), b = buildStrip(Timeline.OTHER) }
-    ui.divider = ui.content:CreateTexture(nil, "ARTWORK")
-    ui.divider:SetTexture(WHITE)
-    local d = Timeline.DIVIDER
-    ui.divider:SetVertexColor(d[1], d[2], d[3], d[4])
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
     buildZoom()
@@ -798,12 +839,14 @@ end
 
 -- ── the cast ticks ──────────────────────────────────────────────────────────────────────────────
 
+-- A tick's hover frame; its tooltip beside the window, level with the tick (P17, the owner's call,
+-- 2026-10-28), as its name's and the icons' are.
 local function newHit()
     local h = CreateFrame("Frame", nil, ui.marks)
     h:SetSize(Timeline.MARK_HIT, Timeline.LANE_H)
     h:EnableMouse(true)
     h:SetScript("OnEnter", function(self)
-        if self.cast then Tbl.BelowTip(self, Timeline.MarkLines(self.cast, self.label)) end
+        if self.cast and ui then Tbl.SideTip(ui.frame, self, Timeline.MarkLines(self.cast, self.label)) end
     end)
     h:SetScript("OnLeave", Tbl.HideTip)
     return h
@@ -857,11 +900,11 @@ end
 
 -- ── the cast icons (*Casts*) ────────────────────────────────────────────────────────────────────
 
--- An icon's hover: the client's spell tooltip, then the cast's time and its run, under the icon at the
--- cursor as a tick's is (P16: beside the window it sat far from the icon).
+-- An icon's hover: the client's spell tooltip, then the cast's time and its run, beside the window
+-- level with the icon (P17, the owner's call, 2026-10-28: P16's, under the cursor, covered the strips).
 local function iconTip(self)
     if not (self.cast and ui) then return end
-    Tbl.SpellBelowTip(self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
+    Tbl.SpellTip(ui.frame, self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
 end
 
 -- An icon: a plain frame on the strips' layer (it takes the mouse for its tooltip) holding the art.
@@ -893,7 +936,7 @@ local function stackOf(list, g)
 end
 
 -- Row `r`'s middle, px down from the content's top: this run's strip stacks up from its bottom row,
--- the compared run's down from its top row (both away from the line between them).
+-- the compared run's down from its top row (both away from each other).
 local function rowMid(side, r)
     local s = ui.sections
     if side == "a" then return s.stripA + s.heightA - (r - 0.5) * Timeline.CAST_STEP end
@@ -915,16 +958,6 @@ local function placeStrip(side, g, label, note)
     st.note:SetPoint("LEFT", ui.content, "TOPLEFT", g.laneX + 6, -rowMid(side, 1))
     st.note:SetText(note or "")
     st.note:SetShown(note ~= nil)
-end
-
--- The line between the strips, the lanes' width (the time area alone), one physical pixel tall: the
--- run detail's compare separator's width (Compare.SepWidth) from the window's scale, not a geometry read.
-local function placeDivider(g)
-    local d = ui.divider
-    d:ClearAllPoints()
-    d:SetPoint("LEFT", ui.content, "TOPLEFT", g.laneX, -Timeline.DividerY(ui.sections))
-    d:SetWidth(g.laneW)
-    d:SetHeight(NS.ResultsCompare.SepWidth(d:GetEffectiveScale()))
 end
 
 -- One strip's icons, from its stack.
@@ -957,7 +990,6 @@ local function layoutStrips(g)
     local otherName = ui.other and NS.ResultsCompare.OtherLabel(ui.kind) or nil
     placeStrip("a", g, L["This run"], stripNote(ui.castsA, "a"))
     placeStrip("b", g, otherName, stripNote(ui.castsB, "b"))
-    placeDivider(g)
     stripIcons("a", ui.castsA, ui.stackA, ui.thisLabel, g)
     stripIcons("b", ui.castsB, ui.stackB, ui.otherLabel, g)
 end
@@ -966,7 +998,6 @@ end
 -- its strip on the row it has (the stacking is redone on release).
 local function stretchStrips(g)
     for _, side in ipairs({ "a", "b" }) do ui.strips[side].track:SetWidth(g.laneW) end
-    ui.divider:SetWidth(g.laneW)
     for _, d in ipairs(ui.icons or {}) do
         d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.zoomW) or 0)
         putIcon(d, g)
@@ -1042,10 +1073,13 @@ local function applyPan(g)
     placeArrows(g)
 end
 
--- The zoom level beside the controls, and the controls dimmed at the ends of the steps.
+-- The zoom level beside the controls in its step's color, and the controls dimmed at the ends of the
+-- steps.
 local function placeZoom(g)
-    ui.zoomText:SetText(L["%sx"]:format(("%g"):format(g.zoom)))
     local i = ui.zoomI or 1
+    local c = Timeline.ZoomColor(i)
+    ui.zoomText:SetText(L["%sx"]:format(("%g"):format(g.zoom)))
+    ui.zoomText:SetTextColor(c[1], c[2], c[3])
     ui.zoomIn:SetAlpha(i < #Timeline.ZOOMS and 1 or Timeline.DIM)
     ui.zoomOut:SetAlpha(i > 1 and 1 or Timeline.DIM)
     ui.zoomReset:SetAlpha(i > 1 and 1 or Timeline.DIM)

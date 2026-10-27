@@ -1,9 +1,9 @@
 -- tests/test_results_timeline_view.lua — the ability timeline's P14 round (modules/Results_Timeline.lua,
 -- with Results.Placement in modules/Results.lua): the scrollbar along the window's bottom while zoomed
 -- in (its thumb the view's share, a drag or a track click scrolling both sections, none at 1x; the
--- wheel's P15 rule is test_results_timeline_scroll's); the strips' labels on their middles; the light line
--- between the two strips, the time area's width, in *Casts* only; and every open exactly over the
--- Results window in either view, a move or a resize never stored.
+-- wheel's P15 rule is test_results_timeline_scroll's); the strips' labels on their middles; nothing
+-- between the two strips but a lane pair's gap (P17: the P14 line is gone); and every open exactly over
+-- the Results window in either view, a move or a resize never stored.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -168,36 +168,28 @@ test("timeline view: This run and Best run sit on their strips' middles, however
     assertEqual(TL.StripMid(s, "b"), s.stripB + s.heightB / 2)
 end)
 
-test("timeline view: a light 1 px line between the strips, the time area's width, in Casts only", function()
+test("timeline view: nothing between the strips but a lane pair's gap, through a resize (UT-P17)", function()
     local i, u = opened()
     local TL = i.TL
     local s = TL.Layout()
-    local _, laneX, laneW = TL.LaneGeometry(u.width)
-    local d = u.divider
-    local at = last(d)
-    assertEqual(at[1], "LEFT")
-    assertTrue(at[2] == u.content)
-    assertEqual(at[4], laneX, "from the lanes' left, not the window's edge")
-    assertEqual(d.__width, laneW, "the strips' width, not the window's")
-    assertEqual(d.__height, i.NS.ResultsCompare.SepWidth(d:GetEffectiveScale()), "one physical pixel")
-    assertEqual(-at[5], s.stripA + s.heightA + TL.STRIP_GAP / 2, "in the gap between the strips")
-    assertTrue(-at[5] < s.stripB and -at[5] > s.stripA + s.heightA)
-    assertTrue(-at[5] < s.lanesHead, "in Casts, above By ability")
-    local c = d.__vertex
-    assertTrue(c[4] >= 0.12 and c[4] <= 0.18, "very light")
-    assertTrue(c[1] == c[2] and c[2] == c[3], "gray")
-    -- One line: none among the By ability pairs.
-    local lines = 0
-    for _, o in ipairs(i.mocks.__widgets.objects) do
-        if o.__vertex and o.__vertex[4] == c[4] and o.__texture == d.__texture and o.__parentFrame == u.content then
-            lines = lines + 1
-        end
+    assertTrue(u.divider == nil and TL.DIVIDER == nil and TL.DividerY == nil, "no line between the strips")
+    assertEqual(s.stripB - (s.stripA + s.heightA), TL.LANE_GAP, "the gap between a pair's lanes")
+    -- No texture of the content's sits in the gap: only the two strips' tracks reach it.
+    local function inGap(o)
+        local at = o.__points and o.__points[#o.__points]
+        return at and at[2] == u.content and type(at[5]) == "number"
+            and -at[5] > s.stripA + s.heightA and -at[5] < s.stripB
     end
-    assertEqual(lines, 1)
-    -- It follows a resize, the lanes' width.
+    for _, o in ipairs(i.mocks.__widgets.objects) do
+        assertFalse(o.__parentFrame == u.content and o.__colorTex == nil and o.__vertex ~= nil and inGap(o), "a line in the gap")
+    end
+    -- Wider: the tracks follow, the gap stays.
     u.frame:__fire("OnSizeChanged", 1200, 560)
     local _, _, wider = TL.LaneGeometry(1200)
-    assertEqual(d.__width, wider)
+    assertEqual(u.strips.a.track.__width, wider)
+    assertEqual(u.strips.b.track.__width, wider)
+    s = TL.Layout()
+    assertEqual(s.stripB - (s.stripA + s.heightA), TL.LANE_GAP)
 end)
 
 -- ── the placement ───────────────────────────────────────────────────────────────────────────────

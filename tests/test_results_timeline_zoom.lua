@@ -78,7 +78,7 @@ test("timeline zoom: the Casts section is roomier: a wider row pitch than the ic
     local TL, Style = i.TL, i.NS.Style
     assertTrue(TL.CAST_STEP >= TL.CAST_ICON + 4, "a few px between stacked rows")
     assertTrue(TL.CAST_PITCH > TL.CAST_ICON and TL.CAST_PITCH < TL.CAST_STEP, "icons stack only when they would touch")
-    assertTrue(TL.STRIP_GAP >= 8, "the strips sit apart")
+    assertEqual(TL.STRIP_GAP, TL.LANE_GAP, "the strips a lane pair's gap apart (UT-P17)")
     local s = TL.Layout()
     assertEqual(s.stripA, Style.SECTION_H + TL.CASTS_PAD)
     assertEqual(u.contentH, s.lanes + #u.rows * TL.PAIR_H - TL.PAIR_GAP)

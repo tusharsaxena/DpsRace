@@ -127,6 +127,7 @@ end
 
 local function paintControl(b, c)
     if b.icon then b.icon:SetVertexColor(c[1], c[2], c[3], 1) end
+    if b.stroke then b.stroke:SetVertexColor(c[1], c[2], c[3], 1) end
     if b.glyph then b.glyph:SetTextColor(c[1], c[2], c[3], 1) end
 end
 
@@ -145,7 +146,8 @@ end
 --- Add `b` to `strip`: hooked (never replacing a script the control already has, such as the close
 --- control's own tint, which this repaints after) so it turns gold under the pointer.
 --- @param strip table
---- @param b table  a control with an `icon` texture and/or a `glyph` FontString
+--- @param b table  a control with an `icon` texture and/or a `glyph` FontString (and a second
+---                  texture, `stroke`, tinted with the icon: the timeline's `+`)
 --- @return table b
 function Style.AddToStrip(strip, b)
     if not b then return nil end
