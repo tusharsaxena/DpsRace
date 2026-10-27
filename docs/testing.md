@@ -42,7 +42,8 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 
 - **`tests/_kit/`** is the shared harness, vendored byte-identical from the LibKa0s tag named in root
   `CLAUDE.md`. Never edit it; `test_vendor_sync` fails on any drift.
-- **`tests/run.lua`** loads the vendored library in `LibKa0s.xml` order and the addon in **TOC
+- **`tests/run.lua`** loads the vendored library in `LibKa0s.xml` order (then any `libs\LibKa0s\`
+  file the TOC names after the .xml: `Toast.lua`, vendored alone for now) and the addon in **TOC
   order** (`Loader.tocFiles`), so the harness cannot drift from what the client loads (testing-§9).
   It runs `OnInitialize` and `OnEnable` like the client, and `loadInstance` builds isolated
   instances (a library-absent load passes `libFiles = {}`).
@@ -115,7 +116,7 @@ places in Lua, and the kit's sighted shadow is what the complexity suite measure
 | `test_surface_parity` | Each degradation stub against the live library surface it stands in for, every adopted module on both arms (the Widgets seam included), and the schema row counts with the hollow-composer delta (testing-§8, options-ui-§1) |
 | `test_perf_harness` | The Perf descriptor, every declared bucket (`combatEvent`, `raceEvent`, `hudLive`, `hudTick`) reached by a real bracket, and the perf hold making the addon inert |
 | `test_loadorder` | The runner's load list against a fresh TOC derivation: order, files on disk, no `libs/` path (testing-§9) |
-| `test_vendor_sync` | The vendored payloads against the tag (delegates to `tests/_kit/vendor_sync.lua`) |
+| `test_vendor_sync` | The vendored payloads against the tag (delegates to `tests/_kit/vendor_sync.lua`), with the one temporary exception: `libs/LibKa0s/Toast.lua`, vendored alone, is left out of the tag's file set and held byte for byte to the LibKa0s branch it came from (docs/ARCHITECTURE.md, Documented deviations) |
 | kit: `test_eol`, `test_prose`, `test_layout_cap`, `test_diagnostics_contract`, `test_lizard_sighted` | Line endings, US spelling, the 1500-line cap, the diagnostics contract, the complexity sanitizer |
 
 

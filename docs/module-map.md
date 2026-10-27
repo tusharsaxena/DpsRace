@@ -17,7 +17,7 @@ drift from what the client loads (testing-§9).
 
 | File | Job | Position |
 |---|---|---|
-| `libs\…` (Ace3, LibStub, CallbackHandler, LibSharedMedia, LibDataBroker, LibDBIcon) | vendored libraries | first; `libs\LibKa0s\LibKa0s.xml` is one line, after Ace3 |
+| `libs\…` (Ace3, LibStub, CallbackHandler, LibSharedMedia, LibDataBroker, LibDBIcon) | vendored libraries | first; `libs\LibKa0s\LibKa0s.xml` is one line, after Ace3, then `libs\LibKa0s\Toast.lua` alone (LibKa0s-Toast-1.0, vendored ahead of the rest until the next full re-vendor: a documented deviation) |
 | `locales/enUS.lua` | `NS.L`, the canonical locale | **load-bearing**: `core/LauncherSetup.lua` and every `settings/` file read `NS.L` at file scope |
 | `core/Namespace.lua` | `NS.PREFIX`, `NS.name`, `NS.BRAND`, `NS.SLASH`/`SLASH_LONG`, the version fallback | **load-bearing**: everything below reads these |
 | `core/MediaSetup.lua` | `NS.Icon`, `NS.MediaFont`; the one `RegisterLSM` call (`LibKa0s-Media-1.0`) | **load-bearing**: `core/Constants.lua` resolves `FONT_MONO` from it |

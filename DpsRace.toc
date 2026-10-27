@@ -25,6 +25,10 @@ libs\AceGUI-3.0\AceGUI-3.0.xml
 libs\AceConfig-3.0\AceConfig-3.0.xml
 # ONE line: the .xml is itself the file list (library-stack-§7). After Ace3.
 libs\LibKa0s\LibKa0s.xml
+# TEMPORARY (docs/ARCHITECTURE.md, Documented deviations): LibKa0s-Toast-1.0 vendored alone, ahead
+# of the rest of LibKa0s, so it is named here rather than in the untouched LibKa0s.xml. After the
+# .xml (it floors on LibKa0s-Core-1.0); the next full re-vendor drops this line.
+libs\LibKa0s\Toast.lua
 libs\LibSharedMedia-3.0\lib.xml
 libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
 libs\LibDataBroker-1.1\LibDataBroker-1.1.lua

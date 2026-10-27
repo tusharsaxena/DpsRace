@@ -35,6 +35,18 @@ do
     assert(#missing == 0, "libs/LibKa0s/LibKa0s.xml is missing " .. table.concat(missing, ", "))
 end
 
+-- A LibKa0s file the TOC names after the .xml (LibKa0s-Toast-1.0, vendored alone until the next full
+-- re-vendor: docs/ARCHITECTURE.md, Documented deviations) loads after it, read out of the TOC so the
+-- runner loads what the client loads.
+do
+    local toc = assert(io.open(root .. "/DpsRace.toc", "r"))
+    for line in toc:lines() do
+        local rel = line:gsub("\r", ""):match("^libs\\LibKa0s\\([^\\]+%.lua)%s*$")
+        if rel then LIB_FILES[#LIB_FILES + 1] = root .. "/libs/LibKa0s/" .. rel end
+    end
+    toc:close()
+end
+
 -- The addon's own files come from the TOC, so this runner cannot drift from what the client loads.
 local ADDON_FILES = Loader.tocFiles(root .. "/DpsRace.toc")
 

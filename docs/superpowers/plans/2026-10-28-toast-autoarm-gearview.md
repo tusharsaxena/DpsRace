@@ -48,7 +48,7 @@ finishes it; a run that stops resumes at the first unticked box.
 - [x] **D2 #17 stats capture and gear view:** stats captured at arm through `NS.Secrets`, stored on the run
   (schema, docs); the gear view replacing the Dressing Room; compare against best or picked. Tests, docs,
   smoke rows.
-- [ ] **D3 Vendor Toast-1.0 only:** copy the LibKa0s branch's Toast file into `libs/LibKa0s/`, TOC line,
+- [x] **D3 Vendor Toast-1.0 only:** copy the LibKa0s branch's Toast file into `libs/LibKa0s/`, TOC line,
   provenance note in `CLAUDE.md`, the deviation row.
 - [ ] **D4 #5 toast:** the trigger on `RACE_RESULT`, the content builder, the settings group (enable,
   duration, sound, scale, preview), position in the profile, test-mode placement. Tests, docs, smoke rows.

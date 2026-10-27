@@ -1052,11 +1052,12 @@ Total.
 - load order: every derived path exists on disk
 - load order: no libs/ path leaked into the addon's own list
 
-### test_vendor_sync.lua (3)
+### test_vendor_sync.lua (4)
 
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
+- libs/LibKa0s/Toast.lua, vendored alone, is the LibKa0s branch's file byte for byte
 
 ### test_eol.lua (2)
 
@@ -1178,11 +1179,11 @@ Total.
 | test_surface_parity.lua | 15 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
-| test_vendor_sync.lua | 3 |
+| test_vendor_sync.lua | 4 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **931** |
+| **Total** | **932** |
