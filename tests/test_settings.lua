@@ -47,6 +47,7 @@ local STORED = {
     ["state.testMode"]       = { "bool",   false },
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
+    ["hud.autoShow"]         = { "bool",   false },
     ["live.rows"]            = { "number", 8,       0,    15,    1 },
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
@@ -56,6 +57,7 @@ local STORED = {
     ["live.castDots"]        = { "bool",   true },
     ["live.paceRange"]       = { "number", 1.5,     1.1,  2.0,   0.05 },
     ["race.defaultLength"]   = { "number", 120 },
+    ["race.autoArm"]         = { "bool",   false },
     ["race.countdownCue"]    = { "bool",   true },
     ["race.centerCountdown"] = { "bool",   true },
     ["race.finalCountdown"]  = { "number", 10,      3,    10,    1 },
@@ -362,7 +364,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps M
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 10 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's ten rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's eleven rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -381,6 +383,7 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
     assertEqual(tabRows(NS, "hud", "Race HUD"), table.concat({
         "hud.showMode|Display|Show the race HUD|false",
         "hud.clock|Display|Race clock|false",
+        "hud.autoShow|Display|Show near a training dummy|true",
         "live.rows|Live breakdown|Spell rows shown|false",
         "live.icons|Live breakdown|Show spell icons|false",
         "live.showDps|Live breakdown|Show live DPS|true",
@@ -397,6 +400,7 @@ test("settings: Race is a one-tab page along the race's timeline, in the pinned 
     for _, r in ipairs(NS.SchemaForPage("race")) do assertEqual(r.group, "Race", r.path .. " tab") end
     assertEqual(tabRows(NS, "race", "Race"), table.concat({
         "race.defaultLength|Length|Default race length|false",
+        "race.autoArm|Auto-arm|Arm on a training dummy|false",
         "race.countdownCue|Countdown|Countdown cue sound|true",
         "race.centerCountdown|Countdown|Center-screen countdown|true",
         "race.finalCountdown|Countdown|Center countdown from (seconds)|false",

@@ -332,6 +332,9 @@ L["Always"] = "Always"
 L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."] =
     "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."
 L["Race clock"] = "Race clock"
+L["Show near a training dummy"] = "Show near a training dummy"
+L["Open the HUD by itself while a known training dummy is your target or its nameplate is up, and close it again a few seconds after none is, unless a race or its result holds it. If you close it yourself, it stays closed until you leave the dummies. Not in instances. With nameplates off, only your target counts."] =
+    "Open the HUD by itself while a known training dummy is your target or its nameplate is up, and close it again a few seconds after none is, unless a race or its result holds it. If you close it yourself, it stays closed until you leave the dummies. Not in instances. With nameplates off, only your target counts."
 L["Elapsed and time left"] = "Elapsed and time left"
 L["Time left"] = "Time left"
 L["Time elapsed"] = "Time elapsed"
@@ -358,6 +361,10 @@ L["Countdown"] = "Countdown"
 L["At the buzzer"] = "At the buzzer"
 L["Scoring rules"] = "Scoring rules"
 L["Default race length"] = "Default race length"
+L["Auto-arm"] = "Auto-arm"
+L["Arm on a training dummy"] = "Arm on a training dummy"
+L["Arm a race by itself when you target a known training dummy out of combat, at the length Arm Race would use; your first hit starts it. Targeting anything else (or nothing) before the pull cancels it. Nothing arms in combat, in instances, over a result, or while a run waits for its result."] =
+    "Arm a race by itself when you target a known training dummy out of combat, at the length Arm Race would use; your first hit starts it. Targeting anything else (or nothing) before the pull cancels it. Nothing arms in combat, in instances, over a result, or while a run waits for its result."
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
 L["Countdown cue sound"] = "Countdown cue sound"

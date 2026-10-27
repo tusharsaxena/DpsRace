@@ -63,6 +63,10 @@ files["modules/Usage.lua"] = {
     read_globals = { "GetInventoryItemID", "C_Item", "C_Container", "C_UnitAuras" },
 }
 
+-- Auto-show and auto-arm (#16): the nameplates up (read again at the hide's fire) and whether the
+-- player is in an instance (neither rule acts there).
+files["modules/AutoArm.lua"] = { read_globals = { "C_NamePlate", "GetInstanceInfo" } }
+
 -- The compat family (compat): the version-variant client calls, and the only file that may name them.
 files["core/Compat.lua"] = {
     read_globals = {

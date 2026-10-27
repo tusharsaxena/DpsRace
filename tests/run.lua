@@ -90,6 +90,7 @@ local SUITES = {
     "test_chart",
     "test_pace",
     "test_countdown",
+    "test_autoarm",
     "test_layers",
     "test_results",
     "test_results_fit",

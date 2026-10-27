@@ -123,6 +123,9 @@ modules\Hud.lua
 # The race's final seconds: the countdown cue and the center-screen numbers, its own frame. LOAD-BEARING:
 # builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua.
 modules\Countdown.lua
+# Auto-show and auto-arm near a training dummy (#16). LOAD-BEARING: builds its bus receiver
+# (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua; reaches the HUD and the race at CALL time.
+modules\AutoArm.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE, so each follows the files it captures (the row pitch is read at CALL time).
 # Where the window reads its runs: the store, or the sample history while test mode or a sim is on

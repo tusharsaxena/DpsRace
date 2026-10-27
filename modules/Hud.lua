@@ -11,7 +11,9 @@ local _, NS = ...
 -- SHOWN = the player wants it AND the master rungs allow it (NS.MasterVisibilityAllows: stood down,
 -- test mode, General visibility). `hud.showMode` "onArm" (default) shows it when a race is armed or a
 -- result arrives, and hides it again when the race it opened for goes back to idle; "always" also
--- shows it at login. The decision is IsShown(); the frame follows it in Refresh().
+-- shows it at login. Auto-show (#16, `hud.autoShow`, modules/AutoArm.lua) opens it near a training
+-- dummy through ShowNearDummy and closes it through HideAwayFromDummy; a race going back to idle leaves
+-- that window open. The decision is IsShown(); the frame follows it in Refresh().
 --
 -- WHAT RUNS, AND WHEN (spec §10). While the window is shown: PLAYER_TARGET_CHANGED and the regen edges
 -- (the idle target card and the Arm button's combat refusal). While it is shown AND the race is
@@ -71,6 +73,10 @@ local liveTimer, lastRead, liveData
 local sliceTimer               -- the next chart bucket's boundary (modules/Slices.lua)
 local hiding = false           -- true while the addon hides the frame itself
 local autoShown = false        -- the window was opened by onArm, not by the player
+-- The window was opened because a training dummy is near (#16, modules/AutoArm.lua's auto-show): a race
+-- going back to idle leaves it open, and only HideAwayFromDummy (or the player) closes it.
+local dummyShown = false
+local closes = 0               -- how many times the player closed the window (AutoArm's manual-close rule)
 local preview                  -- what Hud.Render pushed while test mode is on
 local pick = {}                -- the idle body's choices: length, target, editing
 local dropNames                -- Hud.OwnedDropSpells() for this race, asked once (reset on arm)
@@ -746,7 +752,8 @@ end
 -- leaves a real result card the preview covered as it was.
 function onHide()
     if hiding or (ui and ui.frame:IsShown()) then return end
-    Hud.wanted, autoShown = false, false
+    Hud.wanted, autoShown, dummyShown = false, false, false
+    closes = closes + 1
     syncTicker()
     syncEvents()
     if previewOn() then
@@ -781,12 +788,13 @@ function Hud.Refresh()
 end
 
 function Hud.Show()
-    Hud.wanted, autoShown = true, false
+    Hud.wanted, autoShown, dummyShown = true, false, false
     Hud.Refresh()
 end
 
 function Hud.Hide()
-    Hud.wanted, autoShown = false, false
+    if Hud.wanted then closes = closes + 1 end
+    Hud.wanted, autoShown, dummyShown = false, false, false
     Hud.Refresh()
 end
 
@@ -822,7 +830,7 @@ end
 --- A window the addon opened (onArm, test mode) is dropped: the race or preview it opened for is gone
 --- (Race.Suspend goes to idle without a message), so the stand-up must not bring it back.
 function Hud.Suspend()
-    if autoShown then Hud.wanted, autoShown = false, false end
+    if autoShown then Hud.wanted, autoShown, dummyShown = false, false, false end
     cancelLive()
     hideWindow()
     if events then events:UnregisterAllEvents() end
@@ -849,6 +857,38 @@ function Hud.AutoShow()
     Hud.Refresh()
 end
 
+--- Auto-show's opening (#16, modules/AutoArm.lua): a training dummy is near. Like AutoShow, but a race
+--- going back to idle leaves the window open; HideAwayFromDummy closes it. A window already wanted
+--- (the player's, an arm's, test mode's) is left as it is.
+--- @return boolean opened
+function Hud.ShowNearDummy()
+    if Hud.wanted then return false end
+    Hud.wanted, autoShown, dummyShown = true, true, true
+    Hud.Refresh()
+    return true
+end
+
+--- Auto-show's closing: no dummy is near any more. Only a window ShowNearDummy opened, and still the
+--- addon's (the player's Show, New Race or close makes it the player's), is closed.
+--- @return boolean closed
+function Hud.HideAwayFromDummy()
+    if not dummyShown then return false end
+    Hud.wanted, autoShown, dummyShown = false, false, false
+    Hud.Refresh()
+    return true
+end
+
+--- Whether the window is open because a training dummy is near (ShowNearDummy's, not yet closed).
+function Hud.ShownNearDummy() return dummyShown end
+
+--- How many times the player has closed the window (the close control, Escape, Hide, the toggle): a
+--- count that moves is a close, without the HUD knowing who asks.
+function Hud.Closes() return closes end
+
+--- The length an arm takes now: the idle body's pick, else the last one raced, else the default (what
+--- Arm Race and the Arm key would arm).
+function Hud.ArmLength() return currentLength() end
+
 local function onState(_, from, to)
     local St = S()
     if to == St.ARMED then
@@ -861,7 +901,7 @@ local function onState(_, from, to)
     -- Straight from idle into a live race is the /reload (or stand-up) resume: its HUD comes back
     -- as the arm's did, and closes with the race the same way.
     if from == St.IDLE and (to == St.RUNNING or to == St.STOPPING) then autoShow() end
-    if to == St.IDLE and autoShown and not previewOn() and setting("hud.showMode") == "onArm" then
+    if to == St.IDLE and autoShown and not dummyShown and not previewOn() and setting("hud.showMode") == "onArm" then
         Hud.wanted, autoShown = false, false
     end
     debug("race %s -> %s", tostring(from), tostring(to))
@@ -995,7 +1035,7 @@ end
 function backToIdle(run)
     local length = run and run.race and run.race.length or currentLength()
     -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
-    autoShown = false
+    autoShown, dummyShown = false, false
     if NS.Race.State() == S().RESULT then NS.Race.Cancel() end
     Act.pickLength(length)
     return true

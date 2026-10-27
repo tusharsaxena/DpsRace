@@ -99,6 +99,14 @@ local function npcIDFromGUID(guid)
     return tonumber(id)
 end
 
+--- The catalog entry of the cataloged training dummy `unit` is (#16: the target, a nameplate), or nil:
+--- no such unit, not a cataloged dummy, or a GUID that arrived secret (never parsed).
+--- @param unit string
+--- @return table|nil  { name, category }
+function Recorder.DummyOf(unit)
+    return NS.Dummies.Lookup(npcIDFromGUID(ask(UnitGUID, unit)))
+end
+
 --- Whether a fresh read `t` is the target `prior` recorded: the same creature ID, or (when the ID is
 --- unreadable) the same name, or nothing readable at all (the read cannot claim a different target).
 local function sameTarget(t, prior)
