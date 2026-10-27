@@ -197,9 +197,12 @@ do
     local bus = NS.NewBusTarget()
     if bus then
         bus:RegisterMessage(NS.MSG.RACE_RESULT, function(_, run) BestToast.OnResult(run) end)
-        -- A profile switch or reset: its scale and its point.
+        -- A profile switch or reset: its switch (a toast up goes, test mode's comes back), its scale
+        -- and its point.
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if path == "profile" then BestToast.Refresh() end
+            if path ~= "profile" then return end
+            BestToast.Sync()
+            BestToast.Refresh()
         end)
     end
 end

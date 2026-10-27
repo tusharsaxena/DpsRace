@@ -5,8 +5,9 @@ local _, NS = ...
 --
 -- WHAT IS READ. The spec's primary stat (its index from GetSpecializationInfo's sixth answer, its
 -- value from UnitStat), stamina and armor; crit, haste, mastery and versatility, each as its rating
--- (GetCombatRating) and its percent (GetCritChance, GetHaste, GetMasteryEffect, and versatility's
--- GetCombatRatingBonus plus GetVersatilityBonus); leech, avoidance and speed, each as its rating and
+-- (GetCombatRating) and its percent (crit as the character panel reads it: the highest of
+-- GetCritChance, GetRangedCritChance and GetSpellCritChance over schools 2..7; GetHaste,
+-- GetMasteryEffect, and versatility's GetCombatRatingBonus plus GetVersatilityBonus); leech, avoidance and speed, each as its rating and
 -- its percent (GetLifesteal, GetAvoidance, GetSpeed). Every client function is read bare at CALL time
 -- and pcall'd.
 --
@@ -94,9 +95,21 @@ local function unitStat(index)
     return whole(select(2, ask(UnitStat, "player", index)))
 end
 
+-- Crit as PaperDollFrame_SetCritChance shows it: the highest of melee, ranged and each spell school's.
+local function critChance()
+    local best = Secrets.PlainNumber(ask(GetCritChance))
+    local function take(v)
+        v = Secrets.PlainNumber(v)
+        if v and (best == nil or v > best) then best = v end
+    end
+    take(ask(GetRangedCritChance))
+    for school = 2, 7 do take(ask(GetSpellCritChance, school)) end
+    return best
+end
+
 -- Each percent's reader.
 local PERCENT = {
-    crit = function() return ask(GetCritChance) end,
+    crit = critChance,
     haste = function() return ask(GetHaste) end,
     mastery = function() return ask(GetMasteryEffect) end,
     vers = function()

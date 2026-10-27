@@ -188,7 +188,7 @@ local function release(reason)
     NS.ResultsSource.Restore()
     if opened and reason ~= "race" then
         opened = false
-        NS.Hud.Hide()
+        NS.Hud.Hide(true)   -- the addon's own close: not the player's (AutoArm's manual-close rule)
     else
         opened = false
         NS.Hud.Refresh()

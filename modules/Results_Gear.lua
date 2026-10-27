@@ -632,9 +632,12 @@ function Gear.IsShown()
     return Gear.wanted and ui ~= nil and ui.frame:IsShown() == true
 end
 
---- The detail pane `p` drew a run or changed its compare target: redraw while open on it.
+--- The detail pane `p` drew a run or changed its compare target: redraw while open on it. A pane
+--- left with no run (the shown run was deleted) closes the view.
 function Gear.DetailChanged(p)
-    if p == pane and Gear.IsShown() then draw() end
+    if p ~= pane or not Gear.IsShown() then return end
+    if p.run == nil then return Gear.Hide() end
+    draw()
 end
 
 --- Master scale on the window. Nothing before it is built: the first open applies it.

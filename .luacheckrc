@@ -58,7 +58,7 @@ files["modules/Recorder.lua"] = {
 files["modules/Stats.lua"] = {
     read_globals = {
         "UnitStat", "UnitArmor", "GetCombatRating", "GetCombatRatingBonus", "GetVersatilityBonus",
-        "GetCritChance", "GetHaste", "GetMasteryEffect", "GetLifesteal", "GetAvoidance", "GetSpeed",
+        "GetCritChance", "GetRangedCritChance", "GetSpellCritChance", "GetHaste", "GetMasteryEffect", "GetLifesteal", "GetAvoidance", "GetSpeed",
     },
 }
 

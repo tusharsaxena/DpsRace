@@ -20,9 +20,10 @@ local _, NS = ...
 -- or sim on: Race.Arm at Hud.ArmLength() (what Arm Race would arm), through every refusal Race.Arm has
 -- (pending, in combat, meter unavailable, stood down), silently: the HUD's idle body shows why. The
 -- arm opens the HUD as a manual arm does. The way back out: while the run this rule armed is still
--- armed (not started), a target change to anything that is not a cataloged dummy, or none, cancels it.
--- A result card is never armed over (Race.Arm would: the race must be idle), and a race that started
--- is never disarmed.
+-- armed (not started), a target change out of combat to anything that is not a cataloged dummy, or
+-- none, cancels it (in combat the pull is under way: the race holds ARMED until the clock starts). A
+-- result card is never armed over (Race.Arm would: the race must be idle), and a race that started is
+-- never disarmed.
 --
 -- STAND-DOWN. Neither rule acts in an instance (GetInstanceInfo's type other than "none": a dungeon,
 -- raid, scenario, battleground or arena), and nothing is registered while the addon is stood down.
@@ -146,8 +147,10 @@ local function tryArm()
     debug("auto-armed on a training dummy")
 end
 
--- The target moved off the dummies: the race this rule armed goes, if it has not started.
+-- The target moved off the dummies: the race this rule armed goes, if it has not started. Not in
+-- combat: the pull is under way (Race holds ARMED until the meter session pairs with the regen edge).
 local function disarm()
+    if UnitAffectingCombat("player") then return end
     local run = armedRun
     armedRun = nil
     if run and NS.Race.State() == NS.Race.STATE.ARMED and NS.Race.Current() == run then
@@ -211,7 +214,8 @@ local function register(set)
 end
 
 -- The race on the bus: a run leaving ARMED is no longer this rule's to cancel, and an idle race lets an
--- auto-shown window go (or come back) as the dummies say.
+-- auto-shown window go (or come back) as the dummies say. A profile switch, copy or reset re-reads both
+-- rows (their onChange does not run for it).
 local function onState(_, _, to)
     local S = NS.Race.STATE
     if to ~= S.ARMED then armedRun = nil end
@@ -222,13 +226,16 @@ do
     local bus = NS.NewBusTarget()
     if bus then
         bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, from, to) onState(run, from, to) end)
+        bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
+            if path == "profile" then AutoArm.Sync() end
+        end)
     end
 end
 
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
 
---- Make the registrations and the window follow the two rows (their reaction, OnEnable and the
---- stand-up). Turning auto-show off closes a window it opened; turning auto-arm off leaves an armed
+--- Make the registrations and the window follow the two rows (their reaction, a profile change,
+--- OnEnable and the stand-up). Turning auto-show off closes a window it opened; turning auto-arm off leaves an armed
 --- race armed, as a manual one.
 function AutoArm.Sync()
     local want = wanted()

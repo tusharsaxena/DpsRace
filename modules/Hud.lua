@@ -792,8 +792,11 @@ function Hud.Show()
     Hud.Refresh()
 end
 
-function Hud.Hide()
-    if Hud.wanted then closes = closes + 1 end
+--- Close the window. `own` true is the addon's own close (test mode giving the window back), which is
+--- not the player closing it and does not count toward AutoArm's manual-close rule.
+--- @param own boolean|nil
+function Hud.Hide(own)
+    if Hud.wanted and own ~= true then closes = closes + 1 end
     Hud.wanted, autoShown, dummyShown = false, false, false
     Hud.Refresh()
 end
@@ -858,11 +861,16 @@ function Hud.AutoShow()
 end
 
 --- Auto-show's opening (#16, modules/AutoArm.lua): a training dummy is near. Like AutoShow, but a race
---- going back to idle leaves the window open; HideAwayFromDummy closes it. A window already wanted
---- (the player's, an arm's, test mode's) is left as it is.
+--- going back to idle leaves the window open; HideAwayFromDummy closes it. A window already wanted is
+--- left open: the player's and test mode's stay theirs, and an arm's or a result card's (the addon's
+--- own) is taken over by the dummy, so the onArm close at the idle edge skips it whatever order the
+--- bus calls the HUD and AutoArm in.
 --- @return boolean opened
 function Hud.ShowNearDummy()
-    if Hud.wanted then return false end
+    if Hud.wanted then
+        if autoShown and not previewOn() then dummyShown = true end
+        return false
+    end
     Hud.wanted, autoShown, dummyShown = true, true, true
     Hud.Refresh()
     return true
@@ -881,7 +889,8 @@ end
 --- Whether the window is open because a training dummy is near (ShowNearDummy's, not yet closed).
 function Hud.ShownNearDummy() return dummyShown end
 
---- How many times the player has closed the window (the close control, Escape, Hide, the toggle): a
+--- How many times the player has closed the window (the close control, Escape, Hide but not
+--- Hide(true), the toggle): a
 --- count that moves is a close, without the HUD knowing who asks.
 function Hud.Closes() return closes end
 

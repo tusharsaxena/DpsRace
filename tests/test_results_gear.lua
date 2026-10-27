@@ -311,6 +311,13 @@ test("gear view: the stats column with deltas against the compared run, dashes f
     assertTrue(u.statsNote:IsShown(), "and says so")
 end)
 
+test("gear view: the followed run deleted (the pane left empty) closes the view", function()
+    local i = opened()
+    i.R.__ui().detail:Show(nil)
+    assertFalse(i.G.IsShown(), "the view stayed up over an empty pane")
+    assertFalse(i.R.IsCovered(), "the cover went with it")
+end)
+
 test("gear view: a run without a compared run marks nothing and says so", function()
     local i = inst()
     local NS = i.NS

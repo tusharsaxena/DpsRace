@@ -211,6 +211,23 @@ test("toast: a drag stores the place in the profile in UIParent units; Reset pos
     assertNil(f.NS.db.profile.toast.point, "Reset position forgets the place")
 end)
 
+test("toast: a profile switch follows the new profile's switch: a toast up goes, test mode's comes back", function()
+    local f = fixture()
+    f.NS.db:SetProfile("Other")
+    assertTrue(f.NS.SetByPath("toast.enabled", false))
+    f.NS.db:SetProfile("Default")
+    run(f, "old", 100, 100000)
+    result(f, run(f, "new", 200, 110000))
+    assertEqual(shownKey(f), "new")
+    f.NS.db:SetProfile("Other")
+    assertNil(shownKey(f), "a toast stayed up under a profile with the toast off")
+    assertTrue(f.NS.Preview.Start())
+    assertNil(shownKey(f), "test mode's toast with the toast off")
+    f.NS.db:SetProfile("Default")
+    assertTrue(f.NS.Preview.IsActive(), "the switch ended test mode")
+    assertEqual(shownKey(f), f.NS.TOAST_PREVIEW, "test mode's toast not brought back")
+end)
+
 -- ── the stand-down ──────────────────────────────────────────────────────────────────────────────
 
 test("toast: the stand-down takes the toast down and drops what waits; a result while down shows none", function()

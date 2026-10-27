@@ -204,6 +204,36 @@ test("autoshow: a race going idle near the dummy keeps the window open", functio
     assertTrue(f.Hud.IsShown())
 end)
 
+test("autoshow: a dummy near an arm's window takes it over, so the idle edge never closes it", function()
+    -- Whatever order the bus calls the HUD and AutoArm in at the idle edge, the window stays.
+    local f = fixture{ show = true }
+    assertTrue(f:arm(30))
+    assertTrue(f.Hud.IsShown())
+    assertFalse(f.Hud.ShownNearDummy())
+    plateUp(f, "nameplate1", CLEAVE)
+    assertTrue(f.Hud.ShownNearDummy(), "the dummy took over the arm's window")
+    assertTrue(f.Race.Cancel())
+    assertTrue(f.Hud.IsShown(), "the onArm close took the dummy's window")
+    plateDown(f, "nameplate1")
+    f:advance(f.AutoArm.HIDE_DELAY)
+    assertFalse(f.Hud.IsShown(), "leaving the dummies closes it")
+end)
+
+test("autoshow: test mode's window stays test mode's, and its end is no close by the player", function()
+    local f = fixture{ show = true }
+    assertTrue(f.NS.Preview.Start())
+    assertTrue(f.Hud.IsShown())
+    plateUp(f, "nameplate1", CLEAVE)
+    assertFalse(f.Hud.ShownNearDummy(), "a dummy took over test mode's window")
+    local closes = f.Hud.Closes()
+    f.NS.Preview.Stop("combat")
+    assertFalse(f.Hud.IsShown(), "test mode closes the window it opened")
+    assertEqual(f.Hud.Closes(), closes, "the end of test mode counted as the player's close")
+    target(f, CLEAVE)
+    assertTrue(f.Hud.IsShown(), "auto-show treated the end of test mode as the player's close")
+    assertTrue(f.Hud.ShownNearDummy())
+end)
+
 test("autoshow: General visibility still decides whether it draws", function()
     local f = fixture{ show = true }
     assertTrue(f.NS.SetByPath("visibility", "never"))
@@ -311,6 +341,19 @@ test("autoarm: a started race is never disarmed by a target change", function()
     assertEqual(f.Race.State(), "running")
 end)
 
+test("autoarm: a target change in combat before the clock starts never disarms the pull", function()
+    local f = fixture{ arm = true }
+    target(f, CLEAVE)
+    assertEqual(f.Race.State(), "armed")
+    f.M.__inCombat = true                      -- pulled: the race holds ARMED until the session pairs
+    target(f, nil)
+    assertEqual(f.Race.State(), "armed", "the pull under way was canceled")
+    target(f, BOAR)
+    assertEqual(f.Race.State(), "armed")
+    f:start(25)
+    assertEqual(f.Race.State(), "running", "the pull started the race")
+end)
+
 test("autoarm: a race the player armed is never the rule's to disarm", function()
     local f = fixture{ arm = true }
     assertTrue(f:arm(30))
@@ -336,6 +379,24 @@ test("autoarm: works alongside auto-show; the disarm leaves the dummy's window o
     target(f, BOAR)
     assertEqual(f.Race.State(), "idle")
     assertTrue(f.Hud.IsShown(), "the dummy's plate is still up")
+end)
+
+-- ── profiles ────────────────────────────────────────────────────────────────────────────────────
+
+test("autoarm: a profile switch re-reads both rows, with no /reload", function()
+    local f = fixture()
+    f.NS.db:SetProfile("Other")
+    assertTrue(f.NS.SetByPath("hud.autoShow", true))
+    assertTrue(f.NS.SetByPath("race.autoArm", true))
+    f.NS.db:SetProfile("Default")
+    assertEqual(f.AutoArm.Diagnose().events, "none", "the old profile's rules held on")
+    f.NS.db:SetProfile("Other")
+    assertEqual(f.AutoArm.Diagnose().events, "plates", "the new profile's rules not registered")
+    target(f, CLEAVE)
+    assertTrue(f.Hud.IsShown(), "auto-show after the switch")
+    assertEqual(f.Race.State(), "armed", "auto-arm after the switch")
+    f.NS.db:ResetProfile()
+    assertEqual(f.AutoArm.Diagnose().events, "none", "a reset to the defaults left them registered")
 end)
 
 -- ── stand-down ──────────────────────────────────────────────────────────────────────────────────

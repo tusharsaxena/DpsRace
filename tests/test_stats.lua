@@ -26,6 +26,8 @@ local function statMocks(m, over)
     m.UnitArmor = function() return 100, v.armor end
     m.GetCombatRating = function(i) return v.ratings[i] end
     m.GetCritChance = function() return v.crit end
+    m.GetRangedCritChance = function() return v.rangedCrit end
+    m.GetSpellCritChance = function(school) return v.spellCrit and v.spellCrit[school] end
     m.GetHaste = function() return v.haste end
     m.GetMasteryEffect = function() return v.mastery, 1.5 end
     m.GetCombatRatingBonus = function() return v.versBonus end
@@ -66,6 +68,16 @@ test("stats: Snapshot reads the primary stat, stamina, armor and every rating wi
     assertEqual(s.speed, 2.05)
 end)
 
+test("stats: crit is the highest of melee, ranged and each spell school's, as the character panel shows", function()
+    local NS = fresh({ crit = 20.1, rangedCrit = 22.5,
+                       spellCrit = { [2] = 24, [3] = T.secret(99), [6] = 31.456, [7] = 30 } })
+    assertEqual(NS.Stats.Snapshot().crit, 31.46, "the shadow school's crit is the panel's")
+    NS = fresh({ crit = 20.1, rangedCrit = 22.5 })
+    assertEqual(NS.Stats.Snapshot().crit, 22.5, "ranged over melee, no spell crit readable")
+    NS = fresh({ crit = T.secret(40), spellCrit = { [2] = 18 } })
+    assertEqual(NS.Stats.Snapshot().crit, 18, "a secret reading is skipped, not compared")
+end)
+
 test("stats: a secret value is stored as absent, never compared or kept", function()
     local NS = fresh({ crit = T.secret(25.3), stamina = T.secret(98765), primaryStat = T.secret(4),
                        ratings = { [9] = T.secret(1234), [18] = 2345 } })
@@ -89,7 +101,8 @@ test("stats: a client without the APIs, or one that raises, yields absent fields
     assertNil(s.crit)
     assertNil(s.armor)
     assertEqual(s.haste, 18.5)
-    for _, name in ipairs({ "UnitStat", "UnitArmor", "GetCombatRating", "GetCritChance", "GetHaste",
+    for _, name in ipairs({ "UnitStat", "UnitArmor", "GetCombatRating", "GetCritChance", "GetRangedCritChance",
+                            "GetSpellCritChance", "GetHaste",
                             "GetMasteryEffect", "GetCombatRatingBonus", "GetVersatilityBonus", "GetLifesteal",
                             "GetAvoidance", "GetSpeed", "GetSpecialization", "GetSpecializationInfo" }) do
         M[name] = nil
