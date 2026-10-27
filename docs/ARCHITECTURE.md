@@ -84,7 +84,7 @@ dummy* (`hud.autoShow`) opens the HUD while a cataloged dummy is the target or h
 closes it a debounce after none is, never over a race or a result and never against the player's own
 close in the same dummy session; *Arm on a training dummy* (`race.autoArm`) arms a race through
 `Race.Arm` when the player targets one out of combat, and cancels it when the target moves off the
-dummies before the pull. Neither acts in an instance. Each GUID is read through `NS.Secrets`
+dummies out of combat before the pull. Both follow a profile switch, copy or reset. Neither acts in an instance. Each GUID is read through `NS.Secrets`
 (`Recorder.DummyOf`). The same pass replaced the detail's try-on button with the gear view (#17,
 `modules/Results_Gear.lua`): the run's gear in the character panel's columns without a model (item
 level, enchant and gem marks from the stored link) and its stats in the middle, against the run the
@@ -151,7 +151,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat; `modules/BestToast.lua`: the new-best toast, for a complete run that beats an earlier best |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
 | `RUNS_CHANGED` | `modules/Recorder.lua`; `modules/Usage.lua` (`SetUsed`: a run's usage ticks saved) | none: a delete, a prune, a note or a usage edit changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone (the detail's redraw also redraws an open ability timeline); `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*), and redraws the card on any other store change; `settings/History.lua`: repaints the stored count |
-| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden`; `modules/BestToast.lua`: re-reads the toast's scale and place on a profile change |
+| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden`; `modules/BestToast.lua`: on a profile change follows the toast's switch (`Sync`) and re-reads its scale and place; `modules/AutoArm.lua`: on a profile change re-reads both dummy rows (`Sync`) |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
@@ -521,7 +521,7 @@ first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1457 (the zoom an
 P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1182
 (the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, and the gear view told on each draw, 2026-10-28), `modules/Hud_States.lua` at 1157 (the Stop! and waiting tiles' caption row, 2026-10-28, and the flag chips the toast shares),
 `modules/Results_Runs.lua` at 1085 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28) and
-`modules/Hud.lua` at 1076 (layout-§1; auto-show's hooks, 2026-10-28, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`modules/Hud.lua` at 1085 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
 2026-10-28 pass its own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`), rather than grow these.

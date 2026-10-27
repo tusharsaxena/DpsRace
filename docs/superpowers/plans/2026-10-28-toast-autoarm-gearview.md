@@ -52,7 +52,7 @@ finishes it; a run that stops resumes at the first unticked box.
   provenance note in `CLAUDE.md`, the deviation row.
 - [x] **D4 #5 toast:** the trigger on `RACE_RESULT`, the content builder, the settings group (enable,
   duration, sound, scale, preview), position in the profile, test-mode placement. Tests, docs, smoke rows.
-- [ ] **D5 Review and fixes** across the batch.
+- [x] **D5 Review and fixes** across the batch.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

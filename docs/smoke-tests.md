@@ -94,7 +94,8 @@ instance and with a channel (the probe measured them in the open world only, and
 Rows for the 2026-10-28 build (branch `feat/2026-10-28-toast-autoarm-gearview`), not yet run: section
 20's SM-DR-TA1 to SM-DR-TA8 (new: auto-show and auto-arm near a training dummy, #16), section 21's
 SM-DR-TA9 to SM-DR-TA16 (new: the gear view and the run's stats, #17), section 22's SM-DR-TA17 to
-SM-DR-TA23 (new: the new-best toast, #5), and S3 and SM-DR-LY1 again (rewritten: the Race HUD tab's
+SM-DR-TA23 (new: the new-best toast, #5), section 23's SM-DR-TA24 to SM-DR-TA28 (new: the review's
+fixes), and S3 and SM-DR-LY1 again (rewritten: the Race HUD tab's
 *Display* gains *Show near a training dummy*, and General gains the *New-best toast* tab and its
 Defaults tooltip names it).
 
@@ -611,3 +612,16 @@ on and `/dr debug on`.
 | SM-DR-TA21 | Untick *Play a sound* and press *Test toast*; set *Toast scale* to 1.5 and press it again; drag the sample toast somewhere else, then `/reload` and press *Test toast*; press *Reset position* on Master controls and press it again | No sound with the row off. At 1.5 the toast is half again as large, grown about the same top-center place. The dragged place holds after the reload. *Reset position* puts it back near the top middle | A screenshot at 1.5 |
 | SM-DR-TA22 | `/dr test`; drag the sample toast it shows; untick *Show a toast for a new best*, tick it again; then `/dr test` again to turn it off; with test mode off try to drag a real new best's toast (race one) | Test mode shows a sample toast that stays up (no countdown) and drags; unticking the row takes it down and ticking it brings it back while test mode is on; turning test mode off takes it down. A real toast outside test mode does not move | Whether the toast stayed after test mode ended |
 | SM-DR-TA23 | Beat a best with a late cast (start a cast two seconds after the buzzer); then, with a toast up, `/dr disable`, and `/dr enable` | The flagged run toasts with an amber third line *1 late cast*. Disabling takes the toast down at once and nothing else shows; after enabling, the next new best toasts again | A screenshot of the flagged toast |
+
+## 23. The 2026-10-28 build: review fixes (auto-show, auto-arm, the toast, the gear view, crit)
+
+Fixes from the batch's review (D5). Needs a training dummy in the open world, a second profile (Profiles
+page: *New*, say *Other*), and `/console scriptErrors 1` and `/dr debug on`.
+
+| ID | Do | Pass when | If it fails, report |
+|---|---|---|---|
+| SM-DR-TA24 | On the *Default* profile untick both dummy rows; switch to *Other* and tick *Show near a training dummy* and *Arm on a training dummy*; switch back to *Default*, then to *Other* again (no `/reload`); target a cataloged dummy | On *Other* the HUD opens and a race arms on the target at once; on *Default* neither happens | Which rule did not act after the switch |
+| SM-DR-TA25 | With *Arm on a training dummy* on, target a dummy (the race arms); pull it with a spell that has a cast time and press Escape (clear the target) while the cast is still going | The race is still armed and starts on the first hit; out of combat, clearing the target of an armed race still cancels it | Whether the pull's race was canceled |
+| SM-DR-TA26 | With *Show near a training dummy* on, away from any dummy arm a race (the HUD opens); walk up to a dummy (its nameplate shows), then press *Cancel* | The HUD stays open beside the dummy after the cancel, and closes about 3 s after you walk away | Whether the HUD closed at the cancel |
+| SM-DR-TA27 | With *Show near a training dummy* on, `/dr test` away from the dummies; walk to a dummy and attack it (combat ends test mode); target the dummy again | Test mode ends with its line and the HUD closes; retargeting the dummy opens it again (the end of test mode is not your close) | Whether the HUD stayed closed |
+| SM-DR-TA28 | Open a run's gear view, then delete that run from its HUD result card (or another path that empties the detail); on a profile with *Show a toast for a new best* unticked, switch profiles while a toast is up; check the gear view's *Critical Strike* percent on a caster against the character panel | The gear view closes with its run. The toast goes at the switch. The crit percent matches the character panel's | Which of the three misbehaved |

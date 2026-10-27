@@ -13,7 +13,9 @@ and the smoke row that measures it where one exists.
   window. Neither rule acts in an instance (a dungeon, raid, scenario, battleground or arena; the
   owner's stand-down rule on the issue): there a race is armed by hand. Auto-arm arms only on a
   target change: a race that ended with the dummy still targeted is armed again by retargeting it
-  or by Arm Race (smoke rows SM-DR-TA1 to SM-DR-TA8).
+  or by Arm Race. Auto-show decides on a dummy event (a target change, a nameplate, the race's idle
+  edge): when test mode closes the window it opened beside a dummy, the window comes back on the next
+  such event, not on its own (smoke rows SM-DR-TA1 to SM-DR-TA8, SM-DR-TA24 to SM-DR-TA28).
 - **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping

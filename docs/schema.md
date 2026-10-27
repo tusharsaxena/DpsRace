@@ -29,7 +29,7 @@ row's `default` reads from it.
 | `race.grace` | `1.0` | *Late-cast grace (seconds)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
 | `race.restartGap` | `6` | *Damage-restart gap (seconds)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
 | `race.defaultLength` | `120` | *Default race length*, Race page | The HUD's race length until the player picks one (spec §4.1) |
-| `race.autoArm` | `false` | *Arm on a training dummy*, Race page (*Auto-arm*) | Targeting a cataloged training dummy out of combat arms a race at the HUD's length; targeting anything else before the pull cancels it (#16, `modules/AutoArm.lua`). Opt-in. New key: AceDB's default fills it, no migration |
+| `race.autoArm` | `false` | *Arm on a training dummy*, Race page (*Auto-arm*) | Targeting a cataloged training dummy out of combat arms a race at the HUD's length; targeting anything else out of combat before the pull cancels it (#16, `modules/AutoArm.lua`). Opt-in. New key: AceDB's default fills it, no migration |
 | `race.countdownCue` | `true` | *Countdown cue sound*, Race page | The cue sound at 10, 5, 3, 2 and 1 s left, and with each center-screen number, once a second at most (spec §4.3) |
 | `race.centerCountdown` | `true` | *Center-screen countdown*, Race page | The large numbers in the middle of the screen for the race's last seconds (spec §4.3, `modules/Countdown.lua`) |
 | `race.finalCountdown` | `10` | *Center countdown from (seconds)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
