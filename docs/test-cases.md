@@ -274,7 +274,7 @@ Total.
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
-- hud: New Race re-arms the same length; Details and Share reach their modules
+- hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 - hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
@@ -314,13 +314,14 @@ Total.
 - hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
 - hud hint: the box resizes when the hint's text changes, and not on every redraw
 
-### test_hud_tiles.lua (8)
+### test_hud_tiles.lua (9)
 
 - hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
 - hud tiles: the caption row sits inside the tile at the old padding, the figure a row above it
 - hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46
 - hud tiles: under the taller pair the Stop! chips and note and the waiting hint move down by config
 - hud tiles: the right tile's caption says what its figure is in each state
+- hud tiles: every caption fits a tile at the 260 px minimum by the 6 px a character estimate
 - hud tiles: the waiting screen's tiles read the same as the Stop! screen's
 - hud tiles: the moved Stop! and waiting stacks still fit the minimum height above the foot row
 - hud tiles: the Stop! and waiting redraws read no geometry
@@ -1081,7 +1082,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
 | test_hud_hint.lua | 6 |
-| test_hud_tiles.lua | 8 |
+| test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
@@ -1126,4 +1127,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **884** |
+| **Total** | **885** |

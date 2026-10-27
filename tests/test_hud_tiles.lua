@@ -122,7 +122,18 @@ test("hud tiles: the right tile's caption says what its figure is in each state"
     b:Update({ inCombat = false, endedEarly = true, endedAt = 64 })
     assertEqual(b.w.tail.label.__text, "Combat Ended")
     assertEqual(b.w.tail.value.__text, "1:04")
-    assertEqual(b.w.tail.caption.__text, "on the race clock")
+    assertEqual(b.w.tail.caption.__text, "into the race")
+end)
+
+test("hud tiles: every caption fits a tile at the 260 px minimum by the 6 px a character estimate", function()
+    local f = stopBody()
+    local L = f.NS.L
+    -- A tile is half the 236 px content less the 4 px either side of the middle; the caption sits 8 px
+    -- in from both of its edges.
+    local room = (236 / 2 - 4) - 16
+    for _, key in ipairs({ "after buzzer", "since the buzzer", "combat ended", "into the race" }) do
+        assertTrue(#L[key] * 6 <= room, key .. " fits its tile")
+    end
 end)
 
 test("hud tiles: the waiting screen's tiles read the same as the Stop! screen's", function()

@@ -848,7 +848,7 @@ test("hud: an incomplete run's chip names when combat ended, or that the player 
     assertEqual(#chips, 2, "died is not shown twice")
 end)
 
-test("hud: New Race re-arms the same length; Details and Share reach their modules", function()
+test("hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules", function()
     local f = hud()
     local run = resolved(f)
     local opened, shared

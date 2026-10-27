@@ -804,13 +804,13 @@ function Builders.running(parent)
 end
 
 -- The two figures the stop and waiting bodies share, each with its caption row (the owner's call,
--- 2026-10-28): the tail ("+9.4s", after buzzer) or the time in combat at an early end (on the race
--- clock), and the time in combat since the buzzer (since the buzzer), or a dash once combat is over
+-- 2026-10-28): the tail ("+9.4s", after buzzer) or the time in combat at an early end (into the
+-- race), and the time in combat since the buzzer (since the buzzer), or a dash once combat is over
 -- (combat ended). Plain numbers from GetTime(), never a meter value; the unit joins the figure's string.
 local function setStopFigures(w, v)
     if v.endedEarly then
         w.tail.label:SetText(L["Combat Ended"])
-        setKpi(w.tail, NS.Format.Length(v.endedAt or 0), L["on the race clock"])
+        setKpi(w.tail, NS.Format.Length(v.endedAt or 0), L["into the race"])
     else
         w.tail.label:SetText(L["Damage Stopped"])
         setKpi(w.tail, NS.Format.Seconds(v.tail) .. L["s"], L["after buzzer"])

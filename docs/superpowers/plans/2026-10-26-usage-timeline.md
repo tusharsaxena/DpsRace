@@ -417,6 +417,9 @@ The owner keeps P16's corridor colors as they are.
 - [x] **New Race label:** (owner, 2026-10-28) the HUD result card's *Race Again* overflowed its box at the
   HUD's width; it reads *New Race* everywhere it is user-facing (the `NS.L` key, the action `Act.newRace`, the
   tests, the docs), 48 px at the 6 px a character estimate against the 56 px button at the minimum width.
+- [x] **Review fixes (tiles and rename):** the early end's caption reads *into the race* (13 characters, 78 px)
+  where *on the race clock* overran the tile's 98 px at the minimum width, with a test that every caption fits;
+  the design spec and the New Race test title say *New Race* opens the Arm Race screen; the size register's counts.
 
 ### P8: Finalize (only on the owner's go-ahead)
 
