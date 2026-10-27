@@ -42,6 +42,11 @@ in the spec, sections 1, 2 and 13
   shirt or tabard) and its talent loadout, each distinct set stored once. The detail draws the gear
   grid with the client's item tooltips and the talents with *View* (opens the talent tree, and posts a clickable link to chat) and *Copy*; under the compare it
   highlights the changed slots and marks a different loadout.
+- **The gear view and the stats behind each run** (#17; run-record format 4). Every new run keeps
+  the stats read at arm (the primary stat, stamina, armor, and every secondary and tertiary as rating
+  and percent). The detail's *Gear view* lays the gear out as the character panel does, without the
+  model, with each item's level and its enchant and gem marks, and the stats in the middle, against the
+  compared run: changed slots, item levels, enchants and gems marked, each stat's difference.
 - **Resilience to `/reload`.** A run is stored from its first hit, and a reload at any point resumes
   it, reads it later, or settles it as lost (spec §4.5).
 - **What each run cast and used** (#13, #14; run-record format 3). Every cast of the player and the

@@ -31,7 +31,9 @@ The three windows the addon owns (the Results window, the ability timeline and t
 resized from the library's corner grip (`NS.MakeResizable`, `LibKa0s-Core-1.0`), which runs the
 window's relayout on every `OnSizeChanged`: every frame while the grip is dragged. Before the
 2026-10-26 pass each window ran its full layout there, and the Results window lagged behind the
-cursor (the owner's report). What one size change cost, read from the code:
+cursor (the owner's report). The gear view (#17) is not resizable (its size is its content's), so it
+has no row here: it draws only when opened and when the detail tells it. What one size change cost,
+read from the code:
 
 | Window | Per size change, before |
 |---|---|

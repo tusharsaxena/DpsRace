@@ -25,9 +25,10 @@ C.LOGO = ("Interface\\AddOns\\%s\\media\\logos\\dpsrace.logo.tga"):format(addonN
 --   HIGH               WINDOW        the Results window (modules/Results.lua): the on-demand browser,
 --                                    toplevel; Blizzard's Settings panel shares this strata, and the
 --                                    last one clicked is in front
---   DIALOG             MODAL         the ability timeline (modules/Results_Timeline.lua): opened from the
---                                    Results window, so one strata above it (P13), toplevel and clamped;
---                                    it re-raises a shown StaticPopup when it opens (frame-layering-§4)
+--   DIALOG             MODAL         the ability timeline (modules/Results_Timeline.lua) and the gear view
+--                                    (modules/Results_Gear.lua, #17): opened from the Results window, so
+--                                    one strata above it (P13), toplevel and clamped; each re-raises a
+--                                    shown StaticPopup when it opens (frame-layering-§4)
 --   DIALOG             (library)     Blizzard StaticPopups (reset, delete, whisper share), the LibKa0s
 --                                    debug console and perf panel (toplevel from LibKa0s v1.77.0)
 --   FULLSCREEN         SCREEN_ALERT  the center-screen countdown (modules/Countdown.lua): mouse-disabled,

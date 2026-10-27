@@ -50,7 +50,9 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Arm** (`Race.Arm(length, count)`, out of combat only): refused with `busy` (armed or running),
   `pending` (a run is stopping, or a stored run is unresolved), `bad_length`, `in_combat`,
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
-  the player, target and place, `Recorder.SnapshotLoadout` reads the gear links and the talent
+  the player, target and place and reads the stats onto the run (`Stats.Snapshot`, #17: the primary
+  stat, stamina, armor and every rating with its percent, each through `NS.Secrets`, a sealed one
+  absent), `Recorder.SnapshotLoadout` reads the gear links and the talent
   loadout into memory as the fallback (#6), `Casts.Begin()` starts the race's cast list and
   `Usage.Snapshot()` reads what could be used into memory (#13, #14; below), the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
@@ -403,6 +405,17 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
   with the Results window. Every open places it exactly over the Results window, that window's anchor
   and its size in the view shown (`Results.Placement`); nothing of its place or size is stored.
+- **The gear view** (#17, `modules/Results_Gear.lua`): the *Gear view* button at the right of the
+  detail's *Gear* heading (shown for a run with gear) opens a modal on the detail pane, centered over
+  the Results window (`CenterOver` on `Results.Placement`) at the size its content takes (`Size`). It
+  reads `ResultsSource.LoadoutOf` for this run and the compared run (`CompareTarget(true)`, as the
+  timeline does) and lays the slots out from `Cells` (the character panel's columns, the weapons under
+  the middle); each slot's marks come from its stored link (`ParseLink`: the enchant and gem IDs),
+  and `SlotDiff` against the compared run's slot gives its tint (another item), its item level's color
+  and its marks' amber edge (`Marks`; nothing is marked when the compared run has no gear). The middle
+  column is `Stats.Groups(Stats.Of(run), Stats.Of(other))`: each value's text and its delta, a dash
+  for a run with no `stats`. The detail calls `ResultsGear.DetailChanged` beside the timeline's, so the
+  view follows the run and the compare; it closes with the Results window.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
   same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
   *All categories*: the table has no target column, so two boards of one spec and length would read

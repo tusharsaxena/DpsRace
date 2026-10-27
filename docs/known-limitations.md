@@ -133,6 +133,15 @@ and the smoke row that measures it where one exists.
   dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
   cooldown icons and their *Timeline* button is grayed. Stored runs are never rewritten
   ([schema.md](schema.md), migration 2 → 3).
+- **The gear view's stats are the ones read at the arm** (#17). They are what the character sheet said
+  when the race was armed, with whatever buffs were up then (a flask, a food buff, a temporary proc);
+  a buff gained or lost between the arm and the pull, or a gear change before the pull (the gear is
+  re-read at the combat end, the stats are not), is not seen. A run stored before format 4 has no stats
+  and the view shows dashes; stored runs are never rewritten (migration 4 → 5). A value the client
+  could not read, or that arrived secret, is absent and shows as a dash.
+- **The gear view shows an enchant and gems, not empty sockets** (#17). A stored item link names the
+  enchant and the gems in the item, but not how many sockets it has, so an empty socket has no mark.
+  The marks come from the link's IDs; the enchant's name and the gems' stats are in the item tooltip.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 - **The ability timeline does not scroll sideways on a tilt wheel or a touchpad's sideways swipe**

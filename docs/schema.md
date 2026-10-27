@@ -63,7 +63,7 @@ Every `race.*`, `live.*`, `hud.showMode`, `hud.clock` and `hud.autoShow` key has
 | Path | Default | What it is |
 |---|---|---|
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
-| `schema` | `3` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout`; format 3 (#13, #14) adds `casts` and `usage` |
+| `schema` | `4` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout`; format 3 (#13, #14) adds `casts` and `usage`; format 4 (#17) adds `stats` |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
 | `loadouts` | `{ gear = {}, talents = {} }` | The loadout store (#6, `modules/Loadouts.lua`): each distinct gear set (`{ [slot] = link }`) and talent loadout (`{ specID, configID, name, heroSpecID, heroName, importString, serialVersion }`) once, keyed by a djb2 hash of its canonical form (`<hash>-<n>` for a different set with the same hash). A run holds only the keys (`run.loadout`); a set no run refers to is dropped on every removal |
 | `history.keepDays` | `90` | *Days to keep* (spec §6.3; the owner's call, 2026-10-26, replacing the run count `history.keep`): 0 = never prune. Above 0, `Recorder.Prune` removes every resolved run older than that many days at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. Its row is *Days to keep* on the History page (0-3650); a change prunes nothing on the spot. No migration: a stored `history.keep` is left unread |
@@ -80,6 +80,7 @@ Every `race.*`, `live.*`, `hud.showMode`, `hud.clock` and `hud.autoShow` key has
 | The damage chart's slices: one opaque live total per bucket (at most 60) of each race raced this session, by run id | `modules/Slices.lua` (`Capture`, filled by `modules/Hud.lua`'s live reads, the bucket timer and the buzzer's read; read by `Slices.Get` / `Drawable` for the HUD's chart, the result card and the Results detail) | #2: a value read in combat is secret and stays so, and the client writes a secret to SavedVariables as `nil` (the reload probe, 2026-10-25). Never on the run record; a run from before the last `/reload` or login has no chart |
 | The race's cast list and its usage snapshot | `modules/Casts.lua` (the raw casts, the castGUIDs heard, the open channel, each spell's base cooldown, the dropped count, the clock's start) and the race's `cur.usageSnap` (`modules/Race.lua`: `Usage.Snapshot()`'s gear, bags and auras) | #13, #14: held from the arm to the result, then stored once as `run.casts` and `run.usage`; a cancel or the stand-down drops them, so a run resumed after a `/reload` has neither |
 | The *Usage* section's edit and its ticks not saved yet | the detail pane (`modules/Results_Usage.lua`: `editing`, `state`) | view state (#13, P9): *Edit* opens it; kept across a redraw of the same run (each tick by its row's item), left unsaved by *Edit* again or another run; only *Save* stores the ticks (`Usage.SetUsed`) and leaves it |
+| The gear view's place | `modules/Results_Gear.lua` (its frame's anchor while open) | #17: a modal over the Results window, centered over it on every open (`Results.Placement`); a title-bar move lasts while it is open (the timeline's deviation row in ARCHITECTURE) |
 | The detail's compare: the toggle and the picked run | the detail pane (`comparing`, `pickID`, `modules/Results_Detail.lua`), set by its toggle, the row menu's *Compare With This Run* (`Results.CompareWith`) and *Clear Pick* (`Results.ClearPick`) | view state (#7): the comparison is worked out from the stored runs each time; a pick whose run is deleted falls back to the board's best |
 
 ## Migrations
@@ -95,16 +96,17 @@ profile-scoped step sets `perProfile = true` and runs once per stored profile.
 | 1 → 2 | the run record's format 2 (#6) | Raises a stored `global.schema` below 2 to 2. No stored run is rewritten: format 2 only adds the optional `loadout`, so a format-1 run (keeping its own `schema = 1`) reads as one with no loadout, *Not recorded* |
 | 2 → 3 | the run record's format 3 (#13, #14) | Raises a stored `global.schema` below 3 to 3. No stored run is rewritten: format 3 only adds the optional `casts` and `usage`, so an older run (keeping its own `schema`) reads as one with neither, *Not recorded* |
 | 3 → 4 | the Results window's collapsed default, the timeline's dropped place (UT-P14), per profile | Writes `windows.results.view = "expanded"` into a profile that stores the Results window but no view: it was in the old default, which AceDB stripped, and would otherwise read the new collapsed one. A profile that never stored the Results window keeps the new default. Clears `windows.timeline`, which nothing reads any more |
+| 4 → 5 | the run record's format 4 (#17) | Raises a stored `global.schema` below 4 to 4. No stored run is rewritten: format 4 only adds the optional `stats`, so an older run (keeping its own `schema`) reads as one with none, and the gear view shows dashes |
 
 Adding a step: [common-tasks.md](common-tasks.md#add-a-saved-variables-migration).
 
 ## The run record
 
-Format 3: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
-`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6, format 2)
-and the optional `casts` and `usage` (#13, #14, format 3). A run stored before format 2 keeps
-`schema = 1` and has no `loadout`; one stored before format 3 keeps its `schema` and has no `casts`
-or `usage`. So does a format-3 run resumed after a `/reload` (both lists are held in memory until
+Format 4: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
+`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6, format 2),
+the optional `casts` and `usage` (#13, #14, format 3) and the optional `stats` (#17, format 4). A run
+stored before format 2 keeps `schema = 1` and has no `loadout`; one stored before format 3 keeps its
+`schema` and has no `casts` or `usage`; one stored before format 4 has no `stats`. So does a format-3 run resumed after a `/reload` (both lists are held in memory until
 the result). `status` is one of `armed` (never stored), `running`, `stopping`, `complete`,
 `incomplete` or `lost`. Every value is plain: each client value went through `NS.Secrets`, and a
 sealed one is absent.
@@ -114,6 +116,7 @@ sealed one is absent.
 | top | `id` (`time()-NNNN`), `schema`, `status`, `addon`, `build`, `date` (arm, restamped at the start) | `Recorder.NewRun`; `Race` |
 | `race` | `length`, `grace`, `restartGap` (frozen at arm), `startSource`, `startedAt` (`GetTime()` at the start), `sessionID`, `armMaxSession` (the highest session ID at arm), `lastDamage` (s after the start of the last damage update) | `Recorder.NewRun`; `Race` at arm, start, capture and each update |
 | `char`, `where` | the player and place snapshots | `Recorder.NewRun` (at arm) |
+| `stats` | `v` (1), `primaryStat` (the spec's primary stat's `UnitStat` index: 1 Strength, 2 Agility, 4 Intellect), `primary`, `stamina`, `armor` (whole numbers), and for each of `crit`, `haste`, `mastery`, `vers`, `leech`, `avoidance` and `speed` its `<key>Rating` (whole) and `<key>` (the percent, two decimals; versatility's is `GetCombatRatingBonus` plus `GetVersatilityBonus`). A value that was sealed or unreadable is absent; nothing readable leaves the whole field absent | `Recorder.NewRun` (at arm, out of combat), from `Stats.Snapshot` (`modules/Stats.lua`) |
 | `target` | `npcID`, `name`, `category`, `level`, `classification` (a run from before 2026-10-26 may still carry `count`, which nothing reads) | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
 | `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
 | `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
@@ -126,11 +129,11 @@ sealed one is absent.
 The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
 old one. Spell and item names and icons are resolved for display and never stored. About 1 to 1.5 KB
 per run before format 3; the cast list adds about 10 bytes a cast (a 2:00 race at one cast a second,
-about 1.2 KB more).
+about 1.2 KB more), and the stats about 0.4 KB.
 
 A change to the record's shape raises `global.schema` and adds a migration step. The step rewrites
-stored runs only when the old shape cannot be read as the new one; formats 2 and 3 only add
-optional fields, so their steps (1 → 2, 2 → 3) rewrite none. A reader that meets a run with a
+stored runs only when the old shape cannot be read as the new one; formats 2, 3 and 4 only add
+optional fields, so their steps (1 → 2, 2 → 3, 4 → 5) rewrite none. A reader that meets a run with a
 higher `schema` than it knows leaves it alone.
 
 ## Named non-setting state

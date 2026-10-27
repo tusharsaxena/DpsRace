@@ -45,7 +45,7 @@ finishes it; a run that stops resumes at the first unticked box.
 - [x] **D1 #16 auto-show and auto-arm:** settings (off by default), detection from the target and nameplates
   against `defaults/Dummies.lua`, auto-arm through `Race.Arm` and its blockers, the way back out, stand-down
   in instances and PvP. Tests, docs, smoke rows.
-- [ ] **D2 #17 stats capture and gear view:** stats captured at arm through `NS.Secrets`, stored on the run
+- [x] **D2 #17 stats capture and gear view:** stats captured at arm through `NS.Secrets`, stored on the run
   (schema, docs); the gear view replacing the Dressing Room; compare against best or picked. Tests, docs,
   smoke rows.
 - [ ] **D3 Vendor Toast-1.0 only:** copy the LibKa0s branch's Toast file into `libs/LibKa0s/`, TOC line,
