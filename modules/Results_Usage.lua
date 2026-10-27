@@ -1,0 +1,526 @@
+local _, NS = ...
+-- modules/Results_Usage.lua — what a run used (#13), as the Results window shows it: the Runs list's
+-- *Used* column (its icons, its tooltip and its sort, through modules/Results_Runs.lua and
+-- modules/Results_Tips.lua) and the run detail's *Usage* section, where the player edits the list.
+--
+-- THE SECTION shows what was used (P9, the owner's call, 2026-10-26): one row per used entry, the
+-- item's icon and name and a dim detail ("x2 at 0:09, 1:12", "active at the start", "time unknown"),
+-- or a dim *Nothing used*. The detail follows the name on its line (P10, the owner's call): "Test
+-- Trinket · x2 at 0:09", the dot and the detail in the dim color, as the Runs list's group headers
+-- put a value after a label, so nothing lines up in a column; the line stops at the row's edge in
+-- the client's own ellipsis (Style.Text never wraps). *Edit* (top right) switches it to every candidate (every on-use gear item
+-- and every bag consumable with a use spell at the arm) and every used entry no candidate stands for
+-- (food), each with a checkbox whose label is clickable too (Tbl.SetCheckLabel), what was used ticked.
+-- *Save*, beside Edit and shown only while editing, is live only while the ticks differ from the
+-- stored list; it writes them through Usage.SetUsed (modules/Usage.lua), which keeps a detected
+-- entry's times and source, and leaves the edit. *Edit* again, or another run, leaves it unsaved. A
+-- redraw of the same run mid-edit (another run recorded, an item hidden) keeps the ticks not saved
+-- yet, each by its row. While editing, a right-click on an item's row offers *Never show <item>*
+-- (Usage.Hide). A sample run (test mode, the sim) changes in memory only, as its note does. A run
+-- stored before format 3 says *Not recorded*.
+--
+-- WHAT IS NEVER LISTED (Usage.Shown): a hidden item (the History page's Usage tab), and an enchant
+-- entry an older run recorded. Not in the section, the Used column, its tooltip or its sort. A hidden
+-- item the run used stays in its record: a save keeps it (Edits), so showing it again brings it back.
+--
+-- PLAIN DATA ONLY: the stored run.usage record (plain numbers and strings). Item names and icons are
+-- the client's item data, read at call time and pcall'd. Rows are laid out from the constants here,
+-- never from a size read back; Entries, Rows, UsedRows, Ticks, Edits, Changed, Clock, Detail and Line
+-- are pure over the record and the hidden list.
+
+local ResultsUsage = {}
+NS.ResultsUsage = ResultsUsage
+
+local L = NS.L
+local Tbl = NS.ResultsTable
+local C = Tbl.COLORS
+local FONT = NS.Style.FONT
+
+ResultsUsage.ROW_H = 22      -- one row: the checkbox's height and a little air
+ResultsUsage.CHECK = 20      -- the checkbox
+ResultsUsage.ICON = 16       -- an item's icon, between the box and its name
+ResultsUsage.SAVE_W = 64
+ResultsUsage.EDIT_W = 64
+ResultsUsage.BUTTON_GAP = 4  -- between Save and Edit
+ResultsUsage.BUTTON_H = 18
+ResultsUsage.LINE_H = 14
+
+-- The icon of food with no item: Well Fed's own.
+ResultsUsage.FOOD_ICON = "Interface\\Icons\\Spell_Misc_Food"
+ResultsUsage.UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+-- ── pure ────────────────────────────────────────────────────────────────────────────────────────
+
+--- A run's usage record, or nil for a run stored before format 3 (Not recorded).
+function ResultsUsage.Record(run)
+    local u = type(run) == "table" and run.usage
+    if type(u) ~= "table" or type(u.used) ~= "table" then return nil end
+    return u
+end
+
+--- The used entries as the Used column draws them: the gear first, then everything else, each in
+--- its stored order, hidden items and old enchant entries left out. nil when not recorded.
+--- @return table|nil entries
+function ResultsUsage.Entries(run)
+    local u = ResultsUsage.Record(run)
+    if not u then return nil end
+    local hidden, gear, rest = NS.Usage.HiddenSet(), {}, {}
+    for _, e in ipairs(u.used) do
+        if NS.Usage.Shown(e, hidden) then
+            local into = e.kind == "gear" and gear or rest
+            into[#into + 1] = e
+        end
+    end
+    for _, e in ipairs(rest) do gear[#gear + 1] = e end
+    return gear
+end
+
+--- The Used column's sort value: how many entries, nil (last) when not recorded.
+function ResultsUsage.Count(run)
+    local entries = ResultsUsage.Entries(run)
+    return entries and #entries or nil
+end
+
+--- A time on the race clock as m:ss, a pre-pull one (negative) with its minus sign; one that rounds
+--- to the pull itself is 0:00, never -0:00.
+function ResultsUsage.Clock(t)
+    if type(t) ~= "number" then return "?" end
+    if math.floor(t + 0.5) < 0 then return "-" .. NS.Format.Length(-t) end
+    return NS.Format.Length(math.max(0, t))
+end
+
+--- An entry's detail: how many times and when ("x2 at 0:09, 1:12", "at 0:09"), "active at the
+--- start" (a buff on at the arm), or "time unknown" (a bag drop, a manual tick).
+function ResultsUsage.Detail(e)
+    if type(e) ~= "table" then return "" end
+    local n = tonumber(e.n) or 1
+    if type(e.times) == "table" and #e.times > 0 then
+        local parts = {}
+        for i, t in ipairs(e.times) do parts[i] = ResultsUsage.Clock(t) end
+        local at = L["at %s"]:format(table.concat(parts, ", "))
+        return n > 1 and L["x%d %s"]:format(n, at) or at
+    end
+    if e.src == "buff" then return L["active at the start"] end
+    return n > 1 and L["x%d, time unknown"]:format(n) or L["time unknown"]
+end
+
+--- A row's line: the name, then " · " and the detail in the dim color (the name alone with no
+--- detail), and the same line plain (what its width is estimated from: Tbl.BadgeWidth).
+--- @return string line, string plain
+function ResultsUsage.Line(name, detail)
+    name = tostring(name or "")
+    if type(detail) ~= "string" or detail == "" then return name, name end
+    local after = " \194\183 " .. detail
+    return name .. ("|c%s%s|r"):format(Tbl.Hex(C.dim), after), name .. after
+end
+
+-- Whether used entry `e` is the one candidate `c` stands for: by its item (a gear candidate also by
+-- its slot, when the entry has one); a candidate with no item (food the player unticked, kept by
+-- Usage.SetUsed) by its kind.
+local function stands(c, e)
+    if c.itemID ~= nil then
+        return e.itemID == c.itemID and (c.kind ~= "gear" or e.slot == nil or e.slot == c.slot)
+    end
+    return e.itemID == nil and e.kind == c.kind
+end
+
+-- The used entry a candidate stands for: the first not yet matched. Answers it and its index.
+local function matchOf(used, c, matched)
+    for i, e in ipairs(used) do
+        if not matched[i] and type(e) == "table" and stands(c, e) then return e, i end
+    end
+    return nil
+end
+
+local function rowOf(src, e)
+    return { itemID = src.itemID, kind = src.kind, slot = src.slot, entry = e }
+end
+
+-- Every row the record holds: one per candidate (in its stored order), each with the used entry it
+-- stands for when there is one, then one per used entry no candidate stands for. Matched before any
+-- is left out, so a hidden candidate never takes another row's entry.
+local function allRows(u)
+    local rows, matched = {}, {}
+    for _, c in ipairs(type(u.candidates) == "table" and u.candidates or {}) do
+        if type(c) == "table" then
+            local e, i = matchOf(u.used, c, matched)
+            if i then matched[i] = true end
+            rows[#rows + 1] = rowOf(c, e)
+        end
+    end
+    for i, e in ipairs(u.used) do
+        if not matched[i] and type(e) == "table" then rows[#rows + 1] = rowOf(e, e) end
+    end
+    return rows
+end
+
+--- The edit's rows: every candidate and every used entry no candidate stands for (food), each with
+--- the used entry it stands for, hidden items and old enchant entries left out. nil when not recorded.
+--- @return table|nil rows  { { itemID?, kind, slot?, entry? }, ... }
+function ResultsUsage.Rows(run)
+    local u = ResultsUsage.Record(run)
+    if not u then return nil end
+    local hidden, out = NS.Usage.HiddenSet(), {}
+    for _, row in ipairs(allRows(u)) do
+        if NS.Usage.Shown(row, hidden) then out[#out + 1] = row end
+    end
+    return out
+end
+
+--- The section's rows outside the edit: one per used entry, in Entries' order. nil when not recorded.
+function ResultsUsage.UsedRows(run)
+    local entries = ResultsUsage.Entries(run)
+    if not entries then return nil end
+    local out = {}
+    for i, e in ipairs(entries) do out[i] = rowOf(e, e) end
+    return out
+end
+
+--- The ticks Usage.SetUsed takes for `state` ({ [row index] = true } for a ticked row), in row order.
+function ResultsUsage.Ticks(rows, state)
+    local out = {}
+    for i, row in ipairs(rows or {}) do
+        if state[i] then out[#out + 1] = { itemID = row.itemID, kind = row.kind, slot = row.slot } end
+    end
+    return out
+end
+
+--- What a save writes: the ticks, then one for each used entry the edit does not list (a hidden item
+--- the run used), so hiding an item never drops it from the record.
+function ResultsUsage.Edits(run, rows, state)
+    local out, u = ResultsUsage.Ticks(rows, state), ResultsUsage.Record(run)
+    local hidden = NS.Usage.HiddenSet()
+    for _, e in ipairs(u and u.used or {}) do
+        if type(e) == "table" and e.kind ~= "enchant" and not NS.Usage.Shown(e, hidden) then
+            out[#out + 1] = { itemID = e.itemID, kind = e.kind, slot = e.slot }
+        end
+    end
+    return out
+end
+
+--- Whether `state` differs from what the rows hold (a row ticked that was not used, or the reverse).
+function ResultsUsage.Changed(rows, state)
+    for i, row in ipairs(rows or {}) do
+        if (row.entry ~= nil) ~= (state[i] == true) then return true end
+    end
+    return false
+end
+
+-- A row's identity across two drawings of the same run: its item and slot, or its kind.
+local function rowKey(row)
+    return tostring(row.itemID or row.kind) .. ":" .. tostring(row.slot)
+end
+
+--- The ticks for `rows`: what each holds, or, given the rows and ticks of a drawing before
+--- (`oldRows`, `oldState`), each row's tick there by its identity (a row new since, what it holds).
+function ResultsUsage.Carry(rows, oldRows, oldState)
+    local was = {}
+    for i, row in ipairs(oldRows or {}) do was[rowKey(row)] = oldState[i] == true end
+    local state = {}
+    for i, row in ipairs(rows or {}) do
+        local on = was[rowKey(row)]
+        if on == nil then on = row.entry ~= nil end
+        state[i] = on or nil
+    end
+    return state
+end
+
+-- ── the client's item data ──────────────────────────────────────────────────────────────────────
+
+local function ask(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local ok, a = pcall(fn, ...)
+    if ok then return a end
+    return nil
+end
+
+local function itemApi(name)
+    return type(C_Item) == "table" and C_Item[name] or nil
+end
+
+--- An entry's (or a row's) name: its item's, or "Well Fed" for food with no item.
+function ResultsUsage.Name(e)
+    if type(e) ~= "table" then return "?" end
+    if e.itemID then
+        return NS.Secrets.PlainString(ask(itemApi("GetItemNameByID"), e.itemID)) or L["Item %d"]:format(e.itemID)
+    end
+    if e.kind == "food" then return L["Well Fed"] end
+    return "?"
+end
+
+--- An entry's (or a row's) icon.
+function ResultsUsage.Icon(e)
+    if type(e) ~= "table" then return ResultsUsage.UNKNOWN_ICON end
+    if e.itemID then return ask(itemApi("GetItemIconByID"), e.itemID) or ResultsUsage.UNKNOWN_ICON end
+    if e.kind == "food" then return ResultsUsage.FOOD_ICON end
+    return ResultsUsage.UNKNOWN_ICON
+end
+
+--- An entry's icon as an inline texture for a tooltip line, "|T<icon>:14:14|t".
+function ResultsUsage.InlineIcon(e)
+    return "|T" .. tostring(ResultsUsage.Icon(e)) .. ":14:14|t"
+end
+
+--- The Used column's icons for `run`, in Entries' order; nil when not recorded.
+function ResultsUsage.Icons(run)
+    local entries = ResultsUsage.Entries(run)
+    if not entries then return nil end
+    local out = {}
+    for i, e in ipairs(entries) do out[i] = ResultsUsage.Icon(e) end
+    return out
+end
+
+-- ── the section ─────────────────────────────────────────────────────────────────────────────────
+
+local function tip(p, owner, key, extra)
+    local lines = NS.ResultsTips.Usage(key, p.run, extra)
+    if lines then Tbl.BelowTip(owner, lines) end
+end
+
+local function hoverOver(p, region, key)
+    local f = CreateFrame("Frame", nil, p.content)
+    f:SetAllPoints(region)
+    f:EnableMouse(true)
+    f:SetScript("OnEnter", function(self) tip(p, self, type(key) == "function" and key() or key) end)
+    f:SetScript("OnLeave", Tbl.HideTip)
+    return f
+end
+
+-- A row's hover: the client's own item tooltip with the row's lines after it, or the lines alone.
+-- While editing, an item's row adds how to hide it.
+local function rowTip(p, row)
+    local tt, data = GameTooltip, row.data
+    if not (tt and data) then return end
+    local lines = NS.ResultsTips.Usage("row", p.run, data) or {}
+    if p.usage.editing and data.itemID then lines[#lines + 1] = { L["Right-click: never show this item."], 0.62, 0.62, 0.68 } end
+    local shown = false
+    if data.itemID then
+        tt:SetOwner(row, "ANCHOR_RIGHT")
+        shown = tt.SetItemByID and pcall(tt.SetItemByID, tt, data.itemID)
+    end
+    if not shown then return Tbl.BelowTip(row, lines) end
+    tt:AddLine(" ")
+    NS.Style.AddTipLines(tt, lines, 2)
+    tt:Show()
+end
+
+--- An item row's right-click while editing: a menu with *Never show <item>* (Usage.Hide; the window
+--- redraws from SETTINGS_CHANGED, the ticks not saved yet kept).
+--- @return boolean opened
+function ResultsUsage.RowMenu(p, row)
+    local data = row and row.data
+    if not (p.usage.editing and data and data.itemID and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    local itemID, name = data.itemID, ResultsUsage.Name(data)
+    MenuUtil.CreateContextMenu(row, function(_, root)
+        root:CreateButton(L["Never show %s"]:format(name), function() NS.Usage.Hide(itemID) end)
+    end)
+    return true
+end
+
+-- Save's look: shown only while editing, live only while the ticks differ from the stored list.
+local function paintButtons(x)
+    NS.HudStates.SetEnabled(x.save, x.editing and x.rows ~= nil and ResultsUsage.Changed(x.rows, x.state))
+    x.edit.selected = x.editing
+    NS.HudStates.SetEnabled(x.edit, x.recorded)
+end
+
+local function toggle(x, i)
+    x.state[i] = not x.state[i] or nil
+    x.items[i].check:SetChecked(x.state[i] == true)
+    paintButtons(x)
+end
+
+local function newRow(p, x, i)
+    local row = CreateFrame("Frame", nil, p.content)
+    row:SetHeight(ResultsUsage.ROW_H)
+    row:EnableMouse(true)
+    row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+    row.check:SetSize(ResultsUsage.CHECK, ResultsUsage.CHECK)
+    row.check:SetPoint("LEFT", row, "LEFT", 0, 0)
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetSize(ResultsUsage.ICON, ResultsUsage.ICON)
+    row.check.label = Tbl.Text(row, FONT.TEXT, C.text)
+    row.check.label:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
+    row.check:SetScript("OnClick", function() toggle(x, i) end)
+    for _, f in ipairs({ row, row.check }) do
+        f:HookScript("OnEnter", function() rowTip(p, row) end)
+        f:HookScript("OnLeave", Tbl.HideTip)
+        f:HookScript("OnMouseUp", function(_, button)
+            if button == "RightButton" then ResultsUsage.RowMenu(p, row) end
+        end)
+    end
+    return row
+end
+
+--- Build the Usage section's parts into the pane `p` (its content `c`), as `p.usage`.
+function ResultsUsage.Build(p, c)
+    local x = { items = {}, state = {}, editing = false }
+    p.usage = x
+    x.title = Tbl.Text(c, FONT.SECTION)
+    x.title:SetText(L["Usage"])
+    x.save = NS.HudStates.Button(c, L["Save"], function() ResultsUsage.Save(p) end)
+    x.save:SetSize(ResultsUsage.SAVE_W, ResultsUsage.BUTTON_H)
+    x.edit = NS.HudStates.Button(c, L["Edit"], function() ResultsUsage.ToggleEdit(p) end)
+    x.edit:SetSize(ResultsUsage.EDIT_W, ResultsUsage.BUTTON_H)
+    x.none = Tbl.Text(c, FONT.TEXT, C.dim)
+    local titleHover = hoverOver(p, x.title, function() return x.recorded and "title" or "none" end)
+    x.noneHover = hoverOver(p, x.none, function()
+        if not x.recorded then return "none" end
+        return x.editing and "empty" or "unused"
+    end)
+    for key, b in pairs({ save = x.save, edit = x.edit }) do
+        b:HookScript("OnEnter", function(self) tip(p, self, key, x.editing) end)
+        b:HookScript("OnLeave", Tbl.HideTip)
+    end
+    -- The heading folds the section (the detail's collapsible sections).
+    p:AddHeading("usage", x.title, titleHover)
+    return x
+end
+
+-- One row: in the edit its box, ticked or not, then the icon; outside it the icon at the left edge.
+-- The name and its detail are one line (ResultsUsage.Line); in the edit the box's click area reaches
+-- over it, never past the row (layoutRow caps it at the line's width there).
+local function fillRow(row, data, editing, ticked)
+    row.data, row.editing = data, editing
+    row.name = ResultsUsage.Name(data)
+    row.detailText = data.entry and ResultsUsage.Detail(data.entry) or ""
+    local line, plain = ResultsUsage.Line(row.name, row.detailText)
+    row.lineW = Tbl.BadgeWidth(plain, false)
+    row.check:SetShown(editing)
+    row.icon:ClearAllPoints()
+    if editing then
+        row.icon:SetPoint("LEFT", row.check, "RIGHT", 2, 0)
+        Tbl.SetCheckLabel(row.check, line, 2 + ResultsUsage.ICON + 4, row.lineW)
+        row.check:SetChecked(ticked)
+        row.left = ResultsUsage.CHECK + 2 + ResultsUsage.ICON + 4
+    else
+        row.icon:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.check.label:SetText(line)
+        row.left = ResultsUsage.ICON + 4
+    end
+    row.icon:SetTexture(ResultsUsage.Icon(data))
+end
+
+local function noneText(x)
+    if not x.recorded then return L["Not recorded"] end
+    if x.editing then return L["Nothing to list: no on-use item or consumable was found at the arm."] end
+    return L["Nothing used"]
+end
+
+-- Paint the section from `p.run` in the mode `x.editing` says; `carry` keeps the edit's ticks not
+-- saved yet (a redraw of the same run mid-edit), each by its row.
+local function draw(p, carry)
+    local x = p.usage
+    local rows
+    if x.editing then rows = ResultsUsage.Rows(p.run) else rows = ResultsUsage.UsedRows(p.run) end
+    local state = {}
+    if x.editing then state = ResultsUsage.Carry(rows, carry and x.rows or nil, x.state) end
+    x.rows, x.state = rows, state
+    for i, data in ipairs(rows or {}) do
+        x.items[i] = x.items[i] or newRow(p, x, i)
+        fillRow(x.items[i], data, x.editing, state[i] == true)
+    end
+    for i = #(rows or {}) + 1, #x.items do x.items[i]:Hide() end
+    x.none:SetText(noneText(x))
+    paintButtons(x)
+end
+
+--- Read `p.run`'s usage and paint the section, out of the edit. `keep` (the same run drawn again:
+--- another run recorded, a note saved, an item hidden) stays in an edit, with its ticks not saved
+--- yet; the redraw a save causes leaves it.
+function ResultsUsage.Fill(p, keep)
+    local x = p.usage
+    x.recorded = ResultsUsage.Record(p.run) ~= nil
+    local carry = keep and x.editing and not x.saving and x.recorded
+    x.editing, x.saving = carry and true or false, nil
+    draw(p, carry)
+end
+
+local function relayout(p)
+    if p.Layout and p.width then p:Layout(p.width, p.height, p.narrow) end
+end
+
+--- *Edit*: into the edit (every candidate, what was used ticked), or out of it unsaved.
+--- @return boolean toggled
+function ResultsUsage.ToggleEdit(p)
+    local x = p.usage
+    if not (p.run and x.recorded) then return false end
+    x.editing = not x.editing
+    draw(p, false)
+    relayout(p)
+    return true
+end
+
+--- Write the ticks (Usage.SetUsed) and leave the edit; the window redraws from the bus (a stored run)
+--- or the source (a sample run).
+--- @return boolean stored
+function ResultsUsage.Save(p)
+    local x = p.usage
+    if not (p.run and x.editing and x.rows and ResultsUsage.Changed(x.rows, x.state)) then return false end
+    -- The redraw this save causes starts from the new list, out of the edit.
+    x.saving = true
+    local stored = NS.Usage.SetUsed(p.run, ResultsUsage.Edits(p.run, x.rows, x.state))
+    if x.saving then
+        -- No redraw came (the window is hidden): leave the edit here.
+        x.saving = nil
+        if stored then
+            x.editing = false
+            draw(p, false)
+            relayout(p)
+        end
+    end
+    return stored
+end
+
+local function place(region, parent, px, py)
+    region:ClearAllPoints()
+    region:SetPoint("TOPLEFT", parent, "TOPLEFT", px, py)
+end
+
+--- How wide a row's line is across `cw` from its left edge `left`: to the row's right edge, where the
+--- client cuts a longer line with an ellipsis. Pure.
+function ResultsUsage.LineWidth(cw, left)
+    return math.max(20, cw - (left or 0))
+end
+
+-- One row across `cw`: its line from after the icon to the row's right edge; in the edit the box's
+-- click area over the line's estimate, never past that edge.
+local function layoutRow(p, row, y, cw)
+    local lineW = ResultsUsage.LineWidth(cw, row.left)
+    place(row, p.content, 0, y)
+    row:SetWidth(cw)
+    row.check.label:SetWidth(lineW)
+    if row.editing then
+        row.check:SetHitRectInsets(0, -(1 + 2 + ResultsUsage.ICON + 4 + math.min(row.lineW or 0, lineW)), 0, 0)
+    end
+    row:Show()
+end
+
+--- The Usage section at `y` across `cw`, its heading SECTION_GAP under the block above it; answers
+--- the y beneath. *Edit* at the right edge, *Save* (in the edit) left of it.
+function ResultsUsage.Layout(p, y, cw)
+    local x = p.usage
+    y = y - NS.Style.SECTION_GAP
+    place(x.title, p.content, NS.ResultsDetail.INDENT, y)
+    local body = not p:Heading("usage", true)
+    local n = x.rows and #x.rows or 0
+    x.edit:SetShown(body and x.recorded == true)
+    place(x.edit, p.content, cw - ResultsUsage.EDIT_W, y)
+    x.save:SetShown(body and x.recorded == true and x.editing)
+    place(x.save, p.content, cw - ResultsUsage.EDIT_W - ResultsUsage.BUTTON_GAP - ResultsUsage.SAVE_W, y)
+    y = y - math.max(NS.Style.SECTION_H, ResultsUsage.BUTTON_H) - 2
+    x.none:SetShown(body and n == 0)
+    x.noneHover:SetShown(body and n == 0)
+    if not body then
+        -- Folded: the heading line alone (an edit under way stays open, out of sight).
+        for _, row in ipairs(x.items) do row:Hide() end
+        return y
+    end
+    if n == 0 then
+        place(x.none, p.content, 0, y)
+        x.none:SetWidth(cw)
+        return y - ResultsUsage.LINE_H - 8
+    end
+    for i = 1, n do layoutRow(p, x.items[i], y - (i - 1) * ResultsUsage.ROW_H, cw) end
+    return y - n * ResultsUsage.ROW_H - 8
+end

@@ -47,15 +47,32 @@ local BIG = 40           -- the clock and STOP
 local CLOCK_PAIR = 26
 States.CLOCK_PAIR_SIZE = CLOCK_PAIR
 local KPI_HEIGHT = 46
+-- The Stop! and waiting screens' tiles (the owner's call, 2026-10-28): the figure with its unit in one
+-- large string ("+9.4s"), and under it a row in the caption font saying what it counts ("after
+-- buzzer"), inside the tile. The row is KPI_CAPTION_H tall, the 5 px under it the figure's padding
+-- today, so a captioned tile is that much taller and the stack under it moves down by as much.
+local KPI_PAD, KPI_CAPTION_H = 5, 14
+local KPI_CAPTIONED_HEIGHT = KPI_HEIGHT + KPI_CAPTION_H
+States.KPI_HEIGHT, States.KPI_CAPTION_H, States.KPI_CAPTIONED_HEIGHT = KPI_HEIGHT, KPI_CAPTION_H, KPI_CAPTIONED_HEIGHT
+-- The captioned pair's top on the Stop! body (under STOP) and on the waiting body (under its title).
+local STOP_KPI_Y, WAITING_KPI_Y = 56, 40
+States.STOP_KPI_Y, States.WAITING_KPI_Y = STOP_KPI_Y, WAITING_KPI_Y
 -- Every button is LootHistory's 20px; Arm alone is a little taller, the one action of the idle body.
 local BUTTON_HEIGHT = 20
 local LINK_HEIGHT = 20
 -- A row of equal buttons across the foot (the result card's four, the Stop! and waiting screens'
 -- two): each the same width, worked out from the body's width and this gap (Round C, 2026-10-25).
--- At the minimum width's 236 px of content four are 56 px wide, room for "Race Again".
+-- At the minimum width's 236 px of content four are 56 px wide, room for "New Race": 48 px at the
+-- 6 px a character textWidth estimates (the owner's call, 2026-10-28: "Race Again", 60 px, overflowed).
 local ROW_GAP = 4
 States.ROW_GAP = ROW_GAP
 local GAP = 8
+-- What sits under the captioned pair: the Stop! body's chips and its note one chip line (28) under
+-- them, and the waiting body's hint box.
+local STOP_CHIPS_Y = STOP_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
+local STOP_NOTE_Y = STOP_CHIPS_Y + 28
+local WAITING_HINT_Y = WAITING_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
+States.STOP_CHIPS_Y, States.STOP_NOTE_Y, States.WAITING_HINT_Y = STOP_CHIPS_Y, STOP_NOTE_Y, WAITING_HINT_Y
 -- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
 -- warning line (two lines at the minimum width), then Arm and the refusal line under it.
 local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
@@ -137,14 +154,16 @@ local function setHot(b, on)
     paintButton(b)
 end
 
--- A button's tooltip (b.tip = { title, text }), shown under the pointer, disabled or not.
+-- A button's tooltip (b.tip = { title, text, ... }), shown under the pointer, disabled or not. The
+-- text is in the header gold (the client's normal tooltip color, NORMAL_FONT_COLOR); two or more
+-- lines of it go on bullets (Style).
 local function showTip(b)
     local tip = b.tip
     if not (tip and GameTooltip) then return end
     if type(tip) ~= "table" then tip = { tostring(tip) } end
     GameTooltip:SetOwner(b, "ANCHOR_TOP")
     GameTooltip:SetText(tip[1], 1, 1, 1)
-    if tip[2] then GameTooltip:AddLine(tip[2], nil, nil, nil, true) end
+    Style.AddTipLines(GameTooltip, tip, 2, Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
     GameTooltip:Show()
 end
 
@@ -185,30 +204,35 @@ local function setSelected(b, on)
     paintButton(b)
 end
 
---- A figure in a box: a small caption, a large value and its unit (LootHistory's Insights card: a
---- GameFontNormalHuge figure over a GameFontDisableSmall caption).
-local function kpi(parent, label, valueColor)
+--- A figure in a box: a small caption and a large value (LootHistory's Insights card: a
+--- GameFontNormalHuge figure over a GameFontDisableSmall caption). A `captioned` box is
+--- KPI_CAPTIONED_HEIGHT tall, with a row under the value in the caption font (k.caption).
+local function kpi(parent, label, valueColor, captioned)
     local f = panel(parent)
-    f:SetHeight(KPI_HEIGHT)
+    f:SetHeight(captioned and KPI_CAPTIONED_HEIGHT or KPI_HEIGHT)
     local k = { frame = f }
     k.label = Style.Text(f, FONT.CAPTION)
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     k.label:SetText(label)
     k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text)
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    k.unit = Style.Text(f, FONT.CAPTION)
-    k.unit:SetPoint("BOTTOMLEFT", k.value, "BOTTOMRIGHT", 3, 1)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD + (captioned and KPI_CAPTION_H or 0))
+    if captioned then
+        k.caption = Style.Text(f, FONT.CAPTION)
+        k.caption:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD)
+        k.caption:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, KPI_PAD)
+    end
     return k
 end
 
-local function setKpi(k, value, unit)
+local function setKpi(k, value, caption)
     k.value:SetText(value)
-    k.unit:SetText(unit or "")
+    if k.caption then k.caption:SetText(caption or "") end
 end
 
---- Two KPIs side by side at `y`, halves by anchor (no width needed).
-local function kpiPair(parent, y, leftLabel, rightLabel, rightColor)
-    local a, b = kpi(parent, leftLabel), kpi(parent, rightLabel, rightColor)
+--- Two KPIs side by side at `y`, halves by anchor (no width needed); `captioned` gives both the
+--- caption row, so the pair keeps one height.
+local function kpiPair(parent, y, leftLabel, rightLabel, rightColor, captioned)
+    local a, b = kpi(parent, leftLabel, nil, captioned), kpi(parent, rightLabel, rightColor, captioned)
     a.frame:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     a.frame:SetPoint("TOPRIGHT", parent, "TOP", -4, y)
     b.frame:SetPoint("TOPLEFT", parent, "TOP", 4, y)
@@ -578,7 +602,7 @@ local function paceLine(pace)
 end
 
 --- The Damage profile block's height: the space above its heading, the heading, the pace bar's line,
---- the plot and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
+--- the plot (its frame, with the icons' row on top) and its time labels, and the GAP under it; 0 when neither the pace bar nor the plot shows.
 --- @param pace boolean
 --- @param chart boolean
 --- @param plotH number
@@ -587,7 +611,7 @@ function States.ProfileHeight(pace, chart, plotH)
     if not (pace or chart) then return 0 end
     local Chart = NS.HudChart
     local h = HEAD_GAP + SECTION_H + paceLine(pace)
-    if chart then h = h + plotH + Chart.GAP + Chart.AXIS_H end
+    if chart then h = h + Chart.FrameHeight(plotH) + Chart.GAP + Chart.AXIS_H end
     return h + GAP
 end
 local profileH = States.ProfileHeight
@@ -599,7 +623,8 @@ local function placeStack(body, top, pace, chart, plotH)
     local w, f, width = body.w, body.frame, body.width or 236
     local head = pace or chart
     w.chart:SetParts(head, chart)
-    if not chart then w.chart:SetNote("") end
+    -- No plot, no Draw: the note names the pace bar alone (it has no caption of its own).
+    if not chart then w.chart:SetNote(pace and L["vs best pace"] or "") end
     if head then
         local y = top + HEAD_GAP
         w.chart:Place(f, -y, width, plotH, paceLine(pace))
@@ -778,21 +803,24 @@ function Builders.running(parent)
     return body
 end
 
--- The two figures the stop and waiting bodies share: the tail and the time in combat since the buzzer.
+-- The two figures the stop and waiting bodies share, each with its caption row (the owner's call,
+-- 2026-10-28): the tail ("+9.4s", after buzzer) or the time in combat at an early end (into the
+-- race), and the time in combat since the buzzer (since the buzzer), or a dash once combat is over
+-- (combat ended). Plain numbers from GetTime(), never a meter value; the unit joins the figure's string.
 local function setStopFigures(w, v)
     if v.endedEarly then
         w.tail.label:SetText(L["Combat Ended"])
-        setKpi(w.tail, NS.Format.Length(v.endedAt or 0))
+        setKpi(w.tail, NS.Format.Length(v.endedAt or 0), L["into the race"])
     else
         w.tail.label:SetText(L["Damage Stopped"])
-        setKpi(w.tail, NS.Format.Seconds(v.tail), v.unitTail)
+        setKpi(w.tail, NS.Format.Seconds(v.tail) .. L["s"], L["after buzzer"])
     end
     if v.inCombat then
         w.combat.label:SetText(L["In Combat"])
-        setKpi(w.combat, NS.Format.Seconds(v.sinceBuzzer or 0), L["s"])
+        setKpi(w.combat, NS.Format.Seconds(v.sinceBuzzer or 0) .. L["s"], L["since the buzzer"])
     else
         w.combat.label:SetText(L["Out of Combat"])
-        setKpi(w.combat, DASH)
+        setKpi(w.combat, DASH, L["combat ended"])
     end
 end
 
@@ -816,11 +844,11 @@ function Builders.stop(parent)
     w.big = bigText(f, BIG + 8, C.red)
     w.big:SetPoint("TOP", f, "TOP", 0, -2)
     w.big:SetText(L["STOP"])
-    w.tail, w.combat = kpiPair(f, -56, L["Damage Stopped"], L["In Combat"])
-    w.chips = chips(f, -56 - KPI_HEIGHT - GAP)
+    w.tail, w.combat = kpiPair(f, -STOP_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
+    w.chips = chips(f, -STOP_CHIPS_Y)
     w.note = text(f, FONT.TEXT, C.dim)
-    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
-    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
+    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -STOP_NOTE_Y)
+    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -STOP_NOTE_Y)
     stopButtons(body)
     function body.Layout(self, width)
         self.w.chips.width = width
@@ -828,7 +856,6 @@ function Builders.stop(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
-        v.unitTail = L["s after buzzer"]
         setStopFigures(self.w, v)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
@@ -851,23 +878,68 @@ function Builders.stop(parent)
     return body
 end
 
+-- The waiting body's hint box (the owner's call, 2026-10-26: the fixed 64 px left an empty band
+-- under three lines): its text's lines at the box's inner width, HINT_PADY above and below. The
+-- lines are estimated, never measured: a greedy word wrap at HINT_ADVANCE px a character (the
+-- Results detail's estimate for the same font, a little over its real average, so a line too many
+-- rather than one too few), each line FONT.TEXT's HINT_LINE_H.
+local HINT_PADX, HINT_PADY = 8, 6
+local HINT_ADVANCE, HINT_LINE_H = 5.4, 12
+States.HINT_PADY, States.HINT_LINE_H = HINT_PADY, HINT_LINE_H
+
+--- How many lines `s` wraps to in `width` pixels at HINT_ADVANCE a character (plain copy, config math).
+--- @param s string
+--- @param width number
+--- @return number
+function States.HintLines(s, width)
+    local perLine = math.max(1, math.floor(width / HINT_ADVANCE))
+    local lines, len = 1, 0
+    for word in tostring(s):gmatch("%S+") do
+        local n = #word
+        if len == 0 then
+            len = n
+        elseif len + 1 + n <= perLine then
+            len = len + 1 + n
+        else
+            lines, len = lines + 1, n
+        end
+    end
+    return lines
+end
+
+--- The hint box's height for `s` across a body `width` wide: its lines and the padding above and below.
+--- @param s string
+--- @param width number
+--- @return number
+function States.HintHeight(s, width)
+    return States.HintLines(s, width - 2 * HINT_PADX) * HINT_LINE_H + 2 * HINT_PADY
+end
+
 -- WAITING: combat is holding; the hint, Stop Now and Cancel (screen 06; Round C).
 function Builders.waiting(parent)
     local body = newBody(parent, "waiting")
     local f, w = body.frame, body.w
     w.title = Style.Text(f, FONT.TITLE, nil, "CENTER")
     w.title:SetPoint("TOP", f, "TOP", 0, -10)
-    w.tail, w.combat = kpiPair(f, -40, L["Damage Stopped"], L["In Combat"])
+    w.tail, w.combat = kpiPair(f, -WAITING_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
     w.hint = panel(f, { 1, 0.72, 0.29, 0.07 }, { 1, 0.72, 0.29, 0.35 })
-    w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -40 - KPI_HEIGHT - GAP)
-    w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -40 - KPI_HEIGHT - GAP)
-    w.hint:SetHeight(64)
+    w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -WAITING_HINT_Y)
+    w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -WAITING_HINT_Y)
     w.hintText = text(w.hint, FONT.TEXT, { 0.95, 0.85, 0.67 })
-    w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", 8, -7)
-    w.hintText:SetPoint("BOTTOMRIGHT", w.hint, "BOTTOMRIGHT", -8, 7)
+    w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", HINT_PADX, -HINT_PADY)
+    w.hintText:SetPoint("TOPRIGHT", w.hint, "TOPRIGHT", -HINT_PADX, -HINT_PADY)
     w.hintText:SetJustifyV("TOP")
     stopButtons(body)
-    function body.Layout(self, width) layoutRow(self.footer, self.frame, width) end
+    body.width = 236
+    -- The hint box sized to its text at the body's width (States.HintHeight), never read off the label.
+    function body.SizeHint(self)
+        self.w.hint:SetHeight(States.HintHeight(self.hintShown or "", self.width))
+    end
+    function body.Layout(self, width)
+        self.width = width
+        layoutRow(self.footer, self.frame, width)
+        self:SizeHint()
+    end
     function body.Update(self, v)
         local title = L["Waiting for combat to end"]
         if not v.inCombat then
@@ -876,11 +948,14 @@ function Builders.waiting(parent)
             title = L["Reading when combat ends"]
         end
         self.w.title:SetText(title)
-        v.unitTail = L["s"]
         setStopFigures(self.w, v)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         self.w.hint:SetShown(v.hint ~= nil)
         self.w.hintText:SetText(v.hint or "")
+        if v.hint ~= self.hintShown then
+            self.hintShown = v.hint
+            self:SizeHint()
+        end
     end
     return body
 end
@@ -954,15 +1029,15 @@ function Builders.result(parent)
     -- The four acts in one row, the same width each (Round C): Delete asks first (the Results
     -- window's own confirmation, modules/Hud.lua Act.delete).
     local links = footerButtons(body, {
-        { L["Race Again"], function() act("raceAgain") end, "primary" },
+        { L["New Race"], function() act("newRace") end, "primary" },
         { L["Details"], function() act("details") end },
         { L["Share"], function() act("share") end },
         { L["Delete"], function() act("delete") end, "danger",
           tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
-    w.again, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
-    -- The sample card of test mode has no run to race again, open or delete (modules/Hud.lua Act).
-    w.realOnly = { w.again, w.details, w.delete }
+    w.newRace, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
+    -- The sample card of test mode has no run to start a new race from, open or delete (modules/Hud.lua Act).
+    w.realOnly = { w.newRace, w.details, w.delete }
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height

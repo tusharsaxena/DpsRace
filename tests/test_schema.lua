@@ -143,6 +143,32 @@ test("schema: a migration runs once and stamps the stored version", function()
     assertEqual(NSi.db.global.schemaVersion, top)
 end)
 
+test("schema: migration 4 keeps an old profile's expanded view and drops the timeline's place", function()
+    local inst = T.load({ init = false })
+    local NSi = inst.NS
+    local old = { windows = { results = { expanded = { width = 1400, height = 600 } },
+                              timeline = { point = "CENTER", width = 980, height = 560 } } }
+    local kept = { windows = { results = { view = "collapsed" } } }
+    local fresh = { windows = { hud = { width = 300 } } }
+    local bare = {}
+    _G.DpsRaceDB = { global = { schemaVersion = 3, schema = 3 },
+                     profiles = { Old = old, Kept = kept, Fresh = fresh, Bare = bare } }
+    inst.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    NSi:InitDB()
+    NSi:RunMigrations()
+    assertEqual(NSi.db.global.schemaVersion, 4)
+    assertEqual(old.windows.results.view, "expanded", "the old default's stripped view is written")
+    assertEqual(old.windows.results.expanded.width, 1400, "its size kept")
+    assertEqual(old.windows.timeline, nil, "the timeline's unread place dropped")
+    assertEqual(kept.windows.results.view, "collapsed", "a stored view kept")
+    assertEqual(fresh.windows.results, nil, "a profile that never stored the Results window keeps the default")
+    assertEqual(next(bare), nil, "an empty profile untouched")
+    -- Idempotent: a second pass changes nothing.
+    old.windows.results.view = "collapsed"
+    NSi:RunMigrations()
+    assertEqual(old.windows.results.view, "collapsed", "the step ran twice")
+end)
+
 test("panel: the category registers eagerly and every page body renders on first show", function()
     local inst = T.load()
     local M = inst.mocks
@@ -163,4 +189,30 @@ test("panel: the landing page is the library's, with the logo and one row per ve
     assertEqual(NSs.LANDING.logo, "Interface\\AddOns\\DpsRace\\media\\logos\\dpsrace.logo.tga")
     assertEqual(#NSs.LANDING.sections[1].rows(), #NSs.COMMANDS)
     assertTrue(NSs.LANDING.notes():find("training dummies", 1, true) ~= nil)
+end)
+
+test("schema: a new profile and Reset all settings open each window at its minimum width", function()
+    local inst = T.load()
+    local NSi = inst.NS
+    local W = NSi.defaults.profile.windows
+    -- defaults/Profile.lua loads before the modules, so it keeps numbers; these pin them together.
+    assertEqual(W.hud.width, NSi.Hud.MIN_WIDTH, "the HUD")
+    assertEqual(W.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth, "Results, expanded")
+    assertEqual(W.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth, "Results, collapsed")
+    assertEqual(W.hud.height, 573, "the HUD's 560 plus the chart's icon row (UT-P11)")
+    assertEqual(W.results.expanded.height, 560)
+    assertEqual(W.results.collapsed.height, 560)
+    assertEqual(type(W.results.collapsedSections), "table", "the detail's folded sections (UT-P10)")
+    assertEqual(next(W.results.collapsedSections), nil, "a new profile folds no section")
+    -- Wider windows, then /dr resetall's reset: back to the minimum widths.
+    local p = NSi.db.profile
+    p.windows.hud.width = 400
+    p.windows.results.expanded.width, p.windows.results.collapsed.width = 1500, 1100
+    p.windows.results.collapsedSections.timing = true
+    NSi.Helpers.RestoreAllDefaults()
+    p = NSi.db.profile
+    assertEqual(p.windows.hud.width, NSi.Hud.MIN_WIDTH)
+    assertEqual(p.windows.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth)
+    assertEqual(p.windows.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth)
+    assertEqual(next(p.windows.results.collapsedSections), nil, "every section open again")
 end)

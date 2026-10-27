@@ -10,6 +10,8 @@ local GOLEM_GUID = "Creature-0-3770-2552-1234-243205-0000ABCDEF"
 
 local function fresh(mutate)
     local inst = T.load{ mutate = mutate }
+    -- Stored fixtures carry 1970-era dates; never prune by age here (the prune cases set it).
+    inst.NS.db.global.history.keepDays = 0
     return inst.NS, inst.mocks, inst
 end
 
@@ -146,7 +148,7 @@ test("recorder: NewRun copies grace and restartGap from the profile", function()
     NS.db.profile.race.restartGap = 9
     local r = NS.Recorder.NewRun(180)
     assertEqual(r.status, "armed")
-    assertEqual(r.schema, 2, "run format 2 (#6)")
+    assertEqual(r.schema, 3, "run format 3 (#13, #14)")
     assertEqual(r.race.length, 180)
     assertEqual(r.race.grace, 2.5)
     assertEqual(r.race.restartGap, 9)

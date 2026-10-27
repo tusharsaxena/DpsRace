@@ -55,6 +55,13 @@ files["modules/Recorder.lua"] = {
 
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
+-- The cast list (#14): each spell's base cooldown, the first time it is cast.
+files["modules/Casts.lua"] = { read_globals = { "GetSpellBaseCooldown" } }
+-- What was used (#13): the on-use slots, the bags, the item data and the helpful auras, read at the
+-- arm (out of combat) and the bag counts again at the result.
+files["modules/Usage.lua"] = {
+    read_globals = { "GetInventoryItemID", "C_Item", "C_Container", "C_UnitAuras" },
+}
 
 -- The compat family (compat): the version-variant client calls, and the only file that may name them.
 files["core/Compat.lua"] = {
@@ -98,6 +105,8 @@ files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
+-- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
+files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }
 -- The detail's loadout (#6): the item data, the item tooltip and its modified click, the Dressing
 -- Room, the client's loadout serialization version, and View's SetItemRef (it opens the tree).
 files["modules/Results_Loadout.lua"] = {
@@ -105,6 +114,16 @@ files["modules/Results_Loadout.lua"] = {
         "GameTooltip", "C_Item", "C_Traits", "DressUpItemLink", "HandleModifiedItemClick",
         "IsShiftKeyDown", "ChatEdit_InsertLink", "SetItemRef",
     },
+}
+
+-- What a run used (#13): the item names and icons, the client's item tooltip, and an item row's
+-- right-click menu in the edit (Never show, P9).
+files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item", "MenuUtil" } }
+
+-- The ability timeline (#14): Shift+mouse wheel pans its zoomed time axis (P12); Ctrl+mouse wheel zooms
+-- about the cursor and the `?` control draws its own tooltip (P16).
+files["modules/Results_Timeline.lua"] = {
+    read_globals = { "IsShiftKeyDown", "IsControlKeyDown", "GetCursorPosition", "GameTooltip" },
 }
 
 -- The sample history (B5) dates its runs back from now.

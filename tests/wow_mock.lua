@@ -231,6 +231,57 @@ local function build()
         GetItemQualityColor = function(q) return 0.1 * (q or 0), 0.5, 1 end,
     }
 
+    -- What was used (#13, modules/Usage.lua) and the cast list's base cooldowns (#14, modules/Casts.lua):
+    -- the on-use slots (the item ID out of M.__gear's link), the item data, the bags, the helpful
+    -- auras and the weapon enchants. Empty by default; a case fills them before the arm:
+    --   M.__itemSpells     [itemID] = its use spell ID
+    --   M.__itemInfo       [itemID] = { classID, subclassID }
+    --   M.__bags           [bag] = { size = n, [slot] = { itemID, stackCount } }
+    --   M.__auras          { { spellId, name }, ... }, the player's helpful auras in order
+    --   M.__weaponEnchant  { main = enchantID?, off = enchantID? } or nil
+    --   M.__baseCooldowns  [spellID] = ms
+    M.__itemSpells, M.__itemInfo, M.__bags, M.__auras, M.__baseCooldowns = {}, {}, {}, {}, {}
+    M.__weaponEnchant = nil
+    M.GetInventoryItemID = function(unit, slot)
+        local link = M.GetInventoryItemLink(unit, slot)
+        return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+    end
+    M.C_Item.GetItemSpell = function(itemID)
+        local id = M.__itemSpells[itemID]
+        if id then return "Spell " .. id, id end
+        return nil
+    end
+    M.C_Item.GetItemInfoInstant = function(itemID)
+        local i = M.__itemInfo[itemID]
+        if not i then return nil end
+        return itemID, "Consumable", "Consumable", "", 134400, i[1], i[2]
+    end
+    M.C_Container = {
+        GetContainerNumSlots = function(bag)
+            local b = M.__bags[bag]
+            return b and b.size or 0
+        end,
+        GetContainerItemInfo = function(bag, slot)
+            local b = M.__bags[bag]
+            local s = b and b[slot]
+            if not s then return nil end
+            return { itemID = s[1], stackCount = s[2] }
+        end,
+    }
+    M.C_UnitAuras = {
+        GetAuraDataByIndex = function(unit, i, filter)
+            if unit ~= "player" or filter ~= "HELPFUL" then return nil end
+            local a = M.__auras[i]
+            return a and { spellId = a[1], name = a[2] } or nil
+        end,
+    }
+    M.GetWeaponEnchantInfo = function()
+        local w = M.__weaponEnchant
+        if not w then return false end
+        return w.main ~= nil, 3600000, 0, w.main, w.off ~= nil, 3600000, 0, w.off
+    end
+    M.GetSpellBaseCooldown = function(id) return M.__baseCooldowns[id], 1500 end
+
     -- The class and spec reference data the Results window draws a run with (modules/Results_Table.lua):
     -- a few classes' icon coordinates, colors and names, and the spec lookup by ID. Plain client tables.
     M.CLASS_ICON_TCOORDS = {

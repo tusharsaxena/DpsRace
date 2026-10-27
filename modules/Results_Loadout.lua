@@ -1,19 +1,20 @@
 local _, NS = ...
 -- modules/Results_Loadout.lua — the run detail's loadout (#6): what the run was raced with, read from
--- the loadout store (modules/Loadouts.lua). A *Gear* section draws the equipped items in two columns
--- in the character frame's order, each with its quality border and item level; hovering one shows the
--- client's own item tooltip from the stored link, Shift-click links it in chat, and *Dressing Room*
--- tries the whole set on. A *Talents* line names the loadout and its hero tree, with *View* (the
--- `talentbuild` link posted to the player's own chat window, where a click opens Blizzard's talent tree,
--- read-only) and *Copy* (the import string in the copy window). A run stored before #6 says *Not
--- recorded*.
+-- the loadout store (modules/Loadouts.lua). A *Gear* section (its heading followed by the run's item
+-- level in the caption gray) draws the equipped items in two columns in the character frame's order,
+-- each with its quality border and item level; hovering one shows the client's own item tooltip from
+-- the stored link, Shift-click links it in chat, and *Dressing Room* tries the whole set on. A
+-- *Talents* line names the loadout and its hero tree, with *View* (the `talentbuild` link posted to
+-- the player's own chat window, where a click opens Blizzard's talent tree, read-only) and *Copy* (the
+-- import string in the copy window). A run stored before #6 says *Not recorded*.
 --
 -- UNDER THE COMPARE (#7, the pane's CompareTarget): the gear slots whose link differs from the other
 -- run's are highlighted, and a *Different loadout* line shows when the two import strings differ. No
 -- talent is compared node by node (the owner's call, 2026-10-25).
 --
 -- PLAIN DATA ONLY: links, names and strings stored out of combat. The grid is laid out from the
--- constants here, never from a size read back; ChangedSlots, Grid, LinkData and CanView are pure.
+-- constants here, never from a size read back; ChangedSlots, Grid, LinkData, CanView and IlvlText are
+-- pure.
 
 local Loadout = {}
 NS.ResultsLoadout = Loadout
@@ -41,6 +42,14 @@ local EMPTY_BG = { 0.07, 0.07, 0.1, 1 }
 local SEP = " \194\183 "
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
+
+--- The Gear heading's subtext: the run's equipped item level to one decimal, or "" without one.
+function Loadout.IlvlText(run)
+    local char = type(run) == "table" and run.char or nil
+    local ilvl = type(char) == "table" and char.ilvl or nil
+    if type(ilvl) ~= "number" then return "" end
+    return L["ilvl %s"]:format(Tbl.Ilvl(ilvl))
+end
 
 --- The cells the grid draws for `gear`: { slot, col, row } in the character frame's order.
 --- @return table cells, number rows
@@ -241,7 +250,7 @@ local function itemTip(p, cell)
     local note = cell.changed and NS.ResultsTips.Loadout("changed", p.run, p:CompareTarget(), cell.slot)
     if note then
         tt:AddLine(" ")
-        for _, l in ipairs(note) do tt:AddLine(type(l) == "table" and l[1] or l, 1, 0.72, 0.29, true) end
+        NS.Style.AddTipLines(tt, note, 1, 1, 0.72, 0.29)
     end
     tt:Show()
 end
@@ -290,6 +299,10 @@ function Loadout.Build(p, c)
     local Button = NS.HudStates.Button
     x.title = Tbl.Text(c, FONT.SECTION)
     x.title:SetText(L["Gear"])
+    -- The run's item level as caption subtext right after the heading, on its line: anchored to the
+    -- heading's right edge, so nothing is measured.
+    x.ilvl = Tbl.Text(c, FONT.CAPTION, C.text)
+    x.ilvl:SetPoint("BOTTOMLEFT", x.title, "BOTTOMRIGHT", 6, 0)
     x.dress = Button(c, L["Dressing Room"], function() Loadout.DressUp(x.gear) end)
     x.dress:SetSize(Loadout.DRESS_W, Loadout.BUTTON_H)
     x.none = Tbl.Text(c, FONT.TEXT, C.dim)
@@ -303,14 +316,17 @@ function Loadout.Build(p, c)
     for _, b in ipairs({ x.view, x.copy }) do b:SetSize(Loadout.TALENT_W, Loadout.BUTTON_H) end
     x.differs = Tbl.Text(c, FONT.TEXT, C.amber)
     x.differs:SetText(L["Different loadout"])
-    hoverOver(p, x.title, function() return x.gear and "gear" or "none" end)
-    hoverOver(p, x.none, "none")
+    local titleHover = hoverOver(p, x.title, function() return x.gear and "gear" or "none" end)
+    x.noneHover = hoverOver(p, x.none, "none")
     hover(p, x.dress, "dressUp")
-    hoverOver(p, x.talentsTitle, function() return x.talentsData and "talents" or "none" end)
-    hoverOver(p, x.talents, function() return x.talentsData and "talents" or "none" end)
+    local talentsTitleHover = hoverOver(p, x.talentsTitle, function() return x.talentsData and "talents" or "none" end)
+    x.talentsHover = hoverOver(p, x.talents, function() return x.talentsData and "talents" or "none" end)
     hover(p, x.view, function() return (Loadout.CanView(x.talentsData)) and "view" or "viewOff" end)
     hover(p, x.copy, "copy")
     x.differsHover = hoverOver(p, x.differs, "differs")
+    -- Each heading folds its section (the detail's collapsible sections).
+    p:AddHeading("gear", x.title, titleHover)
+    p:AddHeading("talents", x.talentsTitle, talentsTitleHover)
     return x
 end
 
@@ -348,6 +364,7 @@ function Loadout.Fill(p)
     local x = p.lo
     local gear, talents = NS.ResultsSource.LoadoutOf(p.run)
     x.gear, x.talentsData = gear, talents
+    x.ilvl:SetText(Loadout.IlvlText(p.run))
     local other = p:CompareTarget()
     local otherGear, otherTalents = NS.ResultsSource.LoadoutOf(other)
     local changed = other and Loadout.ChangedSlots(gear, otherGear) or {}
@@ -386,18 +403,22 @@ local function layoutGrid(p, x, y, cw)
     return y - x.rows * Loadout.PITCH
 end
 
+-- The Talents heading, then (unless folded) its line with View and Copy and the Different loadout note.
 local function layoutTalents(p, x, y, cw)
     local tw = Loadout.TALENT_W
     y = y - NS.Style.SECTION_GAP
-    place(x.talentsTitle, p.content, 0, y)
+    place(x.talentsTitle, p.content, NS.ResultsDetail.INDENT, y)
     y = y - NS.Style.SECTION_H
+    local body = not p:Heading("talents", true)
+    for _, part in ipairs({ x.talents, x.talentsHover, x.view, x.copy }) do part:SetShown(body) end
+    x.differs:SetShown(body and x.different)
+    x.differsHover:SetShown(body and x.different)
+    if not body then return y end
     place(x.talents, p.content, 0, y - 2)
     x.talents:SetWidth(math.max(40, cw - 2 * tw - 12))
     place(x.view, p.content, cw - 2 * tw - 4, y)
     place(x.copy, p.content, cw - tw, y)
     y = y - Loadout.BUTTON_H - 4
-    x.differs:SetShown(x.different)
-    x.differsHover:SetShown(x.different)
     if x.different then
         place(x.differs, p.content, 0, y)
         x.differs:SetWidth(cw)
@@ -411,14 +432,18 @@ end
 function Loadout.Layout(p, y, cw)
     local x = p.lo
     y = y - NS.Style.SECTION_GAP
-    place(x.title, p.content, 0, y)
+    place(x.title, p.content, NS.ResultsDetail.INDENT, y)
+    local body = not p:Heading("gear", true)
     local has = x.gear ~= nil
-    x.dress:SetShown(has)
+    x.dress:SetShown(has and body)
     if has then place(x.dress, p.content, cw - Loadout.DRESS_W, y) end
     y = y - math.max(NS.Style.SECTION_H, Loadout.BUTTON_H) - 2
-    x.none:SetShown(not has)
-    x.grid:SetShown(has)
-    if has then
+    x.none:SetShown(body and not has)
+    x.noneHover:SetShown(body and not has)
+    x.grid:SetShown(body and has)
+    if not body then
+        return layoutTalents(p, x, y, cw) - 8
+    elseif has then
         y = layoutGrid(p, x, y, cw)
     else
         place(x.none, p.content, 0, y)

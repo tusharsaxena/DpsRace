@@ -103,7 +103,7 @@ end
 
 -- ── the run list ────────────────────────────────────────────────────────────────────────────────
 
-test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note", function()
+test("results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note", function()
     local i = inst()
     local run = mkRun("a", { flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false } })
     seed(i, { run })
@@ -111,7 +111,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     local pane = runsPane(i)
     local labels = {}
     for n, head in ipairs(pane.list.heads) do labels[n] = (head.label.__text or ""):gsub("%s*|T.-|t", "") end
-    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Delta|Status|Note", "no flag column: the Status cell carries the flags")
+    assertEqual(table.concat(labels, "|"), "Date|Class|Character|iLvl|Target|Time|Damage|DPS|Delta|Status|Used|Note", "no flag column: the Status cell carries the flags")
     local row = assert(visible(pane)[1], "no row drawn")
     local c = row.cells
     assertEqual(c.date.fs.__text, os.date("%d %b %H:%M", run.date))
@@ -206,8 +206,8 @@ test("results: every section heading has SECTION_GAP of clear space above it, th
     assertEqual(GAP, i.NS.Style.SECTION_GAP)
     assertTrue(GAP >= 14 and GAP <= 18, "a gap the eye reads as a break")
     local function y(region) return region.__points[1][5] end
-    -- Spell breakdown: the delta line's height and its 4px under the delta, then the gap.
-    assertEqual(y(w.spellsTitle), y(w.delta) - 14 - 4 - GAP, "Spell breakdown under the header")
+    -- Spell breakdown: the Delta box's height and its 4px under the box, then the gap.
+    assertEqual(y(w.spellsTitle), y(w.deltaBox.frame) - D.KPI_H - 4 - GAP, "Spell breakdown under the header")
     -- Timing (no chart this session): under the spell list's rows and their 8px, then the gap.
     local n, pitch = w.list:Count(), i.NS.HudBreakdown.Pitch()
     assertEqual(y(w.timingLabel), y(w.list.parent) - n * pitch - 8 - GAP, "Timing under the spell rows")
@@ -664,9 +664,13 @@ test("results: Delta is each run's distance from the max DPS among the runs the 
     end
     local c = cells()
     assertEqual(c.top.__text, "0.0%")
-    assertEqual(c.top.__color[1], i.NS.ResultsTable.COLORS.gold[1], "the max run in gold")
+    -- The max run's 0.0% in the column's green, the pair of its red below the max (UT-P14).
+    local C = i.NS.ResultsTable.COLORS
+    for k = 1, 3 do
+        assertEqual(c.top.__color[k], C.green[k], "the max run in green")
+        assertEqual(c.slow.__color[k], C.red[k], "below the max in red")
+    end
     assertEqual(c.slow.__text, "-20.0%")
-    assertEqual(c.slow.__color[1], 1.0, "below the max in red")
     assertEqual(c.short.__text, "-50.0%")
     assertEqual(c.inc.__text, "+20.0%")
     assertEqual(c.inc.__color[1], i.NS.ResultsTable.COLORS.dim[1], "an incomplete run muted")
@@ -928,16 +932,23 @@ test("results: detail flags name late-cast spells and the session matched by lis
     local keys = {}
     for n, line in ipairs(d.flagLines) do keys[n] = line.key end
     assertEqual(table.concat(keys, ","), "lateCasts,sessionFromList")
-    assertEqual(d.w.flagTitle.__text, "Flags \194\183 2")
-    local body = d.w.flagBody.__text
+    assertEqual(d.w.flagTitle.__text, "Flags")
+    local rows = d.w.flagRows
+    assertEqual(rows[1].main.__text, "1 late cast")
+    assertEqual(rows[1].sub.__text, "+1.4s Incinerate")
+    local body = rows[1].body.__text
     assertTrue(body:find("Incinerate started +1.4s after the buzzer (grace 1.0s).", 1, true) ~= nil, body)
-    assertTrue(body:find("Session matched by list", 1, true) ~= nil, body)
     assertTrue(body:find("The run still counts", 1, true) ~= nil, body)
+    assertEqual(rows[2].main.__text, "Session matched by list")
+    assertFalse(rows[2].sub:IsShown(), "a flag with no detail line")
+    assertTrue(rows[2].body.__text:find("found by its place in Blizzard's list", 1, true) ~= nil, rows[2].body.__text)
 
     seed(i, { mkRun("b", { status = "incomplete", result = { damage = 1, dps = 1, endedAt = 60 } }) })
     i.R.ShowRun("b")
-    assertTrue(d.w.flagTitle.__text:find("Incomplete", 1, true) ~= nil, d.w.flagTitle.__text)
-    assertTrue(d.w.flagBody.__text:find("does not count toward bests", 1, true) ~= nil)
+    assertEqual(rows[1].main.__text, "Incomplete: combat ended before the buzzer")
+    assertEqual(rows[1].body.__text, "It does not count toward bests.")
+    assertFalse(rows[2].main:IsShown(), "the second row left from the run before is hidden")
+    assertFalse(rows[2].body:IsShown())
     assertEqual(d.w.dps.label.__text, "DPS \194\183 Incomplete")
 end)
 
@@ -1044,8 +1055,8 @@ test("results: every detail element has a tooltip; spells show the client's spel
     assertEqual(tip.spell, 29722, "the row did not show its spell's tooltip")
     assertEqual(tip.anchor, "ANCHOR_NONE")
     assertEqual(tip.placed[1], "TOPLEFT", "the spell tooltip sits beside the window")
-    assertTrue(tip.lines[2] == "7,330,000 damage", "the exact damage follows the spell")
-    assertEqual(tip.lines[4], "#1 of 2 spells")
+    assertTrue(tip.lines[2] == "\226\128\162 7,330,000 damage", "the exact damage follows the spell, on a bullet")
+    assertEqual(tip.lines[4], "\226\128\162 #1 of 2 spells")
     -- Anything else: under itself.
     d.w.dps.frame:__fire("OnEnter")
     assertEqual(tip.anchor, "ANCHOR_BOTTOM")
@@ -1103,7 +1114,7 @@ test("results: saving a note never prunes the store", function()
     local runs = {}
     for n = 1, 4 do runs[n] = mkRun("r" .. n, { date = NOW - n * DAY, result = { damage = 1000 * n, dps = 10 * n } }) end
     seed(i, runs)
-    i.NS.db.global.history.keep = 1         -- lowered with four stored: nothing goes until the next race
+    i.NS.db.global.history.keepDays = 1     -- lowered with older runs stored: nothing goes until the next race
     assertEqual(i.R.SetNote("r4", "old pull"), "old pull")
     local left = 0
     for _ in pairs(i.NS.db.global.runs) do left = left + 1 end
@@ -1264,26 +1275,34 @@ test("results: the window is skinned, closable with Escape, resizable and clampe
     assertTrue(found, "not in UISpecialFrames")
     assertTrue(u.frame.resizeGrip ~= nil, "no sizing grip")
     local minW, minH = u.frame:GetResizeBounds()
-    assertEqual(i.R.View(), "expanded", "a new profile opens expanded")
-    assertEqual(minW, 1198)
-    assertEqual(minH, 420)
-    assertEqual(u.width, 1340)
-    assertEqual(u.height, 560)
-    -- The toggle: collapsed has its own size and minimum; expanding brings the first back.
-    assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
-    u.viewToggle:__fire("OnClick")
-    assertEqual(i.R.View(), "collapsed")
+    -- A new profile opens collapsed (UT-P14), at that view's minimum width.
+    assertEqual(i.NS.defaults.profile.windows.results.view, "collapsed")
+    assertEqual(i.R.View(), "collapsed", "a new profile opens collapsed")
     assertEqual(i.R.Mode(), "narrow")
-    assertEqual((u.frame:GetResizeBounds()), 834)
-    assertEqual(u.width, 980)
-    assertEqual(u.viewToggle.iconName, "chevron-right")
+    assertEqual(minW, 904)
+    assertEqual(minH, 420)
+    assertEqual(u.width, 904, "a new profile opens at the minimum width")
+    assertEqual(u.height, 560)
+    assertEqual(u.viewToggle.iconName, "chevron-right", "collapsed: the toggle unfolds the detail")
     assertEqual(runsPane(i).barH, 2 * 32 - 6, "collapsed: the filter bar is two rows")
+    -- The toggle: expanded has its own size and minimum; collapsing brings the first back.
     u.viewToggle:__fire("OnClick")
     assertEqual(i.R.View(), "expanded")
-    assertEqual(u.width, 1340)
+    assertEqual(i.R.Mode(), "wide")
+    assertEqual((u.frame:GetResizeBounds()), 1344)
+    assertEqual(u.width, 1344, "expanded opens at its minimum width")
+    assertEqual(u.viewToggle.iconName, "chevron-left", "expanded: the toggle folds the detail away")
+    assertEqual(runsPane(i).barH, 32, "expanded: the filter bar is one row")
+    u.viewToggle:__fire("OnClick")
+    assertEqual(i.R.View(), "collapsed")
+    assertEqual(u.width, 904)
+    -- A stored view that is neither reads as the default, collapsed.
+    i.NS.db.profile.windows.results.view = "sideways"
+    assertEqual(i.R.View(), "collapsed")
+    i.NS.db.profile.windows.results.view = "collapsed"
     assertTrue(u.frame.innerBorder ~= nil, "the Ka0s window edge was not applied")
     assertEqual(u.frame.title.__text, "DPS Race \226\128\148 Results")
-    assertEqual(u.footRight.__text, "Runs to keep: 0 (never prune)")
+    assertEqual(u.footRight.__text, "Days to keep: 90", "the default, 90 days")
     u.close:__fire("OnClick")
     assertFalse(i.R.IsShown())
     assertFalse(u.frame:IsShown())
@@ -1291,6 +1310,7 @@ end)
 
 test("results: position, size and Master scale persist; Reset position restores them", function()
     local i = inst()
+    i.NS.db.profile.windows.results.view = "expanded"
     i.R.Show()
     local u = ui(i)
     rawset(u.frame, "GetPoint", function() return "TOPLEFT", nil, "BOTTOMLEFT", 40.4, 600.6 end)
@@ -1303,7 +1323,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     u.frame:__fire("OnSizeChanged", 1400, 600)
     assertEqual(u.width, 1400)
     u.frame:__fire("OnSizeChanged", 900, 600)
-    assertEqual(u.width, 1198, "expanded never goes under its minimum")
+    assertEqual(u.width, 1344, "expanded never goes under its minimum")
     assertEqual(i.R.View(), "expanded", "a narrower window does not collapse the view")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)
@@ -1314,7 +1334,7 @@ test("results: position, size and Master scale persist; Reset position restores 
     assertEqual(w.point, nil)
     assertEqual(w.expanded, nil)
     assertEqual(w.collapsed, nil)
-    assertEqual(u.width, 1340)
+    assertEqual(u.width, 1344)
 end)
 
 test("results: collapsed, the detail replaces the list, with a back control", function()
@@ -1337,6 +1357,7 @@ test("results: collapsed, the detail replaces the list, with a back control", fu
 
     local j = inst()
     seed(j, { mkRun("a") })
+    j.NS.db.profile.windows.results.view = "expanded"
     j.R.Show()
     assertEqual(j.R.Mode(), "wide")
     visible(runsPane(j))[1]:__fire("OnClick")
@@ -1408,7 +1429,7 @@ test("results: the diagnostics state section names the tab, the layout and the s
     end
     local found = false
     for _, l in ipairs(lines) do
-        if l == "results tab=runs mode=wide rows=1 selected=a" then found = true end
+        if l == "results tab=runs mode=narrow rows=1 selected=a" then found = true end
     end
     assertTrue(found, "no results line; got: " .. table.concat(lines, " | "))
 end)

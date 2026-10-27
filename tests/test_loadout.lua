@@ -14,6 +14,8 @@ local F = dofile(T.root .. "/tests/race_clock.lua")(T)
 
 local function fresh(mutate)
     local inst = T.load{ mutate = mutate }
+    -- Stored fixtures carry 1970-era dates; never prune by age here (the prune cases set it).
+    inst.NS.db.global.history.keepDays = 0
     return inst.NS, inst.mocks, inst
 end
 
@@ -160,19 +162,20 @@ test("loadout: Delete, DeleteAll and Prune drop the loadouts no run refers to", 
     local shared = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
     M.__gear[1] = nil
     local own = NS.Loadouts.Store(NS.Recorder.SnapshotLoadout())
-    storedRun(NS, "a", shared, { date = 1 })
-    storedRun(NS, "b", shared, { date = 2 })
-    storedRun(NS, "c", own, { date = 3 })
+    local now, DAY = 100 * 86400, 86400
+    storedRun(NS, "a", shared, { date = now - 10 * DAY })
+    storedRun(NS, "b", shared, { date = now - 2 * DAY })
+    storedRun(NS, "c", own, { date = now - DAY })
     assertEqual(NS.Loadouts.Counts(), 2)
     assertTrue(NS.Recorder.Delete("c"))
     assertEqual(NS.Loadouts.Counts(), 1, "the deleted run's own gear was kept")
     assertTrue(stored(NS).gear[shared.gear] ~= nil, "a set another run uses was dropped")
-    -- Prune: the oldest goes, the set the newer run shares stays.
+    -- Prune: the run older than the days goes, the set the newer run shares stays.
     NS.Bests.HoldingIDs = function() return {} end
-    assertEqual(NS.Recorder.Prune(1), 1)
+    assertEqual(NS.Recorder.Prune(5, nil, now), 1)
     assertEqual(NS.Loadouts.Counts(), 1)
-    storedRun(NS, "d", NS.Loadouts.Store({ gear = { [2] = "d" } }), { date = 4 })
-    assertEqual(NS.Recorder.Prune(1), 1)
+    storedRun(NS, "d", NS.Loadouts.Store({ gear = { [2] = "d" } }), { date = now })
+    assertEqual(NS.Recorder.Prune(1, nil, now), 1)
     assertNil(stored(NS).gear[shared.gear], "the pruned run's set outlived it")
     assertEqual(NS.Loadouts.Counts(), 1)
     NS.Recorder.DeleteAll()
@@ -200,8 +203,8 @@ test("loadout: the format 2 migration leaves old runs as they were, without a lo
     NS:InitDB()
     NS:RunMigrations()
     local g = NS.db.global
-    assertEqual(g.schemaVersion, 2)
-    assertEqual(g.schema, 2, "the format stamp answers 2")
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
+    assertEqual(g.schema, NS.Recorder.RUN_SCHEMA, "the format stamp answers the current format")
     local run = g.runs.old
     assertEqual(run.schema, 1, "an old run was rewritten")
     assertNil(run.loadout)
@@ -209,7 +212,7 @@ test("loadout: the format 2 migration leaves old runs as they were, without a lo
     assertNil(NS.Loadouts.Of(run))
     assertEqual(NS.Recorder.All()[1].id, "old", "a format-1 run is still listed")
     NS:RunMigrations()
-    assertEqual(g.schemaVersion, 2, "the step ran twice")
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION, "the step ran twice")
 end)
 
 -- ── the race ────────────────────────────────────────────────────────────────────────────────────
@@ -391,6 +394,25 @@ test("loadout: an item's hover is the client's own tooltip; a modified click goe
     assertEqual(M.__modClicks[1], M.__gear[1], "Shift-click never reached the client's handler")
 end)
 
+test("loadout: the Gear heading carries the run's item level as caption subtext on its line", function()
+    local i, NS = ui()
+    uiRun(NS, "r", 100, NS.Loadouts.Store(NS.Recorder.SnapshotLoadout()))
+    NS.db.global.runs.r.char.ilvl = 326.84
+    NS.Results.ShowRun("r")
+    local lo = pane(i).lo
+    assertEqual(lo.ilvl.__text, "ilvl 326.8", "one decimal, as the Runs list shows it")
+    assertEqual(lo.ilvl.__color[1], NS.ResultsTable.COLORS.text[1], "the light gray")
+    local pt = lo.ilvl.__points[1]
+    assertEqual(pt[1], "BOTTOMLEFT")
+    assertEqual(pt[2], lo.title, "right after the Gear heading, on its line")
+    assertEqual(pt[3], "BOTTOMRIGHT")
+    NS.db.global.runs.r.char.ilvl = nil
+    NS.Results.ShowRun("r")
+    assertEqual(lo.ilvl.__text, "", "nothing for a run with no item level")
+    assertEqual(NS.ResultsLoadout.IlvlText(nil), "")
+    assertEqual(NS.ResultsLoadout.IlvlText({ char = { ilvl = 639 } }), "ilvl 639.0")
+end)
+
 test("loadout: a run stored before #6 says Not recorded, with nothing to view or copy", function()
     local i, NS = ui()
     uiRun(NS, "old", 100, nil, { schema = 1 })
@@ -555,5 +577,5 @@ test("loadout: Include talents link sits under Sharing on the History tab, befor
     for _, r in ipairs(NS.SchemaForPage("history")) do
         if r.group == "History" then order[#order + 1] = r.path end
     end
-    assertEqual(table.concat(order, ","), "share.talentsLink,global.history.keep")
+    assertEqual(table.concat(order, ","), "share.talentsLink,global.history.keepDays")
 end)

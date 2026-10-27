@@ -34,7 +34,7 @@ local DAY = 86400
 local DASH = "\226\128\148"
 
 local FILTER_H = 32         -- one row of the filter bar
-local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths
+local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths (their least: BarPlan)
     { key = "char", width = 110 }, { key = "spec", width = 96 }, { key = "category", width = 96 },
     { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 164 },
 }
@@ -54,6 +54,7 @@ local VIEW_BUTTONS = {
 }
 local VIEW_BUTTON_W = 52
 local GAP = 6
+local MARGIN = GAP + 2      -- the bar's left margin, and its right one once the dropdowns stretch
 
 -- ── pure: a run's facts, the filter, the options ────────────────────────────────────────────────
 
@@ -481,12 +482,88 @@ function Runs.Delta(run, top)
     return (dps / top - 1) * 100
 end
 
+-- The Delta cell: a complete run level with the max (the top, or a run tied with it) reads 0.0% in the
+-- column's green, the pair of its red below the max (UT-P14, 2026-10-27; gold before), as the detail's
+-- Delta box draws the top's lead.
 local function deltaText(run, top)
     local pct = Runs.Delta(run, top)
     if pct == nil then return DASH, C.dim end
-    if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.gold end
+    if pct == 0 and run.status == "complete" then return L["%.1f%%"]:format(0), C.green end
     local color = run.status == "complete" and (pct < 0 and C.red or C.green) or C.dim
     return L["%+.1f%%"]:format(pct), color
+end
+
+-- ── the detail's Delta box (the owner's call, 2026-10-26) ───────────────────────────────────────
+-- The detail reads the Delta column's own figures for the run it shows: the run's group under the
+-- Runs view's current Group by (the whole filtered list with None), its max and its runner-up. A
+-- context is { top, first, second, scope }: the max DPS, the complete run that sets it, the next
+-- complete run below it (nil when there is none) and where they were read ("group", "view", or
+-- "board" for a run the filters leave out). Nothing is stored on a run.
+
+-- `a` ranks above `b` for the max: higher DPS; on a tie the earlier run (it set the mark first), then
+-- the id, as a best's board ranks them (modules/Bests.lua).
+local function leads(a, b)
+    local da, db = runDps(a), runDps(b)
+    if da ~= db then return da > db end
+    local ta, tb = a.date or 0, b.date or 0
+    if ta ~= tb then return ta < tb end
+    return tostring(a.id) < tostring(b.id)
+end
+
+--- The top two complete runs in `runs` by DPS (the runs Runs.MaxDps ranks): the run that sets the
+--- max and its runner-up, either nil.
+--- @return table|nil first, table|nil second
+function Runs.Leaders(runs)
+    local first, second
+    for _, run in ipairs(runs or {}) do
+        local dps = run.status == "complete" and runDps(run)
+        if dps and dps > 0 then
+            if not first or leads(run, first) then
+                first, second = run, first
+            elseif not second or leads(run, second) then
+                second = run
+            end
+        end
+    end
+    return first, second
+end
+
+--- One group's context (above) over `runs`.
+function Runs.Context(runs, scope)
+    local first, second = Runs.Leaders(runs)
+    return { top = first and runDps(first), first = first, second = second, scope = scope }
+end
+
+--- The fallback for a run the Runs view does not list: its board (spec x target type x length, as
+--- Bests keys it) among `runs`, every stored run.
+function Runs.BoardContext(run, runs)
+    local key, board = NS.Bests.Key(run), {}
+    for _, other in ipairs(runs or {}) do
+        if type(other) == "table" and NS.Bests.Key(other) == key then board[#board + 1] = other end
+    end
+    return Runs.Context(board, "board")
+end
+
+--- Whether `run` is the complete run that sets its context's max (the detail's *New best* badge).
+function Runs.IsTop(run, ctx)
+    local first = type(ctx) == "table" and ctx.first or nil
+    return type(run) == "table" and run.status == "complete" and first ~= nil
+        and (first == run or first.id == run.id)
+end
+
+--- The detail's Delta box for `run` in `ctx`: its text and color, and whether the run is its group's
+--- top. Not the top: the run's Delta cell (an incomplete run's figure muted, a lost run's a muted dash,
+--- as the column shows them). The top: its lead over the runner-up, green, or a dash with no runner-up.
+--- @return string text, table color, boolean top
+function Runs.DeltaBox(run, ctx)
+    if type(ctx) ~= "table" then return DASH, C.dim, false end
+    if not Runs.IsTop(run, ctx) then
+        local text, color = deltaText(run, ctx.top)
+        return text, color, false
+    end
+    local second = ctx.second and runDps(ctx.second)
+    if not second or second <= 0 then return DASH, C.dim, true end
+    return L["%+.1f%%"]:format((ctx.top / second - 1) * 100), C.green, true
 end
 
 --- The look of one bar column's cell for `run` (History > Results table): its fill and its text,
@@ -550,6 +627,8 @@ end
 -- an ellipsis, its tooltip the whole note. Sorted A to Z ignoring case; a run with no note sorts
 -- last in either direction (the table's rule for a missing value).
 Runs.NOTE_W = 80
+-- The Used column (#13): four icons (Tbl.IconSlots), or three and "+n".
+Runs.USED_W = 70
 Runs.TARGET_W = 92
 Runs.TIME_W = 84
 Runs.STATUS_W = 92
@@ -602,12 +681,16 @@ function Runs.TimeCell(run)
 end
 
 --- The Runs list's columns (mockup screen 08): date, class and spec icons, character, ilvl, target,
---- time (the length's chip and the tail), damage, DPS, delta, status (the flags are its tooltip's).
+--- time (the length's chip and the tail), damage, DPS, delta, status (the flags are its tooltip's),
+--- what was used (#13: its icons, modules/Results_Usage.lua) and the note.
 --- The Delta column reads each group's max off the whole list the table is handed (its `scan`: every
 --- run the filters pass, with the grouping's key), and the bars scale within each group too
---- (Results_Table's measure). A flat list is one group.
-function Runs.Columns()
-    local view = { top = {}, groupOf = function() return true end }
+--- (Results_Table's measure). A flat list is one group. `view` (optional) is the table the scan keeps
+--- its figures in: the Runs view's own, which the detail's Delta box reads (View:DeltaContext).
+function Runs.Columns(view)
+    view = view or {}
+    view.top, view.contexts, view.ids = {}, {}, {}
+    view.groupOf = function() return true end
     local function topOf(run) return view.top[view.groupOf(run)] end
     return {
         { key = "date", label = L["Date"], width = 80, desc = true,
@@ -644,11 +727,16 @@ function Runs.Columns()
           -- Per group (the owner's call, 2026-10-26): each run against the max of its own group of
           -- the runs the filters pass, recomputed whenever the list or its grouping changes.
           scan = function(list, groupOf)
-              view.top, view.groupOf, view.grouped = {}, groupOf, false
-              for key, runs in pairs(Runs.ByGroup(list, groupOf)) do
-                  view.top[key] = Runs.MaxDps(runs)
+              view.top, view.contexts, view.ids, view.groupOf, view.grouped = {}, {}, {}, groupOf, false
+              local groups = Runs.ByGroup(list, groupOf)
+              for key in pairs(groups) do
                   if key ~= true then view.grouped = true end
               end
+              for key, runs in pairs(groups) do
+                  local ctx = Runs.Context(runs, view.grouped and "group" or "view")
+                  view.top[key], view.contexts[key] = ctx.top, ctx
+              end
+              for _, run in ipairs(list) do view.ids[run.id] = true end
           end,
           sort = function(run) return Runs.Delta(run, topOf(run)) end,
           text = function(run) return deltaText(run, topOf(run)) end,
@@ -662,6 +750,11 @@ function Runs.Columns()
               return text, color, icon
           end,
           tip = Runs.StatusTip },
+        -- What the run used (#13): the gear first, "+n" past what fits, a dash for nothing; sorted
+        -- by how many, a run stored before format 3 last either way.
+        { key = "used", label = L["Used"], width = Runs.USED_W, kind = "items", desc = true,
+          sort = function(run) return NS.ResultsUsage.Count(run) end,
+          items = function(run) return NS.ResultsUsage.Icons(run) end },
         { key = "note", label = L["Note"], width = Runs.NOTE_W, desc = false,
           sort = Runs.NoteSort, text = function(run) return Runs.NoteCell(run), C.dim end,
           tip = Runs.NoteTip },
@@ -715,16 +808,17 @@ end
 
 --- The Runs tab in `parent`.
 --- @param parent table
---- @param hooks table  { select(run), share(run), selected() -> id|nil }
+--- @param hooks table  { select(run), share(run), selected() -> id|nil, menu(run, row), count(text),
+---                       changed() after every redraw (the detail's Delta box follows it) }
 --- @return table view
 function Runs.Build(parent, hooks)
     local frame = CreateFrame("Frame", nil, parent)
     frame:SetAllPoints(parent)
-    local view = setmetatable({ frame = frame, hooks = hooks or {}, filters = {}, barH = FILTER_H }, View)
+    local view = setmetatable({ frame = frame, hooks = hooks or {}, filters = {}, barH = FILTER_H, delta = {} }, View)
     for k, v in pairs(Runs.DEFAULTS) do view.filters[k] = v end
     buildBar(view)
     view.listHost = CreateFrame("Frame", nil, frame)
-    view.list = Tbl.New(view.listHost, Runs.Columns(), {
+    view.list = Tbl.New(view.listHost, Runs.Columns(view.delta), {
         -- Newest first (the owner's call, 2026-10-24): the stock view's sort. A saved view (Save,
         -- below) replaces it at every login.
         sortKey = Runs.STOCK_SORT.key, sortDesc = Runs.STOCK_SORT.desc,
@@ -833,20 +927,19 @@ function View:ClearView()
     self:ApplyView(Runs.SavedView())
 end
 
--- Plan the bar from the configured widths, pure (no frame is read). Two rows (the collapsed view):
--- the dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
+-- Place the bar's controls by the dropdowns' `widths` (by key). Two rows (the collapsed view): the
+-- dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
 -- right-aligned under the last dropdown (Group). One row (the expanded view, `oneRow`): the
--- dropdowns, the checkboxes, then the buttons. Answers each control's left x (a button's right x),
--- the second row's y, and the bar's right edge, all from the bar's left.
-function Runs.BarPlan(oneRow)
-    local plan = { dropdowns = {}, checks = {}, buttons = {}, y = oneRow and -6 or -(FILTER_H - 2) }
-    local x = GAP + 2
+-- dropdowns, the checkboxes, then the buttons.
+local function placeBar(oneRow, widths)
+    local plan = { dropdowns = {}, checks = {}, buttons = {}, widths = widths, y = oneRow and -6 or -(FILTER_H - 2) }
+    local x = MARGIN
     for _, spec in ipairs(DROPDOWNS) do
         plan.dropdowns[spec.key] = x
-        x = x + spec.width + GAP
+        x = x + widths[spec.key] + GAP
     end
     local groupRight = x - GAP   -- the last dropdown's right edge
-    if not oneRow then x = GAP + 2 end
+    if not oneRow then x = MARGIN end
     for _, spec in ipairs(CHECKS) do
         plan.checks[spec.key] = x
         x = x + spec.width + GAP
@@ -860,15 +953,47 @@ function Runs.BarPlan(oneRow)
     return plan
 end
 
--- Lay the bar out by Runs.BarPlan. The run count is the window footer's (hooks.count). Answers its
--- height.
-function View:layoutBar(oneRow)
-    local plan = Runs.BarPlan(oneRow)
+-- The configured widths grown by `extra` px between them, in proportion to each (Group, the widest,
+-- takes the most); the last takes the rounding, so the shares add up to `extra` exactly.
+local function stretched(extra)
+    local total = 0
+    for _, spec in ipairs(DROPDOWNS) do total = total + spec.width end
+    local widths, given = {}, 0
+    for i, spec in ipairs(DROPDOWNS) do
+        local add = i == #DROPDOWNS and extra - given or math.floor(extra * spec.width / total)
+        widths[spec.key] = spec.width + add
+        given = given + add
+    end
+    return widths
+end
+
+-- Plan the bar, pure (no frame is read): `width` is the bar's width, the window body's, the one the
+-- shell lays the tab out at. The dropdowns take their configured widths, then share what the bar has
+-- beyond them, so the bar ends MARGIN short of its right edge, as it starts MARGIN in from its left:
+-- collapsed, Group's right edge there (and Clear's under it); expanded, Clear's. A width the
+-- configured plan already fills, or none, answers that plan: the configured widths are the least.
+-- Answers each control's left x (a button's right x), each dropdown's width, the second row's y and
+-- the bar's right edge, all from the bar's left.
+function Runs.BarPlan(oneRow, width)
+    local widths = {}
+    for _, spec in ipairs(DROPDOWNS) do widths[spec.key] = spec.width end
+    local plan = placeBar(oneRow, widths)
+    local extra = type(width) == "number" and math.floor(width - MARGIN - plan.right) or 0
+    if extra <= 0 then return plan end
+    return placeBar(oneRow, stretched(extra))
+end
+
+-- Lay the bar out by Runs.BarPlan at `width`: re-anchored and the dropdowns re-sized, nothing
+-- repainted, so the cheap layout runs it too. The run count is the window footer's (hooks.count).
+-- Answers its height.
+function View:layoutBar(oneRow, width)
+    local plan = Runs.BarPlan(oneRow, width)
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
         if dd then
             dd:ClearAllPoints()
             dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.dropdowns[spec.key], -6)
+            dd:SetWidth(plan.widths[spec.key])
         end
     end
     for _, spec in ipairs(CHECKS) do
@@ -881,6 +1006,7 @@ function View:layoutBar(oneRow)
         b:ClearAllPoints()
         b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", plan.buttons[spec.key], plan.y)
     end
+    self.oneRow = oneRow
     self.barH = oneRow and FILTER_H or (2 * FILTER_H - 6)
     self.bar:SetHeight(self.barH)
     return self.barH
@@ -889,11 +1015,21 @@ end
 --- Lay the tab out: the bar across `width` (one row when `oneRow`, the expanded view), the list
 --- `listWidth` wide beneath it.
 function View:Layout(width, height, listWidth, oneRow)
-    local barH = self:layoutBar(oneRow)
+    local barH = self:layoutBar(oneRow, width)
     self.listHost:ClearAllPoints()
     self.listHost:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -barH)
     self.listHost:SetSize(listWidth or width, math.max(1, height - barH))
     self.list:Layout(listWidth or width, math.max(1, height - barH))
+end
+
+--- While the window is being sized (modules/Sizing.lua): the bar re-planned across `width` (cheap:
+--- twelve controls re-anchored, six re-sized; its rows stay as the view set them), the list
+--- `listWidth` wide beneath it, nothing rebound.
+function View:Resize(width, height, listWidth)
+    self:layoutBar(self.oneRow, width)
+    local h = math.max(1, height - (self.barH or 0))
+    self.listHost:SetSize(listWidth or width, h)
+    self.list:Resize(listWidth or width, h)
 end
 
 --- The bar's height now (the detail pane sits beneath it).
@@ -924,6 +1060,15 @@ function View:Refresh()
     self.list.selected = self.hooks.selected and self.hooks.selected() or nil
     self.list:SetData(self.filtered)
     self.list:SetGroup(Runs.GROUPS[self.filters.group or "none"])
+    if self.hooks.changed then self.hooks.changed() end
+end
+
+--- What the Delta column measured `run` against (Runs.Context's shape: its group under the grouping
+--- now, or the whole view with none), or nil when the filters leave the run out of the list.
+function View:DeltaContext(run)
+    local d = self.delta
+    if type(run) ~= "table" or not (d.ids and d.ids[run.id]) then return nil end
+    return d.contexts[d.groupOf(run)]
 end
 
 --- Set one filter and redraw.

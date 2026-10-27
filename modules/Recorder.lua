@@ -24,8 +24,10 @@ NS.Recorder = Recorder
 local Secrets = NS.Secrets
 
 -- The run record format (spec §7). A stored run carries its own copy; db.global.schema is the same.
--- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one.
-Recorder.RUN_SCHEMA = 2
+-- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one. Format 3 (#13, #14)
+-- adds run.casts and run.usage (modules/Casts.lua, modules/Usage.lua); an older run has neither and
+-- reads as not recorded.
+Recorder.RUN_SCHEMA = 3
 
 -- An id is time() .. "-" .. a four-digit random; a clash with a stored run is redrawn this many times.
 local ID_ATTEMPTS = 32
@@ -388,35 +390,36 @@ local function protectedIDs(protect)
     return ids
 end
 
---- Remove the oldest runs until at most `keep` are stored, never one holding a best (all-runs or
---- clean-only board), never one still running or stopping (spec §6.3, §7), never `protect` and never
---- the race's current run. With nothing left to remove the store may stay above `keep`. Fires
---- RUNS_CHANGED once when anything was removed.
---- @param keep number|nil  0 (the default) or anything not a positive number is a no-op
+Recorder.DAY = 86400
+
+--- Remove every resolved run older than `days` days (by its date, against `now`), never one holding a
+--- best (all-runs or clean-only board), never one still running or stopping (spec §6.3, §7), never
+--- `protect` and never the race's current run (the owner's call, 2026-10-26: pruning by age, not by
+--- count). Fires RUNS_CHANGED once when anything was removed.
+--- @param days number|nil  0 (never) or anything not a positive number is a no-op
 --- @param protect string|nil  a run id to keep (the run just saved)
+--- @param now number|nil  the epoch the age is measured from (time())
 --- @return number removed
-function Recorder.Prune(keep, protect)
+function Recorder.Prune(days, protect, now)
     local runs = store()
-    keep = Secrets.PlainNumber(keep)
-    if not runs or not keep or keep < 1 then return 0 end
-    keep = math.floor(keep)
-    local total = 0
-    for _ in pairs(runs) do total = total + 1 end
-    if total <= keep then return 0 end
+    days = Secrets.PlainNumber(days)
+    if not runs or not days or days < 1 then return 0 end
+    days = math.floor(days)
+    local cutoff = (now or time()) - days * Recorder.DAY
     local holding = NS.Bests.HoldingIDs(Recorder.All())
     for id in pairs(protectedIDs(protect)) do holding[id] = true end
-    local oldestFirst = collect(function(status) return PRUNABLE[status] == true end,
-        function(a, b) return newerFirst(b, a) end)
+    local old = collect(function(status, run)
+        return PRUNABLE[status] == true and type(run.date) == "number" and run.date < cutoff
+    end, newerFirst)
     local n = 0
-    for _, run in ipairs(oldestFirst) do
-        if total - n <= keep then break end
+    for _, run in ipairs(old) do
         if not holding[run.id] then
             runs[run.id] = nil
             n = n + 1
         end
     end
     if n > 0 then
-        debug("pruned %d run(s) to keep %d", n, keep)
+        debug("pruned %d run(s) older than %d days", n, days)
         NS.Loadouts.Sweep()
         NS.SendBus(NS.MSG.RUNS_CHANGED)
     end

@@ -32,14 +32,36 @@ local _, NS = ...
 -- THE HEADING (Round C, 2026-10-25): *Damage profile* in FONT.SECTION on a SECTION_H line, the Results
 -- detail's heading role, with the view's note at its right. On the HUD the pace bar sits between the
 -- heading and the plot (Place's `midH`), and the heading stays with the pace bar alone when the plot is
--- off or steps aside (SetParts).
+-- off or steps aside (SetParts). The heading's note is the bar's only caption (*vs best pace*, the
+-- owner's call, 2026-10-26): the bar has no label of its own and spans the plot's width, edge to edge.
 --
 -- LAYOUT FROM CONFIG. Every size is the width the caller hands Place() and the configured plot height
--- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The
+-- (HUD > HUD Appearance > Damage chart); nothing reads a size or position back off a column. The plot
+-- frame is RESERVE taller than that height, on top (the owner's third test round, 2026-10-26): one
+-- row of cooldown icons (ICON and ICON_GAP) sits there, and the columns and the diagonal scale within
+-- the configured height below it, so a single row of icons never covers them (Chart.FrameHeight). The
 -- columns touch (the column gap defaults to 0) and read as one area over the plot's own backdrop:
 -- each column's edges are whole pixels, x_i = floor(i * inner / count + 0.5), so no column is a
 -- fraction wide and no seam shows between two. The diagonal is plain geometry (Line regions) on an
 -- overlay frame one band over the columns (core/Constants.lua LAYERS.LEVEL.CHART_OVERLAY).
+--
+-- THE COOLDOWN ICONS (#14; icons for the first dots, the owner's call, 2026-10-26): the ability's own
+-- icon, ICON px square, along the top of the plot at each cast of an important ability (a base
+-- cooldown of 29 s or more, modules/Casts.lua), centered at x = INSET + clamp(t, 0, length) / length x
+-- (width - 2 x INSET), the cast's plain race-clock time over the plain length across the width Place()
+-- was handed, held inside the plot. An icon that would overlap the one placed last on its row drops to
+-- the first row below with room, on as many rows as the whole plot frame holds (Chart.IconRowCount on
+-- Chart.FrameHeight: 6 on the default 80 px plot, 3 on the 40 px minimum), the rows past the first
+-- over the columns as before. The last row takes a cast with no room above as
+-- an icon when it stands alone there, and a crowd of them as one *+n* mark at the first one's place, n
+-- the casts it stands for, its hover listing each with its time (ResultsTips.CastCrowd): nothing is
+-- dropped (the owner's second test round, 2026-10-26: a potion, a trinket and Bestial Wrath in one second
+-- showed two icons). Pooled frames on the overlay, each icon with its art and a
+-- hover (the spell and its time, ResultsTips.Cast) everywhere the chart is drawn, the running HUD
+-- included (a plain frame); moved only when the list, the length or the geometry changed. The icon is
+-- C_Spell's for the cast's plain stored ID. Live from Casts.Live() (re-read only when the race heard
+-- another cast), and after the race from the run's record; *Show cooldown icons* (live.castDots) turns
+-- them off everywhere.
 
 local Chart = {}
 NS.HudChart = Chart
@@ -55,16 +77,20 @@ Chart.GAP = 2
 Chart.INSET = 2         -- the plot's inner padding
 Chart.DIAGONAL_W = 2    -- the diagonal's thickness
 Chart.PACE_H = 12       -- the pace bar's line
-Chart.PACE_LABEL_W = 78
+Chart.ICON = 12         -- a cooldown icon's size (#14)
+Chart.ICON_GAP = 1      -- between two rows of icons
+Chart.RESERVE = Chart.ICON + Chart.ICON_GAP   -- the plot's headroom on top: one row of icons
 
-local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
-local PLOT_EDGE = { 1, 1, 1, 0.10 }
+-- The plot is a fill with no edge (the owner's call, 2026-10-26: the faint gray border is gone).
+Chart.PLOT_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8x8" }
 local PACE_TRACK = { 1, 1, 1, 0.08 }   -- the pace bar's empty part
 local DIAGONAL = { 0.9, 0.9, 0.92, 0.4 }
 local TICK = { 1, 1, 1, 0.85 }
 local AHEAD = { 0.36, 0.86, 0.46, 0.85 }    -- the KPI's green: past the tick
 local BEHIND = { 1.0, 0.32, 0.32, 0.85 }    -- the KPI's red: the shortfall to the tick
 local WHITE = "Interface\\Buttons\\WHITE8x8"
+local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }   -- the icon art without its baked-in border
+local MARK_BG = { 0, 0, 0, 0.75 }              -- a +n mark's square, dark under its white count
 
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
@@ -108,14 +134,22 @@ function Chart.ColumnEdges(inner, count, gap)
     return xs, widths
 end
 
+--- The plot frame's height for a configured plot `plotH` tall: that height (the columns' and the
+--- diagonal's) plus RESERVE on top, the first row of icons' own.
+--- @param plotH number
+--- @return number
+function Chart.FrameHeight(plotH)
+    return (tonumber(plotH) or 0) + Chart.RESERVE
+end
+
 --- The chart block's whole height for a plot `plotH` tall: heading, `midH` (the HUD's pace bar line
---- between the heading and the plot), plot, gap, time labels.
+--- between the heading and the plot), the plot frame (Chart.FrameHeight), gap, time labels.
 --- @param plotH number
 --- @param headH number|nil  default HEAD_H
 --- @param midH number|nil  default 0
 --- @return number
 function Chart.BlockHeight(plotH, headH, midH)
-    return (headH or Chart.HEAD_H) + (midH or 0) + plotH + Chart.GAP + Chart.AXIS_H
+    return (headH or Chart.HEAD_H) + (midH or 0) + Chart.FrameHeight(plotH) + Chart.GAP + Chart.AXIS_H
 end
 
 local function shared(run)
@@ -179,13 +213,129 @@ function Chart.TickX(barW)
     return math.floor(barW / 2 + 0.5)
 end
 
+--- A cast's time on the chart, in pixels from the plot's left edge: INSET + clamp(t, 0, length) /
+--- length x (width - 2 x INSET), so a pre-pull cast sits on 0:00 and a cast after the buzzer on the
+--- end. Plain config math on the width Place() was handed; nil without a plain time and length.
+--- @param t number  the cast's seconds on the race clock
+--- @param length number
+--- @param width number
+--- @return number|nil
+function Chart.TimeX(t, length, width)
+    if type(t) ~= "number" or type(length) ~= "number" or length <= 0 then return nil end
+    local inner = (tonumber(width) or 0) - 2 * Chart.INSET
+    return Chart.INSET + math.max(0, math.min(t, length)) / length * inner
+end
+
+--- A cooldown icon's center x: the cast's time (Chart.TimeX), held so the whole icon stays inside the
+--- plot (a cast at 0:00 or on the buzzer sits flush with the edge). Nil without a plain time and length.
+--- @param t number
+--- @param length number
+--- @param width number
+--- @return number|nil
+function Chart.IconX(t, length, width)
+    local x = Chart.TimeX(t, length, width)
+    if not x then return nil end
+    local half = Chart.ICON / 2
+    return math.max(half, math.min(x, (tonumber(width) or 0) - half))
+end
+
+--- How many rows of icons a plot `plotH` tall holds: an icon and ICON_GAP each inside both insets, at
+--- least one. Config math on the configured height, never a measured size.
+--- @param plotH number
+--- @return number
+function Chart.IconRowCount(plotH)
+    local inner = (tonumber(plotH) or 0) - 2 * Chart.INSET
+    return math.max(1, math.floor((inner + Chart.ICON_GAP) / (Chart.ICON + Chart.ICON_GAP)))
+end
+
+-- The first of rows 1..n whose last icon is an icon's width or more left of `x`, or nil.
+local function freeRow(last, x, n)
+    for r = 1, n do
+        if last[r] == nil or x - last[r] >= Chart.ICON then return r end
+    end
+    return nil
+end
+
+-- The indices in `spill` (in time order) in crowds: a crowd starts at its first cast and takes each
+-- later one closer than an icon's width to that first.
+local function crowds(xs, spill)
+    local out, cur = {}, nil
+    for _, i in ipairs(spill) do
+        if cur and xs[i] - xs[cur[1]] < Chart.ICON then
+            cur[#cur + 1] = i
+        else
+            cur = { i }
+            out[#out + 1] = cur
+        end
+    end
+    return out
+end
+
+--- Each icon's row for centers `xs` (in time order) on `maxRows` rows (default 2): the first row from
+--- the top where the icon would not overlap the last one placed there (closer than an icon's width).
+--- The last row is the overflow's: a cast with no room on the rows above sits there as an icon when no
+--- other such cast is within an icon's width of it, and a crowd of them becomes one mark at the first
+--- one's x, standing for every cast in it. Nothing is dropped: each index is in `rows` or in a mark.
+--- @param xs table  numbers
+--- @param maxRows number|nil
+--- @return table rows  { [i] = row }, nil for a cast under a mark
+--- @return table marks  { { x, row, members = { i, ... } }, ... }
+function Chart.IconRows(xs, maxRows)
+    maxRows = math.max(1, math.floor(tonumber(maxRows) or 2))
+    local rows, last, spill = {}, {}, {}
+    for i, x in ipairs(xs) do
+        local r = freeRow(last, x, maxRows - 1)
+        if r then
+            rows[i], last[r] = r, x
+        else
+            spill[#spill + 1] = i
+        end
+    end
+    local marks = {}
+    for _, crowd in ipairs(crowds(xs, spill)) do
+        if #crowd == 1 then
+            rows[crowd[1]] = maxRows
+        else
+            marks[#marks + 1] = { x = xs[crowd[1]], row = maxRows, members = crowd }
+        end
+    end
+    return rows, marks
+end
+
+--- A row's center y, from the plot's top (negative): the top row INSET under the edge, each next
+--- an icon and ICON_GAP below the one before.
+--- @param row number
+--- @return number
+function Chart.IconY(row)
+    return -(Chart.INSET + Chart.ICON / 2 + (row - 1) * (Chart.ICON + Chart.ICON_GAP))
+end
+
+--- Whether the charts draw cooldown icons (live.castDots).
+--- @return boolean
+function Chart.ShowCooldowns()
+    return not (NS.GetSetting and NS.GetSetting("live.castDots") == false)
+end
+
+--- A run's cooldown casts after the race (its important casts, Casts.Important), or nil when the
+--- setting is off or the run has none.
+--- @param run table
+--- @return table|nil casts  { { t, id, pet }, ... }
+function Chart.CooldownsOf(run)
+    if not Chart.ShowCooldowns() or not NS.Casts then return nil end
+    local casts = NS.Casts.Important(run)
+    if #casts == 0 then return nil end
+    return casts
+end
+
 --- What the running body draws: the chart's view and the pace bar's, each nil when hidden. Both hide
---- on a shared session; the pace bar also with no best.
+--- on a shared session; the pace bar also with no best. The chart's `cooldowns` are the race's
+--- important casts so far, with `showCooldowns`.
 --- @param run table
 --- @param elapsed number|nil
 --- @param showChart boolean  live.chart
 --- @param showPace boolean  live.paceBar
---- @return table|nil chart  { count, values, length, max, best, note }  (max nil: scale B, the live total)
+--- @param showCooldowns boolean|nil  live.castDots
+--- @return table|nil chart  { count, values, length, max, best, note, cooldowns }  (max nil: scale B, the live total)
 --- @return table|nil pace  { lo, hi }
 -- THE LIVE VIEWS ARE CACHED (the 20 Hz tick, performance-§3): the chart's view and the best behind it
 -- are rebuilt only when what decides them changes. The best is looked up again only when the run or
@@ -222,11 +372,27 @@ local function liveChart(run, best)
     return chart
 end
 
-function Chart.LiveViews(run, elapsed, showChart, showPace)
+-- The race's important casts so far: read again (Casts.Live, a new list) only when the race heard
+-- another cast or a new race began, so the 20 Hz tick reuses one list.
+local function liveCooldowns(run)
+    local Casts = NS.Casts
+    if not Casts then return nil end
+    local n = Casts.Size()
+    if live.cdRun ~= run or live.cdN ~= n or not live.cooldowns then
+        live.cdRun, live.cdN = run, n
+        live.cooldowns = Casts.Filter(Casts.Live(), Casts.LiveSpells())
+    end
+    return live.cooldowns
+end
+
+function Chart.LiveViews(run, elapsed, showChart, showPace, showCooldowns)
     if type(run) ~= "table" or type(run.race) ~= "table" or shared(run) then return nil, nil end
     local best = liveBest(run)
     local chart, pace
-    if showChart then chart = liveChart(run, best) end
+    if showChart then
+        chart = liveChart(run, best)
+        chart.cooldowns = showCooldowns and liveCooldowns(run) or nil
+    end
     if showPace and best then
         pace = live.pace
         pace.lo, pace.hi = Chart.PaceBounds(best, elapsed)
@@ -274,13 +440,14 @@ end
 
 --- The after-the-race chart's view for `run`, or nil when it has none (modules/Slices.lua Drawable):
 --- its slices scaled to its plain final damage, against the best before it when there is one
---- (Chart.WithBest).
+--- (Chart.WithBest), with its cooldown casts (Chart.CooldownsOf).
 --- @param run table
 --- @return table|nil
 function Chart.ResultView(run)
     local rec = NS.Slices.Drawable(run)
     if not rec then return nil end
-    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = run.result.damage, note = "",
+                   cooldowns = Chart.CooldownsOf(run) }
     return Chart.WithBest(view, run, NS.Bests and NS.Bests.Before(run) or nil)
 end
 
@@ -297,7 +464,7 @@ local function newLine(frame, color)
 end
 
 -- The plot's backdrop: its color from HUD Appearance > Chart background, once per change (the same
--- stamp the columns read). The edge stays the fixed faint line.
+-- stamp the columns read). It has no edge.
 local function restylePlot(s)
     local A = NS.HudAppearance
     if not A or s.plotStamp == A.stamp or not s.plot.SetBackdropColor then return end
@@ -314,14 +481,15 @@ end
 --- @param headH number|nil
 --- @return table chart
 function Chart.New(parent, titleFont, headH)
-    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H }, Strip)
+    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H,
+                             iconPool = NS.Pool.New(), icons = {}, markPool = NS.Pool.New(), marks = {} },
+                           Strip)
     s.title = Style.Text(parent, titleFont or FONT.SECTION)
     s.title:SetText(L["Damage profile"])
     s.note = Style.Text(parent, FONT.CAPTION, nil, "RIGHT")
     local plot = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     if plot.SetBackdrop then
-        plot:SetBackdrop(FLAT)
-        plot:SetBackdropBorderColor(PLOT_EDGE[1], PLOT_EDGE[2], PLOT_EDGE[3], PLOT_EDGE[4])
+        plot:SetBackdrop(Chart.PLOT_BACKDROP)
     end
     s.plot = plot
     restylePlot(s)
@@ -358,8 +526,9 @@ function Strip:SetNote(text)
     self.note:SetText(text or "")
 end
 
---- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall and
---- `midH` (default 0) under the heading's line.
+--- Place the chart at `y` (negative, from `anchor`'s top) across `width`, its plot `plotH` tall (the
+--- columns' height; the frame is Chart.FrameHeight, the icons' row on top) and `midH` (default 0)
+--- under the heading's line.
 --- @param anchor table
 --- @param y number
 --- @param width number
@@ -374,8 +543,10 @@ function Strip:Place(anchor, y, width, plotH, midH)
     local py = y - self.headH - (midH or 0)
     self.plot:ClearAllPoints()
     self.plot:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, py)
-    self.plot:SetSize(width, plotH)
-    local ay = py - plotH - Chart.GAP
+    local frameH = Chart.FrameHeight(plotH)
+    self.frameH = frameH
+    self.plot:SetSize(width, frameH)
+    local ay = py - frameH - Chart.GAP
     local points = { { "TOPLEFT", 0 }, { "TOP", width / 2 }, { "TOPRIGHT", width } }
     for i, fs in ipairs(self.axis) do
         fs:ClearAllPoints()
@@ -403,7 +574,8 @@ local function newColumn(plot)
 end
 
 -- Lay `count` columns across the plot (from Place's width and height and the configured gap, never a
--- measured size), each on whole-pixel edges (Chart.ColumnEdges).
+-- measured size), each on whole-pixel edges (Chart.ColumnEdges), within the configured height from the
+-- plot's bottom: the RESERVE row over them is the icons'.
 function Strip:layoutColumns(count)
     local gap = Chart.ColumnGap()
     local key = ("%d|%s|%s|%d"):format(count, tostring(self.width), tostring(self.plotH), gap)
@@ -412,7 +584,7 @@ function Strip:layoutColumns(count)
     local inner = math.max(0, (self.width or 0) - 2 * Chart.INSET)
     local xs, widths = Chart.ColumnEdges(inner, count, gap)
     local h = math.max(1, (self.plotH or 0) - 2 * Chart.INSET)
-    self.colX, self.colW = xs, widths
+    self.colX, self.colW, self.colH = xs, widths, h
     for i = 1, count do
         local col = self.cols[i] or newColumn(self.plot)
         self.cols[i] = col
@@ -476,11 +648,118 @@ function Strip:Draw(view, max)
     end
     for i = count + 1, #self.cols do self.cols[i]:Hide() end
     self:drawPace(view.best, view.max)
-    self.note:SetText(view.note or "")
     local length = view.length or 0
+    self:drawIcons(view.cooldowns, length)
+    self.note:SetText(view.note or "")
     self.axis[1]:SetText(NS.Format.Length(0))
     self.axis[2]:SetText(NS.Format.Length(math.floor(length / 2)))
     self.axis[3]:SetText(NS.Format.Length(length))
+end
+
+-- ── the cooldown icons ──────────────────────────────────────────────────────────────────────────
+
+-- An icon's hover: the spell and its time on the race clock (modules/Results_Tips.lua Cast), under
+-- the icon. Both are read at call time (the Results modules load after this one).
+local function iconEnter(icon)
+    local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
+    if icon.cast and Tbl and Tips then Tbl.BelowTip(icon, Tips.Cast(icon.cast)) end
+end
+
+local function iconLeave()
+    if NS.ResultsTable then NS.ResultsTable.HideTip() end
+end
+
+-- A +n mark's hover: every cast it stands for, each with its time, on bullets.
+local function markEnter(mark)
+    local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
+    if mark.casts and Tbl and Tips then Tbl.BelowTip(mark, Tips.CastCrowd(mark.casts)) end
+end
+
+-- An icon: a plain frame on the overlay (it takes the mouse for its tooltip) holding the spell's art.
+local function newIcon(over)
+    local f = CreateFrame("Frame", nil, over)
+    f:SetSize(Chart.ICON, Chart.ICON)
+    f:EnableMouse(true)
+    f.tex = f:CreateTexture(nil, "OVERLAY")
+    f.tex:SetAllPoints(f)
+    f.tex:SetTexCoord(ICON_CROP[1], ICON_CROP[2], ICON_CROP[3], ICON_CROP[4])
+    f:SetScript("OnEnter", iconEnter)
+    f:SetScript("OnLeave", iconLeave)
+    return f
+end
+
+-- A +n mark: a plain frame an icon's size on the overlay, a dark square holding the count.
+local function newMark(over)
+    local f = CreateFrame("Frame", nil, over)
+    f:SetSize(Chart.ICON, Chart.ICON)
+    f:EnableMouse(true)
+    f.bg = f:CreateTexture(nil, "ARTWORK")
+    f.bg:SetAllPoints(f)
+    f.bg:SetColorTexture(MARK_BG[1], MARK_BG[2], MARK_BG[3], MARK_BG[4])
+    f.text = Style.Text(f, FONT.TEXT, nil, "CENTER")
+    f.text:SetPoint("CENTER", f, "CENTER", 0, 0)
+    f:SetScript("OnEnter", markEnter)
+    f:SetScript("OnLeave", iconLeave)
+    return f
+end
+
+-- One +n mark for `casts` centered at (x, y) from the plot's top left.
+function Strip:placeMark(casts, x, y, row)
+    local f = NS.Pool.Acquire(self.markPool, function() return newMark(self.over) end)
+    f.casts = casts
+    f.text:SetText(L["+%d"]:format(#casts))
+    f:ClearAllPoints()
+    f:SetPoint("CENTER", self.over, "TOPLEFT", x, y)
+    self.marks[#self.marks + 1] = { frame = f, casts = casts, x = x, row = row }
+end
+
+-- One icon for `cast` centered at (x, y) from the plot's top left.
+function Strip:placeIcon(cast, x, y, row)
+    local f = NS.Pool.Acquire(self.iconPool, function() return newIcon(self.over) end)
+    f.cast = cast
+    f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
+    f:ClearAllPoints()
+    f:SetPoint("CENTER", self.over, "TOPLEFT", x, y)
+    self.icons[#self.icons + 1] = { frame = f, cast = cast, x = x, row = row }
+end
+
+-- The icons for `casts` (plain times and IDs) over `length`, laid again only when the list, its size,
+-- the length or the geometry changed: compared field by field, so the 20 Hz tick builds nothing.
+function Strip:drawIcons(casts, length)
+    local n = casts and #casts or 0
+    if self.iconList == casts and self.iconN == n and self.iconLen == length and self.iconGeom == self.geometry then
+        return
+    end
+    self.iconList, self.iconN, self.iconLen, self.iconGeom = casts, n, length, self.geometry
+    NS.Pool.ReleaseAll(self.iconPool, function(f) f.cast = nil end)
+    NS.Pool.ReleaseAll(self.markPool, function(f) f.casts = nil end)
+    self.icons, self.marks = {}, {}
+    local placed, xs = {}, {}
+    for i = 1, n do
+        local x = Chart.IconX(casts[i].t, length, self.width)
+        if x then
+            placed[#placed + 1], xs[#xs + 1] = casts[i], x
+        end
+    end
+    local rows, marks = Chart.IconRows(xs, Chart.IconRowCount(Chart.FrameHeight(self.plotH)))
+    for i, cast in ipairs(placed) do
+        if rows[i] then self:placeIcon(cast, xs[i], Chart.IconY(rows[i]), rows[i]) end
+    end
+    for _, m in ipairs(marks) do
+        local members = {}
+        for k, i in ipairs(m.members) do members[k] = placed[i] end
+        self:placeMark(members, m.x, Chart.IconY(m.row), m.row)
+    end
+end
+
+--- The icons drawn now, for the suites: { { frame, cast, x, row }, ... }.
+function Strip:Icons()
+    return self.icons
+end
+
+--- The +n marks drawn now, for the suites: { { frame, casts, x, row }, ... }.
+function Strip:Marks()
+    return self.marks
 end
 
 --- The columns drawn now, for the suites.
@@ -514,14 +793,12 @@ local function halfBar(parent)
     return b
 end
 
---- The pace bar built into `parent`: its caption, the track, the behind and ahead halves split at the
---- on-pace tick, and the tick over both (placed by Place).
+--- The pace bar built into `parent`: the track, the behind and ahead halves split at the on-pace tick,
+--- and the tick over both (placed by Place). No caption: the heading's note names it.
 --- @param parent table
 --- @return table pace
 function Chart.NewPace(parent)
     local p = setmetatable({}, Pace)
-    p.label = Style.Text(parent, FONT.CAPTION)
-    p.label:SetText(L["vs best pace"])
     p.bar = CreateFrame("Frame", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
@@ -547,18 +824,14 @@ function Chart.NewPace(parent)
 end
 
 function Pace:SetShown(on)
-    on = on and true or false
-    self.label:SetShown(on)
-    self.bar:SetShown(on)
+    self.bar:SetShown(on and true or false)
 end
 
---- Place it at `y` (negative, from `anchor`'s top) across `width`.
+--- Place it at `y` (negative, from `anchor`'s top) across `width`: the plot's whole width, edge to edge.
 function Pace:Place(anchor, y, width)
-    self.label:ClearAllPoints()
-    self.label:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y)
     self.bar:ClearAllPoints()
-    self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", Chart.PACE_LABEL_W, y - 2)
-    self.barW = math.max(1, width - Chart.PACE_LABEL_W)
+    self.bar:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, y - 2)
+    self.barW = math.max(1, width)
     self.bar:SetSize(self.barW, Chart.PACE_H - 4)
     self:PlaceTick()
 end

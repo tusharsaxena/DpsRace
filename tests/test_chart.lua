@@ -160,7 +160,7 @@ end)
 
 test("chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last", function()
     local C = T.NS.HudChart
-    -- The HUD's default width (300, the body's 12 px pads each side): 272 px of plot, 268 inside.
+    -- A 300-wide HUD (the body's 12 px pads each side): 272 px of plot, 268 inside.
     local xs, ws = C.ColumnEdges(268, 60, 0)
     assertEqual(#xs, 60)
     local total = 0
@@ -288,7 +288,8 @@ test("chart: with a best the scale is its damage x 1.15 (A), with its pace diago
     -- The pace bar: 0.5 to 1.5 x the best's average pace now (plain), the live total (opaque).
     local pace = b.w.pace
     assertTrue(pace.bar:IsShown())
-    assertEqual(pace.label.__text, "vs best pace")
+    assertEqual(pace.label, nil, "no caption of its own: the heading's note names it")
+    assertEqual(b.w.chart.note.__text, "vs best pace")
     local elapsed = f.Race.Elapsed()
     assertTrue(math.abs(pace.ahead.__max - 1.5 * 3000000 * elapsed / 30) < 1e-3, "1.5 x pace at the last redraw")
     assertTrue(math.abs(pace.behind.__min - 0.5 * 3000000 * elapsed / 30) < 1e-3, "from 0.5 x pace")
@@ -413,7 +414,8 @@ test("chart: the result card draws the race's slices to its plain final damage, 
     assertEqual(col.__max, run.result.damage, "scaled to the plain final damage")
     assertTrue(rawequal(col.__value, rec.values[10]), "the very handle captured live")
     local BREAKDOWN = f.NS.HudStates.BREAKDOWN_H
-    assertEqual(b.rowsTop, 80 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN, "the rows under the chart and its heading")
+    assertEqual(b.rowsTop, 80 + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN,
+        "the rows under the chart (its 13px icon row on top) and its heading")
     -- A /reload empties the store: the card has no chart, and its rows move back up.
     f.NS.Slices.Reset()
     f.Hud.Refresh()
@@ -620,4 +622,23 @@ test("chart: the diagnostics state section counts the loadout store and the race
     local found = false
     for _, l in ipairs(lines) do if l == want then found = true end end
     assertTrue(found, "no loadouts line; got: " .. table.concat(lines, " | "))
+end)
+
+test("chart: the plot is a fill with no edge (the owner's call, 2026-10-26)", function()
+    local f = hud()
+    local Chart = f.NS.HudChart
+    assertEqual(Chart.PLOT_BACKDROP.bgFile, "Interface\\Buttons\\WHITE8x8")
+    assertEqual(Chart.PLOT_BACKDROP.edgeFile, nil, "no edge texture")
+    assertEqual(Chart.PLOT_BACKDROP.edgeSize, nil)
+    local set
+    local prior = f.M.CreateFrame
+    f.M.CreateFrame = function(...)
+        local frame = prior(...)
+        rawset(frame, "SetBackdrop", function(_, b) set = b end)
+        rawset(frame, "SetBackdropBorderColor", function() error("the plot draws no edge") end)
+        return frame
+    end
+    Chart.New(f.M.UIParent)
+    f.M.CreateFrame = prior
+    assertTrue(set == Chart.PLOT_BACKDROP, "the plot takes the edgeless backdrop")
 end)

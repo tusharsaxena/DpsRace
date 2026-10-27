@@ -206,8 +206,8 @@ end)
 test("badges: the window minimums hold the wider columns, the Note column last and inside the list", function()
     local i = inst()
     local R, Runs = i.NS.Results, i.NS.ResultsRuns
-    assertEqual(R.VIEWS.collapsed.minWidth, 834)
-    assertEqual(R.VIEWS.expanded.minWidth, 1198)
+    assertEqual(R.VIEWS.collapsed.minWidth, 904)
+    assertEqual(R.VIEWS.expanded.minWidth, 1344)
     local cols = Runs.Columns()
     assertEqual(cols[#cols].key, "note", "the Note column stays at the far right")
     for _, view in ipairs({ "collapsed", "expanded" }) do

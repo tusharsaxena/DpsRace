@@ -16,6 +16,9 @@ local _, NS = ...
 -- HOVER IS OPT-IN AND RESULT-ONLY. A list built with a `tip` hook (the Results detail's) takes the
 -- mouse on its rows and hands the hook a READ RESULT's plain spell record; the live HUD passes none,
 -- so its rows stay click-through and a live (secret) spell ID never reaches a tooltip.
+--
+-- STRIPES ARE OPT-IN TOO. A list built with a `stripe` hook (the Results detail's, the Results list's
+-- tint) tints every other row by its index; the HUD passes none and draws no stripe.
 
 local Breakdown = {}
 NS.HudBreakdown = Breakdown
@@ -127,9 +130,21 @@ List.__index = List
 --- A list of spell rows drawn into `parent`, top down.
 --- @param parent table
 --- @param tip function|nil  tip(row, spell, rank): a result row's hover (none: rows take no mouse)
+--- @param stripe function|nil  stripe(index): the alpha of the row's tint (none: no stripes)
 --- @return table list
-function Breakdown.New(parent, tip)
-    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip }, List)
+function Breakdown.New(parent, tip, stripe)
+    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, stripe = stripe }, List)
+end
+
+-- A row's stripe, made once per pooled row of a list with a `stripe` hook: the row and the gap under it.
+local function paintStripe(list, row, i)
+    if not row.stripe then
+        row.stripe = row:CreateTexture(nil, "BACKGROUND")
+        row.stripe:SetTexture("Interface\\Buttons\\WHITE8x8")
+        row.stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        row.stripe:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -Breakdown.ROW_GAP)
+    end
+    row.stripe:SetVertexColor(1, 1, 1, list.stripe(i))
 end
 
 -- A row's hover, wired once per pooled row of a list with a `tip` hook.
@@ -163,6 +178,7 @@ function List:acquire(i, icons, pct)
     setMode(row, icons, pct)
     row.spell, row.rank = nil, nil
     if self.tip then wireTip(self, row) end
+    if self.stripe then paintStripe(self, row, i) end
     self.rows[i] = row
     return row
 end

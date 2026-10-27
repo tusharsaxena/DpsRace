@@ -15,7 +15,7 @@ two levels and must not contradict each other. The race pipeline is summarized f
   registers, the settings category registers eagerly, and `/dr` and `/dpsrace` register.
 - **`OnEnable`**: if the latch is down, nothing; otherwise `NS.RegisterGameEvents()` registers the
   combat events the current settings need, `NS.Bests.PruneToSetting()` prunes the store to
-  `global.history.keep` (0 = never), and `NS.Race.Resume()` carries on the runs a `/reload`
+  `global.history.keepDays` (0 = never), and `NS.Race.Resume()` carries on the runs a `/reload`
   interrupted (spec §4.5). The stand-up edge calls the same `Resume`.
 
 ## A setting changes
@@ -51,9 +51,11 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `pending` (a run is stopping, or a stored run is unresolved), `bad_length`, `in_combat`,
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
   the player, target and place, `Recorder.SnapshotLoadout` reads the gear links and the talent
-  loadout into memory as the fallback (#6), the session IDs the client holds are remembered (they belong to
+  loadout into memory as the fallback (#6), `Casts.Begin()` starts the race's cast list and
+  `Usage.Snapshot()` reads what could be used into memory (#13, #14; below), the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
-  combat and death events. The newest of those IDs is kept on the run as `race.armMaxSession`, so
+  combat and death events, and the cast list's: every `UNIT_SPELLCAST_SUCCEEDED` of the player and
+  the pet, and the player's channel start and stop (a pre-pull cast is heard while armed). The newest of those IDs is kept on the run as `race.armMaxSession`, so
   a run resumed after a `/reload` (which loses the set) still never adopts an earlier fight's session.
 - **Start**: the first `DAMAGE_METER_CURRENT_SESSION_UPDATED` after arming while the player is in
   combat, or with `PLAYER_REGEN_DISABLED` on the same frame in either order (one heard out of
@@ -67,14 +69,15 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   session held at the arm (read then, out of combat, `race.baseline`) is netted off the total and
   each spell at the read, and the meter's own rate is dropped. A fresh session heard later replaces
   the shared one. The start time is `GetTime()` at that event; `run.date` is restamped, `run.race.startedAt` is the clock's start, and
-  the run is written to SavedVariables as `running`. A `C_Timer.NewTimer` is the
+  the run is written to SavedVariables as `running`; `Casts.Start(t)` makes it the cast list's zero and drops every cast heard more than `Casts.PREPULL` (10) s before it. A `C_Timer.NewTimer` is the
   buzzer. The session ID comes from the first `DAMAGE_METER_COMBAT_SESSION_UPDATED` of type
   DamageDone with a non-zero, plain ID that was not there at arm time. The combat-start edge re-reads
   the target (`Recorder.SnapshotTarget("target", armTimeTarget)`); that read is the one stored. A
   combat that ends while still armed (it never started the clock) clears the re-read, so the combat
   that does start it reads the target again.
-  Watchers adds the player's cast events (start, channel start, empower start, success, interrupt,
-  channel stop); an empowered cast is in flight from its start, like any other.
+  Watchers adds the late-cast judging's own cast events (the player's start, empower start and
+  interrupt; the success and the channel edges are registered from the arm, and `Race.OnCast` judges
+  them only from here on); an empowered cast is in flight from its start, like any other.
 - **Running**: the HUD counts down (`Race.TimeLeft()`) and shows the live breakdown, read through
   `modules/Meter.lua` at the configured rate, with every value opaque. Every DamageDone update for
   the run's session is a stamp on its `Timeline`, and its offset from the start is kept on the run as
@@ -107,12 +110,13 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   takes a fresh snapshot when it resolves out of combat.
 - **Result**: DPS is damage ÷ race length (÷ `endedAt` for an incomplete run); `result.tail`,
   `result.combatEnd` and `flags.restartedAt` are measured from the buzzer (the restart is flagged on
-  the run the moment its update arrives, so a `/reload` after it keeps it); the run is saved
+  the run the moment its update arrives, so a `/reload` after it keeps it); the cast list and what
+  was used are put on the run (below; a lost run gets them too); the run is saved
   (`RUN_SAVED`) and `RACE_RESULT(run)` is sent. Watchers drops every registration. `Race.Cancel()`
   dismisses the card; `Race.Arm` races again.
 - **Cancel** before the result discards the run: an armed one was never stored, a running or
   stopping one is deleted from the store (the HUD's *Cancel* on the running, Stop! and waiting
-  screens, `/dr cancel`).
+  screens, `/dr cancel`). The cast list goes with it (`Casts.Reset()`, as at the stand-down).
 - **Resume** (`OnEnable` and the stand-up): the logged-in character's newest stored `running` or
   `stopping` run is carried on (`Recorder.Pending` holds only this character's runs; another
   character's waits for its own login). Its session gone: `lost`. Running, before its buzzer and in
@@ -125,6 +129,30 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   unresolved run is settled as `lost`. The
   stand-down (disabled or a perf capture) drops the in-memory race and its timers and keeps the stored
   run, so the stand-up resumes it exactly like a `/reload`.
+- **The cast list** (#14, `modules/Casts.lua`): from the arm to the result Watchers hands every cast
+  event to `Casts.Hear`, and the player's to `Race.OnCast` as well. Only a success of `player` or
+  `pet` is kept: its spell ID through `Secrets.PlainNumber` (a sealed one is dropped and counted), an
+  auto-repeat attack skipped (`Casts.AUTO`: Auto Shot, Auto Attack, Shoot), a castGUID heard twice
+  counted once, and while a player channel is open (its `CHANNEL_START` to `CHANNEL_STOP`) only that
+  channel's first success kept. Each cast is held at its `GetTime()` and measured from the clock's
+  start, so one heard while armed is negative; the first cast of a spell asks
+  `GetSpellBaseCooldown` once. At the clock's start (and again at the record) only the casts of the
+  last `Casts.PREPULL` (10) s before it are kept, so the usage, the chart and the timeline read one
+  list; the player's earlier ones are counted by spell (`Casts.Early()`, in memory) for the usage's bag
+  compare. The running HUD reads `Casts.Live()` and `LiveSpells()`; at the result `Casts.Record()` is
+  stored as `run.casts` (`{ v, list, spells, dropped }`, [schema.md](schema.md)).
+- **What was used** (#13, `modules/Usage.lua`): `Usage.Snapshot()` at the arm (out of combat) holds
+  the equipped slots with a use spell, the bag consumables with one and their counts, and the helpful
+  auras on the race (`cur.usageSnap`). At the result (the record path is out
+  of combat) `Usage.Build(snap, Casts.Decode(list), Usage.BagCounts(), Casts.Early())` is stored as `run.usage`
+  (a lost run too, at its loss). It detects, in order: a cast of an on-use slot's or a consumable's
+  spell (`cast`, at each cast's time), a consumable whose count dropped with no cast (`bag`, time
+  unknown; nothing when the bags could not be read whole, and a drop the early casts of its spell
+  explain given back first), an aura at the arm that is a bag consumable's own spell (a flask or phial: `buff`)
+  or *Well Fed* (food, no item: `buff`). No weapon enchant is read (an oil has no on-use; the owner's
+  call, 2026-10-26). The candidates are every on-use item and bag consumable at the arm. The item-cooldown compare
+  is not used (a shared cooldown gave the probe a false positive). A run resumed after a `/reload` or
+  the stand-down has neither list: both were in memory.
 
 ## Bests and pruning (spec §6.2, §7)
 
@@ -142,8 +170,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   `C_Item`, the tooltip from the link itself) and the talents line. While the compare is on it reads
   the other run's the same way and highlights the slots whose link differs, and marks a different
   import string. *View* opens the talent tree through `SetItemRef` with the `talentbuild` link (an accepted taint risk, ARCHITECTURE.md Taint Notes) and also prints the link to the player's own chat window (`NS.Print`), where a click opens the tree again. Nothing is stored.
-- **Pruning** (`Recorder.Prune(keep, protect)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
-  `global.history.keep` is above 0. It removes the oldest resolved runs until `keep` remain, never one
+- **Pruning** (`Recorder.Prune(days, protect, now)`) runs at `OnEnable` and on every `RUN_SAVED`, only when
+  `global.history.keepDays` is above 0 (90 by default). It removes every resolved run older than that many days, never one
   holding a best on either board, never a `running` or `stopping` run, never the run that `RUN_SAVED`
   just stored and never the race's current run (the one on the result card), and fires `RUNS_CHANGED`
   once. While stood down the bus receiver is dropped, so nothing prunes. A prune that removed any run,
@@ -209,7 +237,7 @@ race.
   It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
+  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
   (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
   (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
   less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own
@@ -225,6 +253,26 @@ race.
   that best's faint gray diagonal (one 2px line at 40%) from 0:00 to its damage at the run's length, and the plot's max (the
   columns' too) is max(`result.damage`, that) x 1.15; without one each column is scaled to the plain
   `result.damage`, no diagonal. All plain numbers.
+- **The cooldown icons** (#14, *Show cooldown icons*, `live.castDots`): the running chart's view
+  carries the race's important casts so far as `cooldowns` (`Casts.Filter(Casts.Live(),
+  Casts.LiveSpells())`: a base cooldown of 29 s or more), read again only when `Casts.Size()` or the run
+  changed, so the 20 Hz redraw builds nothing. `Strip:drawIcons` lays a pooled 12 px frame with the
+  spell's icon (`HudBreakdown.SpellIcon` on the cast's plain ID) along the top of the plot, centered
+  at `HudChart.IconX(t, length, width)`: `TimeX` = INSET + clamp(t, 0, length) / length x (width - 2
+  x INSET), held half an icon inside either edge. `HudChart.IconRows` drops an icon closer than its
+  width to the last one on its row to the first row below with room (`IconY`), on as many rows as
+  the plot frame holds (`IconRowCount` on `FrameHeight`: the configured height plus `RESERVE`, one
+  icon row on top, so 6 at 80 px and 3 at the 40 px minimum). The columns and the best's diagonal
+  scale within the configured height below that reserved row, so one row of icons never covers
+  them; the rows past it stack down over the columns as before. A cast
+  with no room above sits on the last row, alone as an icon, or with others crowded there as one
+  pooled *+n* mark at the first one's x, its hover (`ResultsTips.CastCrowd`) listing each cast and
+  its time on bullets, so no cast is dropped. Plain numbers on the configured width and height,
+  laid again only when the list, its size, the length or the geometry changed.
+  After the race the result card and the Results detail draw `HudChart.CooldownsOf(run)`
+  (`Casts.Important` on the stored record). Every icon takes the mouse, on the running HUD too, and
+  shows `ResultsTips.Cast` under it (the spell and *Cast at m:ss*). With the setting off no chart
+  draws any.
 - **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
   down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
   leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
@@ -248,8 +296,14 @@ The window reads stored run records only: every number on one went through `NS.S
 into the store, so sorting, percentages and the timing strip are plain Lua. It holds no game event
 or `OnUpdate`; its only timers are the talent tree's step-aside (a one-frame `C_Timer.After(0)`
 look after a close-stack close, then a `Results.TREE_POLL` ticker while the tree is up; ARCHITECTURE.md
-Taint Notes, B4.1).
+Taint Notes, B4.1) and, only while its grip is dragged, the one-frame `C_Timer.After(0)` that
+coalesces a second size change in a frame (`modules/Sizing.lua`).
 
+- **Resizing** (`modules/Sizing.lua`, [performance.md](performance.md#window-sizing)): while the grip
+  is held the window lays out cheaply at most once a frame (the list's `Table:Resize`: columns,
+  headers, the rows the new height adds or drops, the scroll range; the detail's `Resize`: its
+  scroll frame), from the size `OnSizeChanged` hands it, never a frame read; the release runs the
+  full layout once (every row rebound, the detail drawn again) and stores the view's size.
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
   (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
@@ -258,27 +312,87 @@ Taint Notes, B4.1).
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` measures per group (`Table:measure` on every `SetData` and `SetGroup`: the *Delta* column's max DPS and the Damage and DPS bars' range, each the run's own group's under the current *Group by*, the whole list with *None*; nothing is stored on a run), scales the bars linearly from 10% to 100% of that range, sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
   run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
-- **The detail**: `ResultsDetail` draws the selected run: header, score and `Bests.Delta(run)`, the
+- **The detail**: `ResultsDetail` draws the selected run: header, score and its *Delta* box, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
   the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
   (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
-  run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view (the default) it sits beside the list; in the collapsed view it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
+  run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view it sits beside the list; in the collapsed view (the default, UT-P14) it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
   target line leads with two chips (`Detail.Meta`): the target type in its category color and the
   race length in its length color (`ResultsTable.LengthChip`), then `ResultsTable.TimeTail` (the DoT
   tail, *+11.1s*, or when an incomplete run's combat ended, *at 1:04*) and the target's name.
+- **The detail's Delta box** (the owner's call, 2026-10-26): the Runs list's *Delta* for the run, not
+  `Bests.Delta` (the best that stood when it was raced, which only the HUD's result card and the
+  share line still read). The column's scan (`Table:measure` → its `scan`) keeps one context per
+  group of the runs the filters pass (`ResultsRuns.Context`: the max DPS, the complete run that sets
+  it and the runner-up, `Leaders` breaking a tie to the earlier run) and which runs it listed, on the
+  Runs view, never on a run. The detail asks through the shell's `deltaContext` hook
+  (`View:DeltaContext`); a run the filters leave out (opened from the HUD, a Bests row) gets its board
+  among every run the source holds (`BoardContext`: spec x target type x length, `Bests.Key`), the
+  sample history's in test mode. `DeltaBox` answers the figure: the group's top complete run's lead
+  over the runner-up in green (a dash with none), any other run's own *Delta* cell (an incomplete
+  run's figure muted, as the column shows it, and a lost run's a muted dash); the top complete run
+  alone gets the *New best* badge beside the box.
+  Every `View:Refresh` (a filter, *Group by*, a saved view applied, a store change) calls the view's
+  `changed` hook, and the shell redraws the box and the badge (`Pane:RefreshDelta`).
 - **Writes**: *Add note* → `Results.SetNote` → `ResultsDetail.ClampNote` (200 characters) →
   `Recorder.SetNote` (`RUNS_CHANGED`, never `RUN_SAVED`: that one prunes, and a typed note must not
-  delete runs). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
+  delete runs). The *Usage* section's *Save* → `Usage.SetUsed` (`RUNS_CHANGED`, likewise). *Delete* → `Results.ConfirmDelete` → the `DPSRACE_DELETE_RUN` popup →
   `Results.DeleteRun` → `Recorder.Delete` (`RUNS_CHANGED`).
+- **What was used** (#13, `modules/Results_Usage.lua`): the Runs list's *Used* column draws
+  `ResultsUsage.Icons(run)` (the gear first, as many 16 px icons as the 70 px column holds, else one
+  fewer and *+n*; a dash for nothing or no record), sorts by `Count` (a run with no record last) and
+  names each entry, its icon first, and when in its tooltip (`CELL.used`). The detail's *Usage*
+  section, under *Talents*, lists `UsedRows` (what was used, gear first; *Nothing used* when empty).
+  *Edit* switches it to `Rows` (each candidate with the entry it stands for, then each used entry no
+  candidate stands for: food), the used ones ticked, with *Save* beside *Edit*. *Save*, live only
+  while the ticks differ from the stored list, calls `Usage.SetUsed(run, ResultsUsage.Edits(...))`
+  (the ticks, then each used entry the edit does not list: a hidden item's) and leaves the edit: each
+  tick keeps the detected entry it matches (by item, and by slot, never one entry twice), a new tick
+  is `manual` (used once, no time; food ticked again keeps its detected source), an unticked food
+  joins the candidates so its row stays, and the record is marked `edited`; a sample run changes in
+  memory only (`ResultsSource.Touched`). *Edit* again, or another run, leaves the edit unsaved; a
+  redraw of the same run keeps the scroll, the edit and its ticks not saved yet (`ResultsUsage.Carry`,
+  by each row's item). A run with no `usage` reads *Not recorded*.
+- **The hidden items** (P9, `global.usage.hidden`): `Usage.Shown(e)` leaves out a hidden item and an
+  old record's `enchant` entry everywhere `ResultsUsage` lists (`Entries`, so the Used column, its
+  tooltip and its sort; `Rows`; `UsedRows`). The list is written whole through `NS.SetByPath` by
+  `Usage.Hide` / `Usage.Unhide`: from the History page's *Usage* tab (the library's ID list) and from
+  a right-click on an item's row in the edit (*Never show <item>*, `ResultsUsage.RowMenu`). The
+  `SETTINGS_CHANGED` it sends redraws the Results window (`Results.lua`'s bus receiver). Detection
+  still records a hidden item, so un-hiding it brings it back on every run.
+- **The ability timeline** (#14, `modules/Results_Timeline.lua`): the detail's *Timeline* button,
+  live for a run with a non-empty cast list, opens a pop-out window on the detail pane. It draws
+  `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown of 29 s or more
+  first, longest first, then by this run's count, then the other's, the player's before the pet's),
+  each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
+  count just past its right end (`COUNT_GAP`), over an axis to the longer of the two races (`Span`, `Ticks`),
+  drawn again under the *Casts* strips.
+  Above the lanes (under a *Casts* heading; the lanes under *By ability*) two strips on the same axis,
+  this run's over the compared run's, draw every cast (`CastsOf`, the pet's too) as its ability's icon,
+  stacked onto extra rows where icons would overlap (`Stack`; this run's upward, the other's downward,
+  each strip `StripHeight` tall for its rows, at most `MAX_STACK`); `Sections` places the parts. The compared run
+  is `ResultsDetail.CompareTarget(true)` (the best, the runner-up or the picked run, whether or not
+  the compare is on); with none, or one with no casts, its lanes stay empty under a note. Every
+  position is `MarkX` on the window's tracked size and the zoom: the controls at the right of the *Casts*
+  heading line step `ZOOMS` (1x to 8x), which lays the strips' and the lanes' time area out that many
+  times the lanes' width in clipping scroll frames that pan together (zoomed in, Shift+wheel and the scroll
+  arrows after the zoom controls, `Pan`, a quarter of the view a step, and the scrollbar along the window's bottom, `ScrollTo`, whose thumb is the view's share), kept
+  as the fraction of the axis at the view's left (`ClampPos`, which snaps a value a rounding error short of an end onto it, and `Rezoom`,
+  about the view's middle for a button and about the moment under the cursor for Ctrl+wheel: the cursor less the window's left edge, `CursorAt`, the one
+  geometry read, and no meter value near it); the arrows are live only zoomed in on drawn lanes; another run or compare target
+  goes back to 1x. The detail calls `ResultsTimeline.DetailChanged`
+  on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
+  with the Results window. Every open places it exactly over the Results window, that window's anchor
+  and its size in the view shown (`Results.Placement`); nothing of its place or size is stored.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
   same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
   *All categories*: the table has no target column, so two boards of one spec and length would read
   alike); it starts on the first category present, in `NS.Dummies.CATEGORIES` order.
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
-  `SETTINGS_CHANGED` for `global.history.keep` redraws the footer.
+  `SETTINGS_CHANGED` for `global.history.keepDays` redraws the footer.
 
 ## Share and the race's chat lines (spec §6.1, §6.2; mockup screen 12)
 
@@ -307,11 +421,13 @@ Taint Notes, B4.1).
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
 - **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 16 runs on the
   player and two made-up characters, every Status, target type and preset length, notes, loadouts
-  from the player's own `Recorder.SnapshotLoadout()`, and sample chart records) and routes the
+  from the player's own `Recorder.SnapshotLoadout()`, sample chart records, and sample casts and
+  usage (`MockRuns.Usage`: a class's cast pattern, and usage detected by `Usage.Build` from the
+  player's own snapshot; one run raced before format 3 has neither)) and routes the
   Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
   window draws the sample as it draws the store: the Runs view opens on every character and spec,
-  the Bests tab, the detail's compare, chart, gear and talents. A note or a delete changes the
-  sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
+  the Bests tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
+  the ability timeline. A note, a usage edit or a delete changes the sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
 - **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
   `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample
   0:30 race beating the history's best on its board (`Sim.Sample("newbest")`: the clock, live figures,
@@ -340,4 +456,4 @@ Taint Notes, B4.1).
   Closing the HUD (its X or Escape) and the sample bodies'
   Cancel ends it too, through `Hud.Act`, and never reaches `Race.Cancel`: a start is
   allowed over a real result card, which the preview covers and leaves as it was; the sample card's
-  Race Again, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).
+  New Race, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).

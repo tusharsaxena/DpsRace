@@ -1,6 +1,6 @@
 local _, NS = ...
 -- modules/Results_Detail.lua — one run in full (spec §6.2, mockup screen 08's right-hand pane): who,
--- against what and where; the score (damage, DPS, Blizzard's meter DPS muted, the best delta); the
+-- against what and where; the score (damage, DPS, Blizzard's meter DPS muted, the Delta box); the
 -- ability breakdown sorted highest first with each spell's share; the timing strip (the race, the
 -- buzzer, the grace, the tail, each late cast, the end of combat); the flags with what each means;
 -- the note; Share and Delete. Placed by the shell (modules/Results.lua) beside the list, or in its
@@ -13,7 +13,7 @@ local _, NS = ...
 -- The content scrolls (the mouse wheel) when the breakdown is long; the three buttons stay put.
 --
 -- SECTION HEADINGS (the owner's call, 2026-10-25): Spell breakdown (over the compare's toggle and the
--- spell list), the chart's title, Timing, Gear, Talents, the flags box's title and Note are all
+-- spell list), the chart's title, Timing, Gear, Talents, Usage, Flags (over the flags box) and Note are all
 -- FONT.SECTION, a step above GameFontNormal, each on a SECTION_H line with SECTION_GAP of clear space
 -- above it (the header is the only block above the first heading, so no heading sits at the very top).
 --
@@ -21,12 +21,36 @@ local _, NS = ...
 -- run's in-session slices (modules/Slices.lua), drawn by modules/Hud_Chart.lua and scaled to its plain
 -- final damage. A run from an earlier session, a lost run or a shared session has no section at all.
 --
+-- THE DELTA BOX (the owner's call, 2026-10-26) sits under the three figures, their size and look: the
+-- Runs list's Delta column for this run (its group under the Runs view's Group by, or the whole view
+-- with None), read through the shell's `deltaContext` hook (View:DeltaContext); a run the filters
+-- leave out falls back to its board among every run (Runs.BoardContext). The group's top complete
+-- run shows its lead over the runner-up, and a *New best* badge (the Status column's trophy, blue,
+-- no box) beside the box. The shell redraws it whenever the Runs view's filters or grouping change
+-- (Pane:RefreshDelta). The HUD's result card keeps its own chip (Bests.Delta at the race's end).
+--
 -- THE COMPARE (#7) sits under the score: a toggle that sets the run beside the best on its board, or
 -- beside a run picked from a Runs row's menu. Its parts and its pure logic are
 -- modules/Results_Compare.lua's; while it is on, its compared breakdown takes the plain one's place.
 --
 -- THE LOADOUT (#6) sits under the timing strip: the run's gear and talents, drawn by
 -- modules/Results_Loadout.lua, which highlights what changed while the compare is on.
+--
+-- THE USAGE (#13) sits under the talents: what the run used, ticked as detected and editable, drawn
+-- by modules/Results_Usage.lua.
+--
+-- THE TIMELINE (#14): the *Timeline* button, live for a run with casts, opens the ability timeline
+-- (modules/Results_Timeline.lua) on this pane; every draw and every compare change tells it, so it
+-- follows the run shown and its compare target while it is open.
+--
+-- COLLAPSIBLE SECTIONS (the owner's call, 2026-10-26, UT-P10): every section heading (Detail.SECTIONS)
+-- has an arrow left of its text, chevron-down while the section is open and chevron-right while it is
+-- folded; a click on the arrow or the heading's text folds or opens it. A folded section keeps its
+-- heading line (and what sits on it by the text: Gear's item level, the chart's note is cleared) and
+-- hides its body, so the sections below move up; the layout is from config, so the scroll range
+-- follows. Which sections are folded is stored in profile.windows.results.collapsedSections (a key
+-- set to true, nothing for an open one): kept by Reset position (it is no geometry), cleared by a
+-- profile reset and Reset all settings. Opening the note box (Add Note) opens a folded Note.
 --
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
 -- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
@@ -44,10 +68,17 @@ Detail.NOTE_MAX = 200       -- characters (spec §6.2)
 Detail.STRIP_GAP = 3        -- the gap between the race and the after-the-buzzer segments
 Detail.STRIP_RATIO = 1.2    -- the race segment's share against the after-buzzer one's 1 (mockup)
 Detail.SPAN_STEP = 6        -- the after-buzzer axis runs to a multiple of this, at least two steps
+Detail.TIMELINE_W = 72      -- the Timeline button
+-- The collapsible sections, top to bottom (the stored keys of profile.windows.results.collapsedSections).
+Detail.SECTIONS = { "spells", "chart", "timing", "gear", "talents", "usage", "flags", "note" }
+Detail.ARROW = 14           -- a heading's arrow, a square left of its text
+Detail.INDENT = Detail.ARROW + 2   -- a heading's text, after its arrow and a 2 px gap
 
 local PADX = 12
 local BUTTON_H = 20
 local KPI_H = 46
+local KPI_GAP = 6           -- between two figure boxes, across and down
+local BADGE_ICON = 20       -- the New best badge's trophy
 local STRIP_H = 34
 local LINE_H = 14
 -- The header (the owner's call, 2026-10-25): larger class and spec icons beside a larger name.
@@ -60,6 +91,8 @@ local SECTION_GAP = NS.Style.SECTION_GAP
 Detail.SECTION_H = SECTION_H
 Detail.SECTION_GAP = SECTION_GAP
 Detail.ICON = ICON
+Detail.KPI_H = KPI_H
+Detail.KPI_GAP = KPI_GAP
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
 local CYAN = { 0.3, 0.85, 1.0 }
@@ -69,6 +102,17 @@ local VIOLET = { 0.78, 0.5, 1.0 }
 local LINE_W = 2
 local LINE_INSET = 4
 local RACE = { 0.53, 0.53, 0.93 }
+-- The flags box (the owner's call, 2026-10-27, UT-P11): under its Flags heading, each flag's main line
+-- in FONT.SECTION pale amber, its detail (the late casts' offsets) in FONT.CAPTION amber, then what it
+-- means in FONT.TEXT; the three read apart by size and hue.
+local FLAG_MAIN = { 0.95, 0.84, 0.65 }
+local FLAG_BODY = { 0.94, 0.84, 0.65 }
+local FLAG_PADX, FLAG_PADY = 9, 7   -- inside the box
+local FLAG_GAP = 6                  -- between two flags
+Detail.FLAG_MAIN_H = 18             -- a main line (the 16px font)
+Detail.FLAG_SUB_H = 12              -- a detail line (the 10px caption)
+Detail.FLAG_PADX, Detail.FLAG_PADY, Detail.FLAG_GAP = FLAG_PADX, FLAG_PADY, FLAG_GAP
+Detail.FLAG_MAIN, Detail.FLAG_BODY = FLAG_MAIN, FLAG_BODY
 
 -- ── pure: the note ──────────────────────────────────────────────────────────────────────────────
 
@@ -184,29 +228,32 @@ local function lateLine(run)
         .. " " .. L[STILL_COUNTS]
 end
 
+-- What each flag means, under its own line in the flags box (so none repeats that line); a flag
+-- missing here (died) says it all on its line.
 local EXPLAIN = {
     lateCasts = lateLine,
-    restarted = function(_, text) return L["%s, after the quiet gap."]:format(text) .. " " .. L[STILL_COUNTS] end,
-    reloaded = function(_, text) return text .. ". " .. L[STILL_COUNTS] end,
+    restarted = function() return L["After the quiet gap past the buzzer: a new pull."] .. " " .. L[STILL_COUNTS] end,
+    reloaded = function() return L[STILL_COUNTS] end,
     sessionFromList = function()
-        return L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."]
+        return L["The meter session was found by its place in Blizzard's list, not by its ID."] .. " " .. L[STILL_COUNTS]
+    end,
+    sharedSession = function()
+        return L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
             .. " " .. L[STILL_COUNTS]
     end,
-    sharedSession = function(_, text)
-        return text .. ". " .. L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."]
-            .. " " .. L[STILL_COUNTS]
-    end,
-    died = function(_, text) return text .. "." end,
-    incomplete = function(_, text) return text .. ". " .. L["It does not count toward bests."] end,
-    lost = function(_, text) return text .. ". " .. L["There is no score."] end,
+    incomplete = function() return L["It does not count toward bests."] end,
+    lost = function() return L["There is no score."] end,
 }
 
---- The run's flags with what each means, in Scoring's order: { key, short, text }.
+--- The run's flags with what each means, in Scoring's order: { key, main, sub, text, full }. `main` is
+--- the flag's own line ("2 late casts"), `sub` its detail or "" (the late casts' offsets), `text` what
+--- it means or "", `full` Scoring's one-line text (the tooltip's).
 function Detail.FlagLines(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
         local explain = EXPLAIN[flag.key]
-        out[#out + 1] = { key = flag.key, text = explain and explain(run, flag.text) or flag.text, full = flag.text }
+        out[#out + 1] = { key = flag.key, main = flag.main or flag.text, sub = flag.sub or "",
+                          text = explain and explain(run) or "", full = flag.text }
     end
     return out
 end
@@ -245,6 +292,35 @@ function Detail.Meta(run)
     return table.concat(first, sep), table.concat(second, sep), table.concat(third, sep), chips
 end
 
+-- ── the folded sections (stored) ────────────────────────────────────────────────────────────────
+
+-- The profile's set of folded sections, made on first use (an old profile has none).
+local function foldedSet()
+    local prof = NS.db and NS.db.profile
+    if not prof then return nil end
+    prof.windows = prof.windows or {}
+    prof.windows.results = prof.windows.results or {}
+    local w = prof.windows.results
+    if type(w.collapsedSections) ~= "table" then w.collapsedSections = {} end
+    return w.collapsedSections
+end
+
+--- Whether section `key` (one of Detail.SECTIONS) is folded in this profile.
+--- @param key string
+--- @return boolean
+function Detail.IsCollapsed(key)
+    local set = foldedSet()
+    return set ~= nil and set[key] == true
+end
+
+--- Fold section `key` (`on`) or open it; an open section is stored as nothing.
+--- @param key string
+--- @param on boolean
+function Detail.SetCollapsed(key, on)
+    local set = foldedSet()
+    if set then set[key] = on and true or nil end
+end
+
 -- ── the pane ────────────────────────────────────────────────────────────────────────────────────
 
 local Pane = {}
@@ -258,7 +334,9 @@ Detail.LEGEND_ROWS = { { 1, 2 }, { 3, 4, 5, 6 } }
 
 -- ── hovers ──────────────────────────────────────────────────────────────────────────────────────
 
+-- `index` may be a function: what it answers at hover time (the Delta box's context).
 local function showTip(p, owner, key, index)
+    if type(index) == "function" then index = index() end
     local lines = NS.ResultsTips.Detail(key, p.run, index)
     if lines then Tbl.BelowTip(owner, lines) end
 end
@@ -276,6 +354,54 @@ local function hoverOver(p, region, key, index)
     local f = CreateFrame("Frame", nil, p.content)
     f:SetAllPoints(region)
     return hover(p, f, key, index)
+end
+
+-- ── section headings ────────────────────────────────────────────────────────────────────────────
+
+--- Give section `key`'s heading `title` its arrow (in `parent`, the content by default), anchored
+--- left of the text so it follows the heading wherever it is placed; a left click on the arrow or on
+--- `click` (the heading's hover frame) folds or opens the section.
+--- @param key string  one of Detail.SECTIONS
+--- @param title table  the heading's FontString
+--- @param click table|nil
+--- @param parent table|nil
+--- @return table arrow
+function Pane:AddHeading(key, title, click, parent)
+    local Style = NS.Style
+    local arrow = Style.ControlButton(parent or self.content, "chevron-down", "-", L["Collapse this section"],
+        function() self:ToggleSection(key) end)
+    arrow:SetSize(Detail.ARROW, Detail.ARROW)
+    arrow.icon:SetVertexColor(Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
+    arrow:SetPoint("RIGHT", title, "LEFT", Detail.ARROW - Detail.INDENT, 0)
+    if click then
+        click:EnableMouse(true)
+        click:HookScript("OnMouseUp", function(_, button)
+            if button ~= "RightButton" then self:ToggleSection(key) end
+        end)
+    end
+    arrow.click = click
+    self.heads[key] = arrow
+    return arrow
+end
+
+--- Show section `key`'s arrow (`shown`: its heading is drawn) in the stored state: chevron-down open,
+--- chevron-right folded. Each layout calls it before placing the section's body.
+--- @return boolean folded
+function Pane:Heading(key, shown)
+    local arrow, folded = self.heads[key], Detail.IsCollapsed(key)
+    arrow:SetShown(shown and true or false)
+    NS.Style.SetControlIcon(arrow, folded and "chevron-right" or "chevron-down", folded and "+" or "-")
+    arrow.tip = folded and L["Expand this section"] or L["Collapse this section"]
+    return folded
+end
+
+--- Fold or open section `key` (stored in the profile) and lay the pane out again, the scroll kept.
+function Pane:ToggleSection(key)
+    local fold = not Detail.IsCollapsed(key)
+    Detail.SetCollapsed(key, fold)
+    -- Folding the Note while it is being written closes the box unsaved, as Escape does.
+    if fold and key == "note" and self.editing then return self:closeNote() end
+    if self.run then self:Layout(self.width, self.height, self.narrow) end
 end
 
 local function kpi(parent, label, color)
@@ -308,7 +434,19 @@ local function buildHeader(p, c)
     -- The target line's chips (Detail.Meta): the target type, then the race length.
     w.metaChips = { Tbl.Chip(c), Tbl.Chip(c) }
     w.damage, w.dps, w.meterDps = kpi(c, L["Damage"]), kpi(c, L["DPS"], C.green), kpi(c, L["Meter DPS"], C.dim)
-    w.delta = Tbl.Text(c, FONT.TEXT, C.green)
+    w.deltaBox = kpi(c, L["Delta"], C.dim)
+    -- The New best badge: the trophy and the words in the Status column's Spec best blue, no box.
+    w.badge = CreateFrame("Frame", nil, c)
+    w.badge:SetHeight(KPI_H)
+    w.badgeIcon = w.badge:CreateTexture(nil, "ARTWORK")
+    w.badgeIcon:SetSize(BADGE_ICON, BADGE_ICON)
+    w.badgeIcon:SetPoint("LEFT", w.badge, "LEFT", 0, 0)
+    w.badgeIcon:SetTexture(NS.Icon("ph:trophy"))
+    w.badgeIcon:SetVertexColor(C.blue[1], C.blue[2], C.blue[3])
+    w.badgeText = Tbl.Text(w.badge, FONT.SECTION, C.blue)
+    w.badgeText:SetPoint("LEFT", w.badgeIcon, "RIGHT", 6, 0)
+    w.badgeText:SetText(L["New best"])
+    w.badge:Hide()
     w.spellsTitle = Tbl.Text(c, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
 end
@@ -360,14 +498,24 @@ local function buildTiming(p, c)
     }
 end
 
+-- One flag's three lines in the flags box, made the first time a run has that many flags.
+local function flagRow(p, i)
+    local w = p.w
+    local row = w.flagRows[i]
+    if row then return row end
+    row = { main = wrapText(w.flags, FONT.SECTION, FLAG_MAIN), sub = wrapText(w.flags, FONT.CAPTION, C.amber),
+            body = wrapText(w.flags, FONT.TEXT, FLAG_BODY) }
+    w.flagRows[i] = row
+    return row
+end
+
 local function buildFlags(p, c)
     local w = p.w
+    -- The heading, like every other section's; the yellow box under it holds the flags.
+    w.flagTitle = Tbl.Text(c, FONT.SECTION)
+    w.flagTitle:SetText(L["Flags"])
     w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
-    w.flagTitle = Tbl.Text(w.flags, FONT.SECTION, { 0.95, 0.84, 0.65 })
-    w.flagTitle:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -7)
-    w.flagBody = wrapText(w.flags, FONT.TEXT, { 0.94, 0.84, 0.65 })
-    w.flagBody:SetPoint("TOPLEFT", w.flags, "TOPLEFT", 9, -(7 + SECTION_H))
-    w.flagBody:SetPoint("BOTTOMRIGHT", w.flags, "BOTTOMRIGHT", -9, 6)
+    w.flagRows = {}
     w.noteTitle = Tbl.Text(c, FONT.SECTION)
     w.noteTitle:SetText(L["Note"])
     w.note = wrapText(c, FONT.TEXT, C.dim)
@@ -404,6 +552,10 @@ local function buildButtons(p)
         b:SetSize(84, BUTTON_H)
         b:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + (i - 1) * 90, 8)
     end
+    -- The ability timeline (#14), after Share: 72 px, so it clears Delete on the 440 px pane.
+    w.timeline = Button(f, L["Timeline"], function() if p.run and p.hooks.timeline then p.hooks.timeline(p) end end)
+    w.timeline:SetSize(Detail.TIMELINE_W, BUTTON_H)
+    w.timeline:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", PADX + 2 * 90, 8)
     w.delete:SetSize(78, BUTTON_H)
     w.delete:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -PADX, 8)
 end
@@ -416,23 +568,30 @@ local function wireTips(p)
     hoverOver(p, w.name, "name")
     for i, key in ipairs({ "realm", "target", "stamp" }) do hoverOver(p, w.meta[i], key) end
     for _, chip in ipairs(w.metaChips) do hover(p, chip, "target") end
-    hoverOver(p, w.spellsTitle, "breakdown")
+    w.spellsTitleHover = hoverOver(p, w.spellsTitle, "breakdown")
     hover(p, w.damage.frame, "damage")
     hover(p, w.dps.frame, "dps")
     hover(p, w.meterDps.frame, "meterDps")
-    hoverOver(p, w.delta, "delta")
+    local function deltaContext() return p.deltaCtx end
+    hover(p, w.deltaBox.frame, "delta", deltaContext)
+    hover(p, w.badge, "badge", deltaContext)
     -- Kept: the title keeps its anchors while hidden, so its hover follows the chart's visibility.
     w.chartTitleHover = hoverOver(p, w.chart.title, "chart")
     hover(p, w.chart.over, "chart")
-    hoverOver(p, w.timingLabel, "strip")
+    w.timingTitleHover = hoverOver(p, w.timingLabel, "strip")
     hover(p, w.strip, "strip")
-    for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do hoverOver(p, axis, "strip") end
-    hoverOver(p, w.tailLine, "tail")
+    -- Kept: the timing's body hovers hide with it (no run model, or the section folded), so none is
+    -- left over the sections that move up into its place.
+    local th = {}
+    w.timingHovers = th
+    for _, axis in ipairs({ w.axisLeft, w.axisMid, w.axisRight, w.axisRace }) do th[#th + 1] = hoverOver(p, axis, "strip") end
+    th[#th + 1] = hoverOver(p, w.tailLine, "tail")
     for i, item in ipairs(w.legend) do
-        hoverOver(p, item.swatch, "legend", i)
-        hoverOver(p, item.fs, "legend", i)
+        th[#th + 1] = hoverOver(p, item.swatch, "legend", i)
+        th[#th + 1] = hoverOver(p, item.fs, "legend", i)
     end
     hover(p, w.flags, "flags")
+    w.flagTitleHover = hoverOver(p, w.flagTitle, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
     w.noteTitleHover = hoverOver(p, w.noteTitle, function() return p.editing and "noteBox" or "note" end)
@@ -440,6 +599,7 @@ local function wireTips(p)
     hover(p, w.back, "back")
     hover(p, w.addNote, "addNote")
     hover(p, w.share, function() return w.share:IsEnabled() and "share" or "shareOff" end)
+    hover(p, w.timeline, function() return w.timeline:IsEnabled() and "timeline" or "timelineOff" end)
     hover(p, w.delete, "delete")
 end
 
@@ -452,13 +612,14 @@ end
 --- The detail pane in `parent`.
 --- @param parent table
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
----                       clearPick() }
+---                       clearPick(), timeline(pane), deltaContext(run) -> the Runs view's context or nil }
 function Detail.Build(parent, hooks)
     local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
     -- before any child is built so every child is born in it.
     frame:SetFrameLevel(parent:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.DETAIL)
-    local p = setmetatable({ frame = frame, hooks = hooks or {}, w = {}, scroll = 0, width = 340, height = 400 }, Pane)
+    local p = setmetatable({ frame = frame, hooks = hooks or {}, w = {}, heads = {}, scroll = 0, width = 340,
+                             height = 400 }, Pane)
     p.scrollFrame = CreateFrame("ScrollFrame", nil, frame)
     p.content = CreateFrame("Frame", nil, p.scrollFrame)
     p.scrollFrame:SetScrollChild(p.content)
@@ -470,31 +631,47 @@ function Detail.Build(parent, hooks)
     local c = p.content
     buildHeader(p, c)
     NS.ResultsCompare.Build(p, c)
-    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end)
+    p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end,
+        NS.ResultsTable.StripeAlpha)
     p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
     p.w.chart:SetShown(false)
     buildTiming(p, c)
     NS.ResultsLoadout.Build(p, c)
+    NS.ResultsUsage.Build(p, c)
     buildFlags(p, c)
     buildButtons(p)
     wireTips(p)
+    local w = p.w
+    p:AddHeading("spells", w.spellsTitle, w.spellsTitleHover)
+    p:AddHeading("chart", w.chart.title, w.chartTitleHover)
+    p:AddHeading("timing", w.timingLabel, w.timingTitleHover)
+    p:AddHeading("flags", w.flagTitle, w.flagTitleHover)
+    p:AddHeading("note", w.noteTitle, w.noteTitleHover)
     return p
 end
 
 -- ── drawing one run ─────────────────────────────────────────────────────────────────────────────
 
-local function setDelta(fs, run)
-    if run.status ~= "complete" then return fs:SetText("") end
-    local pct, isNew = NS.ResultsSource.Delta(run)
-    if isNew then
-        fs:SetText(pct and L["New best +%.1f%%"]:format(pct) or L["New best"])
-        fs:SetTextColor(C.green[1], C.green[2], C.green[3])
-    elseif pct then
-        fs:SetText(L["%+.1f%% vs best"]:format(pct))
-        fs:SetTextColor(RED[1], RED[2], RED[3])
-    else
-        fs:SetText("")
-    end
+-- The Delta box's context: the Runs view's for the run, else its board among every run.
+function Pane:deltaContext(run)
+    local ctx = self.hooks.deltaContext and self.hooks.deltaContext(run)
+    return ctx or NS.ResultsRuns.BoardContext(run, NS.ResultsSource.All())
+end
+
+-- The Delta box and the New best badge beside it (the badge on the group's top complete run only).
+function Pane:fillDelta(run)
+    local w = self.w
+    self.deltaCtx = self:deltaContext(run)
+    local text, color, top = NS.ResultsRuns.DeltaBox(run, self.deltaCtx)
+    w.deltaBox.value:SetText(text)
+    w.deltaBox.value:SetTextColor(color[1], color[2], color[3])
+    w.badge:SetShown(top)
+end
+
+--- Redraw the Delta box and the badge for the run shown: the Runs view's filters or grouping changed
+--- (its `changed` hook, through the shell). Nothing else on the pane moves.
+function Pane:RefreshDelta()
+    if self.run then self:fillDelta(self.run) end
 end
 
 function Pane:fillHeader(run)
@@ -523,37 +700,41 @@ function Pane:fillScore(run)
     w.dps.value:SetText(lost and DASH or NS.Format.Number(result.dps or 0))
     w.meterDps.value:SetText(type(result.meterDps) == "number" and NS.Format.Number(result.meterDps) or DASH)
     w.dps.label:SetText(run.status == "incomplete" and L["DPS \194\183 Incomplete"] or L["DPS"])
-    setDelta(w.delta, run)
+    self:fillDelta(run)
 end
 
+-- Each flag's main line, its detail and what it means; a row left from a run with more flags hides.
 function Pane:fillFlags(run)
     local w = self.w
     local lines = Detail.FlagLines(run)
     self.flagLines = lines
-    w.flags:SetShown(#lines > 0)
-    self.flagText = ""
-    if #lines == 0 then return end
-    local title = #lines == 1 and L["Flag \194\183 %s"]:format(lines[1].full) or L["Flags \194\183 %d"]:format(#lines)
-    w.flagTitle:SetText(title)
-    local texts = {}
-    for i, line in ipairs(lines) do texts[i] = line.text end
-    self.flagText = table.concat(texts, "\n")
-    w.flagBody:SetText(self.flagText)
+    for i = 1, math.max(#lines, #w.flagRows) do
+        local row, line = flagRow(self, i), lines[i] or {}
+        for _, part in ipairs({ "main", "sub", "text" }) do
+            local fs = part == "text" and row.body or row[part]
+            fs:SetText(line[part] or "")
+            fs:SetShown((line[part] or "") ~= "")
+        end
+    end
 end
 
---- Draw `run` (nil clears the pane to its prompt).
+--- Draw `run` (nil clears the pane to its prompt). The same run drawn again (a saved note or usage
+--- edit, a store change) keeps the scroll and the usage ticks not saved yet; another run starts at
+--- the top.
 function Pane:Show(run)
+    local same = run ~= nil and run == self.run
     self.run = run
     self.editing = false
     local has = type(run) == "table"
     self.scrollFrame:SetShown(has)
     self.w.empty:SetShown(not has)
-    for _, key in ipairs({ "addNote", "share", "delete" }) do self.w[key]:SetShown(has) end
-    if not has then return end
+    for _, key in ipairs({ "addNote", "share", "delete", "timeline" }) do self.w[key]:SetShown(has) end
+    if not has then return NS.ResultsTimeline.DetailChanged(self) end
     self:fillHeader(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
+    NS.ResultsUsage.Fill(self, same)
     local spells = Detail.SortedSpells(run)
     self.w.list:ShowResult({ spells = spells, result = run.result }, #spells, true)
     self.model = Detail.Timing(run)
@@ -564,8 +745,10 @@ function Pane:Show(run)
     self.w.note:SetText(self.noteText)
     self.w.addNote.label:SetText(run.note ~= nil and run.note ~= "" and L["Edit Note"] or L["Add Note"])
     NS.HudStates.SetEnabled(self.w.share, self.hooks.canShare and self.hooks.canShare() or false)
-    self.scroll = 0
+    NS.HudStates.SetEnabled(self.w.timeline, NS.ResultsTimeline.Has(run))
+    if not same then self.scroll = 0 end
     self:Layout(self.width, self.height, self.narrow)
+    NS.ResultsTimeline.DetailChanged(self)
 end
 
 -- ── the compare ─────────────────────────────────────────────────────────────────────────────────
@@ -591,6 +774,7 @@ function Pane:refreshCompare()
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
     self:Layout(self.width, self.height, self.narrow)
+    NS.ResultsTimeline.DetailChanged(self)
 end
 
 --- The toggle: compare on or off (view state for the session, never stored).
@@ -612,6 +796,8 @@ end
 function Pane:openNote()
     if not self.run then return end
     self.editing = true
+    -- The box sits under the Note heading: a folded Note opens to show it.
+    Detail.SetCollapsed("note", false)
     self.w.noteBox:SetText(self.run.note or "")
     self:Layout(self.width, self.height, self.narrow)
     -- The box sits last in the content, under the spells and timing: scroll down to it.
@@ -680,16 +866,21 @@ function Pane:layoutHeader(y, cw)
         end
     end
     y = y - 8
-    local third = math.floor((cw - 12) / 3)
+    local third = math.floor((cw - 2 * KPI_GAP) / 3)
     for i, k in ipairs({ w.damage, w.dps, w.meterDps }) do
         k.frame:ClearAllPoints()
-        k.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", (i - 1) * (third + 6), y)
+        k.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", (i - 1) * (third + KPI_GAP), y)
         k.frame:SetWidth(third)
     end
-    y = y - KPI_H - 4
-    w.delta:ClearAllPoints()
-    w.delta:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
-    return y - LINE_H - 4
+    -- The Delta box under the first figure, one box's size; the badge where the second box sits, as tall.
+    y = y - KPI_H - KPI_GAP
+    w.deltaBox.frame:ClearAllPoints()
+    w.deltaBox.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    w.deltaBox.frame:SetWidth(third)
+    w.badge:ClearAllPoints()
+    w.badge:SetPoint("TOPLEFT", self.content, "TOPLEFT", third + KPI_GAP, y)
+    w.badge:SetWidth(math.max(1, cw - third - KPI_GAP))
+    return y - KPI_H - 4
 end
 
 -- The breakdown's heading, over the compare's toggle and the spell list (the plain or the compared).
@@ -697,8 +888,25 @@ function Pane:layoutSpellsTitle(y)
     local t = self.w.spellsTitle
     y = y - SECTION_GAP
     t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    t:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
     return y - SECTION_H
+end
+
+-- The Spell breakdown: its heading, then the compare's toggle and the plain or the compared list; folded,
+-- the heading alone.
+function Pane:layoutBreakdown(y, cw)
+    y = self:layoutSpellsTitle(y)
+    local folded = self:Heading("spells", true)
+    local comparing = self:Comparing()
+    self.w.list.parent:SetShown(not comparing and not folded)
+    if folded then
+        NS.ResultsCompare.Fold(self)
+        return y
+    end
+    y = NS.ResultsCompare.LayoutBar(self, y, cw)
+    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
+    if not comparing then y = self:layoutSpells(y, cw) end
+    return y
 end
 
 function Pane:layoutSpells(y, cw)
@@ -715,13 +923,22 @@ end
 function Pane:layoutChart(y, cw)
     local view, chart = self.chartView, self.w.chart
     chart:SetShown(view ~= nil)
-    chart.over:EnableMouse(view ~= nil)
+    local folded = self:Heading("chart", view ~= nil)
+    chart.over:EnableMouse(view ~= nil and not folded)
     self.w.chartTitleHover:SetShown(view ~= nil)
     if not view then return y end
     y = y - SECTION_GAP
     local Chart = NS.HudChart
     local plotH = Chart.PlotHeight()
     chart:Place(self.content, y, cw, plotH)
+    -- The heading after its arrow (the chart places it at the left edge, as the HUD draws it).
+    chart.title:ClearAllPoints()
+    chart.title:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
+    if folded then
+        chart:SetParts(true, false)
+        chart:SetNote("")
+        return y - SECTION_H
+    end
     chart:Draw(view)
     return y - Chart.BlockHeight(plotH, SECTION_H) - 8
 end
@@ -791,15 +1008,22 @@ end
 function Pane:layoutTiming(y, cw)
     local w, model = self.w, self.model
     local on = model ~= nil
-    for _, key in ipairs({ "timingLabel", "strip", "axisLeft", "axisMid", "axisRight", "axisRace", "tailLine" }) do
-        w[key]:SetShown(on)
+    -- Heading runs either way: with no model it hides the arrow, as the heading's hover is hidden.
+    local folded = self:Heading("timing", on)
+    local body = on and not folded
+    w.timingLabel:SetShown(on)
+    w.timingTitleHover:SetShown(on)
+    for _, key in ipairs({ "strip", "axisLeft", "axisMid", "axisRight", "axisRace", "tailLine" }) do
+        w[key]:SetShown(body)
     end
-    for _, item in ipairs(w.legend) do item.swatch:SetShown(on); item.fs:SetShown(on) end
+    for _, item in ipairs(w.legend) do item.swatch:SetShown(body); item.fs:SetShown(body) end
+    for _, f in ipairs(w.timingHovers) do f:SetShown(body) end
     if not on then return y end
     y = y - SECTION_GAP
     w.timingLabel:ClearAllPoints()
-    w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    w.timingLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
     y = y - SECTION_H
+    if not body then return y end
     w.strip:ClearAllPoints()
     w.strip:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
     w.strip:SetWidth(cw)
@@ -835,11 +1059,44 @@ local function wrappedLines(text, width, charW)
     return n
 end
 
+-- One line of the flags box at `dy` under its top, `width` wide: the y under it (unmoved when empty).
+local function placeFlagPart(box, fs, text, dy, width, lineH, charW)
+    if text == "" then return dy end
+    fs:ClearAllPoints()
+    fs:SetPoint("TOPLEFT", box, "TOPLEFT", FLAG_PADX, -dy)
+    fs:SetWidth(width)
+    return dy + wrappedLines(text, width, charW) * lineH
+end
+
+--- The flags box's height for `cw`: each flag's main line, its detail and what it means, from config.
+function Pane:layoutFlagRows(cw)
+    local w, inner, dy = self.w, cw - 2 * FLAG_PADX, FLAG_PADY
+    for i, line in ipairs(self.flagLines) do
+        local row = w.flagRows[i]
+        if i > 1 then dy = dy + FLAG_GAP end
+        dy = placeFlagPart(w.flags, row.main, line.main, dy, inner, Detail.FLAG_MAIN_H, 8)
+        dy = placeFlagPart(w.flags, row.sub, line.sub, dy, inner, Detail.FLAG_SUB_H, 4.8)
+        dy = placeFlagPart(w.flags, row.body, line.text, dy, inner, LINE_H, 5.4)
+    end
+    return dy + FLAG_PADY - 1
+end
+
+-- The Flags heading and the box under it (folded: the heading alone), then the note.
 function Pane:layoutFlags(y, cw)
     local w = self.w
-    if (self.flagText or "") ~= "" then
+    local has = #(self.flagLines or {}) > 0
+    local folded = self:Heading("flags", has)
+    w.flagTitle:SetShown(has)
+    w.flagTitleHover:SetShown(has)
+    w.flags:SetShown(has and not folded)
+    if has then
         y = y - SECTION_GAP
-        local h = 7 + SECTION_H + 6 + wrappedLines(self.flagText, cw - 18, 5.4) * LINE_H
+        w.flagTitle:ClearAllPoints()
+        w.flagTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
+        y = y - SECTION_H
+    end
+    if has and not folded then
+        local h = self:layoutFlagRows(cw)
         w.flags:ClearAllPoints()
         w.flags:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
         w.flags:SetSize(cw, h)
@@ -855,15 +1112,18 @@ function Pane:layoutNote(y, cw)
     local titled = self.editing == true or note ~= ""
     w.noteTitle:SetShown(titled)
     w.noteTitleHover:SetShown(titled)
+    -- Never folded while the box is open: Add Note opens the section, and folding it closes the box.
+    local folded = self:Heading("note", titled) and not self.editing
     if titled then
         y = y - SECTION_GAP
         w.noteTitle:ClearAllPoints()
-        w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+        w.noteTitle:SetPoint("TOPLEFT", self.content, "TOPLEFT", Detail.INDENT, y)
         y = y - SECTION_H
     end
     w.noteBox:SetShown(self.editing == true)
-    w.note:SetShown(not self.editing and note ~= "")
-    w.noteHover:SetShown(not self.editing and note ~= "")
+    w.note:SetShown(not self.editing and note ~= "" and not folded)
+    w.noteHover:SetShown(not self.editing and note ~= "" and not folded)
+    if folded then return y end
     local target = self.editing and w.noteBox or w.note
     target:ClearAllPoints()
     target:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
@@ -886,18 +1146,25 @@ function Pane:Layout(width, height, narrow)
     self.content:SetWidth(cw)
     if not self.run then return end
     local y = self:layoutHeader(0, cw)
-    y = self:layoutSpellsTitle(y)
-    y = NS.ResultsCompare.LayoutBar(self, y, cw)
-    local comparing = self:Comparing()
-    self.w.list.parent:SetShown(not comparing)
-    y = NS.ResultsCompare.LayoutCompared(self, y, cw)
-    if not comparing then y = self:layoutSpells(y, cw) end
+    y = self:layoutBreakdown(y, cw)
     y = self:layoutChart(y, cw)
     y = self:layoutTiming(y, cw)
     y = NS.ResultsLoadout.Layout(self, y, cw)
+    y = NS.ResultsUsage.Layout(self, y, cw)
     y = self:layoutFlags(y, cw)
     self.contentH = -y
     self.content:SetHeight(math.max(1, self.contentH))
+    self:Scroll(0)
+end
+
+--- While the window is being sized (modules/Sizing.lua): the scroll frame to `width` x `height` and the
+--- scroll clamped to it. The content keeps its width and every block in it as they were: Layout redraws
+--- them once, when the grip is released (the chart, the loadout and the usage are what cost).
+function Pane:Resize(width, height)
+    self.width, self.height = width, height
+    local top = self.narrow and (BUTTON_H + 16) or 10
+    self.viewH = math.max(1, height - top - BUTTON_H - 18)
+    self.scrollFrame:SetSize(math.max(100, width - 2 * PADX), self.viewH)
     self:Scroll(0)
 end
 

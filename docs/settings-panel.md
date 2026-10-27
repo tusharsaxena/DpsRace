@@ -12,8 +12,8 @@ built on first show (options-ui-§1, §5).
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
-| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
-| History | Runs to keep (0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text |
+| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
+| History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
 The pages register in that order (the order the panel lists them): General first, Profiles last.
@@ -53,12 +53,12 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 |---|---|---|---|
 | Enable Ka0s DPS Race | `enabled` | checkbox | Off takes the latch's `disabled` hold: every event, message, timer and window goes down (slash-commands-§7) |
 | General visibility | `visibility` | dropdown | `always`, `inCombat`, `outOfCombat`, `never`; also decides whether `PLAYER_REGEN_ENABLED` is registered |
-| Master scale | `scale` | slider | The Race HUD's and the Results window's scale (`Hud.Refresh`, `Results.Refresh`) |
+| Master scale | `scale` | slider | The Race HUD's, the Results window's and the ability timeline's scale (`Hud.Refresh`, `Results.Refresh`, `ResultsTimeline.ApplyScale`) |
 | Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
 | Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while `/dr sim` plays too, and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
-| Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`) |
+| Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`), and an open ability timeline back over the Results window (`ResultsTimeline.ResetPosition`; it stores no place of its own); the run detail's folded sections (`windows.results.collapsedSections`) stay folded |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
 The *Test mode* row is the composer's, with `default = false` stamped by `settings/General.lua`, so
@@ -116,7 +116,7 @@ Tabs, in order: *Race HUD*, *HUD Appearance*.
 
 Every HUD setting, in three subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
 shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*; *Show damage chart* | *Show
-pace bar*.
+cooldown icons*; *Show pace bar*; *Pace bar range*.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
@@ -130,6 +130,7 @@ pace bar*.
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
 | *Chart and pace* heading | | | |
 | Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows; then only the plot hides, and the *Damage profile* heading stays over the pace bar. Also gates the HUD result card's chart (with a best before the run, that best's diagonal on a max covering both the run's damage and the best's, x 1.15; Round C); the Results detail shows it whatever this says |
+| Show cooldown icons | `live.castDots` | checkbox | The ability's icon (12 px) along the top of the damage chart at each cast of an ability whose base cooldown is 29 s or more (#14: the big cooldowns, an on-use trinket, a potion), at its time on the race clock (a pre-pull cast on 0:00); a later icon that would overlap the one before it drops to the first row below with room, as many rows as the plot holds (the *Chart height* and one icon row the plot keeps on top, so a single row never covers the columns), and a crowd past the last row shows as one *+n* mark whose tooltip lists each cast and its time. Live on the running HUD, on the result card and in the Results detail; in all three hovering an icon names the spell and its time (*Cast at 0:12*). Off hides them in all three, and in test mode's sample charts. Reaction: `NS.Hud.Refresh()` and `NS.Results.Refresh()` |
 | Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the *Damage profile* heading and above the plot: it runs from pace x (2 - range) to pace x range around the best's average damage by now (*Pace bar range*), its tick fixed in the middle marking *on pace*. Also gates the HUD result card's pace bar (the final damage against the best before the run: the previous best when the run just became the best), in the same place, under the heading and above the plot. Hidden with no best, on a shared session and on a lost run's card |
 | Pace bar range | `live.paceRange` | slider 1.1 to 2.0, step 0.05 | How far either side of the best's pace so far the pace bar reaches (default 1.5 = ±50%): it runs from pace x (2 - range) to pace x range, the tick fixed in the middle. A value stored above 2.0 reads as 2.0. Its own line. Reaction: `NS.Hud.Refresh()` |
 
@@ -148,7 +149,7 @@ The defaults are the look shipped before the tab existed.
 | *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
 | *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
 | *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
-| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
+| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height (the columns' and the best-pace line's: the plot is one 13 px icon row taller, on top) and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
 | *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
 | *Pace bar* | `appearance.pace.` | the bar block; the chart's old look (solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
@@ -161,9 +162,9 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
 | *Sharing* heading | | | |
-| Include talents link | `share.talentsLink` | checkbox | Off by default (the owner's call, 2026-10-25): the share stays one line. On, `Share.Messages` appends the run's `talentbuild` link (`[<spec>: <loadout>]`, clickable in others' chat), in the same message when both fit in 255 bytes, else as a second message. A run with no talent string, or one whose link alone passes 255 bytes, shares the line alone. Registered before *Runs to keep*, so the stored count and *Purge history…* stay under *Storage* |
+| Include talents link | `share.talentsLink` | checkbox | Off by default (the owner's call, 2026-10-25): the share stays one line. On, `Share.Messages` appends the run's `talentbuild` link (`[<spec>: <loadout>]`, clickable in others' chat), in the same message when both fit in 255 bytes, else as a second message. A run with no talent string, or one whose link alone passes 255 bytes, shares the line alone. Registered before *Days to keep*, so the stored count and *Purge history…* stay under *Storage* |
 | *Storage* heading | | | |
-| Runs to keep | `global.history.keep` | slider 0 to 10000 | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). 0 (the default) never prunes. Above 0 the prune runs at login and after each saved run (spec §7), never on the change itself |
+| Days to keep | `global.history.keepDays` | slider 0 to 3650 | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). 90 by default: runs older than that many days are pruned, never one holding a best. 0 never prunes. The prune runs at login and after each saved run (spec §7), never on the change itself |
 | *Stored now* | — | text | `NS.History.StoredLine()`: the stored count and its size at about 1.5 KB a run; repainted on `RUN_SAVED` / `RUNS_CHANGED` |
 | Purge history… | — | button | The tab's last act, under no heading of its own (options-ui-§7, §21). `NS.History.ConfirmDeleteAll()`: asks first (`DPSRACE_DELETE_ALL_RUNS`), then `Recorder.DeleteAll()`, which fires `RUNS_CHANGED`. Refused while a race is armed, running or waiting for its result |
 
@@ -186,7 +187,16 @@ Every row's reaction is `NS.Results.Refresh()`.
 The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
 own.
 
-The page's Defaults button restores *Runs to keep* and the Results table tab's rows; it never touches a stored run.
+#### Tab: Usage
+
+The hidden items (P9): items the Results window's usage never lists, on any run.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *Hidden items* heading | | | |
+| Hidden items | `global.usage.hidden` | the library's ID list (`H.IdList`, `kind = "item"`, two columns, the X at the left), drawn by the tab's `afterGroup` under a one-line blurb; the row itself is `skipRender` | Account-wide (its tooltip opens *Account-wide: shared by every profile.*). Empty by default. *Hide an item* takes an item ID, a shift-clicked link or the name of an item a stored run listed (`Usage.KnownItems`, the add box's suggestions); each line is the item's icon, name and gray ID with an X that takes it off. Writes go through `Usage.Hide` / `Usage.Unhide` (the whole value through the seam); the `SETTINGS_CHANGED` redraws the Results window and repaints this list, whichever way the value changed (a right-click, `/dr set` or `reset`). The detail's right-click *Never show <item>* (in its *Usage* edit) adds to the same list. *No item is hidden.* when empty |
+
+The page's Defaults button restores *Days to keep*, the Results table tab's rows and the hidden items; it never touches a stored run.
 
 ### Profiles
 

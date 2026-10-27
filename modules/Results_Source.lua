@@ -4,7 +4,7 @@ local _, NS = ...
 -- written anywhere.
 --
 -- ONE SEAM. Every Results file asks this module, never NS.Recorder, NS.Bests or NS.Loadouts, for the
--- runs it lists, a run by id, the bests board, a run's delta, its loadout, its chart, and to store a
+-- runs it lists, a run by id, the bests board, a run's loadout, its chart, and to store a
 -- note or delete a run. With no sample history in place each answer is the store's own (the same
 -- function, called at call time, so a suite's stub on NS.Bests or NS.Recorder still reaches the
 -- window). With one in place (Source.Use) the answers come from it, and a note or a delete changes it
@@ -109,11 +109,6 @@ function Source.Board(opts)
     return board
 end
 
---- The run against the best before it on its board (NS.Bests.Delta's answers).
-function Source.Delta(run)
-    return NS.Bests.Delta(run, mock and mock.runs or nil)
-end
-
 --- A run's gear set and talent loadout (NS.Loadouts.Of's answers).
 function Source.LoadoutOf(run)
     if not mock then return NS.Loadouts.Of(run) end
@@ -132,14 +127,15 @@ end
 
 -- A sample run's chart: its record scaled to its plain final damage, as HudChart.ResultView draws a
 -- stored run's in-session slices (none for a lost run or a shared session), against the sample's best
--- before it (HudChart.WithBest: the diagonal and the shared max).
+-- before it (HudChart.WithBest: the diagonal and the shared max), with its cooldown icons.
 local function mockChart(run)
     local rec = type(run) == "table" and mock.slices[run.id]
     if type(rec) ~= "table" or run.status == "lost" then return nil end
     if type(run.flags) == "table" and run.flags.sharedSession then return nil end
     local damage = type(run.result) == "table" and run.result.damage
     if type(damage) ~= "number" or damage <= 0 then return nil end
-    local view = { count = rec.count, values = rec.values, length = rec.length, max = damage, note = "" }
+    local view = { count = rec.count, values = rec.values, length = rec.length, max = damage, note = "",
+                   cooldowns = NS.HudChart.CooldownsOf(run) }
     return NS.HudChart.WithBest(view, run, NS.Bests.Before(run, mock.runs))
 end
 
@@ -158,6 +154,11 @@ function Source.SetNote(id, note)
     run.note = note
     changed(false)
     return true
+end
+
+--- A sample run changed in memory (its usage ticks, modules/Usage.lua SetUsed): redraw, as a note does.
+function Source.Touched()
+    if mock then changed(false) end
 end
 
 --- Delete a run. A sample run leaves the sample history only.

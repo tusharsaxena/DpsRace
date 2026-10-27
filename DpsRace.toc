@@ -94,12 +94,17 @@ modules\Scoring.lua
 modules\Bests.lua
 # The damage chart's in-session store (#2): one opaque live total per bucket, by run id, never saved.
 modules\Slices.lua
+# The race's cast list (#14) and what was used (#13): reached by Watchers, Race and MockRuns at CALL time.
+modules\Casts.lua
+modules\Usage.lua
 modules\Race.lua
 modules\Watchers.lua
 # The Race HUD (T7). Format first: the HUD's files reach it at call time, as they reach each other.
 modules\Format.lua
 # LOAD-BEARING: the shared look. The HUD's and the Results window's files capture NS.Style at FILE SCOPE.
 modules\Style.lua
+# Smooth resizing, the one pattern all three windows size by; they reach NS.Sizing at CALL time.
+modules\Sizing.lua
 # The HUD's configured look (HUD > HUD Appearance). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua)
 # at FILE SCOPE; the HUD's and the Results window's files reach it at CALL time.
 modules\Hud_Appearance.lua
@@ -133,6 +138,12 @@ modules\Results_Detail.lua
 modules\Results_Compare.lua
 # The detail's gear and talents (#6); the detail builds, fills and lays it out at CALL time.
 modules\Results_Loadout.lua
+# The detail's usage (#13) and the Runs list's Used column: captures NS.ResultsTable and NS.Style at
+# file scope; the detail builds it and Results_Runs reaches it at call time.
+modules\Results_Usage.lua
+# The ability timeline window (#14): reads NS.defaults (defaults\Profile.lua) and captures NS.Style and
+# NS.ResultsTable at FILE SCOPE; the detail and the shell reach it at CALL time.
+modules\Results_Timeline.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.

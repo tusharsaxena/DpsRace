@@ -364,9 +364,10 @@ test("hud: the stop body shows the live tail, time in combat, late casts and the
     tick(f)
     local b = body(f)
     assertEqual(current(f), "stop")
-    assertEqual(b.w.tail.value.__text, "+1.4")
-    assertEqual(b.w.tail.unit.__text, "s after buzzer")
-    assertEqual(b.w.combat.value.__text, "+1.4")
+    assertEqual(b.w.tail.value.__text, "+1.4s")
+    assertEqual(b.w.tail.caption.__text, "after buzzer")
+    assertEqual(b.w.combat.value.__text, "+1.4s")
+    assertEqual(b.w.combat.caption.__text, "since the buzzer")
     local chips = b.w.chips:Texts()
     assertEqual(chips[1], "1 late cast \194\183 +1.4s")
     assertEqual(chips[2], "Grace 1.0s")
@@ -506,8 +507,8 @@ end)
 
 test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 560,
-        "screen 04's rows plus the headings, the chart and the pace bar (#2, #3, Round C)")
+    assertEqual(f.NS.defaults.profile.windows.hud.height, 573,
+        "screen 04's rows plus the headings, the chart (its icon row too, UT-P11) and the pace bar (#2, #3, Round C)")
     assertEqual(f.NS.db.profile.live.rows, 8)
     -- A best on the board, so the pace bar shows too: the tallest default stack.
     local best = f.NS.Recorder.NewRun(30)
@@ -515,7 +516,7 @@ test("hud: the default window size shows every default live row under the chart 
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 560)
+    assertEqual(f.Hud.Diagnose().height, 573)
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
@@ -523,7 +524,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 300x560")
+    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 260x573")
 end)
 
 test("hud: the result card's rows stop above its buttons at every window height", function()
@@ -600,7 +601,8 @@ test("hud: the equal buttons' width is whole pixels from the body's width and th
     local States = f.NS.HudStates
     assertEqual(States.ROW_GAP, 4)
     local each, x0 = States.RowWidths(236, 4)
-    assertEqual(each, 56, "four at the minimum width: room for Race Again")
+    assertEqual(each, 56, "four at the minimum width: room for New Race")
+    assertTrue(#f.NS.L["New Race"] * 6 <= each, "New Race fits at the 6 px a character estimate")
     assertEqual(x0, 0)
     each, x0 = States.RowWidths(239, 4)
     assertEqual(each, 56)
@@ -615,7 +617,7 @@ test("hud: the result card's four buttons sit in one row, the same width each, a
     resolved(f)
     local b = body(f)
     local w = b.w
-    local order = { w.again, w.details, w.share, w.delete }
+    local order = { w.newRace, w.details, w.share, w.delete }
     assertEqual(w.delete.label.__text, "Delete")
     for _, width in ipairs({ 236, 300 }) do
         b:Layout(width, 400)
@@ -846,7 +848,7 @@ test("hud: an incomplete run's chip names when combat ended, or that the player 
     assertEqual(#chips, 2, "died is not shown twice")
 end)
 
-test("hud: Race again re-arms the same length; Details and Share reach their modules", function()
+test("hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules", function()
     local f = hud()
     local run = resolved(f)
     local opened, shared
@@ -859,8 +861,8 @@ test("hud: Race again re-arms the same length; Details and Share reach their mod
     assertEqual(opened, run.id)
     b.w.share:__fire("OnClick")
     assertTrue(shared == run)
-    b.w.again:__fire("OnClick")
-    assertEqual(f.Race.State(), "idle", "Race Again opens the Arm Race screen, it does not arm")
+    b.w.newRace:__fire("OnClick")
+    assertEqual(f.Race.State(), "idle", "New Race opens the Arm Race screen, it does not arm")
     assertEqual(current(f), "idle")
     assertTrue(f.Hud.IsShown(), "the window stays open")
     assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "the run is kept")
@@ -1282,7 +1284,7 @@ test("hud: no body shouts in capitals (Title Case labels and buttons, Sentence c
     local loud = shouting(f.W)
     assertEqual(#loud, 0, "ALL CAPS: " .. table.concat(loud, " | "))
     local w = body(f).w
-    assertEqual(w.again.label.__text, "Race Again")
+    assertEqual(w.newRace.label.__text, "New Race")
     assertEqual(w.details.label.__text, "Details")
     assertEqual(w.share.label.__text, "Share")
 end)
@@ -1377,8 +1379,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(p[5], -58)
     assertEqual(body(f).kpiBottom, 58 + 46 + 8)
     -- The chart sits between the KPIs and the rows, at its configured height (no best: no pace bar).
-    -- Damage profile (6 + 22), the 80px plot, its 2 + 12 time labels and 8, then Spell breakdown.
-    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 2 + 12 + 8) + BREAKDOWN)
+    -- Damage profile (6 + 22), the 80px plot and its 13px icon row, its 2 + 12 time labels and 8, then
+    -- Spell breakdown.
+    assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
 end)
 

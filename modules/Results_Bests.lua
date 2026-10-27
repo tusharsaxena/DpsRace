@@ -145,6 +145,12 @@ function View:Layout(width, height)
     self.list:Layout(width, math.max(1, height - FILTER_H))
 end
 
+--- While the window is being sized (modules/Sizing.lua): the list resized, nothing rebound.
+function View:Resize(width, height)
+    self.listHost:SetSize(width, math.max(1, height - FILTER_H))
+    self.list:Resize(width, math.max(1, height - FILTER_H))
+end
+
 --- Re-read the board and redraw.
 -- The chosen category if it is on the board, else the first one that is (nil on an empty board).
 local function resolveCategory(chosen, options)

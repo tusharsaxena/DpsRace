@@ -86,6 +86,39 @@ function Style.IconMarkup(name, fallback, color)
     return ("|T%s:0:0:0:0:64:64:0:64:0:64:%d:%d:%d|t"):format(path, byte(color[1]), byte(color[2]), byte(color[3]))
 end
 
+-- ── tooltip bodies ──────────────────────────────────────────────────────────────────────────────
+-- BULLETS FROM TWO LINES ON (the owner's call, 2026-10-26): every tooltip the addon draws itself puts
+-- each line under its title on a bullet once there are two or more of them, a dim footer hint
+-- included; a single line stays plain. Each line keeps its own color. Only the addon's own lines come
+-- through here: the client's spell and item text (SetSpellByID, SetItemByID, SetHyperlink) never does.
+
+Style.BULLET = "\226\128\162 "
+
+--- The bullet `lines[first..]` take: Style.BULLET for two or more, "" for one.
+--- @param lines table
+--- @param first number
+--- @return string
+function Style.TipBullet(lines, first)
+    return #lines - first >= 1 and Style.BULLET or ""
+end
+
+--- Add `lines[first..]` to `tip`, each a string (in `r, g, b`, light gray without) or
+--- { text, r, g, b }, wrapped, on a bullet when there are two or more.
+--- @param tip table  GameTooltip
+--- @param lines table
+--- @param first number
+--- @param r number|nil
+--- @param g number|nil
+--- @param b number|nil
+function Style.AddTipLines(tip, lines, first, r, g, b)
+    local bullet = Style.TipBullet(lines, first)
+    for i = first, #lines do
+        local l = lines[i]
+        if type(l) == "table" then tip:AddLine(bullet .. tostring(l[1]), l[2] or 1, l[3] or 1, l[4] or 1, true)
+        else tip:AddLine(bullet .. tostring(l), r or 0.9, g or 0.9, b or 0.9, true) end
+    end
+end
+
 -- ── the title-bar controls ──────────────────────────────────────────────────────────────────────
 -- ONE CONTROL AT A TIME (MultiMeters' HeaderControls). A strip remembers which control the pointer
 -- is on; an enter names it and repaints the strip, a leave un-names it ONLY IF IT IS STILL THE ONE
@@ -94,6 +127,7 @@ end
 
 local function paintControl(b, c)
     if b.icon then b.icon:SetVertexColor(c[1], c[2], c[3], 1) end
+    if b.stroke then b.stroke:SetVertexColor(c[1], c[2], c[3], 1) end
     if b.glyph then b.glyph:SetTextColor(c[1], c[2], c[3], 1) end
 end
 
@@ -112,7 +146,8 @@ end
 --- Add `b` to `strip`: hooked (never replacing a script the control already has, such as the close
 --- control's own tint, which this repaints after) so it turns gold under the pointer.
 --- @param strip table
---- @param b table  a control with an `icon` texture and/or a `glyph` FontString
+--- @param b table  a control with an `icon` texture and/or a `glyph` FontString (and a second
+---                  texture, `stroke`, tinted with the icon: the timeline's `+`)
 --- @return table b
 function Style.AddToStrip(strip, b)
     if not b then return nil end

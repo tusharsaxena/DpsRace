@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 2
+NS.SCHEMA_VERSION = 4
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
 -- `perProfile = true` and runs once for every stored profile.
@@ -15,6 +15,22 @@ local STEPS = {
     { to = 2, run = function(sv)
         local g = type(sv) == "table" and sv.global
         if type(g) == "table" and type(g.schema) == "number" and g.schema < 2 then g.schema = 2 end
+    end },
+    -- 2 -> 3: the run record's format 3 (#13, #14) adds run.casts and run.usage, which an older run is
+    -- simply without (it reads as not recorded), so again only the format stamp moves.
+    { to = 3, run = function(sv)
+        local g = type(sv) == "table" and sv.global
+        if type(g) == "table" and type(g.schema) == "number" and g.schema < 3 then g.schema = 3 end
+    end },
+    -- 3 -> 4 (UT-P14): the Results window's default view moved from expanded to collapsed. AceDB strips
+    -- a value equal to its default, so a profile left in the old default stores no `view` and would
+    -- read the new one: write the expanded view it was in. A profile that never stored the Results
+    -- window keeps the new default. The ability timeline no longer stores its place, so drop it.
+    { to = 4, perProfile = true, run = function(_sv, profile)
+        local w = type(profile) == "table" and profile.windows
+        if type(w) ~= "table" then return end
+        if type(w.results) == "table" and w.results.view == nil then w.results.view = "expanded" end
+        w.timeline = nil
     end },
 }
 NS.__migrationSteps = STEPS   -- test seam only

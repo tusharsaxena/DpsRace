@@ -49,6 +49,7 @@ if not lib then
     NS.MakeCloseButton = function() return nil end
     -- No grip: the window keeps its stored size (Core's own answer where it cannot build one).
     NS.MakeResizable   = function() return nil end
+    NS.RaiseStaticPopups = function() end
 
     -- The SafeRegister* family as ONE-RUNG pcall bodies (events-frames-taint-§1).
     local function reject(rejected, event)
@@ -88,6 +89,9 @@ NS.SKIN      = lib.SKIN
 NS.ApplySkin = lib.ApplySkin
 -- The bottom-right sizing grip the HUD is resized with (standalone-windows).
 NS.MakeResizable = lib.MakeResizable
+-- A toplevel DIALOG window re-raises a shown StaticPopup when it shows, so a confirmation shown first
+-- is never buried under it (frame-layering-§4; the ability timeline).
+NS.RaiseStaticPopups = lib.RaiseStaticPopups or function() end
 
 -- WRAPPED, TO SAY WHO IS ASKING -- a MUST (standalone-windows, anti-patterns #64/#65). Core draws the
 -- catalog's `close` mark only when told which addon FOLDER to build the path from. Every close

@@ -49,22 +49,25 @@ local function lateEntry(cast, nameOf)
     return L["+%.1fs"]:format(cast.t or 0)
 end
 
+-- The late casts' flag: its text, then its count line and its offsets apart (the Results detail's
+-- flags box draws those two as separate lines).
 local function lateCastsText(list, nameOf)
-    local parts = {}
+    local L, parts = NS.L, {}
     for i, cast in ipairs(list) do parts[i] = lateEntry(cast, nameOf) end
     local joined = table.concat(parts, ", ")
-    if #list == 1 then return NS.L["1 late cast (%s)"]:format(joined) end
-    return NS.L["%d late casts (%s)"]:format(#list, joined)
+    if #list == 1 then return L["1 late cast (%s)"]:format(joined), L["1 late cast"], joined end
+    return L["%d late casts (%s)"]:format(#list, joined), L["%d late casts"]:format(#list), joined
 end
 
---- The run's flags as an array of { key, text }, in the order: lateCasts, restarted, reloaded,
+--- The run's flags as an array of { key, text, main?, sub? } (main and sub: the late casts' count
+--- line and their offsets, the text split in two), in the order: lateCasts, restarted, reloaded,
 --- sessionFromList (spec §9: the session ID was never captured), sharedSession (the pull carried on a
 --- session from before the arm, modules/Race.lua share), died, incomplete, lost. `nameOf(spellID) -> name|nil` is optional: the caller (the UI) resolves spell
 --- names through C_Spell, so this file stays pure; without it a late cast shows its offset only.
 function Scoring.Flags(run, nameOf)
     local L, out = NS.L, {}
     local flags = (type(run) == "table" and type(run.flags) == "table") and run.flags or {}
-    local function add(key, text) out[#out + 1] = { key = key, text = text } end
+    local function add(key, text, main, sub) out[#out + 1] = { key = key, text = text, main = main, sub = sub } end
     if type(flags.lateCasts) == "table" and #flags.lateCasts > 0 then
         add("lateCasts", lateCastsText(flags.lateCasts, nameOf))
     end

@@ -1,7 +1,7 @@
 -- tests/test_layers.lua — where every DpsRace frame sits in the client's draw order (frame-layering,
 -- standard v2.88.0): the one layers table in core/Constants.lua, the Race HUD (MEDIUM, toplevel), the
--- Results window (HIGH, toplevel) with its detail pane in its own band over the list pane, and the
--- center-screen countdown (FULLSCREEN, mouse-disabled, below every menu).
+-- Results window (HIGH, toplevel) with its detail pane in its own band over the list pane, the ability
+-- timeline (DIALOG: a modal one strata above the Results window, toplevel), and the center-screen countdown (FULLSCREEN, mouse-disabled, below every menu).
 --
 -- Every case runs on a fresh instance. tests/wow_mock.lua installs the kit's frame-layer recorder
 -- (tests/_kit/mock_layers.lua) on every mock, so a frame's strata, level and toplevel read back.
@@ -20,8 +20,10 @@ test("layers: one table names the addon's tiers by the standard's keys", functio
     assertTrue(type(L) == "table", "NS.Constants.LAYERS exists")
     assertEqual(L.STRATA.HUD, "MEDIUM")
     assertEqual(L.STRATA.WINDOW, "HIGH")
+    assertEqual(L.STRATA.MODAL, "DIALOG")
     assertEqual(L.STRATA.SCREEN_ALERT, "FULLSCREEN")
     assertEqual(L.LEVEL.DETAIL, 2)
+    assertEqual(L.LEVEL.COVER, 30, "the popover band over a window's own content (frame-layering-§3)")
 end)
 
 test("layers: no strata string and no bare level number at a call site", function()
@@ -59,6 +61,16 @@ test("layers: the Results window is HIGH, toplevel and clamped", function()
     i.NS.Results.Show()
     local l = i.mocks.__layers(i.NS.Results.__ui().frame)
     assertEqual(l.strata, "HIGH")
+    assertTrue(l.toplevel)
+    assertTrue(l.clamped)
+end)
+
+test("layers: the ability timeline is DIALOG, one strata above the Results window, toplevel and clamped", function()
+    local i = inst()
+    i.NS.Results.Show()
+    assertTrue(i.NS.ResultsTimeline.Open(i.NS.Results.__ui().detail), "the timeline opens on the detail")
+    local l = i.mocks.__layers(i.NS.ResultsTimeline.__ui().frame)
+    assertEqual(l.strata, "DIALOG", "a modal opened from the HIGH Results window (P13)")
     assertTrue(l.toplevel)
     assertTrue(l.clamped)
 end)

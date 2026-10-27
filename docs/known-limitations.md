@@ -5,7 +5,7 @@ What the addon cannot do, or does only approximately, and why. Split out of
 the hub keeps a short summary. Each entry names the client limit or the owner's decision behind it,
 and the smoke row that measures it where one exists.
 
-- **Lowering *Runs to keep* deletes nothing on the spot.** The prune runs at login and after each
+- **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
   and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current
@@ -73,5 +73,65 @@ and the smoke row that measures it where one exists.
   so the result cannot be read there; the press waives the 2.5 s of quiet after the combat end, not
   the combat end itself, so damage dealt between the press and the combat end counts (the tooltip says
   so). Damage that lands after the read (a DoT still ticking out of combat) is not counted.
+- **Casts were measured plain in the open world only** (#14; the probe of 2026-10-26, a Beast
+  Mastery Hunter on client 12.1.5). The client documents the cast events as secret only for units
+  other than the player and the pet, and instances were not tested (the owner's call). A spell ID that
+  arrives sealed is dropped and counted in `run.casts.dropped`, so that cast is missing from the
+  cooldown icons and the timeline, and an item it used falls back to the bag count (smoke rows C10,
+  SM-DR-UT1).
+- **A channel's ticks are deduped defensively.** No channel was cast in the probe, so whether every
+  tick fires `UNIT_SPELLCAST_SUCCEEDED` is unmeasured. While a player channel is open (its
+  `CHANNEL_START` to its `CHANNEL_STOP`) only its first success counts; a pet's channel is not deduped,
+  as only the player's channel edges are heard (`Casts.Hear`; smoke row SM-DR-UT3).
+- **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, 29 s or more). Talents
+  and haste that shorten it are not seen, and a spell with charges can report a short one (Kill
+  Command read 500 ms in the probe), so it gets no cooldown icon and sorts with the rotation on the timeline.
+- **A cast more than 10 s before the pull is not the race's** (#13, #14; `Casts.PREPULL`). While
+  armed every cast is heard, but when the clock starts only the last 10 s are kept: an earlier one is
+  in neither the cast list, the chart's icons, the timeline nor the usage, and the player's earlier
+  casts of a consumable's spell explain its bag count's drop, so a potion drunk minutes before the
+  pull is not read as used. A pre-pull opener cast 11 s out is dropped with it.
+- **A consumable that leaves the bags while armed reads as used, its time unknown** (#13). The bag
+  compare sees only the count at the arm and at the result, so a consumable sold, destroyed, traded or
+  moved to the bank (or the warband bank) between the two, with no cast of its spell heard, is listed
+  with `src = "bag"` and no time. The player unticks it in the detail's *Usage*.
+- **Two copies of one on-use item: only the first slot's use is detected** (#13). The cast of the use
+  spell names no slot, so a pair of one trinket (one item ID, one spell) counts every cast on the
+  first of the two slots (slot order); the second slot's row stays unticked. The player ticks it in
+  the detail's *Usage*, and each slot's row is then its own.
+- **Food is detected only on an English client** (#13). The *Well Fed* aura is found by its name, the
+  enUS string (`L["Well Fed"]`, which the aura's localized name never equals on another client
+  language), so on a German, French or any other non-English client food is never detected, and the
+  detail's *Usage* has no *Well Fed* row to tick for it.
+- **Food and augment runes are detected by rule, not by measurement** (#13). No food buff or rune
+  was active in the probe. Food is the *Well Fed* aura found by its name at the arm (the enUS
+  string, `L["Well Fed"]`), listed with no item; a rune or any other consumable counts only through a
+  cast of its use spell or a bag count that dropped. A flask or phial is matched by its buff's spell
+  ID against a bag consumable's use spell, so one whose last copy was drunk (none left in the bags at
+  the arm) is not found. Smoke row SM-DR-UT2.
+- **A weapon oil is not listed** (#13; the owner's call, 2026-10-26). An oil has no on-use, and
+  `GetWeaponEnchantInfo` gives an enchant ID that maps to no item, so no enchant is read at the arm; a
+  run stored before then that recorded one never shows it. An oil still in the bags is a candidate
+  (a consumable with a use spell): the player can tick it in the detail's *Usage* edit. A consumable
+  used with no cast heard is listed from its bag count with no time, and one used and then restocked
+  before the result reads no drop.
+- **A hidden item is hidden on every run** (P9). The hidden list (History > *Usage*) is one
+  account-wide set of item IDs, not per run or per character, and it hides by item: food (*Well Fed*,
+  no item) cannot be hidden. A hidden item a run used stays in its record, so it is back on every run
+  once taken off the list.
+- **Runs raced before format 3 have no casts and no usage**, and neither does a run resumed after a
+  `/reload` or a stand-down (both lists are held in memory until the result). Their *Used* cell is a
+  dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
+  cooldown icons and their *Timeline* button is grayed. Stored runs are never rewritten
+  ([schema.md](schema.md), migration 2 → 3).
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
+- **The ability timeline does not scroll sideways on a tilt wheel or a touchpad's sideways swipe**
+  (UT-P15, checked 2026-10-27). The client gives addons one wheel script, `OnMouseWheel(self, delta)`,
+  whose delta is up (1) or down (-1) only; no script, event or binding reports a horizontal wheel
+  (warcraft.wiki.gg's widget script handlers list none). Shift+wheel, the scroll arrows and the
+  scrollbar move the zoomed timeline left and right instead (the `?` after the arrows lists the mouse
+  controls, Ctrl+wheel's zoom too).
+- **The timeline's corridor colors are not a setting** (UT-P16, the owner's call, 2026-10-28). They
+  live in `ResultsTimeline.CORRIDOR` and a `/run` change to it lasts the session (`Repaint()` shows it
+  on an open window); a `/reload` goes back to the defaults.

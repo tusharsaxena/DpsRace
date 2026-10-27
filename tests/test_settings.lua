@@ -53,6 +53,7 @@ local STORED = {
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
     ["live.chart"]           = { "bool",   true },
     ["live.paceBar"]         = { "bool",   true },
+    ["live.castDots"]        = { "bool",   true },
     ["live.paceRange"]       = { "number", 1.5,     1.1,  2.0,   0.05 },
     ["race.defaultLength"]   = { "number", 120 },
     ["race.countdownCue"]    = { "bool",   true },
@@ -62,8 +63,9 @@ local STORED = {
     ["race.hintDelay"]       = { "number", 15,      5,    60,    1 },
     ["race.grace"]           = { "number", 1,       0,    5,     0.1 },
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
-    ["global.history.keep"]  = { "number", 0,       0,    10000, 1 },
+    ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
+    ["global.usage.hidden"]  = { "string", "" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -183,7 +185,7 @@ test("settings: every row sits on a page the panel draws, and every page has a g
     end
 end)
 
-test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0", function()
+test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90", function()
     local NS = T.NS
     local grace = row(NS, "race.grace")
     assertEqual(grace.type, "number")
@@ -196,13 +198,13 @@ test("settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10
     assertEqual(gap.min, 3)
     assertEqual(gap.max, 15)
     assertEqual(gap.default, 6)
-    local keep = row(NS, "global.history.keep")
+    local keep = row(NS, "global.history.keepDays")
     assertEqual(keep.type, "number")
     assertEqual(keep.min, 0)
-    assertEqual(keep.max, 10000)
-    assertEqual(keep.default, 0)
+    assertEqual(keep.max, 3650)
+    assertEqual(keep.default, 90, "90 days (the owner's call, 2026-10-26)")
     assertEqual(keep.page, "history")
-    assertEqual(NS.GetSetting("global.history.keep"), 0)
+    assertEqual(NS.GetSetting("global.history.keepDays"), 90)
 end)
 
 test("settings: the scoring sliders say they apply to new runs", function()
@@ -360,7 +362,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General keeps M
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP, "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 9 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's nine rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 10 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's ten rows and HUD Appearance's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -384,6 +386,7 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",
         "live.chart|Chart and pace|Show damage chart|false",
+        "live.castDots|Chart and pace|Show cooldown icons|false",
         "live.paceBar|Chart and pace|Show pace bar|false",
         "live.paceRange|Chart and pace|Pace bar range|true",
     }, "\n"))
@@ -500,18 +503,68 @@ test("settings: History ends with Purge history…, after the stored count, unde
     assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
 end)
 
-test("settings: Runs to keep says it is account-wide, and its label carries no suffix", function()
-    local keep = row(T.NS, "global.history.keep")
-    assertEqual(keep.label, "Runs to keep")
+test("settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local H = NS.Helpers
+    local spec
+    local realList = H.IdList
+    H.IdList = function(ctx, s, ...) spec = s return realList(ctx, s, ...) end
+    local panel = M.__subcategories["History"]
+    panel:Show()
+    panel:__fire("OnShow")
+    local ctx = assert(NS.pageCtx.history, "the History page drew no ctx")
+    ctx.activeTab = "Usage"
+    ctx._renderFn(ctx)
+    H.IdList = realList
+    assertTrue(spec ~= nil, "the Usage tab drew no ID list")
+    assertEqual(spec.kind, "item")
+    assertEqual(#spec.entries(), 0, "nothing hidden")
+    spec.onAdd(6948)
+    spec.onAdd(201)
+    assertEqual(NS.db.global.usage.hidden, "201,6948", "written whole, ascending")
+    local ids = {}
+    for i, e in ipairs(spec.entries()) do ids[i] = e.id end
+    assertEqual(table.concat(ids, ","), "201,6948")
+    spec.onRemove(201)
+    assertEqual(NS.db.global.usage.hidden, "6948")
+    local hidden = row(NS, "global.usage.hidden")
+    assertTrue(hidden.skipRender, "the list draws the row")
+    assertEqual(hidden.subgroup, "Hidden items")
+    assertTrue(hidden.tooltip:sub(1, #"Account-wide: shared by every profile. ")
+        == "Account-wide: shared by every profile. ", hidden.tooltip)
+end)
+
+test("settings: History repaints when the hidden items change from anywhere, and not for other settings", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local panel = M.__subcategories["History"]
+    panel:Show()
+    panel:__fire("OnShow")
+    assert(NS.pageCtx.history, "the History page drew no ctx")
+    local repainted = 0
+    local real = NS.Helpers.RefreshPanel
+    NS.Helpers.RefreshPanel = function(...) repainted = repainted + 1 return real(...) end
+    NS.Usage.Hide(6948)
+    assertEqual(repainted, 1, "a right-click's Never show repaints the list")
+    assertTrue(NS.SetByPath("live.castDots", false))
+    assertEqual(repainted, 1, "another setting does not")
+    NS.Helpers.RefreshPanel = real
+end)
+
+test("settings: Days to keep says it is account-wide, and its label carries no suffix", function()
+    local keep = row(T.NS, "global.history.keepDays")
+    assertEqual(keep.label, "Days to keep")
     assertTrue(keep.tooltip:sub(1, #"Account-wide: shared by every profile. ")
         == "Account-wide: shared by every profile. ", keep.tooltip)
 end)
 
-test("settings: lowering Runs to keep never deletes on the spot", function()
+test("settings: lowering Days to keep never deletes on the spot", function()
     local inst = T.load()
     local NS = inst.NS
+    NS.db.global.history.keepDays = 0
     seed(NS, 4)
-    assertTrue(NS.SetByPath("global.history.keep", 1))
+    assertTrue(NS.SetByPath("global.history.keepDays", 1))
     assertEqual(#NS.Recorder.All(), 4, "the prune runs at login and after a saved run (spec §7)")
 end)
 

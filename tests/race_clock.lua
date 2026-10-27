@@ -180,6 +180,8 @@ return function(T)
         }
         local NS, M = inst.NS, inst.mocks
         M.__now = 100
+        -- Stored fixtures carry 1970-era dates; never prune by age here (the prune cases set it).
+        NS.db.global.history.keepDays = 0
         local f = setmetatable({ inst = inst, NS = NS, M = M, meter = meter, clock = clock,
                                  Race = NS.Race, heard = listen(NS) }, META)
         return f

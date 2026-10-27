@@ -122,7 +122,10 @@ L["In Combat"] = "In Combat"
 L["s"] = "s"
 L["Out of Combat"] = "Out of Combat"
 L["STOP"] = "STOP"
-L["s after buzzer"] = "s after buzzer"
+L["after buzzer"] = "after buzzer"
+L["since the buzzer"] = "since the buzzer"
+L["combat ended"] = "combat ended"
+L["into the race"] = "into the race"
 L["1 late cast \194\183 +%.1fs"] = "1 late cast \194\183 +%.1fs"
 L["%d late casts \194\183 +%.1fs"] = "%d late casts \194\183 +%.1fs"
 L["Grace %.1fs"] = "Grace %.1fs"
@@ -149,7 +152,7 @@ L["New best +%.1f%%"] = "New best +%.1f%%"
 L["New best"] = "New best"
 L["%+.1f%% vs best"] = "%+.1f%% vs best"
 L["DPS"] = "DPS"
-L["Race Again"] = "Race Again"
+L["New Race"] = "New Race"
 L["Details"] = "Details"
 L["Share"] = "Share"
 L["Couldn't read the result"] = "Couldn't read the result"
@@ -179,8 +182,8 @@ L["Runs"] = "Runs"
 L["Bests"] = "Bests"
 L["Click a row for details \194\183 right-click for options"] =
     "Click a row for details \194\183 right-click for options"
-L["Runs to keep: %d"] = "Runs to keep: %d"
-L["Runs to keep: 0 (never prune)"] = "Runs to keep: 0 (never prune)"
+L["Days to keep: %d"] = "Days to keep: %d"
+L["Days to keep: 0 (never prune)"] = "Days to keep: 0 (never prune)"
 L["Delete this run? This cannot be undone, and a personal best it holds goes with it."] =
     "Delete this run? This cannot be undone, and a personal best it holds goes with it."
 L["Delete"] = "Delete"
@@ -212,9 +215,9 @@ L["1 run"] = "1 run"
 L["%d runs"] = "%d runs"
 L["%s started +%.1fs after the buzzer"] = "%s started +%.1fs after the buzzer"
 L["%s (grace %.1fs)."] = "%s (grace %.1fs)."
-L["%s, after the quiet gap."] = "%s, after the quiet gap."
-L["Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."] =
-    "Session matched by list: the meter session was found by its place in Blizzard's list, not by its ID."
+L["After the quiet gap past the buzzer: a new pull."] = "After the quiet gap past the buzzer: a new pull."
+L["The meter session was found by its place in Blizzard's list, not by its ID."] =
+    "The meter session was found by its place in Blizzard's list, not by its ID."
 L["The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."] =
     "The meter kept the last fight's session open (its DoTs were still ticking), so the race landed in it."
 L["It does not count toward bests."] = "It does not count toward bests."
@@ -233,8 +236,6 @@ L["Back"] = "Back"
 L["Add Note"] = "Add Note"
 L["Select a run to see its detail."] = "Select a run to see its detail."
 L["DPS \194\183 Incomplete"] = "DPS \194\183 Incomplete"
-L["Flag \194\183 %s"] = "Flag \194\183 %s"
-L["Flags \194\183 %d"] = "Flags \194\183 %d"
 L["Edit Note"] = "Edit Note"
 L["Combat ended at %s, before the buzzer."] = "Combat ended at %s, before the buzzer."
 L["Damage stopped %ss after the buzzer"] = "Damage stopped %ss after the buzzer"
@@ -275,8 +276,17 @@ L["Class & spec: %s"] = "Class & spec: %s"
 L["Target: %s"] = "Target: %s"
 L["Time: %s"] = "Time: %s"
 L["Spec: %s"] = "Spec: %s"
-L["Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."] =
-    "Restore Runs to keep and the Results table's look to their addon defaults. Stored runs are not touched."
+L["Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."] =
+    "Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."
+L["Hidden items"] = "Hidden items"
+L["Account-wide: shared by every profile. Item IDs, comma-separated, that the Results window's Usage never lists (the section, the Used column and its tooltip), on every run. A run that used one still records it, so taking it off the list brings it back."] =
+    "Account-wide: shared by every profile. Item IDs, comma-separated, that the Results window's Usage never lists (the section, the Used column and its tooltip), on every run. A run that used one still records it, so taking it off the list brings it back."
+L["Items the Results window's Usage never lists, on any run. Right-click an item in a run's Usage edit to add it here."] =
+    "Items the Results window's Usage never lists, on any run. Right-click an item in a run's Usage edit to add it here."
+L["Hide an item"] = "Hide an item"
+L["An item ID, a shift-clicked item link, or the name of an item a run listed."] =
+    "An item ID, a shift-clicked item link, or the name of an item a run listed."
+L["No item is hidden."] = "No item is hidden."
 L["Results table"] = "Results table"
 L["Damage bar"] = "Damage bar"
 L["DPS bar"] = "DPS bar"
@@ -409,6 +419,9 @@ L["Draw your damage over the race as columns under the live figures, scaled to t
 L["Show pace bar"] = "Show pace bar"
 L["Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."] =
     "Draw a bar under the live figures against the best on this board: its tick is the best's average pace at this moment of the race. The result card shows it again after the race, your final damage against the best before the run. Hidden with no best yet, and when the pull carried an earlier fight's session."
+L["Show cooldown icons"] = "Show cooldown icons"
+L["Mark each cast of an ability with a cooldown of 29 seconds or more (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."] =
+    "Mark each cast of an ability with a cooldown of 29 seconds or more (your big cooldowns, trinkets and potions) with its icon along the top of the damage chart: live on the HUD, on the result card and in the Results window. Hover an icon for the spell and its time."
 L["Pace bar range"] = "Pace bar range"
 L["How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."] =
     "How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."
@@ -426,9 +439,9 @@ L["Pace bar"] = "Pace bar"
 -- History page (settings/History.lua)
 L["History"] = "History"
 L["Storage"] = "Storage"
-L["Runs to keep"] = "Runs to keep"
-L["Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."] =
-    "Account-wide: shared by every profile. 0 keeps every run (the default). Above 0, the oldest runs are removed first, at login and after each saved run, and a run that holds a personal best is always kept. 0 to 10000."
+L["Days to keep"] = "Days to keep"
+L["Account-wide: shared by every profile. Runs older than this many days are removed, at login and after each saved run, and a run that holds a personal best is always kept. 90 by default; 0 keeps every run. 0 to 3650."] =
+    "Account-wide: shared by every profile. Runs older than this many days are removed, at login and after each saved run, and a run that holds a personal best is always kept. 90 by default; 0 keeps every run. 0 to 3650."
 L["Stored now: %d runs (about %d KB of saved variables)."] = "Stored now: %d runs (about %d KB of saved variables)."
 L["Purge history\226\128\166"] = "Purge history\226\128\166"
 L["Deletes every stored run. Asks for confirmation. Personal bests go with them."] =
@@ -557,13 +570,33 @@ L["The meter's session could not be read after combat. There is no score."] =
 L["Collapse: the list alone (a click opens a run in its place)"] = "Collapse: the list alone (a click opens a run in its place)"
 L["Expand: the run's detail beside the list"] = "Expand: the run's detail beside the list"
 
+-- The detail's section arrows (each heading folds or opens its section)
+L["Collapse this section"] = "Collapse this section"
+L["Expand this section"] = "Expand this section"
+
+-- The detail's Delta box and New best badge (Tips.Detail "delta" and "badge")
+L["its group in the Runs list"] = "its group in the Runs list"
+L["the Runs list's whole view"] = "the Runs list's whole view"
+L["its board (every run of the same spec, target type and race length)"] =
+    "its board (every run of the same spec, target type and race length)"
+L["The only complete run in %s: there is no runner-up to lead."] =
+    "The only complete run in %s: there is no runner-up to lead."
+L["This run's lead over the runner-up in %s."] = "This run's lead over the runner-up in %s."
+L["The runner-up: %s DPS."] = "The runner-up: %s DPS."
+L["No complete run in %s to compare with."] = "No complete run in %s to compare with."
+L["Against the max DPS in %s."] = "Against the max DPS in %s."
+L["The max: %s DPS."] = "The max: %s DPS."
+L["The Runs list's filters leave this run out, so it is measured on its board."] =
+    "The Runs list's filters leave this run out, so it is measured on its board."
+L["Recomputed whenever the Runs list's filters or grouping change."] =
+    "Recomputed whenever the Runs list's filters or grouping change."
+L["The highest DPS among the complete runs in %s."] = "The highest DPS among the complete runs in %s."
+
 -- The run detail's tooltips (modules/Results_Tips.lua, Tips.Detail and Tips.Spell)
 L["#%d of %d spells"] = "#%d of %d spells"
 L["%.1f%% of the run's damage"] = "%.1f%% of the run's damage"
 L["A line of your own kept with the run: what you tried, what went wrong."] =
     "A line of your own kept with the run: what you tried, what went wrong."
-L["Against the best DPS before this run for the same spec, target type and race length."] =
-    "Against the best DPS before this run for the same spec, target type and race length."
 L["Back to the list; the run stays selected."] = "Back to the list; the run stays selected."
 L["Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."] =
     "Blizzard's damage meter: damage over its whole session, the idle time before the pull and the tail included. Shown for comparison; it never ranks."
@@ -577,7 +610,6 @@ L["Post the run's summary to chat: say, party, raid, guild or a whisper."] =
     "Post the run's summary to chat: say, party, raid, guild or a whisper."
 L["Remove this run from history, after a confirmation. A best it holds goes with it."] =
     "Remove this run from history, after a confirmation. A best it holds goes with it."
-L["The first complete run of its kind."] = "The first complete run of its kind."
 L["The race, from the start to the buzzer (to the end of combat for an incomplete run)."] =
     "The race, from the start to the buzzer (to the end of combat for an incomplete run)."
 L["Damage still landing after the buzzer (DoTs, travel time). It counts."] =
@@ -601,7 +633,7 @@ L["Clear Pick"] = "Clear Pick"
 L["Different board: the spec, target type or race length differ."] =
     "Different board: the spec, target type or race length differ."
 L["This run"] = "This run"
-L["Best"] = "Best"
+L["Best run"] = "Best run"
 L["Runner-up"] = "Runner-up"
 L["Picked"] = "Picked"
 L["Difference"] = "Difference"
@@ -643,6 +675,49 @@ L["Your damage so far at each step of the race, captured live. With a best befor
     "Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."
 L["Only races run since your last reload or login have it: the live numbers cannot be saved."] =
     "Only races run since your last reload or login have it: the live numbers cannot be saved."
+L["An icon along the top marks each cast of an ability with a cooldown of 29 seconds or more. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."] =
+    "An icon along the top marks each cast of an ability with a cooldown of 29 seconds or more. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."
+-- A cast's tooltip: a cooldown icon on the damage chart, a timeline tick (#14)
+L["%s (pet)"] = "%s (pet)"
+L["Cast at %s"] = "Cast at %s"
+-- A +n mark on the damage chart (casts too crowded to show apart) and its tooltip
+L["+%d"] = "+%d"
+L["%d cooldowns here"] = "%d cooldowns here"
+L["%s at %s"] = "%s at %s"
+
+-- The ability timeline (#14, modules/Results_Timeline.lua), its button in the run detail and their tooltips
+L["Ability timeline"] = "Ability timeline"
+L["Timeline"] = "Timeline"
+L["Right: casts in each lane"] = "Right: casts in each lane"
+L["Casts"] = "Casts"
+L["By ability"] = "By ability"
+L["Zoom in (or Ctrl+mouse wheel up)"] = "Zoom in (or Ctrl+mouse wheel up)"
+L["Zoom out (or Ctrl+mouse wheel down)"] = "Zoom out (or Ctrl+mouse wheel down)"
+L["Mouse controls"] = "Mouse controls"
+L["Mouse wheel: scroll up and down"] = "Mouse wheel: scroll up and down"
+L["Shift+mouse wheel: scroll left and right (zoomed in)"] = "Shift+mouse wheel: scroll left and right (zoomed in)"
+L["Ctrl+mouse wheel: zoom in and out"] = "Ctrl+mouse wheel: zoom in and out"
+L["Reset zoom"] = "Reset zoom"
+L["Scroll left, toward 0:00 (or Shift+mouse wheel up)"] = "Scroll left, toward 0:00 (or Shift+mouse wheel up)"
+L["Scroll right, toward the end (or Shift+mouse wheel down)"] =
+    "Scroll right, toward the end (or Shift+mouse wheel down)"
+L["%sx"] = "%sx"
+L["No casts recorded"] = "No casts recorded"
+L["Too many casts here for %d rows: this icon overlaps others."] =
+    "Too many casts here for %d rows: this icon overlaps others."
+L["No run to compare with"] = "No run to compare with"
+L["No run to compare with: the blue lanes stay empty."] = "No run to compare with: the blue lanes stay empty."
+L["%s has no casts recorded: the blue lanes stay empty."] = "%s has no casts recorded: the blue lanes stay empty."
+L["Select a run in the Results window to see its timeline."] = "Select a run in the Results window to see its timeline."
+L["No casts recorded for this run."] = "No casts recorded for this run."
+L["Cooldown %s"] = "Cooldown %s"
+L["%s cooldown"] = "%s cooldown"
+L["%s: 1 cast"] = "%s: 1 cast"
+L["%s: %d casts"] = "%s: %d casts"
+L["Open the ability timeline: every cast of this run beside the run it is compared with."] =
+    "Open the ability timeline: every cast of this run beside the run it is compared with."
+L["No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."] =
+    "No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."
 
 -- The run detail's gear and talents (modules/Results_Loadout.lua, #6) and their tooltips
 L["Gear"] = "Gear"
@@ -697,3 +772,49 @@ L["Sharing"] = "Sharing"
 L["Include talents link"] = "Include talents link"
 L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] =
     "Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."
+-- What was used (#13): the food buff's name, matched against the helpful auras at the arm
+-- (modules/Usage.lua).
+L["Well Fed"] = "Well Fed"
+
+-- The Runs list's Used column and the run detail's Usage section (#13, modules/Results_Usage.lua)
+L["x%d %s"] = "x%d %s"
+L["active at the start"] = "active at the start"
+L["x%d, time unknown"] = "x%d, time unknown"
+L["time unknown"] = "time unknown"
+L["Item %d"] = "Item %d"
+L["Usage"] = "Usage"
+L["Nothing to list: no on-use item or consumable was found at the arm."] =
+    "Nothing to list: no on-use item or consumable was found at the arm."
+L["Used"] = "Used"
+L["This run was raced before the addon recorded what was used."] =
+    "This run was raced before the addon recorded what was used."
+L["Nothing used"] = "Nothing used"
+L["No on-use item or consumable was detected or ticked for this run."] =
+    "No on-use item or consumable was detected or ticked for this run."
+L["1 item used"] = "1 item used"
+L["%d items used"] = "%d items used"
+L["%s: %s"] = "%s: %s"
+L["Edit the list in the run's detail."] = "Edit the list in the run's detail."
+L["What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many."] =
+    "What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many."
+L["Detected from its cast during the race."] = "Detected from its cast during the race."
+L["Detected from the bag count after the race."] = "Detected from the bag count after the race."
+L["Its buff was on when the race was armed."] = "Its buff was on when the race was armed."
+L["Ticked by you."] = "Ticked by you."
+L["What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."] =
+    "What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."
+L["Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."] =
+    "Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."
+L["No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."] =
+    "No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."
+L["Edit"] = "Edit"
+L["Leave the edit without saving."] = "Leave the edit without saving."
+L["Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."] =
+    "Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."
+L["Right-click: never show this item."] = "Right-click: never show this item."
+L["Never show %s"] = "Never show %s"
+L["No on-use item or consumable was found at the arm, and nothing was detected."] =
+    "No on-use item or consumable was found at the arm, and nothing was detected."
+L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] =
+    "Keep the ticks as this run's usage. An entry the addon detected keeps its times."
+L["Not used: tick it if you did use it."] = "Not used: tick it if you did use it."

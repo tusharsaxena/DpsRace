@@ -4,7 +4,7 @@ local _, NS = ...
 -- buzzer warning. The six bodies are modules/Hud_States.lua; the spell rows modules/Hud_Breakdown.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
--- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (300x560, min 260x354), with its
+-- through NS.MakeCloseButton, in UISpecialFrames, clamped, resizable (260x573, min 260x354: a new profile opens at the minimum width), with its
 -- position and size in db.profile.windows.hud. Master scale and Lock frame (the General page's
 -- `scale` and `locked` rows) act on it: it is the addon's positionable display. Built on first show.
 --
@@ -275,7 +275,7 @@ local function runningView(v)
     v.elapsed = elapsed
     v.live = liveData
     v.chart, v.pace = NS.HudChart.LiveViews(v.run, elapsed, setting("live.chart") ~= false,
-        setting("live.paceBar") ~= false)
+        setting("live.paceBar") ~= false, setting("live.castDots") ~= false)
 end
 
 local FILL = { idle = idleView, running = runningView, result = resultView }
@@ -303,14 +303,24 @@ local function raceView()
     return v
 end
 
+-- The sample's chart without its cooldown icons: a copy, as the preview owns the one it pushed.
+local function withoutCooldowns(chart)
+    if not chart or not chart.cooldowns then return chart end
+    local out = {}
+    for k, x in pairs(chart) do out[k] = x end
+    out.cooldowns = nil
+    return out
+end
+
 -- Test mode: the body Hud.Render pushed, its figures as given (the preview owns them).
 local function previewView()
     local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
     commonView(v)
     for k, x in pairs(preview.extra or {}) do v[k] = x end
-    -- The sample honors the chart and pace settings, as a real race's views do (#2, #3).
+    -- The sample honors the chart, pace and cooldown icon settings, as a real race's views do (#2, #3, #14).
     if setting("live.chart") == false then v.chart = nil end
     if setting("live.paceBar") == false then v.pace = nil end
+    if setting("live.castDots") == false then v.chart = withoutCooldowns(v.chart) end
     v.key = BODY_OF[preview.key] or preview.key
     if v.key == "stopping" then v.key = "stop" end
     if v.key == "idle" then idleView(v) end
@@ -368,10 +378,17 @@ local function savePosition()
     w.x, w.y = math.floor(x + 0.5), math.floor(y + 0.5)
 end
 
-local function onResized(width, height)
+-- Every size change, the grip's or not: the tracked size the bodies lay out from, never under the minimums.
+local function trackSize(width, height)
     if type(width) == "number" then ui.width = math.max(Hud.MIN_WIDTH, width) end
     if type(height) == "number" then ui.height = math.max(Hud.MIN_HEIGHT, height) end
-    layoutBodies()
+end
+
+-- The cheap half of a resize (modules/Sizing.lua): the body on screen alone; the others, and the
+-- redraw that re-fits the rows and re-wraps the chips to the new size, wait for the release.
+local function layoutCurrent()
+    local body = ui.current and ui.body[ui.current]
+    if body and body.Layout then body:Layout(contentWidth(), contentHeight()) end
 end
 
 local function saveSize(width, height)
@@ -435,7 +452,7 @@ local function buildFooter(f)
     ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
 end
 
-local onHide
+local onHide, resized
 
 local function ensureWindow()
     if ui then return ui end
@@ -457,11 +474,12 @@ local function ensureWindow()
     f:SetScript("OnHide", function() onHide() end)
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Hud.FRAME_NAME) end
-    NS.MakeResizable(f, {
+    -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only the body on screen is laid
+    -- out, once a frame; on release every body is, and the shown one is drawn again.
+    NS.Sizing.MakeResizable(f, {
         minWidth = Hud.MIN_WIDTH, minHeight = Hud.MIN_HEIGHT,
         canResize = function() return not Hud.locked end,
-        onResize = onResized,
-        onResizeStop = saveSize,
+        size = trackSize, layout = layoutCurrent, redraw = layoutBodies, done = resized,
     })
     applyPlacement()
     debug("window built")
@@ -577,6 +595,13 @@ end
 
 local function windowShown()
     return ui ~= nil and ui.frame:IsShown() == true
+end
+
+-- The release of a resize: the size stored, and the body on screen drawn again at it (the result
+-- card's rows fit the new height, the chips wrap at the new width).
+function resized(width, height)
+    saveSize(width, height)
+    if windowShown() then render(true) end
 end
 
 local function liveWanted()
@@ -845,7 +870,7 @@ end
 
 -- The run on the result card left the store (the card's Delete, or a delete in the Results window):
 -- the card is dismissed (Race.Cancel keeps nothing it could, the run is gone). After the card's own
--- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length. Any
+-- Delete the HUD goes back to the Arm Race screen as New Race does, open, on the same length. Any
 -- other change to the store (an earlier best deleted) redraws the card: its delta chip, pace bar and
 -- the best's diagonal name the best before the run, read from the store again.
 local deleting   -- the run id whose delete the card's popup accepted, for the one RUNS_CHANGED it fires
@@ -928,7 +953,7 @@ function Act.customLength(text)
 end
 
 -- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
--- race the preview may be covering (a result card), and the sample card's Race Again and Details
+-- race the preview may be covering (a result card), and the sample card's New Race and Details
 -- (drawn disabled) do nothing.
 function Act.cancel()
     if previewOn() then return NS.Preview.Stop() end
@@ -964,7 +989,7 @@ function Act.details()
     openRun(NS.Race.Current())
 end
 
---- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
+--- New Race: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
 --- the idle body is set to the same length, so Arm Race repeats the race.
 function backToIdle(run)
@@ -976,7 +1001,7 @@ function backToIdle(run)
     return true
 end
 
-function Act.raceAgain()
+function Act.newRace()
     if previewOn() then return false end
     return backToIdle(NS.Race.Current())
 end

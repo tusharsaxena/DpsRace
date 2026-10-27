@@ -33,6 +33,14 @@ Tbl.WHEEL_ROWS = 3          -- rows one notch of the mouse wheel moves
 
 local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local WHITE = "Interface\\Buttons\\WHITE8x8"
+Tbl.WHITE = WHITE
+-- The list's stripe: every other row faintly tinted; the detail's spell rows share it.
+Tbl.STRIPE_ALPHA = 0.025
+
+--- The stripe's alpha for the row at `index` (1-based): the tint on every even row, none on the odd.
+function Tbl.StripeAlpha(index)
+    return index % 2 == 0 and Tbl.STRIPE_ALPHA or 0
+end
 local CLASS_ATLAS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 
 local C = {
@@ -222,14 +230,9 @@ end
 
 Tbl.WindowOf = windowOf
 
--- Lines from `first` on, each a string (light gray) or { text, r, g, b }.
-local function addLines(tip, lines, first)
-    for i = first, #lines do
-        local l = lines[i]
-        if type(l) == "table" then tip:AddLine(l[1], l[2] or 1, l[3] or 1, l[4] or 1, true)
-        else tip:AddLine(l, 0.9, 0.9, 0.9, true) end
-    end
-end
+-- Lines from `first` on, each a string (light gray) or { text, r, g, b }, on bullets from two lines
+-- on (modules/Style.lua).
+local addLines = Style.AddTipLines
 
 -- The shown tooltip beside `window`, level with `row`: its right, or its left without the room.
 local function placeSide(tip, window, row)
@@ -314,6 +317,21 @@ function Cells.icons(row, col)
     cell.class:SetSize(Tbl.ICON, Tbl.ICON)
     cell.spec:SetSize(Tbl.ICON, Tbl.ICON)
     if col.withName then cell.fs = Tbl.Text(row, FONT.TEXT, C.text) end
+    return cell
+end
+
+-- A row of small icons (the Runs list's Used column, #13): as many as the column's configured width
+-- holds (Tbl.IconsFit), each its own part (cell.icon1, ...) so a group header's showCells hides it,
+-- then "+n" for the rest, or a dash when there is nothing.
+function Cells.items(row, col)
+    local cell = { more = Tbl.Text(row, FONT.TEXT, C.dim), dash = Tbl.Text(row, FONT.TEXT, C.dim) }
+    cell.dash:SetText("\226\128\148")
+    cell.slots = Tbl.IconSlots(col.width)
+    for i = 1, cell.slots do
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(Tbl.ICON, Tbl.ICON)
+        cell["icon" .. i] = icon
+    end
     return cell
 end
 
@@ -446,6 +464,40 @@ function Bind.text(cell, col, run)
     if cell.bar then bindBar(cell, col, run) end
 end
 
+Tbl.ICON_GAP = 2            -- between two icons of an items cell
+
+--- How many icons an items cell `width` px wide holds (at least one). Pure.
+function Tbl.IconSlots(width)
+    return math.max(1, math.floor(((width or 0) + Tbl.ICON_GAP) / (Tbl.ICON + Tbl.ICON_GAP)))
+end
+
+--- How many of `count` icons an items cell `width` px wide draws, and the "+n" after them: all of
+--- them when they fit, else one slot fewer than fit and the rest counted in the last slot. Pure.
+--- @return number shown, number more
+function Tbl.IconsFit(count, width)
+    local slots = Tbl.IconSlots(width)
+    if count <= slots then return count, 0 end
+    return slots - 1, count - (slots - 1)
+end
+
+-- The column's `items(run)` answers the icons ({ texture, ... }), or nil: a dash for none.
+function Bind.items(cell, col, run)
+    local list = col.items(run) or {}
+    local shown, more = Tbl.IconsFit(#list, col.width)
+    for i = 1, cell.slots do
+        local icon = cell["icon" .. i]
+        icon:SetShown(i <= shown)
+        if i <= shown then icon:SetTexture(list[i]) end
+    end
+    cell.dash:SetShown(#list == 0)
+    cell.more:SetShown(more > 0)
+    cell.more:SetText(more > 0 and ("+" .. more) or "")
+    if more > 0 then
+        cell.more:ClearAllPoints()
+        cell.more:SetPoint("LEFT", cell.icon1 or cell.dash, "LEFT", shown * (Tbl.ICON + Tbl.ICON_GAP), 0)
+    end
+end
+
 function Bind.icons(cell, col, run)
     local char = run.char or {}
     local specName, specIcon = Tbl.SpecInfo(char.specID, char.spec)
@@ -474,11 +526,13 @@ end
 
 --- Set a checkbox's label (`check.label`, 1px right of the box) and widen its click area over it, so
 --- a click on the words toggles it too (the owner's call, 2026-10-26). The width is the label's
---- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one.
-function Tbl.SetCheckLabel(check, text)
+--- estimate (Tbl.BadgeWidth's 6 px a character), never a measured one. `extra` px more lie between
+--- the box and its words (the detail's Usage rows: an item's icon), and are clickable too. `width`
+--- stands for the words' estimate when the text carries color escapes (a Usage row's dim detail).
+function Tbl.SetCheckLabel(check, text, extra, width)
     text = text or ""
     check.label:SetText(text)
-    check:SetHitRectInsets(0, -(1 + Tbl.BadgeWidth(text, false)), 0, 0)
+    check:SetHitRectInsets(0, -(1 + (extra or 0) + (width or Tbl.BadgeWidth(text, false))), 0, 0)
 end
 
 -- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
@@ -561,6 +615,14 @@ local function placeCell(row, cell, col, x, w)
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.w = w
+    elseif kind == "items" then
+        for i = 1, cell.slots do
+            cell["icon" .. i]:ClearAllPoints()
+            cell["icon" .. i]:SetPoint("LEFT", row, "LEFT", x + (i - 1) * (Tbl.ICON + Tbl.ICON_GAP), 0)
+        end
+        cell.dash:ClearAllPoints()
+        cell.dash:SetPoint("LEFT", row, "LEFT", x, 0)
+        cell.more:SetWidth(math.max(10, Tbl.ICON + 8))
     else
         cell.fs:ClearAllPoints()
         cell.fs:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -703,7 +765,8 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail), width | flex+min, tip = fn(run) -> lines, about = header text,
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail)|"items" (items =
+---                         fn(run) -> textures), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run),
 ---                         scan = fn(list, groupOf) on SetData and SetGroup (Table:measure) }
@@ -1020,8 +1083,7 @@ local function bindHeader(row, g)
 end
 
 function Table:bindRow(row, run, index)
-    local alt = self.stripe and index % 2 == 0
-    row.bg:SetVertexColor(1, 1, 1, alt and 0.025 or 0)
+    row.bg:SetVertexColor(1, 1, 1, self.stripe and Tbl.StripeAlpha(index) or 0)
     if run.group then return bindHeader(row, run.group) end
     row.run, row.index, row.group = run, index, nil
     row.groupLabel:Hide()
@@ -1040,13 +1102,23 @@ function Table:syncScrollbar()
 end
 
 --- Redraw the visible slice from the pool.
+---
+--- A redraw can run inside another (the owner's first-drag overlap, 2026-10-27): the first row an open
+--- shows can resolve the window's rect, and the client runs its OnSizeChanged right there, a full
+--- layout and a Bind inside this one's Acquire. That inner Bind released this one's rows and drew the
+--- whole slice; carrying on would draw a second set over it that the list does not hold, which the
+--- next drag leaves where it was. So each Bind counts itself, and one that finds a newer Bind ran
+--- inside it stops: the newer one's rows stand.
 function Table:Bind()
+    local pass = (self.binds or 0) + 1
+    self.binds = pass
     self.offset = math.max(0, math.min(self.offset, self:maxOffset()))
     NS.Pool.ReleaseAll(self.pool, function(row) row.run, row.group = nil, nil end)
-    self.shown = {}
+    self.shown, self.spare = {}, {}
     local count = math.min(self:visibleCount(), #self.rows - self.offset)
     for i = 1, count do
         local row = NS.Pool.Acquire(self.pool, function() return newRow(self) end)
+        if self.binds ~= pass then return end
         self:placeRow(row, i)
         self:bindRow(row, self.rows[self.offset + i], self.offset + i)
         self.shown[i] = row
@@ -1055,9 +1127,9 @@ function Table:Bind()
     self:syncScrollbar()
 end
 
---- Lay the header and the rows out for `width` x `height`.
-function Table:Layout(width, height)
-    self.width, self.height = width, height
+-- The columns at `width` and the header's labels on them; a row's cells follow on its next placeRow.
+function Table:placeColumns(width)
+    self.width = width
     self.place = Tbl.Columns(self.columns, width)
     self.layoutVersion = (self.layoutVersion or 0) + 1
     for i, b in ipairs(self.heads) do
@@ -1068,7 +1140,49 @@ function Table:Layout(width, height)
         b.label:ClearAllPoints()
         b.label:SetAllPoints(b)
     end
+end
+
+--- Lay the header and the rows out for `width` x `height`.
+function Table:Layout(width, height)
+    self.height = height
+    self:placeColumns(width)
     self:Bind()
+end
+
+-- The rows shown to the count that fits now, from the offset held: a row past it hidden and kept
+-- spare, a row the new height adds taken from the spares (or the pool) and bound alone.
+function Table:fitRows()
+    local count = math.max(0, math.min(self:visibleCount(), #self.rows - self.offset))
+    self.spare = self.spare or {}
+    for i = #self.shown, count + 1, -1 do
+        local row = self.shown[i]
+        self.shown[i] = nil
+        row:Hide()
+        self.spare[#self.spare + 1] = row
+    end
+    local pass = self.binds
+    for i = #self.shown + 1, count do
+        local row = table.remove(self.spare) or NS.Pool.Acquire(self.pool, function() return newRow(self) end)
+        row:Show()
+        -- A Bind that ran inside the Show (Table:Bind's note) drew the slice already.
+        if self.binds ~= pass then return end
+        self:placeRow(row, i)
+        self:bindRow(row, self.rows[self.offset + i], self.offset + i)
+        self.shown[i] = row
+    end
+end
+
+--- While the window is being sized (modules/Sizing.lua): the columns at `width`, the rows that fit
+--- `height` and the scroll range, with nothing rebound. The rows shown keep what they draw, their
+--- cells re-placed when the width moved; the offset holds. The release's Layout rebinds them all.
+function Table:Resize(width, height)
+    if width ~= self.width then
+        self:placeColumns(width)
+        for i, row in ipairs(self.shown) do self:placeRow(row, i) end
+    end
+    self.height = height
+    self:fitRows()
+    self:syncScrollbar()
 end
 
 --- The rows drawn now, top down (the suites read these).

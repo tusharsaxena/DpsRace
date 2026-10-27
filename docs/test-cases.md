@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 2, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 3, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -132,10 +132,10 @@ Total.
 - bests: Delta ignores later runs, other boards and runs that never count
 - bests: Delta defaults its run list to the store
 - bests: HoldingIDs names the holders of the all-runs and the clean-only boards
-- bests: prune keep=0 removes nothing
+- bests: prune days=0 removes nothing
 - bests: prune keeps best-holding runs
 - bests: prune never removes a running or stopping run, and stops at the holders
-- bests: prune runs on RUN_SAVED with the global history.keep setting
+- bests: prune runs on RUN_SAVED with the global history.keepDays setting
 - bests: prune never removes the run just saved, nor the race's own run
 - bests: a raced run that lands below the best survives the prune its own save fires
 - bests: prune runs at OnEnable
@@ -274,7 +274,7 @@ Total.
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
-- hud: Race again re-arms the same length; Details and Share reach their modules
+- hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 - hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
@@ -305,7 +305,28 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_chart.lua (29)
+### test_hud_hint.lua (6)
+
+- hud hint: the line estimate wraps whole words at the width
+- hud hint: at the minimum width the plain hint is three lines and 6 px above and below
+- hud hint: a named drop-combat ability takes the line it needs, and a wider body fewer
+- hud hint: the text is inset from the box's top, never pinned to a fixed bottom
+- hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
+- hud hint: the box resizes when the hint's text changes, and not on every redraw
+
+### test_hud_tiles.lua (9)
+
+- hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
+- hud tiles: the caption row sits inside the tile at the old padding, the figure a row above it
+- hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46
+- hud tiles: under the taller pair the Stop! chips and note and the waiting hint move down by config
+- hud tiles: the right tile's caption says what its figure is in each state
+- hud tiles: every caption fits a tile at the 260 px minimum by the 6 px a character estimate
+- hud tiles: the waiting screen's tiles read the same as the Stop! screen's
+- hud tiles: the moved Stop! and waiting stacks still fit the minimum height above the foot row
+- hud tiles: the Stop! and waiting redraws read no geometry
+
+### test_chart.lua (30)
 
 - chart: the bucket count is the length in whole seconds, at most 60
 - chart: a capture copies the handle into each bucket it is the first read at or after
@@ -336,6 +357,7 @@ Total.
 - chart: the sim draws the sample's chart live against a best, then on its result card
 - chart: the sim honors Show damage chart and Show pace bar
 - chart: the diagnostics state section counts the loadout store and the races holding a chart
+- chart: the plot is a fill with no edge (the owner's call, 2026-10-26)
 
 ### test_pace.lua (14)
 
@@ -377,18 +399,19 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
-### test_layers.lua (6)
+### test_layers.lua (7)
 
 - layers: one table names the addon's tiers by the standard's keys
 - layers: no strata string and no bare level number at a call site
 - layers: the Race HUD is MEDIUM, toplevel and clamped
 - layers: the Results window is HIGH, toplevel and clamped
+- layers: the ability timeline is DIALOG, one strata above the Results window, toplevel and clamped
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
 ### test_results.lua (50)
 
-- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, note
+- results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
 - results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
 - results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
@@ -439,11 +462,14 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_results_fit.lua (3)
+### test_results_fit.lua (6)
 
 - results: every Runs column fits the narrowest list either view lays out
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
+- results: the Runs filter bar with no width, or only the room it needs, is the configured plan
+- results: the Runs filter bar ends on the window's right edge in both views, never under its widths
+- results: the Runs filter bar stretches with the window while the grip is dragged
 
 ### test_results_group.lua (6)
 
@@ -453,6 +479,13 @@ Total.
 - results: hovering Save, Reset or Clear shows its tooltip without an error
 - results: Group by spec + target + time, one group per board, the spec in its class color
 - results: Group by Full: character, class, spec, target and time, in that order
+
+### test_results_delta.lua (4)
+
+- results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run
+- results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green
+- results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
+- results: a run the Runs filters leave out falls back to its board among every stored run
 
 ### test_results_tree.lua (5)
 
@@ -476,22 +509,32 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (12)
+### test_compare.lua (22)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
 - compare: rows sort by the run's damage, then the other's, then the id
 - compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
 - compare: the figures and their % difference; none against a zero or missing figure
+- compare: the Difference cell is the amount, then the % in the bars' muted green or red
 - compare: the default is the best on the run's board; for the best itself, the runner-up
 - compare: a picked run wins while it is stored and not the run itself
 - compare: the toggle sets the run beside the best: the score table and the compared breakdown
+- compare: This run right, Best run left; each header at its column's x, width and justify
+- compare: the score table has no box, its columns are the spell table's, and a rule sits between them
+- compare: one bar per row, on the higher run's side, its length the row's % difference against the table's
+- compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped
 - compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
 - compare: the row menu's pick, the different-board note and Clear Pick
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
 - compare: the collapsed view draws the compare in the list's place; no number is read off a frame
+- compare: the columns flex with the width: the name column a share of it up to its cap, the figures the rest
+- compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs
+- compare: the separator draws one physical pixel wide at any UI scale, not one UI unit
+- compare: Damage and DPS in the spell names' white, each after a game icon at the spell icons' size and x
+- compare: every spell row alternates the Results list's stripe, compared and plain
 
-### test_loadout.lua (26)
+### test_loadout.lua (27)
 
 - loadout: SnapshotLoadout reads every equipped link but the shirt and the tabard
 - loadout: SnapshotLoadout reads the talents: the saved loadout's name, the hero tree, the string
@@ -511,6 +554,7 @@ Total.
 - loadout: a run resumed after a /reload whose combat ended unheard still takes a loadout
 - loadout: the detail draws the gear grid in the character frame's order, and the talents line
 - loadout: an item's hover is the client's own tooltip; a modified click goes to the client
+- loadout: the Gear heading carries the run's item level as caption subtext on its line
 - loadout: a run stored before #6 says Not recorded, with nothing to view or copy
 - loadout: View is grayed with a reason once the client's serialization version moved; Copy still works
 - loadout: under the compare the changed slots are highlighted and a different loadout is marked
@@ -520,7 +564,223 @@ Total.
 - loadout: the share line takes the talents link only with Include talents link on
 - loadout: Include talents link sits under Sharing on the History tab, before Storage
 
-### test_schema.lua (15)
+### test_casts.lua (10)
+
+- casts: Encode writes centiseconds, a p before a pet cast, comma-joined
+- casts: Decode reads the stored string back, skipping what does not parse
+- casts: an important ability's base cooldown is 29 s or more
+- casts: Important and Of read a run's record; a run without one has none
+- casts: Group puts cooldowns first, longest first, then the rest by count
+- casts: nothing is heard before Begin or after Stop; other units are never heard
+- casts: times are on the race clock; a cast heard while armed is negative
+- casts: only the last 10 s before the clock starts are kept; the player's earlier casts are counted
+- casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
+- casts: a channel counts once, whether its success comes before or after the channel start
+
+### test_usage.lua (25)
+
+- usage: the arm snapshot reads the on-use slots, the bag consumables and the auras, never the enchants
+- usage: an unreadable bag stack makes the after counts unknown, never a false drop
+- usage: a client without the APIs snapshots nothing and raises nothing
+- usage: detection stacks casts, the bag drop and the arm's auras, in that order
+- usage: a cast item's count drop is not counted again; unknown after counts detect no drop
+- usage: a drop the casts before the pre-pull window explain is given back, never read as a use
+- usage: of two items with one use spell, a cast is the one whose count dropped
+- usage: the candidates are the on-use gear, then every bag consumable by item
+- usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
+- usage: SetUsed matches each tick to its own entry by slot, never one entry twice
+- usage: a tick with a slot answers only an entry in that slot
+- usage: an unticked food joins the candidates, once, and ticked again keeps its source; an old enchant goes
+- usage: the hidden items parse from their setting, sorted and once each, and refuse anything else
+- usage: Hide and Unhide write the whole list through the seam; Shown leaves out hidden items and enchants
+- usage: the known items are every item the stored runs list, newest run first, each once
+- usage: Watchers hears the casts from the arm, for the player and the pet
+- usage: a race stores its casts and usage at the result, and nothing secret
+- usage: a cast heard more than 10 s before the pull is not this race's, in the list or the usage
+- usage: a lost race stores its casts and usage too, and nothing secret
+- usage: a stand-down stops the cast list and drops it
+- usage: a canceled race keeps nothing; the next arm starts a fresh list
+- usage: a run resumed after a /reload keeps no casts and no usage
+- usage: the format 3 migration raises the stamp and rewrites no run
+- usage: the sample history and the sim's race carry casts and usage
+- usage: a player with no consumables gets the sample Healthstone, used with no cast
+
+### test_results_usage.lua (24)
+
+- results usage: entries list the gear first, never an old enchant; a run stored before format 3 has none
+- results usage: each entry's detail says how many times and when, or why there is no time
+- results usage: names and icons come from the item data; food has its own
+- results usage: one row per candidate, then each detected entry no candidate stands for
+- results usage: the ticks follow the rows, and a change is any row ticked against what was stored
+- results usage: a save keeps the used entries the edit does not list, a hidden item's
+- results usage: an items cell draws what fits, or one fewer and +n
+- results usage: the Used column draws the icons gear first, then +n; a dash for nothing or no record
+- results usage: the Used tooltip names each entry with its icon and when, or says why there is none
+- results usage: the Used column sorts by how many entries, a run with no record last either way
+- results usage: a row's line is the name, then a dim dot and the detail; the name alone with none
+- results usage: the detail follows the name on its line, cut at the row's edge, in and out of the edit
+- results usage: the detail shows what was used, each with its icon and when, Edit and no Save
+- results usage: a run with nothing used says so in a dim line, and Edit still opens the list
+- results usage: Edit lists every candidate and the extras, used ones ticked; Edit again leaves unsaved
+- results usage: Save is live only while the ticks differ, writes them through SetUsed and leaves the edit
+- results usage: an unticked Well Fed stays listed in the edit and can be ticked again
+- results usage: a redraw of the same run keeps the edit and its ticks not saved yet, and the scroll
+- results usage: a run stored before format 3 says Not recorded, with no rows, no Edit and no Save
+- results usage: a sample run's edit changes it in memory only; the store never hears it
+- results usage: a row's hover is the item's own tooltip with its detail and source after it
+- results usage: a right-click in the edit offers Never show; the item leaves the edit, its ticks kept
+- results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
+- results usage: a sample run hides the same items
+
+### test_results_sections.lua (9)
+
+- sections: every section heading has an arrow left of its text, open and chevron-down by default
+- sections: the arrow and the heading's text each fold and open every section, the arrow's icon following
+- sections: a folded section's body is hidden, and the sections under it move up by its body's height
+- sections: the folded state is the profile's, read back by a rebuilt pane and by every run
+- sections: Reset position keeps the folded sections; a profile reset and Reset all settings clear them
+- sections: Add Note opens a folded Note; folding the Note while writing closes the box unsaved
+- sections: a heading the run does not draw hides its arrow
+- sections: a lost run after a drawn one hides Timing's heading hover, so it takes no click
+- sections: Flags is a section heading over the yellow box; each flag's main line, detail and meaning read apart
+
+### test_chart_icons.lua (29)
+
+- chart icons: a cast's x is INSET + t / length across the width less both insets
+- chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
+- chart icons: an icon is centered on its cast's time, held inside the plot at either end
+- chart icons: an icon that would overlap the one before it on the top row takes the second
+- chart icons: the rows the plot holds follow its configured height, at least one
+- chart icons: the plot frame holds one icon row over the configured height, one more row in all
+- chart icons: the columns and the best's diagonal scale below the reserved row
+- chart icons: three casts in one second stack on three rows of the 80 px plot
+- chart icons: three casts in one second on the short plot: one icon and a +2 mark
+- chart icons: six casts in one second: four rows and a +2 on the 80 px plot, a +5 on the short one
+- chart icons: crowds an icon's width apart on the last row get a mark each, never overlapping
+- chart icons: only casts of an ability whose base cooldown is 29 s or more get one
+- chart icons: drawn live on the running HUD, the spell's icon along the top, no geometry read back
+- chart icons: two casts close together on the running HUD stagger onto the second row
+- chart icons: three casts in one second are all captured and all drawn on the 80 px running chart
+- chart icons: on the short plot the crowd's overflow is a +n mark whose tooltip lists each cast
+- chart icons: six casts in one second: nothing dropped on the 80 px plot or the short one
+- chart icons: the crowd's tooltip marks a pet's cast and takes nothing but a list
+- chart icons: a running HUD icon's tooltip names the spell and its time
+- chart icons: the live list is read again only when the race heard another cast
+- chart icons: Show cooldown icons off draws none on the running HUD; on again brings them back
+- chart icons: the setting's row reads Show cooldown icons and keeps its stored path
+- chart icons: the result card and the Results detail draw the run's from its record
+- chart icons: an icon's tooltip on the card and in the detail names the spell and when it was cast
+- chart icons: Show cooldown icons off hides them on the card and in the detail too
+- chart icons: a run recorded before casts were (format 2) draws its chart with none
+- chart icons: test mode draws the sample's, live up to its still moment and all on the card
+- chart icons: the sim's running chart keeps one cooldown list until another cast is heard
+- chart icons: test mode's chart follows Show cooldown icons while it is on screen
+
+### test_results_timeline.lua (20)
+
+- results timeline: one row per ability and caster across both runs, each run's times and counts
+- results timeline: cooldowns of 29 s or more first, the longest first; then by count, the player's before the pet's
+- results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane
+- results timeline: the detail's Timeline button is live for a run with casts and disabled without
+- results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts
+- results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run
+- results timeline: each lane's count sits just past the lane's right end, not out at the window's edge
+- results timeline: overlapping icons stack onto extra rows and the strip grows to fit them all
+- results timeline: the Casts strips show every cast of both runs as its icon on the lanes' time axis
+- results timeline: a strip grows with the casts stacked at one time; the lanes start under it
+- results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets
+- results timeline: a strip with no casts shows a dim note in place of its icons
+- results timeline: its minimum width is 640, so the icons get room; no stored size, it opens at the Results window's
+- results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
+- results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
+- results timeline: a run with no casts or no run at all shows a message in place of the lanes
+- results timeline: Escape and its close control close it, as does the Results window closing
+- results timeline: it scrolls by a pair per notch; a move and a resize are never stored; Reset position puts it over the Results window
+- results timeline: it follows Master scale while open
+- results timeline: a stand-down hides it, and nothing opens it while stood down
+
+### test_results_timeline_zoom.lua (7)
+
+- timeline zoom: the Casts section is roomier: a wider row pitch than the icon, gaps around the strips
+- timeline zoom: a second time axis under the compared run's strip, the same labels as the pinned one
+- timeline zoom: the controls sit at the right end of the Casts heading line and step through the zooms
+- timeline zoom: zoomed in, the strips and the lanes widen together and the view pans across the axis
+- timeline zoom: a zoom keeps the view's middle; zoomed in, Shift+wheel pans and the wheel scrolls
+- timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
+- timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
+
+### test_results_timeline_modal.lua (8)
+
+- timeline modal: the timeline sits one strata above the Results window, the cover over its every level
+- timeline modal: opening it re-raises a shown StaticPopup (frame-layering-§4)
+- timeline modal: the cover dims the Results window and takes its mouse and wheel while the timeline is open
+- timeline modal: putting the cover up closes the window's menu and tooltip
+- timeline modal: the cover goes with the Results window, at stand-down and on a source switch
+- timeline modal: Escape closes the timeline before the Results window, in either close-stack order
+- timeline modal: the talent tree's panel open closes the timeline and sends the window aside
+- timeline modal: the timeline's skin is opaque, nothing of the Results window shows through
+
+### test_results_timeline_view.lua (6)
+
+- timeline view: the scrollbar shows only zoomed in, its thumb the view's share of the lanes' width
+- timeline view: a drag of the thumb or a click on the track scrolls Casts and By ability together
+- timeline view: This run and Best run sit on their strips' middles, however many rows each grew to
+- timeline view: nothing between the strips but a lane pair's gap, through a resize (UT-P17)
+- timeline view: it opens exactly over the Results window, expanded or collapsed, never stored
+- timeline view: over a Results window smaller than its minimums, it keeps its minimums
+
+### test_results_timeline_scroll.lua (8)
+
+- timeline scroll: the wheel scrolls up and down at any zoom; Shift+wheel left and right only zoomed in
+- timeline scroll: the zoom and arrow tooltips say how the wheel and the arrows scroll
+- timeline scroll: the arrows follow reset and come before the ?, chevrons from the catalog
+- timeline scroll: each arrow pans a quarter of the view, clamped to the axis
+- timeline scroll: the arrows are disabled and dimmed at 1x and each at its end of the axis
+- timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off
+- timeline scroll: zoomed in on a run with no casts, the arrows stay off
+- timeline scroll: the six heading-line controls and the zoom level read one size
+
+### test_results_timeline_controls.lua (13)
+
+- timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them
+- timeline controls: against the screen's right edge the tooltips open left of the window instead
+- timeline controls: Ctrl+wheel up zooms in a step and down out a step, the buttons' steps
+- timeline controls: Ctrl wins over Shift; off the time area the zoom keeps the view's middle
+- timeline controls: Ctrl+wheel keeps the time under the cursor where it was, clamped to the axis
+- timeline controls: CursorAt is how far across the lanes the cursor is, nil off them
+- timeline controls: read left to right the line is the zoom level, -, +, reset, <, >, ?
+- timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets
+- timeline controls: the controls end on the lanes' right edge, the strips' too, through a resize
+- timeline controls: the strips sit a lane pair's gap apart, no line between, the labels on their strips
+- timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it
+- timeline controls: every corridor wears its run's dark, translucent color
+- timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
+
+### test_sizing.lua (14)
+
+- sizing: a size change the grip did not start redraws at once
+- sizing: while the grip is held, one cheap layout a frame; one redraw on release
+- sizing: changes inside one frame coalesce into one layout now and one next frame
+- sizing: a right press or a refused gate starts no drag
+- sizing: a hide while the grip is held ends the drag as a release would
+- results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
+- results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
+- results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
+- results sizing: the first drag after opening moves every row's cells, none left behind
+- results sizing: the Bests tab's first drag after opening leaves no row behind
+- results sizing: a rebind inside a row the drag adds leaves no second row behind
+- timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
+- hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
+- hud sizing: locked, the grip starts no drag
+
+### test_tooltips.lua (4)
+
+- tooltips: one line under the title stays plain; the title never takes a bullet
+- tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them
+- tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
+- tooltips: a shared button's { title, text, ... } follows the same rule
+
+### test_schema.lua (17)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
@@ -535,16 +795,18 @@ Total.
 - schema: entering combat ends test mode, and says so once
 - schema: General visibility changes the registration set while enabled
 - schema: a migration runs once and stamps the stored version
+- schema: migration 4 keeps an old profile's expanded view and drops the timeline's place
 - panel: the category registers eagerly and every page body renders on first show
 - panel: the landing page is the library's, with the logo and one row per verb
+- schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (29)
+### test_settings.lua (31)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
 - settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar
 - settings: every row sits on a page the panel draws, and every page has a group
-- settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keep 0..10000 default 0
+- settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
 - settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
@@ -566,8 +828,10 @@ Total.
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
 - settings: History ends with Purge history…, after the stored count, under no heading of its own
-- settings: Runs to keep says it is account-wide, and its label carries no suffix
-- settings: lowering Runs to keep never deletes on the spot
+- settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
+- settings: History repaints when the hidden items change from anywhere, and not for other settings
+- settings: Days to keep says it is account-wide, and its label carries no suffix
+- settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
 
 ### test_slash.lua (30)
@@ -619,7 +883,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_preview.lua (22)
+### test_preview.lua (23)
 
 - preview: test mode holds the running body still with live figures, chart, pace bar and spells
 - preview: the still running clock follows the Race clock setting
@@ -627,6 +891,7 @@ Total.
 - preview: the test strip says so on the HUD while it is on, and only then
 - preview: with no Widgets library each window's title carries the marker
 - preview: test mode opens the Results window on the sample history, with its strip
+- preview: the detail's Delta box and New best badge read the sample history's Runs view
 - preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
 - preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
 - preview: a note or a delete changes the sample in memory; Save view and Share refuse
@@ -816,22 +1081,38 @@ Total.
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
 | test_hud.lua | 71 |
-| test_chart.lua | 29 |
+| test_hud_hint.lua | 6 |
+| test_hud_tiles.lua | 9 |
+| test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
-| test_layers.lua | 6 |
+| test_layers.lua | 7 |
 | test_results.lua | 50 |
-| test_results_fit.lua | 3 |
+| test_results_fit.lua | 6 |
 | test_results_group.lua | 6 |
+| test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 11 |
-| test_compare.lua | 12 |
-| test_loadout.lua | 26 |
-| test_schema.lua | 15 |
-| test_settings.lua | 29 |
+| test_compare.lua | 22 |
+| test_loadout.lua | 27 |
+| test_casts.lua | 10 |
+| test_usage.lua | 25 |
+| test_results_usage.lua | 24 |
+| test_results_sections.lua | 9 |
+| test_chart_icons.lua | 29 |
+| test_results_timeline.lua | 20 |
+| test_results_timeline_zoom.lua | 7 |
+| test_results_timeline_modal.lua | 8 |
+| test_results_timeline_view.lua | 6 |
+| test_results_timeline_scroll.lua | 8 |
+| test_results_timeline_controls.lua | 13 |
+| test_sizing.lua | 14 |
+| test_tooltips.lua | 4 |
+| test_schema.lua | 17 |
+| test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
-| test_preview.lua | 22 |
+| test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
@@ -846,4 +1127,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **668** |
+| **Total** | **885** |

@@ -161,6 +161,36 @@ function CELL.flags(run)
     return lines
 end
 
+-- What a run used (#13): each entry's icon, name and when (modules/Results_Usage.lua); a hidden item
+-- is not listed.
+function CELL.used(run)
+    local U = NS.ResultsUsage
+    local entries = U.Entries(run)
+    if not entries then
+        return { L["Not recorded"], L["This run was raced before the addon recorded what was used."] }
+    end
+    if #entries == 0 then
+        return { L["Nothing used"], L["No on-use item or consumable was detected or ticked for this run."] }
+    end
+    local lines = { #entries == 1 and L["1 item used"] or L["%d items used"]:format(#entries) }
+    for _, e in ipairs(entries) do
+        lines[#lines + 1] = U.InlineIcon(e) .. " " .. L["%s: %s"]:format(U.Name(e), U.Detail(e))
+    end
+    lines[#lines + 1] = { L["Edit the list in the run's detail."], 0.62, 0.62, 0.68 }
+    return lines
+end
+
+-- A builder's lines with any hole (an absent role) closed up, however many there are.
+local function compact(lines)
+    local top = 0
+    for k in pairs(lines) do
+        if type(k) == "number" and k > top then top = k end
+    end
+    local out = {}
+    for i = 1, top do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
+    return out
+end
+
 --- A cell's tooltip lines: the column's own `tip`, else the builder for its key, else nil.
 --- @param col table
 --- @param run table
@@ -170,10 +200,7 @@ function Tips.Cell(col, run)
     if not fn then return nil end
     local ok, lines = pcall(fn, run)
     if not ok or type(lines) ~= "table" then return nil end
-    -- A builder may leave holes (an absent role): close them up.
-    local out = {}
-    for i = 1, 8 do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
-    return out
+    return compact(lines)
 end
 
 --- A group header's tooltip.
@@ -197,6 +224,7 @@ local ABOUT = {
     delta = "How far this run's DPS is from the highest complete run in its group (with no grouping, the whole view). Recomputed whenever the filters or the grouping change.",
     status = "Spec best: the best for its spec, target type and length, which its tooltip names. Complete, Flagged, Incomplete, Died or Lost otherwise.",
     flags = "What happened on the run that its result should mention: late casts, a restart, a reload.",
+    used = "What the run used: on-use gear (trinkets first), then potions, flasks, food and the rest. Hover for when; sorted by how many.",
     note = "The note you kept with the run. Click to sort.",
 }
 
@@ -245,14 +273,49 @@ function DETAIL.meterDps(run)
     return lines
 end
 
-function DETAIL.delta(run)
-    if run.status ~= "complete" then return nil end
-    local pct, isNew = NS.ResultsSource.Delta(run)
-    if not pct and not isNew then return nil end
-    local lines = { isNew and L["New best"] or L["%+.1f%% vs best"]:format(pct) }
-    lines[#lines + 1] = L["Against the best DPS before this run for the same spec, target type and race length."]
-    if isNew and not pct then lines[#lines + 1] = L["The first complete run of its kind."] end
+-- Where the Delta box's figures were read (a context's scope, modules/Results_Runs.lua).
+local SCOPE = {
+    group = "its group in the Runs list",
+    view = "the Runs list's whole view",
+    board = "its board (every run of the same spec, target type and race length)",
+}
+
+local function scopeOf(ctx)
+    return L[SCOPE[ctx.scope] or SCOPE.view]
+end
+
+-- What the box's figure measures for a complete run: its lead over the runner-up on the top run,
+-- else its distance from the max.
+local function deltaAgainst(run, ctx, where)
+    if NS.ResultsRuns.IsTop(run, ctx) then
+        if not ctx.second then return { L["The only complete run in %s: there is no runner-up to lead."]:format(where) } end
+        return { L["This run's lead over the runner-up in %s."]:format(where),
+                 L["The runner-up: %s DPS."]:format(grouped(result(ctx.second).dps or 0)) }
+    end
+    if not ctx.top then return { L["No complete run in %s to compare with."]:format(where) } end
+    return { L["Against the max DPS in %s."]:format(where), L["The max: %s DPS."]:format(grouped(ctx.top)) }
+end
+
+--- The Delta box: what its figure compares against (`ctx`, the pane's Runs.Context).
+function DETAIL.delta(run, ctx)
+    ctx = type(ctx) == "table" and ctx or {}
+    local lines = { L["Delta"] }
+    if run.status == "lost" then
+        lines[2] = L["A lost run has no DPS to compare."]
+    else
+        for _, line in ipairs(deltaAgainst(run, ctx, scopeOf(ctx))) do lines[#lines + 1] = line end
+        if run.status ~= "complete" then lines[#lines + 1] = L["An incomplete run is compared, but never sets the max."] end
+    end
+    lines[#lines + 1] = ctx.scope == "board"
+        and L["The Runs list's filters leave this run out, so it is measured on its board."]
+        or L["Recomputed whenever the Runs list's filters or grouping change."]
     return lines
+end
+
+--- The New best badge: the run sets the max where the Delta box reads it.
+function DETAIL.badge(_, ctx)
+    ctx = type(ctx) == "table" and ctx or {}
+    return { L["New best"], L["The highest DPS among the complete runs in %s."]:format(scopeOf(ctx)) }
 end
 
 function DETAIL.strip(run)
@@ -273,7 +336,59 @@ end
 function DETAIL.chart()
     return { L["Damage profile"],
         L["Your damage so far at each step of the race, captured live. With a best before this run, the faint line is that best's average pace, on the same scale."],
+        L["An icon along the top marks each cast of an ability with a cooldown of 29 seconds or more. Hover it for the spell and its time; a +n mark stands for casts too crowded to show apart."],
         dimLine(L["Only races run since your last reload or login have it: the live numbers cannot be saved."]) }
+end
+
+-- A cast's spell name, the pet's marked.
+local function castName(cast)
+    local name = NS.HudBreakdown.SpellName(cast.id)
+    if cast.pet then name = L["%s (pet)"]:format(name) end
+    return name
+end
+
+--- A cast's tooltip: a cooldown icon on the damage chart and a timeline tick (#14): the spell (the pet's marked) and the time it
+--- was cast on the race clock; nil for anything but a cast.
+--- @param cast table  { t, id, pet }
+--- @return table|nil
+function Tips.Cast(cast)
+    if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
+    return { castName(cast), L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
+end
+
+--- A +n mark's tooltip on the damage chart: how many casts it stands for, then each one's spell and
+--- time on the race clock, on bullets. Nil for anything but a list of casts.
+--- @param casts table  { { t, id, pet }, ... }
+--- @return table|nil
+function Tips.CastCrowd(casts)
+    if type(casts) ~= "table" or not casts[1] then return nil end
+    local lines = { L["%d cooldowns here"]:format(#casts) }
+    for _, cast in ipairs(casts) do
+        if type(cast) == "table" and type(cast.id) == "number" then
+            lines[#lines + 1] = L["%s at %s"]:format(castName(cast), NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
+        end
+    end
+    return lines
+end
+
+-- How many casts `label`'s lane holds.
+local function castsLine(label, n)
+    if n == 1 then return L["%s: 1 cast"]:format(label) end
+    return L["%s: %d casts"]:format(label, n)
+end
+
+--- What follows the client's spell tooltip on a timeline row's name (#14): the ability's cooldown when
+--- 29 s or more, then each run's cast count (the compared run's only when there is one).
+--- @param row table  one of ResultsTimeline.Rows' rows
+--- @param otherLabel string|nil  the compared run's label, or nil with none
+--- @return table
+function Tips.TimelineRow(row, otherLabel)
+    local lines = {}
+    local cd = NS.ResultsTimeline.CooldownText(row)
+    if cd ~= "" then lines[1] = { L["Cooldown %s"]:format(cd), 1, 0.82, 0 } end
+    lines[#lines + 1] = castsLine(L["This run"], row.countA or 0)
+    if otherLabel then lines[#lines + 1] = castsLine(otherLabel, row.countB or 0) end
+    return lines
 end
 
 local LEGEND = {
@@ -324,10 +439,19 @@ function DETAIL.back()
     return { L["Back"], L["Back to the list; the run stays selected."] }
 end
 
---- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`), or nil.
+function DETAIL.timeline()
+    return { L["Timeline"], L["Open the ability timeline: every cast of this run beside the run it is compared with."] }
+end
+
+function DETAIL.timelineOff()
+    return { L["Timeline"], dimLine(L["No casts recorded for this run: it was raced before casts were kept, or resumed after a reload."]) }
+end
+
+--- A detail element's tooltip lines (`key` names it; "legend" takes the legend's `index`, and "delta"
+--- and "badge" take the Delta box's context in it), or nil.
 --- @param key string
 --- @param run table
---- @param index number|nil
+--- @param index number|table|nil
 --- @return table|nil
 function Tips.Detail(key, run, index)
     if type(run) ~= "table" then return nil end
@@ -337,7 +461,7 @@ function Tips.Detail(key, run, index)
     end
     local fn = DETAIL[key]
     if not fn then return nil end
-    local ok, lines = pcall(fn, run)
+    local ok, lines = pcall(fn, run, index)
     if not ok or type(lines) ~= "table" then return nil end
     local out = {}
     for i = 1, 8 do if lines[i] ~= nil then out[#out + 1] = lines[i] end end
@@ -530,6 +654,72 @@ function Tips.Loadout(key, run, other, extra)
     local fn = LOADOUT[key]
     if type(run) ~= "table" or not fn then return nil end
     local ok, lines = pcall(fn, run, other, extra)
+    if not ok or type(lines) ~= "table" then return nil end
+    return lines
+end
+
+-- ── the usage ───────────────────────────────────────────────────────────────────────────────────
+-- The detail's Usage section (modules/Results_Usage.lua, #13): its heading, Edit, Save and the empty
+-- line under themselves; a row after the client's item tooltip (or alone, for food).
+
+local SOURCE = {
+    cast = "Detected from its cast during the race.",
+    bag = "Detected from the bag count after the race.",
+    buff = "Its buff was on when the race was armed.",
+    manual = "Ticked by you.",
+}
+
+local USAGE = {}
+
+function USAGE.title()
+    return { L["Usage"], L["What this run used. Edit lists every on-use item and consumable you had at the arm, what was used ticked; tick or untick, then Save."],
+             dimLine(L["Casts, bag counts and the buffs at the arm are the clues. Hidden items are never listed (History settings, Usage tab)."]) }
+end
+
+function USAGE.unused()
+    return { L["Nothing used"], L["No on-use item or consumable was detected or ticked for this run. Edit to tick what you used."] }
+end
+
+function USAGE.edit(_, editing)
+    if editing then return { L["Edit"], L["Leave the edit without saving."] } end
+    return { L["Edit"], L["Tick or untick every on-use item and consumable you had at the arm. Right-click an item to never show it."] }
+end
+
+function USAGE.none()
+    return { L["Not recorded"], L["This run was raced before the addon recorded what was used."] }
+end
+
+function USAGE.empty()
+    return { L["Usage"], L["No on-use item or consumable was found at the arm, and nothing was detected."] }
+end
+
+function USAGE.save()
+    return { L["Save"], L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] }
+end
+
+function USAGE.row(_, row)
+    local U = NS.ResultsUsage
+    local lines = { U.Name(row) }
+    local e = row.entry
+    if not e then
+        lines[#lines + 1] = dimLine(L["Not used: tick it if you did use it."])
+        return lines
+    end
+    lines[#lines + 1] = { U.Detail(e), 1, 0.82, 0 }
+    if SOURCE[e.src] then lines[#lines + 1] = dimLine(L[SOURCE[e.src]]) end
+    return lines
+end
+
+--- A Usage part's tooltip lines (`key`: title, none, empty, unused, save, edit with `extra` whether the
+--- section is editing, row with `extra` the row), or nil.
+--- @param key string
+--- @param run table  the run shown
+--- @param extra any  `row`: one of ResultsUsage.Rows' rows; `edit`: whether editing
+--- @return table|nil
+function Tips.Usage(key, run, extra)
+    local fn = USAGE[key]
+    if type(run) ~= "table" or not fn then return nil end
+    local ok, lines = pcall(fn, run, extra)
     if not ok or type(lines) ~= "table" then return nil end
     return lines
 end

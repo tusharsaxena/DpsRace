@@ -37,6 +37,10 @@ NS.defaults = {
             -- and pace (settings/Hud.lua); both hide on a shared session, the pace bar with no best.
             chart   = true,
             paceBar = true,
+            -- The ability's icon along the top of the chart at each cast of one whose base cooldown is 29 s
+            -- or more (#14), *Show cooldown icons*: live, on the result card and in the Results detail
+            -- (modules/Hud_Chart.lua). The path keeps the first look's name (dots, 2026-10-26).
+            castDots = true,
             -- How far either side of the best's pace so far the pace bar reaches, 1.1-2.0: it runs from
             -- pace x (2 - paceRange) to pace x paceRange, its tick in the middle (Round C; 1.5 = +-50%).
             paceRange = 1.5,
@@ -93,17 +97,26 @@ NS.defaults = {
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
-        -- moved. The Results window follows Master scale like the HUD.
+        -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
+        -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and
+        -- Results.VIEWS[view].minWidth, pinned equal by tests/test_schema.lua.
         windows = {
             -- Tall enough for all 8 live rows under the Damage profile heading (the pace bar and the
-            -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C).
-            hud = { width = 300, height = 560 },
+            -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C; 560
+            -- before the chart's icon row on top, UT-P11). 300 wide before 2026-10-26.
+            hud = { width = 260, height = 573 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
-            -- the list), the default, and collapsed (the list alone). Each keeps its own size; only
-            -- the title bar's toggle switches them.
-            -- Widened for the Note column (2026-10-25): 1220 and 900 before it.
-            results = { view = "expanded", expanded = { width = 1340, height = 560 },
-                        collapsed = { width = 980, height = 560 } },
+            -- the list) and collapsed (the list alone), the default (UT-P14, 2026-10-27; expanded before).
+            -- Each keeps its own size; only the title bar's toggle switches them.
+            -- 1340 and 980 wide before 2026-10-26 (1220 and 900 before the Note column, 2026-10-25).
+            -- `collapsedSections` (UT-P10): the run detail's folded sections, each Detail.SECTIONS key
+            -- set to true (modules/Results_Detail.lua); empty, every section open. Not geometry: Reset
+            -- position keeps it; a profile reset and Reset all settings clear it.
+            results = { view = "collapsed", expanded = { width = 1344, height = 560 },
+                        collapsed = { width = 904, height = 560 }, collapsedSections = {} },
+            -- No `timeline`: the ability timeline (#14, modules/Results_Timeline.lua) opens over the
+            -- Results window at its place and size every time and stores nothing (UT-P14; 980x560 and
+            -- its position were stored before).
         },
     },
     global = {
@@ -111,18 +124,21 @@ NS.defaults = {
         -- would backfill it onto a legacy account (savedvariables-§1).
         schemaVersion = 0,
         -- The run record format (spec §7). Not a migration stamp: a stored run carries its own copy.
-        -- Format 2 (#6) adds the run's loadout keys.
-        schema = 2,
+        -- Format 2 (#6) adds the run's loadout keys; format 3 (#13, #14) its casts and usage.
+        schema = 3,
         -- The run store, keyed by run id (modules/Recorder.lua). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},
         -- The loadout store (#6, modules/Loadouts.lua): each distinct gear set and talent loadout once,
         -- by its hash; a run holds only the keys (run.loadout). Orphans go with every removal.
         loadouts = { gear = {}, talents = {} },
-        -- Runs to keep (spec §6.3): 0 = never prune. Above 0, the oldest runs go first and a run
-        -- holding a best is always kept (modules/Recorder.lua Prune). Global like the store it
-        -- bounds. Its row is the History page's (settings/History.lua).
-        history = { keep = 0 },
+        -- Days to keep (spec §6.3; the owner's call, 2026-10-26): runs older than this many days are
+        -- pruned, 0 = never, and a run holding a best is always kept (modules/Recorder.lua Prune).
+        -- Global like the store it bounds. Its row is the History page's (settings/History.lua).
+        history = { keepDays = 90 },
+        -- The items the Usage lists never show (P9, modules/Usage.lua): item IDs as one plain string,
+        -- "12345,67890". Global like the run store it filters. Its row is the History page's Usage tab.
+        usage = { hidden = "" },
         -- LibDBIcon's own table, handed straight to :Register (launcher-§3). Global, because the
         -- button belongs to the installation and a profile switch must not move it.
         minimap = { hide = false },

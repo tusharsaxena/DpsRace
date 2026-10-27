@@ -13,9 +13,9 @@ local _, NS = ...
 -- display), and neither does General visibility: this is a browser the player opens on purpose.
 -- Built on first show; each tab is built the first time it is shown.
 --
--- EXPANDED OR COLLAPSED (the owner's call, 2026-10-25). Expanded, the default, sets the detail beside
--- the list (screen 08); collapsed shows the list alone, and a click puts the detail in its place, with
--- a back control (spec §6.2). Only the title bar's toggle switches them, never the width; each view
+-- EXPANDED OR COLLAPSED (the owner's call, 2026-10-25). Expanded sets the detail beside the list
+-- (screen 08); collapsed, the default (UT-P14, 2026-10-27; expanded before), shows the list alone, and
+-- a click puts the detail in its place, with a back control (spec §6.2). Only the title bar's toggle switches them, never the width; each view
 -- keeps its own size and minimum (Results.VIEWS), and the filter bar takes one row or two.
 --
 -- WHAT RUNS. Nothing while hidden but its bus receiver: RUN_SAVED and RUNS_CHANGED redraw the shown
@@ -30,18 +30,21 @@ NS.Results = Results
 local L = NS.L
 
 local DW = NS.defaults.profile.windows.results
--- Each view's minimum: collapsed holds the Runs list's columns (about 834 px with the Note column,
--- the boxed Target and Time chips and the Status tag alone: 692 px of fixed columns, the Character
--- column's 60 and the gaps, pads and scrollbar) and its two-row filter bar; expanded adds the 360 px
--- detail and lays the filter bar in one row, which sets its minimum (1198: the bar's 1196 px and
--- the window's border).
+-- Each view's minimum: collapsed holds the Runs list's columns (904 px with the Used and Note columns,
+-- the boxed Target and Time chips and the Status tag alone: 756 px of fixed columns, the Character
+-- column's 60 and the gaps, pads and scrollbar, and the window's border) and its two-row filter bar;
+-- expanded adds the 440 px detail beside that same list (1344; its one-row filter bar, 1196 px, fits
+-- inside it). The Used column (#13, 2026-10-26) raised both, from 834 and 1198; the wider detail
+-- (2026-10-27, from 360 px: the spell names were cramped) raised expanded from 1264. Each view's default
+-- width (defaults/Profile.lua) is its minimum (the owner's call, 2026-10-26; tests/test_schema.lua).
 Results.VIEWS = {
-    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1198 },
-    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 834 },
+    expanded = { width = DW.expanded.width, height = DW.expanded.height, minWidth = 1344 },
+    collapsed = { width = DW.collapsed.width, height = DW.collapsed.height, minWidth = 904 },
 }
 Results.MIN_HEIGHT = 420
-Results.DETAIL_WIDTH = 360      -- the detail pane's width when it sits beside the list
+Results.DETAIL_WIDTH = 440      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
+Results.COVER_ALPHA = 0.45      -- the dim cover over the window while the ability timeline is open
 Results.TABS = { "runs", "bests" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
@@ -71,10 +74,10 @@ local function store()
     return p.windows.results
 end
 
---- The view shown: "expanded" (the default) or "collapsed".
+--- The view shown: "collapsed" (the default) or "expanded".
 function Results.View()
     local w = store() or {}
-    return w.view == "collapsed" and "collapsed" or "expanded"
+    return w.view == "expanded" and "expanded" or "collapsed"
 end
 
 local function storedSize()
@@ -122,7 +125,7 @@ local function share(r)
     if r and canShare() then NS.Share.Prompt(r) end
 end
 
-local layout, renderTab, renderDetail
+local layout, resize, renderTab, renderDetail
 
 local function selectRun(r)
     selected = r and r.id or nil
@@ -141,6 +144,8 @@ local function buildTab(name)
             menu = function(r, row) Results.RowMenu(r, row) end,
             -- The run count lives in the footer, before the hint (the owner's call, 2026-10-25).
             count = function(text) ui.runsCount = text end,
+            -- The detail's Delta box reads the list's groups: a new filter or grouping redraws it.
+            changed = function() ui.detail:RefreshDelta() end,
         })
         -- Built while the sample history is shown: it opens on the sample's view.
         if Source.IsMock() then pane:SampleView(true) end
@@ -226,10 +231,10 @@ end
 
 local onHide
 
-local function onResized(width, height)
+-- Every size change, the grip's or not: the tracked size the layouts read, never under the minimums.
+local function trackSize(width, height)
     if type(width) == "number" then ui.width = math.max(Results.VIEWS[Results.View()].minWidth, width) end
     if type(height) == "number" then ui.height = math.max(Results.MIN_HEIGHT, height) end
-    layout()
 end
 
 -- The toggle's icon and tooltip for the view shown.
@@ -281,14 +286,20 @@ local function ensureWindow()
         saveNote = function(r, text) return Results.SetNote(r.id, text) end,
         canShare = canShare,
         clearPick = function() Results.ClearPick() end,
+        timeline = function(p) NS.ResultsTimeline.Open(p) end,
+        -- The Runs list's Delta for the run (its group, or the view), nil before the tab is built or
+        -- when its filters leave the run out (the detail falls back to the run's board).
+        deltaContext = function(r) return ui.panes.runs and ui.panes.runs:DeltaContext(r) or nil end,
     })
     NS.ApplySkin(f)
     f:SetScript("OnHide", function() onHide() end)
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Results.FRAME_NAME) end
-    NS.MakeResizable(f, {
+    -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
+    -- the full `layout` (every row rebound, the detail redrawn) runs once on release.
+    NS.Sizing.MakeResizable(f, {
         minWidth = Results.VIEWS[Results.View()].minWidth, minHeight = Results.MIN_HEIGHT,
-        onResize = onResized, onResizeStop = saveSize,
+        size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
     })
     applyPlacement()
     debug("window built")
@@ -372,6 +383,34 @@ function layout()
     pane:Layout(width, height)
 end
 
+-- The cheap half of a resize (modules/Sizing.lua): what layout places, at the tracked size, with
+-- nothing rebound or redrawn. The filter bar is re-planned across the width (its rows stay as the view
+-- set them), the list keeps its rows, the detail its content; the release's layout redraws them.
+local function resizeRuns(pane, width, height)
+    local detail = ui.detail
+    if Results.Mode() == "wide" then
+        local dw = math.min(Results.DETAIL_WIDTH, math.floor(width * 0.38))
+        pane:Resize(width, height, width - dw)
+        local h = height - pane:BarHeight()
+        detail.frame:SetSize(dw, h)
+        detail:Resize(dw, h)
+    elseif detailOpen then
+        detail.frame:SetSize(width, height)
+        detail:Resize(width, height)
+    else
+        pane:Resize(width, height, width)
+    end
+end
+
+function resize()
+    if not ui then return end
+    local width, height = bodySize()
+    local pane = ui.panes[tab]
+    if not pane then return end
+    if tab == "runs" then return resizeRuns(pane, width, height) end
+    pane:Resize(width, height)
+end
+
 local function paintTabs()
     for _, name in ipairs(Results.TABS) do
         local b, on = ui.tabs[name], name == tab
@@ -388,8 +427,8 @@ local function footer()
     local count = tab == "runs" and ui.runsCount
     ui.footLeft:SetText(count and (count .. " \194\183 " .. HINT) or HINT)
     -- GetSetting answers the shipped default itself (settings/Schema.lua); no second literal here.
-    local keep = tonumber(NS.GetSetting("global.history.keep"))
-    ui.footRight:SetText(keep and keep > 0 and L["Runs to keep: %d"]:format(keep) or L["Runs to keep: 0 (never prune)"])
+    local days = tonumber(NS.GetSetting("global.history.keepDays"))
+    ui.footRight:SetText(days and days > 0 and L["Days to keep: %d"]:format(days) or L["Days to keep: 0 (never prune)"])
 end
 
 function renderDetail()
@@ -444,7 +483,9 @@ local function applySampleMarker()
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
 end
 
+-- The ability timeline (#14) follows the detail, so it closes with the window.
 local function hideWindow()
+    NS.ResultsTimeline.Hide()
     if windowShown() then
         hiding = true
         ui.frame:Hide()
@@ -521,13 +562,82 @@ local function closedByPlayer()
 end
 
 -- The frame went away by Escape (UISpecialFrames): the player closed it. A frame still shown in its
--- own right was hidden with its parent (Alt-Z), which is not the player closing it.
+-- own right was hidden with its parent (Alt-Z), which is not the player closing it. With the ability
+-- timeline open over it (the cover up), the close stack's hide was the timeline's: the timeline is the
+-- modal, so Escape closes it first and the window shows again at once (the cover goes once the
+-- timeline's own hide settles, modules/Results_Timeline.lua).
 function onHide()
     NS.CloseMenu()
     if hiding or (ui and ui.frame:IsShown()) then return end
+    if Results.wanted and Results.IsCovered() then
+        ui.frame:Show()
+        debug("Escape went to the timeline first")
+        return
+    end
     Results.wanted = false
     closedByPlayer()
     if not talentTreeShown() and C_Timer and C_Timer.After then C_Timer.After(0, reopenUnderTree) end
+end
+
+-- THE MODAL COVER (P13, the owner's call, 2026-10-27). While the ability timeline is open over the
+-- window (one strata above it, core/Constants.lua LAYERS), a black texture at COVER_ALPHA dims the
+-- whole window and its frame takes the mouse and the wheel at W + LEVEL.COVER, over the grip and
+-- every content level: no hover, click or scroll reaches the window behind, so no Results tooltip
+-- shows through. A click on it does nothing (the timeline's close control and Escape close the
+-- timeline). A child of the window, so it hides with it; the timeline shows and hides it. Built on
+-- the first open; its level set again on each show (a click raises the toplevel window's level).
+local function ensureCover()
+    if ui.cover then return ui.cover end
+    local c = CreateFrame("Frame", nil, ui.frame)
+    c:Hide()
+    c:SetAllPoints(ui.frame)
+    c:EnableMouse(true)
+    c:EnableMouseWheel(true)
+    c:SetScript("OnMouseWheel", function() end)
+    c.dim = c:CreateTexture(nil, "BACKGROUND")
+    c.dim:SetAllPoints(c)
+    c.dim:SetColorTexture(0, 0, 0, Results.COVER_ALPHA)
+    ui.cover = c
+    return c
+end
+
+--- The ability timeline opened (`on`) or closed over the window: the dim cover up or down. An open
+--- closes a filter menu and the window's tooltip, which would act on or speak for the window behind.
+function Results.SetCovered(on)
+    if not ui then return end
+    if not on then
+        if ui.cover then ui.cover:Hide() end
+        return
+    end
+    local c = ensureCover()
+    c:SetFrameLevel(ui.frame:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.COVER)
+    c:Show()
+    NS.CloseMenu()
+    NS.ResultsTable.HideTip()
+end
+
+--- Whether the dim cover is up (the ability timeline open over the window).
+function Results.IsCovered()
+    return ui ~= nil and ui.cover ~= nil and ui.cover:IsShown() == true
+end
+
+--- Where the window is and its size in the view shown (expanded or collapsed), for the ability timeline
+--- to open exactly over it (UT-P14): its anchor (the one read savePosition makes, so a move or a view
+--- switch not yet stored still counts; the stored one before the window is built) and the size it
+--- tracks.
+--- @return string point, string relativePoint, number x, number y, number width, number height
+function Results.Placement()
+    local w = store() or {}
+    local point, relativePoint, x, y = w.point or "CENTER", w.relativePoint or "CENTER", w.x or 0, w.y or 0
+    local width, height = storedSize()
+    if ui then
+        local p, _, rp, px, py = ui.frame:GetPoint(1)
+        if type(p) == "string" and type(px) == "number" and type(py) == "number" then
+            point, relativePoint, x, y = p, type(rp) == "string" and rp or p, px, py
+        end
+        width, height = ui.width or width, ui.height or height
+    end
+    return point, relativePoint, x, y, width, height
 end
 
 -- ── the public surface ──────────────────────────────────────────────────────────────────────────
@@ -711,6 +821,8 @@ end
 --- sim's run). A hidden window redraws in full on its next show.
 function Results.OnSourceChanged(swapped)
     if swapped then
+        -- The timeline followed a run the other source does not hold: it closes, and its cover goes.
+        NS.ResultsTimeline.Hide()
         selected, detailOpen = nil, false
         if ui then
             ui.detail:SetPick(nil)
@@ -755,7 +867,9 @@ do
         bus:RegisterMessage(NS.MSG.RUN_SAVED, onStoreChanged)
         bus:RegisterMessage(NS.MSG.RUNS_CHANGED, onStoreChanged)
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if windowShown() and path == "global.history.keep" then footer() end
+            if windowShown() and path == "global.history.keepDays" then footer() end
+            -- A hidden item leaves (or rejoins) every run's usage: the Used column and the detail.
+            if path == NS.Usage.HIDDEN_PATH then onStoreChanged() end
         end)
     end
 end

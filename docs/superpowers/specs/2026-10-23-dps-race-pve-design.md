@@ -266,7 +266,7 @@ browser above all (BankLedger and MultiMeters agree on the same points):
   keep their own monospace sizes, and the KPI figures (Damage, DPS, Meter DPS) take
   `GameFontNormalHuge` over a small gray caption, as LootHistory's Insights cards do.
 - **Words.** Tabs, column headers, buttons, section labels and KPI captions are Title Case
-  (*Arm Race*, *Race Again*, *Add Note*, *Damage Stopped*); prose is Sentence case. No label is
+  (*Arm Race*, *New Race*, *Add Note*, *Damage Stopped*); prose is Sentence case. No label is
   upper-cased, the category badge and the flag words included (*Cleave ×5*, *1 late*). *STOP* is
   the one capitalized shout, and it is as big as the clock.
 - **Sizes.** A 30 px title bar with the title centered in it; a 26 px tab strip of 90 px tabs on a
@@ -295,7 +295,7 @@ A shorter window caps the live and result rows to what fits, never drawing them 
 | **Running** | The race clock, by the *Race clock* setting: by default the time elapsed in green beside the time left in red, each `m:ss.t` (`0:18.7` · `2:41.3`) with an *Elapsed* / *Left* caption, sized so both fit the minimum width; or one big clock, the time left in red or the time elapsed in green · total damage and live DPS (Blizzard's live figure, labelled *live*: the source's `amountPerSecond`, else the player's own `combatSources` row, else the Dps meter type; the meter's rate, never the score) · live breakdown: the top N spells (default 8, configurable 3–15) as icon, name, bar and amount · **Cancel**. |
 | **Stopping: Stop!** | Large **STOP** · *Damage stopped +x.xs* updating live · late-cast counter · *In combat +y.ys*. Shown while the last damage update is under 2.5s old. |
 | **Stopping: Waiting for result** | *Waiting for combat to end* (in combat) or *Reading the result* (out of it) · elapsed time · the hint (§4.4) · **Discard Run** · the HUD can be closed. A run that ended before the buzzer comes straight here and shows when combat ended. |
-| **Result** | Damage · DPS · delta to personal best (*New best +2.4%*, *New best* for a board's first run, or *−3.2% vs best*; words, because the client font may lack arrow glyphs) · flag chips (short labels; each chip's tooltip is the full flag text) · top 5 spells with % · **Race Again** (re-arms with the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
+| **Result** | Damage · DPS · delta to personal best (*New best +2.4%*, *New best* for a board's first run, or *−3.2% vs best*; words, because the client font may lack arrow glyphs) · flag chips (short labels; each chip's tooltip is the full flag text) · top 5 spells with % · **New Race** (back to the Arm Race screen on the same length) · **Details** (opens the run in the Results window) · **Share** (prints the summary to a chat channel). |
 
 **The live breakdown never sorts and never shows percentages.** Both are arithmetic on secret
 values. Bars are drawn with `SetMinMaxValues(0, maxAmount)` and `SetValue(totalAmount)`, so the
@@ -388,7 +388,7 @@ Waiting, then Result, where it holds. It shows the library's `TestStrip` saying 
 numbers. Combat or Arm ends it*, so the layout can be arranged without a dummy. Test runs are never
 written to history and never move the race engine. Test mode ends itself the moment a real race is
 armed or combat starts, and is refused during a real armed, running or stopping race and in combat.
-The sample race's last seconds show the center countdown (silently, when the setting is on), and it goes with the sample buzzer and with test mode. On a test result card, Cancel, Discard and closing the HUD end test mode, Race Again and Details
+The sample race's last seconds show the center countdown (silently, when the setting is on), and it goes with the sample buzzer and with test mode. On a test result card, Cancel, Discard and closing the HUD end test mode, New Race and Details
 are grayed, and none of them reaches the real race.
 
 ## 7. Data model
