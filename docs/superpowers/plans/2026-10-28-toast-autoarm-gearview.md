@@ -42,7 +42,7 @@ finishes it; a run that stops resumes at the first unticked box.
 ### D: DpsRace
 
 - [x] **D0 Plan** (this file).
-- [ ] **D1 #16 auto-show and auto-arm:** settings (off by default), detection from the target and nameplates
+- [x] **D1 #16 auto-show and auto-arm:** settings (off by default), detection from the target and nameplates
   against `defaults/Dummies.lua`, auto-arm through `Race.Arm` and its blockers, the way back out, stand-down
   in instances and PvP. Tests, docs, smoke rows.
 - [ ] **D2 #17 stats capture and gear view:** stats captured at arm through `NS.Secrets`, stored on the run

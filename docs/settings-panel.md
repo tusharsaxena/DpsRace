@@ -83,7 +83,7 @@ way round. In combat nothing is bound or cleared.
 #### Tab: Race
 
 The page's only tab, its subsections in the order of a race. Line by line: *Default race length*;
-*Countdown cue sound* alone (it fires from 10 seconds whatever the center numbers do); *Center-screen
+*Arm on a training dummy*; *Countdown cue sound* alone (it fires from 10 seconds whatever the center numbers do); *Center-screen
 countdown* | *Center countdown from (seconds)*; *Buzzer raid warning and sound* | *Sticky-combat hint
 after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 
@@ -91,6 +91,8 @@ after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 |---|---|---|---|
 | *Length* heading | | | |
 | Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A change clears the remembered pick (`race.lastLength`) and redraws the HUD (`Hud.ForgetLength`) |
+| *Auto-arm* heading | | | |
+| Arm on a training dummy | `race.autoArm` | checkbox | Off by default (#16). On: targeting a cataloged training dummy (`defaults/Dummies.lua`) out of combat, with the race idle and no test mode or sim on, arms a race at the length Arm Race would arm (`Hud.ArmLength`: the pick, else `race.lastLength`, else this default), through `Race.Arm` and every refusal it has, silently; the arm opens the HUD as a manual arm does and the first hit starts it. Targeting anything else (or nothing) before the pull cancels the race this rule armed; a race that started, or one the player armed, is never canceled by it. Nothing arms over a result card, while a run waits for its result, in combat or in an instance. Works without *Show near a training dummy*. Reaction: `NS.AutoArm.Sync()` |
 | *Countdown* heading | | | |
 | Countdown cue sound | `race.countdownCue` | checkbox | The cue at 10, 5, 3, 2, 1 s left and with each center number (so every second from 10 with the defaults), once a second at most; read at each mark, and a change re-arms the marks at once (`Countdown.Refresh`) |
 | Center-screen countdown | `race.centerCountdown` | checkbox | The large numbers in the middle of the screen in the last seconds; off hides a number on screen at once (`Countdown.Refresh`). Test mode follows it |
@@ -114,7 +116,8 @@ Tabs, in order: *Race HUD*, *HUD Appearance*.
 
 #### Tab: Race HUD
 
-Every HUD setting, in three subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
+Every HUD setting, in three subsections. Line by line: *Show the race HUD* | *Race clock*; *Show near a
+training dummy*; *Spell rows
 shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*; *Show damage chart* | *Show
 cooldown icons*; *Show pace bar*; *Pace bar range*.
 
@@ -123,6 +126,7 @@ cooldown icons*; *Show pace bar*; *Pace bar range*.
 | *Display* heading | | | |
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
+| Show near a training dummy | `hud.autoShow` | checkbox | Off by default (#16). On: the HUD opens by itself (`Hud.ShowNearDummy`) while a cataloged training dummy is the target or has a nameplate up, and closes again (`Hud.HideAwayFromDummy`) once none has been seen for `AutoArm.HIDE_DELAY` (3) s, only while the race is idle (an armed or running race, or a result card, holds it; the idle edge asks again). A close by the player during a dummy session keeps it closed until the session ends. A window the player opened is never closed by it. `hud.showMode` is unchanged (*Always* already wants the window), and *General visibility* still applies. Not in instances; with nameplates off only the target counts. Off closes a window it opened. Reaction: `NS.AutoArm.Sync()` |
 | *Live breakdown* heading | | | |
 | Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*). The HUD result card follows it too, with the same wheel scroll |
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |

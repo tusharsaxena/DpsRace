@@ -78,6 +78,14 @@ icon on the same time axis (*Casts*). The same pass replaced *Runs
 to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores is plain: the spell
 IDs and castGUIDs pass through `NS.Secrets` (the probe measured both plain in combat), and the usage
 snapshot is read out of combat.
+The 2026-10-28 pass ([`superpowers/plans/2026-10-28-toast-autoarm-gearview.md`](superpowers/plans/2026-10-28-toast-autoarm-gearview.md))
+added the race near a training dummy (#16, `modules/AutoArm.lua`), both opt-in: *Show near a training
+dummy* (`hud.autoShow`) opens the HUD while a cataloged dummy is the target or has a nameplate up, and
+closes it a debounce after none is, never over a race or a result and never against the player's own
+close in the same dummy session; *Arm on a training dummy* (`race.autoArm`) arms a race through
+`Race.Arm` when the player targets one out of combat, and cancels it when the target moves off the
+dummies before the pull. Neither acts in an instance. Each GUID is read through `NS.Secrets`
+(`Recorder.DummyOf`).
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -100,7 +108,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the nine `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -127,7 +135,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
@@ -231,6 +239,18 @@ own frame. `Countdown.Suspend()` drops them at the stand-down.
 | `PLAYER_TARGET_CHANGED` | the window shown | `Hud.Refresh` (target re-read) | the idle target card (spec §4.1) |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | the window shown | `Hud.Refresh` | the Arm button's *Leave combat to arm* and the footer |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | the window shown and the race RUNNING | one coalesced `Meter.ReadLive` per `1/live.hz` s | the live breakdown at 4 Hz by default, never from `OnUpdate` (spec §10) |
+
+`modules/AutoArm.lua` (#16) registers on its own AceEvent target only while one of its two rows is
+on, and nothing while the addon is stood down (`AutoArm.Suspend()`; the stand-up's `AutoArm.Resume()`
+rebuilds from the rows). Its one timer is auto-show's hide: a `C_Timer.NewTimer` of
+`AutoArm.HIDE_DELAY` (3) s armed when the last cataloged dummy is gone and canceled by the next one,
+so nameplates churning at the edge of their range never flicker the window.
+
+| Event | Registered | Handler | Why |
+|---|---|---|---|
+| `PLAYER_TARGET_CHANGED` | `hud.autoShow` or `race.autoArm` on | auto-show's decision, then the arm (a cataloged dummy) or the disarm (anything else) | auto-arm on the target; the target counts as a dummy near (the only one with nameplates off) |
+| `PLAYER_ENTERING_WORLD` | either row on | the nameplates scanned again, auto-show's decision | a loading screen into or out of an instance |
+| `NAME_PLATE_UNIT_ADDED` / `_REMOVED` | `hud.autoShow` on | the set of cataloged dummies' plates, auto-show's decision | a dummy near without targeting it |
 
 `modules/Results.lua` registers no game event and no `OnUpdate`: it redraws from its bus receiver
 (`RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`) and from the player's clicks, only while the window
@@ -401,6 +421,8 @@ shape the design most:
   is the *Well Fed* aura's enUS name (never detected on another client language), a consumable that
   leaves the bags while armed reads as used, a pair of one on-use item is detected on its first slot
   only, and a run from before format 3 (or resumed after a `/reload`) has neither list.
+- **Auto-show and auto-arm see only cataloged dummies** (#16): a dummy missing from
+  `defaults/Dummies.lua` neither opens the HUD nor arms; with nameplates off only the target counts.
 
 ## Documentation map
 
@@ -474,7 +496,7 @@ first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1457 (the zoom an
 P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1176
 (the detail's collapsible sections, 2026-10-26, and the flags box under its heading, 2026-10-27), `modules/Hud_States.lua` at 1142 (the Stop! and waiting tiles' caption row, 2026-10-28),
 `modules/Results_Runs.lua` at 1085 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28) and
-`modules/Hud.lua` at 1036 (layout-§1); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`modules/Hud.lua` at 1076 (layout-§1; auto-show's hooks, 2026-10-28, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), rather than
 grow these.

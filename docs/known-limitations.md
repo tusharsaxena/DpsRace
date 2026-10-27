@@ -5,6 +5,15 @@ What the addon cannot do, or does only approximately, and why. Split out of
 the hub keeps a short summary. Each entry names the client limit or the owner's decision behind it,
 and the smoke row that measures it where one exists.
 
+- **Auto-show and auto-arm see only cataloged training dummies** (#16, `modules/AutoArm.lua`). A
+  dummy is a creature ID in `defaults/Dummies.lua`; one not cataloged neither opens the HUD nor arms
+  (the catalog grows from measurements, #9). With enemy nameplates off no `NAME_PLATE_UNIT_ADDED`
+  fires, so auto-show sees only the target. A nameplate that comes up in combat may carry a secret
+  GUID and is not counted then; the hide's fire scans the nameplates again before it closes the
+  window. Neither rule acts in an instance (a dungeon, raid, scenario, battleground or arena; the
+  owner's stand-down rule on the issue): there a race is armed by hand. Auto-arm arms only on a
+  target change: a race that ended with the dummy still targeted is armed again by retargeting it
+  or by Arm Race (smoke rows SM-DR-TA1 to SM-DR-TA8).
 - **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping

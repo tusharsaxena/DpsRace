@@ -399,6 +399,35 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
+### test_autoarm.lua (26)
+
+- autoarm: both rules are off by default and register nothing
+- autoarm: each rule registers only what it needs, and turning both off drops it all
+- autoshow: a dummy target opens the HUD, and leaving it closes it after the debounce
+- autoshow: a dummy's nameplate opens the HUD, with no target at all
+- autoshow: nameplates churning inside the debounce never close the window
+- autoshow: the hide's fire scans the nameplates again before it closes
+- autoshow: a secret GUID is no dummy
+- autoshow: the player's close keeps it closed for the rest of the dummy session
+- autoshow: a window the player opened is theirs, and never closed by leaving
+- autoshow: a race or its result holds the window; the idle edge lets it go
+- autoshow: a result card holds the window past the debounce
+- autoshow: a race going idle near the dummy keeps the window open
+- autoshow: General visibility still decides whether it draws
+- autoshow: turning the rule off closes the window it opened
+- autoarm: targeting a cataloged dummy out of combat arms at the HUD's length and opens it
+- autoarm: a target that is no cataloged dummy arms nothing
+- autoarm: Race.Arm's refusals hold, silently: in combat, pending, meter unavailable
+- autoarm: no arm over a result card, nor in test mode
+- autoarm: targeting anything else before the pull disarms; another dummy keeps it
+- autoarm: a started race is never disarmed by a target change
+- autoarm: a race the player armed is never the rule's to disarm
+- autoarm: Cancel works as today, and the next target change to a dummy arms again
+- autoarm: works alongside auto-show; the disarm leaves the dummy's window open
+- autoarm: neither rule acts in an instance or a battleground
+- autoarm: entering an instance closes the dummy's window
+- autoarm: stood down, nothing is registered and nothing acts; the stand-up rebuilds
+
 ### test_layers.lua (7)
 
 - layers: one table names the addon's tiers by the standard's keys
@@ -1086,6 +1115,7 @@ Total.
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
+| test_autoarm.lua | 26 |
 | test_layers.lua | 7 |
 | test_results.lua | 50 |
 | test_results_fit.lua | 6 |
@@ -1127,4 +1157,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **885** |
+| **Total** | **911** |

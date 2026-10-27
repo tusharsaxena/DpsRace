@@ -285,6 +285,23 @@ race.
   under `onArm`, and test mode through `Hud.AutoShow`). Only an addon-opened window closes by itself
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
+- **Near a training dummy** (#16, `modules/AutoArm.lua`, both rows off by default): registered on its
+  own AceEvent target only while a row is on and the addon stands up. *Auto-show* (`hud.autoShow`):
+  `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of cataloged dummies'
+  plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up in
+  `defaults/Dummies.lua`; a secret GUID is no dummy) and the target; while either holds one a dummy
+  session runs and `Hud.ShowNearDummy()` opens the window if nothing else wants it. With none left a
+  `C_Timer` of `AutoArm.HIDE_DELAY` (3) s is armed (the next dummy cancels it); at its fire the
+  nameplates are scanned again (`C_NamePlate.GetNamePlates`) and, still none, the session ends and
+  `Hud.HideAwayFromDummy()` closes the window it opened, only while the race is idle (the idle edge on
+  `RACE_STATE_CHANGED` asks again). A race going idle leaves that window open. A close by the player
+  in a session (`Hud.Closes()` moved) keeps it closed until the session ends. *Auto-arm*
+  (`race.autoArm`): a target change to a cataloged dummy, out of combat, the race idle and no test
+  mode or sim on, calls `Race.Arm(Hud.ArmLength())` with every refusal it has, silently; the arm opens
+  the HUD as a manual arm does. While that run is still ARMED, a target change to anything else (or
+  none) calls `Race.Cancel()`; a run leaving ARMED (started, canceled) is no longer the rule's. Neither
+  rule acts in an instance (`GetInstanceInfo`'s type other than `none`), and `PLAYER_ENTERING_WORLD`
+  re-decides after each loading screen.
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
   one is remembered as `race.lastLength`) go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
