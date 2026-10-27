@@ -394,7 +394,7 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Corridor colors:** every timeline corridor (the *Casts* strips and the *By ability* lanes) on a fairly dark,
   translucent shade of its run's color: gold for this run, blue for the compared run. The colors live in one table the
   owner can change from a `/run` script command, with a function that repaints an open window; report the commands.
-- [ ] **Results filter bar fills the window:** the dropdowns stretch so the bar spans the window's width: collapsed,
+- [x] **Results filter bar fills the window:** the dropdowns stretch so the bar spans the window's width: collapsed,
   Group's right edge and Clear's right edge at the right edge; expanded (one row), Clear's right edge at the right edge.
 
 ### P8: Finalize (only on the owner's go-ahead)

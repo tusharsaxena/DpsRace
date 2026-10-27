@@ -384,8 +384,8 @@ function layout()
 end
 
 -- The cheap half of a resize (modules/Sizing.lua): what layout places, at the tracked size, with
--- nothing rebound or redrawn. The filter bar keeps its plan (only the view changes it), the list its
--- rows, the detail its content; the release's layout redraws all three.
+-- nothing rebound or redrawn. The filter bar is re-planned across the width (its rows stay as the view
+-- set them), the list keeps its rows, the detail its content; the release's layout redraws them.
 local function resizeRuns(pane, width, height)
     local detail = ui.detail
     if Results.Mode() == "wide" then

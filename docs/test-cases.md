@@ -450,11 +450,14 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_results_fit.lua (3)
+### test_results_fit.lua (6)
 
 - results: every Runs column fits the narrowest list either view lays out
 - results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
+- results: the Runs filter bar with no width, or only the room it needs, is the configured plan
+- results: the Runs filter bar ends on the window's right edge in both views, never under its widths
+- results: the Runs filter bar stretches with the window while the grip is dragged
 
 ### test_results_group.lua (6)
 
@@ -1070,7 +1073,7 @@ Total.
 | test_countdown.lua | 20 |
 | test_layers.lua | 7 |
 | test_results.lua | 50 |
-| test_results_fit.lua | 3 |
+| test_results_fit.lua | 6 |
 | test_results_group.lua | 6 |
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
@@ -1109,4 +1112,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **871** |
+| **Total** | **874** |

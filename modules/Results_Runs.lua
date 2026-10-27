@@ -34,7 +34,7 @@ local DAY = 86400
 local DASH = "\226\128\148"
 
 local FILTER_H = 32         -- one row of the filter bar
-local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths
+local DROPDOWNS = {         -- the bar's dropdowns, left to right, and their widths (their least: BarPlan)
     { key = "char", width = 110 }, { key = "spec", width = 96 }, { key = "category", width = 96 },
     { key = "length", width = 88 }, { key = "date", width = 100 }, { key = "group", width = 164 },
 }
@@ -54,6 +54,7 @@ local VIEW_BUTTONS = {
 }
 local VIEW_BUTTON_W = 52
 local GAP = 6
+local MARGIN = GAP + 2      -- the bar's left margin, and its right one once the dropdowns stretch
 
 -- ── pure: a run's facts, the filter, the options ────────────────────────────────────────────────
 
@@ -926,20 +927,19 @@ function View:ClearView()
     self:ApplyView(Runs.SavedView())
 end
 
--- Plan the bar from the configured widths, pure (no frame is read). Two rows (the collapsed view):
--- the dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
+-- Place the bar's controls by the dropdowns' `widths` (by key). Two rows (the collapsed view): the
+-- dropdowns on the first; the checkboxes and Save / Reset / Clear on the second, the buttons
 -- right-aligned under the last dropdown (Group). One row (the expanded view, `oneRow`): the
--- dropdowns, the checkboxes, then the buttons. Answers each control's left x (a button's right x),
--- the second row's y, and the bar's right edge, all from the bar's left.
-function Runs.BarPlan(oneRow)
-    local plan = { dropdowns = {}, checks = {}, buttons = {}, y = oneRow and -6 or -(FILTER_H - 2) }
-    local x = GAP + 2
+-- dropdowns, the checkboxes, then the buttons.
+local function placeBar(oneRow, widths)
+    local plan = { dropdowns = {}, checks = {}, buttons = {}, widths = widths, y = oneRow and -6 or -(FILTER_H - 2) }
+    local x = MARGIN
     for _, spec in ipairs(DROPDOWNS) do
         plan.dropdowns[spec.key] = x
-        x = x + spec.width + GAP
+        x = x + widths[spec.key] + GAP
     end
     local groupRight = x - GAP   -- the last dropdown's right edge
-    if not oneRow then x = GAP + 2 end
+    if not oneRow then x = MARGIN end
     for _, spec in ipairs(CHECKS) do
         plan.checks[spec.key] = x
         x = x + spec.width + GAP
@@ -953,15 +953,47 @@ function Runs.BarPlan(oneRow)
     return plan
 end
 
--- Lay the bar out by Runs.BarPlan. The run count is the window footer's (hooks.count). Answers its
--- height.
-function View:layoutBar(oneRow)
-    local plan = Runs.BarPlan(oneRow)
+-- The configured widths grown by `extra` px between them, in proportion to each (Group, the widest,
+-- takes the most); the last takes the rounding, so the shares add up to `extra` exactly.
+local function stretched(extra)
+    local total = 0
+    for _, spec in ipairs(DROPDOWNS) do total = total + spec.width end
+    local widths, given = {}, 0
+    for i, spec in ipairs(DROPDOWNS) do
+        local add = i == #DROPDOWNS and extra - given or math.floor(extra * spec.width / total)
+        widths[spec.key] = spec.width + add
+        given = given + add
+    end
+    return widths
+end
+
+-- Plan the bar, pure (no frame is read): `width` is the bar's width, the window body's, the one the
+-- shell lays the tab out at. The dropdowns take their configured widths, then share what the bar has
+-- beyond them, so the bar ends MARGIN short of its right edge, as it starts MARGIN in from its left:
+-- collapsed, Group's right edge there (and Clear's under it); expanded, Clear's. A width the
+-- configured plan already fills, or none, answers that plan: the configured widths are the least.
+-- Answers each control's left x (a button's right x), each dropdown's width, the second row's y and
+-- the bar's right edge, all from the bar's left.
+function Runs.BarPlan(oneRow, width)
+    local widths = {}
+    for _, spec in ipairs(DROPDOWNS) do widths[spec.key] = spec.width end
+    local plan = placeBar(oneRow, widths)
+    local extra = type(width) == "number" and math.floor(width - MARGIN - plan.right) or 0
+    if extra <= 0 then return plan end
+    return placeBar(oneRow, stretched(extra))
+end
+
+-- Lay the bar out by Runs.BarPlan at `width`: re-anchored and the dropdowns re-sized, nothing
+-- repainted, so the cheap layout runs it too. The run count is the window footer's (hooks.count).
+-- Answers its height.
+function View:layoutBar(oneRow, width)
+    local plan = Runs.BarPlan(oneRow, width)
     for _, spec in ipairs(DROPDOWNS) do
         local dd = self.dropdowns[spec.key]
         if dd then
             dd:ClearAllPoints()
             dd:SetPoint("TOPLEFT", self.bar, "TOPLEFT", plan.dropdowns[spec.key], -6)
+            dd:SetWidth(plan.widths[spec.key])
         end
     end
     for _, spec in ipairs(CHECKS) do
@@ -974,6 +1006,7 @@ function View:layoutBar(oneRow)
         b:ClearAllPoints()
         b:SetPoint("TOPRIGHT", self.bar, "TOPLEFT", plan.buttons[spec.key], plan.y)
     end
+    self.oneRow = oneRow
     self.barH = oneRow and FILTER_H or (2 * FILTER_H - 6)
     self.bar:SetHeight(self.barH)
     return self.barH
@@ -982,16 +1015,18 @@ end
 --- Lay the tab out: the bar across `width` (one row when `oneRow`, the expanded view), the list
 --- `listWidth` wide beneath it.
 function View:Layout(width, height, listWidth, oneRow)
-    local barH = self:layoutBar(oneRow)
+    local barH = self:layoutBar(oneRow, width)
     self.listHost:ClearAllPoints()
     self.listHost:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -barH)
     self.listHost:SetSize(listWidth or width, math.max(1, height - barH))
     self.list:Layout(listWidth or width, math.max(1, height - barH))
 end
 
---- While the window is being sized (modules/Sizing.lua): the list `listWidth` wide beneath the bar,
---- nothing rebound. The bar keeps its plan: only the view switches it between one row and two.
+--- While the window is being sized (modules/Sizing.lua): the bar re-planned across `width` (cheap:
+--- twelve controls re-anchored, six re-sized; its rows stay as the view set them), the list
+--- `listWidth` wide beneath it, nothing rebound.
 function View:Resize(width, height, listWidth)
+    self:layoutBar(self.oneRow, width)
     local h = math.max(1, height - (self.barH or 0))
     self.listHost:SetSize(listWidth or width, h)
     self.list:Resize(listWidth or width, h)
