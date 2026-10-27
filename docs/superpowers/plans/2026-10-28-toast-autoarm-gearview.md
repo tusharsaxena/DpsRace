@@ -33,11 +33,11 @@ finishes it; a run that stops resumes at the first unticked box.
 
 ### L: LibKa0s Toast-1.0 (worktree, branch `feat/2026-10-28-toast-1.0`)
 
-- [ ] **L1 Toast-1.0:** the shell from LibKa0s#60: one at a time from a queue, auto-close with a hover pause,
+- [x] **L1 Toast-1.0:** the shell from LibKa0s#60: one at a time from a queue, auto-close with a hover pause,
   close mark and right-click, the T5 alert layer, drag-to-place only when the host says so (test mode),
   position, scale and sound from the host's profile; the content drawn by one host-supplied builder. Tests,
   docs/api/Toast, CONSUMERS.md, versioning, CHANGELOG v1.79.0 (unreleased). Runs on v1.77.0's surface.
-- [ ] **L2 review and fixes.**
+- [x] **L2 review and fixes.**
 
 ### D: DpsRace
 
