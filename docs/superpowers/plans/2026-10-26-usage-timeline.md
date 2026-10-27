@@ -408,6 +408,8 @@ The owner keeps P16's corridor colors as they are.
 - [x] **One control size:** the zoom level text, `-`, `+` and `?` read the same size as reset, `<` and `>` (today
   the zoom text and `-` read too small and `?` too large).
 - [x] **Zoom level color:** above 1x the zoom level text runs from gold to red as the zoom goes up.
+- [x] **Review fixes:** smoke row SM-DR-UT59 no longer expects a clear gap between the *Casts* strips; it
+  names the lane pair's narrow 2 px gap, as UT66 and UT81 do.
 
 ### P8: Finalize (only on the owner's go-ahead)
 
