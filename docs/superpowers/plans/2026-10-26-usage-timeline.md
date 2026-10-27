@@ -410,6 +410,10 @@ The owner keeps P16's corridor colors as they are.
 - [x] **Zoom level color:** above 1x the zoom level text runs from gold to red as the zoom goes up.
 - [x] **Review fixes:** smoke row SM-DR-UT59 no longer expects a clear gap between the *Casts* strips; it
   names the lane pair's narrow 2 px gap, as UT66 and UT81 do.
+- [x] **HUD stop tiles:** (a late addition, 2026-10-28) the Stop! and waiting screens' *Damage Stopped* tile reads
+  *+9.4s* in one large string with *after buzzer* on its own caption row inside the tile (today a small
+  *s after buzzer* tail overflows it at 260 px); the right tile gets a caption on the same row, both tiles taller to
+  fit it, and everything under them moves down by config.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

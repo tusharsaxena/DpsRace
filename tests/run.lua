@@ -86,6 +86,7 @@ local SUITES = {
     "test_format",
     "test_hud",
     "test_hud_hint",
+    "test_hud_tiles",
     "test_chart",
     "test_pace",
     "test_countdown",

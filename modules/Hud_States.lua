@@ -47,6 +47,16 @@ local BIG = 40           -- the clock and STOP
 local CLOCK_PAIR = 26
 States.CLOCK_PAIR_SIZE = CLOCK_PAIR
 local KPI_HEIGHT = 46
+-- The Stop! and waiting screens' tiles (the owner's call, 2026-10-28): the figure with its unit in one
+-- large string ("+9.4s"), and under it a row in the caption font saying what it counts ("after
+-- buzzer"), inside the tile. The row is KPI_CAPTION_H tall, the 5 px under it the figure's padding
+-- today, so a captioned tile is that much taller and the stack under it moves down by as much.
+local KPI_PAD, KPI_CAPTION_H = 5, 14
+local KPI_CAPTIONED_HEIGHT = KPI_HEIGHT + KPI_CAPTION_H
+States.KPI_HEIGHT, States.KPI_CAPTION_H, States.KPI_CAPTIONED_HEIGHT = KPI_HEIGHT, KPI_CAPTION_H, KPI_CAPTIONED_HEIGHT
+-- The captioned pair's top on the Stop! body (under STOP) and on the waiting body (under its title).
+local STOP_KPI_Y, WAITING_KPI_Y = 56, 40
+States.STOP_KPI_Y, States.WAITING_KPI_Y = STOP_KPI_Y, WAITING_KPI_Y
 -- Every button is LootHistory's 20px; Arm alone is a little taller, the one action of the idle body.
 local BUTTON_HEIGHT = 20
 local LINK_HEIGHT = 20
@@ -56,6 +66,12 @@ local LINK_HEIGHT = 20
 local ROW_GAP = 4
 States.ROW_GAP = ROW_GAP
 local GAP = 8
+-- What sits under the captioned pair: the Stop! body's chips and its note one chip line (28) under
+-- them, and the waiting body's hint box.
+local STOP_CHIPS_Y = STOP_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
+local STOP_NOTE_Y = STOP_CHIPS_Y + 28
+local WAITING_HINT_Y = WAITING_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
+States.STOP_CHIPS_Y, States.STOP_NOTE_Y, States.WAITING_HINT_Y = STOP_CHIPS_Y, STOP_NOTE_Y, WAITING_HINT_Y
 -- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
 -- warning line (two lines at the minimum width), then Arm and the refusal line under it.
 local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
@@ -187,30 +203,35 @@ local function setSelected(b, on)
     paintButton(b)
 end
 
---- A figure in a box: a small caption, a large value and its unit (LootHistory's Insights card: a
---- GameFontNormalHuge figure over a GameFontDisableSmall caption).
-local function kpi(parent, label, valueColor)
+--- A figure in a box: a small caption and a large value (LootHistory's Insights card: a
+--- GameFontNormalHuge figure over a GameFontDisableSmall caption). A `captioned` box is
+--- KPI_CAPTIONED_HEIGHT tall, with a row under the value in the caption font (k.caption).
+local function kpi(parent, label, valueColor, captioned)
     local f = panel(parent)
-    f:SetHeight(KPI_HEIGHT)
+    f:SetHeight(captioned and KPI_CAPTIONED_HEIGHT or KPI_HEIGHT)
     local k = { frame = f }
     k.label = Style.Text(f, FONT.CAPTION)
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     k.label:SetText(label)
     k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text)
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    k.unit = Style.Text(f, FONT.CAPTION)
-    k.unit:SetPoint("BOTTOMLEFT", k.value, "BOTTOMRIGHT", 3, 1)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD + (captioned and KPI_CAPTION_H or 0))
+    if captioned then
+        k.caption = Style.Text(f, FONT.CAPTION)
+        k.caption:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD)
+        k.caption:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, KPI_PAD)
+    end
     return k
 end
 
-local function setKpi(k, value, unit)
+local function setKpi(k, value, caption)
     k.value:SetText(value)
-    k.unit:SetText(unit or "")
+    if k.caption then k.caption:SetText(caption or "") end
 end
 
---- Two KPIs side by side at `y`, halves by anchor (no width needed).
-local function kpiPair(parent, y, leftLabel, rightLabel, rightColor)
-    local a, b = kpi(parent, leftLabel), kpi(parent, rightLabel, rightColor)
+--- Two KPIs side by side at `y`, halves by anchor (no width needed); `captioned` gives both the
+--- caption row, so the pair keeps one height.
+local function kpiPair(parent, y, leftLabel, rightLabel, rightColor, captioned)
+    local a, b = kpi(parent, leftLabel, nil, captioned), kpi(parent, rightLabel, rightColor, captioned)
     a.frame:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     a.frame:SetPoint("TOPRIGHT", parent, "TOP", -4, y)
     b.frame:SetPoint("TOPLEFT", parent, "TOP", 4, y)
@@ -781,21 +802,24 @@ function Builders.running(parent)
     return body
 end
 
--- The two figures the stop and waiting bodies share: the tail and the time in combat since the buzzer.
+-- The two figures the stop and waiting bodies share, each with its caption row (the owner's call,
+-- 2026-10-28): the tail ("+9.4s", after buzzer) or the time in combat at an early end (on the race
+-- clock), and the time in combat since the buzzer (since the buzzer), or a dash once combat is over
+-- (combat ended). Plain numbers from GetTime(), never a meter value; the unit joins the figure's string.
 local function setStopFigures(w, v)
     if v.endedEarly then
         w.tail.label:SetText(L["Combat Ended"])
-        setKpi(w.tail, NS.Format.Length(v.endedAt or 0))
+        setKpi(w.tail, NS.Format.Length(v.endedAt or 0), L["on the race clock"])
     else
         w.tail.label:SetText(L["Damage Stopped"])
-        setKpi(w.tail, NS.Format.Seconds(v.tail), v.unitTail)
+        setKpi(w.tail, NS.Format.Seconds(v.tail) .. L["s"], L["after buzzer"])
     end
     if v.inCombat then
         w.combat.label:SetText(L["In Combat"])
-        setKpi(w.combat, NS.Format.Seconds(v.sinceBuzzer or 0), L["s"])
+        setKpi(w.combat, NS.Format.Seconds(v.sinceBuzzer or 0) .. L["s"], L["since the buzzer"])
     else
         w.combat.label:SetText(L["Out of Combat"])
-        setKpi(w.combat, DASH)
+        setKpi(w.combat, DASH, L["combat ended"])
     end
 end
 
@@ -819,11 +843,11 @@ function Builders.stop(parent)
     w.big = bigText(f, BIG + 8, C.red)
     w.big:SetPoint("TOP", f, "TOP", 0, -2)
     w.big:SetText(L["STOP"])
-    w.tail, w.combat = kpiPair(f, -56, L["Damage Stopped"], L["In Combat"])
-    w.chips = chips(f, -56 - KPI_HEIGHT - GAP)
+    w.tail, w.combat = kpiPair(f, -STOP_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
+    w.chips = chips(f, -STOP_CHIPS_Y)
     w.note = text(f, FONT.TEXT, C.dim)
-    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -56 - KPI_HEIGHT - GAP - 28)
-    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -56 - KPI_HEIGHT - GAP - 28)
+    w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -STOP_NOTE_Y)
+    w.note:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -STOP_NOTE_Y)
     stopButtons(body)
     function body.Layout(self, width)
         self.w.chips.width = width
@@ -831,7 +855,6 @@ function Builders.stop(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
-        v.unitTail = L["s after buzzer"]
         setStopFigures(self.w, v)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
@@ -897,10 +920,10 @@ function Builders.waiting(parent)
     local f, w = body.frame, body.w
     w.title = Style.Text(f, FONT.TITLE, nil, "CENTER")
     w.title:SetPoint("TOP", f, "TOP", 0, -10)
-    w.tail, w.combat = kpiPair(f, -40, L["Damage Stopped"], L["In Combat"])
+    w.tail, w.combat = kpiPair(f, -WAITING_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
     w.hint = panel(f, { 1, 0.72, 0.29, 0.07 }, { 1, 0.72, 0.29, 0.35 })
-    w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -40 - KPI_HEIGHT - GAP)
-    w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -40 - KPI_HEIGHT - GAP)
+    w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -WAITING_HINT_Y)
+    w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -WAITING_HINT_Y)
     w.hintText = text(w.hint, FONT.TEXT, { 0.95, 0.85, 0.67 })
     w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", HINT_PADX, -HINT_PADY)
     w.hintText:SetPoint("TOPRIGHT", w.hint, "TOPRIGHT", -HINT_PADX, -HINT_PADY)
@@ -924,7 +947,6 @@ function Builders.waiting(parent)
             title = L["Reading when combat ends"]
         end
         self.w.title:SetText(title)
-        v.unitTail = L["s"]
         setStopFigures(self.w, v)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         self.w.hint:SetShown(v.hint ~= nil)

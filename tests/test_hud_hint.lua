@@ -88,7 +88,7 @@ test("hud hint: under the box only the foot row, on the body's bottom, clear of 
     local S = f.NS.HudStates
     b:Layout(236, 400)
     local top = pointAt(b.w.hint, "TOPLEFT")
-    assertEqual(top[5], -(40 + 46 + 8), "the box under the KPIs")
+    assertEqual(top[5], -(40 + 46 + 14 + 8), "the box under the KPIs and their caption row")
     for _, btn in ipairs({ b.w.stopNow, b.w.cancel }) do
         local p = pointAt(btn, "BOTTOMLEFT")
         assertEqual(p[2], b.frame)
