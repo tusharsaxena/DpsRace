@@ -62,7 +62,8 @@ local BUTTON_HEIGHT = 20
 local LINK_HEIGHT = 20
 -- A row of equal buttons across the foot (the result card's four, the Stop! and waiting screens'
 -- two): each the same width, worked out from the body's width and this gap (Round C, 2026-10-25).
--- At the minimum width's 236 px of content four are 56 px wide, room for "Race Again".
+-- At the minimum width's 236 px of content four are 56 px wide, room for "New Race": 48 px at the
+-- 6 px a character textWidth estimates (the owner's call, 2026-10-28: "Race Again", 60 px, overflowed).
 local ROW_GAP = 4
 States.ROW_GAP = ROW_GAP
 local GAP = 8
@@ -1028,15 +1029,15 @@ function Builders.result(parent)
     -- The four acts in one row, the same width each (Round C): Delete asks first (the Results
     -- window's own confirmation, modules/Hud.lua Act.delete).
     local links = footerButtons(body, {
-        { L["Race Again"], function() act("raceAgain") end, "primary" },
+        { L["New Race"], function() act("newRace") end, "primary" },
         { L["Details"], function() act("details") end },
         { L["Share"], function() act("share") end },
         { L["Delete"], function() act("delete") end, "danger",
           tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
-    w.again, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
-    -- The sample card of test mode has no run to race again, open or delete (modules/Hud.lua Act).
-    w.realOnly = { w.again, w.details, w.delete }
+    w.newRace, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
+    -- The sample card of test mode has no run to start a new race from, open or delete (modules/Hud.lua Act).
+    w.realOnly = { w.newRace, w.details, w.delete }
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height

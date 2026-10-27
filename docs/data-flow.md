@@ -237,7 +237,7 @@ race.
   It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *Race Again*
+  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
   (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
   (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
   less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own
@@ -456,4 +456,4 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   Closing the HUD (its X or Escape) and the sample bodies'
   Cancel ends it too, through `Hud.Act`, and never reaches `Race.Cancel`: a start is
   allowed over a real result card, which the preview covers and leaves as it was; the sample card's
-  Race Again, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).
+  New Race, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).

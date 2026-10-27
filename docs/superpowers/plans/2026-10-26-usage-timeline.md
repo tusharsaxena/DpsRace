@@ -414,6 +414,9 @@ The owner keeps P16's corridor colors as they are.
   *+9.4s* in one large string with *after buzzer* on its own caption row inside the tile (today a small
   *s after buzzer* tail overflows it at 260 px); the right tile gets a caption on the same row, both tiles taller to
   fit it, and everything under them moves down by config.
+- [x] **New Race label:** (owner, 2026-10-28) the HUD result card's *Race Again* overflowed its box at the
+  HUD's width; it reads *New Race* everywhere it is user-facing (the `NS.L` key, the action `Act.newRace`, the
+  tests, the docs), 48 px at the 6 px a character estimate against the 56 px button at the minimum width.
 
 ### P8: Finalize (only on the owner's go-ahead)
 

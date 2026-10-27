@@ -274,7 +274,7 @@ Total.
 - hud: a first run is a new best; a slower one shows its deficit and its flags
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
-- hud: Race again re-arms the same length; Details and Share reach their modules
+- hud: New Race re-arms the same length; Details and Share reach their modules
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 - hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled

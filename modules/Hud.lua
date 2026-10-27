@@ -870,7 +870,7 @@ end
 
 -- The run on the result card left the store (the card's Delete, or a delete in the Results window):
 -- the card is dismissed (Race.Cancel keeps nothing it could, the run is gone). After the card's own
--- Delete the HUD goes back to the Arm Race screen as Race Again does, open, on the same length. Any
+-- Delete the HUD goes back to the Arm Race screen as New Race does, open, on the same length. Any
 -- other change to the store (an earlier best deleted) redraws the card: its delta chip, pace bar and
 -- the best's diagonal name the best before the run, read from the store again.
 local deleting   -- the run id whose delete the card's popup accepted, for the one RUNS_CHANGED it fires
@@ -953,7 +953,7 @@ function Act.customLength(text)
 end
 
 -- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
--- race the preview may be covering (a result card), and the sample card's Race Again and Details
+-- race the preview may be covering (a result card), and the sample card's New Race and Details
 -- (drawn disabled) do nothing.
 function Act.cancel()
     if previewOn() then return NS.Preview.Stop() end
@@ -989,7 +989,7 @@ function Act.details()
     openRun(NS.Race.Current())
 end
 
---- Race Again: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
+--- New Race: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
 --- the idle body is set to the same length, so Arm Race repeats the race.
 function backToIdle(run)
@@ -1001,7 +1001,7 @@ function backToIdle(run)
     return true
 end
 
-function Act.raceAgain()
+function Act.newRace()
     if previewOn() then return false end
     return backToIdle(NS.Race.Current())
 end

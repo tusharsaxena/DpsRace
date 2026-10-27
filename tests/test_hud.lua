@@ -601,7 +601,8 @@ test("hud: the equal buttons' width is whole pixels from the body's width and th
     local States = f.NS.HudStates
     assertEqual(States.ROW_GAP, 4)
     local each, x0 = States.RowWidths(236, 4)
-    assertEqual(each, 56, "four at the minimum width: room for Race Again")
+    assertEqual(each, 56, "four at the minimum width: room for New Race")
+    assertTrue(#f.NS.L["New Race"] * 6 <= each, "New Race fits at the 6 px a character estimate")
     assertEqual(x0, 0)
     each, x0 = States.RowWidths(239, 4)
     assertEqual(each, 56)
@@ -616,7 +617,7 @@ test("hud: the result card's four buttons sit in one row, the same width each, a
     resolved(f)
     local b = body(f)
     local w = b.w
-    local order = { w.again, w.details, w.share, w.delete }
+    local order = { w.newRace, w.details, w.share, w.delete }
     assertEqual(w.delete.label.__text, "Delete")
     for _, width in ipairs({ 236, 300 }) do
         b:Layout(width, 400)
@@ -847,7 +848,7 @@ test("hud: an incomplete run's chip names when combat ended, or that the player 
     assertEqual(#chips, 2, "died is not shown twice")
 end)
 
-test("hud: Race again re-arms the same length; Details and Share reach their modules", function()
+test("hud: New Race re-arms the same length; Details and Share reach their modules", function()
     local f = hud()
     local run = resolved(f)
     local opened, shared
@@ -860,8 +861,8 @@ test("hud: Race again re-arms the same length; Details and Share reach their mod
     assertEqual(opened, run.id)
     b.w.share:__fire("OnClick")
     assertTrue(shared == run)
-    b.w.again:__fire("OnClick")
-    assertEqual(f.Race.State(), "idle", "Race Again opens the Arm Race screen, it does not arm")
+    b.w.newRace:__fire("OnClick")
+    assertEqual(f.Race.State(), "idle", "New Race opens the Arm Race screen, it does not arm")
     assertEqual(current(f), "idle")
     assertTrue(f.Hud.IsShown(), "the window stays open")
     assertTrue(f.NS.Recorder.Get(run.id) ~= nil, "the run is kept")
@@ -1283,7 +1284,7 @@ test("hud: no body shouts in capitals (Title Case labels and buttons, Sentence c
     local loud = shouting(f.W)
     assertEqual(#loud, 0, "ALL CAPS: " .. table.concat(loud, " | "))
     local w = body(f).w
-    assertEqual(w.again.label.__text, "Race Again")
+    assertEqual(w.newRace.label.__text, "New Race")
     assertEqual(w.details.label.__text, "Details")
     assertEqual(w.share.label.__text, "Share")
 end)
