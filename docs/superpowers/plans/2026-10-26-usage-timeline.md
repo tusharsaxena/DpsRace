@@ -397,6 +397,18 @@ go-ahead. After the merge: delete every branch, stash and worktree this run crea
 - [x] **Results filter bar fills the window:** the dropdowns stretch so the bar spans the window's width: collapsed,
   Group's right edge and Clear's right edge at the right edge; expanded (one row), Clear's right edge at the right edge.
 
+### P17: The owner's seventh test round (2026-10-28)
+
+The owner keeps P16's corridor colors as they are.
+
+- [ ] **Tooltips beside the window:** the *Casts* icons' and the *By ability* ticks' tooltips open to the right of
+  the timeline window, outside it (as the *Casts* tooltips did before P16), not at the cursor.
+- [ ] **Strips like the lanes:** no divider line between the *This run* and *Best run* strips in *Casts*, and the gap
+  between them the same as between a *By ability* pair's two lanes; the corridor colors tell them apart.
+- [ ] **One control size:** the zoom level text, `-`, `+` and `?` read the same size as reset, `<` and `>` (today
+  the zoom text and `-` read too small and `?` too large).
+- [ ] **Zoom level color:** above 1x the zoom level text runs from gold to red as the zoom goes up.
+
 ### P8: Finalize (only on the owner's go-ahead)
 
 - [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
