@@ -12,7 +12,7 @@ built on first show (options-ui-§1, §5).
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Keybindings tab: the three key bindings |
 | Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
-| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown dots and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
+| HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
@@ -116,7 +116,7 @@ Tabs, in order: *Race HUD*, *HUD Appearance*.
 
 Every HUD setting, in three subsections. Line by line: *Show the race HUD* | *Race clock*; *Spell rows
 shown* | *Show spell icons*; *Show live DPS* | *Live reads per second*; *Show damage chart* | *Show
-pace bar*.
+cooldown icons*; *Show pace bar*; *Pace bar range*.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|

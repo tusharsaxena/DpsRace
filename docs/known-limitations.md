@@ -85,7 +85,7 @@ and the smoke row that measures it where one exists.
   as only the player's channel edges are heard (`Casts.Hear`; smoke row SM-DR-UT3).
 - **An ability is *important* by its base cooldown** (`GetSpellBaseCooldown`, 29 s or more). Talents
   and haste that shorten it are not seen, and a spell with charges can report a short one (Kill
-  Command read 500 ms in the probe), so it gets no dot and sorts with the rotation on the timeline.
+  Command read 500 ms in the probe), so it gets no cooldown icon and sorts with the rotation on the timeline.
 - **A cast more than 10 s before the pull is not the race's** (#13, #14; `Casts.PREPULL`). While
   armed every cast is heard, but when the clock starts only the last 10 s are kept: an earlier one is
   in neither the cast list, the chart's icons, the timeline nor the usage, and the player's earlier
