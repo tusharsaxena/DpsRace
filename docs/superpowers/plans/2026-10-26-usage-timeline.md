@@ -423,4 +423,4 @@ The owner keeps P16's corridor colors as they are.
 
 ### P8: Finalize (only on the owner's go-ahead)
 
-- [ ] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
+- [x] Merge, push, close #13 and #14, delete this run's branches, stashes and worktrees.
