@@ -560,8 +560,12 @@ end
 local function buildZoom()
     ui.zoomStrip = Style.NewStrip()
     local level = ui.content:GetFrameLevel() + 10
-    local function control(name, glyph, tip, onClick)
-        local b = Style.AddToStrip(ui.zoomStrip, Style.ControlButton(ui.content, name, glyph, tip, onClick))
+    -- `onEnter` replaces the stock tooltip BEFORE the strip hooks on: a SetScript after AddToStrip
+    -- would drop the hook, and the control would never turn gold.
+    local function control(name, glyph, tip, onClick, onEnter)
+        local b = Style.ControlButton(ui.content, name, glyph, tip, onClick)
+        if onEnter then b:SetScript("OnEnter", onEnter) end
+        Style.AddToStrip(ui.zoomStrip, b)
         b:SetFrameLevel(level)
         b:SetSize(Timeline.CONTROL, Timeline.CONTROL)
         b.icon:SetSize(Timeline.CONTROL_ICON, Timeline.CONTROL_ICON)
@@ -569,8 +573,7 @@ local function buildZoom()
         return b
     end
     -- Always live; a click does nothing (its tooltip is the point).
-    ui.help = control(nil, "?", nil, function() end)
-    ui.help:SetScript("OnEnter", helpTip)
+    ui.help = control(nil, "?", nil, function() end, helpTip)
     ui.scrollRight = control("chevron-right", ">", L["Scroll right, toward the end (or Shift+mouse wheel down)"],
         function() Timeline.Pan(-1) end)
     ui.scrollRight:SetPoint("RIGHT", ui.help, "LEFT", -Timeline.SCROLL_SEP, 0)

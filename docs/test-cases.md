@@ -736,7 +736,7 @@ Total.
 - timeline controls: Ctrl+wheel keeps the time under the cursor where it was, clamped to the axis
 - timeline controls: CursorAt is how far across the lanes the cursor is, nil off them
 - timeline controls: read left to right the line is the zoom level, -, +, reset, <, >, ?
-- timeline controls: the ? is always live and its tooltip lists the mouse controls on bullets
+- timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets
 - timeline controls: the controls end on the lanes' right edge, the strips' too, through a resize
 - timeline controls: twice the room between the strips, the line centered, the labels on their strips
 - timeline controls: every corridor wears its run's dark, translucent color

@@ -202,7 +202,7 @@ test("timeline controls: read left to right the line is the zoom level, -, +, re
     assertEqual(u.help.glyph.__text, "?")
 end)
 
-test("timeline controls: the ? is always live and its tooltip lists the mouse controls on bullets", function()
+test("timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets", function()
     local i, u = opened()
     local B = i.NS.Style.BULLET
     local tip = { lines = {} }
@@ -220,6 +220,15 @@ test("timeline controls: the ? is always live and its tooltip lists the mouse co
     assertEqual(tip.lines[2], B .. "Mouse wheel: scroll up and down")
     assertEqual(tip.lines[3], B .. "Shift+mouse wheel: scroll left and right (zoomed in)")
     assertEqual(tip.lines[4], B .. "Ctrl+mouse wheel: zoom in and out")
+    -- Its tooltip leaves the strip's hover in place: gold under the pointer, back at rest after.
+    local GOLD, REST = i.NS.Style.GOLD, i.NS.Style.REST
+    local function is(c)
+        local v = u.help.icon.__vertex
+        return v ~= nil and v[1] == c[1] and v[2] == c[2] and v[3] == c[3]
+    end
+    assertTrue(u.zoomStrip.hovered == u.help and is(GOLD), "gold under the pointer, like the other controls")
+    u.help:__fire("OnLeave")
+    assertTrue(u.zoomStrip.hovered == nil and is(REST), "back at rest")
     i.TL.ZoomBy(20)
     assertTrue(u.help:IsEnabled(), "live zoomed all the way in")
 end)
