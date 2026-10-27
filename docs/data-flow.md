@@ -379,7 +379,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   heading line step `ZOOMS` (1x to 8x), which lays the strips' and the lanes' time area out that many
   times the lanes' width in clipping scroll frames that pan together (zoomed in, Shift+wheel and the scroll
   arrows after the zoom controls, `Pan`, a quarter of the view a step, and the scrollbar along the window's bottom, `ScrollTo`, whose thumb is the view's share), kept
-  as the fraction of the axis at the view's left (`ClampPos`, which snaps a value a rounding error short of an end onto it, and `Rezoom`); the arrows are live only zoomed in on drawn lanes; another run or compare target
+  as the fraction of the axis at the view's left (`ClampPos`, which snaps a value a rounding error short of an end onto it, and `Rezoom`,
+  about the view's middle for a button and about the moment under the cursor for Ctrl+wheel: the cursor less the window's left edge, `CursorAt`, the one
+  geometry read, and no meter value near it); the arrows are live only zoomed in on drawn lanes; another run or compare target
   goes back to 1x. The detail calls `ResultsTimeline.DetailChanged`
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
   with the Results window. Every open places it exactly over the Results window, that window's anchor

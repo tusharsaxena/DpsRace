@@ -120,8 +120,11 @@ files["modules/Results_Loadout.lua"] = {
 -- right-click menu in the edit (Never show, P9).
 files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item", "MenuUtil" } }
 
--- The ability timeline (#14): Shift+mouse wheel pans its zoomed time axis (P12).
-files["modules/Results_Timeline.lua"] = { read_globals = { "IsShiftKeyDown" } }
+-- The ability timeline (#14): Shift+mouse wheel pans its zoomed time axis (P12); Ctrl+mouse wheel zooms
+-- about the cursor and the `?` control draws its own tooltip (P16).
+files["modules/Results_Timeline.lua"] = {
+    read_globals = { "IsShiftKeyDown", "IsControlKeyDown", "GetCursorPosition", "GameTooltip" },
+}
 
 -- The sample history (B5) dates its runs back from now.
 files["modules/MockRuns.lua"] = { read_globals = { "time" } }

@@ -718,12 +718,26 @@ Total.
 
 - timeline scroll: the wheel scrolls up and down at any zoom; Shift+wheel left and right only zoomed in
 - timeline scroll: the zoom and arrow tooltips say how the wheel and the arrows scroll
-- timeline scroll: the arrows end the Casts heading line, after reset, chevrons from the catalog
+- timeline scroll: the arrows follow reset and come before the ?, chevrons from the catalog
 - timeline scroll: each arrow pans a quarter of the view, clamped to the axis
 - timeline scroll: the arrows are disabled and dimmed at 1x and each at its end of the axis
 - timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off
 - timeline scroll: zoomed in on a run with no casts, the arrows stay off
-- timeline scroll: the five heading-line controls are one size, icons and glyphs alike
+- timeline scroll: the six heading-line controls are one size, icons and glyphs alike
+
+### test_results_timeline_controls.lua (11)
+
+- timeline controls: a Casts icon's tooltip sits under the icon at the cursor, the ticks' way
+- timeline controls: Ctrl+wheel up zooms in a step and down out a step, the buttons' steps
+- timeline controls: Ctrl wins over Shift; off the time area the zoom keeps the view's middle
+- timeline controls: Ctrl+wheel keeps the time under the cursor where it was, clamped to the axis
+- timeline controls: CursorAt is how far across the lanes the cursor is, nil off them
+- timeline controls: read left to right the line is the zoom level, -, +, reset, <, >, ?
+- timeline controls: the ? is always live and its tooltip lists the mouse controls on bullets
+- timeline controls: the controls end on the lanes' right edge, the strips' too, through a resize
+- timeline controls: twice the room between the strips, the line centered, the labels on their strips
+- timeline controls: every corridor wears its run's dark, translucent color
+- timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
 
 ### test_sizing.lua (14)
 
@@ -1073,6 +1087,7 @@ Total.
 | test_results_timeline_modal.lua | 8 |
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
+| test_results_timeline_controls.lua | 11 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 17 |
@@ -1094,4 +1109,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **860** |
+| **Total** | **871** |

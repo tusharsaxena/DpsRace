@@ -412,8 +412,10 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
     board(i)
     local u = open(i, "this")
     local shown
-    local real = i.NS.ResultsTable.SpellTip
-    i.NS.ResultsTable.SpellTip = function(window, owner, id, lines) shown = { window = window, owner = owner, id = id, lines = lines } end
+    -- Under the icon at the cursor, a tick's way (UT-P16), not beside the window.
+    local real, beside = i.NS.ResultsTable.SpellBelowTip, i.NS.ResultsTable.SpellTip
+    i.NS.ResultsTable.SpellBelowTip = function(owner, id, lines) shown = { owner = owner, id = id, lines = lines } end
+    i.NS.ResultsTable.SpellTip = function() error("an icon's tooltip went beside the window") end
     local function hover(side, id)
         for _, d in ipairs(TL.Icons()) do
             if d.side == side and d.cast.id == id then
@@ -423,7 +425,7 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
         end
     end
     local d = hover("a", INFERNAL)
-    assertTrue(shown.window == u.frame and shown.owner == d.frame)
+    assertTrue(shown.owner == d.frame, "owned by the icon")
     assertEqual(shown.id, INFERNAL, "the plain stored ID")
     assertEqual(shown.lines[1], "Cast at 0:01")
     assertEqual(shown.lines[2][1], u.legendA.__text, "which run")
@@ -432,7 +434,7 @@ test("results timeline: an icon's tooltip is the client's spell tooltip, then it
     hover("b", CONFLAG)
     assertEqual(shown.lines[1], "Cast at 0:03")
     assertEqual(shown.lines[2][1], u.legendB.__text)
-    i.NS.ResultsTable.SpellTip = real
+    i.NS.ResultsTable.SpellBelowTip, i.NS.ResultsTable.SpellTip = real, beside
     -- Two lines or more go on bullets (the addon's rule, Style.TipBullet); past the cap a third says
     -- the icon overlaps others.
     local lines = TL.IconLines({ t = 5, id = INFERNAL }, "This run", true)

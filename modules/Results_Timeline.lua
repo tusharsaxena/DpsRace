@@ -10,7 +10,8 @@ local _, NS = ...
 -- icon at its time; icons too close to sit apart stack onto extra rows, this run's upward and the
 -- compared run's downward (away from the line between them), and each strip grows to the most rows it
 -- needs (every icon shown; past MAX_STACK rows the rest overlap the row that frees first and say so in
--- their tooltip). An icon's tooltip is the client's spell tooltip, then the cast's time and its run.
+-- their tooltip). An icon's tooltip is the client's spell tooltip, then the cast's time and its run,
+-- under the icon at the cursor as a tick's is (P16, the owner's call, 2026-10-28).
 -- *By ability*: one pair of lanes per ability: its name cell (icon,
 -- name, "(pet)" for a pet's, and under the name its cooldown when 29 s or more) beside two lanes, the top
 -- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
@@ -22,7 +23,8 @@ local _, NS = ...
 -- name's shows the client's spell tooltip and both counts.
 --
 -- ZOOM (P12, the owner's call, 2026-10-27). Three controls at the right of the *Casts* heading line
--- (zoom in, zoom out, reset) step the time axis through ZOOMS for the strips and the lanes together:
+-- (zoom out, zoom in, reset: `- +` since P16) step the time axis through ZOOMS for the strips and the
+-- lanes together:
 -- the time area is laid out ZOOMS[i] times the lanes' width and shown through clipping scroll frames
 -- (one over the strips and their axis, one over the lanes, one over the pinned axis) that pan
 -- together, the name cells and the counts staying put. Zoomed in (P14, the owner's call, 2026-10-27),
@@ -32,10 +34,17 @@ local _, NS = ...
 -- and down at any zoom, and Shift+wheel left and right while zoomed in (up toward 0:00; at 1x it does
 -- nothing); two arrows after the reset control pan a quarter of the view (PAN) left or right, each
 -- disabled and dimmed at 1x and at its end of the axis. The client has no horizontal (tilt) wheel for
--- addons: OnMouseWheel's one delta is up or down, and no other script takes the wheel. The five controls
--- are one size (CONTROL, CONTROL_ICON, CONTROL_FONT). At 1x there is no scrollbar. The view is
--- kept as the fraction of the axis at its left edge (`pos`), so a resize keeps the same moment at the
--- left; a zoom keeps the view's middle. Zoom and pan go back to 1x on another run or compare target.
+-- addons: OnMouseWheel's one delta is up or down, and no other script takes the wheel. P16 (the owner's
+-- call, 2026-10-28): Ctrl+wheel zooms a step (up in, down out; Ctrl wins over Shift), keeping the time
+-- under the cursor where it was when the cursor is over the time area; a `?` after the arrows shows
+-- the mouse controls; the controls end on the strips' right edge (the lanes'), not the window's. The
+-- six controls are one size (CONTROL, CONTROL_ICON, CONTROL_FONT). At 1x there is no scrollbar. The
+-- view is kept as the fraction of the axis at its left edge (`pos`), so a resize keeps the same moment
+-- at the left; a button's zoom keeps the view's middle. Zoom and pan go back to 1x on another run or
+-- compare target.
+--
+-- CORRIDORS (P16): each strip and each lane on a dark, translucent shade of its run's color, from
+-- CORRIDOR at paint time, so a session's `/run` change to it shows on Repaint (nothing stored).
 --
 -- WHICH RUNS. The detail's: its run, and its compare target resolved whether or not the compare is on
 -- (CompareTarget(true)). Every detail draw and every compare change (a pick, Clear Pick, the toggle)
@@ -60,8 +69,9 @@ local _, NS = ...
 --
 -- PLAIN DATA ONLY: the stored run.casts records (plain numbers). Every position is computed from the
 -- constants here and the window's tracked size, never read back off a frame; Rows, Span, Ticks, MarkX,
--- LaneGeometry, Stack, Sections, StripMid, DividerY, ClampPos, Rezoom, PosRange, BarBand, CooldownText,
--- CooldownLine, IconLines and Legend are pure.
+-- LaneGeometry, Stack, Sections, StripMid, DividerY, ClampPos, Rezoom, CursorAt, PosRange, BarBand,
+-- CooldownText, CooldownLine, IconLines, HelpLines and Legend are pure. The one geometry read is the
+-- window's left edge, for where a Ctrl+wheel's cursor is (no meter value is anywhere near it).
 
 local Timeline = { wanted = false }
 NS.ResultsTimeline = Timeline
@@ -100,14 +110,15 @@ Timeline.LEGEND_H = 26
 Timeline.NOTE_H = 16
 Timeline.AXIS_H = 20
 -- The *Casts* strips: 14 px icons, closer than 15 px apart they stack, on an 18 px row pitch (P12: 15
--- read as cramped), 4 px above this run's strip, 8 px between the two strips and 4 px over their own
+-- read as cramped), 4 px above this run's strip, 16 px between the two strips (8 until P16: the owner
+-- wanted more room between them) and 4 px over their own
 -- axis (CASTS_AXIS_H), at most MAX_STACK rows a strip. The strips' clip reaches CLIP_PAD past the lanes
 -- at each end, so an icon at 0:00 or at the end shows whole.
 Timeline.CAST_ICON = 14
 Timeline.CAST_PITCH = 15
 Timeline.CAST_STEP = 18
 Timeline.CASTS_PAD = 4
-Timeline.STRIP_GAP = 8
+Timeline.STRIP_GAP = 16
 Timeline.CASTS_AXIS_H = 16
 Timeline.MAX_STACK = 12
 Timeline.CLIP_PAD = 8
@@ -121,7 +132,8 @@ Timeline.SCROLL_GAP = 4
 Timeline.BOTTOM = 6         -- the pinned axis's (or the scrollbar's) gap to the window's bottom
 -- The *Casts* heading line's controls (P15: the 10 px +/- glyphs read small beside the 12 px reset
 -- mark): each a 16 px box, an icon 11 px, a glyph in a 16 px font (a "+" about as wide as the icon),
--- 2 px apart and SCROLL_SEP between the zoom controls and the arrows. DIM: a control that cannot act.
+-- 2 px apart and SCROLL_SEP between the zoom controls and the arrows and between the arrows and the
+-- `?` (P16). DIM: a control that cannot act.
 Timeline.CONTROL = 16
 Timeline.CONTROL_ICON = 11
 Timeline.CONTROL_FONT = "GameFontHighlightLarge"
@@ -133,6 +145,10 @@ Timeline.DIVIDER = { 0.6, 0.6, 0.6, 0.15 }
 -- The two runs' colors: this run gold, the compared run blue (the mock's).
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
 Timeline.OTHER = { 0.35, 0.66, 1.0 }
+-- The corridors behind them (P16, the owner's call, 2026-10-28: the faint white track read as nobody's):
+-- this run's strip and lanes a dark gold of THIS's hue, the compared run's a dark blue of OTHER's, each
+-- translucent over the window's fill. Read at paint time: change them with /run, then Timeline.Repaint().
+Timeline.CORRIDOR = { this = { 0.30, 0.24, 0.02, 0.45 }, other = { 0.06, 0.16, 0.32, 0.45 } }
 local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted (the legend's swatches)
 local WHITE = "Interface\\Buttons\\WHITE8x8"                      -- a cast's tick, tinted
 local TRACK = { 1, 1, 1, 0.06 }
@@ -273,9 +289,20 @@ function Timeline.ClampPos(pos, zoom)
     return pos
 end
 
---- The left edge after zooming from `from` to `to` about the view's middle.
-function Timeline.Rezoom(pos, from, to)
-    return Timeline.ClampPos((tonumber(pos) or 0) + 0.5 / from - 0.5 / to, to)
+--- The left edge after zooming from `from` to `to` about the point `at` of the way across the view
+--- (0 its left edge, 1 its right; the middle without): that moment stays where it was, where it can.
+function Timeline.Rezoom(pos, from, to, at)
+    at = tonumber(at) or 0.5
+    return Timeline.ClampPos((tonumber(pos) or 0) + at / from - at / to, to)
+end
+
+--- How far across a view `laneW` wide, its left edge at `laneLeft`, the point `x` is (0 to 1), or nil
+--- off the view (a Ctrl+wheel over the names, the counts or past them zooms about the middle).
+function Timeline.CursorAt(x, laneLeft, laneW)
+    if type(x) ~= "number" or type(laneLeft) ~= "number" or type(laneW) ~= "number" or laneW <= 0 then return nil end
+    local at = (x - laneLeft) / laneW
+    if at < 0 or at > 1 then return nil end
+    return at
 end
 
 --- The left edge's range at `zoom` (the scrollbar's values, 0 to this): 0 at 1x.
@@ -380,6 +407,12 @@ function Timeline.IconLines(cast, label, over)
     return lines
 end
 
+--- The `?` control's tooltip: its title, then the timeline's mouse controls (bullets, from two lines on).
+function Timeline.HelpLines()
+    return { L["Mouse controls"], L["Mouse wheel: scroll up and down"],
+             L["Shift+mouse wheel: scroll left and right (zoomed in)"], L["Ctrl+mouse wheel: zoom in and out"] }
+end
+
 --- A run's casts in time order (a copy), or an empty list when it has none.
 function Timeline.CastsOf(run)
     local list = NS.Casts.Of(run) or {}
@@ -430,6 +463,12 @@ end
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
 
 local layout, resize
+
+-- A corridor (a strip's track, a lane) in its run's CORRIDOR color, read now: `side` "a" this run's.
+local function paint(tex, side)
+    local c = Timeline.CORRIDOR[side == "a" and "this" or "other"] or TRACK
+    tex:SetColorTexture(c[1], c[2], c[3], c[4] or 1)
+end
 
 local function disc(parent, color, size, layer)
     local t = parent:CreateTexture(nil, layer or "OVERLAY")
@@ -484,11 +523,10 @@ local function buildLegend(f)
     ui.legendLine:SetColorTexture(1, 1, 1, 0.08)
 end
 
--- One *Casts* strip: its track (the lanes' faint fill), its run's name in the name cell in its color,
--- and the dim note it shows with no casts.
+-- One *Casts* strip: its track (its run's corridor, painted as it is placed), its run's name in the
+-- name cell in its color, and the dim note it shows with no casts.
 local function buildStrip(color)
     local s = { track = ui.content:CreateTexture(nil, "BACKGROUND") }
-    s.track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], TRACK[4])
     s.label = Style.Text(ui.content, FONT.TEXT, color)
     s.label:SetWidth(Timeline.NAME_W)
     s.note = Style.Text(ui.content, FONT.CAPTION)
@@ -504,10 +542,21 @@ local function clipLayer(parent)
     return clip, layer
 end
 
--- The controls at the right end of the *Casts* heading line, right to left: scroll right, scroll left,
--- then SCROLL_SEP apart reset, zoom out, zoom in; the zoom level left of them (read left to right:
--- "1x + - reset < >", the zoom group whole and the arrows apart). Over the strips' clip (a higher frame
--- level). Each one size: a CONTROL box, its icon CONTROL_ICON, its glyph in CONTROL_FONT.
+-- The `?` control's hover: the mouse controls on bullets, above it as the other controls' tooltips are.
+local function helpTip(self)
+    local tip, lines = GameTooltip, Timeline.HelpLines()
+    if not tip then return end
+    tip:SetOwner(self, "ANCHOR_TOP")
+    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    Style.AddTipLines(tip, lines, 2)
+    tip:Show()
+end
+
+-- The controls at the right end of the *Casts* heading line, right to left: the `?` (on the lanes'
+-- right edge, placeControls), SCROLL_SEP apart scroll right and scroll left, then SCROLL_SEP apart
+-- reset, zoom in, zoom out; the zoom level left of them (read left to right: "1x - + reset < > ?",
+-- P16). Over the strips' clip (a higher frame level). Each one size: a CONTROL box, its icon
+-- CONTROL_ICON, its glyph in CONTROL_FONT.
 local function buildZoom()
     ui.zoomStrip = Style.NewStrip()
     local level = ui.content:GetFrameLevel() + 10
@@ -519,22 +568,30 @@ local function buildZoom()
         b.glyph:SetFontObject(Timeline.CONTROL_FONT)
         return b
     end
+    -- Always live; a click does nothing (its tooltip is the point).
+    ui.help = control(nil, "?", nil, function() end)
+    ui.help:SetScript("OnEnter", helpTip)
     ui.scrollRight = control("chevron-right", ">", L["Scroll right, toward the end (or Shift+mouse wheel down)"],
         function() Timeline.Pan(-1) end)
-    ui.scrollRight:SetPoint("TOPRIGHT", ui.content, "TOPRIGHT", 0, 0)
+    ui.scrollRight:SetPoint("RIGHT", ui.help, "LEFT", -Timeline.SCROLL_SEP, 0)
     ui.scrollLeft = control("chevron-left", "<", L["Scroll left, toward 0:00 (or Shift+mouse wheel up)"],
         function() Timeline.Pan(1) end)
     ui.scrollLeft:SetPoint("RIGHT", ui.scrollRight, "LEFT", -2, 0)
     ui.zoomReset = control("reset", "R", L["Reset zoom"], function() Timeline.ResetZoom() end)
     ui.zoomReset:SetPoint("RIGHT", ui.scrollLeft, "LEFT", -Timeline.SCROLL_SEP, 0)
-    ui.zoomOut = control(nil, "-", L["Zoom out (the mouse wheel scrolls up and down)"],
-        function() Timeline.ZoomBy(-1) end)
-    ui.zoomOut:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
-    ui.zoomIn = control(nil, "+", L["Zoom in (then Shift+mouse wheel scrolls left and right; the mouse wheel scrolls up and down)"],
-        function() Timeline.ZoomBy(1) end)
-    ui.zoomIn:SetPoint("RIGHT", ui.zoomOut, "LEFT", -2, 0)
+    ui.zoomIn = control(nil, "+", L["Zoom in (or Ctrl+mouse wheel up)"], function() Timeline.ZoomBy(1) end)
+    ui.zoomIn:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
+    ui.zoomOut = control(nil, "-", L["Zoom out (or Ctrl+mouse wheel down)"], function() Timeline.ZoomBy(-1) end)
+    ui.zoomOut:SetPoint("RIGHT", ui.zoomIn, "LEFT", -2, 0)
     ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
-    ui.zoomText:SetPoint("RIGHT", ui.zoomIn, "LEFT", -6, 0)
+    ui.zoomText:SetPoint("RIGHT", ui.zoomOut, "LEFT", -6, 0)
+end
+
+-- The controls' right end (the `?`) on the lanes' right edge, the strips' too, at this geometry (P16:
+-- not the counts' or the window's), so the row follows a resize.
+local function placeControls(g)
+    ui.help:ClearAllPoints()
+    ui.help:SetPoint("TOPRIGHT", ui.content, "TOPLEFT", g.laneX + g.laneW, 0)
 end
 
 -- One mouse-wheel notch on any part of the window.
@@ -671,9 +728,9 @@ end
 
 -- ── one pair of lanes ───────────────────────────────────────────────────────────────────────────
 
+-- A lane: its run's corridor, painted as its pair is filled.
 local function track(parent)
     local t = parent:CreateTexture(nil, "BACKGROUND")
-    t:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], TRACK[4])
     t:SetHeight(Timeline.LANE_H)
     return t
 end
@@ -730,6 +787,8 @@ local function fillPair(pair, row, y, g)
     pair.cd:SetText(Timeline.CooldownLine(row))
     placeLane(pair, pair.laneA, pair.countA, 0, g.laneX, g.laneW)
     placeLane(pair, pair.laneB, pair.countB, -(Timeline.LANE_H + Timeline.LANE_GAP), g.laneX, g.laneW)
+    paint(pair.laneA, "a")
+    paint(pair.laneB, "b")
     pair.countA:SetText(tostring(row.countA))
     pair.countB:SetText(ui.otherHas and tostring(row.countB) or "")
 end
@@ -795,10 +854,11 @@ end
 
 -- ── the cast icons (*Casts*) ────────────────────────────────────────────────────────────────────
 
--- An icon's hover: the client's spell tooltip beside the window, then the cast's time and its run.
+-- An icon's hover: the client's spell tooltip, then the cast's time and its run, under the icon at the
+-- cursor as a tick's is (P16: beside the window it sat far from the icon).
 local function iconTip(self)
     if not (self.cast and ui) then return end
-    Tbl.SpellTip(ui.frame, self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
+    Tbl.SpellBelowTip(self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
 end
 
 -- An icon: a plain frame on the strips' layer (it takes the mouse for its tooltip) holding the art.
@@ -837,10 +897,11 @@ local function rowMid(side, r)
     return s.stripB + (r - 0.5) * Timeline.CAST_STEP
 end
 
--- The strip's track, its run's name on its middle (P14: the strip grows with its rows), and its note
--- when it has no casts.
+-- The strip's track in its corridor color, its run's name on its middle (P14: the strip grows with its
+-- rows), and its note when it has no casts.
 local function placeStrip(side, g, label, note)
     local st, top = ui.strips[side], ui.sections["strip" .. (side == "a" and "A" or "B")]
+    paint(st.track, side)
     st.track:ClearAllPoints()
     st.track:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX, -top)
     st.track:SetSize(g.laneW, ui.sections["height" .. (side == "a" and "A" or "B")])
@@ -1141,6 +1202,7 @@ function layout()
     ui.content:SetHeight(ui.contentH)
     sizeClips(g)
     placeZoom(g)
+    placeControls(g)
     applyPan(g)
     Timeline.Scroll(0)
 end
@@ -1158,6 +1220,7 @@ function resize()
         stretchStrips(g)
         stretchRows(g)
         sizeClips(g)
+        placeControls(g)
     end
     applyPan(g)
     Timeline.Scroll(0)
@@ -1233,9 +1296,24 @@ function Timeline.DetailChanged(p)
     if p == pane and Timeline.IsShown() then draw() end
 end
 
+-- How far across the lanes' view the cursor is (Timeline.CursorAt), or nil off it: the cursor in the
+-- window's units less the window's left edge (read: the player may have moved it), against the lanes'
+-- left and width from the tracked size.
+local function cursorAt()
+    if not (ui and GetCursorPosition) then return nil end
+    local x, scale, left = GetCursorPosition(), ui.frame:GetEffectiveScale(), ui.frame:GetLeft()
+    if type(x) ~= "number" or type(left) ~= "number" or not scale or scale <= 0 then return nil end
+    local _, laneX, laneW = Timeline.LaneGeometry(ui.width)
+    return Timeline.CursorAt(x / scale - left, Timeline.PAD + laneX, laneW)
+end
+
 --- One mouse-wheel notch anywhere in the window (`delta` > 0: the wheel up): up and down at any zoom;
---- with Shift, along the time axis while zoomed in (up toward 0:00), and nothing at 1x (P15).
+--- with Shift, along the time axis while zoomed in (up toward 0:00), and nothing at 1x (P15); with Ctrl
+--- (P16, ahead of Shift when both are down), a zoom step, up in and down out, about the cursor.
 function Timeline.Wheel(delta)
+    if IsControlKeyDown and IsControlKeyDown() then
+        return Timeline.ZoomBy((delta or 0) > 0 and 1 or -1, cursorAt())
+    end
     if not (IsShiftKeyDown and IsShiftKeyDown()) then return Timeline.Scroll(delta) end
     if Timeline.Zoom() > 1 then Timeline.Pan(delta) end
 end
@@ -1266,22 +1344,24 @@ function Timeline.ScrollTo(px)
     applyPan(g)
 end
 
--- To zoom step `i` (clamped), about the view's middle, and the full layout (the icons restack).
-local function setZoom(i)
+-- To zoom step `i` (clamped), about the point `at` of the way across the view (its middle without),
+-- and the full layout (the icons restack).
+local function setZoom(i, at)
     if not ui then return false end
     i = math.max(1, math.min(#Timeline.ZOOMS, i))
     if i == ui.zoomI then return false end
-    ui.pos = Timeline.Rezoom(ui.pos, Timeline.ZoomAt(ui.zoomI), Timeline.ZoomAt(i))
+    ui.pos = Timeline.Rezoom(ui.pos, Timeline.ZoomAt(ui.zoomI), Timeline.ZoomAt(i), at)
     ui.zoomI = i
     layout()
     debug("zoom %sx", tostring(Timeline.ZoomAt(i)))
     return true
 end
 
---- `steps` zoom steps in (> 0) or out (< 0): the strips and the lanes together (the zoom controls).
+--- `steps` zoom steps in (> 0) or out (< 0): the strips and the lanes together (the zoom controls, about
+--- the view's middle; Ctrl+wheel, about the point `at` of the way across the view the cursor is on).
 --- @return boolean changed
-function Timeline.ZoomBy(steps)
-    return setZoom((ui and ui.zoomI or 1) + (steps or 0))
+function Timeline.ZoomBy(steps, at)
+    return setZoom((ui and ui.zoomI or 1) + (steps or 0), at)
 end
 
 --- Back to 1x (the reset control).
@@ -1308,6 +1388,17 @@ function Timeline.ResetPosition()
     if not Timeline.IsShown() then return end
     applyPlacement()
     layout()
+end
+
+--- Paint every corridor drawn now from CORRIDOR again (after a /run change to it); nothing while the
+--- window is closed (the next open paints from it).
+function Timeline.Repaint()
+    if not (Timeline.IsShown() and ui.strips) then return end
+    for side, st in pairs(ui.strips) do paint(st.track, side) end
+    for _, pair in ipairs(ui.pairs.active) do
+        paint(pair.laneA, "a")
+        paint(pair.laneB, "b")
+    end
 end
 
 --- The cast ticks drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.

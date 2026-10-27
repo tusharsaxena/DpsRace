@@ -116,8 +116,8 @@ end)
 
 test("timeline scroll: the zoom and arrow tooltips say how the wheel and the arrows scroll", function()
     local _, u = opened()
-    assertEqual(u.zoomIn.tip, "Zoom in (then Shift+mouse wheel scrolls left and right; the mouse wheel scrolls up and down)")
-    assertEqual(u.zoomOut.tip, "Zoom out (the mouse wheel scrolls up and down)")
+    assertEqual(u.zoomIn.tip, "Zoom in (or Ctrl+mouse wheel up)")
+    assertEqual(u.zoomOut.tip, "Zoom out (or Ctrl+mouse wheel down)")
     assertEqual(u.zoomReset.tip, "Reset zoom")
     assertEqual(u.scrollLeft.tip, "Scroll left, toward 0:00 (or Shift+mouse wheel up)")
     assertEqual(u.scrollRight.tip, "Scroll right, toward the end (or Shift+mouse wheel down)")
@@ -125,12 +125,12 @@ end)
 
 -- ── the arrows ──────────────────────────────────────────────────────────────────────────────────
 
-test("timeline scroll: the arrows end the Casts heading line, after reset, chevrons from the catalog", function()
+test("timeline scroll: the arrows follow reset and come before the ?, chevrons from the catalog", function()
     local i, u = opened()
     local TL = i.TL
     local at = last(u.scrollRight)
-    assertEqual(at[1], "TOPRIGHT")
-    assertTrue(at[2] == u.content and at[3] == "TOPRIGHT", "the content's right end, on the heading line")
+    assertTrue(at[1] == "RIGHT" and at[2] == u.help and at[3] == "LEFT", "right before the ? (UT-P16)")
+    assertEqual(at[4], -TL.SCROLL_SEP, "a group's gap apart")
     assertTrue(last(u.scrollLeft)[2] == u.scrollRight, "left before right")
     assertEqual(last(u.scrollLeft)[4], -2)
     at = last(u.zoomReset)
@@ -228,10 +228,10 @@ end)
 
 -- ── the control sizes ───────────────────────────────────────────────────────────────────────────
 
-test("timeline scroll: the five heading-line controls are one size, icons and glyphs alike", function()
+test("timeline scroll: the six heading-line controls are one size, icons and glyphs alike", function()
     local i, u = opened()
     local TL = i.TL
-    for _, key in ipairs({ "zoomIn", "zoomOut", "zoomReset", "scrollLeft", "scrollRight" }) do
+    for _, key in ipairs({ "zoomIn", "zoomOut", "zoomReset", "scrollLeft", "scrollRight", "help" }) do
         local b = u[key]
         assertEqual(b.__width, TL.CONTROL, key .. ": the box's width")
         assertEqual(b.__height, TL.CONTROL, key .. ": the box's height")

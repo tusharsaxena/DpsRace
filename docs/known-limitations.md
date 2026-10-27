@@ -130,4 +130,8 @@ and the smoke row that measures it where one exists.
   (UT-P15, checked 2026-10-27). The client gives addons one wheel script, `OnMouseWheel(self, delta)`,
   whose delta is up (1) or down (-1) only; no script, event or binding reports a horizontal wheel
   (warcraft.wiki.gg's widget script handlers list none). Shift+wheel, the scroll arrows and the
-  scrollbar move the zoomed timeline left and right instead.
+  scrollbar move the zoomed timeline left and right instead (the `?` after the arrows lists the mouse
+  controls, Ctrl+wheel's zoom too).
+- **The timeline's corridor colors are not a setting** (UT-P16, the owner's call, 2026-10-28). They
+  live in `ResultsTimeline.CORRIDOR` and a `/run` change to it lasts the session (`Repaint()` shows it
+  on an open window); a `/reload` goes back to the defaults.

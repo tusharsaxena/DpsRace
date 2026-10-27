@@ -110,12 +110,13 @@ test("timeline zoom: the controls sit at the right end of the Casts heading line
     local i, u = opened()
     local TL = i.TL
     assertEqual(TL.Zoom(), 1)
-    -- The scroll arrows end the line (UT-P15); reset, out and in before them, in a row.
-    local at = last(u.scrollRight)
-    assertEqual(at[1], "TOPRIGHT")
-    assertTrue(at[2] == u.content and at[3] == "TOPRIGHT", "the content's right end, on the heading line")
+    -- The ? ends the line on the heading line (UT-P16), the scroll arrows before it (UT-P15); reset,
+    -- in and out before them, in a row: read left to right "- + reset" (UT-P16).
+    local at = last(u.help)
+    assertTrue(at[1] == "TOPRIGHT" and at[2] == u.content and at[3] == "TOPLEFT" and at[5] == 0, "the ? on the heading line")
     assertTrue(last(u.zoomReset)[2] == u.scrollLeft, "reset before the arrows")
-    assertTrue(last(u.zoomOut)[2] == u.zoomReset and last(u.zoomIn)[2] == u.zoomOut, "in, out, reset in a row")
+    assertTrue(last(u.zoomIn)[2] == u.zoomReset and last(u.zoomOut)[2] == u.zoomIn, "out, in, reset in a row")
+    assertTrue(last(u.zoomText)[2] == u.zoomOut, "the zoom level first")
     assertEqual(u.zoomIn.glyph.__text, "+")
     assertEqual(u.zoomOut.glyph.__text, "-")
     assertEqual(u.zoomReset.iconName, "reset")
