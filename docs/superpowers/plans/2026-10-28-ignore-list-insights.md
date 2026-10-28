@@ -602,9 +602,9 @@ upstream change). None is ratified by this plan.
     - Added for N4: `ctx:card` / `ctx:setCard` (the `kpi()` shape, the figure shrunk to fit),
       `ctx:strip`, `ctx:Pool(name)` and `ctx:ReleaseAll()`. `makeSwatch` is the legend chip's factory.
     - The deviation row is in `docs/ARCHITECTURE.md` (Documented deviations, `library-stack-§7`, re-check
-      on the next LibKa0s re-vendor or the promotion issue landing). The LibKa0s promotion issue (naming
-      LootHistory, DpsRace and BankLedger) is not filed yet: the session's permission check refused
-      `gh issue create` at I4, so it is left for R or the owner with D-15.
+      on the next LibKa0s re-vendor or the promotion issue landing). The LibKa0s promotion issue is
+      LibKa0s#66 (filed outside this run, 2026-10-28; corrected at R1), naming LootHistory, DpsRace,
+      BankLedger and DropWatcher; the row cites it.
     - TOC: `modules\Results_InsightsCharts.lua` sits between `Results_InsightsData` and `Results_Insights`.
       `.luacheckrc` gives it `GameTooltip` (the host's tooltip). The suite is `tests/test_insights.lua`,
       22 cases, in `tests/run.lua` after `test_insights_data`; N4 adds the tab half to it.
@@ -692,8 +692,8 @@ upstream change). None is ratified by this plan.
     - `docs/common-tasks.md`: two places draw a flag's short label now, not three.
     - Smoke: W10 retired; K8, W9, W14, W15, R14, SM-DR-BL2, BL4, BL12, DL8, UT28 and UT46 rewritten;
       new section 25, SM-DR-IN1 to SM-DR-IN11, with a pending sign-off line.
-    - The LibKa0s promotion issue and D-15 are still not filed (I4's and N3's notes); left for R or the
-      owner.
+    - D-15 is still not filed (I4's note); left for R or the owner. (The LibKa0s promotion issue was
+      filed as LibKa0s#66; corrected at R1.)
 
 ### R: Review and fixes
 

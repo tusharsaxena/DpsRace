@@ -144,7 +144,7 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_late_ignore.lua (18)
+### test_late_ignore.lua (19)
 
 - late ignore: the hearthstone table holds 59 positive IDs, once each, with 8690, Dalaran and Garrison, never 556
 - late ignore: the setting parses sorted and once each, refuses anything else, and joins back
@@ -152,6 +152,7 @@ Total.
 - late ignore: the default is the profile's, and 8690 stands for every hearthstone in Set only
 - late ignore: Ignore, Unignore and Reset write the whole list through the seam
 - late ignore: Resolve takes a number, a link, a hearthstone's name and a default the character does not know
+- late ignore: a variant's name resolves to that variant when it is listed on its own, else to 8690
 - late ignore: on a degraded load a number, a link and a hearthstone still resolve
 - late ignore: the known spells are every late cast's spell, newest run first, then the defaults
 - late ignore: the result card's chips count only the counted casts; all ignored, no chip
@@ -863,7 +864,7 @@ Total.
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 - insights: Compute's spell share is the mean of each run's share, summed by ID, one spec only
 
-### test_insights.lua (38)
+### test_insights.lua (41)
 
 - insights charts: nothing above the host section reads NS or a client global but CreateFrame
 - insights charts: the header names the LootHistory source commit the port came from
@@ -892,13 +893,16 @@ Total.
 - insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
 - insights tab: a selection left with no runs falls back to All; the one just changed never
 - insights tab: the cards state the eight figures, each hover naming its value
+- insights tab: above 60 runs the progression is one column a day, the same day of two years apart
 - insights tab: a section with nothing to show hides; Top Spells needs one spec
+- insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten
 - insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged
 - insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab
 - insights tab: a Recent New Bests row opens its run on the Runs tab; a right-click its row menu
 - insights tab: with no run the empty state shows, and every card and section hides
 - insights tab: Save, Clear and Reset keep the view at profile.views.insights
 - insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
+- insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback
 - insights tab: a load with no library draws no dropdown, and the tab still works
 - insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
 - insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
@@ -1257,7 +1261,7 @@ Total.
 | test_timeline.lua | 10 |
 | test_scoring.lua | 9 |
 | test_bests.lua | 21 |
-| test_late_ignore.lua | 18 |
+| test_late_ignore.lua | 19 |
 | test_late_ignore_ui.lua | 3 |
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
@@ -1292,7 +1296,7 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 12 |
-| test_insights.lua | 38 |
+| test_insights.lua | 41 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1315,4 +1319,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1041** |
+| **Total** | **1045** |
