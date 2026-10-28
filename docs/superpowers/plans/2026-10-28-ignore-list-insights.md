@@ -570,7 +570,7 @@ upstream change). None is ratified by this plan.
     - The TOC line sits right before `modules\Results_Insights.lua`. `.luacheckrc` gives the file `time`
       and `date`.
     - The optional `tests/perf.lua` scenario was not added; N4 can add one with the tab if wanted.
-- [ ] **N3 Renderers.**
+- [x] **N3 Renderers.**
   - New `modules/Results_InsightsCharts.lua` (`NS.InsightsCharts`): port from LootHistory
     `AnalyticsCharts.lua` / `AnalyticsFormat.lua` the factories `makeBar`, `makeStackedBar`, `makeStripBar`,
     `makeListRow`, `makeSwatch`; chrome `sectionHeader`, `sectionDivider`, `listPanel` (on `Tbl.Panel`);
@@ -582,6 +582,32 @@ upstream change). None is ratified by this plan.
     hover states its value. All frames from `NS.Pool`.
   - Tests in `tests/test_insights.lua` (renderer half): pool reuse over two passes (the second creates
     nothing), tips carry values, legend alignment. Gate green.
+  - **Done notes (N3, 2026-10-28), where the code differed from the plan:**
+    - The owner's S-7 answer (host-agnostic, for BankLedger too) overrides "colors from `Tbl.*` and `Style`"
+      and "all frames from `NS.Pool`": the renderers read no `NS`. `Charts.New(content, host)` returns a
+      context, and the renderers are its methods under LootHistory's names. The host table carries `pool`,
+      `panel`, `tip`, `hideTip`, `colors`, `fonts` and `palette`; anything left out takes LootHistory's
+      Ka0s Default value. `Charts.Host()`, the last section of the file and its only `NS` reader, is
+      DpsRace's table: `NS.Pool`, `Tbl.Panel`, `Tbl.COLORS`, `Style.FONT` and the cursor tooltip
+      (`ANCHOR_CURSOR_RIGHT`, a gold title, `Style.AddTipLines`). The meaning colors (class, category,
+      length) are the rows' own, so N4 picks them from `Tbl` when it builds rows. A test fails on an `NS`
+      read above the host section.
+    - The port's changes from LootHistory 2319fd6 are listed in the file header: no skin or reskin walk,
+      a UTF-8-safe `truncate` (character names carry "â"), rows never written (`renderBarSection` scales
+      each row by the longest instead of normalizing `row.frac` in place), an optional `tip` per row
+      (string or lines), `color` per strip column, `onClick` per list row and a fixed top for
+      `renderStrip`, a divider title in its own font object (not 1.5x read back). `renderCharCompanion`
+      and `_buildCharStackRows` were not ported (LootHistory's data shape), and neither were
+      `HideAllCharts`, `Reskin` or the format helpers that are LootHistory's own (money, quality, star).
+    - Added for N4: `ctx:card` / `ctx:setCard` (the `kpi()` shape, the figure shrunk to fit),
+      `ctx:strip`, `ctx:Pool(name)` and `ctx:ReleaseAll()`. `makeSwatch` is the legend chip's factory.
+    - The deviation row is in `docs/ARCHITECTURE.md` (Documented deviations, `library-stack-§7`, re-check
+      on the next LibKa0s re-vendor or the promotion issue landing). The LibKa0s promotion issue (naming
+      LootHistory, DpsRace and BankLedger) is not filed yet: the session's permission check refused
+      `gh issue create` at I4, so it is left for R or the owner with D-15.
+    - TOC: `modules\Results_InsightsCharts.lua` sits between `Results_InsightsData` and `Results_Insights`.
+      `.luacheckrc` gives it `GameTooltip` (the host's tooltip). The suite is `tests/test_insights.lua`,
+      22 cases, in `tests/run.lua` after `test_insights_data`; N4 adds the tab half to it.
 - [ ] **N4 Tab, filter bar and layout.**
   - New `modules/Results_Insights.lua` (`NS.ResultsInsights`): `Build(parent, hooks{open, menu, count})`
     returning the view contract (`frame`, `Layout`, `Resize`, `Refresh`, `Count`, `SetFilter`). Filter bar

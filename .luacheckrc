@@ -122,6 +122,8 @@ files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Insights.lua"] = { read_globals = resultsGlobals }
 -- The Insights stats pass buckets runs by local day.
 files["modules/Results_InsightsData.lua"] = { read_globals = { "time", "date" } }
+-- The Insights charts' DpsRace host draws its hover on the client's tooltip.
+files["modules/Results_InsightsCharts.lua"] = { read_globals = { "GameTooltip" } }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }
