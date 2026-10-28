@@ -202,10 +202,36 @@ local function lengthOptions(runs)
     return list
 end
 
-local function withAll(label, list, current)
+local OPTION_LISTS = { char = charOptions, spec = specOptions, category = categoryOptions, length = lengthOptions }
+
+--- The value dropdowns' options among `runs`, each list without its "all" head: the character
+--- ({ value = "Name-Realm", label, color }), the spec, the target category and the race length. The
+--- Insights tab (modules/Results_InsightsData.lua) builds its faceted lists on these too.
+--- @param runs table  the runs to read (taken as given: no status check)
+--- @param key string|nil  one list only: "char", "spec", "category" or "length"
+--- @return table lists  { char, spec, category, length }, or the one list when `key` is given
+function Runs.OptionLists(runs, key)
+    runs = runs or {}
+    if key then return OPTION_LISTS[key](runs) end
+    local out = {}
+    for k, build in pairs(OPTION_LISTS) do out[k] = build(runs) end
+    return out
+end
+
+--- `list` led by its "all" entry, and by a "current" one before it when `current` is given.
+--- @return table list  the same table
+function Runs.WithAll(list, label, current)
     table.insert(list, 1, { value = "all", label = label })
     if current then table.insert(list, 1, { value = "current", label = current }) end
     return list
+end
+
+--- The date range dropdown's four options, widest first (Runs.DATE_RANGES).
+function Runs.DateOptions()
+    return {
+        { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },
+        { value = "7d", label = L["Last 7 days"] }, { value = "30d", label = L["Last 30 days"] },
+    }
 end
 
 -- ── grouping (LootHistory's Group by) ──────────────────────────────────────────────────────────
@@ -338,15 +364,13 @@ function Runs.Options(runs)
     for _, run in ipairs(runs or {}) do
         if type(run) == "table" and Runs.RESOLVED[run.status] then resolved[#resolved + 1] = run end
     end
+    local lists = Runs.OptionLists(resolved)
     return {
-        char = withAll(L["All characters"], charOptions(resolved), L["Current character"]),
-        spec = withAll(L["All specs"], specOptions(resolved), L["Current spec"]),
-        category = withAll(L["All targets"], categoryOptions(resolved)),
-        length = withAll(L["Any length"], lengthOptions(resolved)),
-        date = {
-            { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },
-            { value = "7d", label = L["Last 7 days"] }, { value = "30d", label = L["Last 30 days"] },
-        },
+        char = Runs.WithAll(lists.char, L["All characters"], L["Current character"]),
+        spec = Runs.WithAll(lists.spec, L["All specs"], L["Current spec"]),
+        category = Runs.WithAll(lists.category, L["All targets"]),
+        length = Runs.WithAll(lists.length, L["Any length"]),
+        date = Runs.DateOptions(),
         group = (function()
             local out = {}
             for i, mode in ipairs(Runs.GROUP_ORDER) do out[i] = { value = mode, label = L[GROUP_LABELS[mode]] } end

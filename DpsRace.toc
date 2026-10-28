@@ -169,6 +169,10 @@ modules\Results_Timeline.lua
 # captures NS.Style and NS.ResultsTable at FILE SCOPE, so it follows modules\Results_Timeline.lua; the
 # detail and the shell reach it at CALL time.
 modules\Results_Gear.lua
+# The Insights tab's pure half (#12): its filters, faceted options and one stats pass. LOAD-BEARING:
+# captures NS.ResultsRuns at FILE SCOPE (and reads NS.Dummies there), so it follows modules\Results_Runs.lua;
+# reaches NS.Bests, NS.Scoring and NS.LateIgnore at CALL time.
+modules\Results_InsightsData.lua
 # The Insights tab (#12): captures NS.ResultsTable at FILE SCOPE; the shell builds it at CALL time.
 modules\Results_Insights.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE

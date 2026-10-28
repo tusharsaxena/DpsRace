@@ -120,6 +120,8 @@ files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Insights.lua"] = { read_globals = resultsGlobals }
+-- The Insights stats pass buckets runs by local day.
+files["modules/Results_InsightsData.lua"] = { read_globals = { "time", "date" } }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }

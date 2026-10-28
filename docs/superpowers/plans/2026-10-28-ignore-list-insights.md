@@ -529,7 +529,7 @@ upstream change). None is ratified by this plan.
     - `docs/data-flow.md` records that no window reads the clean-only board, and its Bests tab bullet
       is the Insights placeholder now. The rest of the docs (module map, ARCHITECTURE, README, smoke
       rows) still name the Bests tab and `Results_Bests.lua` until N5.
-- [ ] **N2 Pure stats module.**
+- [x] **N2 Pure stats module.**
   - `modules/Results_Runs.lua`: export `Runs.OptionLists(runs)` (char, spec, category, length lists without
     the All heads) and `Runs.WithAll(list, label)`, refactoring `charOptions` and friends to use them.
   - New `modules/Results_InsightsData.lua` (`NS.InsightsData`, no frames): `DEFAULTS` (D-11);
@@ -547,6 +547,29 @@ upstream change). None is ratified by this plan.
     board-relative %, new-bests count, tail buckets with a 155 s outlier, spell share summing duplicate IDs,
     late-by-spell with ignored apart, a Feign-Death-only run counted clean). Optional `tests/perf.lua`
     scenario over 1000 runs. Gate green, complexity suite clean.
+  - **Done notes (N2, 2026-10-28), where the code differed from the plan:**
+    - `Runs.OptionLists(runs, key)` takes an optional key, so a facet builds only its own list; with no
+      key it returns all four. `Runs.WithAll(list, label, current)` puts the list first (the old local
+      took the label first). A third export, `Runs.DateOptions()`, holds the four date labels both tabs
+      use. `Runs.Options` is rebuilt on the three and returns what it did before.
+    - `Normalize(f, options)` could not recompute the options between resets, which the fallback rule
+      needs. It is `Normalize(runs, f, now, keep)` and returns `f, options`: `keep` is the dropdown the
+      player just changed, and `f` is a new table, so the caller's (a saved view) is never written.
+      `InsightsData.ORDER` is the bar order it checks in.
+    - Option items are `{ value, label, count, color? }`. The label carries the count ("Traxex (5)"),
+      and so does the All head (the size of its pool). A selection with no runs is kept at 0, labeled
+      from the whole run list.
+    - `Compute` reads no filter: section B takes the most-raced (category, length) pair, and with a Target
+      and a Length filter that is the filter's own pair. Ties go to the catalog's category order, then
+      the shorter length. `spellShare` is nil unless the runs are all one spec; with one spec and no
+      spells recorded it is `{ n = 0, rows = {} }`. `progression` is the complete runs' entries
+      (`{ run, dps, key, pct }`), and each board also carries `avgPct`, which C and the cards read.
+    - `lateBySpell` counts every run given, incomplete ones too; a cast with no spell ID is one
+      `{ unknown = true }` entry, sorted last among equal counts. `byDay` is capped at 3660 days, so a
+      stray date cannot loop for years.
+    - The TOC line sits right before `modules\Results_Insights.lua`. `.luacheckrc` gives the file `time`
+      and `date`.
+    - The optional `tests/perf.lua` scenario was not added; N4 can add one with the tab if wanted.
 - [ ] **N3 Renderers.**
   - New `modules/Results_InsightsCharts.lua` (`NS.InsightsCharts`): port from LootHistory
     `AnalyticsCharts.lua` / `AnalyticsFormat.lua` the factories `makeBar`, `makeStackedBar`, `makeStripBar`,

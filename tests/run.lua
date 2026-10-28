@@ -127,6 +127,7 @@ local SUITES = {
     "test_results_timeline_scroll",
     "test_results_timeline_controls",
     "test_results_gear",
+    "test_insights_data",
     "test_sizing",
     "test_tooltips",
     "test_schema",
