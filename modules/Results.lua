@@ -147,8 +147,6 @@ local function buildTab(name)
             -- The detail's Delta box reads the list's groups: a new filter or grouping redraws it.
             changed = function() ui.detail:RefreshDelta() end,
         })
-        -- Built while the sample history is shown: it opens on the sample's view.
-        if Source.IsMock() then pane:SampleView(true) end
     else
         pane = NS.ResultsInsights.Build(ui.body, {
             open = function(r) Results.ShowRun(r.id) end,
@@ -160,6 +158,8 @@ local function buildTab(name)
             end,
         })
     end
+    -- Built while the sample history is shown: it opens on the sample's view.
+    if Source.IsMock() then pane:SampleView(true) end
     ui.panes[name] = pane
     debug("tab %s built", name)
     return pane
@@ -826,8 +826,8 @@ function Results.SetNote(id, text)
 end
 
 --- The source changed (modules/Results_Source.lua): `swapped` between the store and the sample
---- history, which drops the selection and the compare's pick (neither is in the other) and moves the
---- Runs view to the sample's or back to the player's; else the sample changed (a note, a delete, the
+--- history, which drops the selection and the compare's pick (neither is in the other) and moves each
+--- tab's view to the sample's or back to the player's; else the sample changed (a note, a delete, the
 --- sim's run). A hidden window redraws in full on its next show.
 function Results.OnSourceChanged(swapped)
     if swapped then
@@ -838,7 +838,7 @@ function Results.OnSourceChanged(swapped)
         selected, detailOpen = nil, false
         if ui then
             ui.detail:SetPick(nil)
-            if ui.panes.runs then ui.panes.runs:SampleView(Source.IsMock()) end
+            for _, pane in pairs(ui.panes) do pane:SampleView(Source.IsMock()) end
         end
     end
     if windowShown() then

@@ -732,6 +732,30 @@ test("insights tab: test mode fills the tab from the sample history; Save refuse
     assertEqual(pane:Count(), 0, "back on the empty store")
 end)
 
+test("insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback", function()
+    local i = tab()
+    local pane = i.pane
+    pane:SetFilter("char", "Kaosmage-Frostmourne")
+    assertTrue(pane:SaveView())
+    assertTrue(i.NS.Preview.Start())
+    assertEqual(pane.filters.char, "all", "the samples open wide")
+    i.NS.Preview.Stop()
+    assertEqual(pane.filters.char, "Kaosmage-Frostmourne", "the view the player had")
+    assertEqual(pane:Count(), 1)
+    -- A view never saved comes back too, and a tab first built during test mode opens on its view.
+    pane:SetFilter("length", 180)
+    assertTrue(i.NS.Preview.Start())
+    i.NS.Preview.Stop()
+    assertEqual(pane.filters.length, 180)
+    local j = tab(nil, { closed = true })
+    assertTrue(j.NS.Preview.Start())
+    assertTrue(j.R.ShowTab("insights"))
+    local late = j.R.__ui().panes.insights
+    j.NS.Preview.Stop()
+    assertEqual(late.filters.char, "all")
+    assertEqual(late:Count(), 3, "the stock view over the store")
+end)
+
 test("insights tab: a load with no library draws no dropdown, and the tab still works", function()
     local i = tab(nil, { libFiles = {}, bare = true })
     assertEqual(next(i.pane.dropdowns), nil, "a dead dropdown was drawn")

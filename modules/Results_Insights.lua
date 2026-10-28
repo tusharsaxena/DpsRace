@@ -599,6 +599,22 @@ local function sampleRefusal()
     return true
 end
 
+-- The sample history is other characters' runs, so it opens on the stock view (all of them); the view
+-- the player had comes back when the store does (the shell's OnSourceChanged). Without this, Refresh's
+-- fallback over the samples would stay in the live filters after the swap back.
+
+--- Enter (`on`) or leave the sample history's view: entering keeps the player's view to restore.
+function View:SampleView(on)
+    if on then
+        if not self.realView then self.realView = self:CaptureView() end
+        self:ApplyView(nil)
+    elseif self.realView then
+        local real = self.realView
+        self.realView = nil
+        self:ApplyView(real)
+    end
+end
+
 function View:SaveView()
     if sampleRefusal() then return false end
     local p = NS.db and NS.db.profile
