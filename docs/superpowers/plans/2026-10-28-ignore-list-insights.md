@@ -697,9 +697,24 @@ upstream change). None is ratified by this plan.
 
 ### R: Review and fixes
 
-- [ ] **R1** A review of the whole branch (`dev-copilot:review branch`), plus the standards flags above
+- [x] **R1** A review of the whole branch (`dev-copilot:review branch`), plus the standards flags above
   re-checked against the current standard text. Fix what it finds, one commit per fix, gate green after each.
   Ask the owner about S-1 if still open and about filing D-15.
+  - **Done notes (R1, 2026-10-28), the five verified findings, each fixed with a regression case:**
+    - `LateIgnore.Resolve`: a hearthstone variant's name resolves to that variant when it is listed on its
+      own (8690 off the list), so `/dr ignore remove <its name>` finds it; otherwise still 8690. The
+      `ignore` row in `docs/slash-dispatch.md` now says `add <a variant's name>` ignores every hearthstone.
+    - Insights got the Runs tab's `View:SampleView`: the samples open on the stock view and the player's
+      view comes back when the store does. The shell calls `SampleView` on every built pane (on a swap and
+      on a build during test mode), so Refresh's fallback over the samples no longer sticks or gets saved.
+    - Section A's per-day columns are keyed by `%Y-%m-%d` (the label stays `%m/%d`, the hover names the
+      year), so the same date a year apart is two columns.
+    - Section G keeps up to half of the ten list rows for the ignored spells, so the dimmed rows and their
+      *Stop ignoring* right-click show even with ten or more counted spells.
+    - The `library-stack-§7` chart row cites LibKa0s#66 (LootHistory, DpsRace, BankLedger, DropWatcher);
+      the N3 and N5 notes no longer say it was never filed. D-15 is still not filed and S-1 is settled
+      (owner answers); both stay with the owner. The review's own run and the standards re-check were
+      done before this step; R1 here applied its findings. Gate: 1045 passed, 1 skipped; luacheck 0/0.
 
 ### F: Finalize (only on the owner's go-ahead)
 
