@@ -259,7 +259,7 @@ upstream change). None is ratified by this plan.
   says it does not touch). The default, if the owner does not say, is (a), with the file header naming the
   LootHistory source commit so a later promotion can diff the two.
 
-**Owner answers (2026-10-28):** S-1 resolved to `/dr ignore show|add|remove|defaults` (bare `/dr ignore` is `show`), so it conforms and needs no deviation row. S-7 resolved to (a): copy the renderers now, file a LibKa0s promotion issue, and record a deviation row in `docs/ARCHITECTURE.md` with the next LibKa0s re-vendor as its re-check trigger. Borderline hearthstone entries (Appendix A) stay in by default: anything on the hearthstone cooldown that sends you home counts as a variant. File D-15 (Disengage End) as a GitHub issue. Keep `/dr results bests` as a silent alias.
+**Owner answers (2026-10-28):** S-1 resolved to `/dr ignore show|add|remove|defaults` (bare `/dr ignore` is `show`), so it conforms and needs no deviation row. S-7 resolved to (a): copy the renderers now, file a LibKa0s promotion issue, and record a deviation row in `docs/ARCHITECTURE.md` with the next LibKa0s re-vendor as its re-check trigger. Borderline hearthstone entries (Appendix A) stay in by default: anything on the hearthstone cooldown that sends you home counts as a variant. File D-15 (Disengage End) as a GitHub issue. Keep `/dr results bests` as a silent alias. The owner adds that BankLedger may also use the chart widget, so `Results_InsightsCharts.lua` is written host-agnostic for a clean promotion: no `NS` reads inside the renderers; colors, fonts, the tooltip function and pools are passed in by the host through one config table. The LibKa0s issue names LootHistory, DpsRace and BankLedger as consumers.
 
 ## Steps
 
