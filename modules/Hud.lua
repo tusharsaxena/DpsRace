@@ -247,7 +247,8 @@ local function armBlocker()
 end
 
 local function targetWarning(target)
-    if target.category ~= "other" then return nil end
+    -- Read now (#9): the cached snapshot predates a change to your training dummies.
+    if NS.Dummies.CategoryOf(target) ~= "other" then return nil end
     if target.name then return L["Unknown target: recorded as Other: %s"]:format(target.name) end
     return L["No target: the one you fight is read when combat starts."]
 end

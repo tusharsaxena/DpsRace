@@ -29,6 +29,9 @@ DummyList.KINDS = { "single", "cleave", "dungeoneer", "boss", "pvp" }
 local KIND = {}
 for _, k in ipairs(DummyList.KINDS) do KIND[k] = true end
 
+--- The largest creature ID a list entry takes: above it a number has no integer form to write back.
+DummyList.MAX_ID = 2 ^ 31 - 1
+
 local function builtIn(id) return NS.Dummies.BY_ID[id] ~= nil end
 
 -- ── the stored text ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +49,7 @@ function DummyList.Parse(text)
             local hid = word:match("^%-(%d+)$")
             local num, kind = word:match("^(%d+)%s*:%s*(%a+)$")
             local id = tonumber(hid or num)
-            if not id or id < 1 or (num and not KIND[kind]) then return nil end
+            if not id or id < 1 or id > DummyList.MAX_ID or (num and not KIND[kind]) then return nil end
             byId[id] = hid and { id = id, hidden = true } or { id = id, category = kind }
         end
     end
@@ -126,7 +129,7 @@ end
 
 local function plainId(id)
     id = Secrets.PlainNumber(id)
-    return type(id) == "number" and id >= 1 and id % 1 == 0 and id or nil
+    return type(id) == "number" and id >= 1 and id <= DummyList.MAX_ID and id % 1 == 0 and id or nil
 end
 
 --- Mark creature `id` as a dummy of `category`. A switched-off built-in is switched back on (the
@@ -307,7 +310,7 @@ function DummyList.Resolve(text)
     if text == "" then return nil, "empty" end
     local id = tonumber(text:match("^%d+$") or "")
     if id then
-        if id < 1 then return nil, "notFound" end
+        if id < 1 or id > DummyList.MAX_ID then return nil, "notFound" end
         return id
     end
     local want, found = text:lower(), nil

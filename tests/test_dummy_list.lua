@@ -32,6 +32,9 @@ test("dummy list: Parse reads entries and hides, ascending, the last of an ID wi
     assertNil(DL.Parse("abc:single"))
     assertNil(DL.Parse("0:single"))
     assertNil(DL.Parse(42))
+    assertNil(DL.Parse("99999999999999999999:single"), "past MAX_ID: no integer form to write back")
+    assertNil(T.NS.DummyList.Add(1e20, "single"))
+    assertEqual(select(2, DL.Resolve("99999999999999999999")), "notFound")
 end)
 
 test("dummy list: Normalize drops a custom entry for a built-in and a hide of a non-built-in", function()
@@ -339,4 +342,13 @@ test("targetdummy: answers while the addon is disabled, as ignore does", functio
     NS.DummyList.Add(BOAR, "pvp")
     NS.Slash:OnSlash("targetdummy show")
     assertTrue(has(M, "Creature 99999 \194\183 PvP"), said(M))
+end)
+
+test("dummy list: the idle HUD's unknown-target warning follows the list without a target change", function()
+    local NS, M = fresh()
+    M.__setTarget({ guid = BOAR_GUID, name = "Angry Boar" })
+    local t = NS.Recorder.SnapshotTarget("target")
+    assertEqual(NS.Dummies.CategoryOf(t), "other")
+    NS.DummyList.Add(BOAR, "single")
+    assertEqual(NS.Dummies.CategoryOf(t), "single", "the cached snapshot reads the list now")
 end)
