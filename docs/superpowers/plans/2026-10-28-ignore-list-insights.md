@@ -834,7 +834,18 @@ Found in the screenshots (decided here):
       board tabs, the closed labels and the date format.
     - Gate: 1060 passed, 1 skipped (exit 0); luacheck 0/0; no function in the two Insights modules
       above CCN 10 (lizard; `progressionPerDay` and `boardFigures` at 10); `Results_Insights.lua` is 960 lines.
-- [ ] **V3** Docs, smoke rows (replace the retired ones), test counts, then push.
+- [x] **V3** Docs, smoke rows (replace the retired ones), test counts, then push.
+  - **Done notes (V3, 2026-10-28):** README's Insights paragraph (ten cards and their colors, the
+    closed dropdown's choice count, the board tabs with Spec Comparison and a range Consistency, Races
+    By Character x Length, no Top Spells, the one date format); `docs/ARCHITECTURE.md` (ten cards and
+    ten sections under board tabs; the range renderer in the chart deviation row); `docs/data-flow.md`
+    (the board tabs, `ClosedLabel`, the date format, H gone); `docs/module-map.md` (`Style.FONT.CHART`,
+    `ClosedLabel`, `boardTabs`, `CardGrid`, the range and strip changes); `docs/testing.md` (both
+    Insights rows); `docs/test-cases.md` regenerated (1060). Smoke: the IN rows were never run, so
+    IN1, IN4 and IN5 were rewritten in place rather than retired, and BL2 now reads Races By Character
+    x Length; new SM-DR-IN12 (board tabs), IN13 (Consistency ranges), IN14 (headings, cards and strips
+    beside LootHistory) and IN15 (dates). README badge 1045 to 1060.
+    - Gate: 1060 passed, 1 skipped (exit 0); luacheck 0/0. Docs only, no code touched.
 - [ ] **V4** Review and fixes.
 
 ### F: Finalize (only on the owner's go-ahead)

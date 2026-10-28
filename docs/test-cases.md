@@ -849,22 +849,23 @@ Total.
 - gear view: the followed run deleted (the pane left empty) closes the view
 - gear view: a run without a compared run marks nothing and says so
 
-### test_insights_data.lua (12)
+### test_insights_data.lua (13)
 
 - insights: Runs.OptionLists has each list without its All head, and WithAll adds it
 - insights: Filter defaults wide, keeps lost runs out and maps Clean only to Hide flagged
 - insights: Options lists each facet's values among the runs every other filter passes, with counts
+- insights: a closed dropdown names its choices on the All head, and a pick by its name alone
 - insights: Normalize sets a 0-run selection to All, never the one just changed, in bar order
 - insights: Compute on no runs returns zero cards and empty sections
 - insights: Compute's cards over the owner-shaped fixture
-- insights: Compute's boards, progression, spec compare and consistency are board-relative
+- insights: Compute's boards and progression are board-relative
+- insights: Compute's board tabs, one per target x length pair, in the catalog's order
 - insights: Compute's new bests beat an earlier best on their board, in date order
 - insights: Compute's counts by character, target, length and day, gap days included
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
-- insights: Compute's spell share is the mean of each run's share, summed by ID, one spec only
 
-### test_insights.lua (41)
+### test_insights.lua (55)
 
 - insights charts: nothing above the host section reads NS or a client global but CreateFrame
 - insights charts: the header names the LootHistory source commit the port came from
@@ -877,14 +878,20 @@ Total.
 - insights charts: every bar's hover states its value; a row's own tip lines win
 - insights charts: an empty section hides its header and leaves the cursor where it was
 - insights charts: a legend's chips start under the track, not the labels, and wrap
+- insights charts: a sublabel draws a second, muted line, and every row of its section grows
+- insights charts: RangeScale spans the lowest worst to the highest best, opening a point
+- insights charts: a range section draws worst to best with an average mark, on a scale it names
+- insights charts: a legend can start at a given edge (under a strip, not a bar track)
 - insights charts: a stacked bar shows one segment per share, each hover naming its value
 - insights charts: a strip draws one colored column per bucket, its hover above the column
-- insights charts: a strip takes a fixed top, and thins its labels when the columns crowd
+- insights charts: a strip's labels are level, hung under the axis line, in the band it reserves
+- insights charts: a strip takes a fixed top, and drops a label too close to the last one shown
+- insights charts: StripSlots widens the columns up to a cap, and never below 2 px
 - insights charts: a list panel caps at ten rows, sized to them, each hover stating its value
 - insights charts: a list row's click is the row's own, and a reused row forgets the last one
 - insights charts: a second pass after ReleaseAll builds no frame; every pool comes back whole
 - insights charts: a divider rules both sides of its centered title in the host's colors
-- insights charts: a stat card's caption over its figure, the hover stating the figure
+- insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below
 - insights charts: the panel comes from the host, a plain frame without one
 - insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
 - insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
@@ -892,9 +899,17 @@ Total.
 - insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
 - insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
 - insights tab: a selection left with no runs falls back to All; the one just changed never
-- insights tab: the cards state the eight figures, each hover naming its value
+- insights tab: the cards state the ten figures, each hover naming its value
+- insights tab: a card's figure is gold, and colored where it means something
+- insights tab: CardGrid packs four a row, and a short last row is shared out
+- insights tab: the cards fill even rows across the content, none half empty
 - insights tab: above 60 runs the progression is one column a day, the same day of two years apart
-- insights tab: a section with nothing to show hides; Top Spells needs one spec
+- insights tab: DPS Progression carries a legend of its specs in their class colors
+- insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone
+- insights tab: a tab per target x length board, the most raced first, the pick kept while present
+- insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked
+- insights tab: Races By Character x Length stacks each character's races in the length colors
+- insights tab: one date format everywhere: the day, then the time where it matters
 - insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten
 - insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged
 - insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab
@@ -1295,8 +1310,8 @@ Total.
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
-| test_insights_data.lua | 12 |
-| test_insights.lua | 41 |
+| test_insights_data.lua | 13 |
+| test_insights.lua | 55 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1319,4 +1334,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1045** |
+| **Total** | **1060** |

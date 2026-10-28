@@ -464,8 +464,16 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   in bar order, never the dropdown just changed, and only in the live filters) →
   `InsightsData.Filter` (lost runs out, then `Runs.Filter` with every key given, so no Runs default
   leaks in; *Clean only* is the ignore-aware *Hide flagged*) → `InsightsData.Compute` (one pass over
-  the runs through `REDUCERS`, then `FINALIZERS`) → the eight cards and the sections A to K, each
-  drawn by a renderer of `modules/Results_InsightsCharts.lua`. Every figure that mixes boards is a
+  the runs through `REDUCERS`, then `FINALIZERS`) → the ten cards and the sections A to K (H, Top
+  Spells, was removed in the owner's feedback round), each drawn by a renderer of
+  `modules/Results_InsightsCharts.lua`. B (Spec Comparison) and C (Consistency, a worst-to-best
+  range per spec with its average marked) draw one board: the tab picked from `stats.boardTabs`, one
+  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. The most raced pair
+  (`stats.boardTop`) opens first, and `View.boardKey` keeps a pick while the filters leave it
+  present; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
+  the number of choices under it, a pick by its name alone), and the open list keeps the run counts.
+  Every date is the Runs tab's *26 Oct*, the year added when it is not this year's and the time in a
+  run's hover. Every figure that mixes boards is a
   run's percent of its board's best, that best taken over the filtered runs; DPS reads complete runs
   only. Flags come from `Scoring.Flags`, memoized within one call and never across, so an ignore-list
   change re-scores the next draw. Every widget comes from the chart context's pools: a layout
