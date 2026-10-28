@@ -985,3 +985,41 @@ L["The category a dummy you add gets when you name none. Automatic reads it from
 L["Your training dummies"] = "Your training dummies"
 L["Creatures counted as training dummies beyond the built-in ones, and built-ins switched off: creature ID:category, or -creature ID, comma-separated. Applies to every stored run: a run is categorized by its creature as the list is now."] =
     "Creatures counted as training dummies beyond the built-in ones, and built-ins switched off: creature ID:category, or -creature ID, comma-separated. Applies to every stored run: a run is categorized by its creature as the list is now."
+
+-- /dr targetdummy (#9): show, add, remove, capture, defaults.
+L["Your training dummies: /dr targetdummy [show|add|remove|capture|defaults] [category or creature ID]"] =
+    "Your training dummies: /dr targetdummy [show|add|remove|capture|defaults] [category or creature ID]"
+L["Usage: %s targetdummy [show|add|remove|capture|defaults] [category or creature ID]"] =
+    "Usage: %s targetdummy [show|add|remove|capture|defaults] [category or creature ID]"
+L["Creature %d"] = "Creature %d"
+L["skull level"] = "skull level"
+L["level %d"] = "level %d"
+L["%s %s"] = "%s %s"
+L["%s health"] = "%s health"
+L["PvP flagged"] = "PvP flagged"
+L["not PvP flagged"] = "not PvP flagged"
+L["%s, %s"] = "%s, %s"
+L["%s %.1f, %.1f"] = "%s %.1f, %.1f"
+L["Target a creature first."] = "Target a creature first."
+L["Your target is not a creature, so it cannot be a training dummy."] =
+    "Your target is not a creature, so it cannot be a training dummy."
+L["No training dummies of your own. Target one and type %s targetdummy add."] =
+    "No training dummies of your own. Target one and type %s targetdummy add."
+L["Your training dummies:"] = "Your training dummies:"
+L["  %s \194\183 %s"] = "  %s \194\183 %s"
+L["Built-in training dummies: %d, %d switched off."] = "Built-in training dummies: %d, %d switched off."
+L["  %s (off)"] = "  %s (off)"
+L["Saved: %s"] = "Saved: %s"
+L["'%s' is no category. Use single, cleave, dungeoneer, boss or pvp."] =
+    "'%s' is no category. Use single, cleave, dungeoneer, boss or pvp."
+L["%s is a training dummy now: %s."] = "%s is a training dummy now: %s."
+L["%s is a training dummy again: %s."] = "%s is a training dummy again: %s."
+L["%s is already a built-in training dummy: %s."] = "%s is already a built-in training dummy: %s."
+L["%s is already a training dummy: %s."] = "%s is already a training dummy: %s."
+L["No creature '%s' is known. Use its creature ID."] = "No creature '%s' is known. Use its creature ID."
+L["%s is no longer a training dummy."] = "%s is no longer a training dummy."
+L["%s, a built-in training dummy, is switched off. %s targetdummy add on it brings it back."] =
+    "%s, a built-in training dummy, is switched off. %s targetdummy add on it brings it back."
+L["%s is not a training dummy."] = "%s is not a training dummy."
+L["Your training dummies are cleared: only the built-in ones count."] =
+    "Your training dummies are cleared: only the built-in ones count."

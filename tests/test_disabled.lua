@@ -13,7 +13,7 @@ local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.asse
 local RESERVED = {
     help = true, config = true, version = true, enable = true, disable = true, debug = true,
     diagnostics = true, perf = true, get = true, set = true, list = true, reset = true, resetall = true,
-    ignore = true,
+    ignore = true, targetdummy = true,
 }
 
 local PERF_LINE = "Not available during a performance capture."

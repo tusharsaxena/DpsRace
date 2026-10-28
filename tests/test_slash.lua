@@ -549,11 +549,12 @@ test("slash: ignore is a settings verb: it answers while disabled, on both arms"
     end
 end)
 
-test("slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore", function()
+test("slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore and targetdummy", function()
     local lib = T.mocks.LibStub("LibKa0s-Slash-1.0")
     local want = {}
     for _, v in ipairs(lib.LIVE_VERBS) do want[#want + 1] = v end
     want[#want + 1] = "ignore"
+    want[#want + 1] = "targetdummy"
     table.sort(want)
     local got = {}
     for _, v in ipairs(T.NS.Slash.LIVE_VERBS) do got[#got + 1] = v end

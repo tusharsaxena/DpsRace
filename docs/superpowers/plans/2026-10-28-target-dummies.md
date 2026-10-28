@@ -70,7 +70,7 @@ T4. No merge without the owner's go-ahead.
 - [x] **T2 Read time.** Every stored-run category read through `CategoryOf`; Bests, Results, Insights,
   HUD, AutoArm and the Race page listen on the row. Tests: a stored run moves boards when its creature is
   added, and back when removed.
-- [ ] **T3 The slash verb.** `targetdummy` in NS.COMMANDS and HOST_LIVE_VERBS, its handler, locale
+- [x] **T3 The slash verb.** `targetdummy` in NS.COMMANDS and HOST_LIVE_VERBS, its handler, locale
   strings, tests in `tests/test_dummy_list.lua` (or `test_slash.lua`).
 - [ ] **T4 The settings tab.** The Race page's *Training dummies* tab, the repaint on change, tests. Push.
 - [ ] **T5 Docs.** ARCHITECTURE (module map, schema, slash surface, bus listeners), `docs/schema.md`,
