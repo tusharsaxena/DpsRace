@@ -215,7 +215,7 @@ test("preview: the sample history covers every status, target type, preset lengt
     assertTrue(next(data.slices) ~= nil, "charts on some")
 end)
 
-test("preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample", function()
+test("preview: the sample detail draws its chart, compare and gear; the Insights tab counts the sample", function()
     local f = fixture()
     assertTrue(f.Preview.Start())
     assertTrue(f.R.ShowRun("sample-01"))
@@ -230,8 +230,8 @@ test("preview: the sample detail draws its chart, compare and gear; the Bests ta
     assertTrue(d.lo.talentsData ~= nil, "no sample talents")
     assertTrue(f.R.ShowRun("sample-02"))
     assertTrue(f.NS.ResultsSource.GearChanged(d.run), "the variant set reads as changed gear")
-    assertTrue(f.R.ShowTab("bests"))
-    assertTrue(rui(f).panes.bests:Count() > 0, "no sample bests")
+    assertTrue(f.R.ShowTab("insights"))
+    assertTrue(rui(f).panes.insights:Count() > 0, "no sample runs on the Insights tab")
 end)
 
 test("preview: a note or a delete changes the sample in memory; Save view and Share refuse", function()

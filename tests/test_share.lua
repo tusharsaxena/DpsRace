@@ -159,6 +159,14 @@ test("share: a result prints the score line with the delta, the flags and the ta
     assertTrue(slower:find("\226\128\148 -3.2% vs best \194\183 tail +3.1s", 1, true) ~= nil, slower)
 end)
 
+test("share: the score line counts only the late casts the ignore list leaves (#8)", function()
+    local NS = T.load().NS
+    local run = sampleRun({ flags = { lateCasts = { { t = 1.2, spellID = 5384 }, { t = 1.4, spellID = 29722 } } } })
+    assertTrue(NS.Share.ResultLine(run, 2.4, true):find("\194\183 1 late cast \194\183", 1, true) ~= nil)
+    run.flags.lateCasts[2].spellID = 1856
+    assertEqual(NS.Share.ResultLine(run, 2.4, true):find("late", 1, true), nil, "all ignored: no late casts")
+end)
+
 test("share: the race's own result is printed once, when it resolves", function()
     local f = RaceClock.new()
     assertTrue(f:arm(30))

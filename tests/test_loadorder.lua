@@ -12,6 +12,16 @@ test("load order: the runner loaded exactly the TOC's files, in the TOC's order"
     for i, path in ipairs(fresh) do assertEqual(loaded[i], path, "position " .. i) end
 end)
 
+test("load order: the hearthstones load before the ignore list, and the ignore list before its readers", function()
+    local at = {}
+    for i, path in ipairs(T.loadedAddonFiles) do at[path:gsub("\\", "/")] = i end
+    local hs, li = at["defaults/Hearthstones.lua"], at["modules/LateIgnore.lua"]
+    assertTrue(hs and li and at["defaults/Profile.lua"] < li and hs < li, "the data the list reads at file scope")
+    for _, reader in ipairs({ "modules/Scoring.lua", "modules/Bests.lua", "modules/Hud.lua", "settings/Race.lua" }) do
+        assertTrue(li < at[reader], reader)
+    end
+end)
+
 test("load order: every derived path exists on disk", function()
     for _, path in ipairs(T.loadedAddonFiles) do
         local f = io.open(T.root .. "/" .. path, "rb")

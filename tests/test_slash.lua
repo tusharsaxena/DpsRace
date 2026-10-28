@@ -279,14 +279,24 @@ test("slash: hud show, hide and toggle; a bare hud toggles", function()
     assertTrue(bare(inst.mocks)[1]:find("/dr hud show", 1, true) ~= nil, "an unknown word prints the usage")
 end)
 
-test("slash: results opens the Results window; results bests opens the bests", function()
+test("slash: results opens the Results window; results insights opens Insights, and bests still does", function()
     local inst = T.load()
     local NS = inst.NS
     NS.Slash:OnSlash("results")
     assertTrue(NS.Results.IsShown())
     assertEqual(NS.Results.Tab(), "runs")
+    NS.Slash:OnSlash("results insights")
+    assertEqual(NS.Results.Tab(), "insights")
+    NS.Slash:OnSlash("results runs")
+    assertEqual(NS.Results.Tab(), "insights", "any other word opens the window as it was")
+    NS.Results.ShowTab("runs")
+    -- D-12: the old word stays a silent alias, so a macro written before the rename keeps working.
     NS.Slash:OnSlash("results bests")
-    assertEqual(NS.Results.Tab(), "bests")
+    assertEqual(NS.Results.Tab(), "insights")
+    inst.mocks.__resetPrinted()
+    NS.Slash:OnSlash("help")
+    assertTrue(anyLine(inst.mocks, "/dr results insights opens Insights"), "the help line names Insights")
+    assertFalse(anyLine(inst.mocks, "bests"), "the alias is never advertised")
 end)
 
 test("slash: test turns test mode on and off through the Master controls row", function()
@@ -407,4 +417,146 @@ test("slash: the Arm or cancel key arms the last length, then cancels; a pending
     assertEqual(NS.Race.State(), "stopping")
     key:__fire("OnClick", "LeftButton", true)
     assertEqual(NS.Race.State(), "stopping", "a key press discarded a pending result")
+end)
+
+-- ── `ignore`: the late-cast ignore list (#8) ─────────────────────────────────────────────────────
+
+-- The client's spell names the cases read; the character knows none of them by name.
+local SPELLS = {
+    [66] = "Invisibility", [1856] = "Vanish", [5384] = "Feign Death", [8690] = "Hearthstone",
+    [191329] = "Hearthstone", [58984] = "Shadowmeld", [110959] = "Greater Invisibility", [29722] = "Incinerate",
+}
+
+local function spellClient(M)
+    M.C_Spell = {
+        GetSpellName = function(id) return SPELLS[id] end,
+        GetSpellTexture = function(id) return 1000 + id end,
+        GetSpellInfo = function(key)
+            if type(key) ~= "number" or not SPELLS[key] then return nil end
+            return { name = SPELLS[key], iconID = 1000 + key }
+        end,
+    }
+end
+
+local DEFAULT_SHOWN = {
+    "Late-cast ignore list:",
+    "  Invisibility (66)",
+    "  Vanish (1856)",
+    "  Feign Death (5384)",
+    "  Hearthstone, all variants (8690)",
+    "  Shadowmeld (58984)",
+    "  Greater Invisibility (110959)",
+}
+
+--- `/dr <msg>`'s printed lines, without the chat tag.
+local function said(inst, msg)
+    inst.mocks.__resetPrinted()
+    inst.NS.Slash:OnSlash(msg)
+    return bare(inst.mocks)
+end
+
+test("slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone", function()
+    local inst = T.load({ mutate = spellClient })
+    assertEqual(table.concat(said(inst, "ignore"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
+    assertEqual(table.concat(said(inst, "ignore show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
+    assertEqual(table.concat(said(inst, "IGNORE Show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"), "words are case-blind")
+    assertTrue(inst.NS.SetByPath("race.lateIgnore", "424242"))
+    assertEqual(table.concat(said(inst, "ignore"), "\n"), "Late-cast ignore list:\n  Unknown spell (424242)")
+    assertTrue(inst.NS.SetByPath("race.lateIgnore", ""))
+    assertEqual(table.concat(said(inst, "ignore show"), "\n"), "The late-cast ignore list is empty.")
+end)
+
+test("slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored", function()
+    local inst = T.load({ mutate = spellClient })
+    local NS = inst.NS
+    local out = said(inst, "ignore add 29722")
+    assertEqual(out[#out], "Late casts of Incinerate (29722) no longer flag a run.")
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,29722,58984,110959")
+    out = said(inst, "ignore add |cff71d5ff|Hspell:29722:0|h[Incinerate]|h|r")
+    assertEqual(out[#out], "Incinerate (29722) is already ignored.")
+    out = said(inst, "ignore add hearthstone")
+    assertEqual(out[#out], "Hearthstone, all variants (8690) is already ignored.")
+    out = said(inst, "ignore add 191329")
+    assertEqual(out[#out], "Hearthstone (191329) is already ignored.", "8690 covers the variant")
+    assertTrue(NS.SetByPath("race.lateIgnore", ""))
+    out = said(inst, "ignore add Feign Death")
+    assertEqual(out[#out], "Late casts of Feign Death (5384) no longer flag a run.", "a default, by name")
+    assertEqual(NS.db.profile.race.lateIgnore, "5384")
+end)
+
+test("slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off", function()
+    local inst = T.load({ mutate = spellClient })
+    local NS = inst.NS
+    local out = said(inst, "ignore remove 5384")
+    assertEqual(out[#out], "Late casts of Feign Death (5384) flag a run again.")
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,8690,58984,110959")
+    out = said(inst, "ignore remove Feign Death")
+    assertEqual(out[#out], "Feign Death (5384) is not on the list.")
+    out = said(inst, "ignore remove 191329")
+    assertEqual(out[#out], "Late casts of Hearthstone, all variants (8690) flag a run again.")
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,58984,110959")
+    -- A variant listed on its own is removed by its name, not read as 8690.
+    assertTrue(NS.SetByPath("race.lateIgnore", "66,191329"))
+    out = said(inst, "ignore remove Hearthstone")
+    assertEqual(out[#out], "Late casts of Hearthstone (191329) flag a run again.")
+    assertEqual(NS.db.profile.race.lateIgnore, "66")
+end)
+
+test("slash: ignore defaults puts the six back, as reset race.lateIgnore does", function()
+    local inst = T.load({ mutate = spellClient })
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
+    local out = said(inst, "ignore defaults")
+    assertEqual(out[1], "The late-cast ignore list is back to its defaults.")
+    assertEqual(table.concat(out, "\n", 2), table.concat(DEFAULT_SHOWN, "\n"), "then the list")
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,58984,110959")
+    assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
+    NS.Slash:OnSlash("reset race.lateIgnore")
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,58984,110959", "the CLI's reset is the same write")
+end)
+
+test("slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing", function()
+    local inst = T.load({ mutate = spellClient })
+    local NS, M = inst.NS, inst.mocks
+    local usage = "Usage: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"
+    local cases = {
+        { "ignore purge", usage },
+        { "ignore add", usage },
+        { "ignore remove   ", usage },
+        { "ignore add Frostbolt", "No spell named 'Frostbolt' is known. Use its spell ID or a shift-clicked link." },
+        { "ignore remove Frostbolt", "No spell named 'Frostbolt' is known. Use its spell ID or a shift-clicked link." },
+    }
+    for _, c in ipairs(cases) do
+        M.__resetSvWrites()
+        local out = said(inst, c[1])
+        assertEqual(#out, 1, c[1])
+        assertEqual(out[1], c[2], c[1])
+        assertEqual(#M.__svWrites(), 0, c[1] .. " wrote")
+    end
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,58984,110959")
+end)
+
+test("slash: ignore is a settings verb: it answers while disabled, on both arms", function()
+    for _, opts in ipairs({ { mutate = spellClient }, { mutate = spellClient, libFiles = {} } }) do
+        local inst = T.load(opts)
+        local NS = inst.NS
+        NS.RunVerb("disable")
+        assertTrue(NS.IsDisabled())
+        assertEqual(said(inst, "ignore")[1], "Late-cast ignore list:")
+        local out = said(inst, "ignore add 29722")
+        assertEqual(out[#out], "Late casts of Incinerate (29722) no longer flag a run.")
+        assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,29722,58984,110959")
+    end
+end)
+
+test("slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore", function()
+    local lib = T.mocks.LibStub("LibKa0s-Slash-1.0")
+    local want = {}
+    for _, v in ipairs(lib.LIVE_VERBS) do want[#want + 1] = v end
+    want[#want + 1] = "ignore"
+    table.sort(want)
+    local got = {}
+    for _, v in ipairs(T.NS.Slash.LIVE_VERBS) do got[#got + 1] = v end
+    table.sort(got)
+    assertEqual(table.concat(got, ","), table.concat(want, ","))
 end)

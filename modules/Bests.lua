@@ -7,8 +7,8 @@ local _, NS = ...
 -- through NS.Secrets on its way in). Only `complete` runs count (spec §5.4: incomplete and lost
 -- never do); flags inform and never void, so a flagged run holds a best unless cleanOnly asks.
 --
--- THE CACHE is one board per cleanOnly value, built on first ask and dropped on RUN_SAVED and
--- RUNS_CHANGED. The same RUN_SAVED receiver prunes to `global.history.keepDays` (0 = never, spec §6.3);
+-- THE CACHE is one board per cleanOnly value, built on first ask and dropped on RUN_SAVED,
+-- RUNS_CHANGED and a change to the late-cast ignore list or the profile (SETTINGS_CHANGED). The same RUN_SAVED receiver prunes to `global.history.keepDays` (0 = never, spec §6.3);
 -- core/DpsRace.lua's OnEnable prunes at login. The receiver is a bus target of this module's own, so
 -- the latch drops it at stand-down and replays it at stand-up (slash-commands-§7).
 
@@ -66,7 +66,8 @@ function Bests.Compute(runs, opts)
     return board
 end
 
---- The cached board over the whole store (the Results window's Bests tab and the HUD's delta).
+--- The cached board over the whole store (the HUD's delta, the Runs list's Spec best, the compare and
+--- prune protection; no window reads the clean-only board since the Bests tab became Insights, #12).
 --- @param opts table|nil  as Compute
 function Bests.Board(opts)
     local cleanOnly = type(opts) == "table" and opts.cleanOnly == true
@@ -155,4 +156,9 @@ if receiver then
         Bests.PruneToSetting(type(run) == "table" and run.id or nil)
     end)
     receiver:RegisterMessage(NS.MSG.RUNS_CHANGED, function() Bests.Invalidate() end)
+    -- The clean-only board reads the late-cast ignore list (#8), the profile's: a change to it, or to
+    -- the profile, re-scores the runs it was built from.
+    receiver:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
+        if path == NS.LateIgnore.PATH or path == "profile" then Bests.Invalidate() end
+    end)
 end

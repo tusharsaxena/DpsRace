@@ -373,6 +373,27 @@ test("hud: the stop body shows the live tail, time in combat, late casts and the
     assertEqual(chips[2], "Grace 1.0s")
 end)
 
+test("hud: the stop body counts only the late casts the ignore list leaves (#8), and redraws when it changes", function()
+    local f = hud()
+    running(f, 30)
+    f:to(130)
+    f:advance(1.2)
+    f:update(25)
+    f.Race.OnCast("start", 5384, f:now(), "Cast-1")      -- Feign Death: ignored by default
+    f:advance(0.4)
+    f.Race.OnCast("start", 29722, f:now(), "Cast-2")
+    tick(f)
+    local b = body(f)
+    assertEqual(current(f), "stop")
+    assertEqual(#f.Race.Current().flags.lateCasts, 2, "the run keeps every late cast")
+    assertEqual(b.w.chips:Texts()[1], "1 late cast \194\183 +1.6s")
+    assertTrue(f.NS.LateIgnore.Unignore(5384))
+    assertEqual(body(f).w.chips:Texts()[1], "2 late casts \194\183 +1.2s", "SETTINGS_CHANGED redrew the body")
+    assertTrue(f.NS.LateIgnore.Ignore(29722))
+    assertTrue(f.NS.LateIgnore.Ignore(5384))
+    assertEqual(body(f).w.chips:Texts()[1], "Grace 1.0s", "all ignored: no late chip")
+end)
+
 test("hud: waiting hint appears after hintDelay and names only owned drop-combat spells", function()
     local f = hud()
     f.W.known[5384], f.W.known[58984] = true, true
@@ -812,6 +833,44 @@ test("hud: a first run is a new best; a slower one shows its deficit and its fla
     local chips = body(g).w.chips:Texts()
     assertEqual(chips[1], "-20.0% vs best")
     assertEqual(chips[2], "1 late cast")
+end)
+
+-- The chip drawn now whose text starts with `prefix`, or nil.
+local function chipNamed(b, prefix)
+    for _, chip in ipairs(b.w.chips.shown) do
+        if chip.text:sub(1, #prefix) == prefix then return chip end
+    end
+end
+
+test("hud: a late-cast chip's right-click ignores its spell, and the gray ignored chip's undoes it (#8)", function()
+    local f = hud()
+    running(f, 30)
+    f:to(131.5)
+    f.Race.OnCast("start", 29722, f:now(), "Cast-9")
+    f:update(25)
+    f:combatEnd()
+    f:advance(3)
+    local chip = assert(chipNamed(body(f), "1 late cast"))
+    assertTrue(type(chip.menu) == "function")
+    chip:__fire("OnMouseUp", "RightButton")
+    local menu = f.M.__lastMenu
+    assertEqual(menu.titles[1], "Late casts")
+    menu:Click("Ignore Incinerate for late casts")
+    assertTrue(f.NS.LateIgnore.IsIgnored(29722))
+    -- SETTINGS_CHANGED redrew the card: no flag chip, a gray one in its place that keeps the undo.
+    assertNil(chipNamed(body(f), "1 late cast"))
+    local gray = assert(chipNamed(body(f), "1 ignored"))
+    gray:__fire("OnMouseUp", "RightButton")
+    f.M.__lastMenu:Click("Stop ignoring Incinerate")
+    assertFalse(f.NS.LateIgnore.IsIgnored(29722))
+    assertTrue(chipNamed(body(f), "1 late cast") ~= nil)
+    -- A pooled chip takes the menu of the item it draws now, none included.
+    for _, c in ipairs(body(f).w.chips.shown) do
+        if c.text ~= "1 late cast" then assertNil(c.menu, c.text) end
+    end
+    local before = #f.M.__menus
+    chipNamed(body(f), "New best"):__fire("OnMouseUp", "RightButton")
+    assertEqual(#f.M.__menus, before, "a chip with no menu opens none")
 end)
 
 test("hud: a lost result says it could not be read", function()

@@ -38,7 +38,7 @@ read from the code:
 | Window | Per size change, before |
 |---|---|
 | Results, Runs tab | the filter bar re-planned (`Runs.BarPlan`) across the width and its controls re-anchored, the dropdowns re-sized; the list's `Table:Layout`: the columns (`Tbl.Columns`), every header re-anchored, then `Bind`: every row released and acquired again, every cell of every visible row re-placed (the layout version moved) and bound again (`bindRow`: the texts, the boxed chips measured by `Tbl.BadgeWidth`, the class and spec icons, the bar shares), the scrollbar; then the detail's `Layout`: the header and the KPI boxes, the spell breakdown or the compare's two tables, the damage chart drawn again (`chart:Draw`: the columns and the cooldown icons), the timing strip (`Detail.Place`, its late-cast ticks re-pooled, the axis text set), the gear and talents (`ResultsLoadout.Layout`), the usage rows and the flags and note |
-| Results, Bests tab | the list's `Table:Layout`, as above |
+| Results, Bests tab (Insights since #12) | the list's `Table:Layout`, as above |
 | Ability timeline | the legend and the axis, then every pair and every cast tick re-pooled: each pair refilled (its icon, name, cooldown and counts set) and each tick and its hover frame acquired, colored and anchored again |
 | Race HUD | every built body's `Layout` (anchors only); nothing drawn again, so the result card's rows and chips waited for the next redraw |
 
@@ -55,12 +55,12 @@ What `layout` does per frame now:
 
 | Window | Per frame while dragging | Once on release |
 |---|---|---|
-| Results | the list's `Table:Resize`: the columns and headers re-anchored and, when the width moved, the shown rows' cells re-placed (anchors only); a row the new height adds bound alone, one it drops hidden and kept spare; the offset held; the scroll range. The detail's `Resize`: its scroll frame sized and the scroll clamped, its content as it was. The filter bar re-planned across the new width (`Runs.BarPlan`: twelve controls re-anchored, the six dropdowns re-sized; its rows are the view's), so the dropdowns follow the grip | `layout()`: every row rebound, the detail laid out and drawn, the size stored |
+| Results | the list's `Table:Resize`: the columns and headers re-anchored and, when the width moved, the shown rows' cells re-placed (anchors only); a row the new height adds bound alone, one it drops hidden and kept spare; the offset held; the scroll range. The detail's `Resize`: its scroll frame sized and the scroll clamped, its content as it was. The filter bar re-planned across the new width (`Runs.BarPlan`: twelve controls re-anchored, the six dropdowns re-sized; its rows are the view's), so the dropdowns follow the grip. On the Insights tab, its own bar re-planned (`Insights.BarPlan`) and its scroll frame sized; no section laid out, no pool released | `layout()`: every row rebound, the detail laid out and drawn, the size stored; on Insights, the cards and sections laid out again from their pools at the new width |
 | Ability timeline | the legend, the axis and the scroll frame; when the width moved, each pair's lanes re-anchored, each tick moved along its lane (two anchors a tick) and each *Casts* icon along its strip on the row it had (one anchor an icon), the strips' tracks and the scrollbar to the lanes' width, nothing pooled, filled, colored or restacked | `layout()`: every pair, tick and cast icon re-pooled, the icons restacked for the new width; no size stored (UT-P14: it opens over the Results window every time) |
 | Race HUD | the body on screen's `Layout` alone | every body's `Layout`, the shown body drawn again (`render(true)`: the result card's rows fit the new height, the chips wrap at the new width), the size stored |
 
-`tests/test_sizing.lua` pins it: a 30-frame drag of each window runs its expensive path (the Runs and
-Bests lists' `Bind`, the detail's `Layout`, the timeline's tick and icon pools, the HUD bodies' `Update` and the
+`tests/test_sizing.lua` pins it: a 30-frame drag of each window runs its expensive path (the Runs
+list's `Bind`, the Insights tab's `Layout` and pool release, the detail's `Layout`, the timeline's tick and icon pools, the HUD bodies' `Update` and the
 hidden bodies' `Layout`) zero times, and the release runs it once. The offline runner
 (`tests/perf.lua`) measures bytes per call of the bracketed hot paths and has no grip to drag, so the
 pattern is pinned by those counts rather than by a scenario.
@@ -68,6 +68,19 @@ pattern is pinned by those counts rather than by a scenario.
 The debug console (`LibKa0s` `DebugLog.lua`, vendored and not edited here) passes the library only an
 `onResize`: on every size change, the drag's included, it resyncs its scrollbar's range and its status
 line; its message frame and scrollbar are anchored to the window and follow it on their own.
+
+## The Insights tab
+
+Insights (#12) does its work only when it is drawn: on its first show, a filter or view change, and
+the shell's redraws (a saved run, a store change, an ignore-list or profile change, a source swap),
+and never while the window is hidden. Each draw is one `InsightsData.Options` pass (every run
+checked once against every filter, so the cost is runs times facets, with no `Runs.Filter` call per
+dropdown), one `Filter` and one `Compute` pass over the runs left (each run handed to every reducer,
+then the finalizers over what they gathered). A run's flags are built at most once per call.
+Section A buckets by day above 60 runs, so its strip stays a few dozen columns. Every widget comes
+from the chart context's pools, so a draw after the first builds no frame; a drag of the grip only
+re-plans the bar (above). No bracket or offline scenario covers it yet: it runs out of combat, off
+the race's hot path.
 
 ## Taking a capture
 

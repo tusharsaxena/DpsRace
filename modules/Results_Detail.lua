@@ -95,6 +95,7 @@ Detail.KPI_H = KPI_H
 Detail.KPI_GAP = KPI_GAP
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
+local IGNORED = { 0.55, 0.55, 0.55 }   -- a late cast the ignore list leaves uncounted (#8)
 local CYAN = { 0.3, 0.85, 1.0 }
 local VIOLET = { 0.78, 0.5, 1.0 }
 -- Every line on the strip (grace, late cast, combat end, restart) is one shape: the combat-end line's
@@ -113,6 +114,7 @@ Detail.FLAG_MAIN_H = 18             -- a main line (the 16px font)
 Detail.FLAG_SUB_H = 12              -- a detail line (the 10px caption)
 Detail.FLAG_PADX, Detail.FLAG_PADY, Detail.FLAG_GAP = FLAG_PADX, FLAG_PADY, FLAG_GAP
 Detail.FLAG_MAIN, Detail.FLAG_BODY = FLAG_MAIN, FLAG_BODY
+Detail.IGNORED = IGNORED   -- the ignored late casts' tick, and their line in the flags box
 
 -- ── pure: the note ──────────────────────────────────────────────────────────────────────────────
 
@@ -154,9 +156,11 @@ local function spanFor(marks, n)
     return math.max(2 * step, step * math.ceil(top / step))
 end
 
--- The after-buzzer half of the model: the axis span, then each mark as a fraction of it.
+-- The after-buzzer half of the model: the axis span, then each mark as a fraction of it. Every late
+-- cast has its tick; the ignore list's (#8) are marked `lateIgnored` and drawn gray.
 local function afterBuzzer(m, grace, result, flags)
     local tail, late = result.tail or 0, flags.lateCasts or {}
+    local set = NS.LateIgnore.Set()
     local marks, n = { grace, tail, result.combatEnd, flags.restartedAt }, 4
     for _, cast in ipairs(late) do
         n = n + 1
@@ -169,6 +173,7 @@ local function afterBuzzer(m, grace, result, flags)
     for i, cast in ipairs(late) do
         m.late[i] = clamp01((cast.t or 0) / m.span)
         m.lateAt[i] = cast.t
+        m.lateIgnored[i] = NS.LateIgnore.IsIgnored(cast.spellID, set)
     end
 end
 
@@ -181,7 +186,7 @@ function Detail.Timing(run)
     if type(run) ~= "table" or type(run.result) ~= "table" then return nil end
     local race, result, flags = run.race or {}, run.result, run.flags or {}
     local length = type(race.length) == "number" and race.length > 0 and race.length or 1
-    local m = { length = length, late = {}, lateAt = {} }
+    local m = { length = length, late = {}, lateAt = {}, lateIgnored = {} }
     if run.status == "incomplete" then
         m.raceFill = clamp01((result.endedAt or 0) / length)
         m.endInRace = m.raceFill
@@ -195,8 +200,8 @@ end
 
 --- The strip's pixel positions for `width`, from Timing's fractions: each segment's width, the
 --- buzzer (the boundary), the grace line, the tail band, each late-cast tick and the end of combat.
---- @return table { raceW, postW, postX, raceFill, buzzer, grace, tailX, tailW, late = {x}, combatEnd,
----                 restart, endInRace }
+--- @return table { raceW, postW, postX, raceFill, buzzer, grace, tailX, tailW, late = {x},
+---                 lateIgnored = {bool}, combatEnd, restart, endInRace }
 function Detail.Place(model, width)
     local gap = Detail.STRIP_GAP
     local raceW = math.floor((width - gap) * Detail.STRIP_RATIO / (Detail.STRIP_RATIO + 1))
@@ -211,16 +216,17 @@ function Detail.Place(model, width)
     p.combatEnd = post(model.combatEnd)
     p.restart = post(model.restart)
     for i, f in ipairs(model.late) do p.late[i] = post(f) end
+    p.lateIgnored = model.lateIgnored or {}
     return p
 end
 
 -- ── pure: what the flags mean ───────────────────────────────────────────────────────────────────
 
-local STILL_COUNTS = "The run still counts and the flag shows on the board."
+local STILL_COUNTS = "The run still counts toward bests."
 
-local function lateLine(run)
+local function lateLine(run, flag)
     local parts = {}
-    for i, cast in ipairs(run.flags.lateCasts) do
+    for i, cast in ipairs(flag.casts) do
         local name = NS.HudBreakdown.SpellName(cast.spellID)
         parts[i] = L["%s started +%.1fs after the buzzer"]:format(tostring(name), cast.t or 0)
     end
@@ -228,8 +234,8 @@ local function lateLine(run)
         .. " " .. L[STILL_COUNTS]
 end
 
--- What each flag means, under its own line in the flags box (so none repeats that line); a flag
--- missing here (died) says it all on its line.
+-- What each flag means, under its own line in the flags box (so none repeats that line), from the run
+-- and its flag (the late casts' are the counted ones); a flag missing here (died) says it all on its line.
 local EXPLAIN = {
     lateCasts = lateLine,
     restarted = function() return L["After the quiet gap past the buzzer: a new pull."] .. " " .. L[STILL_COUNTS] end,
@@ -245,16 +251,34 @@ local EXPLAIN = {
     lost = function() return L["There is no score."] end,
 }
 
+-- The late casts the ignore list leaves uncounted (#8), as one dimmed line of the flags box: not a
+-- flag, but the box keeps it (and so shows with no flag at all), as the undo's place. Nil with none.
+local function ignoredLine(run)
+    local nameOf = NS.HudBreakdown.SpellName
+    local full = NS.Scoring.IgnoredText(run, nameOf)
+    if not full then return nil end
+    local _, ignored = NS.Scoring.SplitLate(run)
+    local parts = {}
+    for i, cast in ipairs(ignored) do parts[i] = L["+%.1fs %s"]:format(cast.t or 0, tostring(nameOf(cast.spellID))) end
+    local n = #ignored
+    return { key = "lateIgnored", dim = true, full = full, sub = table.concat(parts, ", "),
+             main = n == 1 and L["1 ignored late cast"] or L["%d ignored late casts"]:format(n),
+             text = L["On the late-cast ignore list, so no flag. Right-click to count a spell again."] }
+end
+
 --- The run's flags with what each means, in Scoring's order: { key, main, sub, text, full }. `main` is
 --- the flag's own line ("2 late casts"), `sub` its detail or "" (the late casts' offsets), `text` what
---- it means or "", `full` Scoring's one-line text (the tooltip's).
+--- it means or "", `full` Scoring's one-line text (the tooltip's). The ignored late casts follow the
+--- counted ones (first when none counts) as one more line, key "lateIgnored" and `dim`.
 function Detail.FlagLines(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
         local explain = EXPLAIN[flag.key]
         out[#out + 1] = { key = flag.key, main = flag.main or flag.text, sub = flag.sub or "",
-                          text = explain and explain(run) or "", full = flag.text }
+                          text = explain and explain(run, flag) or "", full = flag.text }
     end
+    local ignored = ignoredLine(run)
+    if ignored then table.insert(out, (out[1] and out[1].key == "lateCasts") and 2 or 1, ignored) end
     return out
 end
 
@@ -591,6 +615,10 @@ local function wireTips(p)
         th[#th + 1] = hoverOver(p, item.fs, "legend", i)
     end
     hover(p, w.flags, "flags")
+    -- The late casts' menu (#8) on a right-click anywhere in the box; none for a sample run (D-7).
+    w.flags:HookScript("OnMouseUp", function(self, button)
+        if button == "RightButton" and p.run and not NS.ResultsSource.IsMock() then NS.LateIgnore.Menu(p.run, self) end
+    end)
     w.flagTitleHover = hoverOver(p, w.flagTitle, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
@@ -703,6 +731,9 @@ function Pane:fillScore(run)
     self:fillDelta(run)
 end
 
+-- Each part's color: the flag's own, or the ignored casts' gray for their line (#8).
+local FLAG_COLORS = { main = FLAG_MAIN, sub = C.amber, text = FLAG_BODY }
+
 -- Each flag's main line, its detail and what it means; a row left from a run with more flags hides.
 function Pane:fillFlags(run)
     local w = self.w
@@ -712,7 +743,9 @@ function Pane:fillFlags(run)
         local row, line = flagRow(self, i), lines[i] or {}
         for _, part in ipairs({ "main", "sub", "text" }) do
             local fs = part == "text" and row.body or row[part]
+            local c = line.dim and IGNORED or FLAG_COLORS[part]
             fs:SetText(line[part] or "")
+            fs:SetTextColor(c[1], c[2], c[3])
             fs:SetShown((line[part] or "") ~= "")
         end
     end
@@ -973,8 +1006,11 @@ function Pane:layoutStripMarks(pos)
     placeMark(w.combatEnd, w.strip, pos.combatEnd or pos.endInRace, LINE_INSET)
     placeMark(w.restart, w.strip, pos.restart, LINE_INSET)
     NS.Pool.ReleaseAll(w.ticks)
-    for _, x in ipairs(pos.late) do
-        placeMark(NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end), w.strip, x, LINE_INSET)
+    for i, x in ipairs(pos.late) do
+        local tick = NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end)
+        local color = pos.lateIgnored[i] and IGNORED or RED
+        tick:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+        placeMark(tick, w.strip, x, LINE_INSET)
     end
 end
 

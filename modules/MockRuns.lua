@@ -107,7 +107,11 @@ local TARGETS = {
 }
 
 -- The history: every target type, all five preset lengths and every Status the Runs list draws (Max,
--- Spec best, Complete, Flagged, Incomplete, Died, Lost), with notes, loadouts and charts on some.
+-- Spec best, Complete, Flagged, Incomplete, Died, Lost), with notes, loadouts and charts on some. It
+-- spans five days and several boards, so every Insights section (#12) has something to draw: the
+-- Flagged run keeps its counted late casts, and a run of its own carries a Hearthstone cast late, which
+-- the late-cast ignore list's defaults leave uncounted (#8), so Late Casts shows an ignored spell. (The
+-- sample character is a Warlock, so it is a Hearthstone and not Feign Death.)
 -- `ago` is hours before now; `loadout` names a sample set ("a", or "b": "a" with one slot changed).
 -- Every run carries its casts and usage (#13, #14) but one: `old` is a format-2 run, raced before
 -- they were recorded.
@@ -130,6 +134,7 @@ local HISTORY = {
     { who = "fire", cat = "single", len = 60, dps = 146100, ago = 20, chart = true },
     { who = "fire", cat = "dungeoneer", len = 300, dps = 127300, ago = 110, status = "incomplete", endAt = 212 },
     { who = "fire", cat = "single", len = 30, dps = 155800, ago = 40 },
+    { who = "me", cat = "cleave", len = 120, dps = 205100, ago = 74, late = { { t = 2.1, spellID = 8690 } } },
 }
 MockRuns.HISTORY = HISTORY
 

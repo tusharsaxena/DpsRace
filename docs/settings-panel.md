@@ -103,7 +103,8 @@ way round. In combat nothing is bound or cleared.
 The page's only tab, its subsections in the order of a race. Line by line: *Default race length*;
 *Arm on a training dummy*; *Countdown cue sound* alone (it fires from 10 seconds whatever the center numbers do); *Center-screen
 countdown* | *Center countdown from (seconds)*; *Buzzer raid warning and sound* | *Sticky-combat hint
-after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
+after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*; then the *Late-cast ignore list*
+heading over its blurb, the list and *Reset list*.
 
 | Row | Schema path | Control | Behavior |
 |---|---|---|---|
@@ -121,6 +122,11 @@ after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*.
 | *Scoring rules* heading | | | |
 | Late-cast grace (seconds) | `race.grace` | slider 0 to 5, step 0.1 | Copied onto each new run; a saved run keeps its own (spec §5.2). The tooltip says *Applies to new runs* |
 | Damage-restart gap (seconds) | `race.restartGap` | slider 3 to 15 | Copied onto each new run, as grace is (spec §5.3) |
+| *Late-cast ignore list* heading | | | |
+| Late-cast ignore list | `race.lateIgnore` | the library's ID list (`H.IdList`, a spell kind resolved by `LateIgnore.Resolve`, two columns, the X at the left, as the Usage tab's), drawn by the tab's `afterGroup` under a one-line blurb; the row itself is `skipRender` | The spells whose late casts never flag a run (#8). *Ignore a spell* takes a spell ID, a shift-clicked link, *Hearthstone* (or any hearthstone's name, which adds 8690), or the name of a spell the character knows, a stored run cast late or the list's defaults (`LateIgnore.KnownSpells`, the add box's suggestions). The 8690 line carries *(all hearthstones, 59)* and removes every variant at once. Writes go through `LateIgnore.Ignore` / `Unignore`; the `SETTINGS_CHANGED` repaints the list whichever way the value changed (a right-click on the HUD or in the Results window, `/dr ignore`, `/dr set` or `reset`, a profile switch). Applies to every stored run, unlike the grace. *No spell is ignored: every late cast flags its run.* when empty |
+| Reset list | | button (`H.InlineButtonPair`) under the list | `LateIgnore.Reset()`: the six defaults back, one write of the default (the same as `/dr reset race.lateIgnore`); the other Race rows are untouched. Its tooltip names the six |
+
+The page's Defaults button restores every Race row, the late-cast ignore list among them, and its tooltip says so.
 
 ### HUD
 

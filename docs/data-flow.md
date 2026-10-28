@@ -160,9 +160,12 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 
 - **Bests** are worked out, never stored: `Bests.Compute(runs, opts)` keeps the highest
   `result.dps` per `specID|category|length` board, over `complete` runs only (`cleanOnly` drops
-  flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
-  `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
-  with the best on its board before it.
+  flagged ones, judged by `Scoring.Flags` under the late-cast ignore list). `Bests.Board(opts)` caches
+  it per session; the cache is dropped on `RUN_SAVED` and `RUNS_CHANGED`, so a deleted best promotes the
+  next run for free, and on `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`, so the clean-only
+  board follows the list. `Bests.Delta(run)` compares a run
+  with the best on its board before it. Since the Bests tab became Insights (#12), no window reads the
+  clean-only board: only prune protection (`Bests.HoldingIDs`) and the suites do, which is expected.
 - **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
   `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
   holds the best; a run picked from a Runs row's menu wins while it is stored. Both runs are stored
@@ -182,6 +185,37 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).
+
+## The late-cast ignore list (#8)
+
+- **Capture is raw.** The race records every late cast on `flags.lateCasts` (`{ t, spellID? }`),
+  whatever the list says; nothing is dropped at the buzzer.
+- **The list is a setting.** `profile.race.lateIgnore` is a comma-separated string of spell IDs. Its
+  writers (`LateIgnore.Ignore`, `Unignore`, `Reset`) write the whole value through `NS.SetByPath`,
+  which normalizes it (ascending, a hearthstone variant 8690 covers dropped) and announces
+  `SETTINGS_CHANGED("race.lateIgnore", value)`. `LateIgnore.Set()` parses the stored text once per
+  value and expands 8690 to every ID in `NS.HEARTHSTONE_SPELLS`.
+- **The read seam.** `Scoring.SplitLate(run, set)` splits a run's late casts into counted and ignored,
+  each in the recorded order; a cast with no spell ID is always counted. `Scoring.Flags(run, nameOf,
+  set)` reads `LateIgnore.Set()` at call time when no `set` is passed and emits the `lateCasts` flag only
+  when a cast is counted, with `count`, `casts` (the counted ones) and `ignored`. Every reader of flagged
+  or clean goes through it: the Runs list's Status column and *Hide flagged* (`Runs.IsFlagged`), the
+  clean-only board, the result card's chips, the detail's *Flags* box, the share line and the new-best
+  toast's flags line. The Stop! screen counts the race's late casts so far through `LateIgnore.IsIgnored`.
+- **The ignored casts stay visible.** `Scoring.IgnoredText` gives one dimmed *Ignored: +20.6s Feign
+  Death* line that every flags tooltip adds (the result card's chip, the Status cell, the detail's
+  *Flags* box and its timing legend's *Late cast*). The detail's timing strip draws an ignored cast's
+  tick gray. With every late cast ignored, the result card shows a gray *N ignored* chip (no flag; the
+  toast shows none), and the detail's *Flags* box keeps a dimmed line, so the undo stays in reach.
+- **The menus.** A right-click on the result card's late-cast chip (or the *N ignored* chip), on the
+  detail's *Flags* box, or the *Ignore for late casts* submenu of a Runs row's menu, fills the same
+  entries (`LateIgnore.FillMenu`): *Ignore <spell> for late casts* per counted spell, *Stop ignoring
+  <spell>* per ignored one (*Stop ignoring all hearthstones* when 8690 covers it). Samples get no menu:
+  the test-mode card (`v.preview`) and a sample history (`ResultsSource.IsMock()`).
+- **The redraw.** On `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`: `Bests.Invalidate()`;
+  the Results window drops the sample's boards (`ResultsSource.Invalidate`) and redraws the list and the
+  detail; the HUD redraws the body on screen; the Race page repaints the list. Editing the list never
+  writes a run.
 
 ## The Race HUD (spec §6.1)
 
@@ -203,7 +237,7 @@ race.
   dismisses it through `Race.Cancel()`; the run stays stored.
 - **The clock**: one `OnUpdate` on the window, only while it is shown and the race RUNNING (20 Hz)
   or STOPPING (4 Hz, `Hud.STOP_TICK`: no clock there), redraws the body (`hudTick`). The stop body
-  rebuilds its chips only when the late casts or the grace change, and the sticky-combat hint asks
+  rebuilds its chips only when the counted late casts (the ignore list's left out) or the grace change, and the sticky-combat hint asks
   `IsPlayerSpell` once per race. The countdown turns amber at 10 s left.
 - **The live breakdown**: while shown and RUNNING the HUD's frame holds
   `DAMAGE_METER_COMBAT_SESSION_UPDATED`; an update arms one `C_Timer` for the next free slot at
@@ -239,7 +273,8 @@ race.
   It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
+  `Scoring.Flags` text is its tooltip; the late casts' chip adds the ignored casts' dimmed line and opens
+  the ignore menu on a right-click, and a gray *N ignored* chip stands in when every late cast is ignored), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
   (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
   (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
   less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own
@@ -329,17 +364,18 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   scroll frame), from the size `OnSizeChanged` hands it, never a frame read; the release runs the
   full layout once (every row rebound, the detail drawn again) and stores the view's size.
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
-  (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
+  (the HUD's *Details*, an Insights *Recent New Bests* row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
   time it shows.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` measures per group (`Table:measure` on every `SetData` and `SetGroup`: the *Delta* column's max DPS and the Damage and DPS bars' range, each the run's own group's under the current *Group by*, the whole list with *None*; nothing is stored on a run), scales the bars linearly from 10% to 100% of that range, sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), *Ignore for late casts* when the run has a late cast, Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and its *Delta* box, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
-  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
+  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`, plus the ignored late
+  casts' dimmed line), the note. Under
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
   (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
   run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view it sits beside the list; in the collapsed view (the default, UT-P14) it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's
@@ -352,7 +388,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   group of the runs the filters pass (`ResultsRuns.Context`: the max DPS, the complete run that sets
   it and the runner-up, `Leaders` breaking a tie to the earlier run) and which runs it listed, on the
   Runs view, never on a run. The detail asks through the shell's `deltaContext` hook
-  (`View:DeltaContext`); a run the filters leave out (opened from the HUD, a Bests row) gets its board
+  (`View:DeltaContext`); a run the filters leave out (opened from the HUD or from Insights) gets its board
   among every run the source holds (`BoardContext`: spec x target type x length, `Bests.Key`), the
   sample history's in test mode. `DeltaBox` answers the figure: the group's top complete run's lead
   over the runner-up in green (a dash with none), any other run's own *Delta* cell (an incomplete
@@ -421,10 +457,34 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   column is `Stats.Groups(Stats.Of(run), Stats.Of(other))`: each value's text and its delta, a dash
   for a run with no `stats`. The detail calls `ResultsGear.DetailChanged` beside the timeline's, so the
   view follows the run and the compare; it closes with the Results window.
-- **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
-  same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
-  *All categories*: the table has no target column, so two boards of one spec and length would read
-  alike); it starts on the first category present, in `NS.Dummies.CATEGORIES` order.
+- **The Insights tab** (#12, `modules/Results_Insights.lua`): it replaced the Bests tab, whose board
+  UI is gone. `Refresh`: `ResultsSource.All()` (the sample history in test mode and the sim) →
+  `InsightsData.Normalize(runs, filters, now, keep)` (each dropdown's options, faceted: its values
+  among the runs every other filter passes, with counts; a selection no run matches falls back to All
+  in bar order, never the dropdown just changed, and only in the live filters) →
+  `InsightsData.Filter` (lost runs out, then `Runs.Filter` with every key given, so no Runs default
+  leaks in; *Clean only* is the ignore-aware *Hide flagged*) → `InsightsData.Compute` (one pass over
+  the runs through `REDUCERS`, then `FINALIZERS`) → the ten cards and the sections A to K (H, Top
+  Spells, was removed in the owner's feedback round), each drawn by a renderer of
+  `modules/Results_InsightsCharts.lua`. B (Spec Comparison) and C (Consistency, a worst-to-best
+  range per spec with its average marked) draw one board: the tab picked from `stats.boardTabs`, one
+  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. The most raced pair
+  (`stats.boardTop`) opens first, and `View.boardKey` keeps a pick while the filters leave it
+  present; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
+  the number of choices under it, a pick by its name alone), and the open list keeps the run counts.
+  Every date is the Runs tab's *26 Oct*, the year added when it is not this year's and the time in a
+  run's hover. Every figure that mixes boards is a
+  run's percent of its board's best, that best taken over the filtered runs; DPS reads complete runs
+  only. Flags come from `Scoring.Flags`, memoized within one call and never across, so an ignore-list
+  change re-scores the next draw. Every widget comes from the chart context's pools: a layout
+  releases them all and each section acquires what it shows, so a redraw builds no frame. The *Late
+  Casts* list's right-click opens `LateIgnore.Menu` over that one spell (never on a sample, never for
+  a cast with no spell ID), and the write's `SETTINGS_CHANGED` redraws the tab. A *Recent New Bests*
+  row's click opens its run on the Runs tab (`hooks.open`), and its right-click is the row menu. The
+  tab holds no bus receiver: the shell redraws it on `RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`
+  for `race.lateIgnore` or `"profile"`, and a source swap. *Save* / *Reset* / *Clear* keep the filters
+  at `profile.views.insights` (*Save* and *Reset* refuse while the samples show). `/dr results
+  insights` opens it, and `/dr results bests` still does (a silent alias).
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
   `SETTINGS_CHANGED` for `global.history.keepDays` redraws the footer.
@@ -473,7 +533,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   player's own snapshot; one run raced before format 3 has neither)) and routes the
   Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
   window draws the sample as it draws the store: the Runs view opens on every character and spec,
-  the Bests tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
+  the Insights tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
   the ability timeline. A note, a usage edit or a delete changes the sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
 - **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
   `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample

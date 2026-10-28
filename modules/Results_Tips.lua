@@ -149,18 +149,6 @@ function CELL.dps(run)
     return lines
 end
 
--- The Bests board's length and flags columns.
-function CELL.length(run) return CELL.time(run) end
-
-function CELL.flags(run)
-    local texts = Tbl().FlagTexts(run)
-    if #texts == 0 then return { L["Clean run"], L["No flags: nothing happened that the result should mention."] } end
-    local lines = { #texts == 1 and L["1 flag"] or L["%d flags"]:format(#texts) }
-    for _, t in ipairs(texts) do lines[#lines + 1] = t end
-    lines[#lines + 1] = { L["Flags inform; they never void a run."], 0.62, 0.62, 0.68 }
-    return lines
-end
-
 -- What a run used (#13): each entry's icon, name and when (modules/Results_Usage.lua); a hidden item
 -- is not listed.
 function CELL.used(run)
@@ -400,12 +388,37 @@ local LEGEND = {
     "Your damage started again after a quiet gap past the buzzer: a new pull. The run counts, with a flag.",
 }
 
+-- The hint under a run's flags when its late casts have a menu (#8); none for a sample run (D-7).
+local function ignoreHint(run)
+    if NS.ResultsSource.IsMock() or not NS.LateIgnore.Offers(run) then return nil end
+    return dimLine(L["Right-click to ignore a spell for late casts, or count it again."])
+end
+
+-- The flags counted (the ignored casts' line is not one), then that line dimmed, then the hint.
+-- A legend item's tip. The late cast's says what a gray tick is (#8), then names this run's.
+local LATE_LEGEND = 4
+local function legendTip(run, index)
+    local text = LEGEND[index]
+    if not text then return nil end
+    local out = { Detail().LEGEND[index], L[text] }
+    if index ~= LATE_LEGEND then return out end
+    out[3] = dimLine(L["A gray tick is a spell on the late-cast ignore list: ignored, so no flag."])
+    local ignored = NS.Scoring.IgnoredText(run, NS.HudBreakdown.SpellName)
+    if ignored then out[4] = dimLine(ignored) end
+    return out
+end
+
 function DETAIL.flags(run)
-    local lines = Detail().FlagLines(run)
-    if #lines == 0 then return nil end
-    local out = { #lines == 1 and L["1 flag"] or L["%d flags"]:format(#lines) }
-    for _, line in ipairs(lines) do out[#out + 1] = line.full end
+    local flags, ignored = {}, nil
+    for _, line in ipairs(Detail().FlagLines(run)) do
+        if line.dim then ignored = line.full else flags[#flags + 1] = line.full end
+    end
+    if #flags == 0 and not ignored then return nil end
+    local out = { #flags == 0 and L["No flags"] or #flags == 1 and L["1 flag"] or L["%d flags"]:format(#flags) }
+    for _, text in ipairs(flags) do out[#out + 1] = text end
+    if ignored then out[#out + 1] = dimLine(ignored) end
     out[#out + 1] = dimLine(L["Flags inform; they never void a run."])
+    out[#out + 1] = ignoreHint(run)
     return out
 end
 
@@ -455,10 +468,7 @@ end
 --- @return table|nil
 function Tips.Detail(key, run, index)
     if type(run) ~= "table" then return nil end
-    if key == "legend" then
-        local text = LEGEND[index]
-        return text and { Detail().LEGEND[index], L[text] } or nil
-    end
+    if key == "legend" then return legendTip(run, index) end
     local fn = DETAIL[key]
     if not fn then return nil end
     local ok, lines = pcall(fn, run, index)

@@ -64,6 +64,9 @@ files["modules/Stats.lua"] = {
 
 -- The race restamps a run's date at the start and falls back to the epoch on resume (spec §7).
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
+-- The late-cast ignore list (#8): a typed spell's name and icon, the hearthstones' names, and the
+-- late-cast right-click menu.
+files["modules/LateIgnore.lua"] = { read_globals = { "C_Spell", "MenuUtil" } }
 -- The cast list (#14): each spell's base cooldown, the first time it is cast.
 files["modules/Casts.lua"] = { read_globals = { "GetSpellBaseCooldown" } }
 -- What was used (#13): the on-use slots, the bags, the item data and the helpful auras, read at the
@@ -116,7 +119,11 @@ files["modules/Results.lua"] = { read_globals = { "PlayerSpellsFrame", (table.un
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
-files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Insights.lua"] = { read_globals = resultsGlobals }
+-- The Insights stats pass buckets runs by local day.
+files["modules/Results_InsightsData.lua"] = { read_globals = { "time", "date" } }
+-- The Insights charts' DpsRace host draws its hover on the client's tooltip.
+files["modules/Results_InsightsCharts.lua"] = { read_globals = { "GameTooltip" } }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }

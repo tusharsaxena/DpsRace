@@ -216,18 +216,20 @@ test("results sizing: a drag keeps the view's minimum and shrinks the list witho
     assertEqual(binds.n, 0)
 end)
 
-test("results sizing: the Bests tab and the collapsed view's open detail resize without a redraw", function()
+test("results sizing: the Insights tab and the collapsed view's open detail resize without a redraw", function()
     local i, u = seeded()
-    assertTrue(i.R.ShowTab("bests"))
-    local bests = u.panes.bests.list
-    local binds = spy(bests, "Bind")
+    assertTrue(i.R.ShowTab("insights"))
+    local pane = u.panes.insights
+    local layouts = spy(pane, "Layout")
+    local releases = spy(pane.ctx, "ReleaseAll")
     local grip = u.frame.resizeGrip
     grip:__fire("OnMouseDown", "LeftButton")
     drag(i.mocks, u.frame, 30, function(k) return 1344 + k, 560 + k end)
-    assertEqual(binds.n, 0)
-    assertEqual(bests.width, 1374 - 2, "the Bests list spans the body")
+    assertEqual(layouts.n, 0, "the Insights tab is not laid out per frame")
+    assertEqual(releases.n, 0, "nor its sections rebound")
+    assertEqual(pane.width, 1374 - 2, "but it is sized to the body")
     grip:__fire("OnMouseUp")
-    assertEqual(binds.n, 1)
+    assertEqual(layouts.n, 1)
     assertTrue(i.R.ShowTab("runs"))
     assertTrue(i.R.SetView("collapsed"))
     i.R.ShowRun("r2")
@@ -311,18 +313,6 @@ test("results sizing: the first drag after opening moves every row's cells, none
     local list = u.panes.runs.list
     reopenWithNestedSize(i, u, list)
     firstDrag(i, u, list, 1344, 560, "runs")
-end)
-
-test("results sizing: the Bests tab's first drag after opening leaves no row behind", function()
-    local i, u = seeded()
-    -- A board of ten rows: one best per race length.
-    for n = 1, 10 do i.NS.db.global.runs["r" .. n].race.length = 30 * n end
-    i.NS.Bests.Invalidate()
-    assertTrue(i.R.ShowTab("bests"))
-    local list = u.panes.bests.list
-    assertTrue(#list:Visible() >= 10, "the board shows ten rows")
-    reopenWithNestedSize(i, u, list)
-    firstDrag(i, u, list, 1344, 560, "bests")
 end)
 
 -- The drag's own half of the guard: the cheap layout's fitRows adds the rows a taller list fits, and a

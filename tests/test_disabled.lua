@@ -7,10 +7,13 @@
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
--- slash-commands-§2's never-feature verbs: these keep answering, normally, while disabled.
+-- slash-commands-§2's never-feature verbs: these keep answering, normally, while disabled. `ignore`
+-- (#8) joins them: it reads and writes one setting, the late-cast ignore list, as the schema CLI does,
+-- so the addon declines the feature-verb refusal for it (settings/Slash.lua, HOST_LIVE_VERBS).
 local RESERVED = {
     help = true, config = true, version = true, enable = true, disable = true, debug = true,
     diagnostics = true, perf = true, get = true, set = true, list = true, reset = true, resetall = true,
+    ignore = true,
 }
 
 local PERF_LINE = "Not available during a performance capture."

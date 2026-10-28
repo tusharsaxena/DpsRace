@@ -1,8 +1,7 @@
--- tests/test_results_fit.lua — the Results lists' widths against their content (modules/Results_Runs.lua,
--- modules/Results_Bests.lua, modules/Results_Table.lua): every Runs column fits the narrowest list
--- either view lays out and the Bests Flags chips fit their column (the boxed chips' own fit is
--- tests/test_results_badges.lua's). Widths are the table's own estimate (Tbl.BadgeWidth: 6 px a
--- character), never a measured one.
+-- tests/test_results_fit.lua — the Results list's widths against their content (modules/Results_Runs.lua,
+-- modules/Results_Table.lua): every Runs column fits the narrowest list either view lays out, and the
+-- filter bar fits both views (the boxed chips' own fit is tests/test_results_badges.lua's). Widths
+-- are the table's own estimate (Tbl.BadgeWidth: 6 px a character), never a measured one.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
@@ -26,19 +25,6 @@ test("results: every Runs column fits the narrowest list either view lays out", 
             if col.flex then assertTrue(place[n].w >= col.min, view .. ": the Character column is squeezed") end
         end
     end
-end)
-
-test("results: the Bests Flags chips are plain, and a two-flag best fits its column", function()
-    local NS = inst().NS
-    local col
-    for _, c in ipairs(NS.ResultsBests.Columns()) do
-        if c.key == "flags" then col = c end
-    end
-    assertEqual(col.boxed, nil, "only the Runs list's Status tags are boxed")
-    local run = { status = "complete", flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = true } }
-    local s = col.text(run)
-    assertEqual(s, "1 late \194\183 Reloaded")
-    assertTrue(NS.ResultsTable.BadgeWidth(s, col.boxed) <= col.width, "a two-flag chip runs past the Flags column")
 end)
 
 test("results: the Runs filter bar fits inside both views' minimum width", function()

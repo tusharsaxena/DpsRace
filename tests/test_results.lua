@@ -1,7 +1,7 @@
 -- tests/test_results.lua — the Results window (modules/Results*.lua, spec §6.2): the run list's
 -- columns, filters and sorting, the run detail (breakdown, timing strip, flags, note, delete, share),
--- the Bests tab and its clean-only board, the window chrome and its wide/narrow layouts, and how it
--- follows the store and the lifecycle.
+-- how the shell builds the Insights tab and shows its empty state, the window chrome and its wide/narrow
+-- layouts, and how it follows the store and the lifecycle.
 --
 -- Every case runs on a fresh instance with the widget recorder (tests/mock_widgets.lua) installed, so
 -- a label's text, a texture and a tooltip's lines can be read back. Runs are seeded straight into the
@@ -398,7 +398,7 @@ test("results: race lengths take muted ROYGBIV colors for the presets and a neut
     assertEqual(Tbl.Hex({ 1, 0, 0.5 }), "ffff0080")
 end)
 
-test("results: the Time column and the Bests Length column take the length color; the tail stays gray", function()
+test("results: the Time column takes the length color; the tail stays gray", function()
     local i = inst()
     seed(i, {
         mkRun("two", { race = { length = 120, grace = 1 } }),
@@ -414,13 +414,6 @@ test("results: the Time column and the Bests Length column take the length color
     assertEqual(cells.two.time.fs.__color[1], yellow[1], "2:00 in its preset hue")
     assertEqual(cells.two.time.fs.__color[3], yellow[3])
     assertEqual(cells.odd.time.fs.__color[1], Tbl.LENGTH_NEUTRAL[1], "0:45 is neutral")
-    i.R.ShowTab("bests")
-    local pane = assert(ui(i).panes.bests)
-    pane.dropdowns.category.onSelect("cleave")
-    for _, row in ipairs(visible(pane)) do
-        local want = Tbl.LengthColor(row.run.race.length)
-        assertEqual(row.cells.length.fs.__color[1], want[1], "the Bests length in its color")
-    end
 end)
 
 test("results: Status tags are boxed in their hue with the icon inside", function()
@@ -436,7 +429,7 @@ test("results: Status tags are boxed in their hue with the icon inside", functio
     local C = i.NS.ResultsTable.COLORS
     assertEqual(edges.top and edges.top[3], C.blue[3], "Spec best's box in its blue")
     assertEqual(edges.slow and edges.slow[2], C.green[2], "Complete's box in its green")
-    assertEqual(pane.list:column("target").boxed, true, "the Target tag is boxed too")
+    assertTrue(visible(pane)[1].cells.target.box.__borderColor ~= nil, "the Target tag is boxed too")
     -- The sort by Status is the tag order, unchanged by the box: Spec best before Complete.
     pane.list:SetSort("status")
     assertEqual(visibleIDs(pane), "top,slow")
@@ -1159,70 +1152,55 @@ test("results: Share is grayed without a Share module; a row's right-click menu 
     assertEqual(i.popups[#i.popups].which, "DPSRACE_DELETE_RUN", "Delete asks first")
 end)
 
--- ── the bests board ─────────────────────────────────────────────────────────────────────────────
+-- ── the Insights tab (#12) ──────────────────────────────────────────────────────────────────────
+-- N1 renamed the Bests tab and dropped its board; the tab itself (the bar, the cards, the sections)
+-- is tests/test_insights.lua's. Here: how the shell builds it, counts it and shows its empty state.
 
-test("results: bests tab groups by spec x category x length with clean-only toggle", function()
+test("results: the Insights tab is built on first show, counts the runs and shows the empty state with none", function()
     local i = inst()
     seed(i, {
-        mkRun("flagged", { result = { damage = 27000000, dps = 150000 },
-                           flags = { lateCasts = { { t = 1.4, spellID = 29722 } } } }),
-        mkRun("clean", { result = { damage = 25200000, dps = 140000 }, date = NOW - 2 * DAY }),
-        mkRun("short", { race = { length = 30, grace = 1 }, result = { damage = 1500000, dps = 50000 } }),
-        mkRun("fire", { char = "mage", target = { category = "single", count = 1 },
-                        result = { damage = 23400000, dps = 130000 } }),
-        mkRun("inc", { char = "mage", target = { category = "single", count = 1 }, status = "incomplete",
-                       result = { damage = 99000000, dps = 999999, endedAt = 9 } }),
+        mkRun("a"),
+        mkRun("inc", { status = "incomplete", result = { damage = 1, dps = 1, endedAt = 9 } }),
+        mkRun("gone", { status = "lost", date = NOW - 2 * HOUR }),
     })
     i.R.Show()
-    assertEqual(ui(i).panes.bests, nil, "the Bests tab was built before it was shown")
-    i.R.ShowTab("bests")
-    local pane = assert(ui(i).panes.bests)
+    assertEqual(ui(i).panes.insights, nil, "the Insights tab was built before it was shown")
+    assertTrue(i.R.ShowTab("insights"))
+    assertEqual(i.R.Tab(), "insights")
+    local pane = assert(ui(i).panes.insights)
+    assertTrue(pane.frame:IsShown())
     assertFalse(runsPane(i).frame:IsShown(), "the Runs tab still shows")
-    assertEqual(pane.filters.category, "single", "the first category present")
-    assertEqual(visibleIDs(pane), "fire")
-    pane.dropdowns.category.onSelect("cleave")
-    assertEqual(pane:Count(), 2, "one row per spec x length within the category")
-    assertEqual(visibleIDs(pane), "flagged,short")
-    local top = visible(pane)[1].cells
-    assertEqual(top.icons.fs.__text, "Destruction")
-    assertEqual(top.char.fs.__text, "Lanfear")
-    assertEqual(top.dps.fs.__text, "150.0K")
-    assertEqual(top.flags.fs.__text, "1 late")
-    assertEqual(top.date.fs.__text, os.date("%d %b", NOW - HOUR))
-
-    assertEqual(pane.clean.__hitInsets[2], -(1 + i.NS.ResultsTable.BadgeWidth("Clean runs only", false)),
-        "Clean runs only: its label clicks too")
-    pane.clean:__fire("OnClick")
-    assertTrue(pane.filters.cleanOnly)
-    assertEqual(visibleIDs(pane), "clean,short", "the clean board's best on that board")
-    pane.dropdowns.category.onSelect("single")
-    pane.dropdowns.spec.onSelect(63)
-    assertEqual(visibleIDs(pane), "fire")
-    pane.dropdowns.spec.onSelect("all")
-    pane.dropdowns.category.onSelect("cleave")
-    assertEqual(pane:Count(), 2)
-
-    visible(pane)[1]:__fire("OnClick")
-    assertEqual(i.R.Tab(), "runs", "a bests row opens its run on the Runs tab")
-    assertEqual(i.R.Selected(), "clean")
+    assertEqual(pane:Count(), 1, "Include incomplete starts off (D-11)")
+    assertFalse(pane.empty:IsShown(), "the empty state over runs")
+    assertEqual(ui(i).footLeft.__text, "1 run \194\183 Click a row for details \194\183 right-click for options")
+    pane:SetFilter("includeIncomplete", true)
+    assertEqual(pane:Count(), 2, "a lost run never counts")
+    for _, id in ipairs({ "a", "inc", "gone" }) do i.NS.Recorder.Delete(id) end
+    assertEqual(pane:Count(), 0)
+    assertTrue(pane.empty:IsShown())
+    assertEqual(pane.empty.__text, "No runs match these filters.")
+    assertFalse(i.R.ShowTab("bests"), "Bests is no tab name any more")
+    assertEqual(i.NS.ResultsBests, nil, "the board UI is gone")
+    assertEqual(i.NS.ResultsTable.ShortFlags, nil, "and its chip words with it")
+    assertEqual(i.R.Tab(), "insights")
 end)
 
-test("results: the Bests board shows one category at a time, so a spec and length is one row", function()
-    local i = inst()
-    seed(i, {
-        mkRun("cleave", { result = { damage = 26500000, dps = 147000 } }),
-        mkRun("single", { target = { npcID = 225984, name = "Training Dummy", category = "single", count = 1 },
-                          result = { damage = 8900000, dps = 49000 } }),
-    })
-    i.R.ShowTab("bests")
-    local pane = assert(ui(i).panes.bests)
-    assertEqual(pane.filters.category, "single", "the first category on the board, in the canonical order")
-    assertEqual(visibleIDs(pane), "single", "two boards of one spec and length side by side, told apart by nothing")
-    local values = {}
-    for n, o in ipairs(i.NS.ResultsBests.Options(i.NS.Bests.Board({})).category) do values[n] = o.value end
-    assertEqual(table.concat(values, ","), "single,cleave", "an All categories choice mixes boards")
-    pane.dropdowns.category.onSelect("cleave")
-    assertEqual(visibleIDs(pane), "cleave")
+test("results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)", function()
+    local i = T.load{ init = false, mutate = function(m) Widgets.install(m) end }
+    local profile = { windows = { results = { view = "collapsed", collapsed = { width = 1000, height = 600 } } },
+                      views = { runs = { char = "all", group = "none" } } }
+    _G.DpsRaceDB = { global = { schemaVersion = i.NS.SCHEMA_VERSION, schema = 4 },
+                     profileKeys = {}, profiles = { Default = profile } }
+    i.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    local AceAddon = i.mocks.LibStub("AceAddon-3.0")
+    AceAddon:InitializeAddon(i.NS)
+    AceAddon:EnableAddon(i.NS)
+    local R = i.NS.Results
+    assertEqual(i.NS.db.profile.views.runs.char, "all", "the saved Runs view is read")
+    assertTrue(R.ShowTab("insights"))
+    assertTrue(R.__ui().panes.insights.frame:IsShown())
+    assertEqual(i.NS.db.profile.views.insights, nil, "nothing written for the new tab")
+    assertEqual(i.NS.db.profile.windows.results.collapsed.width, 1000, "the window keeps its size")
 end)
 
 -- ── following the store ─────────────────────────────────────────────────────────────────────────
@@ -1410,8 +1388,8 @@ test("results: the library-absent load still draws the window, with no dropdowns
     assertEqual(u.close, nil)
     assertEqual(next(u.panes.runs.dropdowns), nil, "a dead dropdown was drawn")
     assertEqual(#u.panes.runs.list:Visible(), 2, "the run under its spec + target + time header")
-    i.R.ShowTab("bests")
-    assertEqual(u.panes.bests:Count(), 1)
+    assertTrue(i.R.ShowTab("insights"))
+    assertEqual(u.panes.insights:Count(), 1)
 end)
 
 test("results: the diagnostics state section names the tab, the layout and the selection", function()
@@ -1443,10 +1421,10 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     local u = ui(i)
     assertEqual(u.frame.title.__fontObject, "GameFontNormal", "the title")
     assertEqual(u.tabs.runs.label.__text, "Runs")
-    assertEqual(u.tabs.bests.label.__text, "Bests")
+    assertEqual(u.tabs.insights.label.__text, "Insights")
     assertEqual(u.tabs.runs.label.__fontObject, "GameFontNormal", "a tab")
     assertEqual(u.tabs.runs.label.__color[2], 0.82, "the active tab is gold")
-    assertEqual(u.tabs.bests.label.__color[1], 0.7, "an idle tab is gray")
+    assertEqual(u.tabs.insights.label.__color[1], 0.7, "an idle tab is gray")
     assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
     assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
     local Tbl = i.NS.ResultsTable

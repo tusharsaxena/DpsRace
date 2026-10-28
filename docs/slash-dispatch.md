@@ -37,7 +37,10 @@ The descriptor's `isEnabled` is `not NS.IsDisabled()`: only the `disabled` hold 
 capture's `perf` hold alone never prints the disabled line. While disabled:
 
 - every **reserved** verb keeps answering (`help`, `config`, `enable`, `disable`, `list`, `get`,
-  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`);
+  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`), and so does the host verb
+  `ignore`, which reads and writes one setting as `get` and `set` do (`HOST_LIVE_VERBS`, appended to the
+  library's `LIVE_VERBS` as the descriptor's `liveVerbs`; slash-commands-§2 makes the feature-verb
+  refusal a SHOULD, and declining it for a verb owes no register row);
 - a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`) prints
   one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
   (slash-commands-§2, §7).
@@ -56,6 +59,7 @@ copy.
 | `debug` | `doDebug` | `NS.DebugLog:DebugVerb(rest)` first (`diagnostics`, `on`, `off`), else toggles the window |
 | `diagnostics` | `NS.DebugLog:RunDiagnostics()` | See [debug.md](debug.md) |
 | `perf` | `doPerf` | Prints the lines `NS.Perf.OnCommand(rest)` returns; see [performance.md](performance.md) |
+| `ignore [show\|add\|remove\|defaults] <spell>` | `doIgnore` | The late-cast ignore list (#8), dispatched from a sub-verb table (`IGNORE_VERBS`). Bare `ignore` and `show` print the list, one *Name (id)* line each (`LateIgnore.Label`; 8690 as *Hearthstone, all variants (8690)*), or *The late-cast ignore list is empty.* `add` and `remove` resolve a spell ID, a shift-clicked link or a name (`LateIgnore.Resolve`) and print one line: added, already ignored, removed, not on the list, or why the name did not resolve (unknown, or more than one spell by that name). A hearthstone's name (any variant's, in the client's locale) resolves to 8690, so `add <a variant's name>` ignores every hearthstone; a single variant is added on its own by ID or link. While 8690 is off the list, a variant listed on its own resolves by its name, so `remove <its name>` finds it. `remove` of a variant ignored only through 8690 takes 8690 off and names it. `defaults` writes the default and shows the list. Any other word prints the usage line. Every write goes through `LateIgnore` and the seam. Not behind `feature()`: it answers while disabled and under the `perf` hold, as `set` does |
 
 ## Feature verbs
 
@@ -64,7 +68,7 @@ copy.
 | `arm [length]` | `doArm` | `NS.Format.ParseLength` reads `90`, `90s`, `1:30`, `3m` and `1m30s`; a length outside 0:10 to 15:00, or one it cannot read, prints `Format.ArmRefusal("bad_length")` and arms nothing. A good length becomes the HUD's pick (`Hud.Act.pickLength`, so it is remembered as the last length), then `Hud.Act.arm()` arms it with the HUD's target count; a refusal prints `Format.ArmRefusal(reason)`. With no length it arms the HUD's own (the last raced, else `race.defaultLength`). The *Armed* line is printed by `modules/Share.lua` on `RACE_STATE_CHANGED`, so every surface that arms prints it |
 | `cancel` | `doCancel` | `NS.Race.Cancel()`, then one line for the state it found (canceled, discarded, result closed) or *Nothing to cancel.* |
 | `hud [show\|hide\|toggle]` | `doHud` | `NS.SetHudShown(word)`; a bare `hud` toggles, any other word prints the usage line |
-| `results [bests]` | `doResults` | `NS.ShowResults(word)`: `NS.Results.Show()`, or `ShowTab("bests")` |
+| `results [insights]` | `doResults` | `NS.ShowResults(word)`: `NS.Results.ShowTab("insights")` for `insights`, and for `bests` (the tab's old name, a silent alias kept so a macro still works; only `insights` is in the help); any other word, or none, `NS.Results.Show()` |
 | `target` | `doTarget` | `Recorder.SnapshotTarget("target")`: `Target: <name> · creature <npcID> · category <label>`, or *No target.* |
 | `test [armed\|running\|result]` | `doTest` → `NS.ToggleTestMode(word)` | A bare `test` writes `state.testMode` through the seam (on or off), so the Master controls' checkbox follows. A state word holds that HUD body still: switched in place while test mode is on, else queued (`Preview.Queue`) and started through the same row write; any other word prints *Usage: /dr test [armed\|running\|result]* |
 | `sim [scenario]` | `doSim` → `NS.StartSim(word)` | Queues the scenario (`newbest` with none) and turns `state.testMode` on through the seam, or switches an active preview in place. An unknown word prints the usage line (`Sim.Usage()`, every scenario) and one line per scenario with what it shows. The chat box completes no addon's slash words, so these lines are the list |
@@ -86,5 +90,5 @@ the refusal format `DISABLED_LINE_FORMAT` is the one library string it carries, 
 the live library by `test_slash`. Every other line is the stub's own wording (`version` prints
 `Ka0s DPS Race version X`, `help` a plain header naming the reduced mode, and an unknown verb falls
 through to the help index). The stub applies the same disabled gate as the live dispatcher: a verb
-outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) answers the one refusal
-line while the `disabled` hold is taken.
+outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) and `HOST_LIVE_VERBS`
+(`ignore`) answers the one refusal line while the `disabled` hold is taken.

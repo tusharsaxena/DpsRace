@@ -18,12 +18,28 @@ in the spec, sections 1, 2 and 13
   quiet gap, a reload mid-run, a session matched by list and a death after the buzzer all flag a
   run. Incomplete and lost runs are kept but never count
   toward bests (spec §5.4).
-- **A Race HUD** with one body per state, a **Results window** with history, run detail and personal
-  bests, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
+- **A late-cast ignore list** (#8). Spells cast after the buzzer that are not really part of the
+  rotation (Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater
+  Invisibility by default) never flag a run. The list is a per-profile setting read when a run's
+  flags are built, never frozen into the run, so an edit re-scores every stored run. It is edited
+  on the Race page, with `/dr ignore`, or by a right-click on a late cast in the result card, the
+  run detail, a Runs row's menu or Insights' *Late Casts*.
+- **A Race HUD** with one body per state, a **Results window** with history, run detail and an
+  *Insights* tab, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
   diagnostics report (spec §6). The Runs list names each run's status as a boxed badge (the tag
   alone; *Spec best* names the board it tops in its tooltip), colors each preset race
   length (the Results window only), and groups by *Full* (character, class, spec, target and time;
   a new profile's default), character, class and spec, target, time, target and time, or spec, target and time.
+- **Insights** (#12, in place of the Bests tab). A summary of the runs across every character,
+  filtered by character, spec, target, length and date (each list faceted by the others), clean
+  only or with incomplete runs: ten stat cards, then DPS run by run, a tab per target and length
+  with its spec comparison and consistency, races by character (alone, by target, by length) and
+  per day, the damage tail after the buzzer, the late casts and the recent new bests. DPS is only
+  compared within a board; anything that spans boards is each run's percent of its board's best.
+- **Auto-show and auto-arm near a training dummy** (#16), both off by default. *Show near a
+  training dummy* opens the HUD while a cataloged dummy is the target or has a nameplate up; *Arm
+  on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
+  off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
   Results window; `/dr sim [scenario]` plays a whole sample race (arm, race, result, then Results)
   through seven scenarios. Both draw in-memory samples and write nothing to SavedVariables.
@@ -88,4 +104,4 @@ in the spec, sections 1, 2 and 13
 | Share runs between players | Phase 2. The run record already stores what it would need. Comparing two of your own runs side by side shipped in the Results detail (#7). |
 | Classic or any non-Retail client | Retail only: one `## Interface:` line (toc-file-§3). |
 | *Show results* or *Arm last race* on the launcher's menu | The menu is `LibKa0s-Launcher-1.0`'s fixed set (launcher-§2). Both are on the HUD, a slash verb and a key binding (spec §6.4). |
-| Settings for the Results window's filters | The filters, grouping and sort are view state: the window opens on the view *Save* stored in the profile, else on the current character and spec (spec §6.2). |
+| Settings for the Results window's filters | The filters, grouping and sort are view state: the window opens on the view *Save* stored in the profile, else on the current character and spec (spec §6.2). Insights keeps its own saved view the same way, else every character and spec (#12). |

@@ -108,7 +108,7 @@ Total.
 - timeline: an out-of-order or non-number update is handled
 - timeline: two timelines are independent
 
-### test_scoring.lua (7)
+### test_scoring.lua (9)
 
 - scoring: late cast boundaries
 - scoring: QUIET_BEFORE_READ is 2.5s
@@ -116,9 +116,11 @@ Total.
 - scoring: Dps incomplete = damage / endedAt
 - scoring: Flags order and text
 - scoring: Flags names late-cast spells through an optional resolver
+- scoring: SplitLate keeps the recorded order and splits by the ignore set; a sealed cast always counts
+- scoring: Flags flags only the counted late casts and carries the count, the casts and the ignored
 - scoring: a clean complete run has no flags; lost stands alone at the end
 
-### test_bests.lua (20)
+### test_bests.lua (21)
 
 - bests: Key is specID|category|length
 - bests: incomplete and lost never count
@@ -128,6 +130,7 @@ Total.
 - bests: spec, category and length each split the board
 - bests: deleting a best promotes the next run
 - bests: the cache is invalidated by RUN_SAVED and keeps cleanOnly apart
+- bests: a run flagged only by an ignored spell joins the clean board, and leaves it on Unignore
 - bests: Delta reports new best and percentage vs previous best
 - bests: Delta ignores later runs, other boards and runs that never count
 - bests: Delta defaults its run list to the store
@@ -141,7 +144,35 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (57)
+### test_late_ignore.lua (19)
+
+- late ignore: the hearthstone table holds 59 positive IDs, once each, with 8690, Dalaran and Garrison, never 556
+- late ignore: the setting parses sorted and once each, refuses anything else, and joins back
+- late ignore: Normalize drops a variant while 8690 is listed and keeps it alone
+- late ignore: the default is the profile's, and 8690 stands for every hearthstone in Set only
+- late ignore: Ignore, Unignore and Reset write the whole list through the seam
+- late ignore: Resolve takes a number, a link, a hearthstone's name and a default the character does not know
+- late ignore: a variant's name resolves to that variant when it is listed on its own, else to 8690
+- late ignore: on a degraded load a number, a link and a hearthstone still resolve
+- late ignore: the known spells are every late cast's spell, newest run first, then the defaults
+- late ignore: the result card's chips count only the counted casts; all ignored, no chip
+- late ignore: the Results detail draws an ignored cast's tick gray and explains only the counted ones
+- late ignore: a list change redraws the HUD and drops the cached boards and the sample's
+- late ignore: a profile switch re-scores the flags by the other profile's list and drops the clean board
+- late ignore: the menu offers each counted spell once, the undo for each ignored one, nothing for a sealed cast
+- late ignore: the menu's entries ignore and count again through the list
+- late ignore: IgnoredText names the ignored casts in one line, nil with none
+- late ignore: the result card's late chip carries the menu and the dimmed lines; all ignored, a gray chip
+- late ignore: the detail's flags box keeps a dimmed ignored line, also when every cast is ignored
+- late ignore: every flags tooltip shows the dimmed ignored line (D-6a)
+
+### test_late_ignore_ui.lua (3)
+
+- late ignore ui: the detail's Flags box dims the ignored line and its right-click ignores a spell
+- late ignore ui: the row menu holds an Ignore for late casts submenu only when the run has a late cast
+- late ignore ui: the sample history offers no ignore menu (D-7)
+
+### test_race.lua (58)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -166,6 +197,7 @@ Total.
 - race: buzzer at start+length moves to stopping and emits RACE_BUZZER
 - race: cast started 0.5s after buzzer is not late at grace 1.0
 - race: cast started 1.4s after buzzer is recorded as late with spellID
+- race: a late cast of an ignored spell is still stored raw; the list is read, never applied, at capture
 - race: cast that started before buzzer and succeeded after is not late
 - race: the grace in force is the run's own, not the profile's
 - race: an interrupted cast leaves nothing open; a later instant of the same spell is late
@@ -231,7 +263,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (71)
+### test_hud.lua (73)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -251,6 +283,7 @@ Total.
 - hud: layout never calls GetWidth/GetPoint on breakdown rows
 - hud: live reads stop when hud hidden or state leaves running
 - hud: the stop body shows the live tail, time in combat, late casts and the grace
+- hud: the stop body counts only the late casts the ignore list leaves (#8), and redraws when it changes
 - hud: waiting hint appears after hintDelay and names only owned drop-combat spells
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
@@ -272,6 +305,7 @@ Total.
 - hud: the card's Delete accepted after the card has gone leaves no mark behind
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
+- hud: a late-cast chip's right-click ignores its spell, and the gray ignored chip's undoes it (#8)
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
 - hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
@@ -454,7 +488,7 @@ Total.
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
 - results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
-- results: the Time column and the Bests Length column take the length color; the tail stays gray
+- results: the Time column takes the length color; the tail stays gray
 - results: Status tags are boxed in their hue with the icon inside
 - results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
@@ -480,8 +514,8 @@ Total.
 - results: the live HUD's spell rows take no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
-- results: bests tab groups by spec x category x length with clean-only toggle
-- results: the Bests board shows one category at a time, so a spec and length is one row
+- results: the Insights tab is built on first show, counts the runs and shows the empty state with none
+- results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)
 - results: list refreshes on RUN_SAVED
 - results: Runs opens on the current character in every spec; current character and spec are each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
@@ -495,10 +529,9 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_results_fit.lua (6)
+### test_results_fit.lua (5)
 
 - results: every Runs column fits the narrowest list either view lays out
-- results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
 - results: the Runs filter bar with no width, or only the room it needs, is the configured plan
 - results: the Runs filter bar ends on the window's right edge in both views, never under its widths
@@ -528,7 +561,7 @@ Total.
 - results: Escape with no talent tree closes the window for good
 - results: the close control with the talent tree up closes the window alone
 
-### test_results_badges.lua (11)
+### test_results_badges.lua (10)
 
 - badges: the Target cell is a boxed chip in its category color, the count inside
 - badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
@@ -536,7 +569,6 @@ Total.
 - badges: a chip never runs past its column: a too-long word is cut to the box
 - badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
 - badges: the window minimums hold the wider columns, the Note column last and inside the list
-- badges: the Bests Length column is a chip in its length color
 - badges: the detail's target line leads with the type and length chips, laid out from their widths
 - badges: drawing the chips reads no frame's size or position back
 - badges: group headers color their value as plain text: class, target type, length
@@ -817,7 +849,84 @@ Total.
 - gear view: the followed run deleted (the pane left empty) closes the view
 - gear view: a run without a compared run marks nothing and says so
 
-### test_sizing.lua (14)
+### test_insights_data.lua (13)
+
+- insights: Runs.OptionLists has each list without its All head, and WithAll adds it
+- insights: Filter defaults wide, keeps lost runs out and maps Clean only to Hide flagged
+- insights: Options lists each facet's values among the runs every other filter passes, with counts
+- insights: a closed dropdown names its choices on the All head, and a pick by its name alone
+- insights: Normalize sets a 0-run selection to All, never the one just changed, in bar order
+- insights: Compute on no runs returns zero cards and empty sections
+- insights: Compute's cards over the owner-shaped fixture
+- insights: Compute's boards and progression are board-relative
+- insights: Compute's board tabs, one per target x length pair, in the catalog's order
+- insights: Compute's new bests beat an earlier best on their board, in date order
+- insights: Compute's counts by character, target, length and day, gap days included
+- insights: Compute buckets the damage tail, the 155 s outlier in 20+
+- insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
+
+### test_insights.lua (58)
+
+- insights charts: nothing above the host section reads NS or a client global but CreateFrame
+- insights charts: the header names the LootHistory source commit the port came from
+- insights charts: New wants a host pool, and fills the colors and fonts it is not given
+- insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis
+- insights charts: tipText states the value beside the full label
+- insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
+- insights charts: the ranked palette cycles, and a map keeps one color per key
+- insights charts: a bar section scales to its longest bar and colors label and fill alike
+- insights charts: every bar's hover states its value; a row's own tip lines win
+- insights charts: an empty section hides its header and leaves the cursor where it was
+- insights charts: a legend's chips start under the track, not the labels, and wrap
+- insights charts: a sublabel draws a second, muted line, and every row of its section grows
+- insights charts: RangeScale spans the lowest worst to the highest best, opening a point
+- insights charts: a range section draws worst to best with an average mark, on a scale it names
+- insights charts: a legend can start at a given edge (under a strip, not a bar track)
+- insights charts: a stacked bar shows one segment per share, each hover naming its value
+- insights charts: a strip draws one colored column per bucket, its hover above the column
+- insights charts: a strip's labels are level, hung under the axis line, in the band it reserves
+- insights charts: a strip takes a fixed top, and drops a label too close to another one shown
+- insights charts: StripLabels keeps the label of the day with more columns, not the earlier one
+- insights charts: StripLabels keeps the end labels inside the content on a dense strip
+- insights charts: a strip shifts an end label by its offset, from under its column
+- insights charts: StripSlots widens the columns up to a cap, and never below 2 px
+- insights charts: a list panel caps at ten rows, sized to them, each hover stating its value
+- insights charts: a list row's click is the row's own, and a reused row forgets the last one
+- insights charts: a second pass after ReleaseAll builds no frame; every pool comes back whole
+- insights charts: a divider rules both sides of its centered title in the host's colors
+- insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below
+- insights charts: the panel comes from the host, a plain frame without one
+- insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
+- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
+- insights tab: built on its first show, its tab label gold while it shows
+- insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
+- insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
+- insights tab: a selection left with no runs falls back to All; the one just changed never
+- insights tab: the cards state the ten figures, each hover naming its value
+- insights tab: a card's figure is gold, and colored where it means something
+- insights tab: CardGrid packs four a row, and a short last row is shared out
+- insights tab: the cards fill even rows across the content, none half empty
+- insights tab: above 60 runs the progression is one column a day, the same day of two years apart
+- insights tab: DPS Progression carries a legend of its specs in their class colors
+- insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone
+- insights tab: a tab per target x length board, the most raced first, the pick kept while present
+- insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked
+- insights tab: Races By Character x Length stacks each character's races in the length colors
+- insights tab: one date format everywhere: the day, then the time where it matters
+- insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten
+- insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged
+- insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab
+- insights tab: a Recent New Bests row opens its run on the Runs tab; a right-click its row menu
+- insights tab: with no run the empty state shows, and every card and section hides
+- insights tab: Save, Clear and Reset keep the view at profile.views.insights
+- insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
+- insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback
+- insights tab: a load with no library draws no dropdown, and the tab still works
+- insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
+- insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
+- insights tab: the wheel scrolls the content, clamped to it
+
+### test_sizing.lua (13)
 
 - sizing: a size change the grip did not start redraws at once
 - sizing: while the grip is held, one cheap layout a frame; one redraw on release
@@ -826,9 +935,8 @@ Total.
 - sizing: a hide while the grip is held ends the drag as a release would
 - results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
 - results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
-- results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
+- results sizing: the Insights tab and the collapsed view's open detail resize without a redraw
 - results sizing: the first drag after opening moves every row's cells, none left behind
-- results sizing: the Bests tab's first drag after opening leaves no row behind
 - results sizing: a rebind inside a row the drag adds leaves no second row behind
 - timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
 - hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
@@ -841,7 +949,7 @@ Total.
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
 
-### test_schema.lua (17)
+### test_schema.lua (18)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
@@ -850,6 +958,7 @@ Total.
 - schema: a write goes through the seam, reacts, and announces SETTINGS_CHANGED once
 - schema: a profile change announces SETTINGS_CHANGED through the one sender
 - schema: an unknown path is refused and stores nothing
+- schema: the late-cast ignore list is one Race string row of spell IDs; junk is refused and stores nothing
 - schema: the Minimap row reads SHOWN and stores LibDBIcon's inverted `hide`
 - schema: Reset all settings is a profile reset and never touches the Minimap button
 - schema: Test mode is a session-only checkbox over the preview
@@ -861,7 +970,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (31)
+### test_settings.lua (35)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -894,8 +1003,12 @@ Total.
 - settings: Days to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
+- settings: Race draws the late-cast ignore list as the library's spell ID list, writing through LateIgnore
+- settings: Race's Reset list puts the six defaults back and touches no other Race setting
+- settings: Race's Defaults resets the ignore list too, and its tooltip says so
+- settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
 
-### test_slash.lua (30)
+### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -918,7 +1031,7 @@ Total.
 - slash: target prints name, npcID and category
 - slash: an uncataloged target reads as Other
 - slash: hud show, hide and toggle; a bare hud toggles
-- slash: results opens the Results window; results bests opens the bests
+- slash: results opens the Results window; results insights opens Insights, and bests still does
 - slash: test turns test mode on and off through the Master controls row
 - slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
 - slash: sim plays the default scenario or the one named; an unknown one lists them all
@@ -927,8 +1040,15 @@ Total.
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
 - slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
+- slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone
+- slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored
+- slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off
+- slash: ignore defaults puts the six back, as reset race.lateIgnore does
+- slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
+- slash: ignore is a settings verb: it answers while disabled, on both arms
+- slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore
 
-### test_share.lua (13)
+### test_share.lua (14)
 
 - share: Share.Line matches the mockup format
 - share: the target type is named; an uncataloged target by its own name; incomplete is said
@@ -941,16 +1061,18 @@ Total.
 - share: the HUD's and the Results window's Share are live now Share exists
 - share: arming prints the armed line with the length and the target
 - share: a result prints the score line with the delta, the flags and the tail
+- share: the score line counts only the late casts the ignore list leaves (#8)
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (12)
+### test_toast.lua (13)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
 - toast: the payload names the spec and class, the board's chips, the DPS and the gain over the old best
 - toast: with no previous best to name, the DPS line is the DPS alone in the text color
 - toast: a flagged run may toast, its flags on the last line as the result card words them
+- toast: a new best whose late casts are all ignored shows no flags line and no ignored chip
 - toast: it closes after Toast duration, plays its sound only with Play a sound on
 - toast: test mode holds the sample race's toast, and its end takes it down
 - toast: Test toast queues a sample that runs its course, and a second click replaces it
@@ -969,7 +1091,7 @@ Total.
 - preview: test mode opens the Results window on the sample history, with its strip
 - preview: the detail's Delta box and New best badge read the sample history's Runs view
 - preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
-- preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
+- preview: the sample detail draws its chart, compare and gear; the Insights tab counts the sample
 - preview: a note or a delete changes the sample in memory; Save view and Share refuse
 - preview: ending it gives the store back, the player's view and an open window kept open
 - preview: a Results window test mode opened closes with it
@@ -1042,10 +1164,11 @@ Total.
 - Disabled (race): an armed race is dropped by the stand-down and not resumed
 - Disabled (race): a disabled login resumes nothing until the addon is enabled
 
-### test_surface_parity.lua (16)
+### test_surface_parity.lua (17)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
+- parity: the degraded load keeps the late-cast ignore list: the Race page draws quietly and /dr ignore adds by ID
 - parity: the Bus stub carries the library surface, and its record the instance's
 - parity: the Schema stub carries the runtime surface this addon binds
 - parity: the Slash stub carries the live dispatcher's surface
@@ -1068,9 +1191,10 @@ Total.
 - perf: outside an experiment the bracket records nothing
 - perf: suspend takes the perf hold and the addon is inert; resume restores it
 
-### test_loadorder.lua (3)
+### test_loadorder.lua (4)
 
 - load order: the runner loaded exactly the TOC's files, in the TOC's order
+- load order: the hearthstones load before the ignore list, and the ignore list before its readers
 - load order: every derived path exists on disk
 - load order: no libs/ path leaked into the addon's own list
 
@@ -1153,12 +1277,14 @@ Total.
 | test_dummies.lua | 5 |
 | test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
-| test_scoring.lua | 7 |
-| test_bests.lua | 20 |
-| test_race.lua | 57 |
+| test_scoring.lua | 9 |
+| test_bests.lua | 21 |
+| test_late_ignore.lua | 19 |
+| test_late_ignore_ui.lua | 3 |
+| test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 71 |
+| test_hud.lua | 73 |
 | test_hud_hint.lua | 6 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
@@ -1167,11 +1293,11 @@ Total.
 | test_autoarm.lua | 30 |
 | test_layers.lua | 7 |
 | test_results.lua | 50 |
-| test_results_fit.lua | 6 |
+| test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
-| test_results_badges.lua | 11 |
+| test_results_badges.lua | 10 |
 | test_compare.lua | 22 |
 | test_loadout.lua | 27 |
 | test_stats.lua | 9 |
@@ -1187,21 +1313,23 @@ Total.
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
-| test_sizing.lua | 14 |
+| test_insights_data.lua | 13 |
+| test_insights.lua | 58 |
+| test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
-| test_schema.lua | 17 |
-| test_settings.lua | 31 |
-| test_slash.lua | 30 |
-| test_share.lua | 13 |
-| test_toast.lua | 12 |
+| test_schema.lua | 18 |
+| test_settings.lua | 35 |
+| test_slash.lua | 37 |
+| test_share.lua | 14 |
+| test_toast.lua | 13 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
-| test_surface_parity.lua | 16 |
+| test_surface_parity.lua | 17 |
 | test_perf_harness.lua | 4 |
-| test_loadorder.lua | 3 |
+| test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 4 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
@@ -1209,4 +1337,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **951** |
+| **Total** | **1063** |

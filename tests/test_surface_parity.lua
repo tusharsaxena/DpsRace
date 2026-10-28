@@ -31,6 +31,23 @@ test("parity: the Options stub carries every public member of the live Helpers s
     })
 end)
 
+test("parity: the degraded load keeps the late-cast ignore list: the Race page draws quietly and /dr ignore adds by ID", function()
+    -- S-4 (#8): the Race page's list reaches only stubbed Helpers members, and with ResolveId stubbed
+    -- to nil LateIgnore.Resolve still takes a number, a link and "hearthstone" on its own.
+    local _, d = pair()
+    for _, name in ipairs({ "TextRow", "IdList", "InlineButtonPair", "RefreshPanel", "ResolveId" }) do
+        assertEqual(type(d.NS.Helpers[name]), "function", name .. " is not stubbed")
+    end
+    local panel = d.mocks.__subcategories and d.mocks.__subcategories["Race"]
+    if panel then panel:__fire("OnShow") end
+    assertEqual(d.NS.LateIgnore.Resolve("spell:29722"), 29722)
+    assertEqual(d.NS.LateIgnore.Resolve("hearthstone"), d.NS.LateIgnore.HEARTHSTONE)
+    d.NS.Slash:OnSlash("ignore add 29722")
+    assertTrue(d.NS.LateIgnore.IsIgnored(29722), "the degraded /dr ignore add did not land")
+    d.NS.Slash:OnSlash("ignore remove 29722")
+    assertFalse(d.NS.LateIgnore.IsIgnored(29722))
+end)
+
 test("parity: the Bus stub carries the library surface, and its record the instance's", function()
     local l, d = pair()
     T.assertSurfaceParity(d.NS.BusLib, "LibKa0s-Bus-1.0")
@@ -172,8 +189,9 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
     -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;
     -- HUD's Show near a training dummy and Race's Arm on a training dummy, #16, the 22nd and 23rd;
-    -- General's New-best toast tab, #5, the 24th to the 27th).
-    local PAGE_ROWS = 27
+    -- General's New-best toast tab, #5, the 24th to the 27th; Race's Late-cast ignore list, #8, the
+    -- 28th).
+    local PAGE_ROWS = 28
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

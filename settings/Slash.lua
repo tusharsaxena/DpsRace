@@ -10,7 +10,7 @@ local function out(line) NS.Print(line) end
 
 local cli   -- built at the bottom, once NS.COMMANDS exists; handlers reach it at CALL time
 local doEnabled, doDebug, doPerf, doSetVerb
-local doArm, doCancel, doHud, doResults, doTarget, doLock, doTest, doSim
+local doArm, doCancel, doHud, doResults, doTarget, doLock, doTest, doSim, doIgnore
 
 --- A feature verb's handler behind the stand-down: the dispatcher refuses every feature verb while the
 --- `disabled` hold is taken, and this answers the `perf` hold's line (slash-commands-§7, "Which
@@ -50,7 +50,7 @@ NS.COMMANDS = {
                                                                    feature(function() doCancel() end) },
     { "hud",         L["The race HUD: /dr hud show, hide or toggle"],
                                                                    feature(function(rest) doHud(rest) end) },
-    { "results",     L["Open the Results window; /dr results bests opens the bests"],
+    { "results",     L["Open the Results window; /dr results insights opens Insights"],
                                                                    feature(function(rest) doResults(rest) end) },
     { "target",      L["Print your target's name, creature ID and category"],
                                                                    feature(function() doTarget() end) },
@@ -63,6 +63,10 @@ NS.COMMANDS = {
                                                                    feature(function() doLock(true) end) },
     { "unlock",      L["Unlock the race HUD to move and resize it"],
                                                                    feature(function() doLock(false) end) },
+    -- A settings verb over one row, the late-cast ignore list (#8): not behind feature(), and live
+    -- while disabled (HOST_LIVE_VERBS below), as the schema CLI that writes the same row is.
+    { "ignore",      L["The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"],
+                                                                   function(rest) doIgnore(rest) end },
 }
 
 --- Run one verb's handler by name: the launcher's Enabled entry reaches `enable`/`disable` through
@@ -80,6 +84,14 @@ NS.SLASH_LIVE_VERBS = {
     help = true, config = true, version = true, enable = true, disable = true, debug = true,
     diagnostics = true, perf = true, get = true, set = true, list = true, reset = true, resetall = true,
 }
+
+--- The host verbs that also answer while disabled, on BOTH arms: the descriptor's `liveVerbs` below
+--- (the library's LIVE_VERBS plus these) and the library-absent stub's gate. `ignore` reads and writes
+--- one setting, as `get`/`set` do, so the addon declines slash-commands-§2's feature-verb refusal for
+--- it: a player reads and repairs settings while the addon is off.
+local HOST_LIVE_VERBS = { "ignore" }
+local HOST_LIVE = {}
+for _, verb in ipairs(HOST_LIVE_VERBS) do HOST_LIVE[verb] = true end
 
 local SlashLib = LibStub and LibStub("LibKa0s-Slash-1.0", true)
 local degraded = false
@@ -131,7 +143,8 @@ if not SlashLib then
                 if e[1] == verb then
                     -- The disabled gate the live dispatcher applies: a feature verb refuses with the
                     -- one line while the `disabled` hold is taken (slash-commands-§7).
-                    if d.isEnabled and not d.isEnabled() and not NS.SLASH_LIVE_VERBS[verb] then
+                    if d.isEnabled and not d.isEnabled() and not NS.SLASH_LIVE_VERBS[verb]
+                        and not HOST_LIVE[verb] then
                         return out(stub.DisabledLine())
                     end
                     return e[3](rest or "")
@@ -143,6 +156,13 @@ if not SlashLib then
     end
 end
 
+-- The live set: the library's reserved verbs, then this addon's own. The stub has no LIVE_VERBS and
+-- reads NS.SLASH_LIVE_VERBS and HOST_LIVE_VERBS itself.
+local liveVerbs = {}
+for i, verb in ipairs(SlashLib.LIVE_VERBS or {}) do liveVerbs[i] = verb end
+for _, verb in ipairs(HOST_LIVE_VERBS) do liveVerbs[#liveVerbs + 1] = verb end
+Sl.LIVE_VERBS = liveVerbs
+
 cli = SlashLib:New({
     slash        = NS.SLASH,
     slashAliases = { NS.SLASH_LONG },
@@ -152,6 +172,7 @@ cli = SlashLib:New({
     -- while the `disabled` hold is taken (slash-commands-§2, §7). Not IsStoodDown: the `perf` hold
     -- alone must not print the disabled line.
     isEnabled    = function() return not NS.IsDisabled() end,
+    liveVerbs    = liveVerbs,
     brandName    = NS.BRAND,
     print        = function(line) out(line) end,
     version      = function() return NS.Version() end,
@@ -265,7 +286,7 @@ function doSim(rest)
     NS.StartSim(tostring(rest or ""):match("^%s*(%S*)"):lower())
 end
 
---- `results [bests]`.
+--- `results [insights]` (and the silent "bests" alias: core/DpsRace.lua NS.ShowResults).
 function doResults(rest)
     local word = tostring(rest or ""):match("^%s*(%S*)"):lower()
     NS.ShowResults(word)
@@ -279,6 +300,64 @@ function doTarget()
     local name = t.name or L["Unknown"]
     local creature = t.npcID and L["creature %d"]:format(t.npcID) or L["not a creature"]
     out(L["Target: %s \194\183 %s \194\183 category %s"]:format(name, creature, NS.Dummies.Label(t.category)))
+end
+
+-- ── `ignore`: the late-cast ignore list (#8, modules/LateIgnore.lua) ─────────────────────────────
+-- Every write goes through LateIgnore, so through the seam: the row's validate and normalize, and
+-- SETTINGS_CHANGED for the caches and the Race page.
+
+local function ignoreUsage()
+    out(L["Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"]:format(NS.SLASH))
+end
+
+local function showIgnored()
+    local ids = NS.LateIgnore.List()
+    if #ids == 0 then return out(L["The late-cast ignore list is empty."]) end
+    out(L["Late-cast ignore list:"])
+    for _, id in ipairs(ids) do out("  " .. NS.LateIgnore.Label(id)) end
+end
+
+-- What a typed spell is, or nil after the one line that says why (none typed: the usage).
+local function typedSpell(text)
+    local id, reason = NS.LateIgnore.Resolve(text)
+    if id then return id end
+    if reason == "empty" then return ignoreUsage() end
+    if reason == "ambiguous" then
+        return out(L["More than one spell is named '%s'. Use its spell ID or a shift-clicked link."]:format(text))
+    end
+    out(L["No spell named '%s' is known. Use its spell ID or a shift-clicked link."]:format(text))
+end
+
+local IGNORE_VERBS = {
+    show = showIgnored,
+    add = function(text)
+        local LI, id = NS.LateIgnore, typedSpell(text)
+        if not id then return end
+        if LI.IsIgnored(id) then return out(L["%s is already ignored."]:format(LI.Label(id))) end
+        if LI.Ignore(id) then out(L["Late casts of %s no longer flag a run."]:format(LI.Label(id))) end
+    end,
+    remove = function(text)
+        local LI, id = NS.LateIgnore, typedSpell(text)
+        if not id then return end
+        -- A variant ignored through 8690 takes 8690 off, so the line names what was removed.
+        local covering = LI.Covering(id)
+        if not covering then return out(L["%s is not on the list."]:format(LI.Label(id))) end
+        if LI.Unignore(id) then out(L["Late casts of %s flag a run again."]:format(LI.Label(covering))) end
+    end,
+    defaults = function()
+        if NS.LateIgnore.Reset() then out(L["The late-cast ignore list is back to its defaults."]) end
+        showIgnored()
+    end,
+}
+
+--- `ignore [show|add|remove|defaults] <spell>`; a bare `ignore` shows the list.
+function doIgnore(rest)
+    local word, text = tostring(rest or ""):match("^%s*(%S*)%s*(.-)%s*$")
+    word = word:lower()
+    if word == "" then word = "show" end
+    local fn = IGNORE_VERBS[word]
+    if not fn then return ignoreUsage() end
+    fn(text)
 end
 
 function Sl:OnSlash(msg) return cli:OnSlash(msg) end

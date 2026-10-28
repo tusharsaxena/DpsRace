@@ -1,8 +1,8 @@
 local _, NS = ...
 -- modules/Results.lua — the Results window's shell (spec §6.2, mockup screens 08-09): the window, its
--- title bar, the Runs / Bests tab strip with lazily built tabs, where the run detail sits, the footer,
--- and the window's public surface (Show, Hide, Toggle, ShowRun, ShowTab). The tabs are
--- modules/Results_Runs.lua and modules/Results_Bests.lua; the detail pane modules/Results_Detail.lua;
+-- title bar, the Runs / Insights tab strip with lazily built tabs, where the run detail sits, the
+-- footer, and the window's public surface (Show, Hide, Toggle, ShowRun, ShowTab). The tabs are
+-- modules/Results_Runs.lua and modules/Results_Insights.lua; the detail pane modules/Results_Detail.lua;
 -- the shared list modules/Results_Table.lua.
 --
 -- THE WINDOW is a plain, non-secure frame (standalone-windows): skinned through NS.ApplySkin, closed
@@ -45,7 +45,7 @@ Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 440      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
 Results.COVER_ALPHA = 0.45      -- the dim cover over the window while the ability timeline is open
-Results.TABS = { "runs", "bests" }
+Results.TABS = { "runs", "insights" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
 local Style = NS.Style
@@ -55,7 +55,7 @@ local HINT = L["Click a row for details \194\183 right-click for options"]
 local C = NS.ResultsTable.COLORS
 
 local ui                 -- the built window
-local tab = "runs"       -- the tab shown
+local tab = "runs"       -- the tab shown (never saved: no migration when Bests became Insights)
 local selected           -- the run id the detail shows
 local detailOpen = false -- narrow windows: the detail replaces the list
 local hiding = false     -- true while the addon hides the frame itself
@@ -125,7 +125,7 @@ local function share(r)
     if r and canShare() then NS.Share.Prompt(r) end
 end
 
-local layout, resize, renderTab, renderDetail
+local layout, resize, renderTab, renderDetail, footer
 
 local function selectRun(r)
     selected = r and r.id or nil
@@ -147,14 +147,19 @@ local function buildTab(name)
             -- The detail's Delta box reads the list's groups: a new filter or grouping redraws it.
             changed = function() ui.detail:RefreshDelta() end,
         })
-        -- Built while the sample history is shown: it opens on the sample's view.
-        if Source.IsMock() then pane:SampleView(true) end
     else
-        pane = NS.ResultsBests.Build(ui.body, {
-            open = function(r) Results.ShowRun(r.id) end, share = share,
+        pane = NS.ResultsInsights.Build(ui.body, {
+            open = function(r) Results.ShowRun(r.id) end,
             menu = function(r, row) Results.RowMenu(r, row) end,
+            -- A filter change redraws the footer's count at once (the shell's own redraw does too).
+            count = function(text)
+                ui.insightsCount = text
+                if tab == "insights" then footer() end
+            end,
         })
     end
+    -- Built while the sample history is shown: it opens on the sample's view.
+    if Source.IsMock() then pane:SampleView(true) end
     ui.panes[name] = pane
     debug("tab %s built", name)
     return pane
@@ -208,7 +213,7 @@ local function buildChrome(f)
     end)
     ui.drag = drag
     tabButton("runs", L["Runs"], 1)
-    tabButton("bests", L["Bests"], 2)
+    tabButton("insights", L["Insights"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
     line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
@@ -422,9 +427,9 @@ local function paintTabs()
     end
 end
 
-local function footer()
-    -- The Runs tab's count before its hint; the Bests tab shows the hint alone.
-    local count = tab == "runs" and ui.runsCount
+function footer()
+    -- The tab's run count before the hint.
+    local count = (tab == "runs" and ui.runsCount) or (tab == "insights" and ui.insightsCount)
     ui.footLeft:SetText(count and (count .. " \194\183 " .. HINT) or HINT)
     -- GetSetting answers the shipped default itself (settings/Schema.lua); no second literal here.
     local days = tonumber(NS.GetSetting("global.history.keepDays"))
@@ -676,17 +681,17 @@ function Results.Toggle()
     if Results.IsShown() then Results.Hide() else Results.Show() end
 end
 
---- Open the window on `name` ("runs" | "bests").
+--- Open the window on `name` ("runs" | "insights").
 function Results.ShowTab(name)
-    if name ~= "runs" and name ~= "bests" then return false end
+    if name ~= "runs" and name ~= "insights" then return false end
     if name ~= tab then NS.CloseMenu() end
     tab = name
     Results.Show()
     return true
 end
 
---- Open the window on the Runs tab with `id`'s detail (the HUD's Details and Last result, a Bests
---- row). A run the filters hide still opens; an id no longer stored opens the list alone.
+--- Open the window on the Runs tab with `id`'s detail (the HUD's Details and Last result, an
+--- Insights row). A run the filters hide still opens; an id no longer stored opens the list alone.
 function Results.ShowRun(id)
     selected = run(id) and id or nil
     detailOpen = selected ~= nil
@@ -753,7 +758,8 @@ end
 
 --- A row's right-click menu (LootHistory's): Add Note (Edit Note once it has one), Share with the
 --- channels as a submenu, Compare With This Run (for the run in the detail; grayed on that run itself
---- and on a lost one), and Delete behind its confirmation.
+--- and on a lost one), Ignore for late casts as a submenu when the run has a late cast (#8; never on
+--- the sample history, D-7), and Delete behind its confirmation.
 --- @param r table  the run
 --- @param owner table  the row
 --- @return boolean opened
@@ -767,6 +773,9 @@ function Results.RowMenu(r, owner)
         if canShare() and NS.Share.Line(r) then NS.Share.FillMenu(shareMenu, r) else shareMenu:SetEnabled(false) end
         local cmp = root:CreateButton(L["Compare With This Run"], function() Results.CompareWith(r.id) end)
         if r.id == selected or not NS.ResultsCompare.Usable(r) then cmp:SetEnabled(false) end
+        if not Source.IsMock() and NS.LateIgnore.Offers(r) then
+            NS.LateIgnore.FillMenu(root:CreateButton(L["Ignore for late casts"]), r)
+        end
         root:CreateButton("|cffff5555" .. L["Delete"] .. "|r", function() Results.ConfirmDelete(r.id) end)
     end)
     return true
@@ -817,8 +826,8 @@ function Results.SetNote(id, text)
 end
 
 --- The source changed (modules/Results_Source.lua): `swapped` between the store and the sample
---- history, which drops the selection and the compare's pick (neither is in the other) and moves the
---- Runs view to the sample's or back to the player's; else the sample changed (a note, a delete, the
+--- history, which drops the selection and the compare's pick (neither is in the other) and moves each
+--- tab's view to the sample's or back to the player's; else the sample changed (a note, a delete, the
 --- sim's run). A hidden window redraws in full on its next show.
 function Results.OnSourceChanged(swapped)
     if swapped then
@@ -829,7 +838,7 @@ function Results.OnSourceChanged(swapped)
         selected, detailOpen = nil, false
         if ui then
             ui.detail:SetPick(nil)
-            if ui.panes.runs then ui.panes.runs:SampleView(Source.IsMock()) end
+            for _, pane in pairs(ui.panes) do pane:SampleView(Source.IsMock()) end
         end
     end
     if windowShown() then
@@ -873,6 +882,12 @@ do
             if windowShown() and path == "global.history.keepDays" then footer() end
             -- A hidden item leaves (or rejoins) every run's usage: the Used column and the detail.
             if path == NS.Usage.HIDDEN_PATH then onStoreChanged() end
+            -- The late-cast ignore list (#8), the profile's, re-scores every run's flags: the Status
+            -- column, Hide flagged, the detail and the sample's clean board.
+            if path == NS.LateIgnore.PATH or path == "profile" then
+                NS.ResultsSource.Invalidate()
+                onStoreChanged()
+            end
         end)
     end
 end

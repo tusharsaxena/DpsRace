@@ -21,8 +21,8 @@ L["Toggle race HUD"] = "Toggle race HUD"
 L["Toggle results window"] = "Toggle results window"
 L["Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."] =
     "Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."
-L["Shows or hides the Results window, with its run history and personal bests."] =
-    "Shows or hides the Results window, with its run history and personal bests."
+L["Shows or hides the Results window, with its run history and insights."] =
+    "Shows or hides the Results window, with its run history and insights."
 L["Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."] =
     "Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."
 
@@ -179,7 +179,7 @@ L["Invisibility"] = "Invisibility"
 -- The Results window (modules/Results*.lua, T8)
 L["DPS Race \226\128\148 Results"] = "DPS Race \226\128\148 Results"
 L["Runs"] = "Runs"
-L["Bests"] = "Bests"
+L["Insights"] = "Insights"
 L["Click a row for details \194\183 right-click for options"] =
     "Click a row for details \194\183 right-click for options"
 L["Days to keep: %d"] = "Days to keep: %d"
@@ -189,9 +189,6 @@ L["Delete this run? This cannot be undone, and a personal best it holds goes wit
 L["Delete"] = "Delete"
 L["Cancel"] = "Cancel"
 L["Unknown class"] = "Unknown class"
-L["%d late"] = "%d late"
-L["Restarted"] = "Restarted"
-L["By list"] = "By list"
 L["Unknown spec"] = "Unknown spec"
 L["All characters"] = "All characters"
 L["Current character"] = "Current character"
@@ -207,7 +204,6 @@ L["lost"] = "lost"
 L["incomplete"] = "incomplete"
 L["Date"] = "Date"
 L["Class"] = "Class"
-L["Class \194\183 Spec"] = "Class \194\183 Spec"
 L["Character"] = "Character"
 L["iLvl"] = "iLvl"
 L["No runs match these filters."] = "No runs match these filters."
@@ -242,12 +238,7 @@ L["Damage stopped %ss after the buzzer"] = "Damage stopped %ss after the buzzer"
 L["combat ended %ss"] = "combat ended %ss"
 L["0:00 \226\128\148 race %s \226\128\148 buzzer"] = "0:00 \226\128\148 race %s \226\128\148 buzzer"
 L["+%ds"] = "+%ds"
-L["Category: %s"] = "Category: %s"
 L["Flags"] = "Flags"
-L["Clean runs only"] = "Clean runs only"
-L["Best per spec \195\151 category \195\151 race length, all characters"] =
-    "Best per spec \195\151 category \195\151 race length, all characters"
-L["No personal bests yet: finish a race to set one."] = "No personal bests yet: finish a race to set one."
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
 L["Only best"] = "Only best"
@@ -291,8 +282,7 @@ L["Results table"] = "Results table"
 L["Damage bar"] = "Damage bar"
 L["DPS bar"] = "DPS bar"
 L["Bar text"] = "Bar text"
-L["The run still counts and the flag shows on the board."] =
-    "The run still counts and the flag shows on the board."
+L["The run still counts toward bests."] = "The run still counts toward bests."
 
 -- Key bindings: the Arm or cancel key (core/LauncherSetup.lua, core/DpsRace.lua)
 L["Arm or cancel race"] = "Arm or cancel race"
@@ -304,13 +294,28 @@ L["Arm a race: /dr arm [length], e.g. 90, 1:30 or 3m"] = "Arm a race: /dr arm [l
 L["Cancel the armed or running race, or discard a pending result"] =
     "Cancel the armed or running race, or discard a pending result"
 L["The race HUD: /dr hud show, hide or toggle"] = "The race HUD: /dr hud show, hide or toggle"
-L["Open the Results window; /dr results bests opens the bests"] =
-    "Open the Results window; /dr results bests opens the bests"
+L["Open the Results window; /dr results insights opens Insights"] =
+    "Open the Results window; /dr results insights opens Insights"
 L["Print your target's name, creature ID and category"] = "Print your target's name, creature ID and category"
 L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"] = "Sample data in the HUD and the Results window: /dr test [armed|running|result]"
 L["Play a whole sample race: /dr sim [%s]"] = "Play a whole sample race: /dr sim [%s]"
 L["Lock the race HUD in place"] = "Lock the race HUD in place"
 L["Unlock the race HUD to move and resize it"] = "Unlock the race HUD to move and resize it"
+L["The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"] =
+    "The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"
+L["Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"] =
+    "Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"
+L["The late-cast ignore list is empty."] = "The late-cast ignore list is empty."
+L["Late-cast ignore list:"] = "Late-cast ignore list:"
+L["More than one spell is named '%s'. Use its spell ID or a shift-clicked link."] =
+    "More than one spell is named '%s'. Use its spell ID or a shift-clicked link."
+L["No spell named '%s' is known. Use its spell ID or a shift-clicked link."] =
+    "No spell named '%s' is known. Use its spell ID or a shift-clicked link."
+L["%s is already ignored."] = "%s is already ignored."
+L["Late casts of %s no longer flag a run."] = "Late casts of %s no longer flag a run."
+L["%s is not on the list."] = "%s is not on the list."
+L["Late casts of %s flag a run again."] = "Late casts of %s flag a run again."
+L["The late-cast ignore list is back to its defaults."] = "The late-cast ignore list is back to its defaults."
 L["Nothing to cancel."] = "Nothing to cancel."
 L["Race canceled."] = "Race canceled."
 L["Race canceled: the run is deleted."] = "Race canceled: the run is deleted."
@@ -385,11 +390,45 @@ L["A cast that starts later than this after the buzzer flags the run. 0 to 5 sec
 L["Damage-restart gap (seconds)"] = "Damage-restart gap (seconds)"
 L["Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
     "Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."
+L["Late-cast ignore list"] = "Late-cast ignore list"
+L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] =
+    "Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."
+L["(all hearthstones, %d)"] = "(all hearthstones, %d)"
+L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."] =
+    "Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."
+L["Ignore a spell"] = "Ignore a spell"
+L["A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."] =
+    "A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."
+L["No spell is ignored: every late cast flags its run."] =
+    "No spell is ignored: every late cast flags its run."
+L["Reset list"] = "Reset list"
+L["Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."] =
+    "Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."
+L["%s, all variants (%d)"] = "%s, all variants (%d)"
+L["%s (%d)"] = "%s (%d)"
+-- The late-cast ignore list's actions (#8): the right-click menu, the ignored casts' lines and chip.
+L["Ignored: %s"] = "Ignored: %s"
+L["Late casts"] = "Late casts"
+L["Ignore %s for late casts"] = "Ignore %s for late casts"
+L["Stop ignoring %s"] = "Stop ignoring %s"
+L["Stop ignoring all hearthstones"] = "Stop ignoring all hearthstones"
+L["Ignore for late casts"] = "Ignore for late casts"
+L["Right-click to ignore a spell for late casts, or count it again."] =
+    "Right-click to ignore a spell for late casts, or count it again."
+L["%d ignored"] = "%d ignored"
+L["Late casts on the ignore list: they flag nothing."] = "Late casts on the ignore list: they flag nothing."
+L["1 ignored late cast"] = "1 ignored late cast"
+L["%d ignored late casts"] = "%d ignored late casts"
+L["On the late-cast ignore list, so no flag. Right-click to count a spell again."] =
+    "On the late-cast ignore list, so no flag. Right-click to count a spell again."
+L["No flags"] = "No flags"
+L["A gray tick is a spell on the late-cast ignore list: ignored, so no flag."] =
+    "A gray tick is a spell on the late-cast ignore list: ignored, so no flag."
 L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
 L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
-L["Restore every Race setting on this profile to its addon default."] =
-    "Restore every Race setting on this profile to its addon default."
+L["Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."] =
+    "Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."
 L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
     "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 
@@ -546,9 +585,6 @@ L["Damage over the time in combat (%s). Incomplete runs never rank."] =
 L["Damage over the race length (%s), your clock."] = "Damage over the race length (%s), your clock."
 L["Blizzard's meter said %s (over its whole session, idle time included)."] =
     "Blizzard's meter said %s (over its whole session, idle time included)."
-L["Clean run"] = "Clean run"
-L["No flags: nothing happened that the result should mention."] =
-    "No flags: nothing happened that the result should mention."
 L["1 flag"] = "1 flag"
 L["%d flags"] = "%d flags"
 L["Flags inform; they never void a run."] = "Flags inform; they never void a run."
@@ -870,3 +906,71 @@ L["No on-use item or consumable was found at the arm, and nothing was detected."
 L["Keep the ticks as this run's usage. An entry the addon detected keeps its times."] =
     "Keep the ticks as this run's usage. An entry the addon detected keeps its times."
 L["Not used: tick it if you did use it."] = "Not used: tick it if you did use it."
+
+-- The Insights tab (#12, modules/Results_Insights.lua): the filter bar, the cards, the sections.
+L["%s \194\183 %s \194\183 %s"] = "%s \194\183 %s \194\183 %s"
+L["%dh %02dm"] = "%dh %02dm"
+L["%dm %02ds"] = "%dm %02ds"
+L["Races run"] = "Races run"
+L["The runs these filters pass."] = "The runs these filters pass."
+L["Time raced"] = "Time raced"
+L["The race lengths added up; an incomplete run counts its time in combat."] =
+    "The race lengths added up; an incomplete run counts its time in combat."
+L["Best DPS"] = "Best DPS"
+L["No complete run in these filters."] = "No complete run in these filters."
+L["Avg DPS"] = "Avg DPS"
+L["The complete runs' average, all on one board."] = "The complete runs' average, all on one board."
+L["Avg % of board best"] = "Avg % of board best"
+L["Each complete run against the best on its own board (spec, target and length), averaged."] =
+    "Each complete run against the best on its own board (spec, target and length), averaged."
+L["Clean runs"] = "Clean runs"
+L["%d of %d runs carry no flag."] = "%d of %d runs carry no flag."
+L["Late casts on the ignore list do not flag a run."] = "Late casts on the ignore list do not flag a run."
+L["New bests set"] = "New bests set"
+L["Runs that beat an earlier best on their board, within these filters. A board's first run does not count."] =
+    "Runs that beat an earlier best on their board, within these filters. A board's first run does not count."
+L["Characters"] = "Characters"
+L["The characters with a run in these filters."] = "The characters with a run in these filters."
+L["Specs"] = "Specs"
+L["The specs with a run in these filters."] = "The specs with a run in these filters."
+L["Active days"] = "Active days"
+L["%s to %s"] = "%s to %s"
+L["Date range"] = "Date range"
+L["%d days with a run."] = "%d days with a run."
+L["%s of board best"] = "%s of board best"
+L["Avg %s DPS"] = "Avg %s DPS"
+L["Avg %s of board best"] = "Avg %s of board best"
+L["DPS Progression"] = "DPS Progression"
+L["DPS Progression (% of board best)"] = "DPS Progression (% of board best)"
+L["Best %s DPS"] = "Best %s DPS"
+L["Worst %s DPS"] = "Worst %s DPS"
+L["Spread (CV) %s"] = "Spread (CV) %s"
+L["%s: %d"] = "%s: %d"
+L["%s (ignored)"] = "%s (ignored)"
+L["On the ignore list: no flag. Right-click to stop ignoring it."] =
+    "On the ignore list: no flag. Right-click to stop ignoring it."
+L["No spell ID was recorded, so it cannot be ignored."] = "No spell ID was recorded, so it cannot be ignored."
+L["Each one flags its run. Right-click to ignore it."] = "Each one flags its run. Right-click to ignore it."
+L["%d-%d s"] = "%d-%d s"
+L["%d+ s"] = "%d+ s"
+L["Damage still landing after the buzzer, and counted."] = "Damage still landing after the buzzer, and counted."
+L["%s  %s"] = "%s  %s"
+L["%s DPS, up from %s"] = "%s DPS, up from %s"
+L["Click to open the run \194\183 right-click for options"] = "Click to open the run \194\183 right-click for options"
+L["Insights view saved as default."] = "Insights view saved as default."
+L["Insights view reset to stock defaults."] = "Insights view reset to stock defaults."
+L["Clean only"] = "Clean only"
+L["By Target \195\151 Length"] = "By Target \195\151 Length"
+L["Spec Comparison"] = "Spec Comparison"
+L["Consistency"] = "Consistency"
+L["Races By Character"] = "Races By Character"
+L["Races By Character \195\151 Target"] = "Races By Character \195\151 Target"
+L["Races By Character \195\151 Length"] = "Races By Character \195\151 Length"
+L["Races Per Day"] = "Races Per Day"
+L["Damage Tail After The Buzzer"] = "Damage Tail After The Buzzer"
+L["Late Casts"] = "Late Casts"
+L["Recent New Bests"] = "Recent New Bests"
+L["Save these filters as this profile's default view of Insights."] =
+    "Save these filters as this profile's default view of Insights."
+L["Delete the saved view and go back to the stock one: every character, spec, target, length and date."] =
+    "Delete the saved view and go back to the stock one: every character, spec, target, length and date."

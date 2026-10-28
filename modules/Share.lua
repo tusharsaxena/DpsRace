@@ -258,9 +258,10 @@ function Share.ResultLine(run, delta, isNew)
         NS.Format.Number(result.dps or 0), NS.Format.Length(run.race and run.race.length), targetName(run.target))
     local tail = {}
     tail[#tail + 1] = deltaText(delta, isNew)
-    local late = run.flags and run.flags.lateCasts
-    if type(late) == "table" and #late > 0 then
-        tail[#tail + 1] = #late == 1 and L["1 late cast"] or L["%d late casts"]:format(#late)
+    -- The counted late casts only: the ignore list's never flag a run (#8).
+    local late = #(NS.Scoring.SplitLate(run))
+    if late > 0 then
+        tail[#tail + 1] = late == 1 and L["1 late cast"] or L["%d late casts"]:format(late)
     end
     if run.status == "incomplete" then tail[#tail + 1] = L["incomplete"] end
     if type(result.tail) == "number" then tail[#tail + 1] = L["tail +%.1fs"]:format(result.tail) end

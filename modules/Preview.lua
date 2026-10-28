@@ -5,7 +5,7 @@ local _, NS = ...
 --   test  `/dr test [armed|running|result]`, the Master controls' Test mode row and the launcher's
 --         entry: STATIC sample data in every view. The HUD holds one body still (the running body
 --         by default: its clock, live figures, chart, pace bar and spells) and the Results window
---         opens on a made-up run history (modules/MockRuns.lua) so the Runs list, the Bests tab and
+--         opens on a made-up run history (modules/MockRuns.lua) so the Runs list, the Insights tab and
 --         the detail (compare, chart, gear and talents) can be seen without a real history.
 --   sim   `/dr sim [scenario]`: a whole sample race played through the HUD's bodies (armed, running,
 --         Stop!, waiting, the result card), then the Results window on the sim's run beside the same

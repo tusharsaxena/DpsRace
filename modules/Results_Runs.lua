@@ -202,10 +202,36 @@ local function lengthOptions(runs)
     return list
 end
 
-local function withAll(label, list, current)
+local OPTION_LISTS = { char = charOptions, spec = specOptions, category = categoryOptions, length = lengthOptions }
+
+--- The value dropdowns' options among `runs`, each list without its "all" head: the character
+--- ({ value = "Name-Realm", label, color }), the spec, the target category and the race length. The
+--- Insights tab (modules/Results_InsightsData.lua) builds its faceted lists on these too.
+--- @param runs table  the runs to read (taken as given: no status check)
+--- @param key string|nil  one list only: "char", "spec", "category" or "length"
+--- @return table lists  { char, spec, category, length }, or the one list when `key` is given
+function Runs.OptionLists(runs, key)
+    runs = runs or {}
+    if key then return OPTION_LISTS[key](runs) end
+    local out = {}
+    for k, build in pairs(OPTION_LISTS) do out[k] = build(runs) end
+    return out
+end
+
+--- `list` led by its "all" entry, and by a "current" one before it when `current` is given.
+--- @return table list  the same table
+function Runs.WithAll(list, label, current)
     table.insert(list, 1, { value = "all", label = label })
     if current then table.insert(list, 1, { value = "current", label = current }) end
     return list
+end
+
+--- The date range dropdown's four options, widest first (Runs.DATE_RANGES).
+function Runs.DateOptions()
+    return {
+        { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },
+        { value = "7d", label = L["Last 7 days"] }, { value = "30d", label = L["Last 30 days"] },
+    }
 end
 
 -- ── grouping (LootHistory's Group by) ──────────────────────────────────────────────────────────
@@ -338,15 +364,13 @@ function Runs.Options(runs)
     for _, run in ipairs(runs or {}) do
         if type(run) == "table" and Runs.RESOLVED[run.status] then resolved[#resolved + 1] = run end
     end
+    local lists = Runs.OptionLists(resolved)
     return {
-        char = withAll(L["All characters"], charOptions(resolved), L["Current character"]),
-        spec = withAll(L["All specs"], specOptions(resolved), L["Current spec"]),
-        category = withAll(L["All targets"], categoryOptions(resolved)),
-        length = withAll(L["Any length"], lengthOptions(resolved)),
-        date = {
-            { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },
-            { value = "7d", label = L["Last 7 days"] }, { value = "30d", label = L["Last 30 days"] },
-        },
+        char = Runs.WithAll(lists.char, L["All characters"], L["Current character"]),
+        spec = Runs.WithAll(lists.spec, L["All specs"], L["Current spec"]),
+        category = Runs.WithAll(lists.category, L["All targets"]),
+        length = Runs.WithAll(lists.length, L["Any length"]),
+        date = Runs.DateOptions(),
         group = (function()
             local out = {}
             for i, mode in ipairs(Runs.GROUP_ORDER) do out[i] = { value = mode, label = L[GROUP_LABELS[mode]] } end
@@ -398,7 +422,7 @@ Runs.STATUS = {
 }
 local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
 
--- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
+-- Whether `run` holds the best on its board (the all-runs board: flagged runs count, as the toast's).
 function Runs.HoldsBest(run)
     local Bests = NS.Bests
     if not (Bests and Bests.Board) then return false end
@@ -620,6 +644,9 @@ function Runs.StatusTip(run)
         lines[1] = L["%s: %s \194\183 %s"]:format(text, target, time)
     end
     for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
+    -- The late casts the ignore list leaves uncounted (#8), dimmed: no flag, but still named.
+    local ignored = NS.Scoring.IgnoredText(run, NS.HudBreakdown.SpellName)
+    if ignored then lines[#lines + 1] = { ignored, C.dim[1], C.dim[2], C.dim[3] } end
     return lines
 end
 
@@ -707,11 +734,11 @@ function Runs.Columns(view)
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
         -- Boxed in the category color; wide enough for the widest type, "Single target".
-        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
+        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
         -- The length boxed in its color, then the tail: "5:00" then "+15.9s" or "at 4:59".
-        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", boxed = true, trail = true, desc = true,
+        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", trail = true, desc = true,
           sort = NS.Format.RunSeconds,
           text = Runs.TimeCell },
         { key = "damage", label = L["Damage"], width = 60, desc = true,
@@ -742,7 +769,7 @@ function Runs.Columns(view)
           text = function(run) return deltaText(run, topOf(run)) end,
           tip = function(run) return Runs.DeltaTip(run, topOf(run), view.grouped) end },
         -- Wide enough for the widest tag alone: the boxed "Incomplete" with its icon.
-        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true,
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge",
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)
