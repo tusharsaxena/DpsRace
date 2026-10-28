@@ -56,6 +56,8 @@ finishes it; a run that stops resumes at the first unticked box.
 
 ### P8: Finalize (only on the owner's go-ahead)
 
-- [ ] LibKa0s: merge the Toast branch after the other session's release work, tag, push; the owner re-vendors
+- [x] LibKa0s: merge the Toast branch after the other session's release work, tag, push; the owner re-vendors
   all of LibKa0s (drop the deviation row then). DpsRace: merge, push, close #5, #16, #17. Delete this run's
   branches and the worktree.
+
+Finalized 2026-10-28 on the owner's go-ahead: LibKa0s Toast branch merged to master (7deaeb0, v1.79.0 still unreleased, no tag); this branch merged and pushed. The deviation row stays until the owner re-vendors all of LibKa0s.
