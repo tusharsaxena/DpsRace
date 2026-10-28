@@ -167,7 +167,7 @@ test("sections: a folded section's body is hidden, and the sections under it mov
     d.heads.timing:__fire("OnClick")
     assertEqual(y(d.lo.title), y(w.timingLabel) - H - GAP, "Gear under Timing's heading")
     for _, f in ipairs(w.timingHovers) do assertFalse(f:IsShown(), "a strip hover was left over the moved sections") end
-    -- Gear folded: Talents under its heading line (the line Dressing Room shares).
+    -- Gear folded: Talents under its heading line (the line Gear view shares).
     d.heads.gear:__fire("OnClick")
     assertFalse(d.lo.none:IsShown())
     assertFalse(d.lo.noneHover:IsShown())

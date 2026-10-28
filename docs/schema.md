@@ -29,6 +29,7 @@ row's `default` reads from it.
 | `race.grace` | `1.0` | *Late-cast grace (seconds)*, Race page | Seconds after the buzzer before a cast start is late (spec §5.2); copied onto each new run |
 | `race.restartGap` | `6` | *Damage-restart gap (seconds)*, Race page | Seconds of quiet after the buzzer before damage counts as restarted (spec §5.3); copied onto each new run |
 | `race.defaultLength` | `120` | *Default race length*, Race page | The HUD's race length until the player picks one (spec §4.1) |
+| `race.autoArm` | `false` | *Arm on a training dummy*, Race page (*Auto-arm*) | Targeting a cataloged training dummy out of combat arms a race at the HUD's length; targeting anything else out of combat before the pull cancels it (#16, `modules/AutoArm.lua`). Opt-in. New key: AceDB's default fills it, no migration |
 | `race.countdownCue` | `true` | *Countdown cue sound*, Race page | The cue sound at 10, 5, 3, 2 and 1 s left, and with each center-screen number, once a second at most (spec §4.3) |
 | `race.centerCountdown` | `true` | *Center-screen countdown*, Race page | The large numbers in the middle of the screen for the race's last seconds (spec §4.3, `modules/Countdown.lua`) |
 | `race.finalCountdown` | `10` | *Center countdown from (seconds)*, Race page (3-10, step 1) | Seconds left when the center numbers start |
@@ -45,6 +46,11 @@ row's `default` reads from it.
 | `share.talentsLink` | `false` | *Include talents link*, History page, History tab (*Sharing*) | Appends the run's `talentbuild` link to the shared line (#6), in the same message when both fit in 255 bytes, else as a second; a run with no talent string shares the line alone (`Share.Messages`) |
 | `hud.showMode` | `"onArm"` | *Show the race HUD*, HUD page, Race HUD tab | `onArm`: the HUD opens on arm and on a result, and closes again when the race it opened for goes idle; `always`: also open at login |
 | `hud.clock` | `"both"` | *Race clock*, HUD page, Race HUD tab | What the running body's clock shows (spec §6.1): `both` (elapsed in green beside time left in red), `left` (time left, red) or `elapsed` (time elapsed, green) |
+| `toast.enabled` | `true` | *Show a toast for a new best*, General page, New-best toast tab | The new-best toast (#5, `modules/BestToast.lua`): a complete run that beats an earlier best on its board shows a toast; off drops any shown or waiting. New key: AceDB's default fills it, no migration |
+| `toast.sound` | `true` | *Play a sound*, General page, New-best toast tab | The shell's alert sound as each toast shows (LibKa0s-Toast-1.0: `SOUNDKIT.UI_EPICLOOT_TOAST`, else `RAID_WARNING`) |
+| `toast.duration` | `8` | *Toast duration (seconds)*, General page, New-best toast tab (3-30, step 1) | Seconds on screen, the countdown paused while the pointer is over it (the shell's own `DURATION` as the default) |
+| `toast.scale` | `1.0` | *Toast scale*, General page, New-best toast tab (0.5-2.0, step 0.05) | The toast's own scale, not multiplied by Master scale; it grows about the stored place |
+| `hud.autoShow` | `false` | *Show near a training dummy*, HUD page, Race HUD tab | The HUD opens by itself while a cataloged training dummy is the target or has a nameplate up, and closes a debounce after none is (#16, `modules/AutoArm.lua`). Opt-in. New key: AceDB's default fills it, no migration |
 | `windows.hud.width` / `.height` | `260` / `573` | none (geometry) | The HUD's size: its minimum width (300 before 2026-10-26: a new profile and `/dr resetall` open every window at its minimum width, the owner's call; `test_schema.lua` pins each default width to its window's minimum), and tall enough for the default 8 live rows (mockup screen 04) under the *Damage profile* heading (the pace bar and the damage chart) and the *Spell breakdown* heading (460 until #2 and #3, 520 until Round C's headings, 560 until the chart's icon row on top, UT-P11); the minimum is 260x354 (`Hud.MIN_HEIGHT`: the chrome plus `HudStates.MinContentHeight()`, the tallest body's fixed stack; the spec's 240 could not hold the idle body), in `modules/Hud.lua` |
 | `windows.results.view`, `.expanded`, `.collapsed` | `"collapsed"`; `{ width = 1344, height = 560 }`; `{ width = 904, height = 560 }` | none (geometry; the title bar's view toggle) | The Results window's view and each view's own size (the owner's call, 2026-10-25); a new profile opens collapsed (UT-P14, 2026-10-27; expanded before, and a stored view that is neither reads as collapsed; migration 3 → 4 keeps a profile that was in the old default expanded); each default width is that view's minimum (1340 and 980 before 2026-10-26). Each view's minimum (expanded 1344; collapsed 904; 420 high; widened with the Runs list's Note column and the boxed Target and Time chips, then narrowed when the Status column dropped its board chips, 2026-10-25, then widened by the Used column, 2026-10-26, and expanded by the 440 px detail, 2026-10-27) is `Results.VIEWS` in `modules/Results.lua`. Only the toggle switches views; a resize never does. Its scale is the Master controls' `scale` |
 | `windows.results.collapsedSections` | `{}` | none (view state; the detail's heading arrows) | The run detail's folded sections (UT-P10): each folded `ResultsDetail.SECTIONS` key set to `true`, so a new profile shows every section open. Not geometry, so *Reset position* keeps it; a profile reset and *Reset all settings* empty it (`tests/test_schema.lua`) |
@@ -54,14 +60,15 @@ row's `default` reads from it.
 | `appearance.chart.*` | `barTexture` `"Solid"`, `barAlpha` `0.9`, `barColor` (the mockup's indigo, `0.36, 0.37, 0.84`), `useClassColorBar` `false`, `height` `80`, `columnGap` `0`, `bgColor` (`0, 0, 0, 0.35`), `useClassColorBg` `false` | the composed bar block with *Chart height* (40-160, step 2) and *Column gap* (0-3, step 1), and *Chart background*'s composed color pair, HUD page, HUD Appearance tab | The damage chart's columns, plot height (the columns' and the best's diagonal; the plot frame is `HudChart.RESERVE`, one 13 px icon row, taller on top: `HudChart.FrameHeight`), column gap and plot background, on the HUD and in the Results detail (`HudAppearance.Chart`, `HudAppearance.ChartBackground`, `HudChart.PlotHeight`, `HudChart.ColumnGap`). New keys need no migration: AceDB's defaults fill them |
 | `appearance.pace.*` | `barTexture` `"Solid"`, `barAlpha` `0.9`, `barColor` (`0.36, 0.37, 0.84`), `useClassColorBar` `false` | the composed bar block *Pace bar*, HUD page, HUD Appearance tab | The pace bar's fill (`HudAppearance.Pace`), split from `appearance.chart` on 2026-10-25 with the chart's look as its default. The branch that added the chart never shipped, so no stored chart look is carried over |
 
-Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.lastLength` is state, below.
+Every `race.*`, `live.*`, `hud.showMode`, `hud.clock`, `hud.autoShow` and `toast.*` key has its row, except
+`race.lastLength` and `toast.point`, which are state, below.
 
 ### Global (`db.global`)
 
 | Path | Default | What it is |
 |---|---|---|
 | `schemaVersion` | `0` | The migration stamp. The default is 0, never the current version, so AceDB does not strip it and backfill it onto an old account (savedvariables-§1) |
-| `schema` | `3` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout`; format 3 (#13, #14) adds `casts` and `usage` |
+| `schema` | `4` | The run-record format (spec §7). Not a migration stamp: each stored run carries its own copy. Format 2 (#6) adds `loadout`; format 3 (#13, #14) adds `casts` and `usage`; format 4 (#17) adds `stats` |
 | `runs` | `{}` | The run store, keyed by run id. Global so a profile switch never hides a character's history and bests span alts |
 | `loadouts` | `{ gear = {}, talents = {} }` | The loadout store (#6, `modules/Loadouts.lua`): each distinct gear set (`{ [slot] = link }`) and talent loadout (`{ specID, configID, name, heroSpecID, heroName, importString, serialVersion }`) once, keyed by a djb2 hash of its canonical form (`<hash>-<n>` for a different set with the same hash). A run holds only the keys (`run.loadout`); a set no run refers to is dropped on every removal |
 | `history.keepDays` | `90` | *Days to keep* (spec §6.3; the owner's call, 2026-10-26, replacing the run count `history.keep`): 0 = never prune. Above 0, `Recorder.Prune` removes every resolved run older than that many days at login and after each saved run, never one holding a best (all-runs or clean-only board) and never a running or stopping one. Its row is *Days to keep* on the History page (0-3650); a change prunes nothing on the spot. No migration: a stored `history.keep` is left unread |
@@ -78,6 +85,7 @@ Every `race.*`, `live.*`, `hud.showMode` and `hud.clock` key has its row; `race.
 | The damage chart's slices: one opaque live total per bucket (at most 60) of each race raced this session, by run id | `modules/Slices.lua` (`Capture`, filled by `modules/Hud.lua`'s live reads, the bucket timer and the buzzer's read; read by `Slices.Get` / `Drawable` for the HUD's chart, the result card and the Results detail) | #2: a value read in combat is secret and stays so, and the client writes a secret to SavedVariables as `nil` (the reload probe, 2026-10-25). Never on the run record; a run from before the last `/reload` or login has no chart |
 | The race's cast list and its usage snapshot | `modules/Casts.lua` (the raw casts, the castGUIDs heard, the open channel, each spell's base cooldown, the dropped count, the clock's start) and the race's `cur.usageSnap` (`modules/Race.lua`: `Usage.Snapshot()`'s gear, bags and auras) | #13, #14: held from the arm to the result, then stored once as `run.casts` and `run.usage`; a cancel or the stand-down drops them, so a run resumed after a `/reload` has neither |
 | The *Usage* section's edit and its ticks not saved yet | the detail pane (`modules/Results_Usage.lua`: `editing`, `state`) | view state (#13, P9): *Edit* opens it; kept across a redraw of the same run (each tick by its row's item), left unsaved by *Edit* again or another run; only *Save* stores the ticks (`Usage.SetUsed`) and leaves it |
+| The gear view's place | `modules/Results_Gear.lua` (its frame's anchor while open) | #17: a modal over the Results window, centered over it on every open (`Results.Placement`); a title-bar move lasts while it is open (the timeline's deviation row in ARCHITECTURE) |
 | The detail's compare: the toggle and the picked run | the detail pane (`comparing`, `pickID`, `modules/Results_Detail.lua`), set by its toggle, the row menu's *Compare With This Run* (`Results.CompareWith`) and *Clear Pick* (`Results.ClearPick`) | view state (#7): the comparison is worked out from the stored runs each time; a pick whose run is deleted falls back to the board's best |
 
 ## Migrations
@@ -93,16 +101,17 @@ profile-scoped step sets `perProfile = true` and runs once per stored profile.
 | 1 → 2 | the run record's format 2 (#6) | Raises a stored `global.schema` below 2 to 2. No stored run is rewritten: format 2 only adds the optional `loadout`, so a format-1 run (keeping its own `schema = 1`) reads as one with no loadout, *Not recorded* |
 | 2 → 3 | the run record's format 3 (#13, #14) | Raises a stored `global.schema` below 3 to 3. No stored run is rewritten: format 3 only adds the optional `casts` and `usage`, so an older run (keeping its own `schema`) reads as one with neither, *Not recorded* |
 | 3 → 4 | the Results window's collapsed default, the timeline's dropped place (UT-P14), per profile | Writes `windows.results.view = "expanded"` into a profile that stores the Results window but no view: it was in the old default, which AceDB stripped, and would otherwise read the new collapsed one. A profile that never stored the Results window keeps the new default. Clears `windows.timeline`, which nothing reads any more |
+| 4 → 5 | the run record's format 4 (#17) | Raises a stored `global.schema` below 4 to 4. No stored run is rewritten: format 4 only adds the optional `stats`, so an older run (keeping its own `schema`) reads as one with none, and the gear view shows dashes |
 
 Adding a step: [common-tasks.md](common-tasks.md#add-a-saved-variables-migration).
 
 ## The run record
 
-Format 3: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
-`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6, format 2)
-and the optional `casts` and `usage` (#13, #14, format 3). A run stored before format 2 keeps
-`schema = 1` and has no `loadout`; one stored before format 3 keeps its `schema` and has no `casts`
-or `usage`. So does a format-3 run resumed after a `/reload` (both lists are held in memory until
+Format 4: spec §7's format 1 (`id`, `schema`, `status`, `addon`, `build`, `date`, `race`, `char`,
+`target`, `where`, `result`, `flags`, `spells`, `note`) plus the optional `loadout` (#6, format 2),
+the optional `casts` and `usage` (#13, #14, format 3) and the optional `stats` (#17, format 4). A run
+stored before format 2 keeps `schema = 1` and has no `loadout`; one stored before format 3 keeps its
+`schema` and has no `casts` or `usage`; one stored before format 4 has no `stats`. So does a format-3 run resumed after a `/reload` (both lists are held in memory until
 the result). `status` is one of `armed` (never stored), `running`, `stopping`, `complete`,
 `incomplete` or `lost`. Every value is plain: each client value went through `NS.Secrets`, and a
 sealed one is absent.
@@ -112,6 +121,7 @@ sealed one is absent.
 | top | `id` (`time()-NNNN`), `schema`, `status`, `addon`, `build`, `date` (arm, restamped at the start) | `Recorder.NewRun`; `Race` |
 | `race` | `length`, `grace`, `restartGap` (frozen at arm), `startSource`, `startedAt` (`GetTime()` at the start), `sessionID`, `armMaxSession` (the highest session ID at arm), `lastDamage` (s after the start of the last damage update) | `Recorder.NewRun`; `Race` at arm, start, capture and each update |
 | `char`, `where` | the player and place snapshots | `Recorder.NewRun` (at arm) |
+| `stats` | `v` (1), `primaryStat` (the spec's primary stat's `UnitStat` index: 1 Strength, 2 Agility, 4 Intellect), `primary`, `stamina`, `armor` (whole numbers), and for each of `crit`, `haste`, `mastery`, `vers`, `leech`, `avoidance` and `speed` its `<key>Rating` (whole) and `<key>` (the percent, two decimals; versatility's is `GetCombatRatingBonus` plus `GetVersatilityBonus`). A value that was sealed or unreadable is absent; nothing readable leaves the whole field absent | `Recorder.NewRun` (at arm, out of combat), from `Stats.Snapshot` (`modules/Stats.lua`) |
 | `target` | `npcID`, `name`, `category`, `level`, `classification` (a run from before 2026-10-26 may still carry `count`, which nothing reads) | `Recorder.NewRun`; re-read once at combat start (`Recorder.SnapshotTarget` with the arm-time `prior`) |
 | `result` | `damage`, `dps`, `meterDps`, `sessionDuration`, `tail`, `combatEnd` (s after the buzzer), `endedAt` (incomplete: s after the start); absent on a lost run | `Race` |
 | `flags` | `lateCasts` (`{ t, spellID? }`), `restartedAt`, `reloaded`, `died`, `sessionFromList`, `sharedSession` (the pull carried on a session from before the arm; netted against `race.baseline`) | `Race` |
@@ -124,11 +134,11 @@ sealed one is absent.
 The grace and restart gap in force are copied onto each run, so a settings change never re-grades an
 old one. Spell and item names and icons are resolved for display and never stored. About 1 to 1.5 KB
 per run before format 3; the cast list adds about 10 bytes a cast (a 2:00 race at one cast a second,
-about 1.2 KB more).
+about 1.2 KB more), and the stats about 0.4 KB.
 
 A change to the record's shape raises `global.schema` and adds a migration step. The step rewrites
-stored runs only when the old shape cannot be read as the new one; formats 2 and 3 only add
-optional fields, so their steps (1 → 2, 2 → 3) rewrite none. A reader that meets a run with a
+stored runs only when the old shape cannot be read as the new one; formats 2, 3 and 4 only add
+optional fields, so their steps (1 → 2, 2 → 3, 4 → 5) rewrite none. A reader that meets a run with a
 higher `schema` than it knows leaves it alone.
 
 ## Named non-setting state
@@ -144,6 +154,7 @@ and a closed list of writers.
 | `global.minimap` (position fields) | `core/LauncherSetup.lua` | LibDBIcon's own drag handler (a vendored library's writes); `hide` is the *Minimap button* row and goes through the seam via `NS.Launcher:SetShown` |
 | `DpsRacePerfDB` | `core/PerfSetup.lua` | `LibKa0s-Perf-1.0` (`/dr perf finish`) |
 | `profile.windows.hud` (`point`, `relativePoint`, `x`, `y`, `width`, `height`) | `modules/Hud.lua` | the HUD's drag stop (position) and resize grip (size); `Hud.ResetPosition` clears them (the Master controls' *Reset position*) |
+| `profile.toast.point` (`{ point, relativePoint, x, y }`, UIParent's units) | `modules/BestToast.lua` | the new-best toast's drag stop (LibKa0s-Toast-1.0 hands the point to the descriptor's `setPosition`; only test mode's toast and *Test toast*'s sample move), stored as four plain values; `BestToast.ResetPosition` clears it (the Master controls' *Reset position*). No default: absent means the shell's own place under the top of the screen (`TOP`, 0, -160) |
 | `profile.race.lastLength` | `modules/Hud.lua` | `Hud.Act.pickLength` / `customLength`, and `/dr arm <length>` through `Hud.Act.pickLength`: the last race length picked, offered next (spec §4.1). No default: absent means `race.defaultLength`. Cleared (with the HUD's session pick) when `race.defaultLength` changes, through `Hud.ForgetLength`, so a new default takes effect |
 | `profile.views.runs` (`filters`, `sortKey`, `sortDesc`) | `modules/Results_Runs.lua` | the Runs tab's *Save* (`View:SaveView`, the view now) and *Reset* (`View:ResetView`, deletes it); read by every build of the tab (`Runs.SavedView`) and by *Clear*. Absent means the stock view (`Runs.DEFAULTS`, newest first, grouped by `full`, *Full*: character, class, spec, target and time, a new profile's view, the owner's call 2026-10-25). `filters.group` is a `Runs.GROUPS` mode: `none`, `full` (Full), `char`, `classSpec`, `target`, `length` (Time), `targetLength` (Target + time) or `specTargetLength` (Spec + target + time); a mode the tab no longer knows draws the list flat |
 | `profile.windows.timeline` | none | nothing writes it (UT-P14): the ability timeline opens over the Results window at its place and size every time (`Results.Placement`), and a move or a resize lasts only while it is open. Before UT-P14 its drag stop and grip stored `point`, `relativePoint`, `x`, `y`, `width` and `height` there (980x560 by default); migration 3 → 4 clears them from an older profile. *Reset position* (`ResultsTimeline.ResetPosition`) puts an open timeline back over the Results window |

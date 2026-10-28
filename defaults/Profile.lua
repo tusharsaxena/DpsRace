@@ -23,6 +23,10 @@ NS.defaults = {
             finalCountdown  = 10,   -- s left when the numbers start, 3-10
             buzzer        = true,  -- the raid-warning STOP and its sound at the buzzer (§4.4)
             hintDelay     = 15,    -- s in combat after the buzzer before the drop-combat hint (§4.4)
+            -- Auto-arm (#16, modules/AutoArm.lua): targeting a cataloged training dummy out of combat
+            -- arms a race at the length Arm Race would; targeting anything else before the pull
+            -- cancels it. Opt-in (the owner's call, 2026-10-28).
+            autoArm       = false,
             -- `lastLength` (no default): the last length picked on the HUD, remembered (§4.1). It is
             -- state the HUD writes, not a setting row.
         },
@@ -46,9 +50,11 @@ NS.defaults = {
             paceRange = 1.5,
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
-        -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". Both rows are
-        -- on the HUD page's Race HUD tab (settings/Hud.lua).
-        hud = { showMode = "onArm", clock = "both" },
+        -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". `autoShow`
+        -- (#16, modules/AutoArm.lua): the HUD opens by itself near a cataloged training dummy, opt-in
+        -- (the owner's call, 2026-10-28). All three rows are on the HUD page's Race HUD tab
+        -- (settings/Hud.lua).
+        hud = { showMode = "onArm", clock = "both", autoShow = false },
         -- The HUD's look (the owner's call, 2026-10-24; HUD > HUD Appearance, settings/Hud.lua,
         -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
@@ -96,6 +102,11 @@ NS.defaults = {
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
+        -- The new-best toast (#5, modules/BestToast.lua; General > New-best toast, settings/General.lua):
+        -- on, 8 s on screen (LibKa0s-Toast-1.0's own DURATION), with its sound, at scale 1. `point`
+        -- (no default): where test mode's drag put it, { point, relativePoint, x, y } in UIParent's
+        -- units, written by the shell's drag stop; absent, the shell's own place under the top.
+        toast = { enabled = true, duration = 8, sound = true, scale = 1.0 },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
         -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and
@@ -124,8 +135,9 @@ NS.defaults = {
         -- would backfill it onto a legacy account (savedvariables-§1).
         schemaVersion = 0,
         -- The run record format (spec §7). Not a migration stamp: a stored run carries its own copy.
-        -- Format 2 (#6) adds the run's loadout keys; format 3 (#13, #14) its casts and usage.
-        schema = 3,
+        -- Format 2 (#6) adds the run's loadout keys; format 3 (#13, #14) its casts and usage; format 4
+        -- (#17) its stats.
+        schema = 4,
         -- The run store, keyed by run id (modules/Recorder.lua). Global: a run belongs to the
         -- installation, and a profile switch must not hide a character's history.
         runs = {},

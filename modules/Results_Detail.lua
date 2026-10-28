@@ -718,6 +718,12 @@ function Pane:fillFlags(run)
     end
 end
 
+-- The windows that follow the detail (the ability timeline, the gear view) redraw while open on it.
+local function followers(p)
+    NS.ResultsTimeline.DetailChanged(p)
+    NS.ResultsGear.DetailChanged(p)
+end
+
 --- Draw `run` (nil clears the pane to its prompt). The same run drawn again (a saved note or usage
 --- edit, a store change) keeps the scroll and the usage ticks not saved yet; another run starts at
 --- the top.
@@ -729,7 +735,7 @@ function Pane:Show(run)
     self.scrollFrame:SetShown(has)
     self.w.empty:SetShown(not has)
     for _, key in ipairs({ "addNote", "share", "delete", "timeline" }) do self.w[key]:SetShown(has) end
-    if not has then return NS.ResultsTimeline.DetailChanged(self) end
+    if not has then return followers(self) end
     self:fillHeader(run)
     self:fillScore(run)
     NS.ResultsCompare.Fill(self)
@@ -748,7 +754,7 @@ function Pane:Show(run)
     NS.HudStates.SetEnabled(self.w.timeline, NS.ResultsTimeline.Has(run))
     if not same then self.scroll = 0 end
     self:Layout(self.width, self.height, self.narrow)
-    NS.ResultsTimeline.DetailChanged(self)
+    followers(self)
 end
 
 -- ── the compare ─────────────────────────────────────────────────────────────────────────────────
@@ -774,7 +780,7 @@ function Pane:refreshCompare()
     NS.ResultsCompare.Fill(self)
     NS.ResultsLoadout.Fill(self)
     self:Layout(self.width, self.height, self.narrow)
-    NS.ResultsTimeline.DetailChanged(self)
+    followers(self)
 end
 
 --- The toggle: compare on or off (view state for the session, never stored).

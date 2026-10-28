@@ -384,7 +384,7 @@ test("usage: a race stores its casts and usage at the result, and nothing secret
     assertEqual(f.Race.State(), "result")
     assertEqual(run.status, "complete")
     assertEqual(#run.flags.lateCasts, 0, "the late-cast judging heard only the player")
-    assertEqual(run.schema, 3)
+    assertEqual(run.schema, f.NS.Recorder.RUN_SCHEMA)
 
     local stored = f:stored(run.id)
     assertTrue(stored == run)
@@ -517,7 +517,7 @@ test("usage: the format 3 migration raises the stamp and rewrites no run", funct
     NS:RunMigrations()
     local g = NS.db.global
     assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
-    assertEqual(g.schema, 3)
+    assertEqual(g.schema, NS.Recorder.RUN_SCHEMA, "the format stamp answers the current format")
     local run = g.runs.old
     assertEqual(run.schema, 2, "an old run was rewritten")
     assertNil(run.casts)

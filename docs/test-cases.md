@@ -13,7 +13,7 @@ Total.
 - skeleton: the addon registers with AceAddon under its folder name
 - skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
 - skeleton: /dr and /dpsrace are both registered on the one dispatcher
-- skeleton: the DB defaults load (global.runs empty, global.schema 3, schemaVersion stamped)
+- skeleton: the DB defaults load (global.runs empty, global.schema 4, schemaVersion stamped)
 - skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
 - skeleton: the produced interfaces exist
 - skeleton: every declared icon resolves to a shipped path
@@ -399,6 +399,39 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
+### test_autoarm.lua (30)
+
+- autoarm: both rules are off by default and register nothing
+- autoarm: each rule registers only what it needs, and turning both off drops it all
+- autoshow: a dummy target opens the HUD, and leaving it closes it after the debounce
+- autoshow: a dummy's nameplate opens the HUD, with no target at all
+- autoshow: nameplates churning inside the debounce never close the window
+- autoshow: the hide's fire scans the nameplates again before it closes
+- autoshow: a secret GUID is no dummy
+- autoshow: the player's close keeps it closed for the rest of the dummy session
+- autoshow: a window the player opened is theirs, and never closed by leaving
+- autoshow: a race or its result holds the window; the idle edge lets it go
+- autoshow: a result card holds the window past the debounce
+- autoshow: a race going idle near the dummy keeps the window open
+- autoshow: a dummy near an arm's window takes it over, so the idle edge never closes it
+- autoshow: test mode's window stays test mode's, and its end is no close by the player
+- autoshow: General visibility still decides whether it draws
+- autoshow: turning the rule off closes the window it opened
+- autoarm: targeting a cataloged dummy out of combat arms at the HUD's length and opens it
+- autoarm: a target that is no cataloged dummy arms nothing
+- autoarm: Race.Arm's refusals hold, silently: in combat, pending, meter unavailable
+- autoarm: no arm over a result card, nor in test mode
+- autoarm: targeting anything else before the pull disarms; another dummy keeps it
+- autoarm: a started race is never disarmed by a target change
+- autoarm: a target change in combat before the clock starts never disarms the pull
+- autoarm: a race the player armed is never the rule's to disarm
+- autoarm: Cancel works as today, and the next target change to a dummy arms again
+- autoarm: works alongside auto-show; the disarm leaves the dummy's window open
+- autoarm: a profile switch re-reads both rows, with no /reload
+- autoarm: neither rule acts in an instance or a battleground
+- autoarm: entering an instance closes the dummy's window
+- autoarm: stood down, nothing is registered and nothing acts; the stand-up rebuilds
+
 ### test_layers.lua (7)
 
 - layers: one table names the addon's tiers by the standard's keys
@@ -563,6 +596,18 @@ Total.
 - loadout: the Spec cell's tooltip names the loadout and notes gear changed since the previous run
 - loadout: the share line takes the talents link only with Include talents link on
 - loadout: Include talents link sits under Sharing on the History tab, before Storage
+
+### test_stats.lua (9)
+
+- stats: Snapshot reads the primary stat, stamina, armor and every rating with its percent
+- stats: crit is the highest of melee, ranged and each spell school's, as the character panel shows
+- stats: a secret value is stored as absent, never compared or kept
+- stats: a client without the APIs, or one that raises, yields absent fields; nothing readable is nil
+- stats: a new run carries the arm's stats; a run without any reads as none
+- stats: the format 4 migration raises the stamp and rewrites no run
+- stats: Groups lays out Primary, Secondary and Tertiary with each value's text
+- stats: a run without stats shows dashes in every row
+- stats: deltas against the compared run, signed, the percent deciding a rated row
 
 ### test_casts.lua (10)
 
@@ -756,6 +801,22 @@ Total.
 - timeline controls: every corridor wears its run's dark, translucent color
 - timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
 
+### test_results_gear.lua (13)
+
+- gear view: ParseLink reads the item, its enchant and its gems from the stored link
+- gear view: the cells follow the character panel, from the constants, the optional slots only when filled
+- gear view: SlotDiff tells an item change, the item level, the enchant and the gems apart
+- gear view: a slot's marks, a missing enchant or gem the compared run had, and its notes
+- gear view: CenterOver centers the view over the Results window from its anchor
+- gear view: a modal over the Results window: its strata, the cover, the opaque skin
+- gear view: Escape closes the view first and the Results window stays
+- gear view: it closes with the Results window
+- gear view: each slot's item, item level and marks; Shift-click and the tooltip go to the client
+- gear view: against the compared run, changed items tinted, item levels colored, enchant and gems edged
+- gear view: the stats column with deltas against the compared run, dashes for a run with none
+- gear view: the followed run deleted (the pane left empty) closes the view
+- gear view: a run without a compared run marks nothing and says so
+
 ### test_sizing.lua (14)
 
 - sizing: a size change the grip did not start redraws at once
@@ -817,12 +878,12 @@ Total.
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: the HUD page holds Race HUD then HUD Appearance; General keeps Master controls alone
+- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is a one-tab page along the race's timeline, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults names Master controls, and not the keys or the HUD
+- settings: General's Defaults names Master controls and the toast, and not the keys or the HUD
 - settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
@@ -882,6 +943,20 @@ Total.
 - share: a result prints the score line with the delta, the flags and the tail
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
+
+### test_toast.lua (11)
+
+- toast: a complete run that beats the board's best toasts once, whatever the HUD shows
+- toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
+- toast: the payload names the spec, the board, the time, the DPS and the gain over the old best
+- toast: a flagged run may toast, its flags on the last line as the result card words them
+- toast: it closes after Toast duration, plays its sound only with Play a sound on
+- toast: test mode holds the sample race's toast, and its end takes it down
+- toast: Test toast queues a sample that runs its course, and a second click replaces it
+- toast: a real toast never moves; in test mode or as a sample it drags
+- toast: a drag stores the place in the profile in UIParent units; Reset position clears it
+- toast: a profile switch follows the new profile's switch: a toast up goes, test mode's comes back
+- toast: the stand-down takes the toast down and drops what waits; a result while down shows none
 
 ### test_preview.lua (23)
 
@@ -966,7 +1041,7 @@ Total.
 - Disabled (race): an armed race is dropped by the stand-down and not resumed
 - Disabled (race): a disabled login resumes nothing until the addon is enabled
 
-### test_surface_parity.lua (15)
+### test_surface_parity.lua (16)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
@@ -982,6 +1057,7 @@ Total.
 - parity: the Widgets seam answers on both arms, nil being a real answer
 - parity: the Media seam answers on both arms, nil being a real answer
 - parity: the Env seam answers the TOC's version on both arms
+- parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing
 - parity: the hollow composers cost the library-absent load exactly the composed rows
 
 ### test_perf_harness.lua (4)
@@ -997,11 +1073,12 @@ Total.
 - load order: every derived path exists on disk
 - load order: no libs/ path leaked into the addon's own list
 
-### test_vendor_sync.lua (3)
+### test_vendor_sync.lua (4)
 
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
+- libs/LibKa0s/Toast.lua, vendored alone, is the LibKa0s branch's file byte for byte
 
 ### test_eol.lua (2)
 
@@ -1086,6 +1163,7 @@ Total.
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
+| test_autoarm.lua | 30 |
 | test_layers.lua | 7 |
 | test_results.lua | 50 |
 | test_results_fit.lua | 6 |
@@ -1095,6 +1173,7 @@ Total.
 | test_results_badges.lua | 11 |
 | test_compare.lua | 22 |
 | test_loadout.lua | 27 |
+| test_stats.lua | 9 |
 | test_casts.lua | 10 |
 | test_usage.lua | 25 |
 | test_results_usage.lua | 24 |
@@ -1106,25 +1185,27 @@ Total.
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
+| test_results_gear.lua | 13 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 17 |
 | test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
+| test_toast.lua | 11 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
-| test_surface_parity.lua | 15 |
+| test_surface_parity.lua | 16 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 3 |
-| test_vendor_sync.lua | 3 |
+| test_vendor_sync.lua | 4 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **885** |
+| **Total** | **950** |

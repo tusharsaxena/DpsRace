@@ -1,6 +1,6 @@
 local _, NS = ...
 -- settings/Race.lua — the Race page (spec §6.3), one tab along the race's timeline: the default race
--- length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and
+-- length, auto-arm on a training dummy (#16), the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and
 -- the scoring rules a new run freezes into its own record (grace, restart gap).
 
 local L = NS.L
@@ -28,6 +28,11 @@ NS.RegisterSchemaRows({
       label = L["Default race length"], default = D.defaultLength, values = lengthValues(),
       tooltip = L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."],
       onChange = newDefault },
+    -- ── Auto-arm ── (#16, modules/AutoArm.lua) before the race, at the length above.
+    { path = "race.autoArm", page = PAGE, group = RACE, subgroup = L["Auto-arm"], type = "bool",
+      label = L["Arm on a training dummy"], default = D.autoArm,
+      tooltip = L["Arm a race by itself when you target a known training dummy out of combat, at the length Arm Race would use; your first hit starts it. Targeting anything else (or nothing) before the pull cancels it. Nothing arms in combat, in instances, over a result, or while a run waits for its result."],
+      onChange = function() NS.AutoArm.Sync() end },
     -- ── Countdown ── the cue first, alone on its line (it fires from 10 s whatever the center
     -- numbers do), then the center numbers and where they start.
     { path = "race.countdownCue", page = PAGE, group = RACE, subgroup = L["Countdown"], type = "bool",

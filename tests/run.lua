@@ -35,6 +35,18 @@ do
     assert(#missing == 0, "libs/LibKa0s/LibKa0s.xml is missing " .. table.concat(missing, ", "))
 end
 
+-- A LibKa0s file the TOC names after the .xml (LibKa0s-Toast-1.0, vendored alone until the next full
+-- re-vendor: docs/ARCHITECTURE.md, Documented deviations) loads after it, read out of the TOC so the
+-- runner loads what the client loads.
+do
+    local toc = assert(io.open(root .. "/DpsRace.toc", "r"))
+    for line in toc:lines() do
+        local rel = line:gsub("\r", ""):match("^libs\\LibKa0s\\([^\\]+%.lua)%s*$")
+        if rel then LIB_FILES[#LIB_FILES + 1] = root .. "/libs/LibKa0s/" .. rel end
+    end
+    toc:close()
+end
+
 -- The addon's own files come from the TOC, so this runner cannot drift from what the client loads.
 local ADDON_FILES = Loader.tocFiles(root .. "/DpsRace.toc")
 
@@ -90,6 +102,7 @@ local SUITES = {
     "test_chart",
     "test_pace",
     "test_countdown",
+    "test_autoarm",
     "test_layers",
     "test_results",
     "test_results_fit",
@@ -99,6 +112,7 @@ local SUITES = {
     "test_results_badges",
     "test_compare",
     "test_loadout",
+    "test_stats",
     "test_casts",
     "test_usage",
     "test_results_usage",
@@ -110,12 +124,14 @@ local SUITES = {
     "test_results_timeline_view",
     "test_results_timeline_scroll",
     "test_results_timeline_controls",
+    "test_results_gear",
     "test_sizing",
     "test_tooltips",
     "test_schema",
     "test_settings",
     "test_slash",
     "test_share",
+    "test_toast",
     "test_preview",
     "test_sim",
     "test_launcher",

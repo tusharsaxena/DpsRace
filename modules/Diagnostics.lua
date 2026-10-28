@@ -50,6 +50,9 @@ function NS.Diagnostics.Sections()
             local test = NS.Preview.Diagnose()
             out:add("Diag", "test active=%s mode=%s phase=%s scenario=%s ticking=%s", test.active, test.mode,
                 test.phase, test.scenario, test.ticking)
+            local toast = NS.BestToast.Diagnose()
+            out:add("Diag", "toast shown=%s waiting=%s key=%s preview=%s", toast.shown, toast.waiting, toast.key,
+                toast.preview)
             local results = NS.Results.Diagnose()
             out:add("Diag", "results tab=%s mode=%s rows=%s selected=%s", results.tab, results.mode,
                 results.rows, results.selected)

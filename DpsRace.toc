@@ -25,6 +25,10 @@ libs\AceGUI-3.0\AceGUI-3.0.xml
 libs\AceConfig-3.0\AceConfig-3.0.xml
 # ONE line: the .xml is itself the file list (library-stack-§7). After Ace3.
 libs\LibKa0s\LibKa0s.xml
+# TEMPORARY (docs/ARCHITECTURE.md, Documented deviations): LibKa0s-Toast-1.0 vendored alone, ahead
+# of the rest of LibKa0s, so it is named here rather than in the untouched LibKa0s.xml. After the
+# .xml (it floors on LibKa0s-Core-1.0); the next full re-vendor drops this line.
+libs\LibKa0s\Toast.lua
 libs\LibSharedMedia-3.0\lib.xml
 libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
 libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
@@ -59,6 +63,9 @@ core\Bus.lua
 core\PoolSetup.lua
 # Reads LibStub (LibKa0s-Widgets-1.0) at FILE SCOPE and NS.Icon at CALL time only.
 core\WidgetsSetup.lua
+# The new-best toast's shell (#5): reads LibStub (LibKa0s-Toast-1.0) at FILE SCOPE and publishes
+# NS.NewToast, which modules\BestToast.lua calls at FILE SCOPE.
+core\ToastSetup.lua
 # LOAD-BEARING: core\PerfSetup.lua hands NS.lifecycle to LibKa0s-Perf-1.0, which RAISES at :New
 # without it, so the latch is built first.
 core\LifecycleSetup.lua
@@ -88,6 +95,8 @@ modules\Meter.lua
 modules\Recorder.lua
 # The loadout store (#6): reached by Recorder and Race at CALL time.
 modules\Loadouts.lua
+# The stats a run was raced with (#17): read by Recorder at CALL time (the arm).
+modules\Stats.lua
 modules\Timeline.lua
 modules\Scoring.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED) at FILE SCOPE through core\Bus.lua.
@@ -123,6 +132,9 @@ modules\Hud.lua
 # The race's final seconds: the countdown cue and the center-screen numbers, its own frame. LOAD-BEARING:
 # builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua.
 modules\Countdown.lua
+# Auto-show and auto-arm near a training dummy (#16). LOAD-BEARING: builds its bus receiver
+# (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua; reaches the HUD and the race at CALL time.
+modules\AutoArm.lua
 # The Results window (T8). The table first: the tabs and the detail capture NS.ResultsTable at FILE
 # SCOPE, so each follows the files it captures (the row pitch is read at CALL time).
 # Where the window reads its runs: the store, or the sample history while test mode or a sim is on
@@ -144,6 +156,10 @@ modules\Results_Usage.lua
 # The ability timeline window (#14): reads NS.defaults (defaults\Profile.lua) and captures NS.Style and
 # NS.ResultsTable at FILE SCOPE; the detail and the shell reach it at CALL time.
 modules\Results_Timeline.lua
+# The gear view window (#17). LOAD-BEARING: takes NS.ResultsTimeline.SKIN (the opaque modal skin) and
+# captures NS.Style and NS.ResultsTable at FILE SCOPE, so it follows modules\Results_Timeline.lua; the
+# detail and the shell reach it at CALL time.
+modules\Results_Gear.lua
 modules\Results_Bests.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.
@@ -151,6 +167,10 @@ modules\Results.lua
 # Share (T9): the one-line share and the race's own chat lines. LOAD-BEARING: builds its bus receiver
 # (RACE_STATE_CHANGED / RACE_RESULT) at FILE SCOPE through core\Bus.lua.
 modules\Share.lua
+# The new-best toast (#5). LOAD-BEARING: builds its toast through NS.NewToast (core\ToastSetup.lua) and
+# its bus receiver (RACE_RESULT / SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua; reaches the
+# HUD's flag chips, the style and the settings at CALL time.
+modules\BestToast.lua
 # The sample data test mode and the sim draw (B5): a made-up run history and HUD race, never stored.
 # Reached at CALL time only.
 modules\MockRuns.lua

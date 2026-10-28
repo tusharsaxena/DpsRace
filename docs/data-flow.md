@@ -50,7 +50,9 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 - **Arm** (`Race.Arm(length, count)`, out of combat only): refused with `busy` (armed or running),
   `pending` (a run is stopping, or a stored run is unresolved), `bad_length`, `in_combat`,
   `meter_unavailable` (with Blizzard's reason) or `disabled`. Otherwise `Recorder.NewRun` snapshots
-  the player, target and place, `Recorder.SnapshotLoadout` reads the gear links and the talent
+  the player, target and place and reads the stats onto the run (`Stats.Snapshot`, #17: the primary
+  stat, stamina, armor and every rating with its percent, each through `NS.Secrets`, a sealed one
+  absent), `Recorder.SnapshotLoadout` reads the gear links and the talent
   loadout into memory as the fallback (#6), `Casts.Begin()` starts the race's cast list and
   `Usage.Snapshot()` reads what could be used into memory (#13, #14; below), the session IDs the client holds are remembered (they belong to
   earlier fights and are never this run's), and nothing is stored yet. Watchers registers the meter,
@@ -282,9 +284,31 @@ race.
   `RACE_BUZZER` raises the raid warning *STOP* and its sound (`race.buzzer`, `modules/Hud.lua`).
   None of it needs the HUD window.
 - **Who opened the window**: the player (`Hud.Show`, the toggle) or the addon (an arm or a result
-  under `onArm`, and test mode through `Hud.AutoShow`). Only an addon-opened window closes by itself
+  under `onArm`, and test mode through `Hud.AutoShow`; test mode gives it back through
+  `Hud.Hide(true)`, which is not the player's close and does not move `Hud.Closes()`). Only an addon-opened window closes by itself
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
+- **Near a training dummy** (#16, `modules/AutoArm.lua`, both rows off by default): registered on its
+  own AceEvent target only while a row is on and the addon stands up. *Auto-show* (`hud.autoShow`):
+  `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of cataloged dummies'
+  plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up in
+  `defaults/Dummies.lua`; a secret GUID is no dummy) and the target; while either holds one a dummy
+  session runs and `Hud.ShowNearDummy()` opens the window if nothing else wants it (an arm's or a result
+  card's window, the addon's own, is taken over instead, so the onArm close at the idle edge skips it
+  whatever order the bus calls the HUD and this module in; the player's and test mode's stay theirs). With none left a
+  `C_Timer` of `AutoArm.HIDE_DELAY` (3) s is armed (the next dummy cancels it); at its fire the
+  nameplates are scanned again (`C_NamePlate.GetNamePlates`) and, still none, the session ends and
+  `Hud.HideAwayFromDummy()` closes the window it opened, only while the race is idle (the idle edge on
+  `RACE_STATE_CHANGED` asks again). A race going idle leaves that window open. A close by the player
+  in a session (`Hud.Closes()` moved) keeps it closed until the session ends. *Auto-arm*
+  (`race.autoArm`): a target change to a cataloged dummy, out of combat, the race idle and no test
+  mode or sim on, calls `Race.Arm(Hud.ArmLength())` with every refusal it has, silently; the arm opens
+  the HUD as a manual arm does. While that run is still ARMED, a target change out of combat to anything
+  else (or none) calls `Race.Cancel()` (in combat the pull is under way: Race holds ARMED until the
+  meter session pairs with the regen edge, so nothing is canceled); a run leaving ARMED (started, canceled) is no longer the rule's. Neither
+  rule acts in an instance (`GetInstanceInfo`'s type other than `none`), `PLAYER_ENTERING_WORLD`
+  re-decides after each loading screen, and `SETTINGS_CHANGED("profile")` re-reads both rows
+  (`AutoArm.Sync`) on a profile switch, copy or reset.
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
   one is remembered as `race.lastLength`) go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
@@ -386,6 +410,17 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   on every draw and compare change, so the window follows the run, a pick and *Clear Pick*; it closes
   with the Results window. Every open places it exactly over the Results window, that window's anchor
   and its size in the view shown (`Results.Placement`); nothing of its place or size is stored.
+- **The gear view** (#17, `modules/Results_Gear.lua`): the *Gear view* button at the right of the
+  detail's *Gear* heading (shown for a run with gear) opens a modal on the detail pane, centered over
+  the Results window (`CenterOver` on `Results.Placement`) at the size its content takes (`Size`). It
+  reads `ResultsSource.LoadoutOf` for this run and the compared run (`CompareTarget(true)`, as the
+  timeline does) and lays the slots out from `Cells` (the character panel's columns, the weapons under
+  the middle); each slot's marks come from its stored link (`ParseLink`: the enchant and gem IDs),
+  and `SlotDiff` against the compared run's slot gives its tint (another item), its item level's color
+  and its marks' amber edge (`Marks`; nothing is marked when the compared run has no gear). The middle
+  column is `Stats.Groups(Stats.Of(run), Stats.Of(other))`: each value's text and its delta, a dash
+  for a run with no `stats`. The detail calls `ResultsGear.DetailChanged` beside the timeline's, so the
+  view follows the run and the compare; it closes with the Results window.
 - **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
   same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
   *All categories*: the table has no target column, so two boards of one spec and length would read
@@ -409,6 +444,16 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   every surface that arms says so once; `RACE_RESULT` prints `Share.ResultLine(run, Bests.Delta(run))`
   (*26.56M damage · 147.6K DPS in 3:00 on … — new best (+2.4%) · 1 late cast · tail +3.1s*), or that
   a lost run could not be read.
+- **The new-best toast** (#5, `modules/BestToast.lua`): `RACE_RESULT` with a `complete` run asks
+  `Bests.Delta(run)`; only a new best with a gain (a previous best on the board, so never a board's
+  first run) queues one toast under the run's id, through LibKa0s-Toast-1.0 (`core/ToastSetup.lua`),
+  whatever the HUD shows. Its payload is plain text off the stored run and the previous best (Delta's
+  third return): *New best: Destruction (Single target)*, *1:00 · 104.2K DPS, +4.2% over 100.0K*, and
+  the run's flags as the result card's chips word them. The shell shows one at a time for
+  `toast.duration` seconds (paused under the pointer), plays the alert with `toast.sound`, and closes on
+  its X or a right-click. Test mode holds the sample race's toast (`BestToast.ShowPreview`, from
+  `modules/Preview.lua`) until it ends; only that toast and *Test toast*'s sample move, and a drag
+  stores `profile.toast.point`. The stand-down clears it (`BestToast.Suspend`).
 
 ## Test mode and the sim (spec §6.5, preview-mode; B5)
 

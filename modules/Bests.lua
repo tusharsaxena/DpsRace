@@ -116,13 +116,15 @@ end
 --- @param runs table|nil  defaults to every stored run
 --- @return number|nil pct  (dps / previous best dps - 1) * 100; nil with no previous best or no score
 --- @return boolean isNewBest  it beats the previous best, or is the first complete run on its board
+--- @return table|nil prev  the previous best it was compared with (Bests.Before), nil with none (the
+---   new-best toast names its DPS, modules/BestToast.lua)
 function Bests.Delta(run, runs)
-    if not counts(run) then return nil, false end
+    if not counts(run) then return nil, false, nil end
     local prev = Bests.Before(run, runs)
-    if not prev then return nil, true end
+    if not prev then return nil, true, nil end
     local mine, theirs = dpsOf(run), dpsOf(prev)
-    if theirs <= 0 then return nil, mine > theirs end
-    return (mine / theirs - 1) * 100, mine > theirs
+    if theirs <= 0 then return nil, mine > theirs, prev end
+    return (mine / theirs - 1) * 100, mine > theirs, prev
 end
 
 --- Every run holding a best on the all-runs board or the clean-only board: what pruning keeps.

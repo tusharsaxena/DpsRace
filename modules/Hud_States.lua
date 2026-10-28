@@ -979,6 +979,23 @@ local FLAG_CHIP = {
     died = function() return L["Died"] end,
 }
 
+--- A run's flags as the result card's chips draw them: { text = the short label, tip = the full text },
+--- in Scoring.Flags' order (the new-best toast's second line reads them too, modules/BestToast.lua).
+--- @param run table
+--- @return table chips
+function States.FlagChips(run)
+    local list = {}
+    for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
+        local skip = flag.key == "died" and run.status == "incomplete"
+        local short = FLAG_CHIP[flag.key]
+        if short and not skip then list[#list + 1] = { text = short(run), tip = flag.text } end
+    end
+    return list
+end
+
+--- The amber the flag chips draw in, for a caller drawing them elsewhere.
+States.FLAG_COLOR = C.amber
+
 --- The result card's chips: the best delta, the flags, the tail (spec §6.1).
 function States.ResultChips(v)
     local run, list = v.run, {}
@@ -987,10 +1004,8 @@ function States.ResultChips(v)
     elseif v.delta then
         list[1] = { text = L["%+.1f%% vs best"]:format(v.delta), color = C.red }
     end
-    for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
-        local skip = flag.key == "died" and run.status == "incomplete"
-        local short = FLAG_CHIP[flag.key]
-        if short and not skip then list[#list + 1] = { text = short(run), color = C.amber, tip = flag.text } end
+    for _, chip in ipairs(States.FlagChips(run)) do
+        list[#list + 1] = { text = chip.text, color = C.amber, tip = chip.tip }
     end
     -- The run's time: the length and the DoT tail, or the time in combat before the buzzer.
     if run.status ~= "lost" and type(run.result) == "table" then

@@ -36,8 +36,8 @@ L["Reset this profile to the addon's defaults? Everything you have configured or
 L["Yes"] = "Yes"
 L["No"] = "No"
 L["All settings reset to defaults."] = "All settings reset to defaults."
-L["Restore every General setting on this profile to its addon default: Master controls."] =
-    "Restore every General setting on this profile to its addon default: Master controls."
+L["Restore every General setting on this profile to its addon default: Master controls and the new-best toast."] =
+    "Restore every General setting on this profile to its addon default: Master controls and the new-best toast."
 
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
@@ -332,6 +332,9 @@ L["Always"] = "Always"
 L["When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."] =
     "When a race is armed: the HUD opens when you arm a race or a result arrives, and closes again when that race is over. Always: it is open from login. General visibility on Master controls still applies: while it hides the addon, the HUD stays hidden whatever this says."
 L["Race clock"] = "Race clock"
+L["Show near a training dummy"] = "Show near a training dummy"
+L["Open the HUD by itself while a known training dummy is your target or its nameplate is up, and close it again a few seconds after none is, unless a race or its result holds it. If you close it yourself, it stays closed until you leave the dummies. Not in instances. With nameplates off, only your target counts."] =
+    "Open the HUD by itself while a known training dummy is your target or its nameplate is up, and close it again a few seconds after none is, unless a race or its result holds it. If you close it yourself, it stays closed until you leave the dummies. Not in instances. With nameplates off, only your target counts."
 L["Elapsed and time left"] = "Elapsed and time left"
 L["Time left"] = "Time left"
 L["Time elapsed"] = "Time elapsed"
@@ -358,6 +361,10 @@ L["Countdown"] = "Countdown"
 L["At the buzzer"] = "At the buzzer"
 L["Scoring rules"] = "Scoring rules"
 L["Default race length"] = "Default race length"
+L["Auto-arm"] = "Auto-arm"
+L["Arm on a training dummy"] = "Arm on a training dummy"
+L["Arm a race by itself when you target a known training dummy out of combat, at the length Arm Race would use; your first hit starts it. Targeting anything else (or nothing) before the pull cancels it. Nothing arms in combat, in instances, over a result, or while a run waits for its result."] =
+    "Arm a race by itself when you target a known training dummy out of combat, at the length Arm Race would use; your first hit starts it. Targeting anything else (or nothing) before the pull cancels it. Nothing arms in combat, in instances, over a result, or while a run waits for its result."
 L["The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."] =
     "The race length the HUD offers until you pick another. The last length you pick is remembered until you change this."
 L["Countdown cue sound"] = "Countdown cue sound"
@@ -454,6 +461,24 @@ L["Deleted %d runs."] = "Deleted %d runs."
 -- Share and the race's chat lines (modules/Share.lua, mockup screen 12)
 L["DPS Race %s"] = "DPS Race %s"
 L["%s DPS"] = "%s DPS"
+-- The new-best toast (#5, modules/BestToast.lua; General > New-best toast).
+L["New best: %s (%s)"] = "New best: %s (%s)"
+L["%s DPS, %s over %s"] = "%s DPS, %s over %s"
+L["New-best toast"] = "New-best toast"
+L["Show a toast for a new best"] = "Show a toast for a new best"
+L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."] =
+    "When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."
+L["Play a sound"] = "Play a sound"
+L["Play an alert sound as the toast appears."] = "Play an alert sound as the toast appears."
+L["Toast duration (seconds)"] = "Toast duration (seconds)"
+L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] =
+    "How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."
+L["Toast scale"] = "Toast scale"
+L["The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."] =
+    "The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."
+L["Test toast"] = "Test toast"
+L["Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."] =
+    "Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."
 L["(Ka0s DPS Race)"] = "(Ka0s DPS Race)"
 L["Share to"] = "Share to"
 L["Say"] = "Say"
@@ -725,7 +750,7 @@ L["Talents"] = "Talents"
 L["Not recorded"] = "Not recorded"
 L["Unnamed loadout"] = "Unnamed loadout"
 L["Talent loadout"] = "Talent loadout"
-L["Dressing Room"] = "Dressing Room"
+L["Gear view"] = "Gear view"
 L["View"] = "View"
 L["Copy"] = "Copy"
 L["Different loadout"] = "Different loadout"
@@ -737,7 +762,8 @@ L["Hover an item for its tooltip; Shift-click links it in chat."] =
 L["This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."] =
     "This run has no gear or talents: it was raced before the addon recorded them, or the client could not read them."
 L["Nothing was equipped in this slot."] = "Nothing was equipped in this slot."
-L["Try the run's gear on in the Dressing Room."] = "Try the run's gear on in the Dressing Room."
+L["The run's gear and stats, laid out as the character panel does, against the run the detail compares with."] =
+    "The run's gear and stats, laid out as the character panel does, against the run the detail compares with."
 L["Hero talents: %s"] = "Hero talents: %s"
 L["The talent loadout the run was raced with."] = "The talent loadout the run was raced with."
 L["Open the run's talent tree, read-only, and post its link to your chat window to open again later."] =
@@ -746,6 +772,32 @@ L["Only you see the link: nothing is sent to a channel."] = "Only you see the li
 L["this run"] = "this run"
 L["Talents for %s: %s \226\128\148 click the link to view the tree."] =
     "Talents for %s: %s \226\128\148 click the link to view the tree."
+
+-- The gear view (modules/Results_Gear.lua, #17) and the stats it shows (modules/Stats.lua)
+L["vs %s"] = "vs %s"
+L["Changed: %s wore %s."] = "Changed: %s wore %s."
+L["Changed: %s had nothing here."] = "Changed: %s had nothing here."
+L["The enchant differs from %s's."] = "The enchant differs from %s's."
+L["The gems differ from %s's."] = "The gems differ from %s's."
+L["Higher item level than %s's."] = "Higher item level than %s's."
+L["Lower item level than %s's."] = "Lower item level than %s's."
+L["Stats were not recorded for this run."] = "Stats were not recorded for this run."
+L["Primary"] = "Primary"
+L["Secondary"] = "Secondary"
+L["Tertiary"] = "Tertiary"
+L["Primary stat"] = "Primary stat"
+L["Strength"] = "Strength"
+L["Agility"] = "Agility"
+L["Intellect"] = "Intellect"
+L["Stamina"] = "Stamina"
+L["Armor"] = "Armor"
+L["Critical Strike"] = "Critical Strike"
+L["Haste"] = "Haste"
+L["Mastery"] = "Mastery"
+L["Versatility"] = "Versatility"
+L["Leech"] = "Leech"
+L["Avoidance"] = "Avoidance"
+L["Speed"] = "Speed"
 L["Spell breakdown"] = "Spell breakdown"
 L["Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."] =
     "Each spell's damage and its share of the run's, highest first. Compare sets them beside another run's."

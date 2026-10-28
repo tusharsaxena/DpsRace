@@ -5,6 +5,17 @@ What the addon cannot do, or does only approximately, and why. Split out of
 the hub keeps a short summary. Each entry names the client limit or the owner's decision behind it,
 and the smoke row that measures it where one exists.
 
+- **Auto-show and auto-arm see only cataloged training dummies** (#16, `modules/AutoArm.lua`). A
+  dummy is a creature ID in `defaults/Dummies.lua`; one not cataloged neither opens the HUD nor arms
+  (the catalog grows from measurements, #9). With enemy nameplates off no `NAME_PLATE_UNIT_ADDED`
+  fires, so auto-show sees only the target. A nameplate that comes up in combat may carry a secret
+  GUID and is not counted then; the hide's fire scans the nameplates again before it closes the
+  window. Neither rule acts in an instance (a dungeon, raid, scenario, battleground or arena; the
+  owner's stand-down rule on the issue): there a race is armed by hand. Auto-arm arms only on a
+  target change: a race that ended with the dummy still targeted is armed again by retargeting it
+  or by Arm Race. Auto-show decides on a dummy event (a target change, a nameplate, the race's idle
+  edge): when test mode closes the window it opened beside a dummy, the window comes back on the next
+  such event, not on its own (smoke rows SM-DR-TA1 to SM-DR-TA8, SM-DR-TA24 to SM-DR-TA28).
 - **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
@@ -124,6 +135,25 @@ and the smoke row that measures it where one exists.
   dash (its tooltip *Not recorded*), their *Usage* section says *Not recorded*, their chart draws no
   cooldown icons and their *Timeline* button is grayed. Stored runs are never rewritten
   ([schema.md](schema.md), migration 2 → 3).
+- **A board's first run never toasts, and the toast judges the all-runs board** (#5, the owner's call
+  on the issue, 2026-10-25). A first run is a new best with nothing to beat, so it gets the result
+  card's *New best* chip but no toast. A flagged run that beats the best still toasts (flags inform,
+  never void), its flags on the toast's last line; the clean-only board is not consulted. The sim's
+  results do not toast either: only a real `RACE_RESULT` does, and test mode shows its sample instead.
+- **The toast is LibKa0s-Toast-1.0 vendored alone, ahead of the rest of LibKa0s** (a documented
+  deviation in [ARCHITECTURE.md](ARCHITECTURE.md#documented-deviations), until the next full
+  re-vendor). On v1.77.0's Core it wears Core's own window skin and close mark, not a skin owner's;
+  the diagnostics report's library header does not list the Toast module until the re-vendor
+  (smoke rows SM-DR-TA17 to SM-DR-TA23).
+- **The gear view's stats are the ones read at the arm** (#17). They are what the character sheet said
+  when the race was armed, with whatever buffs were up then (a flask, a food buff, a temporary proc);
+  a buff gained or lost between the arm and the pull, or a gear change before the pull (the gear is
+  re-read at the combat end, the stats are not), is not seen. A run stored before format 4 has no stats
+  and the view shows dashes; stored runs are never rewritten (migration 4 → 5). A value the client
+  could not read, or that arrived secret, is absent and shows as a dash.
+- **The gear view shows an enchant and gems, not empty sockets** (#17). A stored item link names the
+  enchant and the gems in the item, but not how many sockets it has, so an empty socket has no mark.
+  The marks come from the link's IDs; the enchant's name and the gems' stats are in the item tooltip.
 - **No exact cutoff at the buzzer.** Damage that lands after it counts, because meter values captured
   in combat stay secret (spec §2, §5.1).
 - **The ability timeline does not scroll sideways on a tilt wheel or a touchpad's sideways swipe**

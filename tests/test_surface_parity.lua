@@ -145,6 +145,18 @@ test("parity: the Env seam answers the TOC's version on both arms", function()
     assertEqual(d.NS.Meta("Version"), l.NS.Meta("Version"))
 end)
 
+test("parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing", function()
+    local l, d = pair()
+    assertTrue(l.NS.HasToast(), "the live load has no Toast library")
+    assertFalse(d.NS.HasToast())
+    assertTrue(d.NS.BestToast.Instance() == d.NS.ToastStub, "the degraded load holds the stub")
+    T.assertSurfaceParity(l.NS.BestToast.Instance(), d.NS.ToastStub, "Toast instance")
+    assertFalse(d.NS.BestToast.Test(), "the stub shows nothing")
+    d.NS.BestToast.Sync()
+    d.NS.BestToast.Suspend()
+    assertFalse(d.NS.BestToast.Diagnose().shown)
+end)
+
 test("parity: the hollow composers cost the library-absent load exactly the composed rows", function()
     -- red under: make a composer in settings/OptionsSetup.lua's stub emit rows, or add a row a page
     -- declares outside a composer (options-ui-§1: pin both counts and the delta)
@@ -158,8 +170,10 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     local RESULTS_TABLE_ROWS = 2 * 4 + 6
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
-    -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st).
-    local PAGE_ROWS = 21
+    -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;
+    -- HUD's Show near a training dummy and Race's Arm on a training dummy, #16, the 22nd and 23rd;
+    -- General's New-best toast tab, #5, the 24th to the 27th).
+    local PAGE_ROWS = 27
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

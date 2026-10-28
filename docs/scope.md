@@ -42,6 +42,16 @@ in the spec, sections 1, 2 and 13
   shirt or tabard) and its talent loadout, each distinct set stored once. The detail draws the gear
   grid with the client's item tooltips and the talents with *View* (opens the talent tree, and posts a clickable link to chat) and *Copy*; under the compare it
   highlights the changed slots and marks a different loadout.
+- **The gear view and the stats behind each run** (#17; run-record format 4). Every new run keeps
+  the stats read at arm (the primary stat, stamina, armor, and every secondary and tertiary as rating
+  and percent). The detail's *Gear view* lays the gear out as the character panel does, without the
+  model, with each item's level and its enchant and gem marks, and the stats in the middle, against the
+  compared run: changed slots, item levels, enchants and gems marked, each stat's difference.
+- **The new-best toast** (#5). A complete run that beats an earlier best on its board shows a toast
+  near the top of the screen, whether or not the HUD is open: the spec and board, the time, the DPS
+  and the gain over the old best, and the run's flags. A board's first run does not toast. It runs on
+  LibKa0s-Toast-1.0 (one at a time, timed, paused under the pointer); General > *New-best toast* turns
+  it off and sets its duration, sound and scale, and test mode places it.
 - **Resilience to `/reload`.** A run is stored from its first hit, and a reload at any point resumes
   it, reads it later, or settles it as lost (spec §4.5).
 - **What each run cast and used** (#13, #14; run-record format 3). Every cast of the player and the

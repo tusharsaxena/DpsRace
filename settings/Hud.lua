@@ -41,6 +41,11 @@ NS.RegisterSchemaRows({
       validate = function(v) return CLOCK_MODES[v] == true end,
       tooltip = L["What the HUD's clock shows while the race runs: the time elapsed in green, the time left in red, or both side by side. The armed and stop screens keep their own."],
       onChange = function() NS.Hud.Refresh() end },
+    -- Auto-show (#16, modules/AutoArm.lua): its own line under the two dropdowns.
+    { path = "hud.autoShow", page = PAGE, group = L["Race HUD"], subgroup = L["Display"], type = "bool",
+      label = L["Show near a training dummy"], default = NS.defaults.profile.hud.autoShow, startsLine = true,
+      tooltip = L["Open the HUD by itself while a known training dummy is your target or its nameplate is up, and close it again a few seconds after none is, unless a race or its result holds it. If you close it yourself, it stays closed until you leave the dummies. Not in instances. With nameplates off, only your target counts."],
+      onChange = function() NS.AutoArm.Sync() end },
 })
 
 -- The live breakdown: each row is read when the HUD draws or reads, so a redraw is the whole

@@ -329,9 +329,30 @@ local function build()
         M.__target = t
         M.__unitExists.target = t ~= nil
     end
+    -- The nameplates up (#16, modules/AutoArm.lua): unit token -> { guid, name }, in the order
+    -- C_NamePlate.GetNamePlates answers them. A case edits it through M.__setPlate.
+    M.__plates, M.__plateOrder = {}, {}
+    function M.__setPlate(unit, t)
+        if t and not M.__plates[unit] then M.__plateOrder[#M.__plateOrder + 1] = unit end
+        if not t then
+            for i, u in ipairs(M.__plateOrder) do
+                if u == unit then table.remove(M.__plateOrder, i) break end
+            end
+        end
+        M.__plates[unit] = t
+        M.__unitExists[unit] = t ~= nil
+    end
+    M.C_NamePlate = {
+        GetNamePlates = function()
+            local out = {}
+            for _, u in ipairs(M.__plateOrder) do out[#out + 1] = { namePlateUnitToken = u } end
+            return out
+        end,
+    }
     local function unitField(unit, field, playerValue)
         if unit == "player" then return playerValue end
         if unit == "target" and M.__target then return M.__target[field] end
+        if M.__plates[unit] then return M.__plates[unit][field] end
         return nil
     end
     M.UnitGUID = function(unit) return unitField(unit, "guid", M.__context.guid) end

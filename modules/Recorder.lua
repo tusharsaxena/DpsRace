@@ -26,8 +26,9 @@ local Secrets = NS.Secrets
 -- The run record format (spec §7). A stored run carries its own copy; db.global.schema is the same.
 -- Format 2 (#6) adds run.loadout; a format-1 run is a format-2 run without one. Format 3 (#13, #14)
 -- adds run.casts and run.usage (modules/Casts.lua, modules/Usage.lua); an older run has neither and
--- reads as not recorded.
-Recorder.RUN_SCHEMA = 3
+-- reads as not recorded. Format 4 (#17) adds run.stats (modules/Stats.lua), read at arm; an older run
+-- has none and the gear view shows dashes.
+Recorder.RUN_SCHEMA = 4
 
 -- An id is time() .. "-" .. a four-digit random; a clash with a stored run is redrawn this many times.
 local ID_ATTEMPTS = 32
@@ -97,6 +98,14 @@ local function npcIDFromGUID(guid)
     local kind, id = guid:match("^(%a+)%-%d+%-%d+%-%d+%-%d+%-(%d+)%-")
     if kind ~= "Creature" and kind ~= "Vehicle" then return nil end
     return tonumber(id)
+end
+
+--- The catalog entry of the cataloged training dummy `unit` is (#16: the target, a nameplate), or nil:
+--- no such unit, not a cataloged dummy, or a GUID that arrived secret (never parsed).
+--- @param unit string
+--- @return table|nil  { name, category }
+function Recorder.DummyOf(unit)
+    return NS.Dummies.Lookup(npcIDFromGUID(ask(UnitGUID, unit)))
 end
 
 --- Whether a fresh read `t` is the target `prior` recorded: the same creature ID, or (when the ID is
@@ -248,8 +257,8 @@ local function raceSettings()
     return (race and race.grace) or d.grace, (race and race.restartGap) or d.restartGap
 end
 
---- A new, unsaved run with status "armed": the player, target and place snapshotted now, and the
---- grace and restart gap copied from the profile so changing them never re-grades it (spec §5.2).
+--- A new, unsaved run with status "armed": the player, target, place and stats (#17) snapshotted now,
+--- and the grace and restart gap copied from the profile so changing them never re-grades it (spec §5.2).
 --- @param length number  the race length in seconds
 --- @return table run  spec §7's shape; result is filled when the run is read
 function Recorder.NewRun(length)
@@ -267,6 +276,7 @@ function Recorder.NewRun(length)
         char   = Recorder.SnapshotPlayer(),
         target = target,
         where  = Recorder.SnapshotWhere(),
+        stats  = NS.Stats.Snapshot(),
         flags  = { lateCasts = {}, reloaded = false, died = false },
         spells = {},
         note   = "",
