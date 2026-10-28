@@ -370,10 +370,12 @@ function METHODS:Clear()
 end
 
 --- Stop showing: a toast on screen goes back to the head of the queue, with its full time again,
---- and nothing shows until Release.
-function METHODS:Hold()
+--- and nothing shows until Release. With `keepShown` the toast on screen stays up and runs its
+--- course; only what would show after it waits (a host's hold set while a toast is already up).
+function METHODS:Hold(keepShown)
   local S = state(self)
   S.held = true
+  if keepShown == true then return end
   local entry = takeDown(S)
   if entry then enqueue(S, entry, true) end
 end
@@ -427,13 +429,19 @@ function METHODS:Current()
   return S.current.payload, S.current.key
 end
 
---- The toast's state, for a host's diagnostics report and its suites.
+--- The toast's state, for a host's diagnostics report and its suites. `keys` lists the waiting
+--- payloads' keys, oldest first (`false` for one queued without a key), so a host can name what
+--- waits without keeping a copy of the queue.
 function METHODS:Stats()
   local S = state(self)
+  local keys = {}
+  for i, entry in ipairs(S.queue) do
+    if entry.key == nil then keys[i] = false else keys[i] = entry.key end
+  end
   return {
     built = S.frame ~= nil, shown = S.current ~= nil, waiting = #S.queue, held = S.held == true,
     paused = S.remaining ~= nil, sticky = S.current ~= nil and S.current.sticky == true,
-    key = S.current and S.current.key,
+    key = S.current and S.current.key, keys = keys,
   }
 end
 
