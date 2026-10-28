@@ -194,20 +194,27 @@ function LateIgnore.Label(id)
     return NS.L["%s (%d)"]:format(name, id)
 end
 
--- Whether a typed name is a hearthstone's: the word itself, or any variant's name in the client's
--- locale. Several variants share a name (8690, 191329 and 401802 are all "Hearthstone"), so the
--- name lookup below would answer "ambiguous".
+-- The hearthstone a typed name stands for, or nil when it is no hearthstone's name (the word itself,
+-- or any variant's name in the client's locale). Several variants share a name (8690, 191329 and
+-- 401802 are all "Hearthstone"), so the name lookup below would answer "ambiguous". The answer is
+-- 8690, unless 8690 is off the list and a variant carrying the name is listed on its own: then that
+-- variant (the lowest), so `remove <its name>` finds what is listed.
 local function hearthByName(want)
-    if want == "hearthstone" then return true end
+    for _, id in ipairs((read())) do
+        local name = id ~= HEARTH and HEARTH_SET[id] and spellName(id)
+        if name and name:lower() == want then return id end
+    end
+    if want == "hearthstone" then return HEARTH end
     for id in pairs(HEARTH_SET) do
         local name = spellName(id)
-        if name and name:lower() == want then return true end
+        if name and name:lower() == want then return HEARTH end
     end
-    return false
+    return nil
 end
 
---- Typed text to a spell ID: a number, a spell link, a hearthstone's name (8690), else the options
---- library's spell lookup over `candidates` (KnownSpells by default). The first three need no
+--- Typed text to a spell ID: a number, a spell link, a hearthstone's name (8690, or a variant listed
+--- on its own that carries the name), else the options library's spell lookup over `candidates`
+--- (KnownSpells by default). The first three need no
 --- library, so they resolve on a degraded load too. Answers `id, name, icon` or `nil, reason`
 --- ("empty", "notFound", "ambiguous"): the ID list's own resolver shape.
 --- @param text string|number
@@ -221,7 +228,8 @@ function LateIgnore.Resolve(text, candidates)
         if id < 1 then return nil, "notFound" end
         return id, spellName(id), spellIcon(id)
     end
-    if hearthByName(text:lower()) then return HEARTH, spellName(HEARTH), spellIcon(HEARTH) end
+    local hearth = hearthByName(text:lower())
+    if hearth then return hearth, spellName(hearth), spellIcon(hearth) end
     local H = NS.Helpers
     if not (H and H.ResolveId) then return nil, "notFound" end
     local found, name, icon = H.ResolveId("spell", text, candidates or LateIgnore.KnownSpells)

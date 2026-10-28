@@ -173,6 +173,21 @@ test("late ignore: Resolve takes a number, a link, a hearthstone's name and a de
     assertEqual((LI.Resolve("incinerate")), INCINERATE)
 end)
 
+test("late ignore: a variant's name resolves to that variant when it is listed on its own, else to 8690", function()
+    local NS = fresh()
+    local LI = NS.LateIgnore
+    assertTrue(NS.SetByPath(LI.PATH, "66,231504"))
+    local id, name = LI.Resolve("Town Portal")
+    assertEqual(id, 231504, "the listed variant, so remove finds it")
+    assertEqual(name, "Town Portal")
+    assertEqual((LI.Resolve("hearthstone")), HEARTH, "no listed variant carries the name")
+    assertTrue(LI.Unignore((LI.Resolve("town portal"))))
+    assertEqual(NS.GetSetting(LI.PATH), "66")
+    assertEqual((LI.Resolve("town portal")), HEARTH, "nothing listed: every hearthstone")
+    assertTrue(NS.SetByPath(LI.PATH, "8690,231504"))
+    assertEqual((LI.Resolve("town portal")), HEARTH, "8690 covers it")
+end)
+
 test("late ignore: on a degraded load a number, a link and a hearthstone still resolve", function()
     local inst = T.load({ libFiles = {}, mutate = named })
     local LI = inst.NS.LateIgnore

@@ -495,6 +495,11 @@ test("slash: ignore remove counts a spell again; a variant ignored through 8690 
     out = said(inst, "ignore remove 191329")
     assertEqual(out[#out], "Late casts of Hearthstone, all variants (8690) flag a run again.")
     assertEqual(NS.db.profile.race.lateIgnore, "66,1856,58984,110959")
+    -- A variant listed on its own is removed by its name, not read as 8690.
+    assertTrue(NS.SetByPath("race.lateIgnore", "66,191329"))
+    out = said(inst, "ignore remove Hearthstone")
+    assertEqual(out[#out], "Late casts of Hearthstone (191329) flag a run again.")
+    assertEqual(NS.db.profile.race.lateIgnore, "66")
 end)
 
 test("slash: ignore defaults puts the six back, as reset race.lateIgnore does", function()
