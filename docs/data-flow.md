@@ -160,8 +160,10 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 
 - **Bests** are worked out, never stored: `Bests.Compute(runs, opts)` keeps the highest
   `result.dps` per `specID|category|length` board, over `complete` runs only (`cleanOnly` drops
-  flagged ones). `Bests.Board(opts)` caches it per session; the cache is dropped on `RUN_SAVED` and
-  `RUNS_CHANGED`, so a deleted best promotes the next run for free. `Bests.Delta(run)` compares a run
+  flagged ones, judged by `Scoring.Flags` under the late-cast ignore list). `Bests.Board(opts)` caches
+  it per session; the cache is dropped on `RUN_SAVED` and `RUNS_CHANGED`, so a deleted best promotes the
+  next run for free, and on `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`, so the clean-only
+  board follows the list. `Bests.Delta(run)` compares a run
   with the best on its board before it.
 - **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
   `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
@@ -183,6 +185,37 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 No decision in this pipeline reads a meter value in combat: every transition comes from an event or
 `GetTime()` (spec §8, rule 2).
 
+## The late-cast ignore list (#8)
+
+- **Capture is raw.** The race records every late cast on `flags.lateCasts` (`{ t, spellID? }`),
+  whatever the list says; nothing is dropped at the buzzer.
+- **The list is a setting.** `profile.race.lateIgnore` is a comma-separated string of spell IDs. Its
+  writers (`LateIgnore.Ignore`, `Unignore`, `Reset`) write the whole value through `NS.SetByPath`,
+  which normalizes it (ascending, a hearthstone variant 8690 covers dropped) and announces
+  `SETTINGS_CHANGED("race.lateIgnore", value)`. `LateIgnore.Set()` parses the stored text once per
+  value and expands 8690 to every ID in `NS.HEARTHSTONE_SPELLS`.
+- **The read seam.** `Scoring.SplitLate(run, set)` splits a run's late casts into counted and ignored,
+  each in the recorded order; a cast with no spell ID is always counted. `Scoring.Flags(run, nameOf,
+  set)` reads `LateIgnore.Set()` at call time when no `set` is passed and emits the `lateCasts` flag only
+  when a cast is counted, with `count`, `casts` (the counted ones) and `ignored`. Every reader of flagged
+  or clean goes through it: the Runs list's Status column and *Hide flagged* (`Runs.IsFlagged`), the
+  clean-only board, the result card's chips, the detail's *Flags* box, the share line and the new-best
+  toast's flags line. The Stop! screen counts the race's late casts so far through `LateIgnore.IsIgnored`.
+- **The ignored casts stay visible.** `Scoring.IgnoredText` gives one dimmed *Ignored: +20.6s Feign
+  Death* line that every flags tooltip adds (the result card's chip, the Status cell, the detail's
+  *Flags* box and its timing legend's *Late cast*). The detail's timing strip draws an ignored cast's
+  tick gray. With every late cast ignored, the result card shows a gray *N ignored* chip (no flag; the
+  toast shows none), and the detail's *Flags* box keeps a dimmed line, so the undo stays in reach.
+- **The menus.** A right-click on the result card's late-cast chip (or the *N ignored* chip), on the
+  detail's *Flags* box, or the *Ignore for late casts* submenu of a Runs row's menu, fills the same
+  entries (`LateIgnore.FillMenu`): *Ignore <spell> for late casts* per counted spell, *Stop ignoring
+  <spell>* per ignored one (*Stop ignoring all hearthstones* when 8690 covers it). Samples get no menu:
+  the test-mode card (`v.preview`) and a sample history (`ResultsSource.IsMock()`).
+- **The redraw.** On `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`: `Bests.Invalidate()`;
+  the Results window drops the sample's boards (`ResultsSource.Invalidate`) and redraws the list and the
+  detail; the HUD redraws the body on screen; the Race page repaints the list. Editing the list never
+  writes a run.
+
 ## The Race HUD (spec §6.1)
 
 `modules/Hud.lua` hears the race on its own bus target and draws it; it decides nothing about the
@@ -203,7 +236,7 @@ race.
   dismisses it through `Race.Cancel()`; the run stays stored.
 - **The clock**: one `OnUpdate` on the window, only while it is shown and the race RUNNING (20 Hz)
   or STOPPING (4 Hz, `Hud.STOP_TICK`: no clock there), redraws the body (`hudTick`). The stop body
-  rebuilds its chips only when the late casts or the grace change, and the sticky-combat hint asks
+  rebuilds its chips only when the counted late casts (the ignore list's left out) or the grace change, and the sticky-combat hint asks
   `IsPlayerSpell` once per race. The countdown turns amber at 10 s left.
 - **The live breakdown**: while shown and RUNNING the HUD's frame holds
   `DAMAGE_METER_COMBAT_SESSION_UPDATED`; an update arms one `C_Timer` for the next free slot at
@@ -239,7 +272,8 @@ race.
   It hides when *Show pace bar* is off, on a lost run, on a shared session and with no earlier best.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
-  `Scoring.Flags` text is its tooltip), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
+  `Scoring.Flags` text is its tooltip; the late casts' chip adds the ignored casts' dimmed line and opens
+  the ignore menu on a right-click, and a gray *N ignored* chip stands in when every late cast is ignored), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
   (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
   (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
   less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own
@@ -335,11 +369,12 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
   present → `ResultsRuns.Filter` keeps the resolved runs (complete, incomplete, lost) that pass the
   bar (*Only best* keeps the runs holding their board's best; *Group* is not a filter but the list's grouping, LootHistory's model: `Table:SetGroup` partitions the sorted runs under folding headers) → `ResultsTable` measures per group (`Table:measure` on every `SetData` and `SetGroup`: the *Delta* column's max DPS and the Damage and DPS bars' range, each the run's own group's under the current *Group by*, the whole list with *None*; nothing is stored on a run), scales the bars linearly from 10% to 100% of that range, sorts them (newest first in the stock view; the tab opens on the saved view, `profile.views.runs`, else the stock one; on DPS an unranked run sorts last; a tie to the newer
-  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), Delete behind its confirmation).
+  run) and binds the visible slice to pooled rows. A click selects a run; a right-click opens its menu (`Results.RowMenu`: Add Note, Share with the channels as a submenu through `Share.FillMenu`, *Compare With This Run* (`Results.CompareWith`: the session-only pick the detail's compare reads), *Ignore for late casts* when the run has a late cast, Delete behind its confirmation).
 - **The detail**: `ResultsDetail` draws the selected run: header, score and its *Delta* box, the
   breakdown (`SortedSpells`, with each spell's share through `NS.HudBreakdown`), the timing strip
   (`Timing` → `Place`: the race, the buzzer, the grace, the tail, each late cast, the end of combat),
-  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`), the note. Under
+  the flags (`FlagLines`, over `Scoring.Flags` with spell names through `C_Spell`, plus the ignored late
+  casts' dimmed line), the note. Under
   the breakdown, for a run raced since the last `/reload` or login, the damage chart
   (`HudChart.ResultView`, the in-session buckets scaled to `result.damage`, or with a best before the
   run its diagonal on the shared max, as on the result card); a run without buckets has no section. In the expanded view it sits beside the list; in the collapsed view (the default, UT-P14) it replaces the list with a back control. Only the title bar's toggle switches the view, never the width. The header's

@@ -6,7 +6,7 @@ page (`settings/Profiles.lua`).
 ## What a profile holds
 
 Everything under `db.profile`: today the Master controls (`enabled`, `visibility`, `scale`,
-`locked`), the HUD's show mode and clock (`hud.*`), the Race page (`race.*`), the live breakdown on
+`locked`), the HUD's show mode and clock (`hud.*`), the Race page (`race.*`, the late-cast ignore list among them), the live breakdown on
 HUD > Race HUD (`live.*`), the HUD's look (`appearance.*`), the Runs list's bars (`resultsTable.*`), *Include talents link* (`share.*`), the saved Runs view (`views.runs`) and the windows' size and position (`windows.*`). See
 [schema.md](schema.md) for the full list.
 
@@ -17,6 +17,15 @@ What a profile does **not** hold, by design:
 - **The minimap button** (`db.global.minimap`). It belongs to the installation; no profile switch
   moves or hides it (launcher-§3).
 - **Session state**: the debug flag and test mode.
+
+**The late-cast ignore list is per profile, and it is read, not frozen** (#8, the owner's call). Each
+run keeps every late cast it recorded, and the active profile's `race.lateIgnore` decides which of them
+flag it. Switching to a profile with another list re-scores the whole history at once: the Status
+column's *Flagged*, *Hide flagged*, the clean-only bests board and the flags tooltips all follow. Every
+cache keyed on the list listens for `SETTINGS_CHANGED("profile", key)` as well as for the row.
+Pruning is account-wide (`global.history.keepDays`), so a run that holds a best only on one profile's
+clean-only board can be pruned at a login on another profile; the all-runs board protects every
+board's best whatever the list ([known-limitations.md](known-limitations.md)).
 
 New characters start on AceDB's default per-character profile (`NS:InitDB` passes `true`).
 

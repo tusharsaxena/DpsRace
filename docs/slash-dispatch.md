@@ -37,7 +37,10 @@ The descriptor's `isEnabled` is `not NS.IsDisabled()`: only the `disabled` hold 
 capture's `perf` hold alone never prints the disabled line. While disabled:
 
 - every **reserved** verb keeps answering (`help`, `config`, `enable`, `disable`, `list`, `get`,
-  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`);
+  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`), and so does the host verb
+  `ignore`, which reads and writes one setting as `get` and `set` do (`HOST_LIVE_VERBS`, appended to the
+  library's `LIVE_VERBS` as the descriptor's `liveVerbs`; slash-commands-§2 makes the feature-verb
+  refusal a SHOULD, and declining it for a verb owes no register row);
 - a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`) prints
   one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
   (slash-commands-§2, §7).
@@ -56,6 +59,7 @@ copy.
 | `debug` | `doDebug` | `NS.DebugLog:DebugVerb(rest)` first (`diagnostics`, `on`, `off`), else toggles the window |
 | `diagnostics` | `NS.DebugLog:RunDiagnostics()` | See [debug.md](debug.md) |
 | `perf` | `doPerf` | Prints the lines `NS.Perf.OnCommand(rest)` returns; see [performance.md](performance.md) |
+| `ignore [show\|add\|remove\|defaults] <spell>` | `doIgnore` | The late-cast ignore list (#8), dispatched from a sub-verb table (`IGNORE_VERBS`). Bare `ignore` and `show` print the list, one *Name (id)* line each (`LateIgnore.Label`; 8690 as *Hearthstone, all variants (8690)*), or *The late-cast ignore list is empty.* `add` and `remove` resolve a spell ID, a shift-clicked link or a name (`LateIgnore.Resolve`) and print one line: added, already ignored, removed, not on the list, or why the name did not resolve (unknown, or more than one spell by that name). `remove` of a variant ignored only through 8690 takes 8690 off and names it. `defaults` writes the default and shows the list. Any other word prints the usage line. Every write goes through `LateIgnore` and the seam. Not behind `feature()`: it answers while disabled and under the `perf` hold, as `set` does |
 
 ## Feature verbs
 
@@ -86,5 +90,5 @@ the refusal format `DISABLED_LINE_FORMAT` is the one library string it carries, 
 the live library by `test_slash`. Every other line is the stub's own wording (`version` prints
 `Ka0s DPS Race version X`, `help` a plain header naming the reduced mode, and an unknown verb falls
 through to the help index). The stub applies the same disabled gate as the live dispatcher: a verb
-outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) answers the one refusal
-line while the `disabled` hold is taken.
+outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) and `HOST_LIVE_VERBS`
+(`ignore`) answers the one refusal line while the `disabled` hold is taken.

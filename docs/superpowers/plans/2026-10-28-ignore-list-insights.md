@@ -434,7 +434,7 @@ upstream change). None is ratified by this plan.
       the Results window half into a new `tests/test_late_ignore_ui.lua` (the detail box, the row submenu,
       the sample history). `test_toast.lua` already pinned the all-ignored toast (I1). I4 owes its
       `docs/testing.md` row.
-- [ ] **I4 Docs and smoke rows, then push.**
+- [x] **I4 Docs and smoke rows, then push.**
   - `docs/ARCHITECTURE.md` (settings table, module map, flags read path), `docs/schema.md`,
     `docs/settings-panel.md`, `docs/data-flow.md`, `docs/module-map.md`, `docs/slash-dispatch.md`,
     `docs/profiles.md` (per-profile list re-scores history), `docs/common-tasks.md` (hearthstone refresh
@@ -447,6 +447,21 @@ upstream change). None is ratified by this plan.
     defaults report the listed IDs in game (Invisibility as 66). Update C10.
   - File the D-15 follow-up issue only with the owner's OK (ask at R).
   - Gate green, commit, push the branch.
+  - **Done notes (I4, 2026-10-28), where the code differed from the plan:**
+    - The README has no slash table; `/dr ignore` and the list are a new paragraph under *Usage*, and
+      the FAQ's late-cast answer and *How the race works* name the list. The `[tests]` badge moved to
+      994 with the regenerated `docs/test-cases.md`.
+    - `docs/ARCHITECTURE.md` has no settings table of its own (it points at `schema.md`); the read-time
+      row is a paragraph under *Settings Schema*. Its *Message Bus* row for `SETTINGS_CHANGED` names
+      the four new receivers, its slash table gains `ignore`, and the cap paragraph's line counts are
+      current.
+    - `docs/data-flow.md` gained a section of its own, *The late-cast ignore list (#8)*, after *Bests
+      and pruning*; `docs/common-tasks.md` a *Refresh the hearthstone list* recipe.
+    - The smoke rows are section 24, SM-DR-IL1 to SM-DR-IL9, with C10 and SM-DR-LY2 rewritten and a
+      pending sign-off line.
+    - D-15 was not filed: the session's permission check refused the `gh issue create`. The owner's
+      answers above say to file it; it is left for R (or the owner) to file. Disengage End is recorded in
+      `docs/known-limitations.md` meanwhile.
 
 ### N: #12 Insights
 

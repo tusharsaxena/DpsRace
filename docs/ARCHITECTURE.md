@@ -97,6 +97,18 @@ does not toast) shows a toast near the top of the screen with the spec, the boar
 and the gain over the old best, whether or not the HUD is open; the shell queues, times, pauses under
 the pointer and closes it. Its rows are General > *New-best toast* (`toast.*`), test mode shows a
 sample to drag into place (`profile.toast.point`), and *Test toast* plays one through.
+The 2026-10-28 ignore-list pass ([`superpowers/plans/2026-10-28-ignore-list-insights.md`](superpowers/plans/2026-10-28-ignore-list-insights.md))
+added the late-cast ignore list (#8, `modules/LateIgnore.lua`): the spells whose casts after the grace
+never flag a run. It is one profile setting, `race.lateIgnore`, a comma-separated string of spell IDs
+(Invisibility, Vanish, Feign Death, Hearthstone, Shadowmeld and Greater Invisibility by default), and
+8690 in it stands for every hearthstone variant in `defaults/Hearthstones.lua`. Unlike the grace it is
+read when a run's flags are built, never frozen into the run: a run keeps every late cast it recorded,
+and `Scoring.Flags` (through `Scoring.SplitLate`) is the one judge of flagged and clean, so editing the
+list re-scores every stored run, the clean-only board and *Hide flagged* included. Players edit it on
+the Race page (the library's ID list, by ID, link or name), with `/dr ignore`, or by a right-click on a
+late-cast flag on the HUD's result card, in the run detail's *Flags* box or in a Runs row's menu.
+Ignored casts stay visible as a dimmed line in every flags tooltip, and a run whose late casts are all
+ignored shows a gray *N ignored* chip on the result card, so the undo stays in reach.
 
 Four invariants carry the whole design (spec §8). They bind from the first commit that touches the
 code they name:
@@ -118,8 +130,8 @@ annotated (toc-file-§5).
 |---|---|
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the ten `*Setup.lua` descriptors, the message-bus names, AceAddon registration and AceDB |
-| `defaults/` | `Profile.lua`, the only place a default is hardcoded |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `defaults/` | `Profile.lua`, the only place a default is hardcoded; `Dummies.lua`, the training-dummy catalog; `Hearthstones.lua`, every hearthstone variant's spell ID (#8) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_Bests`, `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -133,6 +145,12 @@ write from the panel, the slash CLI, the launcher and the key bindings goes thro
 in `db.global`; every other path lives in the active profile. Each stored write announces
 `SETTINGS_CHANGED`. The Master controls rows are composed by the library; the minimap row stores at
 LibDBIcon's own `global.minimap.hide` and is vetoed out of every reset (launcher-§3).
+
+One row is read at read time rather than frozen into a run: `race.lateIgnore` (#8). The grace and
+the restart gap are copied onto each new run, so changing them never re-grades a saved run; the
+late-cast ignore list is read each time a run's flags are built, so a change, or a profile switch to a
+profile with another list, re-scores every stored run. Every cache keyed on the flags listens for
+`SETTINGS_CHANGED` on `race.lateIgnore` and on `"profile"`.
 
 The SavedVariables shape, every default, the migration path, the run record's format, and the
 register of named non-setting state (the run store, LibDBIcon's table, the perf ring, the migration
@@ -151,7 +169,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat; `modules/BestToast.lua`: the new-best toast, for a complete run that beats an earlier best |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
 | `RUNS_CHANGED` | `modules/Recorder.lua`; `modules/Usage.lua` (`SetUsed`: a run's usage ticks saved) | none: a delete, a prune, a note or a usage edit changed the store | `modules/Bests.lua`: drops the bests cache; `modules/Results.lua`: redraws, dropping a selection whose run is gone (the detail's redraw also redraws an open ability timeline); `modules/Hud.lua`: dismisses a result card whose run left the store (back to the Arm Race screen after the card's own *Delete*), and redraws the card on any other store change; `settings/History.lua`: repaints the stored count |
-| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden`; `modules/BestToast.lua`: on a profile change follows the toast's switch (`Sync`) and re-reads its scale and place; `modules/AutoArm.lua`: on a profile change re-reads both dummy rows (`Sync`) |
+| `SETTINGS_CHANGED` | `settings/Schema.lua` (`NS.AnnounceSettingsChanged`: the write seam's tail, and `core/Database.lua`'s profile callbacks call it on a profile change) | `path, value` (`"profile", key` on a profile change) | `modules/Results.lua`: the footer's *Days to keep* on `global.history.keepDays`, and on `race.lateIgnore` or a profile change drops the sample boards (`ResultsSource.Invalidate`) and redraws; `modules/Bests.lua`: drops the bests cache on `race.lateIgnore` or a profile change; `modules/Hud.lua`: redraws the body on screen on `race.lateIgnore` or a profile change (the result card's chips, the Stop! count); `settings/Race.lua`: repaints the late-cast ignore list on the same two; `settings/History.lua`: repaints the Usage tab's hidden-items list on `global.usage.hidden`; `modules/BestToast.lua`: on a profile change follows the toast's switch (`Sync`) and re-reads its scale and place; `modules/AutoArm.lua`: on a profile change re-reads both dummy rows (`Sync`) |
 
 Six messages today; the Tier 2 `message-bus.md` trigger is more than ten. Race reaches its own
 `modules/Watchers.lua` directly (`Watchers.Sync()` on every transition), not over the bus: the
@@ -191,9 +209,12 @@ in `settings/Slash.lua`, in its declared order:
 | `test [armed\|running\|result]` | Static sample data in the HUD and the Results window: a bare `test` turns test mode on or off (the Master controls' *Test mode* row); a word holds that HUD body still |
 | `sim [scenario]` | Play a whole sample race, then open the Results window on it; `newbest` (the default), `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; an unknown word lists them |
 | `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
+| `ignore [show\|add\|remove\|defaults] <spell>` | The late-cast ignore list (#8): a bare `ignore` or `show` lists it, `add` and `remove` take a spell ID, a shift-clicked link or a name, `defaults` puts the six defaults back |
 
 The nine feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
 disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
+`ignore`, last, is not a feature verb: it reads and writes one setting, as `get` and `set` do, so it
+answers while the addon is disabled (the descriptor's `liveVerbs`).
 The dispatch rules, the disabled gate and the live list: [slash-dispatch.md](slash-dispatch.md).
 
 The launcher (`core/LauncherSetup.lua`) and the three key bindings (`Bindings.xml`: *Toggle race
@@ -444,6 +465,11 @@ shape the design most:
   only, and a run from before format 3 (or resumed after a `/reload`) has neither list.
 - **Auto-show and auto-arm see only cataloged dummies** (#16): a dummy missing from
   `defaults/Dummies.lua` neither opens the HUD nor arms; with nameplates off only the target counts.
+- **The late-cast ignore list is a static table and judges by spell ID** (#8): the hearthstone
+  variants are a list per patch (`defaults/Hearthstones.lua`), a late cast whose spell ID arrived
+  sealed is always counted, automatic follow-up spells (Disengage End) are not special-cased, and a
+  typed name resolves only to a spell the character knows or a run cast late. The list is per profile
+  while pruning is account-wide.
 - **The gear view's stats are the arm's** (#17): what the character sheet read when the race was
   armed, buffs then included; a change between the arm and the pull is not seen, and a run from
   before format 4 has none.
@@ -515,13 +541,13 @@ Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band
 `test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`,
 `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll`, `test_results_timeline_controls`, `test_results_delta` and
 `test_results_sections` did)
-and `tests/test_hud.lua` at 1415 (the waiting hint box's cases went to a new `test_hud_hint`, the Stop! and waiting tiles' to a new `test_hud_tiles`), and
+and `tests/test_hud.lua` at 1474 (the waiting hint box's cases went to a new `test_hud_hint`, the Stop! and waiting tiles' to a new `test_hud_tiles`), and
 six addon files, `modules/Results_Table.lua` at 1191 lines (a Bind nested in another stops, the
 first-drag fix, 2026-10-27), `modules/Results_Timeline.lua` at 1457 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27, then Ctrl+wheel, the `?` and the corridor colors, then the controls at one size and the zoom level's color, 2026-10-28; its suite's
-P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1182
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, and the gear view told on each draw, 2026-10-28), `modules/Hud_States.lua` at 1157 (the Stop! and waiting tiles' caption row, 2026-10-28, and the flag chips the toast shares),
-`modules/Results_Runs.lua` at 1085 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28) and
-`modules/Hud.lua` at 1085 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1218
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1204 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, and the late casts' menu and *ignored* chip),
+`modules/Results_Runs.lua` at 1088 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28) and
+`modules/Hud.lua` at 1090 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
-2026-10-28 pass its own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`), rather than grow these.
+2026-10-28 passes their own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`, then `LateIgnore`), rather than grow these.

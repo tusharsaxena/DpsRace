@@ -16,6 +16,25 @@ and the smoke row that measures it where one exists.
   or by Arm Race. Auto-show decides on a dummy event (a target change, a nameplate, the race's idle
   edge): when test mode closes the window it opened beside a dummy, the window comes back on the next
   such event, not on its own (smoke rows SM-DR-TA1 to SM-DR-TA8, SM-DR-TA24 to SM-DR-TA28).
+- **The late-cast ignore list judges by spell ID, from a static hearthstone table** (#8,
+  `modules/LateIgnore.lua`).
+  - The hearthstone variants are a table per patch (`defaults/Hearthstones.lua`, built from the
+    12.1.5.70575 DB2 exports): a toy hearthstone added by a later patch flags a run until the table is
+    refreshed ([common-tasks.md](common-tasks.md#refresh-the-hearthstone-list)), or until the player
+    adds its spell ID.
+  - A late cast stored with no spell ID (its ID arrived sealed) is never ignored: there is nothing to
+    match it against, so it always counts.
+  - Automatic follow-up spells are not special-cased. Disengage End (199558) is recorded as a late
+    cast of its own after a late Disengage, and the player adds it to the list if they want it
+    ignored.
+  - A typed name resolves only to a spell the logged-in character knows (the client's own name lookup),
+    a spell a stored run cast late, one of the six defaults, or a hearthstone's name. Any other spell is
+    added by its spell ID or a shift-clicked link. A name two spells share (in the candidates) asks for
+    the ID.
+  - The list is per profile, and pruning is account-wide. A run that holds a best only on the
+    clean-only board under one profile's list is not protected under another's, so a login on that
+    profile can prune it. The all-runs board, which protects every board's best, does not depend on
+    the list.
 - **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping

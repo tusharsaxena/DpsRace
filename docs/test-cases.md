@@ -108,7 +108,7 @@ Total.
 - timeline: an out-of-order or non-number update is handled
 - timeline: two timelines are independent
 
-### test_scoring.lua (7)
+### test_scoring.lua (9)
 
 - scoring: late cast boundaries
 - scoring: QUIET_BEFORE_READ is 2.5s
@@ -116,9 +116,11 @@ Total.
 - scoring: Dps incomplete = damage / endedAt
 - scoring: Flags order and text
 - scoring: Flags names late-cast spells through an optional resolver
+- scoring: SplitLate keeps the recorded order and splits by the ignore set; a sealed cast always counts
+- scoring: Flags flags only the counted late casts and carries the count, the casts and the ignored
 - scoring: a clean complete run has no flags; lost stands alone at the end
 
-### test_bests.lua (20)
+### test_bests.lua (21)
 
 - bests: Key is specID|category|length
 - bests: incomplete and lost never count
@@ -128,6 +130,7 @@ Total.
 - bests: spec, category and length each split the board
 - bests: deleting a best promotes the next run
 - bests: the cache is invalidated by RUN_SAVED and keeps cleanOnly apart
+- bests: a run flagged only by an ignored spell joins the clean board, and leaves it on Unignore
 - bests: Delta reports new best and percentage vs previous best
 - bests: Delta ignores later runs, other boards and runs that never count
 - bests: Delta defaults its run list to the store
@@ -141,7 +144,34 @@ Total.
 - bests: prune runs at OnEnable
 - bests: no prune and no cache work while disabled
 
-### test_race.lua (57)
+### test_late_ignore.lua (18)
+
+- late ignore: the hearthstone table holds 59 positive IDs, once each, with 8690, Dalaran and Garrison, never 556
+- late ignore: the setting parses sorted and once each, refuses anything else, and joins back
+- late ignore: Normalize drops a variant while 8690 is listed and keeps it alone
+- late ignore: the default is the profile's, and 8690 stands for every hearthstone in Set only
+- late ignore: Ignore, Unignore and Reset write the whole list through the seam
+- late ignore: Resolve takes a number, a link, a hearthstone's name and a default the character does not know
+- late ignore: on a degraded load a number, a link and a hearthstone still resolve
+- late ignore: the known spells are every late cast's spell, newest run first, then the defaults
+- late ignore: the result card's chips count only the counted casts; all ignored, no chip
+- late ignore: the Results detail draws an ignored cast's tick gray and explains only the counted ones
+- late ignore: a list change redraws the HUD and drops the cached boards and the sample's
+- late ignore: a profile switch re-scores the flags by the other profile's list and drops the clean board
+- late ignore: the menu offers each counted spell once, the undo for each ignored one, nothing for a sealed cast
+- late ignore: the menu's entries ignore and count again through the list
+- late ignore: IgnoredText names the ignored casts in one line, nil with none
+- late ignore: the result card's late chip carries the menu and the dimmed lines; all ignored, a gray chip
+- late ignore: the detail's flags box keeps a dimmed ignored line, also when every cast is ignored
+- late ignore: every flags tooltip shows the dimmed ignored line (D-6a)
+
+### test_late_ignore_ui.lua (3)
+
+- late ignore ui: the detail's Flags box dims the ignored line and its right-click ignores a spell
+- late ignore ui: the row menu holds an Ignore for late casts submenu only when the run has a late cast
+- late ignore ui: the sample history offers no ignore menu (D-7)
+
+### test_race.lua (58)
 
 - race: the state names are the interface's
 - race: arm refuses in combat and while a run is pending
@@ -166,6 +196,7 @@ Total.
 - race: buzzer at start+length moves to stopping and emits RACE_BUZZER
 - race: cast started 0.5s after buzzer is not late at grace 1.0
 - race: cast started 1.4s after buzzer is recorded as late with spellID
+- race: a late cast of an ignored spell is still stored raw; the list is read, never applied, at capture
 - race: cast that started before buzzer and succeeded after is not late
 - race: the grace in force is the run's own, not the profile's
 - race: an interrupted cast leaves nothing open; a later instant of the same spell is late
@@ -231,7 +262,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (71)
+### test_hud.lua (73)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -251,6 +282,7 @@ Total.
 - hud: layout never calls GetWidth/GetPoint on breakdown rows
 - hud: live reads stop when hud hidden or state leaves running
 - hud: the stop body shows the live tail, time in combat, late casts and the grace
+- hud: the stop body counts only the late casts the ignore list leaves (#8), and redraws when it changes
 - hud: waiting hint appears after hintDelay and names only owned drop-combat spells
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
@@ -272,6 +304,7 @@ Total.
 - hud: the card's Delete accepted after the card has gone leaves no mark behind
 - hud: result body shows % and the best delta chip
 - hud: a first run is a new best; a slower one shows its deficit and its flags
+- hud: a late-cast chip's right-click ignores its spell, and the gray ignored chip's undoes it (#8)
 - hud: a lost result says it could not be read
 - hud: an incomplete run's chip names when combat ended, or that the player died
 - hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
@@ -841,7 +874,7 @@ Total.
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
 
-### test_schema.lua (17)
+### test_schema.lua (18)
 
 - schema: the load-time shape check finds no error and every stored path resolves
 - schema: Master controls carries exactly the rows this addon has state for, in order
@@ -850,6 +883,7 @@ Total.
 - schema: a write goes through the seam, reacts, and announces SETTINGS_CHANGED once
 - schema: a profile change announces SETTINGS_CHANGED through the one sender
 - schema: an unknown path is refused and stores nothing
+- schema: the late-cast ignore list is one Race string row of spell IDs; junk is refused and stores nothing
 - schema: the Minimap row reads SHOWN and stores LibDBIcon's inverted `hide`
 - schema: Reset all settings is a profile reset and never touches the Minimap button
 - schema: Test mode is a session-only checkbox over the preview
@@ -861,7 +895,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (31)
+### test_settings.lua (35)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -894,8 +928,12 @@ Total.
 - settings: Days to keep says it is account-wide, and its label carries no suffix
 - settings: lowering Days to keep never deletes on the spot
 - settings: the global reset confirms with options-ui-§12's one wording, verbatim
+- settings: Race draws the late-cast ignore list as the library's spell ID list, writing through LateIgnore
+- settings: Race's Reset list puts the six defaults back and touches no other Race setting
+- settings: Race's Defaults resets the ignore list too, and its tooltip says so
+- settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
 
-### test_slash.lua (30)
+### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -927,8 +965,15 @@ Total.
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
 - slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
+- slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone
+- slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored
+- slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off
+- slash: ignore defaults puts the six back, as reset race.lateIgnore does
+- slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
+- slash: ignore is a settings verb: it answers while disabled, on both arms
+- slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore
 
-### test_share.lua (13)
+### test_share.lua (14)
 
 - share: Share.Line matches the mockup format
 - share: the target type is named; an uncataloged target by its own name; incomplete is said
@@ -941,16 +986,18 @@ Total.
 - share: the HUD's and the Results window's Share are live now Share exists
 - share: arming prints the armed line with the length and the target
 - share: a result prints the score line with the delta, the flags and the tail
+- share: the score line counts only the late casts the ignore list leaves (#8)
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (12)
+### test_toast.lua (13)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
 - toast: the payload names the spec and class, the board's chips, the DPS and the gain over the old best
 - toast: with no previous best to name, the DPS line is the DPS alone in the text color
 - toast: a flagged run may toast, its flags on the last line as the result card words them
+- toast: a new best whose late casts are all ignored shows no flags line and no ignored chip
 - toast: it closes after Toast duration, plays its sound only with Play a sound on
 - toast: test mode holds the sample race's toast, and its end takes it down
 - toast: Test toast queues a sample that runs its course, and a second click replaces it
@@ -1042,10 +1089,11 @@ Total.
 - Disabled (race): an armed race is dropped by the stand-down and not resumed
 - Disabled (race): a disabled login resumes nothing until the addon is enabled
 
-### test_surface_parity.lua (16)
+### test_surface_parity.lua (17)
 
 - parity: the degraded load still initializes, enables and answers /dr
 - parity: the Options stub carries every public member of the live Helpers surface
+- parity: the degraded load keeps the late-cast ignore list: the Race page draws quietly and /dr ignore adds by ID
 - parity: the Bus stub carries the library surface, and its record the instance's
 - parity: the Schema stub carries the runtime surface this addon binds
 - parity: the Slash stub carries the live dispatcher's surface
@@ -1068,9 +1116,10 @@ Total.
 - perf: outside an experiment the bracket records nothing
 - perf: suspend takes the perf hold and the addon is inert; resume restores it
 
-### test_loadorder.lua (3)
+### test_loadorder.lua (4)
 
 - load order: the runner loaded exactly the TOC's files, in the TOC's order
+- load order: the hearthstones load before the ignore list, and the ignore list before its readers
 - load order: every derived path exists on disk
 - load order: no libs/ path leaked into the addon's own list
 
@@ -1153,12 +1202,14 @@ Total.
 | test_dummies.lua | 5 |
 | test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
-| test_scoring.lua | 7 |
-| test_bests.lua | 20 |
-| test_race.lua | 57 |
+| test_scoring.lua | 9 |
+| test_bests.lua | 21 |
+| test_late_ignore.lua | 18 |
+| test_late_ignore_ui.lua | 3 |
+| test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 71 |
+| test_hud.lua | 73 |
 | test_hud_hint.lua | 6 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
@@ -1189,19 +1240,19 @@ Total.
 | test_results_gear.lua | 13 |
 | test_sizing.lua | 14 |
 | test_tooltips.lua | 4 |
-| test_schema.lua | 17 |
-| test_settings.lua | 31 |
-| test_slash.lua | 30 |
-| test_share.lua | 13 |
-| test_toast.lua | 12 |
+| test_schema.lua | 18 |
+| test_settings.lua | 35 |
+| test_slash.lua | 37 |
+| test_share.lua | 14 |
+| test_toast.lua | 13 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
-| test_surface_parity.lua | 16 |
+| test_surface_parity.lua | 17 |
 | test_perf_harness.lua | 4 |
-| test_loadorder.lua | 3 |
+| test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 4 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
@@ -1209,4 +1260,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **951** |
+| **Total** | **994** |

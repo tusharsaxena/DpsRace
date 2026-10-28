@@ -24,9 +24,25 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
   (`FLAG_CHIP` in `modules/Hud_States.lua`), the Bests board's chip words (`SHORT` in
   `modules/Results_Table.lua`), and the detail's explanation line (`EXPLAIN` in
   `modules/Results_Detail.lua`). Add the `enUS` keys. A chip word is Sentence case, never
-  upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word.
+  upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word. The late
+  casts' chip (`FLAG_CHIP.lateCasts`) reads the flag's `count`, the casts left after the ignore list
+  (`modules/LateIgnore.lua`), never the run's raw list; any new reader of late casts goes through
+  `Scoring.SplitLate` or the flag, so the ignore list applies to it.
 - Add the field to spec §7 and §5.4 and to [schema.md](schema.md#the-run-record); extend the
   order case in `test_scoring` and a case in the suite of the module that raises it.
+
+## Refresh the hearthstone list
+
+- `defaults/Hearthstones.lua` (`NS.HEARTHSTONE_SPELLS`) is a static table per patch: the spells the
+  ignore list's 8690 entry stands for (#8). Refresh it when a patch adds a hearthstone toy.
+- Download SpellCategories, SpellEffect, SpellName, ItemEffect and ItemXItemEffect for the new build
+  from wago.tools, and re-run the four rules in the file's header: every spell on the hearthstone
+  charge category (2309); plus every teleport to the bind point (SpellEffect `Effect` 252,
+  `ImplicitTarget` 9) that a toy or an item casts; plus Dalaran 222695 and Garrison 171253; minus
+  Astral Recall 556 and the test and placeholder spells the header names.
+- Diff the result against the table, update it and the build named in its header, and update the pin
+  test in `tests/test_late_ignore.lua` (the count, 8690, 222695 and 171253 present, 556 absent). The
+  Race page's *(all hearthstones, N)* suffix reads the table's length, so it follows on its own.
 
 ## Add a HUD body
 
