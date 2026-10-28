@@ -70,6 +70,32 @@ Total.
 - dummies: six categories in order, each with an enUS label
 - dummies: every cataloged category is one of the six
 
+### test_dummy_list.lua (23)
+
+- dummy list: Parse reads entries and hides, ascending, the last of an ID winning
+- dummy list: Normalize drops a custom entry for a built-in and a hide of a non-built-in
+- dummy list: the row refuses what does not parse and stores what it normalizes
+- dummy list: Add marks a creature, Lookup answers it, Remove takes it off
+- dummy list: a built-in is switched off and back on, never recategorized
+- dummy list: Reset clears the list; a profile switch reads the other profile's
+- dummy list: CategoryOf reads a stored target by its creature as the list is now
+- dummy list: a new snapshot of a listed creature is categorized and auto-arm sees it
+- dummy list: Infer reads a name word, then a boss classification or skull level, else single
+- dummy list: CategoryFor takes a typed word, else the row, and auto infers
+- dummy list: Read and Capture keep what the game says, by map, and count the captures
+- dummy list: a sealed field is left out of the read, and a player is no creature
+- dummy list: Resolve takes an ID or a captured or cataloged name
+- dummy list: a captured custom dummy answers its captured name
+- dummy list: a stored run moves boards when its creature is added, and back when removed
+- dummy list: switching a built-in off sends its runs to Other; a run with no creature ID keeps its own
+- targetdummy: add marks the target, captures it and says what it saved
+- targetdummy: add refuses a word that is no category, no target, and a player
+- targetdummy: on a built-in, add says so and captures; remove switches it off, add brings it back
+- targetdummy: remove takes a typed creature ID or name; show lists yours and the switched-off
+- targetdummy: capture saves without marking; an unknown word prints the usage
+- targetdummy: answers while the addon is disabled, as ignore does
+- dummy list: the idle HUD's unknown-target warning follows the list without a target change
+
 ### test_recorder.lua (22)
 
 - recorder: SnapshotPlayer records who the player is (spec §7 char)
@@ -970,7 +996,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (35)
+### test_settings.lua (37)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -989,7 +1015,7 @@ Total.
 - settings: the pages register in the panel's order, General first and Profiles last
 - settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
-- settings: Race is a one-tab page along the race's timeline, in the pinned order
+- settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
 - settings: General's Defaults names Master controls and the toast, and not the keys or the HUD
@@ -1007,6 +1033,8 @@ Total.
 - settings: Race's Reset list puts the six defaults back and touches no other Race setting
 - settings: Race's Defaults resets the ignore list too, and its tooltip says so
 - settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
+- settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
+- settings: Race repaints when your training dummies change from anywhere
 
 ### test_slash.lua (37)
 
@@ -1046,7 +1074,7 @@ Total.
 - slash: ignore defaults puts the six back, as reset race.lateIgnore does
 - slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
 - slash: ignore is a settings verb: it answers while disabled, on both arms
-- slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore
+- slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore and targetdummy
 
 ### test_share.lua (14)
 
@@ -1275,6 +1303,7 @@ Total.
 | test_secrets.lua | 11 |
 | test_meter.lua | 26 |
 | test_dummies.lua | 5 |
+| test_dummy_list.lua | 23 |
 | test_recorder.lua | 22 |
 | test_timeline.lua | 10 |
 | test_scoring.lua | 9 |
@@ -1318,7 +1347,7 @@ Total.
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
-| test_settings.lua | 35 |
+| test_settings.lua | 37 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1337,4 +1366,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1063** |
+| **Total** | **1088** |

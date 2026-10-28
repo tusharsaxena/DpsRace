@@ -6,7 +6,7 @@ page (`settings/Profiles.lua`).
 ## What a profile holds
 
 Everything under `db.profile`: today the Master controls (`enabled`, `visibility`, `scale`,
-`locked`), the HUD's show mode and clock (`hud.*`), the Race page (`race.*`, the late-cast ignore list among them), the live breakdown on
+`locked`), the HUD's show mode and clock (`hud.*`), the Race page (`race.*`, the late-cast ignore list and your training dummies among them), the live breakdown on
 HUD > Race HUD (`live.*`), the HUD's look (`appearance.*`), the Runs list's bars (`resultsTable.*`), *Include talents link* (`share.*`), the saved Runs and Insights views (`views.runs`, `views.insights`) and the windows' size and position (`windows.*`). See
 [schema.md](schema.md) for the full list.
 
@@ -14,6 +14,9 @@ What a profile does **not** hold, by design:
 
 - **Run history** (`db.global.runs`). A run belongs to the installation, so switching profiles never
   hides a character's runs, and personal bests span every character on the account.
+- **The training-dummy captures** (`db.global.dummies.captures`). What the game said about a creature
+  is the same on every profile; only which creatures count as dummies (`race.dummies`) is the
+  profile's.
 - **The minimap button** (`db.global.minimap`). It belongs to the installation; no profile switch
   moves or hides it (launcher-§3).
 - **Session state**: the debug flag and test mode.
@@ -26,6 +29,12 @@ cache keyed on the list listens for `SETTINGS_CHANGED("profile", key)` as well a
 Pruning is account-wide (`global.history.keepDays`), so a run that holds a best only on one profile's
 clean-only board can be pruned at a login on another profile; the all-runs board protects every
 board's best whatever the list ([known-limitations.md](known-limitations.md)).
+
+**Your training dummies are per profile too, and read the same way** (#9). A run keeps its creature
+ID, and the active profile's `race.dummies` (with the shipped catalog) decides its category through
+`Dummies.CategoryOf`. Switching to a profile with another list recategorizes the whole history: the
+bests boards, the Runs and Insights filters and groupings, the target badges, the share line and the
+toast follow, and auto-arm re-reads its dummies.
 
 New characters start on AceDB's default per-character profile (`NS:InitDB` passes `true`).
 

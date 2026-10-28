@@ -37,8 +37,8 @@ The descriptor's `isEnabled` is `not NS.IsDisabled()`: only the `disabled` hold 
 capture's `perf` hold alone never prints the disabled line. While disabled:
 
 - every **reserved** verb keeps answering (`help`, `config`, `enable`, `disable`, `list`, `get`,
-  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`), and so does the host verb
-  `ignore`, which reads and writes one setting as `get` and `set` do (`HOST_LIVE_VERBS`, appended to the
+  `set`, `reset`, `resetall`, `debug`, `diagnostics`, `perf`, `version`), and so do the host verbs
+  `ignore` and `targetdummy`, which read and write one setting as `get` and `set` do (`HOST_LIVE_VERBS`, appended to the
   library's `LIVE_VERBS` as the descriptor's `liveVerbs`; slash-commands-§2 makes the feature-verb
   refusal a SHOULD, and declining it for a verb owes no register row);
 - a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`) prints
@@ -60,6 +60,7 @@ copy.
 | `diagnostics` | `NS.DebugLog:RunDiagnostics()` | See [debug.md](debug.md) |
 | `perf` | `doPerf` | Prints the lines `NS.Perf.OnCommand(rest)` returns; see [performance.md](performance.md) |
 | `ignore [show\|add\|remove\|defaults] <spell>` | `doIgnore` | The late-cast ignore list (#8), dispatched from a sub-verb table (`IGNORE_VERBS`). Bare `ignore` and `show` print the list, one *Name (id)* line each (`LateIgnore.Label`; 8690 as *Hearthstone, all variants (8690)*), or *The late-cast ignore list is empty.* `add` and `remove` resolve a spell ID, a shift-clicked link or a name (`LateIgnore.Resolve`) and print one line: added, already ignored, removed, not on the list, or why the name did not resolve (unknown, or more than one spell by that name). A hearthstone's name (any variant's, in the client's locale) resolves to 8690, so `add <a variant's name>` ignores every hearthstone; a single variant is added on its own by ID or link. While 8690 is off the list, a variant listed on its own resolves by its name, so `remove <its name>` finds it. `remove` of a variant ignored only through 8690 takes 8690 off and names it. `defaults` writes the default and shows the list. Any other word prints the usage line. Every write goes through `LateIgnore` and the seam. Not behind `feature()`: it answers while disabled and under the `perf` hold, as `set` does |
+| `targetdummy [show\|add\|remove\|capture\|defaults] [category or creature ID]` | `doTargetDummy` | Your training dummies (#9, `modules/DummyList.lua`), dispatched from a sub-verb table (`DUMMY_VERBS`). Bare `targetdummy` and `show` list your own dummies, one *Name (id) · Category* line each (*Creature id* when never captured), then *Built-in training dummies: N, M switched off.* and one line per switched-off built-in. `add [category]` reads the target (`DummyList.Read`), saves it (`DummyList.Capture`, to `global.dummies.captures`), prints *Saved:* and the details (name and creature ID, level, health, creature type, PvP flag, zone, subzone and map position), then marks it (`DummyList.Add`) with the typed category, else `race.dummyCategory` (`auto` infers it, `DummyList.CategoryFor`), and says added, changed, switched back on (a switched-off built-in), or already a dummy (a built-in on, still captured). A word that is no category (`auto` is one: it infers) prints the categories and does nothing. `remove [creature ID or name]` takes the target when nothing is typed, resolves a typed ID or captured name (`DummyList.Resolve`), and removes a custom entry or switches a built-in off (`DummyList.Remove`). `capture` saves and prints the target's details without marking it. `defaults` clears the list (`DummyList.Reset`) and shows it. No target, or a target that is no creature, prints one line. Any other word prints the usage line. Every list write goes through `DummyList` and the seam. Not behind `feature()`, like `ignore` |
 
 ## Feature verbs
 
@@ -91,4 +92,4 @@ the live library by `test_slash`. Every other line is the stub's own wording (`v
 `Ka0s DPS Race version X`, `help` a plain header naming the reduced mode, and an unknown verb falls
 through to the help index). The stub applies the same disabled gate as the live dispatcher: a verb
 outside `NS.SLASH_LIVE_VERBS` (the library's `LIVE_VERBS`, pinned equal) and `HOST_LIVE_VERBS`
-(`ignore`) answers the one refusal line while the `disabled` hold is taken.
+(`ignore`, `targetdummy`) answers the one refusal line while the `disabled` hold is taken.

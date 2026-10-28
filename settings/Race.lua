@@ -1,5 +1,5 @@
 local _, NS = ...
--- settings/Race.lua — the Race page (spec §6.3), one tab along the race's timeline: the default race
+-- settings/Race.lua — the Race page (spec §6.3), its first tab along the race's timeline: the default race
 -- length, auto-arm on a training dummy (#16), the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and
 -- the scoring rules a new run freezes into its own record (grace, restart gap), and the late-cast
 -- ignore list (#8), read when a run's flags are. A second tab, Training dummies (#9), holds your own

@@ -51,8 +51,8 @@ T4. No merge without the owner's go-ahead.
 - **D-7 The settings.** A second tab on the Race page, *Training dummies*: a blurb, the *Category for new
   dummies* row (`race.dummyCategory`), an *Add your target* button, the library's ID list over the active
   dummies (custom and built-in; the suffix names the category and marks a built-in; the X removes a custom
-  entry or switches a built-in off), a second list of the switched-off built-ins whose action restores
-  one, and *Reset list*. The ID list's add box takes a creature ID (or a captured name), with the category
+  entry), a checkbox per built-in (cleared switches it off; as built, in place of a second list of the
+  switched-off ones: the library's ID list always draws an add box), and *Reset list*. The ID list's add box takes a creature ID (or a captured name), with the category
   the row names.
 - **D-8 Auto-arm** re-reads its dummies (Sync and a nameplate rescan) on a change to the row.
 
@@ -73,6 +73,6 @@ T4. No merge without the owner's go-ahead.
 - [x] **T3 The slash verb.** `targetdummy` in NS.COMMANDS and HOST_LIVE_VERBS, its handler, locale
   strings, tests in `tests/test_dummy_list.lua` (or `test_slash.lua`).
 - [x] **T4 The settings tab.** The Race page's *Training dummies* tab, the repaint on change, tests. Push.
-- [ ] **T5 Docs.** ARCHITECTURE (module map, schema, slash surface, bus listeners), `docs/schema.md`,
+- [x] **T5 Docs.** ARCHITECTURE (module map, schema, slash surface, bus listeners), `docs/schema.md`,
   `docs/slash-dispatch.md`, `docs/common-tasks.md` (adding a dummy), README commands, smoke rows. Gate,
   push.

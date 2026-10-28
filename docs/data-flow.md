@@ -159,11 +159,11 @@ depends on combat. The handler is the `combatEvent` perf bucket.
 ## Bests and pruning (spec §6.2, §7)
 
 - **Bests** are worked out, never stored: `Bests.Compute(runs, opts)` keeps the highest
-  `result.dps` per `specID|category|length` board, over `complete` runs only (`cleanOnly` drops
+  `result.dps` per `specID|category|length` board (the category read now, `Dummies.CategoryOf`), over `complete` runs only (`cleanOnly` drops
   flagged ones, judged by `Scoring.Flags` under the late-cast ignore list). `Bests.Board(opts)` caches
   it per session; the cache is dropped on `RUN_SAVED` and `RUNS_CHANGED`, so a deleted best promotes the
-  next run for free, and on `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`, so the clean-only
-  board follows the list. `Bests.Delta(run)` compares a run
+  next run for free, and on `SETTINGS_CHANGED` for `race.lateIgnore`, `race.dummies` or `"profile"`, so the
+  clean-only board follows the ignore list and every board the dummy list. `Bests.Delta(run)` compares a run
   with the best on its board before it. Since the Bests tab became Insights (#12), no window reads the
   clean-only board: only prune protection (`Bests.HoldingIDs`) and the suites do, which is expected.
 - **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
@@ -216,6 +216,34 @@ No decision in this pipeline reads a meter value in combat: every transition com
   the Results window drops the sample's boards (`ResultsSource.Invalidate`) and redraws the list and the
   detail; the HUD redraws the body on screen; the Race page repaints the list. Editing the list never
   writes a run.
+
+## Your training dummies (#9)
+
+- **The list is a setting.** `profile.race.dummies` is a comma-separated string, ascending by creature
+  ID: `243300:cleave` marks a creature as a dummy, `-243205` switches a built-in off. Its writers
+  (`DummyList.Add`, `Remove`, `Reset`) write the whole value through `NS.SetByPath`, which normalizes it
+  (a custom entry for a built-in and a hide of a non-built-in dropped) and announces
+  `SETTINGS_CHANGED("race.dummies", value)`. `DummyList.Entry` parses the stored text once per value.
+- **The effective catalog.** `Dummies.Lookup(npcID)` reads the list at call time: a switched-off
+  built-in answers nil, a custom entry its category and its captured name, anything else the shipped
+  row (`Dummies.BuiltIn`). The recorder's snapshot (`Recorder.SnapshotTarget`, `DummyOf`), auto-show
+  and auto-arm, `/dr target` and the idle HUD's target line all read it, so a custom dummy is a dummy
+  everywhere a built-in is. The sample runs read `Dummies.BuiltIn` for their names.
+- **Read time.** A run stores the category the catalog gave at the snapshot, but every reader goes
+  through `Dummies.CategoryOf(run.target)`: by `npcID` through `Lookup` (`other` when no dummy now),
+  the stored category only for a run with no `npcID` (a sealed GUID). The bests key, the Runs and
+  Insights filters, option lists and groupings, the table's target badge and tooltip, the HUD's
+  result-card badge, the share line and the toast all do, so a list change or a profile switch
+  recategorizes every stored run. Nothing writes a run.
+- **The captures are data.** `/dr targetdummy add` and `capture` and the Race page's *Add your target*
+  call `DummyList.Read("target")` (the target's details and the player's map position, every field
+  through `NS.Secrets`, a sealed one left out) and `DummyList.Capture`, which merges it into
+  `global.dummies.captures[npcID]` (latest details, first and last dates, a count, one place per map).
+  A race never writes a capture. `add` then calls `DummyList.Add` with `DummyList.CategoryFor` (the
+  typed word, else `race.dummyCategory`, `auto` inferring from the name and classification).
+- **The redraw.** On `SETTINGS_CHANGED` for `race.dummies` or `"profile"`: `Bests.Invalidate()`; the
+  Results window drops the sample's boards and redraws; the HUD redraws the body on screen; auto-arm
+  re-reads its rows and rescans the nameplates (`AutoArm.Sync`); the Race page repaints the tab.
 
 ## The Race HUD (spec §6.1)
 
@@ -325,9 +353,9 @@ race.
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
 - **Near a training dummy** (#16, `modules/AutoArm.lua`, both rows off by default): registered on its
   own AceEvent target only while a row is on and the addon stands up. *Auto-show* (`hud.autoShow`):
-  `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of cataloged dummies'
-  plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up in
-  `defaults/Dummies.lua`; a secret GUID is no dummy) and the target; while either holds one a dummy
+  `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of known dummies'
+  plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up through
+  `Dummies.Lookup`, the catalog with the profile's own list; a secret GUID is no dummy) and the target; while either holds one a dummy
   session runs and `Hud.ShowNearDummy()` opens the window if nothing else wants it (an arm's or a result
   card's window, the addon's own, is taken over instead, so the onArm close at the idle edge skips it
   whatever order the bus calls the HUD and this module in; the player's and test mode's stay theirs). With none left a
@@ -336,14 +364,15 @@ race.
   `Hud.HideAwayFromDummy()` closes the window it opened, only while the race is idle (the idle edge on
   `RACE_STATE_CHANGED` asks again). A race going idle leaves that window open. A close by the player
   in a session (`Hud.Closes()` moved) keeps it closed until the session ends. *Auto-arm*
-  (`race.autoArm`): a target change to a cataloged dummy, out of combat, the race idle and no test
+  (`race.autoArm`): a target change to a known dummy, out of combat, the race idle and no test
   mode or sim on, calls `Race.Arm(Hud.ArmLength())` with every refusal it has, silently; the arm opens
   the HUD as a manual arm does. While that run is still ARMED, a target change out of combat to anything
   else (or none) calls `Race.Cancel()` (in combat the pull is under way: Race holds ARMED until the
   meter session pairs with the regen edge, so nothing is canceled); a run leaving ARMED (started, canceled) is no longer the rule's. Neither
   rule acts in an instance (`GetInstanceInfo`'s type other than `none`), `PLAYER_ENTERING_WORLD`
   re-decides after each loading screen, and `SETTINGS_CHANGED("profile")` re-reads both rows
-  (`AutoArm.Sync`) on a profile switch, copy or reset.
+  (`AutoArm.Sync`) on a profile switch, copy or reset, as `SETTINGS_CHANGED("race.dummies")` does on a
+  change to your own dummies (a rescan of the nameplates; the target is judged again on its next change).
 - **Arm from the idle body**: the length picked (a preset, or a typed `90`, `1:30`, `3m`; the last
   one is remembered as `race.lastLength`) go to `Race.Arm`; a
   refusal prints `Format.ArmRefusal(reason, detail)`, and the Arm button is grayed with the same line
