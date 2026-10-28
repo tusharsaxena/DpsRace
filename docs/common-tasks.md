@@ -1,7 +1,7 @@
 # Common tasks
 
 Recipes for the changes made most often in Ka0s DPS Race. Every change ends on the green gate:
-`lua tests/run.lua` and `luacheck .` from the repo root ([testing.md](testing.md)).
+`lua tests/run.lua` and `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` from the repo root ([testing.md](testing.md)).
 
 ## Add a training dummy to the catalog
 

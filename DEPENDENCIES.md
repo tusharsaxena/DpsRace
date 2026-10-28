@@ -24,7 +24,7 @@ such rather than listed as a requirement.
 | Tool | Version | Needed for | Evidence |
 |---|---|---|---|
 | `lua5.1` (+ `luac`) | **5.1 exactly** | the headless suite, `lua tests/run.lua` | `tests/_kit/loader.lua` sandboxes each file with `setfenv` |
-| `luacheck` | any recent (verified with 1.2.0) | `luacheck .`, the other half of the commit gate | `.luacheckrc` at the repo root |
+| `luacheck` | any recent (verified with 1.2.0) | `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .`, the other half of the commit gate | `.luacheckrc` at the repo root |
 | `git` | any recent | the suite itself, and vendoring | `tests/_kit/test_eol.lua`, `test_layout_cap.lua` and `test_prose.lua` read the tracked tree through `git ls-files`; `tests/_kit/vendor_sync.lua` compares the payloads; library-stack-§7 |
 | POSIX shell | any | the suite's `-j` workers and the kit's bounds | `tests/_kit/framework.lua` shells out through `os.execute` and `io.popen` |
 | `lizard` | any recent (verified with 1.24.0) | the `complexity` suite of `tests/_kit/run-automated-tests.sh` | the runner calls `lizard` over the sighted shadow `tests/_kit/lizard_sighted.lua` builds, because `lizard` alone is blind in places in Lua (automated-tests-§3) |
@@ -80,7 +80,7 @@ regenerating them is that repo's job and its toolchain.
 ```sh
 lua tests/run.lua                                             # the suite: must be green
 lua tests/run.lua -j auto                                     # the same, across CPUs (testing-§14)
-luacheck .                                                    # must be 0 warnings / 0 errors
+~/.claude/dev-copilot/bin/ka0s-bounded luacheck .      # must be 0 warnings / 0 errors (bounded: luacheck loads no kit)
 bash tests/_kit/run-automated-tests.sh --suite complexity     # the sighted complexity report (release-time)
 ```
 

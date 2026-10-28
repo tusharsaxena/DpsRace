@@ -10,103 +10,11 @@ the catalog (spec §4.6).
 | Date | Build | Result |
 |---|---|---|
 | 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, center countdown, restyle, title-bar hover) |
+| 2026-10-28 | 0.1.0 (master, tip 653eb86: the late-cast ignore list #8 and Insights #12), client 12.1.5 | Full pass by the owner: every row passed, including every row pending since 2026-10-24 |
 
 ### Pending sign-off
 
-Rows changed for the Keybindings tab's one key button and not yet run by the owner: SM-DR-KB2
-and SM-DR-KB3 (rewritten), and SM-DR-RV3 (new).
-
-Rows for the 2026-10-24 pass (branch `feat/2026-10-24-hud-styling-status-arm`), not yet run: S3, S6,
-R1, W1, W3, W4, W7, W17 and SM-DR-LY1 (rewritten), section 10, W5b and W8b (new), and W5 again for its timing strip (its marks drew under the segments; every line mark is now one size, Restart is violet, and the legend is two rows: Race and Tail, then Grace, Late cast, Combat ended and Restart).
-
-Rows for the 2026-10-25 pass (branch `feat/2026-10-25-chart-compare-loadout`), not yet run: section 11's
-SM-DR-CP1, SM-DR-CP2, SM-DR-CP3 and SM-DR-CP4 (new: the detail's compare, #7); section 12's SM-DR-CH1 to
-SM-DR-CH10 (new: the damage chart and the pace bar, #2 and #3); section 13's SM-DR-LO1 to SM-DR-LO11
-(new: equipment and talents, #6); S3 again (the Race HUD tab's new *Chart and pace* subsection); and
-SM-DR-LY3 again (History's new *Sharing* subsection and its *Include talents link* above *Runs to
-keep*).
-
-Rows for the 2026-10-25 feedback round on the same branch (the owner's in-game test), not yet run:
-section 14's SM-DR-FB1 to SM-DR-FB5 (new); SM-DR-CH1, SM-DR-CH2, SM-DR-CH7 and SM-DR-CH8 (rewritten:
-no gold best line, touching columns, the new styling blocks); SM-DR-LO4 (rewritten: *View* posts a link
-to chat, and the in-combat action-bar check); S3, W5 and W7 again (the new HUD Appearance blocks, the
-detail's header and headings, the wider window).
-
-Rows for the talent tree step-aside, the quieter Status column and the Spec + target + time grouping (branch
-`fix/2026-10-25-talent-tree-step-aside`), not yet run: SM-DR-BL19 (new: *Group: Full*, a new profile's default,
-*Group: Spec + target + time*, and *Duration* renamed *Time*); SM-DR-BL9 (rewritten: Results hides while the tree is
-up and comes back when it closes); SM-DR-BL1 and SM-DR-BL4 (rewritten: Status is the tag alone, the column
-narrower, the window minimums 834 and 1198); W1, W3, W4, W4b and W4c (rewritten: Status the tag alone, the *Spec best* label, *Full* the default grouping and *Reset*'s stock view); W7 again (the new minimums).
-
-Rows for the owner's 2026-10-25 follow-up on the backlog branch, not yet run: SM-DR-LO4 (rewritten: *View* opens the
-tree directly again and still posts the link); W5 again (hover *Save*, *Reset* and *Clear* in the Runs filter bar:
-each shows its title and text, no Lua error).
-
-Rows for the 2026-10-25 backlog (branch `feat/2026-10-25-results-badges-sim`), not yet run: section 15's
-SM-DR-BL1 to SM-DR-BL4 (new: the boxed Status badges and the race length colors) and SM-DR-BL5 (new: Group
-by *Time* and *Target + time*), SM-DR-BL6 (new: *Pace bar range*), SM-DR-BL7 and SM-DR-BL8 (new: the
-result card's pace bar); W1 and W7 again (the Status badges,
-the wider window minimums), W4c again (the wider *Group* dropdown), S3 again (*Pace bar range* under *Chart and
-pace*), and SM-DR-CH3 (rewritten: the tick two thirds along at the default range); SM-DR-BL9 (new: the
-talent tree's open no longer closes the Results window); SM-DR-BL10 to SM-DR-BL16 (new: `/dr test`'s
-static sample data in the HUD and the Results window, and `/dr sim`'s scenarios and end conditions), and P5, P6, P11, R7a,
-R8e, SM-DR-CH8, SM-DR-CH9 and SM-DR-BL8 (rewritten: the scripted race moved from `/dr test` to
-`/dr sim`).
-
-Rows for Round C of the same backlog (the owner's notes after testing it), not yet run: section 16's
-SM-DR-RC1 (new: the detail's larger headings and the space above them), SM-DR-RC2 (new: the HUD's *Damage
-profile* and *Spell breakdown* headings, the pace bar under the first, the 560 default height), and P6, H2,
-SM-DR-CH1, SM-DR-CH6, SM-DR-CH10, SM-DR-FB2, SM-DR-BL7 and SM-DR-BL12 again (the chart's new name and
-place, the 354 minimum); SM-DR-RC3 (new: the centered pace bar), SM-DR-CH3 and SM-DR-BL6 (rewritten: the
-tick in the middle, *Pace bar range* 1.1 to 2.0) and S3 again (the slider's new bounds and tooltip);
-SM-DR-RC4 to SM-DR-RC7 (new: *Stop Now* and *Cancel* on the Stop! and waiting screens, in a race and in
-`/dr sim`), SM-DR-RC8 and SM-DR-RC9 (new: the result card's *Delete* and its four equal buttons),
-SM-DR-RC10 (new: the best's diagonal on the chart after the race), and R10, R12, R17 and SM-DR-CH5
-(rewritten: the waiting body's buttons, the card's four buttons, the chart's shared scale).
-
-Rows for the owner's notes on the Results window (the same branch), not yet run: SM-DR-BL1, SM-DR-BL2,
-SM-DR-BL3, SM-DR-BL4 and SM-DR-BL5 (rewritten: the *Target* and *Time* cells and the Status board as boxes
-in their colors, the colored group headers, the 968 and 1328 minimums), SM-DR-BL17 (new: the group headers'
-values in the class, target and length colors) and SM-DR-BL18 (new: the detail's target and length boxes),
-and W1, W5 and W7 again (the boxed cells, the detail's header line, the wider minimums and the 1340
-default).
-
-Rows for the 2026-10-26 usage and ability-timeline build (branch `feat/2026-10-26-usage-timeline`), not
-yet run: section 19's SM-DR-UT1 to SM-DR-UT6 (new: the cast list and the usage stored on a run, run
-format 3; checked by dumping the newest run), SM-DR-UT7 to SM-DR-UT12 (new: the Runs list's *Used*
-column and the detail's *Usage* section), SM-DR-UT13 to SM-DR-UT15 (new, rewritten for the icons: the chart's cooldown icons and
-*Show cooldown icons*), SM-DR-UT16 to SM-DR-UT21 (new: the ability timeline window) and SM-DR-UT22 (new:
-*Days to keep*), SM-DR-UT23 and SM-DR-UT24 (new: the review fixes), SM-DR-UT25 (new: the pace bar
-across the plot's width with no caption) and SM-DR-UT26 (new: a new profile opens each window at its
-minimum width), SM-DR-UT27 and SM-DR-UT28 (new: the detail's *Delta* box and *New best* badge, from the Runs
-list's groups), SM-DR-UT30 (new: the timeline's cast ticks, its cooldown under the name and its narrower
-default) with SM-DR-UT17, SM-DR-UT18 and SM-DR-UT21 (rewritten for the same), SM-DR-UT31 and SM-DR-UT32
-(new: the cooldown icons' second row and their tooltip on the running HUD; SM-DR-UT31 rewritten for the
-rows the plot's height holds) with SM-DR-UT38 (new: the *+n* mark), SM-DR-UT35 to SM-DR-UT37 (new: the
-hidden items, from a right-click and from the History page's *Usage* tab) with SM-DR-UT2 and SM-DR-UT8 to
-SM-DR-UT12 (rewritten: no weapon enchant, the *Used* tooltip's icons, the section showing what was used
-and *Edit*), and S4 (rewritten: History's three tabs); W5 and W5b again (rewritten: the *Delta* box in place of the best delta line); SM-DR-CH3 and SM-DR-RC2 (rewritten: *vs best pace* only as the heading's note, and the
-HUD's 260 default width); H1 (rewritten: 260x560); S7 and SM-DR-LY3 (rewritten: *Days to keep* in place
-of *Runs to keep*), W7 and SM-DR-BL4 (rewritten: the minimums 904 and 1264 with the *Used* column (1344 expanded since the 440 px detail, UT54), W7's
-defaults now the same) and SM-DR-RC1 again (the detail's *Usage* heading); and C10 and C13 again in an
-instance and with a channel (the probe measured them in the open world only, and cast no channel).
-
-Rows for the 2026-10-28 build (branch `feat/2026-10-28-toast-autoarm-gearview`), not yet run: section
-20's SM-DR-TA1 to SM-DR-TA8 (new: auto-show and auto-arm near a training dummy, #16), section 21's
-SM-DR-TA9 to SM-DR-TA16 (new: the gear view and the run's stats, #17), section 22's SM-DR-TA17 to
-SM-DR-TA23 (new: the new-best toast, #5), section 23's SM-DR-TA24 to SM-DR-TA28 (new: the review's
-fixes), and S3 and SM-DR-LY1 again (rewritten: the Race HUD tab's
-*Display* gains *Show near a training dummy*, and General gains the *New-best toast* tab and its
-Defaults tooltip names it).
-
-Rows for the late-cast ignore list (#8, branch `feat/2026-10-28-ignore-list-insights`), not yet run:
-section 24's SM-DR-IL1 to SM-DR-IL9 (new), SM-DR-LY2 (rewritten: the Race page's *Late-cast ignore
-list* heading and list) and C10 (rewritten: a spell on the list leaves no flag).
-
-Rows for the Insights tab (#12, same branch), not yet run: section 25's SM-DR-IN1 to SM-DR-IN15
-(new; the owner's feedback round rewrote IN1, IN4 and IN5, added IN12 to IN15, and moved BL2 to
-*Races By Character × Length*); K8, W9, W14, W15, R14, SM-DR-BL2, SM-DR-BL4, SM-DR-BL12, SM-DR-DL8, SM-DR-UT28 and SM-DR-UT46
-(rewritten: the Bests tab is gone); W10 (retired).
+None. The 2026-10-28 pass signed off every row, including everything that was pending.
 
 ## How to run it
 
