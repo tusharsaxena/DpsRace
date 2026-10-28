@@ -83,22 +83,40 @@ test("toast: none for an incomplete or lost run, a run that is no best, a board'
     assertFalse(f.toast:Stats().built, "no frame was ever built")
 end)
 
-test("toast: the payload names the spec, the board, the time, the DPS and the gain over the old best", function()
+test("toast: the payload names the spec and class, the board's chips, the DPS and the gain over the old best", function()
     local f = fixture()
     local NS = f.NS
+    local Tbl = NS.ResultsTable
     run(f, "old", 100, 100000)
     local new = run(f, "new", 200, 104200)
     local _, _, prev = NS.Bests.Delta(new)
     local p = f.BT.Payload(new, 4.2, prev)
-    assertEqual(p.title, "New best: Destruction (Single target)")
-    assertEqual(p.detail, ("1:00 \194\183 %s DPS, +4.2%% over %s"):format(NS.Format.Number(104200),
+    assertEqual(p.title, ("|c%sNew best:|r |c%sDestruction %s|r"):format(Tbl.Hex(Tbl.COLORS.blue),
+        Tbl.Hex(Tbl.ClassColor("WARLOCK")), Tbl.ClassName("WARLOCK")), "the words in blue, spec and class in class color")
+    assertEqual(p.chips[1][1], "Single target")
+    assertEqual(p.chips[1][2], select(2, Tbl.Badge(new.target)), "the target chip in the Runs list's category color")
+    assertEqual(p.chips[2][1], "1:00")
+    assertEqual(p.chips[2][2], Tbl.LengthColor(60), "the time chip in the Runs list's length color")
+    assertEqual(p.detail, ("%s DPS, +4.2%% better than previous best (%s)"):format(NS.Format.Number(104200),
         NS.Format.Number(100000)))
+    assertEqual(p.detailColor, Tbl.COLORS.green, "a gain reads green")
     assertNil(p.flags, "a clean run has no flags line")
     result(f, new)
     local w = f.toast:Frame().dpsRace
     assertEqual(w.title:GetText(), p.title)
+    assertEqual(w.chips[1].fs:GetText(), "Single target")
+    assertEqual(w.chips[2].fs:GetText(), "1:00")
+    assertTrue(w.chips[1]:IsShown() and w.chips[2]:IsShown())
     assertEqual(w.detail:GetText(), p.detail)
     assertFalse(w.flags:IsShown())
+end)
+
+test("toast: with no previous best to name, the DPS line is the DPS alone in the text color", function()
+    local f = fixture()
+    local new = run(f, "new", 200, 104200)
+    local p = f.BT.Payload(new, nil, nil)
+    assertEqual(p.detail, ("%s DPS"):format(f.NS.Format.Number(104200)))
+    assertEqual(p.detailColor, f.NS.ResultsTable.COLORS.text)
 end)
 
 test("toast: a flagged run may toast, its flags on the last line as the result card words them", function()
@@ -140,7 +158,7 @@ test("toast: test mode holds the sample race's toast, and its end takes it down"
     assertTrue(f.NS.Preview.Start())
     assertEqual(shownKey(f), f.NS.TOAST_PREVIEW, "test mode shows the sample's toast")
     assertTrue(f.toast:Stats().sticky, "held for placing: no countdown")
-    assertTrue(f.toast:Frame().dpsRace.title:GetText():find("^New best: ") ~= nil)
+    assertTrue(f.toast:Frame().dpsRace.title:GetText():find("New best:", 1, true) ~= nil)
     f:advance(60)
     assertEqual(shownKey(f), f.NS.TOAST_PREVIEW, "still up")
     -- Off and on again while test mode is on: the sample goes and comes back.

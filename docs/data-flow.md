@@ -448,7 +448,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   `Bests.Delta(run)`; only a new best with a gain (a previous best on the board, so never a board's
   first run) queues one toast under the run's id, through LibKa0s-Toast-1.0 (`core/ToastSetup.lua`),
   whatever the HUD shows. Its payload is plain text off the stored run and the previous best (Delta's
-  third return): *New best: Destruction (Single target)*, *1:00 · 104.2K DPS, +4.2% over 100.0K*, and
+  third return): *New best:* in the Spec best blue then *Destruction Warlock* in the class color; the
+  target type and the race length as the Runs list's chips (*Single target*, *1:00*, in their colors);
+  *104.2K DPS, +4.2% better than previous best (100.0K)* in green; and
   the run's flags as the result card's chips word them. The shell shows one at a time for
   `toast.duration` seconds (paused under the pointer), plays the alert with `toast.sound`, and closes on
   its X or a right-click. Test mode holds the sample race's toast (`BestToast.ShowPreview`, from
