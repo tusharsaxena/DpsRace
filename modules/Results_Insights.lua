@@ -362,11 +362,16 @@ local function lateRow(e, ignored)
     return row
 end
 
--- G: the late casts by spell, the counted ones first, the ignored ones dimmed and tagged.
+-- G: the late casts by spell, the counted ones first, the ignored ones dimmed and tagged. The panel
+-- shows ten rows (K.LIST_MAX); the ignored ones keep up to half of them however many spells count, so
+-- the right-click that stops ignoring one is never cut off.
 local function layoutLateCasts(self, stats, y, w, pad)
+    local counted, ignored = stats.lateBySpell.counted, stats.lateBySpell.ignored
+    local max = NS.InsightsCharts.K.LIST_MAX
+    local nIgnored = math.min(#ignored, math.max(max - #counted, math.floor(max / 2)))
     local rows = {}
-    for _, e in ipairs(stats.lateBySpell.counted) do rows[#rows + 1] = lateRow(e, false) end
-    for _, e in ipairs(stats.lateBySpell.ignored) do rows[#rows + 1] = lateRow(e, true) end
+    for n = 1, math.min(#counted, max - nIgnored) do rows[#rows + 1] = lateRow(counted[n], false) end
+    for n = 1, nIgnored do rows[#rows + 1] = lateRow(ignored[n], true) end
     return listSection(self, "late", rows, y, w, pad)
 end
 

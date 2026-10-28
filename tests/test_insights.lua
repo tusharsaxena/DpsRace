@@ -641,6 +641,18 @@ test("insights tab: a section with nothing to show hides; Top Spells needs one s
     assertFalse(pane.panels.bests:IsShown(), "one run sets no new best")
 end)
 
+test("insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten", function()
+    local casts = {}
+    for n = 1, 12 do casts[n] = { t = 1.5, spellID = 100000 + n } end
+    casts[13] = { t = 2, spellID = 5384 }
+    local i = tab({ mkRun("x", { flags = { lateCasts = casts } }) })
+    local rows = active(i.pane, "late")
+    assertEqual(#rows, 10)
+    assertTrue(rows[10].name.__text:find("(ignored)", 1, true) ~= nil, "the ignored row was cut")
+    rows[10]:GetScript("OnMouseUp")(rows[10], "RightButton")
+    assertTrue(i.mocks.__lastMenu ~= nil, "no way to stop ignoring it from Insights")
+end)
+
 test("insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged", function()
     local i = tab()
     local rows = active(i.pane, "late")
