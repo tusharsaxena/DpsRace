@@ -716,6 +716,42 @@ upstream change). None is ratified by this plan.
       (owner answers); both stay with the owner. The review's own run and the standards re-check were
       done before this step; R1 here applied its findings. Gate: 1045 passed, 1 skipped; luacheck 0/0.
 
+### V: Owner feedback round (2026-10-28, from in-game screenshots)
+
+The owner's fixes:
+- **V-a** Strip x-axis labels overlap the chart. Reserve room under the axis so no label touches a column.
+- **V-b** Section headings are too large; match LootHistory's Insights heading size (GameFontNormal gold),
+  and use the same heading style for list panels (Late Casts, Recent New Bests) as for sections.
+- **V-c** Y-axis labels are cut off (Consistency By Board). Bar rows support a two-line label: spec on the
+  first line, target and length on the second.
+- **V-d** Each closed filter dropdown shows the number of choices it holds (for example "All characters (4)"),
+  not the run count. Items in the open list keep their run counts.
+- **V-e** Cards as LootHistory draws them: the figure on top, centered, gold by default and colored when it
+  means something (clean %, signed deltas, class color for a best's spec), the caption small below. An even
+  4-column grid with no lone half-empty row.
+- **V-f** Board tabs. Spec Comparison and Consistency used the most-raced board (cleave 2:00, 30 of 56 runs)
+  when the filter did not name one. Replace that with a tab strip inside Insights, one tab per target x length
+  board present in the filtered runs ("Cleave · 2:00"), in NS.Dummies.CATEGORIES order then length, the most
+  raced board selected first and the choice kept while it stays present. Each tab shows Spec Comparison and
+  Consistency for that board.
+- **V-g** Replace Races By Length with Races By Character x Length (stacked, like Races By Character x Target).
+- **V-h** Remove Top Spells.
+
+Found in the screenshots (decided here):
+- **V-i** Consistency inside a board tab is a range bar per spec: worst to best DPS, with an average mark and
+  the run count in the tip, because percentages near 100 on a 0-based track all look full.
+- **V-j** One date format everywhere in Insights (cards, strip labels, Recent New Bests, tips).
+- **V-k** Strips: remove the dead space under them; thin labels so none collide (10/23 vs 10/24); with few
+  buckets, columns widen to a sensible max instead of thin bars far apart; a spec color legend under DPS
+  Progression.
+- **V-l** World nameplates show through the Results window. Check the window's strata and backdrop alpha
+  against LootHistory's browser and fix if it differs.
+
+- [ ] **V1** Charts module: V-a, V-b, V-c, V-e, V-i renderer, V-k. Tests.
+- [ ] **V2** Insights tab: V-d, V-f, V-g, V-h, V-j, V-l. Tests.
+- [ ] **V3** Docs, smoke rows (replace the retired ones), test counts, then push.
+- [ ] **V4** Review and fixes.
+
 ### F: Finalize (only on the owner's go-ahead)
 
 - [ ] **F1** Merge to master, push, close #8 and #12. Delete this run's branches, stashes and worktrees.
