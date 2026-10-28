@@ -699,6 +699,11 @@ test("insights tab: the dropdowns list the stored runs with their counts, led by
     assertEqual(labels(dd.length._options), "Any length (3)|1:00 (1)|3:00 (2)")
     assertEqual(dd.date._options[1].label, "All time (3)")
     assertEqual(dd.char._value, "all")
+    -- Closed, a dropdown names its choices, not the runs (the owner's call, plan step V-d).
+    assertEqual(dd.char.text.__text, "All characters (2)")
+    assertEqual(dd.spec.text.__text, "All specs (2)")
+    assertEqual(dd.length.text.__text, "Any length (2)")
+    assertEqual(dd.date.text.__text, "All time", "the date ranges always number four")
     assertFalse(i.pane.filters.cleanOnly)
     assertFalse(i.pane.filters.includeIncomplete, "Include incomplete starts off (D-11)")
     assertEqual(i.pane:Count(), 3, "the lost and the incomplete run left out")
@@ -715,6 +720,8 @@ test("insights tab: a filter redraws the cards, and narrows the other dropdowns 
     assertEqual(i.ui.footLeft.__text, "1 run \194\183 Click a row for details \194\183 right-click for options",
         "the footer's count follows the filter")
     assertEqual(labels(pane.dropdowns.length._options), "Any length (1)|1:00 (1)", "Fire raced 1:00 only")
+    assertEqual(pane.dropdowns.spec.text.__text, "Fire", "a pick by its name alone")
+    assertEqual(pane.dropdowns.length.text.__text, "Any length (1)")
     assertEqual(labels(pane.dropdowns.spec._options), "All specs (3)|Destruction (2)|Fire (1)",
         "a dropdown lists what the OTHER filters leave")
     assertFalse(pane:SetFilter("group", "none"), "not an Insights filter")
@@ -836,26 +843,109 @@ test("insights tab: DPS Progression carries a legend of its specs in their class
     assertEqual(point(chips[1])[4], 8, "under the strip, from its left edge")
 end)
 
-test("insights tab: a section with nothing to show hides; Top Spells needs one spec", function()
+test("insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone", function()
     local i = tab()
     local pane, H = i.pane, i.pane.headers
     assertTrue(H.progression:IsShown())
+    assertTrue(H.boards:IsShown())
     assertTrue(H.specs:IsShown())
-    assertFalse(H.consistency:IsShown(), "no board has three runs")
+    assertFalse(H.consistency:IsShown(), "no spec has three runs on a board")
     assertTrue(H.chars:IsShown())
+    assertTrue(H.charLength:IsShown())
     assertTrue(H.tail:IsShown())
-    assertTrue(H.spells:IsShown())
-    assertTrue(pane.hint:IsShown())
-    assertEqual(pane.hint.__text, "Pick one spec to see its top spells.")
+    assertNil(H.spells, "Top Spells removed (plan step V-h)")
+    assertNil(H.lengths, "Races By Length became Races By Character x Length (V-g)")
     assertTrue(pane.panels.late:IsShown())
     assertTrue(pane.panels.bests:IsShown())
     pane:SetFilter("spec", 267)
-    assertFalse(pane.hint:IsShown())
-    assertEqual(#active(pane, "spells"), 2, "Incinerate and Chaos Bolt")
     assertFalse(pane.panels.late:IsShown(), "no late cast in these runs")
-    assertEqual(H.specs.__text, "Spec Comparison (Cleave \194\183 3:00)")
+    assertEqual(H.specs.__text, "Spec Comparison", "the tab names the board")
     pane:SetFilter("spec", 63)
     assertFalse(pane.panels.bests:IsShown(), "one run sets no new best")
+end)
+
+test("insights tab: a tab per target x length board, the most raced first, the pick kept while present", function()
+    local i = tab()
+    local pane = i.pane
+    local tabs = active(pane, "boardTabs")
+    assertEqual(#tabs, 2)
+    assertEqual(tabs[1].label.__text, "Cleave \194\183 3:00", "the catalog's order: cleave before boss")
+    assertEqual(tabs[2].label.__text, "Boss-level \194\183 1:00")
+    assertEqual(pane.boardKey, "cleave|180", "the most raced board")
+    assertTrue(tabs[1].underline:IsShown())
+    assertFalse(tabs[2].underline:IsShown())
+    assertEqual(active(pane, "specs")[1].label.__text, "Destruction")
+    assertEqual(tabs[2]._tip[2], "1 run")
+    tabs[2]:GetScript("OnClick")(tabs[2])
+    assertEqual(pane.boardKey, "boss|60")
+    local specs = active(pane, "specs")
+    assertEqual(#specs, 1)
+    assertEqual(specs[1].label.__text, "Fire")
+    assertTrue(active(pane, "boardTabs")[2].underline:IsShown(), "the pick redrawn")
+    -- Kept through a redraw that leaves it present; the most raced again once it is gone.
+    pane:SetFilter("date", "30d")
+    assertEqual(pane.boardKey, "boss|60")
+    pane:SetFilter("cleanOnly", true)
+    assertEqual(pane.boardKey, "cleave|180", "the boss run is flagged")
+    assertEqual(#active(pane, "boardTabs"), 1)
+end)
+
+test("insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked", function()
+    local runs = {}
+    for n, v in ipairs({ 150000, 160000, 140000 }) do
+        runs[n] = mkRun("r" .. n, { date = NOW - n * HOUR, result = { damage = v * 180, dps = v, tail = 5 } })
+    end
+    local i = tab(runs)
+    local pane = i.pane
+    assertTrue(pane.headers.consistency:IsShown())
+    assertEqual(pane.headers.consistency.__text, "Consistency")
+    local rows = active(pane, "consistency")
+    assertEqual(#rows, 1)
+    assertEqual(rows[1].label.__text, "Destruction")
+    assertTrue(rows[1].mark:IsShown(), "the average's mark")
+    assertEqual(rows[1].value.__text, "93.8%", "the average run's share of the best")
+    local tip = rows[1]._tip
+    assertEqual(tip[1], "Destruction")
+    assertEqual(tip[2], "Best " .. i.NS.Format.Number(160000) .. " DPS")
+    assertEqual(tip[4], "Worst " .. i.NS.Format.Number(140000) .. " DPS")
+    assertEqual(tip[#tip], "3 runs")
+    local scale = active(pane, "consistencyScale")[1]
+    assertEqual(scale.lo.__text, i.NS.Format.Number(140000))
+    assertEqual(scale.hi.__text, i.NS.Format.Number(160000))
+end)
+
+test("insights tab: Races By Character x Length stacks each character's races in the length colors", function()
+    local i = tab()
+    local pane = i.pane
+    assertEqual(pane.headers.charLength.__text, "Races By Character \195\151 Length")
+    local rows = active(pane, "charLength")
+    assertEqual(#rows, 2)
+    assertEqual(rows[1].label.__text, "Lanfear")
+    assertEqual(rows[1].value.__text, "2")
+    local Tbl = i.NS.ResultsTable
+    assertTrue(sameColor(rows[1].segs[1].tex.__colorTex, Tbl.LengthColor(180)))
+    assertEqual(rows[1].segs[1]._tip, "3:00: 2")
+    local chips = active(pane, "charLengthLegend")
+    assertEqual(#chips, 2)
+    assertEqual(chips[1].fs.__text, "1:00", "shortest first")
+    assertEqual(chips[2].fs.__text, "3:00")
+end)
+
+test("insights tab: one date format everywhere: the day, then the time where it matters", function()
+    local i = tab()
+    local pane, Tbl = i.pane, i.NS.ResultsTable
+    local function day(t) return Tbl.Date(t, "%d %b") end
+    local first, last = NOW - 3 * DAY, NOW - DAY
+    assertEqual(pane.cards.span.value.__text, day(first) .. " to " .. day(last))
+    assertEqual(pane.cards.best.frame._tip[3], day(NOW - 2 * DAY) .. Tbl.Date(NOW - 2 * DAY, " %H:%M"))
+    local cols = active(pane, "progression")
+    assertEqual(cols[1].axis.__text, day(first), "a strip label")
+    assertEqual(cols[1]._tip[2], day(first) .. Tbl.Date(first, " %H:%M"))
+    local perDay = active(pane, "perDay")
+    assertEqual(perDay[1]._tip, day(first) .. ": 1 run")
+    local best = active(pane, "bests")[1]
+    assertEqual(best.name.__text:sub(1, #day(NOW - 2 * DAY)), day(NOW - 2 * DAY))
+    assertEqual(best._tip[2], day(NOW - 2 * DAY) .. Tbl.Date(NOW - 2 * DAY, " %H:%M"))
 end)
 
 test("insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten", function()
@@ -960,7 +1050,7 @@ test("insights tab: test mode fills the tab from the sample history; Save refuse
     assertEqual(late.ignored[1] and late.ignored[1].id, 8690, "the sample's late Hearthstone, ignored")
     assertTrue(#late.counted > 0, "the Flagged sample's counted casts")
     assertTrue(#active(pane, "bests") > 0)
-    for _, name in ipairs({ "progression", "specs", "chars", "charTarget", "lengths", "spells", "perDay", "tail" }) do
+    for _, name in ipairs({ "progression", "boards", "specs", "chars", "charTarget", "charLength", "perDay", "tail" }) do
         assertTrue(pane.headers[name]:IsShown(), name .. " drew nothing from the samples")
     end
     -- A late-cast row offers no menu on a sample (D-7).

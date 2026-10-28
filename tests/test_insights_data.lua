@@ -1,9 +1,10 @@
 -- tests/test_insights_data.lua — the Insights tab's pure half (#12, modules/Results_InsightsData.lua):
 -- the filter (lost runs out, no Runs default leaking in), the faceted dropdown options with their counts,
 -- the fallback to All, and the one stats pass: the cards, the boards and their % of board best, the
--- new bests, the per-character, per-length and per-day counts, the damage tail's buckets, the late
--- casts by spell with the ignored ones apart, and the spell share summed by ID. Also the Runs tab's
--- exported option lists (Runs.OptionLists, Runs.WithAll) that both tabs build on.
+-- new bests, the board tabs (each target x length pair's specs and their spread), the per-character,
+-- per-length and per-day counts, the damage tail's buckets, and the late casts by spell with the
+-- ignored ones apart. Also the closed dropdowns' labels, and the Runs tab's exported option lists
+-- (Runs.OptionLists, Runs.WithAll) that both tabs build on.
 --
 -- The fixture is shaped like the owner's data (docs/superpowers/plans/2026-10-28-ignore-list-insights.md,
 -- Insights analysis), cut to nine runs: three characters, four boards, a day with no runs, a flagged run,
@@ -188,6 +189,24 @@ test("insights: Options lists each facet's values among the runs every other fil
     assertEqual(option(o.char, "Tiamat-Frostmourne").count, 2, "the incomplete run, never the lost one")
 end)
 
+test("insights: a closed dropdown names its choices on the All head, and a pick by its name alone", function()
+    local NS = fresh()
+    local D = NS.InsightsData
+    local o = D.Options(fixture(), D.DEFAULTS, NOW)
+    assertEqual(D.ClosedLabel(o.char, "all"), "All characters (3)", "three characters to pick from")
+    assertEqual(D.ClosedLabel(o.length, "all"), "Any length (3)")
+    assertEqual(D.ClosedLabel(o.char, "Traxex-Frostmourne"), "Traxex", "no run count on a pick")
+    assertEqual(D.ClosedLabel(o.length, 120), "2:00")
+    assertEqual(D.ClosedLabel(o.date, "all"), "All time", "the date ranges always number four")
+    assertEqual(D.ClosedLabel(o.date, "today"), "Today")
+    assertNil(D.ClosedLabel(o.char, "Ghost-Nowhere"), "not offered")
+    -- The open list keeps its run counts.
+    assertEqual(option(o.char, "Traxex-Frostmourne").label, "Traxex (5)")
+    -- A pick narrows the other heads' choices: Beast Mastery raced two lengths.
+    o = D.Options(fixture(), { spec = BM }, NOW)
+    assertEqual(D.ClosedLabel(o.length, "all"), "Any length (2)")
+end)
+
 test("insights: Normalize sets a 0-run selection to All, never the one just changed, in bar order", function()
     local NS = fresh()
     local D = NS.InsightsData
@@ -224,12 +243,12 @@ test("insights: Compute on no runs returns zero cards and empty sections", funct
     assertNil(s.totals.avgPct)
     assertEqual(s.totals.newBests, 0)
     assertEqual(#s.progression, 0)
-    assertNil(s.specCompare)
-    assertEqual(#s.consistency, 0)
+    assertEqual(#s.boardTabs, 0)
+    assertNil(s.boardTop)
     assertEqual(#s.byChar, 0)
     assertEqual(#s.byDay, 0)
     assertEqual(#s.lateBySpell.counted, 0)
-    assertNil(s.spellShare)
+    assertNil(s.spellShare, "Top Spells is gone")
     assertEqual(#s.tail, 5)
     assertEqual(s.tail[1].n, 0)
     assertEqual(#s.newBests, 0)
@@ -264,7 +283,7 @@ test("insights: Compute's cards over the owner-shaped fixture", function()
     near(one.totals.avgDps, 420, "avg DPS on one board")
 end)
 
-test("insights: Compute's boards, progression, spec compare and consistency are board-relative", function()
+test("insights: Compute's boards and progression are board-relative", function()
     local NS = fresh()
     local D = NS.InsightsData
     local s = D.Compute(D.Filter(fixture(), nil, NOW))
@@ -281,19 +300,39 @@ test("insights: Compute's boards, progression, spec compare and consistency are 
     assertEqual(s.progression[1].run.id, "h1")
     assertEqual(s.progression[8].run.id, "s1")
     near(s.progression[5].pct, 0.8, "h4 against its own board")
-    -- B: the most-raced (target, length) pair, specs best first.
-    assertEqual(s.specCompare.category, "cleave")
-    assertEqual(s.specCompare.length, 120)
-    assertEqual(#s.specCompare.rows, 2)
-    assertEqual(s.specCompare.rows[1].specID, BM)
-    assertEqual(s.specCompare.rows[1].best, 440)
-    near(s.specCompare.rows[1].avg, 420, "spec avg")
-    assertEqual(s.specCompare.rows[2].specID, DESTRO)
-    assertEqual(s.specCompare.rows[2].n, 2)
-    -- C: boards with 3 or more runs.
-    assertEqual(#s.consistency, 1)
-    assertEqual(s.consistency[1].key, BM .. "|cleave|120")
-    near(s.consistency[1].avgPct, (400 / 440 + 1 + 420 / 440) / 3, "consistency avg %")
+    assertEqual(bm.worstDps, 400, "the board's worst run")
+    assertEqual(s.boards[DESTRO .. "|cleave|120"].worstDps, 300)
+end)
+
+test("insights: Compute's board tabs, one per target x length pair, in the catalog's order", function()
+    local NS = fresh()
+    local D = NS.InsightsData
+    local s = D.Compute(D.Filter(fixture(), nil, NOW))
+    local keys = {}
+    for i, tab in ipairs(s.boardTabs) do keys[i] = tab.key end
+    assertEqual(table.concat(keys, ","), "cleave|30,cleave|120,boss|60", "category order, then the shorter length")
+    assertEqual(s.boardTop, "cleave|120", "the most raced pair is shown first")
+    local tab = s.boardTabs[2]
+    assertEqual(tab.category, "cleave")
+    assertEqual(tab.length, 120)
+    assertEqual(tab.n, 5)
+    -- Spec Comparison: the specs on the pair, best first.
+    assertEqual(#tab.specs, 2)
+    assertEqual(tab.specs[1].specID, BM)
+    assertEqual(tab.specs[1].best, 440)
+    near(tab.specs[1].avg, 420, "spec avg")
+    assertEqual(tab.specs[1].worst, 400)
+    assertEqual(tab.specs[2].specID, DESTRO)
+    assertEqual(tab.specs[2].n, 2)
+    -- Consistency: the specs with three runs or more, the most consistent first.
+    assertEqual(#tab.consistency, 1)
+    assertEqual(tab.consistency[1].specID, BM)
+    near(tab.consistency[1].avgPct, (400 / 440 + 1 + 420 / 440) / 3, "consistency avg %")
+    near(tab.consistency[1].cv, math.sqrt(800 / 3) / 420, "consistency CV")
+    assertEqual(#s.boardTabs[3].consistency, 0, "two boss runs: no spread to speak of")
+    -- A tie on runs goes to the catalog's order.
+    local tie = D.Compute({ mk("a", "hunt", "boss", 60, day(0), 100), mk("b", "hunt", "cleave", 120, day(1), 100) })
+    assertEqual(tie.boardTop, "cleave|120")
 end)
 
 test("insights: Compute's new bests beat an earlier best on their board, in date order", function()
@@ -326,9 +365,11 @@ test("insights: Compute's counts by character, target, length and day, gap days 
     assertEqual(hunt.byCategory.cleave, 3)
     assertEqual(hunt.byCategory.boss, 2)
     assertEqual(table.concat(s.byCharTarget.categories, ","), "cleave,boss", "the catalog's order")
-    assertEqual(#s.byLength, 3)
-    assertEqual(s.byLength[1].length, 30)
-    assertEqual(s.byLength[3].n, 5)
+    assertEqual(s.byCharLength.rows[1].byLength[120], 3)
+    assertEqual(s.byCharLength.rows[1].byLength[60], 2)
+    assertEqual(s.byCharLength.rows[3].byLength[30], 1)
+    assertEqual(table.concat(s.byCharLength.lengths, ","), "30,60,120", "shortest first")
+    assertNil(s.byLength, "Races By Length is gone")
     assertEqual(#s.byDay, 4, "Oct 23 to Oct 26, the empty day included")
     assertEqual(s.byDay[1].n, 2)
     assertEqual(s.byDay[2].n, 3)
@@ -370,22 +411,4 @@ test("insights: Compute lists late casts by spell, ignored apart, a sealed one a
     assertEqual(#s.lateBySpell.ignored, 1)
     assertEqual(s.totals.clean, 6)
     assertEqual(ids(D.Filter(fixture(), { cleanOnly = true }, NOW)), "h1,h2,h3,h4,l2,s1")
-end)
-
-test("insights: Compute's spell share is the mean of each run's share, summed by ID, one spec only", function()
-    local NS = fresh()
-    local D = NS.InsightsData
-    assertNil(D.Compute(D.Filter(fixture(), nil, NOW)).spellShare, "three specs")
-    local s = D.Compute(D.Filter(fixture(), { spec = BM }, NOW))
-    local share = s.spellShare
-    assertEqual(share.specID, BM)
-    assertEqual(share.n, 2, "the runs with spells")
-    assertEqual(#share.rows, 2)
-    assertEqual(share.rows[1].id, 34026)
-    near(share.rows[1].share, 0.625, "Kill Command")
-    assertEqual(share.rows[2].id, 6603)
-    near(share.rows[2].share, 0.375, "Auto Attack, player and pet summed")
-    local none = D.Compute(D.Filter(fixture(), { spec = ELE }, NOW)).spellShare
-    assertEqual(none.n, 0, "one spec with no spells recorded")
-    assertEqual(#none.rows, 0)
 end)

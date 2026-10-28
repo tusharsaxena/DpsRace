@@ -1,9 +1,10 @@
 local _, NS = ...
 -- modules/Results_Insights.lua — the Results window's Insights tab (#12), in place of the Bests board
 -- (dropped by the owner, 2026-10-28; NS.Bests stays as a data module). LootHistory's Insights tab in
--- DpsRace's terms: a filter bar, ten stat cards and eleven chart sections (A to K) over the runs the
--- filters pass, all fed by one stats pass (docs/superpowers/plans/2026-10-28-ignore-list-insights.md,
--- "Insights analysis").
+-- DpsRace's terms: a filter bar, ten stat cards and the chart sections over the runs the filters pass,
+-- all fed by one stats pass (docs/superpowers/plans/2026-10-28-ignore-list-insights.md, "Insights
+-- analysis", and the owner's feedback round, step V). Spec Comparison and Consistency sit under a
+-- strip of board tabs, one per target x length pair, since DPS compares only within a board.
 --
 -- THREE FILES. modules/Results_InsightsData.lua is the pure half (the filters, the faceted options,
 -- the stats pass); modules/Results_InsightsCharts.lua draws the widgets through a host table; this
@@ -17,7 +18,9 @@ local _, NS = ...
 -- THE FILTERS (D-11) open wide: every character, spec, target, length and date. Each dropdown lists
 -- what the OTHER filters leave, with counts (InsightsData.Options), and a selection that no run
 -- matches falls back to All (InsightsData.Normalize), the dropdown just changed never. Save / Reset /
--- Clear keep the view at profile.views.insights (named non-setting state, docs/schema.md).
+-- Clear keep the view at profile.views.insights (named non-setting state, docs/schema.md). Closed, a
+-- dropdown names the choices it holds, not the runs (InsightsData.ClosedLabel); open, each row keeps
+-- its run count.
 --
 -- POOLED. Every widget a section draws comes from the chart context's pools: a layout pass releases
 -- them all, then each section acquires what it shows, so a second pass builds no frame. Resize (the
@@ -56,6 +59,7 @@ local CARD_COLS, CARD_GAP = 4, 8
 local WHEEL_STEP = 40       -- px one notch of the mouse wheel moves
 local PROGRESS_DAYS_FROM = 60   -- section A buckets by day above this many runs
 local LIST_VALUE_W = { late = 48, bests = 120 }
+local BOARD_TAB_W, BOARD_TAB_H = 120, 22    -- a board tab ("Boss-level · 2:00" fits)
 
 -- ── the filter bar, planned (pure) ──────────────────────────────────────────────────────────────
 
@@ -148,6 +152,21 @@ local function dps(v)
     return Format.Number(v)
 end
 
+-- ONE DATE FORMAT (plan step V-j): the day as the Runs tab writes it ("26 Oct"), its year added
+-- only when it is not this year's, and the time after it where the moment matters (a run's hover).
+-- A strip's axis label is the day alone; its hover names the year.
+local DAY_FMT, TIME_FMT = "%d %b", " %H:%M"
+
+local function dayText(t)
+    local text = Tbl.Date(t, DAY_FMT)
+    if Tbl.Date(t, "%Y") ~= Tbl.Date(time(), "%Y") then text = text .. Tbl.Date(t, " %Y") end
+    return text
+end
+
+local function whenText(t)
+    return dayText(t) .. Tbl.Date(t, TIME_FMT)
+end
+
 -- ── the cards (10, LootHistory's: 4 a row, a wide one spans 2, the figure gold unless it means more)
 
 local DASH = "\226\128\148"
@@ -194,7 +213,7 @@ local CARD_FILL = {
         local b = t.best
         if not b then return DASH, { L["Best DPS"], L["No complete run in these filters."] } end
         local board = runBoard(b.run)
-        return dps(b.dps), { L["Best DPS"], board, Tbl.Date(b.run.date, "%d %b %H:%M") },
+        return dps(b.dps), { L["Best DPS"], board, whenText(b.run.date) },
             L["%s \194\183 %s"]:format(L["Best DPS"], board), Tbl.ClassColor(b.run.char and b.run.char.class)
     end,
     avg = function(t)
@@ -227,7 +246,7 @@ local CARD_FILL = {
     end,
     span = function(t)
         if not t.first then return DASH end
-        local text = L["%s to %s"]:format(Tbl.Date(t.first, "%b %d"), Tbl.Date(t.last, "%b %d"))
+        local text = L["%s to %s"]:format(dayText(t.first), dayText(t.last))
         return text, { L["Date range"], text, runsWord(t.runs) }
     end,
 }
@@ -263,7 +282,7 @@ function Insights.CardGrid(defs, cols)
     return cells, row + 1
 end
 
--- ── the sections (A to K), each one turning the stats into its renderer's rows ──────────────────
+-- ── the sections, each one turning the stats into its renderer's rows ───────────────────────────
 
 -- A: one column per run in date order, its height the run's % of its board's best (raw DPS on one
 -- board), in its class color; above PROGRESS_DAYS_FROM runs, one column per day (the day's average).
@@ -271,10 +290,10 @@ local function progressionPerRun(list, raw)
     local out, lastDay = {}, nil
     for i, e in ipairs(list) do
         local run = e.run
-        local day = Tbl.Date(run.date, "%m/%d")
+        local day = Tbl.Date(run.date, "%Y-%m-%d")
         out[i] = { count = raw and e.dps or e.pct, color = Tbl.ClassColor(run.char and run.char.class),
-                   label = day ~= lastDay and day or nil,
-                   info = { runBoard(run), Tbl.Date(run.date, "%d %b %H:%M"), L["%s DPS"]:format(dps(e.dps)),
+                   label = day ~= lastDay and Tbl.Date(run.date, DAY_FMT) or nil,
+                   info = { runBoard(run), whenText(run.date), L["%s DPS"]:format(dps(e.dps)),
                             L["%s of board best"]:format(pct(e.pct)) } }
         lastDay = day
     end
@@ -289,7 +308,7 @@ local function progressionPerDay(list, raw)
         local day = Tbl.Date(e.run.date, "%Y-%m-%d")
         local b = byDay[day]
         if not b then
-            b = { label = Tbl.Date(e.run.date, "%m/%d"), sum = 0, n = 0, day = Tbl.Date(e.run.date, "%d %b %Y") }
+            b = { label = Tbl.Date(e.run.date, DAY_FMT), sum = 0, n = 0, day = dayText(e.run.date) }
             byDay[day] = b
             out[#out + 1] = b
         end
@@ -333,33 +352,96 @@ local function layoutProgression(self, stats, y, w, pad)
         y + NS.InsightsCharts.K.SECTION_GAP, w, pad, pad)
 end
 
--- B: the specs side by side on one (target, length) pair, by best DPS.
-local function layoutSpecs(self, stats, y, w, pad)
-    local pair, rows = stats.specCompare, {}
-    local H = self.headers
-    if not pair then return self.ctx:renderBarSection(self.ctx:Pool("specs"), H.specs, rows, y, w, pad) end
-    H.specs:SetText(L["Spec Comparison (%s \194\183 %s)"]:format(NS.Dummies.Label(pair.category),
-        Format.Length(pair.length)))
-    for _, r in ipairs(pair.rows) do
+-- B, on the board tab shown: the specs side by side, by best DPS.
+local function layoutSpecs(self, board, y, w, pad)
+    local rows = {}
+    for _, r in ipairs(board.specs) do
         local name = specName(r.specID, r.spec)
         rows[#rows + 1] = { label = name, color = Tbl.ClassColor(r.class), frac = r.best, value = dps(r.best),
                             tip = { name, L["Best %s DPS"]:format(dps(r.best)), L["Avg %s DPS"]:format(dps(r.avg)),
-                                    r.n == 1 and L["1 run"] or L["%d runs"]:format(r.n) } }
+                                    runsWord(r.n) } }
     end
-    return self.ctx:renderBarSection(self.ctx:Pool("specs"), H.specs, rows, y, w, pad)
+    return self.ctx:renderBarSection(self.ctx:Pool("specs"), self.headers.specs, rows, y, w, pad)
 end
 
--- C: the boards with three runs or more, the most consistent first, by the average % of best.
-local function layoutConsistency(self, stats, y, w, pad)
+-- C, on the board tab shown: per spec with three runs or more, a range from its worst run to its best
+-- with a mark at its average, the most consistent first (plan step V-i: shares near 100% on a 0-based
+-- track all look full). The value is the average run's share of the spec's best.
+local function layoutConsistency(self, board, y, w, pad)
     local rows = {}
-    for _, b in ipairs(stats.consistency) do
-        local board = boardText(b.specID, b.spec, b.category, b.length)
-        rows[#rows + 1] = { label = board, color = Tbl.ClassColor(b.class), frac = b.avgPct, value = pct(b.avgPct),
-                            tip = { board, L["Avg %s of board best"]:format(pct(b.avgPct)),
-                                    L["Spread (CV) %s"]:format(b.cv and pct(b.cv) or DASH),
-                                    L["%d runs"]:format(b.n) } }
+    for _, r in ipairs(board.consistency) do
+        local name = specName(r.specID, r.spec)
+        rows[#rows + 1] = { label = name, color = Tbl.ClassColor(r.class), lo = r.worst, hi = r.best, mark = r.avg,
+                            value = pct(r.avgPct),
+                            tip = { name, L["Best %s DPS"]:format(dps(r.best)), L["Avg %s DPS"]:format(dps(r.avg)),
+                                    L["Worst %s DPS"]:format(dps(r.worst)),
+                                    L["Spread (CV) %s"]:format(r.cv and pct(r.cv) or DASH), runsWord(r.n) } }
     end
-    return self.ctx:renderBarSection(self.ctx:Pool("consistency"), self.headers.consistency, rows, y, w, pad)
+    return self.ctx:renderRangeSection(self.ctx:Pool("consistency"), self.headers.consistency, rows, y, w, pad,
+        self.ctx:Pool("consistencyScale"), dps)
+end
+
+-- A board tab: LootHistory's tab look in the small font, gold and underlined when picked, gray when
+-- not. Pooled through the chart context; the click and the hover are the bind's.
+local function makeBoardTab(ctx, parent)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(BOARD_TAB_W, BOARD_TAB_H)
+    b.label = Tbl.Text(b, Tbl.FONT.TEXT, nil, "CENTER")
+    b.label:SetPoint("CENTER", b, "CENTER", 0, 1)
+    b.underline = b:CreateTexture(nil, "OVERLAY")
+    b.underline:SetColorTexture(C.gold[1], C.gold[2], C.gold[3], 1)
+    b.underline:SetHeight(2)
+    b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 8, 0)
+    b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
+    b:SetScript("OnClick", function(self2) if self2._onClick then self2._onClick() end end)
+    b:SetScript("OnEnter", function(self2) ctx:showTip(self2, self2._tip) end)
+    b:SetScript("OnLeave", function() ctx.hideTip() end)
+    return b
+end
+
+local function findBoard(tabs, key)
+    for _, t in ipairs(tabs) do
+        if t.key == key then return t end
+    end
+    return nil
+end
+
+-- The board tabs from the cursor, wrapping at the content's edge, and a rule under them.
+local function placeBoardTabs(self, tabs, y, w, pad)
+    local pool, x = self.ctx:Pool("boardTabs"), pad
+    for _, t in ipairs(tabs) do
+        if x > pad and x + BOARD_TAB_W > w - pad then x, y = pad, y - BOARD_TAB_H end
+        local b = self.ctx:acquire(pool, makeBoardTab)
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y)
+        local on, name = t.key == self.boardKey, L["%s \194\183 %s"]:format(NS.Dummies.Label(t.category),
+            Format.Length(t.length))
+        local c = on and C.gold or NS.Style.TAB_IDLE
+        b.label:SetText(name)
+        b.label:SetTextColor(c[1], c[2], c[3])
+        b.underline:SetShown(on)
+        b._tip, b._onClick = { name, runsWord(t.n) }, function() self:SelectBoard(t.key) end
+        x = x + BOARD_TAB_W
+    end
+    y = y - BOARD_TAB_H
+    self.boardRule:ClearAllPoints()
+    self.boardRule:SetPoint("TOPLEFT", self.content, "TOPLEFT", pad, y)
+    self.boardRule:SetWidth(math.max(1, w - pad * 2))
+    self.boardRule:Show()
+    return y - NS.InsightsCharts.K.BAR_GAP * 2
+end
+
+-- B and C under the board tabs (plan step V-f): the tab picked while it stays present, else the most
+-- raced board's. Nothing with no complete run.
+local function layoutBoards(self, stats, y, w, pad)
+    local tabs = stats.boardTabs
+    if #tabs == 0 then return y end
+    local board = findBoard(tabs, self.boardKey) or findBoard(tabs, stats.boardTop)
+    self.boardKey = board.key
+    y = self.ctx:placeHeader(self.headers.boards, y, pad)
+    y = placeBoardTabs(self, tabs, y, w, pad)
+    y = layoutSpecs(self, board, y, w, pad)
+    return layoutConsistency(self, board, y, w, pad)
 end
 
 -- D: the races per character, in its class color.
@@ -367,42 +449,51 @@ local function layoutCharacters(self, stats, y, w, pad)
     local rows = {}
     for _, e in ipairs(stats.byChar) do
         rows[#rows + 1] = { label = e.name, color = Tbl.ClassColor(e.class), frac = e.n, value = tostring(e.n),
-                            tip = { e.key, e.n == 1 and L["1 run"] or L["%d runs"]:format(e.n) } }
+                            tip = { e.key, runsWord(e.n) } }
     end
     return self.ctx:renderBarSection(self.ctx:Pool("chars"), self.headers.chars, rows, y, w, pad)
 end
 
--- E: each character's races split by target, in the category colors, with the categories' legend.
-local function layoutCharTarget(self, stats, y, w, pad)
-    local E, top, rows, legend = stats.byCharTarget, 1, {}, {}
-    for _, e in ipairs(E.rows) do top = math.max(top, e.n) end
-    for _, e in ipairs(E.rows) do
+-- E and F split each character's races: by target in the category colors, by length in the length
+-- colors. `of` names the character entry's counts; `color` and `name` read one key.
+local SPLITS = {
+    charTarget = { of = "byCategory",
+                   color = function(cat) return Tbl.CATEGORY_COLORS[cat] or Tbl.CATEGORY_COLORS.other end,
+                   name = function(cat) return NS.Dummies.Label(cat) end },
+    charLength = { of = "byLength", color = function(len) return Tbl.LengthColor(len) end,
+                   name = function(len) return Format.Length(len) end },
+}
+
+-- A split section: one stacked bar per character over `keys` in order, then the keys' legend.
+local function layoutSplit(self, key, chars, keys, y, w, pad)
+    local split, top, rows, legend = SPLITS[key], 1, {}, {}
+    for _, e in ipairs(chars) do top = math.max(top, e.n) end
+    for _, e in ipairs(chars) do
         local segs = {}
-        for _, cat in ipairs(E.categories) do
-            local n = e.byCategory[cat]
+        for _, k in ipairs(keys) do
+            local n = e[split.of][k]
             if n then
-                segs[#segs + 1] = { frac = n / top, color = Tbl.CATEGORY_COLORS[cat] or Tbl.CATEGORY_COLORS.other,
-                                    tip = L["%s: %d"]:format(NS.Dummies.Label(cat), n) }
+                segs[#segs + 1] = { frac = n / top, color = split.color(k), tip = L["%s: %d"]:format(split.name(k), n) }
             end
         end
         rows[#rows + 1] = { label = e.name, labelColor = Tbl.ClassColor(e.class), value = tostring(e.n), segments = segs }
     end
-    y = self.ctx:renderStackedBarSection(self.ctx:Pool("charTarget"), self.headers.charTarget, rows, y, w, pad)
+    y = self.ctx:renderStackedBarSection(self.ctx:Pool(key), self.headers[key], rows, y, w, pad)
     if #rows == 0 then return y end
-    for _, cat in ipairs(E.categories) do
-        legend[#legend + 1] = { label = NS.Dummies.Label(cat), color = Tbl.CATEGORY_COLORS[cat] or Tbl.CATEGORY_COLORS.other }
-    end
-    return self.ctx:renderLegend(self.ctx:Pool("charTargetLegend"), legend, y + NS.InsightsCharts.K.SECTION_GAP, w, pad)
+    for _, k in ipairs(keys) do legend[#legend + 1] = { label = split.name(k), color = split.color(k) } end
+    return self.ctx:renderLegend(self.ctx:Pool(key .. "Legend"), legend, y + NS.InsightsCharts.K.SECTION_GAP, w, pad)
 end
 
--- F: the races per length, shortest first, in the length colors.
-local function layoutLengths(self, stats, y, w, pad)
-    local rows = {}
-    for _, e in ipairs(stats.byLength) do
-        rows[#rows + 1] = { label = Format.Length(e.length), color = Tbl.LengthColor(e.length), frac = e.n,
-                            value = tostring(e.n) }
-    end
-    return self.ctx:renderBarSection(self.ctx:Pool("lengths"), self.headers.lengths, rows, y, w, pad)
+-- E: each character's races split by target.
+local function layoutCharTarget(self, stats, y, w, pad)
+    local E = stats.byCharTarget
+    return layoutSplit(self, "charTarget", E.rows, E.categories, y, w, pad)
+end
+
+-- F: each character's races split by length (plan step V-g, in place of Races By Length).
+local function layoutCharLength(self, stats, y, w, pad)
+    local F = stats.byCharLength
+    return layoutSplit(self, "charLength", F.rows, F.lengths, y, w, pad)
 end
 
 -- A list panel across the content, or nothing (the panel hidden) with no rows.
@@ -451,36 +542,11 @@ local function layoutLateCasts(self, stats, y, w, pad)
     return listSection(self, "late", rows, y, w, pad)
 end
 
--- H: the top spells by damage share when the runs are all one spec; a hint line otherwise.
-local function layoutSpells(self, stats, y, w, pad)
-    local share, H = stats.spellShare, self.headers
-    local hint = not share and L["Pick one spec to see its top spells."]
-        or (share.n == 0 and L["No spell breakdown on these runs."]) or nil
-    if hint then
-        y = self.ctx:placeHeader(H.spells, y, pad)
-        self.hint:ClearAllPoints()
-        self.hint:SetPoint("TOPLEFT", self.content, "TOPLEFT", pad, y)
-        self.hint:SetText(hint)
-        self.hint:Show()
-        return y - NS.InsightsCharts.K.BAR_H - NS.InsightsCharts.K.SECTION_GAP
-    end
-    local rows = {}
-    for i, r in ipairs(share.rows) do
-        local name = NS.HudBreakdown.SpellName(r.id)
-        rows[i] = { label = name, color = self.ctx:paletteColor(i), frac = r.share, value = pct(r.share),
-                    tip = { name, L["%s of each run's damage, on average"]:format(pct(r.share)),
-                            L["Over %d runs"]:format(share.n) } }
-    end
-    return self.ctx:renderBarSection(self.ctx:Pool("spells"), H.spells, rows, y, w, pad)
-end
-
 -- I: the races per day, the days with none included.
 local function layoutPerDay(self, stats, y, w, pad)
     local buckets = {}
     for i, d in ipairs(stats.byDay) do
-        buckets[i] = { count = d.n, label = Tbl.Date(d.day, "%m/%d"),
-                       info = L["%s: %s"]:format(Tbl.Date(d.day, "%a %d %b"),
-                           d.n == 1 and L["1 run"] or L["%d runs"]:format(d.n)) }
+        buckets[i] = { count = d.n, label = Tbl.Date(d.day, DAY_FMT), info = L["%s: %s"]:format(dayText(d.day), runsWord(d.n)) }
     end
     return self.ctx:renderStrip(self.ctx:Pool("perDay"), self.headers.perDay, self.strips.perDay, buckets, y, w, pad)
 end
@@ -519,10 +585,10 @@ local function layoutNewBests(self, stats, y, w, pad)
         local run = e.run
         local gain = e.gain and L["%+.1f%%"]:format(e.gain) or DASH
         rows[#rows + 1] = {
-            name = L["%s \194\183 %s"]:format(Tbl.Date(run.date, "%d %b"), runBoard(run)),
+            name = L["%s \194\183 %s"]:format(dayText(run.date), runBoard(run)),
             nameColor = Tbl.ClassColor(run.char and run.char.class),
             right = L["%s  %s"]:format(dps(e.dps), gain),
-            tip = { runBoard(run), Tbl.Date(run.date, "%d %b %H:%M"),
+            tip = { runBoard(run), whenText(run.date),
                     L["%s DPS, up from %s"]:format(dps(e.dps), dps(e.prevDps)),
                     L["Click to open the run \194\183 right-click for options"] },
             onClick = bestClick(self, run),
@@ -531,18 +597,18 @@ local function layoutNewBests(self, stats, y, w, pad)
     return listSection(self, "bests", rows, y, w, pad)
 end
 
-local SECTIONS = { layoutProgression, layoutSpecs, layoutConsistency, layoutCharacters, layoutCharTarget,
-                   layoutLengths, layoutLateCasts, layoutSpells, layoutPerDay, layoutTail, layoutNewBests }
+local SECTIONS = { layoutProgression, layoutBoards, layoutCharacters, layoutCharTarget, layoutCharLength,
+                   layoutLateCasts, layoutPerDay, layoutTail, layoutNewBests }
 
 -- The sections' headings (the list panels carry their own titles).
 local HEADERS = {
     { key = "progression", title = "DPS Progression" },
+    { key = "boards", title = "By Target \195\151 Length" },
     { key = "specs", title = "Spec Comparison" },
-    { key = "consistency", title = "Consistency By Board" },
+    { key = "consistency", title = "Consistency" },
     { key = "chars", title = "Races By Character" },
     { key = "charTarget", title = "Races By Character \195\151 Target" },
-    { key = "lengths", title = "Races By Length" },
-    { key = "spells", title = "Top Spells" },
+    { key = "charLength", title = "Races By Character \195\151 Length" },
     { key = "perDay", title = "Races Per Day" },
     { key = "tail", title = "Damage Tail After The Buzzer" },
 }
@@ -593,7 +659,7 @@ local function buildBar(view)
 end
 
 -- The scroll frame under the bar, its content, and the chrome the sections place: the cards, the
--- headings, the strips, the list panels, the hint and the empty state.
+-- headings, the strips, the board tabs' rule, the list panels and the empty state.
 local function buildBody(view)
     local frame = view.frame
     view.scrollFrame = CreateFrame("ScrollFrame", nil, frame)
@@ -619,8 +685,10 @@ local function buildBody(view)
     end
     view.chrome[#view.chrome + 1] = view.strips.progression
     view.chrome[#view.chrome + 1] = view.strips.perDay
-    view.hint = Tbl.Text(view.content, Tbl.FONT.CAPTION)
-    view.chrome[#view.chrome + 1] = view.hint
+    view.boardRule = view.content:CreateTexture(nil, "ARTWORK")
+    view.boardRule:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    view.boardRule:SetHeight(1)
+    view.chrome[#view.chrome + 1] = view.boardRule
     view.empty = Tbl.Text(frame, Tbl.FONT.EMPTY, nil, "CENTER")
     view.empty:SetText(L["No runs match these filters."])
     view.empty:Hide()
@@ -835,13 +903,15 @@ end
 
 -- ── the data ────────────────────────────────────────────────────────────────────────────────────
 
--- Put the filters on the controls.
+-- Put the filters on the controls: each dropdown closed on its ClosedLabel (the choices, not the runs).
 function View:paintFilters(options)
     for _, spec in ipairs(DROPDOWNS) do
-        local dd = self.dropdowns[spec.key]
+        local dd, value = self.dropdowns[spec.key], self.filters[spec.key]
         if dd then
             dd:SetOptions(options[spec.key])
-            dd:SelectValue(self.filters[spec.key])
+            dd:SelectValue(value)
+            local closed = NS.InsightsData.ClosedLabel(options[spec.key], value)
+            if closed then dd:SetValue(value, closed) end
         end
     end
     for _, spec in ipairs(CHECKS) do self.checks[spec.key]:SetChecked(self.filters[spec.key] == true) end
@@ -875,6 +945,13 @@ function View:SetFilter(key, value)
     self.keep = key
     self:Redraw()
     return true
+end
+
+--- Show the board tab `key` (a target x length pair: "cleave|120"): kept while the filters leave it
+--- present, never saved with the view.
+function View:SelectBoard(key)
+    self.boardKey = key
+    if self.width then self:draw() end
 end
 
 --- How many runs pass the filters now.

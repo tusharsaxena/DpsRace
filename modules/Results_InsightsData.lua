@@ -45,8 +45,7 @@ local FACETS = {
 local DATE = #FACETS + 1     -- the date range's slot after the value facets
 
 local TAIL_EDGES = { 5, 10, 15, 20 }   -- section J's buckets: 0-5, 5-10, 10-15, 15-20, 20+ s
-local SPELL_TOP = 8                     -- section H's rows
-local CONSISTENT_MIN = 3                -- section C's least runs on a board
+local CONSISTENT_MIN = 3                -- a board tab's Consistency: the least runs on a spec
 local MAX_DAYS = 3660                   -- section I's longest span, a guard against a stray date
 local UNKNOWN = "unknown"               -- a late cast with no spell ID (sealed): counted, never ignored
 
@@ -136,13 +135,14 @@ local function countInto(list, pool, facet)
         if v ~= nil then n[v] = (n[v] or 0) + 1 end
     end
     for _, o in ipairs(list) do
-        o.count = n[o.value] or 0
+        o.count, o.name = n[o.value] or 0, o.label
         o.label = L["%s (%d)"]:format(o.label, o.count)
     end
 end
 
 -- One value facet's options: the values in `pool`, the current selection kept (at 0) when it is not
--- among them, each with its count, led by the "all" head with the pool's size.
+-- among them, each with its count, led by the "all" head with the pool's size and the number of
+-- choices under it (the closed dropdown's figure, InsightsData.ClosedLabel).
 local function facetOptions(facet, pool, runs, want)
     local list = Runs.OptionLists(pool, facet.key)
     if want ~= "all" and not find(list, want) then
@@ -150,8 +150,9 @@ local function facetOptions(facet, pool, runs, want)
     end
     countInto(list, pool, facet)
     Runs.WithAll(list, facet.head)
-    list[1].count = #pool
-    list[1].label = L["%s (%d)"]:format(facet.head, #pool)
+    local head = list[1]
+    head.count, head.name, head.choices = #pool, facet.head, #list - 1
+    head.label = L["%s (%d)"]:format(facet.head, #pool)
     return list
 end
 
@@ -163,7 +164,7 @@ local function dateOptions(pool, now)
         for _, run in ipairs(pool) do
             if since == nil or (run.date or 0) >= since then n = n + 1 end
         end
-        o.count = n
+        o.count, o.name = n, o.label
         o.label = L["%s (%d)"]:format(o.label, n)
     end
     return list
@@ -195,6 +196,18 @@ function InsightsData.Options(runs, f, now)
     local out = { date = dateOptions(pools[DATE], now) }
     for i, facet in ipairs(FACETS) do out[facet.key] = facetOptions(facet, pools[i], runs, f[facet.key]) end
     return out
+end
+
+--- What a closed dropdown shows for `value` among its `options` (Options' lists): the All head with
+--- the number of choices under it ("All characters (4)"), any other pick by its name alone. The run
+--- counts stay on the open list's rows. The date ranges always number four, so their head shows its
+--- name alone. Nil when `value` is not offered.
+--- @return string|nil
+function InsightsData.ClosedLabel(options, value)
+    local o = find(options or {}, value)
+    if not o then return nil end
+    if o.choices then return L["%s (%d)"]:format(o.name, o.choices) end
+    return o.name or o.label
 end
 
 local function countOf(list, value)
@@ -274,7 +287,8 @@ local function charEntry(acc, run)
     local entry = acc.chars[key]
     if not entry then
         local char = run.char or {}
-        entry = { key = key, name = tostring(char.name or "?"), class = char.class, n = 0, byCategory = {} }
+        entry = { key = key, name = tostring(char.name or "?"), class = char.class, n = 0, byCategory = {},
+                  byLength = {} }
         acc.chars[key] = entry
         acc.charList[#acc.charList + 1] = entry
     end
@@ -306,10 +320,13 @@ local REDUCERS = {
         local spec = run.char and run.char.specID
         if spec ~= nil then acc.specs[spec] = true end
     end,
-    -- The race lengths.
+    -- The race lengths, per character.
     function(acc, run)
         local length = run.race and run.race.length
-        if type(length) == "number" then acc.lengths[length] = (acc.lengths[length] or 0) + 1 end
+        if type(length) ~= "number" then return end
+        local byLength = charEntry(acc, run).byLength
+        byLength[length] = (byLength[length] or 0) + 1
+        acc.lengths[length] = true
     end,
     -- The late casts by spell, split by the ignore list.
     function(acc, run)
@@ -344,7 +361,7 @@ local function newBoard(e)
     local char = run.char or {}
     return { key = e.key, specID = char.specID, class = char.class, spec = char.spec,
              category = run.target and run.target.category or "other", length = run.race and run.race.length,
-             n = 0, sum = 0, first = run, pct = {} }
+             n = 0, sum = 0, first = run, worstDps = e.dps, pct = {} }
 end
 
 -- One complete run, in date order, onto its board: a new best when it beats the board's best so far.
@@ -359,6 +376,7 @@ local function onBoard(out, e)
                                             prevDps = board.bestDps, gain = gain }
     end
     if not board.best or e.dps > board.bestDps then board.best, board.bestDps = e.run, e.dps end
+    if e.dps < board.worstDps then board.worstDps = e.dps end
     board.n, board.sum = board.n + 1, board.sum + e.dps
     local best = out.totals.best
     if not best or e.dps > best.dps then out.totals.best = { run = e.run, dps = e.dps, key = e.key } end
@@ -384,12 +402,17 @@ end
 local CATEGORY_RANK = {}
 for i, key in ipairs(NS.Dummies.CATEGORIES) do CATEGORY_RANK[key] = i end
 
--- Section B's pair: more runs first, then the catalog's category order, then the shorter length.
-local function morePopular(a, b)
-    if a.n ~= b.n then return a.n > b.n end
+-- The catalog's category order, then the shorter length.
+local function inCatalogOrder(a, b)
     local ra, rb = CATEGORY_RANK[a.category] or 99, CATEGORY_RANK[b.category] or 99
     if ra ~= rb then return ra < rb end
     return (a.length or 0) < (b.length or 0)
+end
+
+-- The pair shown first: more runs, then the catalog's category order, then the shorter length.
+local function morePopular(a, b)
+    if a.n ~= b.n then return a.n > b.n end
+    return inCatalogOrder(a, b)
 end
 
 local function byBest(a, b)
@@ -397,37 +420,44 @@ local function byBest(a, b)
     return tostring(a.specID) < tostring(b.specID)
 end
 
--- B: the specs side by side on the most-raced (category, length) pair; with a Target and a Length
--- filter that is the filter's own pair.
-local function specCompare(out)
-    local byPair, chosen = {}, nil
-    for _, board in pairs(out.boards) do
-        local key = board.category .. "|" .. tostring(board.length)
-        local p = byPair[key]
-        if not p then
-            p = { category = board.category, length = board.length, n = 0, rows = {} }
-            byPair[key] = p
-        end
-        p.n = p.n + board.n
-        p.rows[#p.rows + 1] = { specID = board.specID, class = board.class, spec = board.spec, run = board.best,
-                                best = board.bestDps, avg = board.avg, n = board.n }
-    end
-    for _, p in pairs(byPair) do
-        if not chosen or morePopular(p, chosen) then chosen = p end
-    end
-    if chosen then table.sort(chosen.rows, byBest) end
-    out.specCompare = chosen
+local function moreConsistent(a, b)
+    if a.avgPct ~= b.avgPct then return a.avgPct > b.avgPct end
+    return tostring(a.specID) < tostring(b.specID)
 end
 
--- C: the boards with enough runs to speak of a spread, the most consistent first.
-local function consistency(out)
+-- One spec's row on a board tab, off its board.
+local function specRow(board)
+    return { specID = board.specID, class = board.class, spec = board.spec, run = board.best, best = board.bestDps,
+             worst = board.worstDps, avg = board.avg, n = board.n, cv = board.cv, avgPct = board.avgPct }
+end
+
+-- The board tabs (D-10's boards gathered by target x length, plan step V-f): one per pair, in the
+-- catalog's category order then the shorter length, each with its specs best first (Spec
+-- Comparison) and those with CONSISTENT_MIN runs or more, the most consistent first (Consistency).
+-- boardTop is the most raced pair's key, the tab shown first.
+local function boardTabs(out)
+    local byPair = {}
     for _, board in pairs(out.boards) do
-        if board.n >= CONSISTENT_MIN then out.consistency[#out.consistency + 1] = board end
+        local key = board.category .. "|" .. tostring(board.length)
+        local tab = byPair[key]
+        if not tab then
+            tab = { key = key, category = board.category, length = board.length, n = 0, specs = {}, consistency = {} }
+            byPair[key] = tab
+            out.boardTabs[#out.boardTabs + 1] = tab
+        end
+        local row = specRow(board)
+        tab.n = tab.n + board.n
+        tab.specs[#tab.specs + 1] = row
+        if board.n >= CONSISTENT_MIN then tab.consistency[#tab.consistency + 1] = row end
     end
-    table.sort(out.consistency, function(a, b)
-        if a.avgPct ~= b.avgPct then return a.avgPct > b.avgPct end
-        return a.key < b.key
-    end)
+    table.sort(out.boardTabs, inCatalogOrder)
+    local top
+    for _, tab in ipairs(out.boardTabs) do
+        table.sort(tab.specs, byBest)
+        table.sort(tab.consistency, moreConsistent)
+        if not top or morePopular(tab, top) then top = tab end
+    end
+    out.boardTop = top and top.key or nil
 end
 
 -- The cards that read the boards: the average % of board best, and the raw average on one board.
@@ -458,41 +488,6 @@ local function lateList(map)
     return list
 end
 
--- One run's damage per spell ID (player and pet rows of one ID summed) and its total.
-local function runSpells(run)
-    local by, total = {}, 0
-    for _, s in ipairs(type(run.spells) == "table" and run.spells or {}) do
-        local id, dmg = s.id, s.dmg
-        if type(id) == "number" and type(dmg) == "number" and dmg > 0 then
-            by[id] = (by[id] or 0) + dmg
-            total = total + dmg
-        end
-    end
-    return by, total
-end
-
--- H: the top spells by damage share, when the runs are all one spec. The share is the mean of each
--- run's own share, so the long cleave runs do not outweigh the short ones.
-local function spellShare(acc, out)
-    local specID = next(acc.specs)
-    if specID == nil or next(acc.specs, specID) ~= nil then return end
-    local sums, n, rows = {}, 0, {}
-    for _, e in ipairs(acc.complete) do
-        local by, total = runSpells(e.run)
-        if total > 0 then
-            n = n + 1
-            for id, dmg in pairs(by) do sums[id] = (sums[id] or 0) + dmg / total end
-        end
-    end
-    for id, sum in pairs(sums) do rows[#rows + 1] = { id = id, share = sum / n } end
-    table.sort(rows, function(a, b)
-        if a.share ~= b.share then return a.share > b.share end
-        return a.id < b.id
-    end)
-    for i = #rows, SPELL_TOP + 1, -1 do rows[i] = nil end
-    out.spellShare = { specID = specID, n = n, rows = rows }
-end
-
 -- I: one entry per local day from the first run's to the last's, the days with no run included.
 local function byDay(acc, out)
     if not acc.first then return end
@@ -512,8 +507,7 @@ local FINALIZERS = {
         boardFigures(acc, out)
         out.progression = acc.complete
     end,
-    function(_, out) specCompare(out) end,
-    function(_, out) consistency(out) end,
+    function(_, out) boardTabs(out) end,
     boardCards,
     -- The headline cards.
     function(acc, out)
@@ -533,16 +527,17 @@ local FINALIZERS = {
             if acc.categories[key] then out.byCharTarget.categories[#out.byCharTarget.categories + 1] = key end
         end
     end,
-    -- F: the race lengths, shortest first.
+    -- F: each character's races by length (the rows are D's), the lengths shortest first.
     function(acc, out)
-        for length, n in pairs(acc.lengths) do out.byLength[#out.byLength + 1] = { length = length, n = n } end
-        table.sort(out.byLength, function(a, b) return a.length < b.length end)
+        local lengths = out.byCharLength.lengths
+        out.byCharLength.rows = acc.charList
+        for length in pairs(acc.lengths) do lengths[#lengths + 1] = length end
+        table.sort(lengths)
     end,
     -- G: the late casts by spell, the counted and the ignored apart.
     function(acc, out)
         out.lateBySpell = { counted = lateList(acc.lateCounted), ignored = lateList(acc.lateIgnored) }
     end,
-    spellShare,
     byDay,
     -- J: the damage tail's buckets; the last is open-ended.
     function(acc, out)
@@ -568,12 +563,13 @@ end
 --- InsightsData.Filter).
 --- @return table stats  { totals (the cards: runs, timeRaced, best { run, dps, key }, avgPct, avgDps
 ---   and oneBoard on one board, clean, newBests, chars, specs, first, last, activeDays), boards
----   ([Bests.Key] = { best, bestDps, avg, cv, n, first, avgPct, pct = { [run id] = share of best } }),
----   progression (A: { run, dps, key, pct } in date order), specCompare (B: { category, length, n,
----   rows } or nil), consistency (C: boards of 3 runs or more), byChar (D), byCharTarget (E: { rows,
----   categories }), byLength (F), lateBySpell (G: { counted, ignored }, each { id, unknown?, count }),
----   spellShare (H: { specID, n, rows { id, share } } when one spec, else nil), byDay (I: { day, n }),
----   tail (J: { lo, hi?, n }), newBests (K: { run, dps, key, prev, prevDps, gain } in date order) }
+---   ([Bests.Key] = { best, bestDps, worstDps, avg, cv, n, first, avgPct, pct = { [run id] = share of
+---   best } }), progression (A: { run, dps, key, pct } in date order), boardTabs (B and C: { key,
+---   category, length, n, specs, consistency }, each row { specID, class, spec, run, best, worst, avg,
+---   n, cv, avgPct }) and boardTop (the most raced tab's key, or nil), byChar (D), byCharTarget (E:
+---   { rows, categories }), byCharLength (F: { rows, lengths }), lateBySpell (G: { counted, ignored },
+---   each { id, unknown?, count }), byDay (I: { day, n }), tail (J: { lo, hi?, n }), newBests (K:
+---   { run, dps, key, prev, prevDps, gain } in date order) }
 function InsightsData.Compute(runs)
     local flagged, acc = flaggedMemo(), newAcc()
     for _, run in ipairs(runs or {}) do
@@ -584,8 +580,9 @@ function InsightsData.Compute(runs)
     end
     local out = {
         totals = { runs = 0, timeRaced = 0, clean = 0, newBests = 0, chars = 0, specs = 0, activeDays = 0 },
-        boards = {}, progression = {}, consistency = {}, byChar = {}, byCharTarget = { rows = {}, categories = {} },
-        byLength = {}, lateBySpell = { counted = {}, ignored = {} }, byDay = {}, tail = {}, newBests = {},
+        boards = {}, progression = {}, boardTabs = {}, byChar = {}, byCharTarget = { rows = {}, categories = {} },
+        byCharLength = { rows = {}, lengths = {} }, lateBySpell = { counted = {}, ignored = {} }, byDay = {},
+        tail = {}, newBests = {},
     }
     for i = 1, #FINALIZERS do FINALIZERS[i](acc, out) end
     return out

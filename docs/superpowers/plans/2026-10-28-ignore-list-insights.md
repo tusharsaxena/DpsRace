@@ -786,7 +786,54 @@ Found in the screenshots (decided here):
       the docs do not name `Style.FONT.CHART`, the range section or the level strip labels.
     - Gate: 1055 passed, 1 skipped (exit 0); luacheck 0/0; complexity suite green, every touched
       function under CCN 15 (`Ctx.renderStrip` 10), its bundle discarded.
-- [ ] **V2** Insights tab: V-d, V-f, V-g, V-h, V-j, V-l. Tests.
+- [x] **V2** Insights tab: V-d, V-f, V-g, V-h, V-j, V-l. Tests.
+  - **Done notes (V2, 2026-10-28), where the code differed from the plan:**
+    - V-d: `InsightsData.ClosedLabel(options, value)` is what a closed dropdown shows. The All head
+      names the choices under it ("All characters (4)"), and any other pick shows its name alone
+      ("Fire"). The open list keeps its run counts. The date dropdown's head shows "All time" with no
+      figure, because the four ranges never change. `View:paintFilters` puts the label on through the
+      dropdown's own `SetValue`, so LibKa0s is untouched.
+    - V-f: `stats.boardTabs` holds one tab per target x length pair, in `NS.Dummies.CATEGORIES` order
+      and then by length. Each tab carries its specs (best first) and the specs with 3 or more runs
+      (most consistent first). `stats.boardTop` is the most raced pair; a tie goes to the catalog's
+      order. The tabs sit under a "By Target x Length" heading, 120 px each, in the small font, gold
+      and underlined when picked, and they wrap at the content's edge. A rule runs under them. The
+      pick (`View.boardKey`) is kept while the filters leave it present, falls back to `boardTop`
+      when they don't, and is never saved with the view. On the owner's data there are 7 tabs
+      (cleave 0:30, 1:00, 2:00; boss 0:30, 1:00, 2:00; other 2:00), and cleave 2:00 opens first.
+      A tab counts complete runs, as the boards do.
+    - V-i wired in: Consistency is a range per spec on the tab's board, worst to best DPS, with a mark
+      at the average and a scale line naming the two ends. The value is the average run's share of
+      the spec's best. The hover gives best, average, worst, CV and the run count. Boards gained
+      `worstDps`.
+    - V-c: the board tabs name the target and length, so the rows are spec names alone and no row
+      uses `sublabel`. The renderer support from V1 stays. Open question for the owner: should a
+      second line carry something else, such as the character?
+    - V-g: Races By Character x Length is a stacked bar per character in the length colors, with a
+      legend of the lengths (shortest first). E and F share one `layoutSplit`. `stats.byLength` is
+      gone and `stats.byCharLength` = { rows, lengths } replaces it.
+    - V-h: Top Spells is gone, with its data (`spellShare`, `runSpells`), its hint line and four
+      locale keys.
+    - V-j: one date format, "%d %b" ("26 Oct"), the Runs tab's. The year is added when it isn't the
+      current one, and " %H:%M" is added in a run's hover. Strip labels show the day alone (the
+      hover names the year), so `K.STRIP_LABEL_PITCH` stays 40 px. The Date range card reads
+      "23 Oct to 28 Oct".
+    - V-l: no change, because nothing differs. Both windows use the HIGH strata
+      (`LAYERS.STRATA.WINDOW`) and a 0.92 background (`lib.SKIN.bg` here, LootHistory's `win.bg`).
+      The nameplates in the screenshots show through that 8% of transparency, and they would show
+      through LootHistory's browser body the same way. LootHistory's skin also paints a 0.9 title
+      band, so its title bar is close to opaque. DpsRace's isn't, which is why the nameplates were
+      plain at the top right. Open question for the owner: should the Results window be opaque, or
+      use the denser 0.95 (`win.bgDense`)? Either is a skin override, and the second is what
+      LootHistory's Export window wears.
+    - Locale keys: removed `Spec Comparison (%s · %s)`, `Consistency By Board`, `Races By Length`,
+      `Top Spells` and the three Top Spells lines. Added `By Target × Length`, `Consistency`,
+      `Races By Character × Length` and `Worst %s DPS`.
+    - Left for V3: `docs/testing.md` (the `test_insights` row still says eight cards and *Top
+      Spells*), `docs/test-cases.md` (the renamed and new tests), the smoke rows and the docs on the
+      board tabs, the closed labels and the date format.
+    - Gate: 1060 passed, 1 skipped (exit 0); luacheck 0/0; no function in the two Insights modules
+      above CCN 10 (lizard; `progressionPerDay` and `boardFigures` at 10); `Results_Insights.lua` is 960 lines.
 - [ ] **V3** Docs, smoke rows (replace the retired ones), test counts, then push.
 - [ ] **V4** Review and fixes.
 
