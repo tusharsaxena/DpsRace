@@ -7,7 +7,7 @@ page (`settings/Profiles.lua`).
 
 Everything under `db.profile`: today the Master controls (`enabled`, `visibility`, `scale`,
 `locked`), the HUD's show mode and clock (`hud.*`), the Race page (`race.*`, the late-cast ignore list among them), the live breakdown on
-HUD > Race HUD (`live.*`), the HUD's look (`appearance.*`), the Runs list's bars (`resultsTable.*`), *Include talents link* (`share.*`), the saved Runs view (`views.runs`) and the windows' size and position (`windows.*`). See
+HUD > Race HUD (`live.*`), the HUD's look (`appearance.*`), the Runs list's bars (`resultsTable.*`), *Include talents link* (`share.*`), the saved Runs and Insights views (`views.runs`, `views.insights`) and the windows' size and position (`windows.*`). See
 [schema.md](schema.md) for the full list.
 
 What a profile does **not** hold, by design:

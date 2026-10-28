@@ -487,7 +487,7 @@ Total.
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
 - results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
-- results: the Time column and the Bests Length column take the length color; the tail stays gray
+- results: the Time column takes the length color; the tail stays gray
 - results: Status tags are boxed in their hue with the icon inside
 - results: the HUD never draws a race length in the Results length colors
 - results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
@@ -513,8 +513,8 @@ Total.
 - results: the live HUD's spell rows take no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
-- results: bests tab groups by spec x category x length with clean-only toggle
-- results: the Bests board shows one category at a time, so a spec and length is one row
+- results: the Insights tab is built on first show, counts the runs and shows the empty state with none
+- results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)
 - results: list refreshes on RUN_SAVED
 - results: Runs opens on the current character in every spec; current character and spec are each a choice of its own
 - results: the window is skinned, closable with Escape, resizable and clamped
@@ -528,10 +528,9 @@ Total.
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
 - results: the close control turns gold under the pointer and back to its gray
 
-### test_results_fit.lua (6)
+### test_results_fit.lua (5)
 
 - results: every Runs column fits the narrowest list either view lays out
-- results: the Bests Flags chips are plain, and a two-flag best fits its column
 - results: the Runs filter bar fits inside both views' minimum width
 - results: the Runs filter bar with no width, or only the room it needs, is the configured plan
 - results: the Runs filter bar ends on the window's right edge in both views, never under its widths
@@ -561,7 +560,7 @@ Total.
 - results: Escape with no talent tree closes the window for good
 - results: the close control with the talent tree up closes the window alone
 
-### test_results_badges.lua (11)
+### test_results_badges.lua (10)
 
 - badges: the Target cell is a boxed chip in its category color, the count inside
 - badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
@@ -569,7 +568,6 @@ Total.
 - badges: a chip never runs past its column: a too-long word is cut to the box
 - badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
 - badges: the window minimums hold the wider columns, the Note column last and inside the list
-- badges: the Bests Length column is a chip in its length color
 - badges: the detail's target line leads with the type and length chips, laid out from their widths
 - badges: drawing the chips reads no frame's size or position back
 - badges: group headers color their value as plain text: class, target type, length
@@ -850,7 +848,63 @@ Total.
 - gear view: the followed run deleted (the pane left empty) closes the view
 - gear view: a run without a compared run marks nothing and says so
 
-### test_sizing.lua (14)
+### test_insights_data.lua (12)
+
+- insights: Runs.OptionLists has each list without its All head, and WithAll adds it
+- insights: Filter defaults wide, keeps lost runs out and maps Clean only to Hide flagged
+- insights: Options lists each facet's values among the runs every other filter passes, with counts
+- insights: Normalize sets a 0-run selection to All, never the one just changed, in bar order
+- insights: Compute on no runs returns zero cards and empty sections
+- insights: Compute's cards over the owner-shaped fixture
+- insights: Compute's boards, progression, spec compare and consistency are board-relative
+- insights: Compute's new bests beat an earlier best on their board, in date order
+- insights: Compute's counts by character, target, length and day, gap days included
+- insights: Compute buckets the damage tail, the 155 s outlier in 20+
+- insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
+- insights: Compute's spell share is the mean of each run's share, summed by ID, one spec only
+
+### test_insights.lua (38)
+
+- insights charts: nothing above the host section reads NS or a client global but CreateFrame
+- insights charts: the header names the LootHistory source commit the port came from
+- insights charts: New wants a host pool, and fills the colors and fonts it is not given
+- insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis
+- insights charts: tipText states the value beside the full label
+- insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
+- insights charts: the ranked palette cycles, and a map keeps one color per key
+- insights charts: a bar section scales to its longest bar and colors label and fill alike
+- insights charts: every bar's hover states its value; a row's own tip lines win
+- insights charts: an empty section hides its header and leaves the cursor where it was
+- insights charts: a legend's chips start under the track, not the labels, and wrap
+- insights charts: a stacked bar shows one segment per share, each hover naming its value
+- insights charts: a strip draws one colored column per bucket, its hover above the column
+- insights charts: a strip takes a fixed top, and thins its labels when the columns crowd
+- insights charts: a list panel caps at ten rows, sized to them, each hover stating its value
+- insights charts: a list row's click is the row's own, and a reused row forgets the last one
+- insights charts: a second pass after ReleaseAll builds no frame; every pool comes back whole
+- insights charts: a divider rules both sides of its centered title in the host's colors
+- insights charts: a stat card's caption over its figure, the hover stating the figure
+- insights charts: the panel comes from the host, a plain frame without one
+- insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
+- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
+- insights tab: built on its first show, its tab label gold while it shows
+- insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
+- insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
+- insights tab: a selection left with no runs falls back to All; the one just changed never
+- insights tab: the cards state the eight figures, each hover naming its value
+- insights tab: a section with nothing to show hides; Top Spells needs one spec
+- insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged
+- insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab
+- insights tab: a Recent New Bests row opens its run on the Runs tab; a right-click its row menu
+- insights tab: with no run the empty state shows, and every card and section hides
+- insights tab: Save, Clear and Reset keep the view at profile.views.insights
+- insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
+- insights tab: a load with no library draws no dropdown, and the tab still works
+- insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
+- insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
+- insights tab: the wheel scrolls the content, clamped to it
+
+### test_sizing.lua (13)
 
 - sizing: a size change the grip did not start redraws at once
 - sizing: while the grip is held, one cheap layout a frame; one redraw on release
@@ -859,9 +913,8 @@ Total.
 - sizing: a hide while the grip is held ends the drag as a release would
 - results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
 - results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
-- results sizing: the Bests tab and the collapsed view's open detail resize without a redraw
+- results sizing: the Insights tab and the collapsed view's open detail resize without a redraw
 - results sizing: the first drag after opening moves every row's cells, none left behind
-- results sizing: the Bests tab's first drag after opening leaves no row behind
 - results sizing: a rebind inside a row the drag adds leaves no second row behind
 - timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
 - hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
@@ -956,7 +1009,7 @@ Total.
 - slash: target prints name, npcID and category
 - slash: an uncataloged target reads as Other
 - slash: hud show, hide and toggle; a bare hud toggles
-- slash: results opens the Results window; results bests opens the bests
+- slash: results opens the Results window; results insights opens Insights, and bests still does
 - slash: test turns test mode on and off through the Master controls row
 - slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
 - slash: sim plays the default scenario or the one named; an unknown one lists them all
@@ -1016,7 +1069,7 @@ Total.
 - preview: test mode opens the Results window on the sample history, with its strip
 - preview: the detail's Delta box and New best badge read the sample history's Runs view
 - preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
-- preview: the sample detail draws its chart, compare and gear; the Bests tab ranks the sample
+- preview: the sample detail draws its chart, compare and gear; the Insights tab counts the sample
 - preview: a note or a delete changes the sample in memory; Save view and Share refuse
 - preview: ending it gives the store back, the player's view and an open window kept open
 - preview: a Results window test mode opened closes with it
@@ -1218,11 +1271,11 @@ Total.
 | test_autoarm.lua | 30 |
 | test_layers.lua | 7 |
 | test_results.lua | 50 |
-| test_results_fit.lua | 6 |
+| test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
-| test_results_badges.lua | 11 |
+| test_results_badges.lua | 10 |
 | test_compare.lua | 22 |
 | test_loadout.lua | 27 |
 | test_stats.lua | 9 |
@@ -1238,7 +1291,9 @@ Total.
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
-| test_sizing.lua | 14 |
+| test_insights_data.lua | 12 |
+| test_insights.lua | 38 |
+| test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 35 |
@@ -1260,4 +1315,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **994** |
+| **Total** | **1041** |

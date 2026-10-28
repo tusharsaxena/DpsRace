@@ -18,11 +18,10 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
   (`run.flags.<key>`). Keep the value plain (a number, a boolean or a list of plain tables): it is
   stored as is.
 - Emit it from `Scoring.Flags` (`modules/Scoring.lua`) at its place in the display order, with a
-  locale key for its full text. A flag emitted there drops the run off the *Clean runs only* board
-  automatically (`Bests.Compute`).
-- Give it a short label in each of the three places that draw flags: the HUD's result chips
-  (`FLAG_CHIP` in `modules/Hud_States.lua`), the Bests board's chip words (`SHORT` in
-  `modules/Results_Table.lua`), and the detail's explanation line (`EXPLAIN` in
+  locale key for its full text. A flag emitted there drops the run off the clean-only bests board, *Hide
+  flagged* and Insights' *Clean only* automatically (`Bests.Compute`, `Runs.IsFlagged`).
+- Give it a short label in each of the two places that draw flags: the HUD's result chips
+  (`FLAG_CHIP` in `modules/Hud_States.lua`) and the detail's explanation line (`EXPLAIN` in
   `modules/Results_Detail.lua`). Add the `enUS` keys. A chip word is Sentence case, never
   upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word. The late
   casts' chip (`FLAG_CHIP.lateCasts`) reads the flag's `count`, the casts left after the ignore list

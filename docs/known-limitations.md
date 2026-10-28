@@ -41,7 +41,8 @@ and the smoke row that measures it where one exists.
   and sort open on what *Save* stored in the profile (`profile.views.runs`), else on *Current
   character*, *All specs*, grouped *Full* (character, class, spec, target and time) and newest first; *Reset* deletes the saved view and
   *Clear* returns to it. They are view state, not settings: no schema row, and the profile reset
-  takes them with the profile.
+  takes them with the profile. The Insights tab keeps its own the same way (`profile.views.insights`),
+  opening on every character, spec, target, length and date when none is saved.
 - **The live breakdown can never show percentages or sort** (spec §6.1): both are arithmetic on
   secret values. This is a client limit, not a gap to close.
 - **Unmeasured client behavior** is tracked as the spec's open items O1 to O7 (spec §12) and the

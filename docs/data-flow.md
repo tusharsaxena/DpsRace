@@ -364,7 +364,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   scroll frame), from the size `OnSizeChanged` hands it, never a frame read; the release runs the
   full layout once (every row rebound, the detail drawn again) and stores the view's size.
 - **Opening**: `NS.ToggleResults` (the key binding, the HUD's Results control), `Results.ShowRun(id)`
-  (the HUD's *Details*, a Bests row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
+  (the HUD's *Details*, an Insights *Recent New Bests* row), `Results.EditNote(id)` (a row menu's *Add Note*: the run with its note box focused) or `Results.ShowTab(name)`. `IsShown()` =
   wanted and not stood down; General visibility does not apply to it. Each tab is built the first
   time it shows.
 - **The Runs tab**: `Recorder.All()` → `ResultsRuns.Options` fills the six dropdowns from the runs
@@ -388,7 +388,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   group of the runs the filters pass (`ResultsRuns.Context`: the max DPS, the complete run that sets
   it and the runner-up, `Leaders` breaking a tie to the earlier run) and which runs it listed, on the
   Runs view, never on a run. The detail asks through the shell's `deltaContext` hook
-  (`View:DeltaContext`); a run the filters leave out (opened from the HUD, a Bests row) gets its board
+  (`View:DeltaContext`); a run the filters leave out (opened from the HUD or from Insights) gets its board
   among every run the source holds (`BoardContext`: spec x target type x length, `Bests.Key`), the
   sample history's in test mode. `DeltaBox` answers the figure: the group's top complete run's lead
   over the runner-up in green (a dash with none), any other run's own *Delta* cell (an incomplete
@@ -458,9 +458,25 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   for a run with no `stats`. The detail calls `ResultsGear.DetailChanged` beside the timeline's, so the
   view follows the run and the compare; it closes with the Results window.
 - **The Insights tab** (#12, `modules/Results_Insights.lua`): it replaced the Bests tab, whose board
-  UI is gone. Until the tab's stats and charts land it is a placeholder: `ResultsSource.All()` minus
-  lost runs gives the footer's count, and the empty state shows when there are none.
-  `/dr results insights` opens it, and `/dr results bests` still does (a silent alias).
+  UI is gone. `Refresh`: `ResultsSource.All()` (the sample history in test mode and the sim) →
+  `InsightsData.Normalize(runs, filters, now, keep)` (each dropdown's options, faceted: its values
+  among the runs every other filter passes, with counts; a selection no run matches falls back to All
+  in bar order, never the dropdown just changed, and only in the live filters) →
+  `InsightsData.Filter` (lost runs out, then `Runs.Filter` with every key given, so no Runs default
+  leaks in; *Clean only* is the ignore-aware *Hide flagged*) → `InsightsData.Compute` (one pass over
+  the runs through `REDUCERS`, then `FINALIZERS`) → the eight cards and the sections A to K, each
+  drawn by a renderer of `modules/Results_InsightsCharts.lua`. Every figure that mixes boards is a
+  run's percent of its board's best, that best taken over the filtered runs; DPS reads complete runs
+  only. Flags come from `Scoring.Flags`, memoized within one call and never across, so an ignore-list
+  change re-scores the next draw. Every widget comes from the chart context's pools: a layout
+  releases them all and each section acquires what it shows, so a redraw builds no frame. The *Late
+  Casts* list's right-click opens `LateIgnore.Menu` over that one spell (never on a sample, never for
+  a cast with no spell ID), and the write's `SETTINGS_CHANGED` redraws the tab. A *Recent New Bests*
+  row's click opens its run on the Runs tab (`hooks.open`), and its right-click is the row menu. The
+  tab holds no bus receiver: the shell redraws it on `RUN_SAVED`, `RUNS_CHANGED`, `SETTINGS_CHANGED`
+  for `race.lateIgnore` or `"profile"`, and a source swap. *Save* / *Reset* / *Clear* keep the filters
+  at `profile.views.insights` (*Save* and *Reset* refuse while the samples show). `/dr results
+  insights` opens it, and `/dr results bests` still does (a silent alias).
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
   `SETTINGS_CHANGED` for `global.history.keepDays` redraws the footer.

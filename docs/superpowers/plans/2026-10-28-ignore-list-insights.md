@@ -663,7 +663,7 @@ upstream change). None is ratified by this plan.
       wheel), the `test_sizing.lua` Insights drag case now also pins that no pool is released per
       frame. No new suite file, so `tests/run.lua` is unchanged. The optional perf scenario was not
       added.
-- [ ] **N5 Docs and smoke rows, then push.**
+- [x] **N5 Docs and smoke rows, then push.**
   - README (replace the Bests sentence with an Insights paragraph, slash table), `docs/ARCHITECTURE.md`
     (:189 and the module list), `docs/module-map.md` (:74 out, three rows in), `docs/data-flow.md` (:424,
     :476, plus the Insights flow `Source.All` to `Filter` to `Compute` to sections), `docs/performance.md`
@@ -676,6 +676,24 @@ upstream change). None is ratified by this plan.
     Insights filters and faceting, cards, each section's tooltip, the empty state, resize, test mode, saved
     view, and the G right-click ignore.
   - Gate green, commit, push the branch.
+  - **Done notes (N5, 2026-10-28), where the docs differed from the plan:**
+    - The plan's line numbers predate I4's and N1's edits; each spot was found by its text. The README has
+      no slash table (I4's note), so the Insights paragraph names `/dr results insights` itself. The tests
+      badge and `docs/test-cases.md` (regenerated, CRLF) read 1041.
+    - `docs/ARCHITECTURE.md` gained an overview paragraph for #12 beside the ignore list's, and the cap
+      paragraph's counts moved (`test_results.lua` 1473, `Results_Table.lua` 1155, `Results_Runs.lua`
+      1112). The S-7 deviation row was already written at N3 and names BankLedger.
+    - `docs/performance.md` keeps the before-table's Bests row (it is history, now marked "Insights since
+      #12"), adds Insights to the per-frame table and gets a short *The Insights tab* section: one Options
+      pass, one Filter and one Compute, pooled widgets, no bracket or offline scenario yet.
+    - Not in the plan, found by grep: `docs/debug.md` (the diagnostics line's `tab=<runs|insights>`),
+      `docs/profiles.md` and `docs/known-limitations.md` (the saved Insights view), the module map's
+      MockRuns row (17 sample runs) and smoke row R14 ("never appears on the Bests board").
+    - `docs/common-tasks.md`: two places draw a flag's short label now, not three.
+    - Smoke: W10 retired; K8, W9, W14, W15, R14, SM-DR-BL2, BL4, BL12, DL8, UT28 and UT46 rewritten;
+      new section 25, SM-DR-IN1 to SM-DR-IN11, with a pending sign-off line.
+    - The LibKa0s promotion issue and D-15 are still not filed (I4's and N3's notes); left for R or the
+      owner.
 
 ### R: Review and fixes
 
