@@ -509,7 +509,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | Doc | Status | Trigger |
 |---|---|---|
 | `perf-analysis/README.md` | Present | The performance harness is wired (`core/PerfSetup.lua`) |
-| `slash-dispatch.md` | Present | 22 commands in `NS.COMMANDS` (eight or more) |
+| `slash-dispatch.md` | Present | 23 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |
@@ -546,13 +546,15 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Files over the 1500-line cap
 
-Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: two test files,
+Nothing is over the cap today. Nine files are in the 1000–1500 on-notice band: three test files,
 `tests/test_results.lua` at 1473 lines (the next Results suite goes in a new file, as
 `test_results_group`, `test_results_fit`, `test_results_tree`, `test_results_badges`,
 `test_results_usage`, `test_results_timeline`, `test_results_timeline_zoom`,
 `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll`, `test_results_timeline_controls`, `test_results_delta` and
-`test_results_sections` did)
-and `tests/test_hud.lua` at 1474 (the waiting hint box's cases went to a new `test_hud_hint`, the Stop! and waiting tiles' to a new `test_hud_tiles`), and
+`test_results_sections` did),
+`tests/test_hud.lua` at 1474 (the waiting hint box's cases went to a new `test_hud_hint`, the Stop! and waiting tiles' to a new `test_hud_tiles`)
+and `tests/test_insights.lua` at 1201 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
+is already its own `test_insights_data`), and
 six addon files, `modules/Results_Table.lua` at 1155 lines (a Bind nested in another stops, the
 first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1457 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27, then Ctrl+wheel, the `?` and the corridor colors, then the controls at one size and the zoom level's color, 2026-10-28; its suite's
 P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1218

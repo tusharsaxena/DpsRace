@@ -32,10 +32,14 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Race` | `modules/Race.lua`, one line per edge (debug-logging-§8): the arm (length, newest session before it) and each refusal with its reason code; a session adopted, or ignored because it existed before the arm; the clock start; each combat-start and combat-end edge; the buzzer; an incomplete run's early end; the stopping hold and the quiet that releases the read; a still-sealed read's retry; the read's outcome (status, damage present or absent, never the figure); each late cast and a restart; the resume's decision after a `/reload`; and why a run was lost |
 | `Meter` | `modules/Meter.lua`: a `C_DamageMeter` call that raised, with the error |
 | `Recorder` | `modules/Recorder.lua`: a snapshot call that raised, and each prune's count with its age in days |
+| `Loadouts` | `modules/Loadouts.lua`: how many orphaned gear and talent sets a sweep dropped (#6) |
 | `Casts` | `modules/Casts.lua`: at the result, how many casts the race kept and how many were dropped for a sealed spell ID (#14) |
 | `Timeline` | `modules/Results_Timeline.lua`: the ability timeline window built, and each draw's ability count (#14) |
+| `Gear` | `modules/Results_Gear.lua`: the gear view window built, and each draw's slot count (#17) |
 | `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
+| `Countdown` | `modules/Countdown.lua`: the center numbers' frame built (with the digit art or the font fallback), and a pop animation the client refused |
+| `AutoArm` | `modules/AutoArm.lua`: a dummy session beginning and ending, each auto-arm (or its refusal, with the reason) and each cancel when the target moves off the dummies (#16) |
 | `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
