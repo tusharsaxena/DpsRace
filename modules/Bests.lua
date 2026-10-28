@@ -66,7 +66,8 @@ function Bests.Compute(runs, opts)
     return board
 end
 
---- The cached board over the whole store (the Results window's Bests tab and the HUD's delta).
+--- The cached board over the whole store (the HUD's delta, the Runs list's Spec best, the compare and
+--- prune protection; no window reads the clean-only board since the Bests tab became Insights, #12).
 --- @param opts table|nil  as Compute
 function Bests.Board(opts)
     local cleanOnly = type(opts) == "table" and opts.cleanOnly == true

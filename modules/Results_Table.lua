@@ -1,7 +1,7 @@
 local _, NS = ...
 -- modules/Results_Table.lua — the Results window's sortable list (spec §6.2): a header of sort
--- controls over a pooled, scrolling set of row buttons, shared by the Runs and Bests tabs; and the
--- small helpers both tabs draw a run with (class and spec icons, the class color, the category badge,
+-- controls over a pooled, scrolling set of row buttons, the Runs tab's; and the
+-- small helpers the window draws a run with (class and spec icons, the class color, the category badge,
 -- the flag texts, the dates).
 --
 -- POOLED AND VIRTUAL. Only the rows that fit are drawn (LibKa0s-Pool, events-frames-taint-§6): a
@@ -179,25 +179,6 @@ function Tbl.FlagTexts(run)
     return out
 end
 
--- Each flag's chip word on the bests board (mockup screen 09: "1 late").
-local SHORT = {
-    lateCasts = function(_, flag) return L["%d late"]:format(flag.count) end,
-    restarted = function() return L["Restarted"] end,
-    reloaded = function() return L["Reloaded"] end,
-    sessionFromList = function() return L["By list"] end,
-    died = function() return L["Died"] end,
-}
-
---- The run's flags as chip words, joined ("1 late · Reloaded"), or "" for a clean run.
-function Tbl.ShortFlags(run)
-    local out = {}
-    for _, flag in ipairs(NS.Scoring.Flags(run)) do
-        local short = SHORT[flag.key]
-        if short then out[#out + 1] = short(run, flag) end
-    end
-    return table.concat(out, " \194\183 ")
-end
-
 --- A run's date in `fmt` (os.date's), or "" when it has none.
 function Tbl.Date(t, fmt)
     if type(t) ~= "number" or type(date) ~= "function" then return "" end
@@ -311,12 +292,11 @@ function Cells.text(row, col)
     return cell
 end
 
--- The class and spec icons, each with a hover naming it, and (on the bests board) the spec's name.
-function Cells.icons(row, col)
+-- The class and spec icons, each with a hover naming it.
+function Cells.icons(row)
     local cell = { class = row:CreateTexture(nil, "ARTWORK"), spec = row:CreateTexture(nil, "ARTWORK") }
     cell.class:SetSize(Tbl.ICON, Tbl.ICON)
     cell.spec:SetSize(Tbl.ICON, Tbl.ICON)
-    if col.withName then cell.fs = Tbl.Text(row, FONT.TEXT, C.text) end
     return cell
 end
 
@@ -335,19 +315,18 @@ function Cells.items(row, col)
     return cell
 end
 
--- A tag: its icon (where the column names one) before its word, both in the tag's color. A `boxed`
--- column draws it in a 1px box tinted the tag's color, its icon inside (the Status, Target and Time
--- columns: the owner's calls, 2026-10-25); any other is the colored word on no box (the Bests Flags).
--- A column whose text returns chips draws up to that many more boxed chips after the tag (no column
+-- A tag: its icon (where the column names one) before its word, both in the tag's color, in a 1px box
+-- tinted the tag's color, its icon inside (the Status, Target and Time columns: the owner's calls,
+-- 2026-10-25). A column whose text returns chips draws up to that many more boxed chips after the tag (no column
 -- uses it today); a `trail` column draws plain text after the last box (the Time column's tail).
 function Cells.badge(row, col)
-    local cell = { box = col.boxed and Tbl.Panel(row) or CreateFrame("Frame", nil, row) }
+    local cell = { box = Tbl.Panel(row) }
     cell.box:SetHeight(Tbl.CHIP_H)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
     cell.icon = cell.box:CreateTexture(nil, "ARTWORK")
     cell.icon:SetSize(BADGE_ICON, BADGE_ICON)
-    cell.icon:SetPoint("LEFT", cell.box, "LEFT", col.boxed and 4 or 0, 0)
+    cell.icon:SetPoint("LEFT", cell.box, "LEFT", 4, 0)
     cell.icon:Hide()
     -- Each chip a part of its own (cell.chip1, ...), so a group header's showCells hides it too.
     cell.chipCount = col.chips or 0
@@ -370,8 +349,7 @@ end
 
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
 -- A chip is a boxed badge with no icon: a 1px box tinted its color around its word in that color.
--- The Runs list's Target and Time cells and Status boards, the Bests Length cells and the detail's
--- header draw one. Its width is Tbl.BadgeWidth's (config, never measured).
+-- The Runs list's Target and Time cells and Status boards and the detail's header draw one. Its width is Tbl.BadgeWidth's (config, never measured).
 
 Tbl.CHIP_H = 16
 Tbl.CHIP_GAP = 4            -- the gap between two boxes, and between a box and the text after it
@@ -504,10 +482,6 @@ function Bind.icons(cell, col, run)
     Tbl.SetClassIcon(cell.class, char.class)
     cell.spec:SetTexture(specIcon)
     cell.spec:SetShown(specIcon ~= nil)
-    if cell.fs then
-        cell.fs:SetText(specName or "")
-        paint(cell.fs, Tbl.ClassColor(char.class))
-    end
     cell.specName = specName
     if col.after then col.after(cell, run) end
 end
@@ -535,17 +509,12 @@ function Tbl.SetCheckLabel(check, text, extra, width)
     check:SetHitRectInsets(0, -(1 + (extra or 0) + (width or Tbl.BadgeWidth(text, false))), 0, 0)
 end
 
--- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column.
--- A boxed tag also takes its tint on the box's edge and fill.
-local function layoutBadge(cell, col, s, color, extra)
+-- The tag's word beside its icon and the box's width (Tbl.BadgeWidth), never wider than the column,
+-- with its tint on the box's edge and fill.
+local function layoutBadge(cell, s, color, extra)
     cell.fs:ClearAllPoints()
-    local w = Tbl.BadgeWidth(s, col.boxed, extra)
+    local w = Tbl.BadgeWidth(s, true, extra)
     if cell.w and w > cell.w then w = math.max(14, cell.w) end
-    if not col.boxed then
-        cell.fs:SetPoint("LEFT", cell.box, "LEFT", extra, 0)
-        cell.fs:SetWidth(math.max(1, w - extra))
-        return w
-    end
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", extra / 2, 0)
     cell.fs:SetWidth(math.max(1, w - 6 - extra))
     tint(cell.box, color)
@@ -586,7 +555,7 @@ function Bind.badge(cell, col, run)
     cell.fs:SetText(s)
     paint(cell.fs, color)
     cell.box:SetShown(s ~= "")
-    local boxW = layoutBadge(cell, col, s, color, bindIcon(cell, icon, color))
+    local boxW = layoutBadge(cell, s, color, bindIcon(cell, icon, color))
     cell.box:SetWidth(boxW)
     local used, last = bindChips(cell, chips, boxW)
     if not cell.trail then return end
@@ -606,11 +575,6 @@ local function placeCell(row, cell, col, x, w)
         cell.class:SetPoint("LEFT", row, "LEFT", x, 0)
         cell.spec:ClearAllPoints()
         cell.spec:SetPoint("LEFT", row, "LEFT", x + Tbl.ICON + 3, 0)
-        if cell.fs then
-            cell.fs:ClearAllPoints()
-            cell.fs:SetPoint("LEFT", row, "LEFT", x + 2 * Tbl.ICON + 10, 0)
-            cell.fs:SetWidth(math.max(10, w - 2 * Tbl.ICON - 10))
-        end
     elseif kind == "badge" then
         cell.box:ClearAllPoints()
         cell.box:SetPoint("LEFT", row, "LEFT", x, 0)
@@ -765,7 +729,7 @@ end
 
 --- A sortable, scrolling list in `parent` (which it fills).
 --- @param parent table
---- @param columns table  { key, label, kind = "text"|"icons"|"badge" (boxed, chips, trail)|"items" (items =
+--- @param columns table  { key, label, kind = "text"|"icons"|"badge" (chips, trail)|"items" (items =
 ---                         fn(run) -> textures), width | flex+min, tip = fn(run) -> lines, about = header text,
 ---                         justify, sort = fn(run) -> value, desc = default direction, text = fn(run),
 ---                         bar = fn(run) -> value, barStyle = fn(run),

@@ -222,7 +222,7 @@ end
 
 -- ── pure: what the flags mean ───────────────────────────────────────────────────────────────────
 
-local STILL_COUNTS = "The run still counts and the flag shows on the board."
+local STILL_COUNTS = "The run still counts toward bests."
 
 local function lateLine(run, flag)
     local parts = {}

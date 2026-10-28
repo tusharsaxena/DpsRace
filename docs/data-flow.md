@@ -164,7 +164,8 @@ depends on combat. The handler is the `combatEvent` perf bucket.
   it per session; the cache is dropped on `RUN_SAVED` and `RUNS_CHANGED`, so a deleted best promotes the
   next run for free, and on `SETTINGS_CHANGED` for `race.lateIgnore` or `"profile"`, so the clean-only
   board follows the list. `Bests.Delta(run)` compares a run
-  with the best on its board before it.
+  with the best on its board before it. Since the Bests tab became Insights (#12), no window reads the
+  clean-only board: only prune protection (`Bests.HoldingIDs`) and the suites do, which is expected.
 - **The detail's compare** (#7, `modules/Results_Compare.lua`) reads the same cached board:
   `ResultsCompare.Default(run)` is the best on the run's board, or the runner-up on it when the run
   holds the best; a run picked from a Runs row's menu wins while it is stored. Both runs are stored
@@ -456,10 +457,10 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   column is `Stats.Groups(Stats.Of(run), Stats.Of(other))`: each value's text and its delta, a dash
   for a run with no `stats`. The detail calls `ResultsGear.DetailChanged` beside the timeline's, so the
   view follows the run and the compare; it closes with the Results window.
-- **The Bests tab**: `Bests.Board({ cleanOnly })` → `ResultsBests.Rows` (spec and category) → the
-  same list widget. *Clean runs only* switches to the clean board. One category shows at a time (no
-  *All categories*: the table has no target column, so two boards of one spec and length would read
-  alike); it starts on the first category present, in `NS.Dummies.CATEGORIES` order.
+- **The Insights tab** (#12, `modules/Results_Insights.lua`): it replaced the Bests tab, whose board
+  UI is gone. Until the tab's stats and charts land it is a placeholder: `ResultsSource.All()` minus
+  lost runs gives the footer's count, and the empty state shows when there are none.
+  `/dr results insights` opens it, and `/dr results bests` still does (a silent alias).
 - **Following the store**: `RUN_SAVED` and `RUNS_CHANGED` redraw the shown tab and the detail (a
   selection whose run is gone is dropped); a hidden window redraws in full on its next show.
   `SETTINGS_CHANGED` for `global.history.keepDays` redraws the footer.
@@ -508,7 +509,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   player's own snapshot; one run raced before format 3 has neither)) and routes the
   Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
   window draws the sample as it draws the store: the Runs view opens on every character and spec,
-  the Bests tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
+  the Insights tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
   the ability timeline. A note, a usage edit or a delete changes the sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
 - **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
   `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample

@@ -119,7 +119,7 @@ files["modules/Results.lua"] = { read_globals = { "PlayerSpellsFrame", (table.un
 files["modules/Results_Table.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Runs.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Detail.lua"] = { read_globals = resultsGlobals }
-files["modules/Results_Bests.lua"] = { read_globals = resultsGlobals }
+files["modules/Results_Insights.lua"] = { read_globals = resultsGlobals }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }

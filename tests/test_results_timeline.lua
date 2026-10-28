@@ -603,8 +603,8 @@ test("results timeline: it follows Master scale while open", function()
     local u = open(i, "this")
     assertTrue(i.NS.SetByPath("scale", 1.25))
     assertEqual(u.frame.__scale, 1.25)
-    -- On the Bests tab the detail draws nothing, so the scale reaction itself must reach the window.
-    assertTrue(i.R.ShowTab("bests"))
+    -- On the Insights tab the detail draws nothing, so the scale reaction itself must reach the window.
+    assertTrue(i.R.ShowTab("insights"))
     assertTrue(i.TL.IsShown(), "it stays open over the other tab")
     assertTrue(i.NS.SetByPath("scale", 0.8))
     assertEqual(u.frame.__scale, 0.8)

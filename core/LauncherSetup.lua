@@ -44,7 +44,7 @@ NS.BINDINGS = {
     { command = clickCommand(NS.TOGGLE_HUD_BUTTON),
       tooltip = L["Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."] },
     { command = clickCommand(NS.TOGGLE_RESULTS_BUTTON),
-      tooltip = L["Shows or hides the Results window, with its run history and personal bests."] },
+      tooltip = L["Shows or hides the Results window, with its run history and insights."] },
     { command = clickCommand(NS.ARM_TOGGLE_BUTTON),
       tooltip = L["Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."] },
 }

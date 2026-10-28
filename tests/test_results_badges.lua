@@ -1,8 +1,7 @@
 -- tests/test_results_badges.lua — the Results window's boxed chips and colored group headers
--- (modules/Results_Table.lua's chips, modules/Results_Runs.lua, modules/Results_Bests.lua,
--- modules/Results_Detail.lua): the Runs list's Target and Time cells boxed in their category and
--- length colors, the Status board as two chips after Spec best and Max, the Bests Length chip, the
--- detail's target line, every width from Tbl.BadgeWidth fitting its column at the window minimums,
+-- (modules/Results_Table.lua's chips, modules/Results_Runs.lua, modules/Results_Detail.lua): the Runs
+-- list's Target and Time cells boxed in their category and length colors, the Status board as two
+-- chips after Spec best and Max, the detail's target line, every width from Tbl.BadgeWidth fitting its column at the window minimums,
 -- and the group headers' values in the class, category and length colors as plain text. The helpers
 -- follow tests/test_results_group.lua's (layout-§1's 1500-line cap keeps them out of test_results).
 
@@ -197,10 +196,6 @@ test("badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)", 
     for _, tag in pairs(Runs.STATUS) do
         assertTrue(Tbl.BadgeWidth(L[tag.label], true, Tbl.BADGE_ICON + 2) <= Runs.STATUS_W, tag.label .. " is cut off")
     end
-    -- The Bests Length chip: a custom length's.
-    local col
-    for _, c in ipairs(NS.ResultsBests.Columns()) do if c.key == "length" then col = c end end
-    assertTrue(col.boxed and Tbl.BadgeWidth("10:00", true) <= col.width, "Bests Length is boxed and fits")
 end)
 
 test("badges: the window minimums hold the wider columns, the Note column last and inside the list", function()
@@ -214,20 +209,6 @@ test("badges: the window minimums hold the wider columns, the Note column last a
         assertTrue(i.NS.defaults.profile.windows.results[view].width >= R.VIEWS[view].minWidth,
             view .. ": the default size is under the minimum")
     end
-end)
-
-test("badges: the Bests Length column is a chip in its length color", function()
-    local i = inst()
-    local Tbl = i.NS.ResultsTable
-    seed(i, { mkRun("a", { race = { length = 60, grace = 1 } }) })
-    i.R.Show()
-    i.R.ShowTab("bests")
-    local pane = assert(ui(i).panes.bests)
-    pane.dropdowns.category.onSelect("cleave")
-    local row = assert(pane.list:Visible()[1], "no best drawn")
-    assertEqual(row.cells.length.fs.__text, "1:00")
-    sameColor(row.cells.length.fs.__color, Tbl.LengthColor(60), "the Bests length chip")
-    assertEqual(row.cells.length.box.__width, Tbl.BadgeWidth("1:00", true))
 end)
 
 -- ── the detail ──────────────────────────────────────────────────────────────────────────────────

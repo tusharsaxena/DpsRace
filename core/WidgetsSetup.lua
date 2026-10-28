@@ -1,7 +1,7 @@
 local addonName, NS = ...
 -- core/WidgetsSetup.lua — NS.MakeDropdown / NS.CloseMenu / NS.MakeTestStrip / NS.ShowCopy from
--- LibKa0s-Widgets-1.0: the Results window's filter-bar dropdowns (modules/Results_Runs.lua,
--- modules/Results_Bests.lua), the test-mode strip a window lays over data that is not the player's,
+-- LibKa0s-Widgets-1.0: the Results window's filter-bar dropdowns (modules/Results_Runs.lua, and
+-- modules/Results_Insights.lua from N4 of the #12 plan), the test-mode strip a window lays over data that is not the player's,
 -- and the copy window the run detail's talent loadout opens (modules/Results_Loadout.lua).
 --
 -- A seam, nothing else (library-stack-§7): one file leases the major, so the art the dropdown draws

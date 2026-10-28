@@ -398,7 +398,7 @@ Runs.STATUS = {
 }
 local STATUS_ORDER = { best = 1, complete = 2, flagged = 3, incomplete = 4, died = 5, lost = 6 }
 
--- Whether `run` holds the best on its board (the all-runs board, as the Bests tab's default).
+-- Whether `run` holds the best on its board (the all-runs board: flagged runs count, as the toast's).
 function Runs.HoldsBest(run)
     local Bests = NS.Bests
     if not (Bests and Bests.Board) then return false end
@@ -710,11 +710,11 @@ function Runs.Columns(view)
           sort = function(run) return run.char and run.char.ilvl end,
           text = function(run) return Tbl.Ilvl(run.char and run.char.ilvl) end },
         -- Boxed in the category color; wide enough for the widest type, "Single target".
-        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", boxed = true, desc = false,
+        { key = "target", label = L["Target"], width = Runs.TARGET_W, kind = "badge", desc = false,
           sort = function(run) return (Tbl.Badge(run.target)) end,
           text = function(run) return Tbl.Badge(run.target) end },
         -- The length boxed in its color, then the tail: "5:00" then "+15.9s" or "at 4:59".
-        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", boxed = true, trail = true, desc = true,
+        { key = "time", label = L["Time"], width = Runs.TIME_W, kind = "badge", trail = true, desc = true,
           sort = NS.Format.RunSeconds,
           text = Runs.TimeCell },
         { key = "damage", label = L["Damage"], width = 60, desc = true,
@@ -745,7 +745,7 @@ function Runs.Columns(view)
           text = function(run) return deltaText(run, topOf(run)) end,
           tip = function(run) return Runs.DeltaTip(run, topOf(run), view.grouped) end },
         -- Wide enough for the widest tag alone: the boxed "Incomplete" with its icon.
-        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge", boxed = true,
+        { key = "status", label = L["Status"], width = Runs.STATUS_W, kind = "badge",
           desc = false,
           sort = function(run) return STATUS_ORDER[(Runs.Status(run))] end,
           text = function(run)

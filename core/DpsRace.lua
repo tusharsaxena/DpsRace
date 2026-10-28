@@ -118,11 +118,13 @@ function NS.SetHudShown(how)
     return true
 end
 
---- `/dr results [bests]`: open the Results window, on the Bests tab when asked.
---- @param tab string|nil "bests" for the Bests tab; anything else opens the window as it was
+--- `/dr results [insights]`: open the Results window, on the Insights tab when asked. "bests", the
+--- tab's name before #12, is a silent alias (D-12 of the plan): a macro written before the rename
+--- keeps working, and only "insights" is in the help and the docs.
+--- @param tab string|nil "insights" (or "bests") for the Insights tab; anything else opens the window as it was
 function NS.ShowResults(tab)
     if refused() then return false end
-    if tab == "bests" then return NS.Results.ShowTab("bests") end
+    if tab == "insights" or tab == "bests" then return NS.Results.ShowTab("insights") end
     NS.Results.Show()
     return true
 end

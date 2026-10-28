@@ -21,8 +21,8 @@ L["Toggle race HUD"] = "Toggle race HUD"
 L["Toggle results window"] = "Toggle results window"
 L["Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."] =
     "Shows or hides the race HUD, as the launcher's Show window entry and /dr hud toggle do."
-L["Shows or hides the Results window, with its run history and personal bests."] =
-    "Shows or hides the Results window, with its run history and personal bests."
+L["Shows or hides the Results window, with its run history and insights."] =
+    "Shows or hides the Results window, with its run history and insights."
 L["Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."] =
     "Arms a race at the HUD's length, or cancels an armed or running race. A finished race's result is kept."
 
@@ -179,7 +179,7 @@ L["Invisibility"] = "Invisibility"
 -- The Results window (modules/Results*.lua, T8)
 L["DPS Race \226\128\148 Results"] = "DPS Race \226\128\148 Results"
 L["Runs"] = "Runs"
-L["Bests"] = "Bests"
+L["Insights"] = "Insights"
 L["Click a row for details \194\183 right-click for options"] =
     "Click a row for details \194\183 right-click for options"
 L["Days to keep: %d"] = "Days to keep: %d"
@@ -189,9 +189,6 @@ L["Delete this run? This cannot be undone, and a personal best it holds goes wit
 L["Delete"] = "Delete"
 L["Cancel"] = "Cancel"
 L["Unknown class"] = "Unknown class"
-L["%d late"] = "%d late"
-L["Restarted"] = "Restarted"
-L["By list"] = "By list"
 L["Unknown spec"] = "Unknown spec"
 L["All characters"] = "All characters"
 L["Current character"] = "Current character"
@@ -207,7 +204,6 @@ L["lost"] = "lost"
 L["incomplete"] = "incomplete"
 L["Date"] = "Date"
 L["Class"] = "Class"
-L["Class \194\183 Spec"] = "Class \194\183 Spec"
 L["Character"] = "Character"
 L["iLvl"] = "iLvl"
 L["No runs match these filters."] = "No runs match these filters."
@@ -242,12 +238,7 @@ L["Damage stopped %ss after the buzzer"] = "Damage stopped %ss after the buzzer"
 L["combat ended %ss"] = "combat ended %ss"
 L["0:00 \226\128\148 race %s \226\128\148 buzzer"] = "0:00 \226\128\148 race %s \226\128\148 buzzer"
 L["+%ds"] = "+%ds"
-L["Category: %s"] = "Category: %s"
 L["Flags"] = "Flags"
-L["Clean runs only"] = "Clean runs only"
-L["Best per spec \195\151 category \195\151 race length, all characters"] =
-    "Best per spec \195\151 category \195\151 race length, all characters"
-L["No personal bests yet: finish a race to set one."] = "No personal bests yet: finish a race to set one."
 L["Hide flagged"] = "Hide flagged"
 L["Include incomplete"] = "Include incomplete"
 L["Only best"] = "Only best"
@@ -291,8 +282,7 @@ L["Results table"] = "Results table"
 L["Damage bar"] = "Damage bar"
 L["DPS bar"] = "DPS bar"
 L["Bar text"] = "Bar text"
-L["The run still counts and the flag shows on the board."] =
-    "The run still counts and the flag shows on the board."
+L["The run still counts toward bests."] = "The run still counts toward bests."
 
 -- Key bindings: the Arm or cancel key (core/LauncherSetup.lua, core/DpsRace.lua)
 L["Arm or cancel race"] = "Arm or cancel race"
@@ -304,8 +294,8 @@ L["Arm a race: /dr arm [length], e.g. 90, 1:30 or 3m"] = "Arm a race: /dr arm [l
 L["Cancel the armed or running race, or discard a pending result"] =
     "Cancel the armed or running race, or discard a pending result"
 L["The race HUD: /dr hud show, hide or toggle"] = "The race HUD: /dr hud show, hide or toggle"
-L["Open the Results window; /dr results bests opens the bests"] =
-    "Open the Results window; /dr results bests opens the bests"
+L["Open the Results window; /dr results insights opens Insights"] =
+    "Open the Results window; /dr results insights opens Insights"
 L["Print your target's name, creature ID and category"] = "Print your target's name, creature ID and category"
 L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"] = "Sample data in the HUD and the Results window: /dr test [armed|running|result]"
 L["Play a whole sample race: /dr sim [%s]"] = "Play a whole sample race: /dr sim [%s]"
@@ -595,9 +585,6 @@ L["Damage over the time in combat (%s). Incomplete runs never rank."] =
 L["Damage over the race length (%s), your clock."] = "Damage over the race length (%s), your clock."
 L["Blizzard's meter said %s (over its whole session, idle time included)."] =
     "Blizzard's meter said %s (over its whole session, idle time included)."
-L["Clean run"] = "Clean run"
-L["No flags: nothing happened that the result should mention."] =
-    "No flags: nothing happened that the result should mention."
 L["1 flag"] = "1 flag"
 L["%d flags"] = "%d flags"
 L["Flags inform; they never void a run."] = "Flags inform; they never void a run."

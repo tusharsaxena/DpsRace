@@ -10,7 +10,7 @@ local L = NS.L
 local Dummies = {}
 NS.Dummies = Dummies
 
--- The order is the display order (filters, the bests board). "other" is any target not cataloged.
+-- The order is the display order (the Results window's filters). "other" is any target not cataloged.
 Dummies.CATEGORIES = { "single", "cleave", "dungeoneer", "boss", "pvp", "other" }
 
 Dummies.LABELS = {

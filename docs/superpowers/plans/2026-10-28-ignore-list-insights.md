@@ -465,7 +465,7 @@ upstream change). None is ratified by this plan.
 
 ### N: #12 Insights
 
-- [ ] **N1 Rename and drop the board UI.**
+- [x] **N1 Rename and drop the board UI.**
   - `modules/Results.lua`: `TABS = { "runs", "insights" }` (:48); `buildTab` else branch (:152-156) calls
     `NS.ResultsInsights.Build(ui.body, hooks)`; `tabButton("insights", L["Insights"], 2)` (:211); `ShowTab`
     check (:679-681); footer (:425-432) shows the Insights count and hint; header (:3-5) and `ShowRun` (:688)
@@ -502,6 +502,33 @@ upstream change). None is ratified by this plan.
     `test_preview.lua` (218-234); `test_results_timeline.lua` (606-607); `test_slash.lua` (283-290);
     `test_sizing.lua` (219-222, 316-325, rewritten for Insights), plus `test_slash.lua` for the `bests` alias
     (D-12). Gate green.
+  - **Done notes (N1, 2026-10-28), where the code differed from the plan:**
+    - The placeholder is `modules/Results_Insights.lua` itself (N4 grows it), in the TOC line
+      `Results_Bests.lua` held, after `Results_Gear` and before `Results.lua`. It keeps the view contract
+      (`frame`, `Layout`, `Resize`, `Refresh`, `Count`); `Count` is the stored runs less lost ones, and
+      the footer shows it before the hint through a `count` hook, as on Runs. The hooks are `open`,
+      `menu` and `count` (the board's `share` hook went with it).
+    - Not in the plan: the detail's flag explanations ended in "The run still counts and the flag shows
+      on the board." With the board gone that is untrue, so it reads "The run still counts toward
+      bests." (`Results_Detail.lua` `STILL_COUNTS` and its locale key).
+    - The unboxed-badge path went, and with it the `boxed` column flag: every badge column is boxed
+      now (`Cells.badge`, `layoutBadge`, the three Runs columns). The Status test reads the Target
+      box's border instead of the flag.
+    - Locale keys removed after the raw-byte grep: `Bests`, `Category: %s`, the board hint, the "No
+      personal bests yet" line, `Class · Spec`, `Clean runs only` (N4 adds its own check label), the
+      `SHORT` words `%d late`, `Restarted` and `By list`, and `CELL.flags`' `Clean run` and "No flags:
+      nothing happened..." lines. Added `Insights` and the new help line; the launcher binding's tooltip
+      says "run history and insights".
+    - `Scoring.lua:8` no longer names the tab (I1 rewrote the header), and `Diagnostics.lua` pins no
+      `"bests"`; neither changed. `defaults/Dummies.lua:13` named the bests board and was reworded.
+    - `test_sizing.lua`: the Bests drag case is rewritten for the Insights pane (no layout per frame,
+      sized to the body); the Bests first-drag case is deleted, since the placeholder has no rows. N4
+      owes the Insights drag case (already in its list).
+    - The D-14 case is in `test_results.lua`: a saved profile with only `windows.results` and
+      `views.runs` loads, opens Insights and writes nothing for it.
+    - `docs/data-flow.md` records that no window reads the clean-only board, and its Bests tab bullet
+      is the Insights placeholder now. The rest of the docs (module map, ARCHITECTURE, README, smoke
+      rows) still name the Bests tab and `Results_Bests.lua` until N5.
 - [ ] **N2 Pure stats module.**
   - `modules/Results_Runs.lua`: export `Runs.OptionLists(runs)` (char, spec, category, length lists without
     the All heads) and `Runs.WithAll(list, label)`, refactoring `charOptions` and friends to use them.

@@ -149,18 +149,6 @@ function CELL.dps(run)
     return lines
 end
 
--- The Bests board's length and flags columns.
-function CELL.length(run) return CELL.time(run) end
-
-function CELL.flags(run)
-    local texts = Tbl().FlagTexts(run)
-    if #texts == 0 then return { L["Clean run"], L["No flags: nothing happened that the result should mention."] } end
-    local lines = { #texts == 1 and L["1 flag"] or L["%d flags"]:format(#texts) }
-    for _, t in ipairs(texts) do lines[#lines + 1] = t end
-    lines[#lines + 1] = { L["Flags inform; they never void a run."], 0.62, 0.62, 0.68 }
-    return lines
-end
-
 -- What a run used (#13): each entry's icon, name and when (modules/Results_Usage.lua); a hidden item
 -- is not listed.
 function CELL.used(run)

@@ -4,7 +4,7 @@ local _, NS = ...
 -- written anywhere.
 --
 -- ONE SEAM. Every Results file asks this module, never NS.Recorder, NS.Bests or NS.Loadouts, for the
--- runs it lists, a run by id, the bests board, a run's loadout, its chart, and to store a
+-- runs it lists, a run by id, the bests board (Spec best and the compare), a run's loadout, its chart, and to store a
 -- note or delete a run. With no sample history in place each answer is the store's own (the same
 -- function, called at call time, so a suite's stub on NS.Bests or NS.Recorder still reaches the
 -- window). With one in place (Source.Use) the answers come from it, and a note or a delete changes it
@@ -20,7 +20,7 @@ local Source = {}
 NS.ResultsSource = Source
 
 local mock        -- the sample history in place, or nil
-local boards = {} -- the sample's bests boards, by cleanOnly; dropped on every change
+local boards = {} -- the sample's bests boards, by cleanOnly (Spec best reads the all-runs one); dropped on a change
 
 local function debug(fmt, ...)
     if NS.Debug then NS.Debug("Results", fmt, ...) end

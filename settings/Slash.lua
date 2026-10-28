@@ -50,7 +50,7 @@ NS.COMMANDS = {
                                                                    feature(function() doCancel() end) },
     { "hud",         L["The race HUD: /dr hud show, hide or toggle"],
                                                                    feature(function(rest) doHud(rest) end) },
-    { "results",     L["Open the Results window; /dr results bests opens the bests"],
+    { "results",     L["Open the Results window; /dr results insights opens Insights"],
                                                                    feature(function(rest) doResults(rest) end) },
     { "target",      L["Print your target's name, creature ID and category"],
                                                                    feature(function() doTarget() end) },
@@ -286,7 +286,7 @@ function doSim(rest)
     NS.StartSim(tostring(rest or ""):match("^%s*(%S*)"):lower())
 end
 
---- `results [bests]`.
+--- `results [insights]` (and the silent "bests" alias: core/DpsRace.lua NS.ShowResults).
 function doResults(rest)
     local word = tostring(rest or ""):match("^%s*(%S*)"):lower()
     NS.ShowResults(word)

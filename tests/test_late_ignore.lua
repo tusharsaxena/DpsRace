@@ -228,7 +228,7 @@ test("late ignore: the Results detail draws an ignored cast's tick gray and expl
     assertEqual(lines[1].main, "1 late cast")
     assertTrue(lines[1].text:find("Incinerate", 1, true) ~= nil, lines[1].text)
     assertNil(lines[1].text:find("Feign Death", 1, true), lines[1].text)
-    assertEqual(NS.ResultsTable.ShortFlags(r), "1 late")
+    assertEqual(table.concat(NS.ResultsTable.FlagTexts(r), "|"), "1 late cast (+2.0s Incinerate)")
 end)
 
 test("late ignore: a list change redraws the HUD and drops the cached boards and the sample's", function()
