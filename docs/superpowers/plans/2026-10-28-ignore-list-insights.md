@@ -867,7 +867,7 @@ Found in the screenshots (decided here):
 
 ### F: Finalize (only on the owner's go-ahead)
 
-- [ ] **F1** Merge to master, push, close #8 and #12. Delete this run's branches, stashes and worktrees.
+- [x] **F1** Merge to master, push, close #8 and #12. Delete this run's branches, stashes and worktrees.
 
 ## Appendix A: hearthstone spell IDs (D-3)
 
@@ -898,3 +898,5 @@ everything that sends you home on the hearthstone's cooldown. Ask at R if unsure
 Refresh recipe (for `docs/common-tasks.md`): download SpellCategories, SpellEffect and SpellName for the new
 build from wago.tools, re-run rules 1 to 4, diff the result against `defaults/Hearthstones.lua`, and update the
 table and its pin test (the count, and that 8690 / 222695 / 171253 are present and 556 is absent).
+
+Finalized 2026-10-28 on the owner's go-ahead: merged to master (2a9c7cd) and pushed; #8 and #12 closed; the branch deleted.
