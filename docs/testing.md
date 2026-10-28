@@ -11,7 +11,7 @@ How to verify Ka0s DPS Race (testing-§6). What to install first is in the root
 | `lua tests/run.lua` | The headless suite. Exits non-zero on any failure |
 | `lua tests/run.lua -j auto` | The same, split across one worker per CPU (testing-§14) |
 | `lua tests/run.lua --list > docs/test-cases.md` | Regenerates the case inventory without running anything |
-| `luacheck .` | Lint, configured by `.luacheckrc`; must report 0 warnings and 0 errors |
+| `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` | Lint, configured by `.luacheckrc`; must report 0 warnings and 0 errors. `luacheck` loads no kit, so it runs through the bounded runner (testing-§15) |
 | `luac -p path/to/file.lua` | Syntax-check one file |
 | `bash tests/_kit/run-automated-tests.sh` | All four out-of-game suites, written to a dated bundle ([automated-tests/README.md](automated-tests/README.md)) |
 
@@ -19,7 +19,7 @@ Every run is bounded by the vendored kit as it loads (memory, time, process dept
 
 ## The commit gate
 
-Before **every** commit: `lua tests/run.lua` green **and** `luacheck .` at 0/0 (testing-§4). Work is
+Before **every** commit: `lua tests/run.lua` green **and** `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` at 0/0 (testing-§4). Work is
 test-first: a failing case that pins the behavior, then the code. The runner's
 `--suite lint --suite tests --no-bundle` is the same pair and writes nothing.
 
@@ -29,7 +29,7 @@ A suite gates a **commit** and a **release** (the tag) differently, so both are 
 
 | Suite | Command | Gates the commit? | Gates the release (tag)? |
 |---|---|---|---|
-| `lint` | `luacheck .` | yes | yes |
+| `lint` | `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` | yes | yes |
 | `tests` | `lua tests/run.lua` | yes | yes |
 | `perf` | `lua tests/perf.lua` | no, recorded only | yes, at `pass` (a `skip` is not evaluated) |
 | `complexity` | `bash tests/_kit/run-automated-tests.sh --suite complexity` | no, recorded only | yes, at `pass` with zero functions above CCN 15 |
