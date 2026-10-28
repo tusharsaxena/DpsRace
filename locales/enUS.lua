@@ -427,8 +427,6 @@ L["A gray tick is a spell on the late-cast ignore list: ignored, so no flag."] =
 L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
 L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
-L["Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."] =
-    "Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."
 L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
     "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 
@@ -1023,3 +1021,24 @@ L["%s, a built-in training dummy, is switched off. %s targetdummy add on it brin
 L["%s is not a training dummy."] = "%s is not a training dummy."
 L["Your training dummies are cleared: only the built-in ones count."] =
     "Your training dummies are cleared: only the built-in ones count."
+
+-- The Race page's Training dummies tab (#9).
+L["\194\183 %s"] = "\194\183 %s"
+L["Creatures a race counts as training dummies, on top of the built-in ones: auto-arm, the HUD and the target type of every stored run follow this list. Target a dummy and click Add your target, or type /dr targetdummy add; either saves what the game says about it."] =
+    "Creatures a race counts as training dummies, on top of the built-in ones: auto-arm, the HUD and the target type of every stored run follow this list. Target a dummy and click Add your target, or type /dr targetdummy add; either saves what the game says about it."
+L["Add your target"] = "Add your target"
+L["Count your target as a training dummy, with the category above, and save what the game says about it (its level, health, zone and where you stand). A built-in that is switched off is switched back on."] =
+    "Count your target as a training dummy, with the category above, and save what the game says about it (its level, health, zone and where you stand). A built-in that is switched off is switched back on."
+L["Add a creature"] = "Add a creature"
+L["A creature ID, or the name of a creature you captured. It gets the category above."] =
+    "A creature ID, or the name of a creature you captured. It gets the category above."
+L["No training dummies of your own yet."] = "No training dummies of your own yet."
+L["Built-in training dummies. Clear one to stop counting it as a dummy."] =
+    "Built-in training dummies. Clear one to stop counting it as a dummy."
+L["%s (%d) \194\183 %s"] = "%s (%d) \194\183 %s"
+L["Count this built-in as a training dummy. Cleared, its runs read as Other."] =
+    "Count this built-in as a training dummy. Cleared, its runs read as Other."
+L["Remove your own training dummies and switch every built-in back on. The category for new dummies is not touched."] =
+    "Remove your own training dummies and switch every built-in back on. The category for new dummies is not touched."
+L["Restore every Race setting on this profile to its addon default, the late-cast ignore list and your training dummies among them."] =
+    "Restore every Race setting on this profile to its addon default, the late-cast ignore list and your training dummies among them."

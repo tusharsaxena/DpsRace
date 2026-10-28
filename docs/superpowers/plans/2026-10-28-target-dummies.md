@@ -72,7 +72,7 @@ T4. No merge without the owner's go-ahead.
   added, and back when removed.
 - [x] **T3 The slash verb.** `targetdummy` in NS.COMMANDS and HOST_LIVE_VERBS, its handler, locale
   strings, tests in `tests/test_dummy_list.lua` (or `test_slash.lua`).
-- [ ] **T4 The settings tab.** The Race page's *Training dummies* tab, the repaint on change, tests. Push.
+- [x] **T4 The settings tab.** The Race page's *Training dummies* tab, the repaint on change, tests. Push.
 - [ ] **T5 Docs.** ARCHITECTURE (module map, schema, slash surface, bus listeners), `docs/schema.md`,
   `docs/slash-dispatch.md`, `docs/common-tasks.md` (adding a dummy), README commands, smoke rows. Gate,
   push.
