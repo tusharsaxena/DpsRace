@@ -5,12 +5,24 @@ Recipes for the changes made most often in Ka0s DPS Race. Every change ends on t
 
 ## Add a training dummy to the catalog
 
-- Measure it first: target it in game and run `/dr target`, which prints its name, creature ID and
-  current category. The catalog takes measured entries only (spec §4.6).
-- Add `[npcID] = { name = "…", category = "…", count = N },` to `defaults/Dummies.lua` with a
-  comment giving the date and place it was measured. `category` is one of `Dummies.CATEGORIES`
-  (`single`, `cleave`, `dungeoneer`, `boss`, `pvp`, `other`); bests group by category, never by ID.
-- Update the catalog table in the spec (§4.6). `test_dummies` checks every entry's shape.
+A player adds a dummy for themselves with `/dr targetdummy add [category]` (or the Race page's
+*Training dummies* tab); that is a profile setting (`race.dummies`) and needs no code. The shipped
+catalog is grown from the same captures:
+
+- Measure it first: target it in game and run `/dr targetdummy add` (or `capture`, which saves
+  without marking it). It prints the *Saved:* line (name and creature ID, level, health, creature
+  type, PvP flag, zone, subzone and position) and writes the capture to SavedVariables,
+  `DpsRaceDB.global.dummies.captures[npcID]`, after a `/reload` or logout. The catalog takes measured
+  entries only (spec §4.6), never a guess.
+- Read the captures out of `WTF/Account/<account>/SavedVariables/DpsRace.lua` and add
+  `[npcID] = { name = "…", category = "…" },` to `defaults/Dummies.lua` with a comment giving the date
+  and place it was captured. `category` is one of `Dummies.CATEGORIES` (`single`, `cleave`,
+  `dungeoneer`, `boss`, `pvp`; `other` is what no dummy reads as); bests group by category, never by ID.
+- Once cataloged it is a built-in: a player's own entry for that ID stops applying (a built-in is
+  never recategorized), and their stored runs on it read the catalog's category.
+- Update the catalog table in the spec (§4.6). `test_dummies` checks every entry's shape. A suite's
+  fixture run is categorized through `Dummies.CategoryOf` too, so one that wants a category carries
+  a cataloged creature ID (243208 for cleave), never an uncataloged one with a stored category.
 
 ## Add a flag
 

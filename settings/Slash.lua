@@ -10,7 +10,7 @@ local function out(line) NS.Print(line) end
 
 local cli   -- built at the bottom, once NS.COMMANDS exists; handlers reach it at CALL time
 local doEnabled, doDebug, doPerf, doSetVerb
-local doArm, doCancel, doHud, doResults, doTarget, doLock, doTest, doSim, doIgnore
+local doArm, doCancel, doHud, doResults, doTarget, doLock, doTest, doSim, doIgnore, doTargetDummy
 
 --- A feature verb's handler behind the stand-down: the dispatcher refuses every feature verb while the
 --- `disabled` hold is taken, and this answers the `perf` hold's line (slash-commands-§7, "Which
@@ -67,6 +67,10 @@ NS.COMMANDS = {
     -- while disabled (HOST_LIVE_VERBS below), as the schema CLI that writes the same row is.
     { "ignore",      L["The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"],
                                                                    function(rest) doIgnore(rest) end },
+    -- Your training dummies (#9): a settings verb like `ignore` (the list is one row), live while
+    -- disabled. `add` and `capture` read the target and save what the game says about it.
+    { "targetdummy", L["Your training dummies: /dr targetdummy [show|add|remove|capture|defaults] [category or creature ID]"],
+                                                                   function(rest) doTargetDummy(rest) end },
 }
 
 --- Run one verb's handler by name: the launcher's Enabled entry reaches `enable`/`disable` through
@@ -89,7 +93,7 @@ NS.SLASH_LIVE_VERBS = {
 --- (the library's LIVE_VERBS plus these) and the library-absent stub's gate. `ignore` reads and writes
 --- one setting, as `get`/`set` do, so the addon declines slash-commands-§2's feature-verb refusal for
 --- it: a player reads and repairs settings while the addon is off.
-local HOST_LIVE_VERBS = { "ignore" }
+local HOST_LIVE_VERBS = { "ignore", "targetdummy" }
 local HOST_LIVE = {}
 for _, verb in ipairs(HOST_LIVE_VERBS) do HOST_LIVE[verb] = true end
 
@@ -357,6 +361,128 @@ function doIgnore(rest)
     if word == "" then word = "show" end
     local fn = IGNORE_VERBS[word]
     if not fn then return ignoreUsage() end
+    fn(text)
+end
+
+-- ── `targetdummy`: your training dummies (#9, modules/DummyList.lua) ─────────────────────────────
+-- Every list write goes through DummyList, so through the seam; a capture goes to the global store.
+
+local function dummyUsage()
+    out(L["Usage: %s targetdummy [show|add|remove|capture|defaults] [category or creature ID]"]:format(NS.SLASH))
+end
+
+-- "Angry Boar (99999)", or "Creature 99999" when it was never captured and is no built-in.
+local function dummyName(id)
+    local name = NS.DummyList.NameOf(id)
+    if name then return L["%s (%d)"]:format(name, id) end
+    return L["Creature %d"]:format(id)
+end
+
+-- The capture as one line: what the game said, then where.
+local function captureLine(r)
+    local parts = { dummyName(r.npcID) }
+    if r.level then
+        local lvl = r.level == -1 and L["skull level"] or L["level %d"]:format(r.level)
+        parts[#parts + 1] = r.classification and r.classification ~= "normal"
+            and L["%s %s"]:format(lvl, r.classification) or lvl
+    end
+    if r.health then parts[#parts + 1] = L["%s health"]:format(NS.Format.Number(r.health)) end
+    if r.creatureType then parts[#parts + 1] = r.creatureType end
+    if r.pvp ~= nil then parts[#parts + 1] = r.pvp and L["PvP flagged"] or L["not PvP flagged"] end
+    local where = r.subzone and r.subzone ~= "" and r.zone and L["%s, %s"]:format(r.zone, r.subzone) or r.zone
+    if where then
+        if r.x and r.y then where = L["%s %.1f, %.1f"]:format(where, r.x, r.y) end
+        parts[#parts + 1] = where
+    end
+    return table.concat(parts, " \194\183 ")
+end
+
+-- The target as a creature, captured, or nil after the one line that says why.
+local function capturedTarget()
+    if not (UnitExists and UnitExists("target")) then return out(L["Target a creature first."]) end
+    local r = NS.DummyList.Read("target")
+    if not r then return out(L["Your target is not a creature, so it cannot be a training dummy."]) end
+    NS.DummyList.Capture(r)
+    return r
+end
+
+local function showDummies()
+    local own, off = {}, {}
+    for _, e in ipairs(NS.DummyList.Entries()) do
+        if e.hidden then off[#off + 1] = e else own[#own + 1] = e end
+    end
+    local builtIn = 0
+    for _ in pairs(NS.Dummies.BY_ID) do builtIn = builtIn + 1 end
+    if #own == 0 then
+        out(L["No training dummies of your own. Target one and type %s targetdummy add."]:format(NS.SLASH))
+    else
+        out(L["Your training dummies:"])
+        for _, e in ipairs(own) do out(L["  %s \194\183 %s"]:format(dummyName(e.id), NS.Dummies.Label(e.category))) end
+    end
+    out(L["Built-in training dummies: %d, %d switched off."]:format(builtIn, #off))
+    for _, e in ipairs(off) do out(L["  %s (off)"]:format(dummyName(e.id))) end
+end
+
+local DUMMY_VERBS = {
+    show = showDummies,
+    capture = function()
+        local r = capturedTarget()
+        if r then out(L["Saved: %s"]:format(captureLine(r))) end
+    end,
+    add = function(word)
+        local DL = NS.DummyList
+        if word ~= "" and not DL.CategoryWord(word) and word:lower() ~= "auto" then
+            return out(L["'%s' is no category. Use single, cleave, dungeoneer, boss or pvp."]:format(word))
+        end
+        local r = capturedTarget()
+        if not r then return end
+        local category = DL.CategoryFor(r, word)
+        local outcome, name = DL.Add(r.npcID, category), dummyName(r.npcID)
+        out(L["Saved: %s"]:format(captureLine(r)))
+        local d = NS.Dummies.Lookup(r.npcID)
+        local label = NS.Dummies.Label(d and d.category or category)
+        if outcome == "added" or outcome == "changed" then
+            out(L["%s is a training dummy now: %s."]:format(name, label))
+        elseif outcome == "restored" then
+            out(L["%s is a training dummy again: %s."]:format(name, label))
+        elseif NS.Dummies.BuiltIn(r.npcID) then
+            out(L["%s is already a built-in training dummy: %s."]:format(name, label))
+        else
+            out(L["%s is already a training dummy: %s."]:format(name, label))
+        end
+    end,
+    remove = function(text)
+        local DL, id = NS.DummyList
+        if text ~= "" then
+            id = DL.Resolve(text)
+            if not id then return out(L["No creature '%s' is known. Use its creature ID."]:format(text)) end
+        else
+            if not (UnitExists and UnitExists("target")) then return dummyUsage() end
+            id = NS.Recorder.NpcIDOf("target")
+            if not id then return out(L["Your target is not a creature, so it cannot be a training dummy."]) end
+        end
+        local outcome = DL.Remove(id)
+        if outcome == "removed" then
+            out(L["%s is no longer a training dummy."]:format(dummyName(id)))
+        elseif outcome == "hidden" then
+            out(L["%s, a built-in training dummy, is switched off. %s targetdummy add on it brings it back."]:format(dummyName(id), NS.SLASH))
+        else
+            out(L["%s is not a training dummy."]:format(dummyName(id)))
+        end
+    end,
+    defaults = function()
+        if NS.DummyList.Reset() then out(L["Your training dummies are cleared: only the built-in ones count."]) end
+        showDummies()
+    end,
+}
+
+--- `targetdummy [show|add|remove|capture|defaults] [category or creature ID]`; a bare verb shows the list.
+function doTargetDummy(rest)
+    local word, text = tostring(rest or ""):match("^%s*(%S*)%s*(.-)%s*$")
+    word = word:lower()
+    if word == "" then word = "show" end
+    local fn = DUMMY_VERBS[word]
+    if not fn then return dummyUsage() end
     fn(text)
 end
 

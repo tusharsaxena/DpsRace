@@ -8,7 +8,7 @@ in the spec, sections 1, 2 and 13
 
 - **A timed race.** The most damage in a chosen time (presets 0:30 to 5:00, custom 0:10 to 15:00)
   against any target, with known training dummies recognized from a small catalog
-  (`defaults/Dummies.lua`). There is no target count (DpsRace#15).
+  (`defaults/Dummies.lua`) and the player's own list. There is no target count (DpsRace#15).
 - **A frame-accurate start.** The clock starts on the new meter session, which lands on the same
   frame as the first hit (spec §2, §4.2).
 - **An honest score.** Damage is the run session's total, read after combat. DPS is that total
@@ -36,8 +36,13 @@ in the spec, sections 1, 2 and 13
   with its spec comparison and consistency, races by character (alone, by target, by length) and
   per day, the damage tail after the buzzer, the late casts and the recent new bests. DPS is only
   compared within a board; anything that spans boards is each run's percent of its board's best.
+- **Your own training dummies** (#9). `/dr targetdummy add [category]` (or the Race page's
+  *Training dummies* tab) counts any creature as a dummy of a category, and a built-in can be switched
+  off, never recategorized. The list is a per-profile setting read when a run's category is, so an
+  edit recategorizes every stored run. Each add saves what the game says about the creature
+  (`global.dummies.captures`), and the catalog grows from those captures, never from guesses.
 - **Auto-show and auto-arm near a training dummy** (#16), both off by default. *Show near a
-  training dummy* opens the HUD while a cataloged dummy is the target or has a nameplate up; *Arm
+  training dummy* opens the HUD while a known dummy is the target or has a nameplate up; *Arm
   on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
   off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the

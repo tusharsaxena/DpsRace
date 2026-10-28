@@ -42,7 +42,7 @@ local function mkRun(NS, id, dps, list, fields)
         id = id, schema = 3, status = "complete", addon = "0.1.0", date = NOW - HOUR,
         race = { length = 60, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 60, dps = dps, tail = 2 },
         flags = { lateCasts = {} }, spells = { { id = INCINERATE, dmg = dps * 50 } }, note = "",
         casts = { v = 1, list = NS.Casts.Encode(decoded), spells = SPELLS, dropped = 0 },

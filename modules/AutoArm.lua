@@ -227,7 +227,8 @@ do
     if bus then
         bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, from, to) onState(run, from, to) end)
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if path == "profile" then AutoArm.Sync() end
+            -- Your training dummies (#9): another creature may be one now, or no longer.
+            if path == "profile" or path == NS.DummyList.PATH then AutoArm.Sync() end
         end)
     end
 end

@@ -73,6 +73,8 @@ local STORED = {
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
     ["global.usage.hidden"]  = { "string", "" },
     ["race.lateIgnore"]      = { "string", "66,1856,5384,8690,58984,110959" },
+    ["race.dummies"]         = { "string", "" },
+    ["race.dummyCategory"]   = { "string", "auto" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -401,9 +403,16 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
     }, "\n"))
 end)
 
-test("settings: Race is a one-tab page along the race's timeline, in the pinned order", function()
+test("settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order", function()
     local NS = T.NS
-    for _, r in ipairs(NS.SchemaForPage("race")) do assertEqual(r.group, "Race", r.path .. " tab") end
+    for _, r in ipairs(NS.SchemaForPage("race")) do
+        local want = (r.path == "race.dummies" or r.path == "race.dummyCategory") and "Training dummies" or "Race"
+        assertEqual(r.group, want, r.path .. " tab")
+    end
+    assertEqual(tabRows(NS, "race", "Training dummies"), table.concat({
+        "race.dummyCategory|New dummies|Category for new dummies|false",
+        "race.dummies|Your training dummies|Training dummies|false",
+    }, "\n"))
     assertEqual(tabRows(NS, "race", "Race"), table.concat({
         "race.defaultLength|Length|Default race length|false",
         "race.autoArm|Auto-arm|Arm on a training dummy|false",
@@ -684,5 +693,88 @@ test("settings: Race repaints when the ignore list changes from anywhere or the 
     assertEqual(repainted, 2, "a profile switch repaints it")
     assertTrue(NS.SetByPath("live.castDots", false))
     assertEqual(repainted, 2, "another setting does not")
+    NS.Helpers.RefreshPanel = real
+end)
+
+-- ── Race: your training dummies (#9) ─────────────────────────────────────────────────────────────
+
+--- The Race page's Training dummies tab drawn once: what its builder handed the ID list, each
+--- checkbox and each button, in draw order.
+local function drawDummies(inst)
+    local NS, M = inst.NS, inst.mocks
+    local H = NS.Helpers
+    local panel = M.__subcategories["Race"]
+    panel:Show()
+    panel:__fire("OnShow")
+    local got = { drawn = {}, boxes = {}, buttons = {} }
+    local realList, realText, realPair, realBox = H.IdList, H.TextRow, H.InlineButtonPair, H.SessionCheckbox
+    H.IdList = function(ctx, s, ...) got.list = s got.drawn[#got.drawn + 1] = "list" return realList(ctx, s, ...) end
+    H.TextRow = function(ctx, text, ...) got.drawn[#got.drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.InlineButtonPair = function(ctx, a, ...)
+        got.buttons[#got.buttons + 1] = a got.drawn[#got.drawn + 1] = "button" return realPair(ctx, a, ...)
+    end
+    H.SessionCheckbox = function(ctx, parent, w, s, ...)
+        got.boxes[#got.boxes + 1] = s got.drawn[#got.drawn + 1] = "box" return realBox(ctx, parent, w, s, ...)
+    end
+    local ctx = assert(NS.pageCtx.race, "the Race page drew no ctx")
+    ctx.activeTab = "Training dummies"
+    H.RefreshPanel(ctx, true)
+    H.IdList, H.TextRow, H.InlineButtonPair, H.SessionCheckbox = realList, realText, realPair, realBox
+    return got
+end
+
+test("settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local got = drawDummies(inst)
+    -- The list draws its empty line through TextRow too.
+    assertEqual(table.concat(got.drawn, ","), "text,button,list,text,text,box,box,box,box,box,button")
+    local list = got.list
+    assertEqual(list.label, "Add a creature")
+    assertEqual(list.removeStyle, "icon")
+    assertEqual(#list.entries(), 0)
+    -- A typed creature ID gets the row's category: auto, no name known, so single.
+    list.onAdd(99999)
+    assertEqual(NS.db.profile.race.dummies, "99999:single")
+    assertEqual(list.entries()[1].id, 99999)
+    assertEqual(list.entries()[1].suffix, "\194\183 Single target")
+    assertEqual(list.kind.resolve("99999"), 99999)
+    list.onRemove(99999)
+    assertEqual(NS.db.profile.race.dummies, "")
+    -- One checkbox per built-in, ascending; clearing one switches it off.
+    assertEqual(got.boxes[3].label, "Reinforced Golem (243205) \194\183 Boss-level")
+    assertTrue(got.boxes[3].get())
+    got.boxes[3].set(false)
+    assertEqual(NS.db.profile.race.dummies, "-243205")
+    assertFalse(got.boxes[3].get())
+    got.boxes[3].set(true)
+    assertEqual(NS.db.profile.race.dummies, "")
+    -- Add your target: the target, captured, with the row's category.
+    assertEqual(got.buttons[1].text, "Add your target")
+    assertTrue(NS.SetByPath("race.dummyCategory", "pvp"))
+    M.__setTarget({ guid = "Creature-0-3770-2552-1234-99999-0000ABCDEF", name = "Angry Boar" })
+    got.buttons[1].onClick()
+    assertEqual(NS.db.profile.race.dummies, "99999:pvp")
+    assertTrue(NS.db.global.dummies.captures[99999] ~= nil, "captured")
+    -- Reset list clears it and leaves the category row alone.
+    assertEqual(got.buttons[2].text, "Reset list")
+    NS.DummyList.Remove(243205)
+    got.buttons[2].onClick()
+    assertEqual(NS.db.profile.race.dummies, "")
+    assertEqual(NS.db.profile.race.dummyCategory, "pvp")
+end)
+
+test("settings: Race repaints when your training dummies change from anywhere", function()
+    local inst = T.load()
+    local NS = inst.NS
+    drawDummies(inst)
+    local repainted = 0
+    local real = NS.Helpers.RefreshPanel
+    NS.Helpers.RefreshPanel = function(ctx, ...)
+        if ctx == NS.pageCtx.race then repainted = repainted + 1 end
+        return real(ctx, ...)
+    end
+    NS.DummyList.Add(99999, "cleave")
+    assertEqual(repainted, 1)
     NS.Helpers.RefreshPanel = real
 end)

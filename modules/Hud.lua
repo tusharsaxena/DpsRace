@@ -247,7 +247,8 @@ local function armBlocker()
 end
 
 local function targetWarning(target)
-    if target.category ~= "other" then return nil end
+    -- Read now (#9): the cached snapshot predates a change to your training dummies.
+    if NS.Dummies.CategoryOf(target) ~= "other" then return nil end
     if target.name then return L["Unknown target: recorded as Other: %s"]:format(target.name) end
     return L["No target: the one you fight is read when combat starts."]
 end
@@ -950,7 +951,9 @@ do
         -- The late-cast ignore list (#8), the profile's, changes what the result card's flag chips
         -- (and the STOP body's count) say: the body on screen is drawn again.
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if (path == NS.LateIgnore.PATH or path == "profile") and windowShown() then render(true) end
+            if (path == NS.LateIgnore.PATH or path == NS.DummyList.PATH or path == "profile") and windowShown() then
+                render(true)
+            end
         end)
     end
 end

@@ -884,7 +884,8 @@ do
             if path == NS.Usage.HIDDEN_PATH then onStoreChanged() end
             -- The late-cast ignore list (#8), the profile's, re-scores every run's flags: the Status
             -- column, Hide flagged, the detail and the sample's clean board.
-            if path == NS.LateIgnore.PATH or path == "profile" then
+            -- Your training dummies (#9) recategorize every run: the boards, the filters, the badges.
+            if path == NS.LateIgnore.PATH or path == NS.DummyList.PATH or path == "profile" then
                 NS.ResultsSource.Invalidate()
                 onStoreChanged()
             end

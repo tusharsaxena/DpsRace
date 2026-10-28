@@ -39,7 +39,7 @@ local FACETS = {
     { key = "char", head = L["All characters"], of = Runs.CharKey },
     { key = "spec", head = L["All specs"], of = function(run) return run.char and run.char.specID end },
     { key = "category", head = L["All targets"],
-      of = function(run) return run.target and run.target.category or "other" end },
+      of = function(run) return NS.Dummies.CategoryOf(run.target) end },
     { key = "length", head = L["Any length"], of = function(run) return run.race and run.race.length end },
 }
 local DATE = #FACETS + 1     -- the date range's slot after the value facets
@@ -313,7 +313,7 @@ local REDUCERS = {
     -- Who raced: each character with its target categories, and the specs seen.
     function(acc, run)
         local entry = charEntry(acc, run)
-        local category = run.target and run.target.category or "other"
+        local category = NS.Dummies.CategoryOf(run.target)
         entry.n = entry.n + 1
         entry.byCategory[category] = (entry.byCategory[category] or 0) + 1
         acc.categories[category] = true
@@ -360,7 +360,7 @@ local function newBoard(e)
     local run = e.run
     local char = run.char or {}
     return { key = e.key, specID = char.specID, class = char.class, spec = char.spec,
-             category = run.target and run.target.category or "other", length = run.race and run.race.length,
+             category = NS.Dummies.CategoryOf(run.target), length = run.race and run.race.length,
              n = 0, sum = 0, first = run, worstDps = e.dps, pct = {} }
 end
 

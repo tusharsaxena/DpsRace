@@ -12,7 +12,8 @@ local _, NS = ...
 --
 -- THE VIEW CONTRACT is the Runs tab's, so the shell (modules/Results.lua) treats both tabs alike:
 -- frame, Layout, Resize, Refresh, Count, SetFilter. The shell redraws the shown tab on RUN_SAVED,
--- RUNS_CHANGED, a SETTINGS_CHANGED on the late-cast ignore list or the profile, and a source swap
+-- RUNS_CHANGED, a SETTINGS_CHANGED on the late-cast ignore list, your training dummies (#9) or the
+-- profile, and a source swap
 -- (test mode, a sim): Refresh re-reads NS.ResultsSource.All(), so the samples fill the tab.
 --
 -- THE FILTERS (D-11) open wide: every character, spec, target, length and date. Each dropdown lists
@@ -133,7 +134,7 @@ end
 
 local function runBoard(run)
     local char = run.char or {}
-    return boardText(char.specID, char.spec, run.target and run.target.category, run.race and run.race.length)
+    return boardText(char.specID, char.spec, NS.Dummies.CategoryOf(run.target), run.race and run.race.length)
 end
 
 local function pct(x)

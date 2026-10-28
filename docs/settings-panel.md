@@ -11,7 +11,7 @@ built on first show (options-ui-§1, §5).
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Keybindings tab: the three key bindings |
-| Race | One tab along the race's timeline: the default race length, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and the scoring rules (late-cast grace, damage-restart gap) |
+| Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap) and the late-cast ignore list; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
@@ -98,9 +98,11 @@ way round. In combat nothing is bound or cleared.
 
 ### Race
 
+Tabs, in order: *Race*, *Training dummies*.
+
 #### Tab: Race
 
-The page's only tab, its subsections in the order of a race. Line by line: *Default race length*;
+The page's first tab, its subsections in the order of a race. Line by line: *Default race length*;
 *Arm on a training dummy*; *Countdown cue sound* alone (it fires from 10 seconds whatever the center numbers do); *Center-screen
 countdown* | *Center countdown from (seconds)*; *Buzzer raid warning and sound* | *Sticky-combat hint
 after (seconds)*; *Late-cast grace (seconds)* | *Damage-restart gap (seconds)*; then the *Late-cast ignore list*
@@ -111,7 +113,7 @@ heading over its blurb, the list and *Reset list*.
 | *Length* heading | | | |
 | Default race length | `race.defaultLength` | dropdown | The presets 0:30, 1:00, 2:00, 3:00, 5:00 (`NS.HudStates.PRESETS`); the HUD's length until the player picks one. A change clears the remembered pick (`race.lastLength`) and redraws the HUD (`Hud.ForgetLength`) |
 | *Auto-arm* heading | | | |
-| Arm on a training dummy | `race.autoArm` | checkbox | Off by default (#16). On: targeting a cataloged training dummy (`defaults/Dummies.lua`) out of combat, with the race idle and no test mode or sim on, arms a race at the length Arm Race would arm (`Hud.ArmLength`: the pick, else `race.lastLength`, else this default), through `Race.Arm` and every refusal it has, silently; the arm opens the HUD as a manual arm does and the first hit starts it. Targeting anything else (or nothing) out of combat before the pull cancels the race this rule armed (in combat the pull is under way, so it holds); a race that started, or one the player armed, is never canceled by it. Nothing arms over a result card, while a run waits for its result, in combat or in an instance. Works without *Show near a training dummy*. Reaction: `NS.AutoArm.Sync()` |
+| Arm on a training dummy | `race.autoArm` | checkbox | Off by default (#16). On: targeting a training dummy (`defaults/Dummies.lua` and the Training dummies tab's list, `Dummies.Lookup`) out of combat, with the race idle and no test mode or sim on, arms a race at the length Arm Race would arm (`Hud.ArmLength`: the pick, else `race.lastLength`, else this default), through `Race.Arm` and every refusal it has, silently; the arm opens the HUD as a manual arm does and the first hit starts it. Targeting anything else (or nothing) out of combat before the pull cancels the race this rule armed (in combat the pull is under way, so it holds); a race that started, or one the player armed, is never canceled by it. Nothing arms over a result card, while a run waits for its result, in combat or in an instance. Works without *Show near a training dummy*. Reaction: `NS.AutoArm.Sync()` |
 | *Countdown* heading | | | |
 | Countdown cue sound | `race.countdownCue` | checkbox | The cue at 10, 5, 3, 2, 1 s left and with each center number (so every second from 10 with the defaults), once a second at most; read at each mark, and a change re-arms the marks at once (`Countdown.Refresh`) |
 | Center-screen countdown | `race.centerCountdown` | checkbox | The large numbers in the middle of the screen in the last seconds; off hides a number on screen at once (`Countdown.Refresh`). Test mode follows it |
@@ -126,7 +128,29 @@ heading over its blurb, the list and *Reset list*.
 | Late-cast ignore list | `race.lateIgnore` | the library's ID list (`H.IdList`, a spell kind resolved by `LateIgnore.Resolve`, two columns, the X at the left, as the Usage tab's), drawn by the tab's `afterGroup` under a one-line blurb; the row itself is `skipRender` | The spells whose late casts never flag a run (#8). *Ignore a spell* takes a spell ID, a shift-clicked link, *Hearthstone* (or any hearthstone's name, which adds 8690), or the name of a spell the character knows, a stored run cast late or the list's defaults (`LateIgnore.KnownSpells`, the add box's suggestions). The 8690 line carries *(all hearthstones, 59)* and removes every variant at once. Writes go through `LateIgnore.Ignore` / `Unignore`; the `SETTINGS_CHANGED` repaints the list whichever way the value changed (a right-click on the HUD or in the Results window, `/dr ignore`, `/dr set` or `reset`, a profile switch). Applies to every stored run, unlike the grace. *No spell is ignored: every late cast flags its run.* when empty |
 | Reset list | | button (`H.InlineButtonPair`) under the list | `LateIgnore.Reset()`: the six defaults back, one write of the default (the same as `/dr reset race.lateIgnore`); the other Race rows are untouched. Its tooltip names the six |
 
-The page's Defaults button restores every Race row, the late-cast ignore list among them, and its tooltip says so.
+#### Tab: Training dummies
+
+Your own training dummies (#9, `modules/DummyList.lua`). Line by line: *Category for new dummies*
+under *New dummies*; then, under *Your training dummies*, a blurb, *Add your target*, the list, the
+built-ins' checkboxes and *Reset list*. The list row is `skipRender`: the tab's `afterGroup` draws it.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| *New dummies* heading | | | |
+| Category for new dummies | `race.dummyCategory` | dropdown | *Automatic* (`auto`, the default), then *Single target*, *Cleave*, *Dungeoneer*, *Boss-level*, *PvP* (`DummyList.KINDS`): the category a dummy added here or by `/dr targetdummy add` gets when none is typed. *Automatic* reads it from the name (Cleave, Dungeoneer, PvP) and a boss classification or skull level, else single (`DummyList.Infer`). Read when a dummy is added |
+| *Your training dummies* heading | | | |
+| Add your target | | button (`H.InlineButtonPair`) under the blurb | Reads the target (`DummyList.Read`), saves what the game says about it to `global.dummies.captures` (`DummyList.Capture`) and marks it with the category above (`DummyList.Add`); a switched-off built-in is switched back on. *Target a creature first.* with no creature targeted |
+| Training dummies | `race.dummies` | the library's ID list (`H.IdList`, a creature kind resolved by `DummyList.Resolve`, the X as an icon); the row itself is `skipRender` | Your own dummies, ascending by creature ID, each *Name (id)* with the category as its suffix. *Add a creature* takes a creature ID or a captured name and adds it with the category above; the X removes it (`DummyList.Remove`). *No training dummies of your own yet.* when empty |
+| One checkbox per built-in | `race.dummies` | `H.SessionCheckbox`, *Name (id) · Category*, ascending by creature ID | Ticked while the built-in counts (`Dummies.Lookup`); clearing one switches it off (`-id` in the list, its runs read as *Other*), ticking switches it back on |
+| Reset list | | button (`H.InlineButtonPair`) under the checkboxes | `DummyList.Reset()`: your own dummies gone and every built-in back on, one write of the default (the same as `/dr reset race.dummies`); *Category for new dummies* is untouched |
+
+Every write goes through `DummyList` and the seam. The `SETTINGS_CHANGED` on `race.dummies` or
+`"profile"` repaints the tab whichever way the list changed (`/dr targetdummy`, `/dr set` or
+`reset`, a profile switch). Applies to every stored run: a run is categorized by its creature as the
+list is now.
+
+The page's Defaults button restores every row on both tabs, the late-cast ignore list and your
+training dummies among them, and its tooltip says so.
 
 ### HUD
 
@@ -150,7 +174,7 @@ cooldown icons*; *Show pace bar*; *Pace bar range*.
 | *Display* heading | | | |
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
-| Show near a training dummy | `hud.autoShow` | checkbox | Off by default (#16). On: the HUD opens by itself (`Hud.ShowNearDummy`) while a cataloged training dummy is the target or has a nameplate up, and closes again (`Hud.HideAwayFromDummy`) once none has been seen for `AutoArm.HIDE_DELAY` (3) s, only while the race is idle (an armed or running race, or a result card, holds it; the idle edge asks again). A close by the player during a dummy session keeps it closed until the session ends (the end of test mode closing a window it opened is not the player's close). An arm's or a result card's window becomes the dummy's while one is near, so the race going idle there leaves it open. A window the player opened is never closed by it. `hud.showMode` is unchanged (*Always* already wants the window), and *General visibility* still applies. Not in instances; with nameplates off only the target counts. Off closes a window it opened. Reaction: `NS.AutoArm.Sync()` |
+| Show near a training dummy | `hud.autoShow` | checkbox | Off by default (#16). On: the HUD opens by itself (`Hud.ShowNearDummy`) while a known training dummy (the catalog or `race.dummies`) is the target or has a nameplate up, and closes again (`Hud.HideAwayFromDummy`) once none has been seen for `AutoArm.HIDE_DELAY` (3) s, only while the race is idle (an armed or running race, or a result card, holds it; the idle edge asks again). A close by the player during a dummy session keeps it closed until the session ends (the end of test mode closing a window it opened is not the player's close). An arm's or a result card's window becomes the dummy's while one is near, so the race going idle there leaves it open. A window the player opened is never closed by it. `hud.showMode` is unchanged (*Always* already wants the window), and *General visibility* still applies. Not in instances; with nameplates off only the target counts. Off closes a window it opened. Reaction: `NS.AutoArm.Sync()` |
 | *Live breakdown* heading | | | |
 | Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*). The HUD result card follows it too, with the same wheel scroll |
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |

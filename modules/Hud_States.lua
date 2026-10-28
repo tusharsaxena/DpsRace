@@ -362,7 +362,7 @@ end
 local function setTarget(card, target)
     target = target or {}
     card.name:SetText(target.name or L["No target"])
-    local badge = NS.Dummies.Label(target.category or "other")
+    local badge = NS.Dummies.Label(NS.Dummies.CategoryOf(target))
     card.badgeText:SetText(badge)
     card.badge:SetWidth(math.floor(textWidth(card.badgeText, badge) + 12))
     card.npc:SetText(type(target.npcID) == "number" and ("#%d"):format(target.npcID) or "")

@@ -114,7 +114,7 @@ end
 local PASS = {
     function(run, f) return charPasses(run, f.char) end,
     function(run, f) return specPasses(run, f.spec) end,
-    function(run, f) return f.category == "all" or (run.target and run.target.category or "other") == f.category end,
+    function(run, f) return f.category == "all" or NS.Dummies.CategoryOf(run.target) == f.category end,
     function(run, f) return f.length == "all" or (run.race and run.race.length) == f.length end,
     function(run, _, since) return since == nil or (run.date or 0) >= since end,
     function(run, f) return f.includeIncomplete or run.status == "complete" end,
@@ -181,7 +181,7 @@ end
 
 local function categoryOptions(runs)
     local present, list = {}, {}
-    for _, run in ipairs(runs) do present[run.target and run.target.category or "other"] = true end
+    for _, run in ipairs(runs) do present[NS.Dummies.CategoryOf(run.target)] = true end
     for _, key in ipairs(NS.Dummies.CATEGORIES) do
         if present[key] then list[#list + 1] = { value = key, label = NS.Dummies.Label(key) } end
     end
@@ -270,7 +270,7 @@ local function categoryText(category)
 end
 
 local function targetGroup(run)
-    local category = run.target and run.target.category or "other"
+    local category = NS.Dummies.CategoryOf(run.target)
     return category, L["Target: %s"]:format(categoryText(category)), CATEGORY_RANK[category] or 99
 end
 
@@ -296,7 +296,7 @@ end
 
 -- One group per (target type, length) pair: the catalog's order, then shortest first in each type.
 local function targetLengthGroup(run)
-    local category = run.target and run.target.category or "other"
+    local category = NS.Dummies.CategoryOf(run.target)
     local length = lengthOf(run)
     local rank = (CATEGORY_RANK[category] or 99) * (NO_LENGTH_RANK + 1) + (length or NO_LENGTH_RANK)
     return category .. "|" .. tostring(length),
@@ -309,7 +309,7 @@ end
 local function specTargetLengthGroup(run)
     local char = run.char or {}
     local spec = Tbl.SpecInfo(char.specID, char.spec) or Tbl.ClassName(char.class)
-    local category = run.target and run.target.category or "other"
+    local category = NS.Dummies.CategoryOf(run.target)
     local length = lengthOf(run)
     local key = ("%s|%s|%s|%s"):format(tostring(char.class), tostring(char.specID), category, tostring(length))
     local label = L["Spec: %s"]:format(("%s \194\183 %s \194\183 %s"):format(
@@ -326,7 +326,7 @@ local function fullGroup(run)
     local char = run.char or {}
     local class = Tbl.ClassName(char.class)
     local spec = Tbl.SpecInfo(char.specID, char.spec) or class
-    local category = run.target and run.target.category or "other"
+    local category = NS.Dummies.CategoryOf(run.target)
     local length = lengthOf(run)
     local key = ("%s|%s|%s|%s|%s"):format(Runs.CharKey(run), tostring(char.class), tostring(char.specID),
         category, tostring(length))
@@ -465,7 +465,7 @@ local NAMES_BOARD = { best = true }
 --- @return string target, string time, table color
 function Runs.StatusBoard(run)
     local length = run.race and run.race.length
-    return NS.Dummies.Label(run.target and run.target.category):lower(), NS.Format.Length(length),
+    return NS.Dummies.Label(NS.Dummies.CategoryOf(run.target)):lower(), NS.Format.Length(length),
         Tbl.LengthColor(length)
 end
 

@@ -190,8 +190,8 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;
     -- HUD's Show near a training dummy and Race's Arm on a training dummy, #16, the 22nd and 23rd;
     -- General's New-best toast tab, #5, the 24th to the 27th; Race's Late-cast ignore list, #8, the
-    -- 28th).
-    local PAGE_ROWS = 28
+    -- 28th; Race's Training dummies tab, #9, the 29th and 30th).
+    local PAGE_ROWS = 30
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

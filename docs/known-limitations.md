@@ -5,9 +5,9 @@ What the addon cannot do, or does only approximately, and why. Split out of
 the hub keeps a short summary. Each entry names the client limit or the owner's decision behind it,
 and the smoke row that measures it where one exists.
 
-- **Auto-show and auto-arm see only cataloged training dummies** (#16, `modules/AutoArm.lua`). A
-  dummy is a creature ID in `defaults/Dummies.lua`; one not cataloged neither opens the HUD nor arms
-  (the catalog grows from measurements, #9). With enemy nameplates off no `NAME_PLATE_UNIT_ADDED`
+- **Auto-show and auto-arm see only known training dummies** (#16, `modules/AutoArm.lua`). A
+  dummy is a creature ID in `defaults/Dummies.lua` or on the profile's own list (`race.dummies`, #9);
+  one on neither opens the HUD nor arms until the player adds it (`/dr targetdummy add`). With enemy nameplates off no `NAME_PLATE_UNIT_ADDED`
   fires, so auto-show sees only the target. A nameplate that comes up in combat may carry a secret
   GUID and is not counted then; the hide's fire scans the nameplates again before it closes the
   window. Neither rule acts in an instance (a dungeon, raid, scenario, battleground or arena; the
@@ -35,6 +35,22 @@ and the smoke row that measures it where one exists.
     clean-only board under one profile's list is not protected under another's, so a login on that
     profile can prune it. The all-runs board, which protects every board's best, does not depend on
     the list.
+- **Your own training dummies are read by creature ID, now** (#9, `modules/DummyList.lua`).
+  - A stored run's category is the list's as it is now (`Dummies.CategoryOf`), so switching a built-in
+    off, removing a custom dummy or switching profiles moves its past runs to *Other* (and to another
+    board) in Results, Insights, the bests and the share line, and adding one moves them back. A run
+    whose creature ID arrived sealed keeps the category it recorded.
+  - A built-in cannot be recategorized: the list only switches it off or on. A custom entry for a
+    built-in ID is dropped from the stored text.
+  - The sample runs (test mode, the sim) name the built-ins, so with one switched off its sample runs
+    read as *Other* too.
+  - Auto-arm arms only on a target change: after adding the creature already targeted, retarget it
+    (or press Arm Race). A list change rescans the nameplates for auto-show at once.
+  - *Automatic* infers the category from English name words (Cleave, Dungeoneer, PvP) and a boss
+    classification or skull level; on another client language, or for a dummy whose name says
+    nothing, it reads as Single target unless a category is typed.
+  - The list is per profile, the captures are account-wide; a capture records what the game said
+    then, and a field that arrived sealed is left out.
 - **Lowering *Days to keep* deletes nothing on the spot.** The prune runs at login and after each
   saved run (spec §7), so a slip of the slider costs nothing until the next race.
 - **The Results window's Runs view is the saved one, else the stock one.** Its filters, grouping
