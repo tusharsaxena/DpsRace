@@ -24,7 +24,8 @@ do
         "Slash.lua", "SlashParse.lua", "Launcher.lua",
         "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsTabs.lua",
         "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
-        "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua",
+        "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua", "Toast.lua",
+        "OptionsAppearance.lua", "OptionsSkinPicker.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do present[path:match("([^/]+)$")] = true end
@@ -33,18 +34,6 @@ do
         if not present[name] then missing[#missing + 1] = name end
     end
     assert(#missing == 0, "libs/LibKa0s/LibKa0s.xml is missing " .. table.concat(missing, ", "))
-end
-
--- A LibKa0s file the TOC names after the .xml (LibKa0s-Toast-1.0, vendored alone until the next full
--- re-vendor: docs/ARCHITECTURE.md, Documented deviations) loads after it, read out of the TOC so the
--- runner loads what the client loads.
-do
-    local toc = assert(io.open(root .. "/DpsRace.toc", "r"))
-    for line in toc:lines() do
-        local rel = line:gsub("\r", ""):match("^libs\\LibKa0s\\([^\\]+%.lua)%s*$")
-        if rel then LIB_FILES[#LIB_FILES + 1] = root .. "/libs/LibKa0s/" .. rel end
-    end
-    toc:close()
 end
 
 -- The addon's own files come from the TOC, so this runner cannot drift from what the client loads.

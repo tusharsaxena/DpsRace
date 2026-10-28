@@ -517,7 +517,7 @@ build in gear with at least one enchant and one gem, a run on the same board rac
 ## 22. The 2026-10-28 build: the new-best toast (#5)
 
 A toast near the top of the screen when a race beats an earlier best on its board,
-`modules/BestToast.lua` on LibKa0s-Toast-1.0 (vendored alone, `libs/LibKa0s/Toast.lua`). Its rows are
+`modules/BestToast.lua` on LibKa0s-Toast-1.0. Its rows are
 General > *New-best toast*. Needs a board with one complete run already on it (race one 0:30
 single-target first if you have none), and the game's sound on. Keep `/console scriptErrors 1`
 on and `/dr debug on`.

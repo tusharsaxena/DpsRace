@@ -17,7 +17,7 @@ drift from what the client loads (testing-§9).
 
 | File | Job | Position |
 |---|---|---|
-| `libs\…` (Ace3, LibStub, CallbackHandler, LibSharedMedia, LibDataBroker, LibDBIcon) | vendored libraries | first; `libs\LibKa0s\LibKa0s.xml` is one line, after Ace3, then `libs\LibKa0s\Toast.lua` alone (LibKa0s-Toast-1.0, vendored ahead of the rest until the next full re-vendor: a documented deviation) |
+| `libs\…` (Ace3, LibStub, CallbackHandler, LibSharedMedia, LibDataBroker, LibDBIcon) | vendored libraries | first; `libs\LibKa0s\LibKa0s.xml` is one line, after Ace3 |
 | `locales/enUS.lua` | `NS.L`, the canonical locale | **load-bearing**: `core/LauncherSetup.lua` and every `settings/` file read `NS.L` at file scope |
 | `core/Namespace.lua` | `NS.PREFIX`, `NS.name`, `NS.BRAND`, `NS.SLASH`/`SLASH_LONG`, the version fallback | **load-bearing**: everything below reads these |
 | `core/MediaSetup.lua` | `NS.Icon`, `NS.MediaFont`; the one `RegisterLSM` call (`LibKa0s-Media-1.0`) | **load-bearing**: `core/Constants.lua` resolves `FONT_MONO` from it |
@@ -30,7 +30,7 @@ drift from what the client loads (testing-§9).
 | `core/Bus.lua` | `NS.MSG` names, the bus record, `NS.NewBusTarget`, `NS.SendBus` | conventional |
 | `core/PoolSetup.lua` | `NS.Pool` (`LibKa0s-Pool-1.0`), for the HUD and Results rows | conventional |
 | `core/WidgetsSetup.lua` | `NS.MakeDropdown`, `NS.CloseMenu`, `NS.MakeTestStrip`, `NS.TEST_STRIP_HEIGHT`, `NS.HasWidgets`, `NS.ShowCopy` (`LibKa0s-Widgets-1.0`): the Results filter bars' dropdowns, with the catalog's `chevron-down` and `confirm` marks, the HUD's test-mode strip, and the one copy window (`CopyWindow`, built on its first use) the detail's talent *Copy* opens; nil (no control) when the library is absent, and `ShowCopy` answers false | conventional (reached at call time) |
-| `core/ToastSetup.lua` | `NS.NewToast(d)`, `NS.HasToast`, `NS.TOAST_PREVIEW` and the instance stub `NS.ToastStub` (`LibKa0s-Toast-1.0`, the one LibKa0s file vendored alone until the next full re-vendor): the new-best toast's shell, each descriptor carrying this addon's folder as its skin owner; the stub when the library is absent | **load-bearing**: `modules/BestToast.lua` calls `NS.NewToast` at file scope |
+| `core/ToastSetup.lua` | `NS.NewToast(d)`, `NS.HasToast`, `NS.TOAST_PREVIEW` and the instance stub `NS.ToastStub` (`LibKa0s-Toast-1.0`): the new-best toast's shell, each descriptor carrying this addon's folder as its skin owner; the stub when the library is absent | **load-bearing**: `modules/BestToast.lua` calls `NS.NewToast` at file scope |
 | `core/LifecycleSetup.lua` | the one stand-down latch with its `disabled` and `perf` holds; `NS.StoodDownRefusal` | **load-bearing**: `LibKa0s-Perf-1.0` raises without `NS.lifecycle` |
 | `core/PerfSetup.lua` | `NS.Perf` (`LibKa0s-Perf-1.0`) and its declared buckets | **load-bearing**: before any module holding `NS.Perf` as an upvalue |
 | `core/DebugLogSetup.lua` | `NS.DebugLog`, the gated sink `NS.Debug` and its gates (`LibKa0s-DebugLog-1.0`) | **load-bearing**: needs `FONT_MONO`, the flag and the printer; before any `NS.Debug` call |

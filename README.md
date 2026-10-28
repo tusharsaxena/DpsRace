@@ -3,7 +3,7 @@
 ![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.5-purple)
 ![License](https://img.shields.io/badge/License-MIT-orange)
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
-![Tests](https://img.shields.io/badge/Tests-1088%2F1088_passing-green)
+![Tests](https://img.shields.io/badge/Tests-1087%2F1087_passing-green)
 
 DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
 
@@ -86,4 +86,8 @@ Please raise them on GitHub rather than in comments:
 
 ## Credits
 
-The debug console uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL Open Font License 1.1. The window controls and the debug console draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT), and the Results window's status tags draw their icons (trophy, check, flag, x, skull, ghost) from [Phosphor](https://github.com/phosphor-icons/core) (MIT). Only the icons this addon draws are included, each set with its license file beside it.
+The debug console and the race clocks use [JetBrains Mono](https://www.jetbrains.com/lp/mono/), licensed under the SIL Open Font License 1.1.
+
+Ka0s Default, the skin every profile starts on, draws [Oxanium](https://github.com/sevmeyer/oxanium) by The Oxanium Project Authors, also SIL Open Font License 1.1. The other skins draw on seven more SIL Open Font License 1.1 faces, one family per skin: [Inter](https://github.com/rsms/inter) by The Inter Project Authors, [Nunito](https://github.com/googlefonts/nunito) by The Nunito Project Authors, [Vollkorn](https://github.com/FAlthausen/Vollkorn-Typeface) by The Vollkorn Project Authors, [Bitter](https://github.com/solmatas/BitterPro) by The Bitter Project Authors, [Philosopher](https://github.com/alexeiva/philosopher) by The Philosopher Project Authors, [Fira Sans](https://github.com/mozilla/Fira) by The Mozilla Foundation and Telefonica S.A., and [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) by the Braille Institute of America. Inter, Nunito, Vollkorn, Bitter and Oxanium are static weights cut from upstream's variable fonts.
+
+The window controls, the debug console and the first-run skin picker (its preview eye and settings gear) draw icons from [Open Iconic](https://github.com/iconic/open-iconic) by Waybury (MIT), and the Results window's status tags draw their icons (trophy, check, flag, x, skull, ghost) from [Phosphor](https://github.com/phosphor-icons/core) (MIT). Only the icons this addon draws are included. The fonts and the icons are bundled inside the LibKa0s payload, each set with its license file beside it.

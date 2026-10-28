@@ -118,6 +118,17 @@ if not lib then
     Helpers.StrataTooltip     = function() return "" end
     Helpers.ResetAllTooltip   = function() return "" end
     Helpers.KEYBINDS_UNCHANGED = "Key bindings are not changed."
+    -- The Skin tab (LibKa0s v1.78.0, OptionsAppearance; skinning-§3): every Options stub owes both
+    -- members, adopted or not. On this path RenderTabbedSchema draws no tabs and EnsureScroll answers
+    -- nil, so the entry is inert and AppearanceRows answers nil, as the live one does when it cannot
+    -- draw. Labeled "Skin" since OptionsAppearance minor 3; the key stays "Appearance".
+    Helpers.AppearanceTab  = function() return { key = "Appearance", label = "Skin", render = function() end } end
+    Helpers.AppearanceRows = function() return nil end
+    -- The first-run skin picker (LibKa0s v1.79.0, OptionsSkinPicker minor 1): without the library there
+    -- is no skin to pick, so SkinPicker draws nothing and answers nil (never "queued": there is no
+    -- queue), and HideSkinPicker is a no-op.
+    Helpers.SkinPicker     = function() return nil end
+    Helpers.HideSkinPicker = function() end
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel

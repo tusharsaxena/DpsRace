@@ -155,6 +155,4 @@ catalog is grown from the same captures:
 - Use `/dev-copilot:wow-revendor-libka0s`. It copies `libs/LibKa0s/` and `tests/_kit/` from the
   library's tag, moves the `Bundles` line in root `CLAUDE.md` in the same commit, and prunes
   `media/icons/` to the `LibKa0s icons:` line. Never edit either vendored folder by hand;
-  `test_vendor_sync` catches it. The re-vendor that carries LibKa0s-Toast-1.0 also drops the TOC's
-  `libs\LibKa0s\Toast.lua` line, `test_vendor_sync`'s exception for it, the provenance note under
-  the `Bundles` line and its deviation row in `ARCHITECTURE.md` (the gate fails until it does).
+  `test_vendor_sync` catches it.
