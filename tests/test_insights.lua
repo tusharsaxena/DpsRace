@@ -390,7 +390,7 @@ test("insights charts: a strip's labels are level, hung under the axis line, in 
     assertTrue(K.STRIP_LABEL_H <= 20, "no dead space under the strip")
 end)
 
-test("insights charts: a strip takes a fixed top, and drops a label too close to the last one shown", function()
+test("insights charts: a strip takes a fixed top, and drops a label too close to another one shown", function()
     local i = inst()
     local K = i.Charts.K
     local pool, strip = i.ctx:Pool("strip"), i.ctx:strip()
@@ -398,21 +398,80 @@ test("insights charts: a strip takes a fixed top, and drops a label too close to
     for n = 1, 60 do buckets[n] = { count = 0.5, label = tostring(n), info = tostring(n) } end
     i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), strip, buckets, 0, 316, 8, 2)
     assertEqual(pool.active[1].fill.__height, (K.DAYSTRIP_H - 2) / 4, "0.5 of a top of 2")
-    -- 300 / 60 = 5 px a slot: a label every eighth column (40 px apart at least).
+    -- 300 / 60 = 5 px a slot. The first label is pulled in to 20 px (half the pitch) so it stays
+    -- inside the content, and the next one shows 40 px past it, at column 13 (62.5 px).
     assertEqual(pool.active[1].axis.__text, "1")
     assertEqual(pool.active[2].axis.__text, "")
-    assertEqual(pool.active[8].axis.__text, "")
-    assertEqual(pool.active[9].axis.__text, "9")
-    -- A run per column labels only where its day changes: two day labels on neighbors (10/23 on the
-    -- first run, 10/24 on the second) keep the first, and the next day change far enough on shows.
+    assertEqual(pool.active[9].axis.__text, "")
+    assertEqual(pool.active[13].axis.__text, "13")
+    -- A run per column labels only where its day changes: two day labels on neighbors (10/23 on a
+    -- one-run day, 10/24 on the ten runs after it) keep the larger day's, and the next day change far
+    -- enough on shows.
     i.ctx:ReleaseAll()
     local runs = {}
     for n = 1, 40 do runs[n] = { count = 1, info = tostring(n) } end
     runs[1].label, runs[2].label, runs[12].label = "10/23", "10/24", "10/25"
     i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), strip, runs, 0, 816, 8)
-    assertEqual(pool.active[1].axis.__text, "10/23")
-    assertEqual(pool.active[2].axis.__text, "", "20 px from 10/23: dropped")
+    assertEqual(pool.active[1].axis.__text, "", "a one-run day 20 px before a ten-run day: dropped")
+    assertEqual(pool.active[2].axis.__text, "10/24")
     assertEqual(pool.active[12].axis.__text, "10/25")
+end)
+
+test("insights charts: StripLabels keeps the label of the day with more columns, not the earlier one", function()
+    local C = inst().Charts
+    -- The owner's data in per-run mode: 23 Oct has one run, 24 Oct has twelve, 25 Oct has five,
+    -- at about 15.5 px a slot. 24 Oct's label wins over 23 Oct's, and 25 Oct's is far enough on.
+    local runs = {}
+    for n = 1, 56 do runs[n] = { count = 1 } end
+    runs[1].label, runs[2].label, runs[14].label = "23 Oct", "24 Oct", "25 Oct"
+    local shown = C.StripLabels(runs, 15.5, 868)
+    assertNil(shown[1], "23 Oct: one run, under the pitch of 24 Oct's twelve")
+    assertTrue(shown[2] ~= nil and shown[14] ~= nil)
+    -- Two blocks of one size keep the earlier one.
+    local even = { { count = 1, label = "a" }, { count = 1, label = "b" }, { count = 1, label = "c" } }
+    shown = C.StripLabels(even, 15, 300)
+    assertTrue(shown[1] ~= nil)
+    assertNil(shown[2])
+    assertNil(shown[3], "c is 30 px past a")
+    -- Columns before the first label belong to no block, and an unlabeled strip shows nothing.
+    assertNil(next(C.StripLabels({ { count = 1 }, { count = 1 } }, 48, 300)))
+end)
+
+test("insights charts: StripLabels keeps the end labels inside the content on a dense strip", function()
+    local C = inst().Charts
+    local K = C.K
+    local half = K.STRIP_LABEL_PITCH / 2
+    local days = {}
+    for n = 1, 90 do days[n] = { count = 1, label = tostring(n) } end
+    local innerW = 886
+    local slot = C.StripSlots(innerW, #days)
+    local shown = C.StripLabels(days, slot, innerW)
+    -- The first column's center is under 10 px: the label shifts right until its left half fits.
+    assertEqual(slot / 2 + shown[1], half)
+    -- Every label shown sits inside the content, and no two are under the pitch apart.
+    local xs = {}
+    for idx, dx in pairs(shown) do xs[#xs + 1] = (idx - 0.5) * slot + dx end
+    table.sort(xs)
+    assertTrue(xs[1] >= half and xs[#xs] <= innerW - half)
+    for n = 2, #xs do assertTrue(xs[n] - xs[n - 1] >= K.STRIP_LABEL_PITCH) end
+    -- The last column's label, when it shows, is pulled left the same way.
+    local tail = {}
+    for n = 1, 10 do tail[n] = { count = 1 } end
+    tail[10].label = "end"
+    shown = C.StripLabels(tail, 10, 100)
+    assertEqual(shown[10], (100 - half) - 95)
+end)
+
+test("insights charts: a strip shifts an end label by its offset, from under its column", function()
+    local i = inst()
+    local K = i.Charts.K
+    local pool = i.ctx:Pool("strip")
+    local days = {}
+    for n = 1, 90 do days[n] = { count = 1, label = tostring(n), info = "x" } end
+    i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), i.ctx:strip(), days, 0, 902, 8)
+    local slot = i.Charts.StripSlots(886, 90)
+    local p = point(pool.active[1].axis)
+    assertEqual(p[4], K.STRIP_LABEL_PITCH / 2 - slot / 2, "pulled right, inside the content")
 end)
 
 test("insights charts: StripSlots widens the columns up to a cap, and never below 2 px", function()

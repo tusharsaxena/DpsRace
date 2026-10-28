@@ -846,7 +846,24 @@ Found in the screenshots (decided here):
     x Length; new SM-DR-IN12 (board tabs), IN13 (Consistency ranges), IN14 (headings, cards and strips
     beside LootHistory) and IN15 (dates). README badge 1045 to 1060.
     - Gate: 1060 passed, 1 skipped (exit 0); luacheck 0/0. Docs only, no code touched.
-- [ ] **V4** Review and fixes.
+- [x] **V4** Review and fixes.
+  - **Done notes (V4, 2026-10-28):** two review findings, both in the strip labels
+    (`modules/Results_InsightsCharts.lua`), now picked by the pure `Charts.StripLabels`.
+    - Thinning kept the earlier of two close labels, so in per-run mode the one-run 23 Oct took the
+      label and the twelve runs of 24 Oct read as 23 Oct. Each label now owns a block (its column up
+      to the next label), and the larger block wins, then the earlier one; a label shows only when it
+      is `K.STRIP_LABEL_PITCH` or more from every label already shown. Per-day strips label every
+      bucket, so their blocks tie and they thin from the left as before. This replaces the V1 note
+      that the second of two close labels is dropped.
+    - On a dense strip (about 64 days or more at the collapsed width) the first and last labels hung
+      past the content edge and were clipped. A label within half the pitch (20 px) of either edge
+      now moves in until it fits; the move is the anchor's x offset, and thinning measures the moved
+      positions. The width is taken as the pitch, not measured, since a day label ("26 Oct") is
+      about 30 px; the label sits slightly off its column at the ends.
+    - Tests: three new cases (the larger day wins, the end labels stay inside, the renderer applies
+      the offset) and the old thinning case updated to the new rule. `docs/module-map.md`,
+      `docs/testing.md`, `docs/test-cases.md` and the README badge (1063) updated.
+    - Gate: 1063 passed, 1 skipped (exit 0); luacheck 0/0; lizard -C 15 clean on the module.
 
 ### F: Finalize (only on the owner's go-ahead)
 

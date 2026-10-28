@@ -865,7 +865,7 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (55)
+### test_insights.lua (58)
 
 - insights charts: nothing above the host section reads NS or a client global but CreateFrame
 - insights charts: the header names the LootHistory source commit the port came from
@@ -885,7 +885,10 @@ Total.
 - insights charts: a stacked bar shows one segment per share, each hover naming its value
 - insights charts: a strip draws one colored column per bucket, its hover above the column
 - insights charts: a strip's labels are level, hung under the axis line, in the band it reserves
-- insights charts: a strip takes a fixed top, and drops a label too close to the last one shown
+- insights charts: a strip takes a fixed top, and drops a label too close to another one shown
+- insights charts: StripLabels keeps the label of the day with more columns, not the earlier one
+- insights charts: StripLabels keeps the end labels inside the content on a dense strip
+- insights charts: a strip shifts an end label by its offset, from under its column
 - insights charts: StripSlots widens the columns up to a cap, and never below 2 px
 - insights charts: a list panel caps at ten rows, sized to them, each hover stating its value
 - insights charts: a list row's click is the row's own, and a reused row forgets the last one
@@ -1311,7 +1314,7 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 55 |
+| test_insights.lua | 58 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1334,4 +1337,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1060** |
+| **Total** | **1063** |

@@ -635,10 +635,11 @@ function Ctx:renderLegend(pool, rows, y, w, pad, x0)
     return rowY - K.LEGEND_ROW_H - K.SECTION_GAP
 end
 
--- A strip column's label: level, centered under the column, its top a gap below the axis line, so
--- it sits in the band under the line and never reaches a column. (LootHistory rotates these and
--- places them by the measured string width; in game they crossed the line, plan step V-a.)
-local function placeAxisLabel(f, label)
+-- A strip column's label: level, centered under the column (shifted by `dx` at the strip's ends),
+-- its top a gap below the axis line, so it sits in the band under the line and never reaches a
+-- column. (LootHistory rotates these and places them by the measured string width; in game they
+-- crossed the line, plan step V-a.)
+local function placeAxisLabel(f, label, dx)
     if not label then
         f.axis:SetText("")
         f.axis:Hide()
@@ -646,7 +647,7 @@ local function placeAxisLabel(f, label)
     end
     f.axis:SetText(label)
     f.axis:ClearAllPoints()
-    f.axis:SetPoint("TOP", f, "BOTTOM", 0, -(K.STRIP_AXIS_GAP + K.STRIP_LABEL_GAP))
+    f.axis:SetPoint("TOP", f, "BOTTOM", dx or 0, -(K.STRIP_AXIS_GAP + K.STRIP_LABEL_GAP))
     f.axis:Show()
 end
 
@@ -668,6 +669,52 @@ function Charts.StripSlots(innerW, n)
     return slot, math.max(2, math.min(K.STRIP_BAR_MAX, slot - 2))
 end
 
+-- The labeled columns as blocks: each runs from its label to the column before the next label.
+local function labelBlocks(buckets)
+    local blocks, last = {}, nil
+    for i, b in ipairs(buckets) do
+        if b.label then
+            if last then last.size = i - last.i end
+            last = { i = i }
+            blocks[#blocks + 1] = last
+        end
+    end
+    if last then last.size = #buckets - last.i + 1 end
+    return blocks
+end
+
+local function clearOf(kept, x)
+    for _, k in ipairs(kept) do
+        if math.abs(x - k) < K.STRIP_LABEL_PITCH then return false end
+    end
+    return true
+end
+
+--- Which strip labels show, and how far each moves off its column's center. A label shows only
+--- K.STRIP_LABEL_PITCH or more from every other one shown, so two never collide; the larger block
+--- (the most columns up to the next label) wins, then the earlier one, so a one-run day never takes
+--- the label of the many-run day after it (plan step V4). A label is never wider than the pitch, so
+--- one within half of it of the content's edge moves in until it fits. Pure.
+--- @return table  { [bucket index] = x offset } for the labels shown
+function Charts.StripLabels(buckets, slot, innerW)
+    local half = K.STRIP_LABEL_PITCH / 2
+    local blocks = labelBlocks(buckets)
+    table.sort(blocks, function(a, b)
+        if a.size ~= b.size then return a.size > b.size end
+        return a.i < b.i
+    end)
+    local shown, kept = {}, {}
+    for _, blk in ipairs(blocks) do
+        local center = (blk.i - 0.5) * slot
+        local x = math.max(half, math.min(center, innerW - half))
+        if clearOf(kept, x) then
+            kept[#kept + 1] = x
+            shown[blk.i] = x - center
+        end
+    end
+    return shown
+end
+
 local function tallest(buckets, top)
     if top then return top end
     top = 1
@@ -679,8 +726,7 @@ end
 
 --- A strip of vertical columns, one per bucket: { count, label|nil, info (the hover: a string or
 --- lines), color|nil }. A column's height is its count over `top` (the largest count, at least 1,
---- when nil); a zero column is a faint stub. A label shows only K.STRIP_LABEL_PITCH or more past
---- the last one shown, so two never collide.
+--- when nil); a zero column is a faint stub. Charts.StripLabels picks the labels that show.
 --- @return number  the cursor under the strip and its labels
 function Ctx:renderStrip(pool, header, strip, buckets, y, w, pad, top)
     if #buckets == 0 then header:Hide(); strip:Hide(); return y end
@@ -691,7 +737,7 @@ function Ctx:renderStrip(pool, header, strip, buckets, y, w, pad, top)
     strip:SetSize(innerW, K.DAYSTRIP_H)
     strip:Show()
     local slot, barW = Charts.StripSlots(innerW, #buckets)
-    local lastLabel = -math.huge
+    local shown = Charts.StripLabels(buckets, slot, innerW)
     top = tallest(buckets, top)
     self:placeAxisLine(strip, slot * #buckets)
     for i, b in ipairs(buckets) do
@@ -705,9 +751,8 @@ function Ctx:renderStrip(pool, header, strip, buckets, y, w, pad, top)
         fillColor(f.fill, b.color or self.colors.bar)
         f.fill:SetAlpha(b.count == 0 and 0.12 or 0.9)
         f._tip = b.info
-        local room = b.label and x - lastLabel >= K.STRIP_LABEL_PITCH
-        if room then lastLabel = x end
-        placeAxisLabel(f, room and b.label or nil)
+        local dx = shown[i]
+        placeAxisLabel(f, dx and b.label or nil, dx)
     end
     return y - K.DAYSTRIP_H - K.STRIP_LABEL_H - K.SECTION_GAP
 end
