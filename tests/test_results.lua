@@ -1,7 +1,7 @@
 -- tests/test_results.lua — the Results window (modules/Results*.lua, spec §6.2): the run list's
 -- columns, filters and sorting, the run detail (breakdown, timing strip, flags, note, delete, share),
--- the Insights tab (its N1 placeholder: the empty state), the window chrome and its wide/narrow layouts, and how it
--- follows the store and the lifecycle.
+-- how the shell builds the Insights tab and shows its empty state, the window chrome and its wide/narrow
+-- layouts, and how it follows the store and the lifecycle.
 --
 -- Every case runs on a fresh instance with the widget recorder (tests/mock_widgets.lua) installed, so
 -- a label's text, a texture and a tooltip's lines can be read back. Runs are seeded straight into the
@@ -1153,8 +1153,8 @@ test("results: Share is grayed without a Share module; a row's right-click menu 
 end)
 
 -- ── the Insights tab (#12) ──────────────────────────────────────────────────────────────────────
--- N1 renames the Bests tab and drops its board; until N4 lands the tab, its pane is the empty state
--- and the run count alone.
+-- N1 renamed the Bests tab and dropped its board; the tab itself (the bar, the cards, the sections)
+-- is tests/test_insights.lua's. Here: how the shell builds it, counts it and shows its empty state.
 
 test("results: the Insights tab is built on first show, counts the runs and shows the empty state with none", function()
     local i = inst()
@@ -1170,9 +1170,11 @@ test("results: the Insights tab is built on first show, counts the runs and show
     local pane = assert(ui(i).panes.insights)
     assertTrue(pane.frame:IsShown())
     assertFalse(runsPane(i).frame:IsShown(), "the Runs tab still shows")
-    assertEqual(pane:Count(), 2, "a lost run never counts")
+    assertEqual(pane:Count(), 1, "Include incomplete starts off (D-11)")
     assertFalse(pane.empty:IsShown(), "the empty state over runs")
-    assertEqual(ui(i).footLeft.__text, "2 runs \194\183 Click a row for details \194\183 right-click for options")
+    assertEqual(ui(i).footLeft.__text, "1 run \194\183 Click a row for details \194\183 right-click for options")
+    pane:SetFilter("includeIncomplete", true)
+    assertEqual(pane:Count(), 2, "a lost run never counts")
     for _, id in ipairs({ "a", "inc", "gone" }) do i.NS.Recorder.Delete(id) end
     assertEqual(pane:Count(), 0)
     assertTrue(pane.empty:IsShown())

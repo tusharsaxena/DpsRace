@@ -221,10 +221,12 @@ test("results sizing: the Insights tab and the collapsed view's open detail resi
     assertTrue(i.R.ShowTab("insights"))
     local pane = u.panes.insights
     local layouts = spy(pane, "Layout")
+    local releases = spy(pane.ctx, "ReleaseAll")
     local grip = u.frame.resizeGrip
     grip:__fire("OnMouseDown", "LeftButton")
     drag(i.mocks, u.frame, 30, function(k) return 1344 + k, 560 + k end)
     assertEqual(layouts.n, 0, "the Insights tab is not laid out per frame")
+    assertEqual(releases.n, 0, "nor its sections rebound")
     assertEqual(pane.width, 1374 - 2, "but it is sized to the body")
     grip:__fire("OnMouseUp")
     assertEqual(layouts.n, 1)

@@ -6,7 +6,7 @@
 -- the hover text, the shrink-to-fit figure, the ranked palette), every renderer's geometry and colors,
 -- every hover stating its value, the legend under the bars' track, pooled widgets reused over two
 -- passes (the second pass builds nothing), the list rows' clicks, the stat card, and the DpsRace host.
--- The tab half (the filter bar, the layout, the sections) joins this file in N4.
+-- The tab half (modules/Results_Insights.lua: the filter bar, the cards, the sections) follows it.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil, assertErrorMatches =
@@ -444,4 +444,342 @@ test("insights charts: the DpsRace host's tooltip is a gold title over bulleted 
     hover(pool.active[1])
     assertEqual(tip.lines[1], "Beast Mastery:  417.2k")
     assertNil(tip.lines[2])
+end)
+
+-- ══ the tab half (modules/Results_Insights.lua) ═════════════════════════════════════════════════
+-- The tab in the Results window: built on its first show, the filter bar (faceted dropdowns with
+-- counts, the two checks, Save / Reset / Clear on profile.views.insights), the cards and the
+-- sections drawn from one stats pass, the section rows' clicks and menus, the empty state, the sample
+-- history in test mode, a load with no library, and a resize that rebinds nothing.
+
+local NOW = os.time()
+local HOUR, DAY = 3600, 86400
+
+local CHARS = {
+    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+}
+
+local function copy(t)
+    if type(t) ~= "table" then return t end
+    local out = {}
+    for k, v in pairs(t) do out[k] = copy(v) end
+    return out
+end
+
+--- A stored-shape run: a complete 3:00 cleave race by Lanfear. `fields` replaces any top-level field;
+--- `char` names one of CHARS.
+local function mkRun(id, fields)
+    local run = {
+        id = id, schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = NOW - HOUR,
+        race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
+        char = copy(CHARS.lan),
+        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        where = { mapID = 2393, zone = "Silvermoon City", instanceType = "none" },
+        result = { damage = 27000000, dps = 150000, sessionDuration = 190, tail = 9.2, combatEnd = 7.3 },
+        flags = { lateCasts = {}, reloaded = false, died = false },
+        spells = { { id = 29722, dmg = 7000000, dps = 1 }, { id = 116858, dmg = 3000000, dps = 1 } },
+        note = "",
+    }
+    for k, v in pairs(fields or {}) do run[k] = v end
+    if type(run.char) == "string" then run.char = copy(CHARS[run.char]) end
+    return run
+end
+
+-- Two Destruction cleave 3:00 runs (the second a new best, +6.7%), a Fire boss 1:00 run with one
+-- counted late cast (Incinerate) and one the defaults ignore (Feign Death), an incomplete run and a
+-- lost one.
+local function fixtureRuns()
+    return {
+        mkRun("a", { date = NOW - 3 * DAY }),
+        mkRun("b", { date = NOW - 2 * DAY, result = { damage = 28800000, dps = 160000, tail = 4.0 } }),
+        mkRun("c", { date = NOW - DAY, char = "mage", race = { length = 60, grace = 1.0 },
+                     target = { npcID = 1, name = "Golem", category = "boss" },
+                     result = { damage = 7200000, dps = 120000, tail = 25 },
+                     flags = { lateCasts = { { t = 1.6, spellID = 29722 }, { t = 3.0, spellID = 5384 } } } }),
+        mkRun("d", { status = "incomplete", race = { length = 60, grace = 1.0 },
+                     result = { damage = 1, dps = 1, endedAt = 41 } }),
+        mkRun("e", { status = "lost", date = NOW - 2 * HOUR, result = nil }),
+    }
+end
+
+--- A fresh instance with the widget recorder, `runs` stored, and the window open on Insights.
+local function tab(runs, opts)
+    opts = opts or {}
+    local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
+        if not opts.bare then Widgets.install(m) end
+        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+    end }
+    for _, run in ipairs(runs or fixtureRuns()) do i.NS.db.global.runs[run.id] = run end
+    i.NS.Bests.Invalidate()
+    i.R = i.NS.Results
+    if opts.closed then return i end
+    assertTrue(i.R.ShowTab("insights"))
+    i.ui = i.R.__ui()
+    i.pane = assert(i.ui.panes.insights)
+    return i
+end
+
+local function labels(options)
+    local out = {}
+    for n, o in ipairs(options or {}) do out[n] = o.label end
+    return table.concat(out, "|")
+end
+
+local function active(pane, name)
+    return pane.ctx:Pool(name).active
+end
+
+test("insights tab: built on its first show, its tab label gold while it shows", function()
+    local i = tab(nil, { closed = true })
+    i.R.Show()
+    local u = i.R.__ui()
+    assertNil(u.panes.insights, "built before it was shown")
+    assertTrue(i.R.ShowTab("insights"))
+    assertTrue(u.panes.insights.frame:IsShown())
+    assertEqual(u.tabs.insights.label.__color[2], i.NS.Style.GOLD[2], "the active tab is gold")
+    assertEqual(u.tabs.runs.label.__color[1], 0.7, "the idle tab is gray")
+end)
+
+test("insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)", function()
+    local i = tab()
+    local dd = i.pane.dropdowns
+    assertEqual(labels(dd.char._options), "All characters (3)|Kaosmage (1)|Lanfear (2)")
+    assertEqual(labels(dd.spec._options), "All specs (3)|Destruction (2)|Fire (1)")
+    assertEqual(labels(dd.length._options), "Any length (3)|1:00 (1)|3:00 (2)")
+    assertEqual(dd.date._options[1].label, "All time (3)")
+    assertEqual(dd.char._value, "all")
+    assertFalse(i.pane.filters.cleanOnly)
+    assertFalse(i.pane.filters.includeIncomplete, "Include incomplete starts off (D-11)")
+    assertEqual(i.pane:Count(), 3, "the lost and the incomplete run left out")
+    assertEqual(i.ui.footLeft.__text, "3 runs \194\183 Click a row for details \194\183 right-click for options")
+end)
+
+test("insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)", function()
+    local i = tab()
+    local pane = i.pane
+    assertEqual(pane.cards.runs.value.__text, "3")
+    assertTrue(pane:SetFilter("spec", 63))
+    assertEqual(pane:Count(), 1)
+    assertEqual(pane.cards.runs.value.__text, "1", "the card redrawn")
+    assertEqual(i.ui.footLeft.__text, "1 run \194\183 Click a row for details \194\183 right-click for options",
+        "the footer's count follows the filter")
+    assertEqual(labels(pane.dropdowns.length._options), "Any length (1)|1:00 (1)", "Fire raced 1:00 only")
+    assertEqual(labels(pane.dropdowns.spec._options), "All specs (3)|Destruction (2)|Fire (1)",
+        "a dropdown lists what the OTHER filters leave")
+    assertFalse(pane:SetFilter("group", "none"), "not an Insights filter")
+    -- A check through its click.
+    pane.checks.includeIncomplete:__fire("OnClick")
+    assertTrue(pane.filters.includeIncomplete)
+    pane:SetFilter("spec", "all")
+    assertEqual(pane:Count(), 4)
+end)
+
+test("insights tab: a selection left with no runs falls back to All; the one just changed never", function()
+    local i = tab()
+    local pane = i.pane
+    pane:SetFilter("char", "Kaosmage-Frostmourne")
+    assertEqual(pane:Count(), 1)
+    pane:SetFilter("spec", 267)
+    assertEqual(pane.filters.spec, 267, "kept: the dropdown just changed")
+    assertEqual(pane.filters.char, "all", "Kaosmage raced no Destruction")
+    assertEqual(pane:Count(), 2)
+    assertNil(i.NS.db.profile.views, "a fallback never writes the saved view")
+end)
+
+test("insights tab: the cards state the eight figures, each hover naming its value", function()
+    local i = tab()
+    local c = i.pane.cards
+    assertEqual(c.runs.value.__text, "3")
+    assertEqual(c.time.value.__text, "7m 00s", "3:00 + 3:00 + 1:00")
+    assertEqual(c.best.label.__text, "Best DPS \194\183 Destruction \194\183 Cleave \194\183 3:00")
+    assertEqual(c.clean.value.__text, "66.7%", "the Incinerate flags its run; the Feign Death does not")
+    assertEqual(c.newBests.value.__text, "1")
+    assertEqual(c.people.value.__text, "2 / 2")
+    assertEqual(c.avg.value.__text, "97.9%", "(150 / 160 + 1 + 1) / 3")
+    assertEqual(c.clean.frame._tip[2], "2 of 3 runs carry no flag.", "the hover states the count")
+    assertEqual(c.runs.frame._tip[1], "Races run")
+    -- One spec alone is one board: the raw average.
+    i.pane:SetFilter("spec", 267)
+    assertEqual(c.avg.label.__text, "Avg DPS")
+    assertEqual(c.avg.value.__text, i.NS.Format.Number(155000))
+end)
+
+test("insights tab: a section with nothing to show hides; Top Spells needs one spec", function()
+    local i = tab()
+    local pane, H = i.pane, i.pane.headers
+    assertTrue(H.progression:IsShown())
+    assertTrue(H.specs:IsShown())
+    assertFalse(H.consistency:IsShown(), "no board has three runs")
+    assertTrue(H.chars:IsShown())
+    assertTrue(H.tail:IsShown())
+    assertTrue(H.spells:IsShown())
+    assertTrue(pane.hint:IsShown())
+    assertEqual(pane.hint.__text, "Pick one spec to see its top spells.")
+    assertTrue(pane.panels.late:IsShown())
+    assertTrue(pane.panels.bests:IsShown())
+    pane:SetFilter("spec", 267)
+    assertFalse(pane.hint:IsShown())
+    assertEqual(#active(pane, "spells"), 2, "Incinerate and Chaos Bolt")
+    assertFalse(pane.panels.late:IsShown(), "no late cast in these runs")
+    assertEqual(H.specs.__text, "Spec Comparison (Cleave \194\183 3:00)")
+    pane:SetFilter("spec", 63)
+    assertFalse(pane.panels.bests:IsShown(), "one run sets no new best")
+end)
+
+test("insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged", function()
+    local i = tab()
+    local rows = active(i.pane, "late")
+    assertEqual(#rows, 2)
+    assertEqual(rows[1].name.__text, "Incinerate")
+    assertEqual(rows[2].name.__text, "Feign Death (ignored)")
+    local dim = i.NS.ResultsTable.COLORS.dim
+    assertEqual(rows[2].name.__color[1], dim[1])
+    assertTrue(rows[1]._tip[3]:find("Right%-click to ignore") ~= nil)
+end)
+
+test("insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab", function()
+    local i = tab()
+    local M = i.mocks
+    local row = active(i.pane, "late")[1]
+    row:GetScript("OnMouseUp")(row, "LeftButton")
+    assertNil(M.__lastMenu, "a left click opens nothing")
+    row:GetScript("OnMouseUp")(row, "RightButton")
+    local menu = assert(M.__lastMenu)
+    assertEqual(menu.titles[1], "Late casts")
+    menu:Click("Ignore Incinerate for late casts")
+    assertTrue(i.NS.LateIgnore.Set()[29722] == true)
+    -- Both ignored now, Feign Death (5384) first on the tie.
+    local rows = active(i.pane, "late")
+    assertEqual(rows[2].name.__text, "Incinerate (ignored)", "the tab redrawn on the list's change")
+    assertEqual(i.pane.cards.clean.value.__text, "100.0%")
+    rows[2]:GetScript("OnMouseUp")(rows[2], "RightButton")
+    M.__lastMenu:Click("Stop ignoring Incinerate")
+    assertEqual(active(i.pane, "late")[1].name.__text, "Incinerate")
+end)
+
+test("insights tab: a Recent New Bests row opens its run on the Runs tab; a right-click its row menu", function()
+    local i = tab()
+    local rows = active(i.pane, "bests")
+    assertEqual(#rows, 1)
+    assertTrue(rows[1].count.__text:find("+6.7%", 1, true) ~= nil)
+    rows[1]:GetScript("OnMouseUp")(rows[1], "RightButton")
+    assertTrue(i.mocks.__lastMenu ~= nil and i.mocks.__lastMenu:Find("Add Note") ~= nil, "the run's row menu")
+    rows[1]:GetScript("OnMouseUp")(rows[1], "LeftButton")
+    assertEqual(i.R.Tab(), "runs")
+    assertEqual(i.R.Selected(), "b")
+end)
+
+test("insights tab: with no run the empty state shows, and every card and section hides", function()
+    local i = tab({})
+    local pane = i.pane
+    assertEqual(pane:Count(), 0)
+    assertTrue(pane.empty:IsShown())
+    assertEqual(pane.empty.__text, "No runs match these filters.")
+    assertFalse(pane.cards.runs.frame:IsShown())
+    assertFalse(pane.headers.progression:IsShown())
+    assertFalse(pane.panels.late:IsShown())
+    i.NS.db.global.runs.a = mkRun("a")
+    i.NS.SendBus(i.NS.MSG.RUNS_CHANGED)
+    assertFalse(pane.empty:IsShown(), "the store's change redrew the tab")
+    assertTrue(pane.cards.runs.frame:IsShown())
+end)
+
+test("insights tab: Save, Clear and Reset keep the view at profile.views.insights", function()
+    local i = tab()
+    local pane = i.pane
+    pane:SetFilter("char", "Lanfear-Frostmourne")
+    pane:SetFilter("cleanOnly", true)
+    assertEqual(pane:Count(), 2)
+    assertTrue(pane:SaveView())
+    local saved = i.NS.db.profile.views.insights
+    assertEqual(saved.filters.char, "Lanfear-Frostmourne")
+    assertTrue(saved.filters.cleanOnly)
+    pane:SetFilter("char", "all")
+    pane:ClearView()
+    assertEqual(pane.filters.char, "Lanfear-Frostmourne", "Clear returns to the saved view")
+    -- A new build opens on it.
+    local again = i.NS.ResultsInsights.Build(i.ui.body, {})
+    assertEqual(again.filters.char, "Lanfear-Frostmourne")
+    assertTrue(pane:ResetView())
+    assertNil(i.NS.db.profile.views, "the saved view deleted")
+    assertEqual(pane.filters.char, "all")
+    assertFalse(pane.filters.cleanOnly)
+end)
+
+test("insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored", function()
+    local i = tab({})
+    assertTrue(i.NS.Preview.Start())
+    local pane = i.pane
+    assertTrue(pane:Count() > 0, "no sample run on the tab")
+    assertFalse(pane.empty:IsShown())
+    local late = pane.stats.lateBySpell
+    assertEqual(late.ignored[1] and late.ignored[1].id, 8690, "the sample's late Hearthstone, ignored")
+    assertTrue(#late.counted > 0, "the Flagged sample's counted casts")
+    assertTrue(#active(pane, "bests") > 0)
+    for _, name in ipairs({ "progression", "specs", "chars", "charTarget", "lengths", "spells", "perDay", "tail" }) do
+        assertTrue(pane.headers[name]:IsShown(), name .. " drew nothing from the samples")
+    end
+    -- A late-cast row offers no menu on a sample (D-7).
+    local row = active(pane, "late")[1]
+    row:GetScript("OnMouseUp")(row, "RightButton")
+    assertNil(i.mocks.__lastMenu)
+    assertFalse(pane:SaveView())
+    assertFalse(pane:ResetView())
+    assertNil(i.NS.db.profile.views)
+    assertEqual(next(i.NS.db.global.runs), nil)
+    i.NS.Preview.Stop()
+    assertEqual(pane:Count(), 0, "back on the empty store")
+end)
+
+test("insights tab: a load with no library draws no dropdown, and the tab still works", function()
+    local i = tab(nil, { libFiles = {}, bare = true })
+    assertEqual(next(i.pane.dropdowns), nil, "a dead dropdown was drawn")
+    assertEqual(i.pane:Count(), 3)
+    assertTrue(i.pane:SetFilter("spec", 63))
+    assertEqual(i.pane:Count(), 1)
+end)
+
+test("insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing", function()
+    local i = tab()
+    local pane = i.pane
+    local released, made = 0, 0
+    local release = pane.ctx.ReleaseAll
+    pane.ctx.ReleaseAll = function(...) released = released + 1; return release(...) end
+    local base = i.mocks.CreateFrame
+    i.mocks.CreateFrame = function(...) made = made + 1; return base(...) end
+    pane:Resize(1342, 700)
+    assertEqual(released, 0, "Resize released the pools")
+    assertEqual(made, 0)
+    assertEqual(pane.barH, 32, "one row across the expanded body")
+    pane:Layout(1342, 700)
+    assertEqual(released, 1)
+    assertEqual(made, 0, "a second layout pass builds no frame")
+end)
+
+test("insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge", function()
+    local Ins = tab(nil, { closed = true }).NS.ResultsInsights
+    local narrow = Ins.BarPlan(902)
+    assertFalse(narrow.oneRow, "the collapsed body (904 - 2) takes two rows")
+    assertEqual(narrow.dropdowns.date + narrow.widths.date, 902 - 8, "the dropdowns stretch to the margin")
+    assertEqual(narrow.buttons.clear, 902 - 8, "Clear under the last dropdown's right edge")
+    assertTrue(narrow.checks.includeIncomplete + 128 < narrow.buttons.save - 52, "no overlap on the second row")
+    local wide = Ins.BarPlan(1342)
+    assertTrue(wide.oneRow)
+    assertEqual(wide.buttons.clear, 1342 - 8)
+    local least = Ins.BarPlan(nil)
+    assertEqual(least.widths.char, 110, "no width: the least widths")
+end)
+
+test("insights tab: the wheel scrolls the content, clamped to it", function()
+    local i = tab()
+    local pane = i.pane
+    pane:Layout(902, 300)
+    assertTrue(pane.contentH > pane.viewH, "the sections run past a short window")
+    pane:Scroll(-1)
+    assertEqual(pane.scroll, 40)
+    pane:Scroll(1000)
+    assertEqual(pane.scroll, 0)
+    pane:Scroll(-1000)
+    assertEqual(pane.scroll, pane.contentH - pane.viewH)
 end)

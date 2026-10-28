@@ -608,7 +608,7 @@ upstream change). None is ratified by this plan.
     - TOC: `modules\Results_InsightsCharts.lua` sits between `Results_InsightsData` and `Results_Insights`.
       `.luacheckrc` gives it `GameTooltip` (the host's tooltip). The suite is `tests/test_insights.lua`,
       22 cases, in `tests/run.lua` after `test_insights_data`; N4 adds the tab half to it.
-- [ ] **N4 Tab, filter bar and layout.**
+- [x] **N4 Tab, filter bar and layout.**
   - New `modules/Results_Insights.lua` (`NS.ResultsInsights`): `Build(parent, hooks{open, menu, count})`
     returning the view contract (`frame`, `Layout`, `Resize`, `Refresh`, `Count`, `SetFilter`). Filter bar
     with `NS.MakeDropdown` (Character 110, Spec 96, Target 96, Length 88, Date 100), the two checks
@@ -633,6 +633,36 @@ upstream change). None is ratified by this plan.
     round trip; test mode sample filled without Save; degraded load (`libFiles={}`) draws no dropdowns and no
     error; `Resize` does not rebind pools; `test_sizing.lua` drag case. Add the new suites to `tests/run.lua`.
     Gate green, complexity suite clean.
+  - **Done notes (N4, 2026-10-28), where the code differed from the plan:**
+    - The bar does not fit one row at the collapsed minimum: the least widths, the two checks and the
+      three buttons need 928 px against the 902 px body. `Insights.BarPlan(width)` takes one row when
+      everything fits (the expanded window) and two rows otherwise (the Runs bar's collapsed shape: the
+      checks and Save / Reset / Clear on the second row, the buttons under the last dropdown), and the
+      dropdowns stretch to the right margin either way.
+    - No receiver of its own: the shell already redraws the shown tab on `RUN_SAVED`, `RUNS_CHANGED`, a
+      `SETTINGS_CHANGED` on `race.lateIgnore` or `"profile"`, and a source swap (test mode, a sim), so
+      `Refresh` re-reads `ResultsSource.All()` and the shell lays it out. A filter or view change
+      redraws through `View:Redraw`.
+    - `Count` is the filtered count now, so with Include incomplete off by default (D-11) the N1 case in
+      `test_results.lua` counts 1 run, then 2 with the check on.
+    - The footer's count follows a filter change at once: the shell's Insights `count` hook calls
+      `footer()` (forward-declared). The Runs tab's hook does not, so its footer count still waits for
+      the next shell redraw after a filter change. That predates this branch; left for R.
+    - Section G's right-click calls `LateIgnore.Menu` over a stand-in run holding that one cast, so it
+      offers Ignore or Stop ignoring exactly as the result card does; never on a sample (D-7), never for
+      a cast with no spell ID (D-5). The ignored rows are tagged "(ignored)" and dimmed.
+    - Section A buckets by day above 60 runs (each day's average). G and K are full-width list panels;
+      H shows its heading and a hint line when the runs are not one spec (or carry no breakdown).
+    - A selection with no runs falls back in the live filters only; `View:SaveView` saves what shows.
+      Save and Reset refuse while the samples show, with the Runs tab's line.
+    - `Results_InsightsCharts.lua`: a strip's axis label reads `GetStringWidth` as a number only, or 0,
+      so a client (or the bare harness) that answers something else does not break the layout.
+    - The sample history gained one run (`MockRuns.HISTORY`, last): a Destruction cleave 2:00 run with
+      a late Hearthstone (8690), which the defaults ignore. The Flagged sample keeps its counted casts.
+    - Tests: 16 tab cases in `tests/test_insights.lua` (the plan's list, plus the bar plan and the
+      wheel), the `test_sizing.lua` Insights drag case now also pins that no pool is released per
+      frame. No new suite file, so `tests/run.lua` is unchanged. The optional perf scenario was not
+      added.
 - [ ] **N5 Docs and smoke rows, then push.**
   - README (replace the Bests sentence with an Insights paragraph, slash table), `docs/ARCHITECTURE.md`
     (:189 and the module list), `docs/module-map.md` (:74 out, three rows in), `docs/data-flow.md` (:424,

@@ -176,7 +176,8 @@ modules\Results_InsightsData.lua
 # The Insights tab's chart widgets (#12), ported from LootHistory and drawn through a host table: reads
 # NS.Style, NS.ResultsTable and NS.Pool at CALL time only (Charts.Host).
 modules\Results_InsightsCharts.lua
-# The Insights tab (#12): captures NS.ResultsTable at FILE SCOPE; the shell builds it at CALL time.
+# The Insights tab (#12): captures NS.ResultsTable and NS.Format at FILE SCOPE; reaches its data and
+# chart halves (above) at CALL time, and the shell builds it at CALL time.
 modules\Results_Insights.lua
 # LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
 # through core\Bus.lua, and reads NS.defaults (defaults\Profile.lua) for its default size.

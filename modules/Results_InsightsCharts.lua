@@ -512,7 +512,8 @@ local function placeAxisLabel(f, label, barW)
         return
     end
     f.axis:SetText(label)
-    local tw = f.axis:GetStringWidth() or 0
+    local tw = f.axis:GetStringWidth()
+    tw = type(tw) == "number" and tw or 0
     f.axis:ClearAllPoints()
     f.axis:SetPoint("CENTER", f, "BOTTOMLEFT", barW / 2 + K.LABEL_X_ADJUST,
         -(tw / 2) - K.STRIP_AXIS_GAP - K.STRIP_LABEL_GAP)

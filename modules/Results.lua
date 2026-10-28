@@ -125,7 +125,7 @@ local function share(r)
     if r and canShare() then NS.Share.Prompt(r) end
 end
 
-local layout, resize, renderTab, renderDetail
+local layout, resize, renderTab, renderDetail, footer
 
 local function selectRun(r)
     selected = r and r.id or nil
@@ -153,7 +153,11 @@ local function buildTab(name)
         pane = NS.ResultsInsights.Build(ui.body, {
             open = function(r) Results.ShowRun(r.id) end,
             menu = function(r, row) Results.RowMenu(r, row) end,
-            count = function(text) ui.insightsCount = text end,
+            -- A filter change redraws the footer's count at once (the shell's own redraw does too).
+            count = function(text)
+                ui.insightsCount = text
+                if tab == "insights" then footer() end
+            end,
         })
     end
     ui.panes[name] = pane
@@ -423,7 +427,7 @@ local function paintTabs()
     end
 end
 
-local function footer()
+function footer()
     -- The tab's run count before the hint.
     local count = (tab == "runs" and ui.runsCount) or (tab == "insights" and ui.insightsCount)
     ui.footLeft:SetText(count and (count .. " \194\183 " .. HINT) or HINT)
