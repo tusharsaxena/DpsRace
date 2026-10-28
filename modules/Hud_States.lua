@@ -837,6 +837,20 @@ local function stopButtons(body)
     body.w.stopNow, body.w.cancel = links[1], links[2]
 end
 
+-- How many of the race's late casts so far count (the ignore list's are left out, #8) and the first
+-- counted one's offset. Filtered here rather than in modules/Hud.lua: test mode's and the sim's STOP
+-- view (modules/MockRuns.lua) hands its raw list straight to this body.
+local function countedLate(list)
+    local set, n, first = NS.LateIgnore.Set(), 0, nil
+    for _, cast in ipairs(type(list) == "table" and list or {}) do
+        if not NS.LateIgnore.IsIgnored(cast.spellID, set) then
+            n = n + 1
+            first = first or cast.t
+        end
+    end
+    return n, first or 0
+end
+
 -- STOP: the buzzer, the tail updating live, late casts so far, the grace (screen 05).
 function Builders.stop(parent)
     local body = newBody(parent, "stop")
@@ -859,17 +873,17 @@ function Builders.stop(parent)
         setStopFigures(self.w, v)
         setEnabled(self.w.stopNow, v.stopNow ~= true)
         -- Redrawn at 4 Hz while combat may hold for minutes: the chips and the note are rebuilt
-        -- only when what they say (the late casts, the grace) changed.
-        local late, grace = v.lateCasts or {}, v.grace or 0
-        local first = late[1] and late[1].t or 0
-        local key = ("%d|%.1f|%.1f"):format(#late, first, grace)
+        -- only when what they say (the counted late casts, the grace) changed.
+        local late, first = countedLate(v.lateCasts)
+        local grace = v.grace or 0
+        local key = ("%d|%.1f|%.1f"):format(late, first, grace)
         if key == self.shownKey then return end
         self.shownKey = key
         local list = {}
-        if #late == 1 then
+        if late == 1 then
             list[1] = { text = L["1 late cast \194\183 +%.1fs"]:format(first), color = C.amber }
-        elseif #late > 1 then
-            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(#late, first), color = C.amber }
+        elseif late > 1 then
+            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(late, first), color = C.amber }
         end
         list[#list + 1] = { text = L["Grace %.1fs"]:format(grace), color = C.info }
         self.w.chips:Set(list)
@@ -960,10 +974,11 @@ function Builders.waiting(parent)
     return body
 end
 
--- A flag's short chip label (the full text is its tooltip).
+-- A flag's short chip label (the full text is its tooltip), from the run and its flag (the late
+-- casts' count is the counted ones, Scoring.Flags).
 local FLAG_CHIP = {
-    lateCasts = function(run)
-        local n = #run.flags.lateCasts
+    lateCasts = function(_, flag)
+        local n = flag.count
         return n == 1 and L["1 late cast"] or L["%d late casts"]:format(n)
     end,
     restarted = function(run) return L["Restarted +%.1fs"]:format(run.flags.restartedAt) end,
@@ -988,7 +1003,7 @@ function States.FlagChips(run)
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
         local skip = flag.key == "died" and run.status == "incomplete"
         local short = FLAG_CHIP[flag.key]
-        if short and not skip then list[#list + 1] = { text = short(run), tip = flag.text } end
+        if short and not skip then list[#list + 1] = { text = short(run, flag), tip = flag.text } end
     end
     return list
 end

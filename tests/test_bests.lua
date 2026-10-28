@@ -126,6 +126,16 @@ test("bests: the cache is invalidated by RUN_SAVED and keeps cleanOnly apart", f
     assertEqual(NS.Bests.Board({ cleanOnly = true })["267|boss|30"].id, "a")
 end)
 
+test("bests: a run flagged only by an ignored spell joins the clean board, and leaves it on Unignore", function()
+    local NS = fresh()
+    local feign = { lateCasts = { { t = 1.4, spellID = 5384 } }, reloaded = false, died = false }
+    storeAll(NS, { run("f", 1, 900, { flags = feign }), run("c", 2, 500) })
+    assertEqual(NS.Bests.Board({ cleanOnly = true })["267|boss|30"].id, "f", "Feign Death is ignored by default")
+    assertTrue(NS.LateIgnore.Unignore(5384))
+    assertEqual(NS.Bests.Board({ cleanOnly = true })["267|boss|30"].id, "c", "flagged again, off the clean board")
+    assertEqual(NS.Bests.Board()["267|boss|30"].id, "f", "the all-runs board never asks")
+end)
+
 -- ── Delta ───────────────────────────────────────────────────────────────────────────────────────
 
 test("bests: Delta reports new best and percentage vs previous best", function()

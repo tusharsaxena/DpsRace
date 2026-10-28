@@ -93,6 +93,7 @@ local SUITES = {
     "test_timeline",
     "test_scoring",
     "test_bests",
+    "test_late_ignore",
     "test_race",
     "test_race_resume",
     "test_format",

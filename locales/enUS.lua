@@ -385,6 +385,9 @@ L["A cast that starts later than this after the buzzer flags the run. 0 to 5 sec
 L["Damage-restart gap (seconds)"] = "Damage-restart gap (seconds)"
 L["Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."] =
     "Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."
+L["Late-cast ignore list"] = "Late-cast ignore list"
+L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] =
+    "Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."
 L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
 L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."

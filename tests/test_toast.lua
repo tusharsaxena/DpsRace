@@ -130,6 +130,15 @@ test("toast: a flagged run may toast, its flags on the last line as the result c
     assertTrue(w.flags:IsShown())
 end)
 
+test("toast: a new best whose late casts are all ignored shows no flags line and no ignored chip", function()
+    local f = fixture()
+    run(f, "old", 100, 100000)
+    local feign = run(f, "feign", 200, 120000, { flags = { lateCasts = { { t = 1.4, spellID = 5384 } } } })
+    result(f, feign)
+    assertEqual(shownKey(f), "feign")
+    assertFalse(f.toast:Frame().dpsRace.flags:IsShown())
+end)
+
 -- ── the lifetime ────────────────────────────────────────────────────────────────────────────────
 
 test("toast: it closes after Toast duration, plays its sound only with Play a sound on", function()

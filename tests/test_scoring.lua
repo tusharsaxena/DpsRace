@@ -90,6 +90,44 @@ test("scoring: Flags names late-cast spells through an optional resolver", funct
         "a raising resolver costs the name, never the flag")
 end)
 
+test("scoring: SplitLate keeps the recorded order and splits by the ignore set; a sealed cast always counts", function()
+    local S = T.NS.Scoring
+    local r = run("complete", { flags = {
+        lateCasts = { { t = 1.2, spellID = 5384 }, { t = 1.4, spellID = 29722 }, { t = 2.0 }, { t = 2.5, spellID = 1856 } },
+    } })
+    local function ids(list)
+        local out = {}
+        for i, c in ipairs(list) do out[i] = tostring(c.spellID) .. "@" .. c.t end
+        return table.concat(out, ",")
+    end
+    local counted, ignored = S.SplitLate(r, { [5384] = true, [1856] = true })
+    assertEqual(ids(counted), "29722@1.4,nil@2")
+    assertEqual(ids(ignored), "5384@1.2,1856@2.5")
+    counted, ignored = S.SplitLate(r, {})
+    assertEqual(#counted, 4, "none ignored")
+    assertEqual(#ignored, 0)
+    counted, ignored = S.SplitLate(r)
+    assertEqual(ids(counted), "29722@1.4,nil@2", "no set: the stored list (Feign Death and Vanish by default)")
+    assertEqual(#ignored, 2)
+    assertEqual(#S.SplitLate({}), 0, "no flags table")
+end)
+
+test("scoring: Flags flags only the counted late casts and carries the count, the casts and the ignored", function()
+    local S = T.NS.Scoring
+    local r = run("complete", { flags = {
+        lateCasts = { { t = 1.2, spellID = 5384 }, { t = 1.4, spellID = 29722 }, { t = 2.0, spellID = 17962 } },
+    } })
+    local f = S.Flags(r, nil, { [5384] = true })
+    assertEqual(f[1].key, "lateCasts")
+    assertEqual(f[1].count, 2)
+    assertEqual(f[1].text, "2 late casts (+1.4s, +2.0s)")
+    assertEqual(f[1].casts[1].spellID, 29722)
+    assertEqual(f[1].ignored[1].spellID, 5384)
+    assertEqual(#S.Flags(r, nil, { [5384] = true, [29722] = true, [17962] = true }), 0, "all ignored: clean")
+    assertEqual(S.Flags(r, nil, {})[1].count, 3, "none ignored")
+    assertEqual(S.Flags(r)[1].count, 2, "no set: Feign Death is on the default list")
+end)
+
 test("scoring: a clean complete run has no flags; lost stands alone at the end", function()
     local S = T.NS.Scoring
     assertEqual(#S.Flags(run("complete")), 0)

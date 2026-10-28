@@ -414,6 +414,16 @@ test("race: cast started 1.4s after buzzer is recorded as late with spellID", fu
     near(run.flags.lateCasts[3].t, 4.25)
 end)
 
+test("race: a late cast of an ignored spell is still stored raw; the list is read, never applied, at capture", function()
+    local f, run = stopping()
+    f.Race.OnCast("start", 5384, 131.4)          -- Feign Death, on the default ignore list
+    f.Race.OnCast("succeeded", 8690, 132.0)      -- Hearthstone
+    assertEqual(#run.flags.lateCasts, 2)
+    assertEqual(run.flags.lateCasts[1].spellID, 5384)
+    assertEqual(run.flags.lateCasts[2].spellID, 8690)
+    assertEqual(#f.NS.Scoring.Flags(run), 0, "neither flags the run")
+end)
+
 test("race: cast that started before buzzer and succeeded after is not late", function()
     local f, run = running(30)
     f:to(128.5)

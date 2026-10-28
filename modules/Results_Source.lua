@@ -96,6 +96,12 @@ function Source.Get(id)
     return nil
 end
 
+--- Drop the sample's bests boards without a redraw: the late-cast ignore list (#8) or the profile
+--- changed, so the clean-only board's flags may have (modules/Results.lua calls it, then redraws).
+function Source.Invalidate()
+    boards = {}
+end
+
 --- The bests board (NS.Bests.Board's shape).
 --- @param opts table|nil  { cleanOnly = true }
 function Source.Board(opts)

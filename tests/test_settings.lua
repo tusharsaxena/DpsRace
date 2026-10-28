@@ -72,6 +72,7 @@ local STORED = {
     ["toast.duration"]       = { "number", 8,       3,    30,    1 },
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
     ["global.usage.hidden"]  = { "string", "" },
+    ["race.lateIgnore"]      = { "string", "66,1856,5384,8690,58984,110959" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -413,6 +414,7 @@ test("settings: Race is a one-tab page along the race's timeline, in the pinned 
         "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
         "race.grace|Scoring rules|Late-cast grace (seconds)|false",
         "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
+        "race.lateIgnore|Late-cast ignore list|Late-cast ignore list|false",
     }, "\n"))
 end)
 

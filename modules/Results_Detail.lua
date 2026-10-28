@@ -95,6 +95,7 @@ Detail.KPI_H = KPI_H
 Detail.KPI_GAP = KPI_GAP
 local DASH = "\226\128\148"
 local RED = { 1.0, 0.32, 0.32 }
+local IGNORED = { 0.55, 0.55, 0.55 }   -- a late cast the ignore list leaves uncounted (#8)
 local CYAN = { 0.3, 0.85, 1.0 }
 local VIOLET = { 0.78, 0.5, 1.0 }
 -- Every line on the strip (grace, late cast, combat end, restart) is one shape: the combat-end line's
@@ -154,9 +155,11 @@ local function spanFor(marks, n)
     return math.max(2 * step, step * math.ceil(top / step))
 end
 
--- The after-buzzer half of the model: the axis span, then each mark as a fraction of it.
+-- The after-buzzer half of the model: the axis span, then each mark as a fraction of it. Every late
+-- cast has its tick; the ignore list's (#8) are marked `lateIgnored` and drawn gray.
 local function afterBuzzer(m, grace, result, flags)
     local tail, late = result.tail or 0, flags.lateCasts or {}
+    local set = NS.LateIgnore.Set()
     local marks, n = { grace, tail, result.combatEnd, flags.restartedAt }, 4
     for _, cast in ipairs(late) do
         n = n + 1
@@ -169,6 +172,7 @@ local function afterBuzzer(m, grace, result, flags)
     for i, cast in ipairs(late) do
         m.late[i] = clamp01((cast.t or 0) / m.span)
         m.lateAt[i] = cast.t
+        m.lateIgnored[i] = NS.LateIgnore.IsIgnored(cast.spellID, set)
     end
 end
 
@@ -181,7 +185,7 @@ function Detail.Timing(run)
     if type(run) ~= "table" or type(run.result) ~= "table" then return nil end
     local race, result, flags = run.race or {}, run.result, run.flags or {}
     local length = type(race.length) == "number" and race.length > 0 and race.length or 1
-    local m = { length = length, late = {}, lateAt = {} }
+    local m = { length = length, late = {}, lateAt = {}, lateIgnored = {} }
     if run.status == "incomplete" then
         m.raceFill = clamp01((result.endedAt or 0) / length)
         m.endInRace = m.raceFill
@@ -195,8 +199,8 @@ end
 
 --- The strip's pixel positions for `width`, from Timing's fractions: each segment's width, the
 --- buzzer (the boundary), the grace line, the tail band, each late-cast tick and the end of combat.
---- @return table { raceW, postW, postX, raceFill, buzzer, grace, tailX, tailW, late = {x}, combatEnd,
----                 restart, endInRace }
+--- @return table { raceW, postW, postX, raceFill, buzzer, grace, tailX, tailW, late = {x},
+---                 lateIgnored = {bool}, combatEnd, restart, endInRace }
 function Detail.Place(model, width)
     local gap = Detail.STRIP_GAP
     local raceW = math.floor((width - gap) * Detail.STRIP_RATIO / (Detail.STRIP_RATIO + 1))
@@ -211,6 +215,7 @@ function Detail.Place(model, width)
     p.combatEnd = post(model.combatEnd)
     p.restart = post(model.restart)
     for i, f in ipairs(model.late) do p.late[i] = post(f) end
+    p.lateIgnored = model.lateIgnored or {}
     return p
 end
 
@@ -218,9 +223,9 @@ end
 
 local STILL_COUNTS = "The run still counts and the flag shows on the board."
 
-local function lateLine(run)
+local function lateLine(run, flag)
     local parts = {}
-    for i, cast in ipairs(run.flags.lateCasts) do
+    for i, cast in ipairs(flag.casts) do
         local name = NS.HudBreakdown.SpellName(cast.spellID)
         parts[i] = L["%s started +%.1fs after the buzzer"]:format(tostring(name), cast.t or 0)
     end
@@ -228,8 +233,8 @@ local function lateLine(run)
         .. " " .. L[STILL_COUNTS]
 end
 
--- What each flag means, under its own line in the flags box (so none repeats that line); a flag
--- missing here (died) says it all on its line.
+-- What each flag means, under its own line in the flags box (so none repeats that line), from the run
+-- and its flag (the late casts' are the counted ones); a flag missing here (died) says it all on its line.
 local EXPLAIN = {
     lateCasts = lateLine,
     restarted = function() return L["After the quiet gap past the buzzer: a new pull."] .. " " .. L[STILL_COUNTS] end,
@@ -253,7 +258,7 @@ function Detail.FlagLines(run)
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
         local explain = EXPLAIN[flag.key]
         out[#out + 1] = { key = flag.key, main = flag.main or flag.text, sub = flag.sub or "",
-                          text = explain and explain(run) or "", full = flag.text }
+                          text = explain and explain(run, flag) or "", full = flag.text }
     end
     return out
 end
@@ -973,8 +978,11 @@ function Pane:layoutStripMarks(pos)
     placeMark(w.combatEnd, w.strip, pos.combatEnd or pos.endInRace, LINE_INSET)
     placeMark(w.restart, w.strip, pos.restart, LINE_INSET)
     NS.Pool.ReleaseAll(w.ticks)
-    for _, x in ipairs(pos.late) do
-        placeMark(NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end), w.strip, x, LINE_INSET)
+    for i, x in ipairs(pos.late) do
+        local tick = NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end)
+        local color = pos.lateIgnored[i] and IGNORED or RED
+        tick:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+        placeMark(tick, w.strip, x, LINE_INSET)
     end
 end
 

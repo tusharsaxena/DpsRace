@@ -266,7 +266,7 @@ upstream change). None is ratified by this plan.
 ### I: #8 late-cast ignore list
 
 - [x] **I0 Plan** (this file).
-- [ ] **I1 Core.**
+- [x] **I1 Core.**
   - New `defaults/Hearthstones.lua`: `NS.HEARTHSTONE_SPELLS` (the 59 IDs in Appendix A; the table starts with
     8690, 222695, 171253). Header comment with the wago.tools refresh recipe from Appendix A and the client
     build the export came from (look it up on wago.tools when writing the file; the research run did not record
@@ -322,6 +322,30 @@ upstream change). None is ratified by this plan.
     character that does not know it (resolved through the default candidates), "Hearthstone" (8690, not
     ambiguous), a variant ID kept on its own, and a variant dropped by Normalize while 8690 is present.
     Gate green.
+  - **Done notes (I1, 2026-10-28), where the code differed from the plan:**
+    - The schema row (`settings/Race.lua`, `race.lateIgnore`: path, subgroup, label, default, `skipRender`,
+      validate, normalize, tooltip, and its locale strings) landed in I1, not I2: `NS.SetByPath` refuses a
+      path with no row, so `Ignore`, `Unignore` and `Reset` cannot write without it. I2 still owes the
+      `afterGroup` IdList, the *Reset list* button, the page's `defaultsTooltip` and its own tests. Until
+      I2 the Race page draws the subgroup's heading with nothing under it. The pinned-row tests
+      (`test_settings.lua`, `test_surface_parity.lua` PAGE_ROWS 28) were updated here.
+    - TOC: `NS.Helpers` is published by `settings/OptionsSetup.lua`, which loads after every module, so
+      `modules\LateIgnore.lua` cannot sit "after Helpers". It sits right before `modules\Scoring.lua` and
+      reaches `NS.Helpers` at call time only. `defaults\Hearthstones.lua` follows `defaults\Dummies.lua`.
+    - The client build: wago.tools served Retail 12.1.5.70575 on 2026-10-28 (live since 2026-10-23); the
+      header records it. 49493 and 188816 rechecked: no ItemEffect row casts either, and their
+      ChargeCategory is 0, so rule 2 already leaves them out.
+    - `Results_Source.lua` has no bus receiver, so the sample boards cache is dropped by a new
+      `Source.Invalidate()` that `Results.lua`'s SETTINGS_CHANGED receiver calls before it redraws.
+    - The Results detail's gray ticks are drawn here (`Pane:layoutStripMarks`, `Detail.Place` carries
+      `lateIgnored`); I3 still owes the tick tip's "ignored, so no flag" text.
+    - `Scoring.IgnoredText` (D-6a) is left to I3, with the tooltip sites that read it.
+    - `Scoring.Flags` was CCN 18 before this step; the late flag and the shared-session text moved into
+      local helpers, so it is under 15 now. Four functions this step did not touch stay above 15
+      (`Hud_Appearance color`, the result body's `Update` in `Hud_States.lua`, `Usage.KnownItems`,
+      `View.ApplyView`).
+    - The STOP body's count case is in `test_hud.lua` (it needs the race fixture); `.luacheckrc` gained a
+      per-file `C_Spell` read for `modules/LateIgnore.lua`.
 - [ ] **I2 Settings row and slash.**
   - `settings/Race.lua`: row `{ path = "race.lateIgnore", page = "race", group = RACE,
     subgroup = L["Late-cast ignore list"], type = "string", skipRender = true, validate, normalize, tooltip }`.

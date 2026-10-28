@@ -87,6 +87,8 @@ defaults\Profile.lua
 # LOAD-BEARING: publishes NS.Dummies and reads NS.L at FILE SCOPE (the category labels); calls
 # NS.Secrets at CALL time only.
 defaults\Dummies.lua
+# Every hearthstone variant's spell ID (#8): data, read by modules\LateIgnore.lua at FILE SCOPE.
+defaults\Hearthstones.lua
 
 # Modules -- conventional order: each reaches the others at CALL time, except as noted.
 # LOAD-BEARING: publishes NS.Meter and resolves the meter enums at FILE SCOPE; first, so every later
@@ -98,8 +100,14 @@ modules\Loadouts.lua
 # The stats a run was raced with (#17): read by Recorder at CALL time (the arm).
 modules\Stats.lua
 modules\Timeline.lua
+# The late-cast ignore list (#8). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua) and
+# NS.HEARTHSTONE_SPELLS (defaults\Hearthstones.lua) at FILE SCOPE; Scoring reads it at CALL time, and
+# settings\Race.lua names its PATH at FILE SCOPE. It reaches NS.Helpers (settings\OptionsSetup.lua) at
+# CALL time only.
+modules\LateIgnore.lua
 modules\Scoring.lua
-# LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED) at FILE SCOPE through core\Bus.lua.
+# LOAD-BEARING: builds its bus receiver (RUN_SAVED / RUNS_CHANGED / SETTINGS_CHANGED) at FILE SCOPE
+# through core\Bus.lua.
 modules\Bests.lua
 # The damage chart's in-session store (#2): one opaque live total per bucket, by run id, never saved.
 modules\Slices.lua
@@ -124,8 +132,9 @@ modules\Hud_Breakdown.lua
 # CALL time.
 modules\Hud_Chart.lua
 modules\Hud_States.lua
-# LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT) at FILE SCOPE
-# through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its default size, and calls
+# LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT / RUNS_CHANGED /
+# SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its
+# default size, and calls
 # NS.HudStates.MinContentHeight() (modules\Hud_States.lua, which reaches modules\Hud_Breakdown.lua) for
 # its minimum height.
 modules\Hud.lua

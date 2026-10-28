@@ -873,6 +873,12 @@ do
             if windowShown() and path == "global.history.keepDays" then footer() end
             -- A hidden item leaves (or rejoins) every run's usage: the Used column and the detail.
             if path == NS.Usage.HIDDEN_PATH then onStoreChanged() end
+            -- The late-cast ignore list (#8), the profile's, re-scores every run's flags: the Status
+            -- column, Hide flagged, the detail and the sample's clean board.
+            if path == NS.LateIgnore.PATH or path == "profile" then
+                NS.ResultsSource.Invalidate()
+                onStoreChanged()
+            end
         end)
     end
 end

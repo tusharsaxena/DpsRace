@@ -1,7 +1,8 @@
 local _, NS = ...
 -- settings/Race.lua — the Race page (spec §6.3), one tab along the race's timeline: the default race
 -- length, auto-arm on a training dummy (#16), the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and
--- the scoring rules a new run freezes into its own record (grace, restart gap).
+-- the scoring rules a new run freezes into its own record (grace, restart gap), and the late-cast
+-- ignore list (#8), read when a run's flags are.
 
 local L = NS.L
 local D = NS.defaults.profile.race
@@ -67,6 +68,16 @@ NS.RegisterSchemaRows({
       min = 3, max = 15, step = 1,
       label = L["Damage-restart gap (seconds)"], default = D.restartGap,
       tooltip = L["Your damage going quiet for this long after the buzzer, then landing again, flags the run as damage restarted. 3 to 15 seconds. Applies to new runs. Saved runs keep the value they were raced with."] },
+
+    -- ── Late-cast ignore list ── (#8, modules/LateIgnore.lua) read when a run's flags are, never
+    -- frozen into a run. One plain string of spell IDs written WHOLE through the seam (the Usage tab's
+    -- hidden items' shape, settings/History.lua), so the CLI's get/set/reset and the page's Defaults
+    -- reach it like any row. The row carries skipRender: the tab draws it as the library's ID list.
+    { path = NS.LateIgnore.PATH, page = PAGE, group = RACE, subgroup = L["Late-cast ignore list"], type = "string",
+      label = L["Late-cast ignore list"], default = D.lateIgnore, skipRender = true,
+      validate = function(v) return NS.LateIgnore.Parse(v) ~= nil end,
+      normalize = function(v) return NS.LateIgnore.Normalize(v) end,
+      tooltip = L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] },
 })
 
 NS.RegisterTabbedPage({

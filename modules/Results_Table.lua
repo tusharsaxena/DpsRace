@@ -181,7 +181,7 @@ end
 
 -- Each flag's chip word on the bests board (mockup screen 09: "1 late").
 local SHORT = {
-    lateCasts = function(run) return L["%d late"]:format(#run.flags.lateCasts) end,
+    lateCasts = function(_, flag) return L["%d late"]:format(flag.count) end,
     restarted = function() return L["Restarted"] end,
     reloaded = function() return L["Reloaded"] end,
     sessionFromList = function() return L["By list"] end,
@@ -193,7 +193,7 @@ function Tbl.ShortFlags(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run)) do
         local short = SHORT[flag.key]
-        if short then out[#out + 1] = short(run) end
+        if short then out[#out + 1] = short(run, flag) end
     end
     return table.concat(out, " \194\183 ")
 end

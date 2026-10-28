@@ -3,8 +3,11 @@ local _, NS = ...
 -- the addon's own clock (§5.1), the quiet wait before the result read (§4.5) and a run's flag set in
 -- display order (§5.4).
 --
--- PURE. No WoW API and no meter value: every input is a plain number already stored on the run (the
--- damage comes from Meter.ReadSession after combat). NS.L is read at CALL time for the flag text.
+-- PURE but for one injected seam. No WoW API and no meter value: every input is a plain number already
+-- stored on the run (the damage comes from Meter.ReadSession after combat). NS.L is read at CALL time
+-- for the flag text, and so is the late-cast ignore list (#8, NS.LateIgnore.Set()) when a caller hands
+-- no `set`: a run keeps every late cast it recorded, and which of them count is decided here, each
+-- time, so a change to the list re-scores every stored run.
 -- Flags inform, never void: only `incomplete` and `lost` keep a run off the bests (modules/Bests.lua reads
 -- run.status for that, not this list).
 
@@ -49,8 +52,38 @@ local function lateEntry(cast, nameOf)
     return L["+%.1fs"]:format(cast.t or 0)
 end
 
+-- The ignore list in force: the caller's, else the stored one (an empty set before LateIgnore loads).
+local function ignoreSet(set)
+    if type(set) == "table" then return set end
+    local LI = NS.LateIgnore
+    return LI and LI.Set() or {}
+end
+
+--- A run's late casts split by the ignore list: the counted ones (they flag the run) and the ignored
+--- ones, each in the recorded order. A cast with no spell ID (sealed) is always counted.
+--- @param run table
+--- @param set table|nil  { [spellID] = true }; NS.LateIgnore.Set() when nil
+--- @return table counted
+--- @return table ignored
+function Scoring.SplitLate(run, set)
+    local counted, ignored = {}, {}
+    local flags = type(run) == "table" and run.flags
+    local list = type(flags) == "table" and flags.lateCasts
+    if type(list) ~= "table" then return counted, ignored end
+    set = ignoreSet(set)
+    for _, cast in ipairs(list) do
+        local id = type(cast) == "table" and cast.spellID
+        if type(id) == "number" and set[id] then
+            ignored[#ignored + 1] = cast
+        else
+            counted[#counted + 1] = cast
+        end
+    end
+    return counted, ignored
+end
+
 -- The late casts' flag: its text, then its count line and its offsets apart (the Results detail's
--- flags box draws those two as separate lines).
+-- flags box draws those two as separate lines). `list` is the counted casts.
 local function lateCastsText(list, nameOf)
     local L, parts = NS.L, {}
     for i, cast in ipairs(list) do parts[i] = lateEntry(cast, nameOf) end
@@ -59,28 +92,44 @@ local function lateCastsText(list, nameOf)
     return L["%d late casts (%s)"]:format(#list, joined), L["%d late casts"]:format(#list), joined
 end
 
+-- The lateCasts flag over the counted casts, or nil when none counts (the ignore list's never do).
+local function lateFlag(run, nameOf, set)
+    local counted, ignored = Scoring.SplitLate(run, set)
+    if #counted == 0 then return nil end
+    local text, main, sub = lateCastsText(counted, nameOf)
+    return { key = "lateCasts", text = text, main = main, sub = sub,
+             count = #counted, casts = counted, ignored = ignored }
+end
+
+-- The shared session's text: netted when the arm kept the session's damage to take off.
+local function sharedText(run)
+    local L = NS.L
+    local netted = type(run.race) == "table" and type(run.race.baseline) == "table"
+    return netted and L["Shared session: the damage it held at the arm was taken off"]
+        or L["Shared session: the total may include the fight before the arm"]
+end
+
 --- The run's flags as an array of { key, text, main?, sub? } (main and sub: the late casts' count
 --- line and their offsets, the text split in two), in the order: lateCasts, restarted, reloaded,
 --- sessionFromList (spec §9: the session ID was never captured), sharedSession (the pull carried on a
 --- session from before the arm, modules/Race.lua share), died, incomplete, lost. `nameOf(spellID) -> name|nil` is optional: the caller (the UI) resolves spell
 --- names through C_Spell, so this file stays pure; without it a late cast shows its offset only.
-function Scoring.Flags(run, nameOf)
+--- The lateCasts flag is there only when a late cast is counted (Scoring.SplitLate under `set`), and
+--- also carries `count`, `casts` (the counted ones) and `ignored` (the rest). This is the one judge of
+--- flagged and clean: every reader goes through it, never the run's raw list.
+--- @param set table|nil  the ignore list as a set; NS.LateIgnore.Set() when nil
+function Scoring.Flags(run, nameOf, set)
     local L, out = NS.L, {}
     local flags = (type(run) == "table" and type(run.flags) == "table") and run.flags or {}
     local function add(key, text, main, sub) out[#out + 1] = { key = key, text = text, main = main, sub = sub } end
-    if type(flags.lateCasts) == "table" and #flags.lateCasts > 0 then
-        add("lateCasts", lateCastsText(flags.lateCasts, nameOf))
-    end
+    local late = lateFlag(run, nameOf, set)
+    if late then out[#out + 1] = late end
     if type(flags.restartedAt) == "number" then
         add("restarted", L["Damage restarted at +%.1fs"]:format(flags.restartedAt))
     end
     if flags.reloaded then add("reloaded", L["Reloaded mid-run: casts after the buzzer not tracked"]) end
     if flags.sessionFromList then add("sessionFromList", L["Session matched by list"]) end
-    if flags.sharedSession then
-        local netted = type(run.race) == "table" and type(run.race.baseline) == "table"
-        add("sharedSession", netted and L["Shared session: the damage it held at the arm was taken off"]
-            or L["Shared session: the total may include the fight before the arm"])
-    end
+    if flags.sharedSession then add("sharedSession", sharedText(run)) end
     if flags.died then add("died", L["Died during the run"]) end
     local status = type(run) == "table" and run.status or nil
     if status == "incomplete" then add("incomplete", L["Incomplete: combat ended before the buzzer"]) end

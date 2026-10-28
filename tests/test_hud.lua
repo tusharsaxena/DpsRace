@@ -373,6 +373,27 @@ test("hud: the stop body shows the live tail, time in combat, late casts and the
     assertEqual(chips[2], "Grace 1.0s")
 end)
 
+test("hud: the stop body counts only the late casts the ignore list leaves (#8), and redraws when it changes", function()
+    local f = hud()
+    running(f, 30)
+    f:to(130)
+    f:advance(1.2)
+    f:update(25)
+    f.Race.OnCast("start", 5384, f:now(), "Cast-1")      -- Feign Death: ignored by default
+    f:advance(0.4)
+    f.Race.OnCast("start", 29722, f:now(), "Cast-2")
+    tick(f)
+    local b = body(f)
+    assertEqual(current(f), "stop")
+    assertEqual(#f.Race.Current().flags.lateCasts, 2, "the run keeps every late cast")
+    assertEqual(b.w.chips:Texts()[1], "1 late cast \194\183 +1.6s")
+    assertTrue(f.NS.LateIgnore.Unignore(5384))
+    assertEqual(body(f).w.chips:Texts()[1], "2 late casts \194\183 +1.2s", "SETTINGS_CHANGED redrew the body")
+    assertTrue(f.NS.LateIgnore.Ignore(29722))
+    assertTrue(f.NS.LateIgnore.Ignore(5384))
+    assertEqual(body(f).w.chips:Texts()[1], "Grace 1.0s", "all ignored: no late chip")
+end)
+
 test("hud: waiting hint appears after hintDelay and names only owned drop-combat spells", function()
     local f = hud()
     f.W.known[5384], f.W.known[58984] = true, true

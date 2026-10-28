@@ -10,12 +10,18 @@ NS.defaults = {
         visibility = "always",   -- always | inCombat | outOfCombat | never
         scale      = 1.0,
         locked     = false,
-        -- The scoring settings a new run freezes into its own record (modules/Recorder.lua NewRun):
-        -- changing one never re-grades a saved run (spec §5.2). Their rows are on the Race page
-        -- (settings/Race.lua).
+        -- The race's settings; their rows are on the Race page (settings/Race.lua). The two scoring
+        -- settings first: a new run freezes them into its own record (modules/Recorder.lua NewRun),
+        -- so changing one never re-grades a saved run (spec §5.2).
         race = {
             grace      = 1.0,   -- s after the buzzer before a cast start is late (spec §5.2)
             restartGap = 6,     -- s of quiet after the buzzer before damage counts as restarted (§5.3)
+            -- The late-cast ignore list (#8, modules/LateIgnore.lua): the exception. It is read when a
+            -- run's flags are, never frozen into a run, so a change re-scores every stored run. Spell
+            -- IDs, ascending and comma-separated; 8690 stands for every hearthstone
+            -- (defaults/Hearthstones.lua). Invisibility, Vanish, Feign Death, Hearthstone,
+            -- Shadowmeld, Greater Invisibility.
+            lateIgnore = "66,1856,5384,8690,58984,110959",
             -- The Race HUD's own (modules/Hud.lua); their rows are on the Race page too.
             defaultLength = 120,   -- s; the idle body's length until the player picks one (§4.1)
             countdownCue  = true,  -- the sound at 10, 5, 3, 2, 1 s left, and each center number (§4.3)
