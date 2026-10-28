@@ -94,6 +94,9 @@ defaults\Hearthstones.lua
 # LOAD-BEARING: publishes NS.Meter and resolves the meter enums at FILE SCOPE; first, so every later
 # module may capture it.
 modules\Meter.lua
+# Your training dummies (#9). LOAD-BEARING: reads NS.defaults (defaults\Profile.lua) at FILE SCOPE;
+# defaults\Dummies.lua Lookup reaches it at CALL time, and it reaches NS.Recorder at CALL time only.
+modules\DummyList.lua
 modules\Recorder.lua
 # The loadout store (#6): reached by Recorder and Race at CALL time.
 modules\Loadouts.lua

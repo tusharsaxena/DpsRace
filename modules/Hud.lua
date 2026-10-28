@@ -950,7 +950,9 @@ do
         -- The late-cast ignore list (#8), the profile's, changes what the result card's flag chips
         -- (and the STOP body's count) say: the body on screen is drawn again.
         bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-            if (path == NS.LateIgnore.PATH or path == "profile") and windowShown() then render(true) end
+            if (path == NS.LateIgnore.PATH or path == NS.DummyList.PATH or path == "profile") and windowShown() then
+                render(true)
+            end
         end)
     end
 end

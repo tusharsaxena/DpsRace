@@ -73,6 +73,8 @@ local STORED = {
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
     ["global.usage.hidden"]  = { "string", "" },
     ["race.lateIgnore"]      = { "string", "66,1856,5384,8690,58984,110959" },
+    ["race.dummies"]         = { "string", "" },
+    ["race.dummyCategory"]   = { "string", "auto" },
     -- HUD > HUD Appearance: composed blocks (options-ui-§16). A color's default is a table.
     ["appearance.elapsed.font"] = { "string", "JetBrains Mono" },
     ["appearance.elapsed.fontSize"] = { "number", 26, 6, 32, 1 },
@@ -401,9 +403,16 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
     }, "\n"))
 end)
 
-test("settings: Race is a one-tab page along the race's timeline, in the pinned order", function()
+test("settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order", function()
     local NS = T.NS
-    for _, r in ipairs(NS.SchemaForPage("race")) do assertEqual(r.group, "Race", r.path .. " tab") end
+    for _, r in ipairs(NS.SchemaForPage("race")) do
+        local want = (r.path == "race.dummies" or r.path == "race.dummyCategory") and "Training dummies" or "Race"
+        assertEqual(r.group, want, r.path .. " tab")
+    end
+    assertEqual(tabRows(NS, "race", "Training dummies"), table.concat({
+        "race.dummyCategory|New dummies|Category for new dummies|false",
+        "race.dummies|Your training dummies|Training dummies|false",
+    }, "\n"))
     assertEqual(tabRows(NS, "race", "Race"), table.concat({
         "race.defaultLength|Length|Default race length|false",
         "race.autoArm|Auto-arm|Arm on a training dummy|false",

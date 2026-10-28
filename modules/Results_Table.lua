@@ -162,7 +162,7 @@ end
 --- @return string text, table color
 function Tbl.Badge(target)
     target = type(target) == "table" and target or {}
-    local category = target.category or "other"
+    local category = NS.Dummies.CategoryOf(target)
     return NS.Dummies.Label(category), Tbl.CATEGORY_COLORS[category] or Tbl.CATEGORY_COLORS.other
 end
 

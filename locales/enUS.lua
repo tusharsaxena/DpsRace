@@ -974,3 +974,14 @@ L["Save these filters as this profile's default view of Insights."] =
     "Save these filters as this profile's default view of Insights."
 L["Delete the saved view and go back to the stock one: every character, spec, target, length and date."] =
     "Delete the saved view and go back to the stock one: every character, spec, target, length and date."
+
+-- Your training dummies (#9): the Race page's Training dummies tab and /dr targetdummy.
+L["Training dummies"] = "Training dummies"
+L["Automatic"] = "Automatic"
+L["New dummies"] = "New dummies"
+L["Category for new dummies"] = "Category for new dummies"
+L["The category a dummy you add gets when you name none. Automatic reads it from the name (Cleave, Dungeoneer, PvP) and a boss-level creature, else Single target."] =
+    "The category a dummy you add gets when you name none. Automatic reads it from the name (Cleave, Dungeoneer, PvP) and a boss-level creature, else Single target."
+L["Your training dummies"] = "Your training dummies"
+L["Creatures counted as training dummies beyond the built-in ones, and built-ins switched off: creature ID:category, or -creature ID, comma-separated. Applies to every stored run: a run is categorized by its creature as the list is now."] =
+    "Creatures counted as training dummies beyond the built-in ones, and built-ins switched off: creature ID:category, or -creature ID, comma-separated. Applies to every stored run: a run is categorized by its creature as the list is now."

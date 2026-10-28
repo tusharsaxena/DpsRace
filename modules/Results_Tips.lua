@@ -96,7 +96,7 @@ end
 function CELL.target(run)
     local t = run.target or {}
     local lines = { t.name or L["Unknown target"] }
-    lines[#lines + 1] = NS.Dummies.Label(t.category)
+    lines[#lines + 1] = NS.Dummies.Label(NS.Dummies.CategoryOf(t))
     local meta = {}
     if type(t.level) == "number" then meta[#meta + 1] = L["Level %d"]:format(t.level) end
     if type(t.npcID) == "number" then meta[#meta + 1] = L["creature %d"]:format(t.npcID) end

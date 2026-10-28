@@ -34,15 +34,15 @@ end
 --- "Cleave" / "Single target" / an uncataloged target's own name.
 local function targetText(target)
     target = target or {}
-    local text = NS.Dummies.Label(target.category)
-    if (target.category == nil or target.category == "other") and target.name then text = target.name end
-    return text
+    local category = NS.Dummies.CategoryOf(target)
+    if category == "other" and target.name then return target.name end
+    return NS.Dummies.Label(category)
 end
 
 --- "Cleave Training Dummy": the target by name, for the player's own lines.
 local function targetName(target)
     target = target or {}
-    return target.name or NS.Dummies.Label(target.category)
+    return target.name or NS.Dummies.Label(NS.Dummies.CategoryOf(target))
 end
 
 local function whoText(char)

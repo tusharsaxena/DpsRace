@@ -8,7 +8,8 @@ local _, NS = ...
 -- never do); flags inform and never void, so a flagged run holds a best unless cleanOnly asks.
 --
 -- THE CACHE is one board per cleanOnly value, built on first ask and dropped on RUN_SAVED,
--- RUNS_CHANGED and a change to the late-cast ignore list or the profile (SETTINGS_CHANGED). The same RUN_SAVED receiver prunes to `global.history.keepDays` (0 = never, spec §6.3);
+-- RUNS_CHANGED and a change to the late-cast ignore list, your training dummies (#9: a run's board is
+-- its category read now) or the profile (SETTINGS_CHANGED). The same RUN_SAVED receiver prunes to `global.history.keepDays` (0 = never, spec §6.3);
 -- core/DpsRace.lua's OnEnable prunes at login. The receiver is a bus target of this module's own, so
 -- the latch drops it at stand-down and replays it at stand-up (slash-commands-§7).
 
@@ -21,7 +22,7 @@ local cache = {}   -- [true|false] = board
 --- @return string key
 function Bests.Key(run)
     local char, target, race = run.char or {}, run.target or {}, run.race or {}
-    return ("%s|%s|%s"):format(tostring(char.specID), tostring(target.category or "other"),
+    return ("%s|%s|%s"):format(tostring(char.specID), tostring(NS.Dummies.CategoryOf(target)),
         tostring(race.length))
 end
 
@@ -159,6 +160,6 @@ if receiver then
     -- The clean-only board reads the late-cast ignore list (#8), the profile's: a change to it, or to
     -- the profile, re-scores the runs it was built from.
     receiver:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
-        if path == NS.LateIgnore.PATH or path == "profile" then Bests.Invalidate() end
+        if path == NS.LateIgnore.PATH or path == NS.DummyList.PATH or path == "profile" then Bests.Invalidate() end
     end)
 end

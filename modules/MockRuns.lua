@@ -171,7 +171,7 @@ end
 --- A target of `category` as a run records it.
 function MockRuns.Target(category)
     local spec = TARGETS[category] or TARGETS.single
-    local d = spec.npcID and NS.Dummies.Lookup(spec.npcID)
+    local d = spec.npcID and NS.Dummies.BuiltIn(spec.npcID)
     return { npcID = spec.npcID, name = d and d.name or L["Training Dummy"], category = category }
 end
 

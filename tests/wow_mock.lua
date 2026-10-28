@@ -359,6 +359,19 @@ local function build()
     M.UnitName = function(unit) return unitField(unit or "player", "name", M.__context.name) end
     M.UnitLevel = function(unit) return unitField(unit or "player", "level", M.__context.level) end
     M.UnitClassification = function(unit) return unitField(unit, "classification", "normal") end
+    -- What `/dr targetdummy` captures (#9, modules/DummyList.lua Read): the target's or a plate's own
+    -- fields (healthMax, creatureType, pvp, faction, reaction), and the player's map position, settable
+    -- through M.__context.mapX / mapY (nil = no position).
+    M.UnitHealthMax = function(unit) return unitField(unit, "healthMax", 1000000) end
+    M.UnitCreatureType = function(unit) return unitField(unit, "creatureType", nil) end
+    M.UnitIsPVP = function(unit) return unitField(unit, "pvp", false) end
+    M.UnitFactionGroup = function(unit) return unitField(unit, "faction", "Horde") end
+    M.UnitReaction = function(unit) return unitField(unit, "reaction", nil) end
+    M.C_Map.GetPlayerMapPosition = function()
+        local x, y = M.__context.mapX, M.__context.mapY
+        if x == nil then return nil end
+        return { GetXY = function() return x, y end }
+    end
 
     -- The client's key-binding API, from the kit (the Keybindings tab, options-ui-§20). Its
     -- GetBindingName reads M and the real _G, but this addon's BINDING_NAME_ globals are rawset into

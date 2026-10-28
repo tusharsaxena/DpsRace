@@ -18,6 +18,10 @@ local NOW = 1000 * DAY   -- the epoch the prune cases measure age from
 
 --- A stored-shape run with what Bests reads: char.specID, target.category, race.length, status,
 --- result.dps and flags.
+-- A cataloged creature per category, so the read-time category (#9) is the recorded one; single has
+-- no built-in dummy, so a single-target run carries no creature ID and keeps its own.
+local CATALOG_ID = { boss = 243205, cleave = 243208, dungeoneer = 243167, pvp = 243211 }
+
 local function run(id, date, dps, o)
     o = o or {}
     local status = o.status or "complete"
@@ -25,7 +29,7 @@ local function run(id, date, dps, o)
         id = id, date = date, status = status, schema = 1,
         race   = { length = o.length or 30 },
         char   = { name = o.name or "Lanfear", specID = o.specID or 267 },
-        target = { npcID = o.npcID or 243205, category = o.category or "boss" },
+        target = { npcID = o.npcID or CATALOG_ID[o.category or "boss"], category = o.category or "boss" },
         result = (status ~= "lost") and { damage = (dps or 0) * (o.length or 30), dps = dps } or nil,
         flags  = o.flags or { lateCasts = {}, reloaded = false, died = false },
     }

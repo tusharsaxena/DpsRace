@@ -61,7 +61,7 @@ local function mkRun(NS, id, dps, gear, fields)
         race = { length = 60, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
                  level = 80, ilvl = 639.4 },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 60, dps = dps, tail = 2 },
         flags = { lateCasts = {} }, spells = { { id = 29722, dmg = dps * 50 } }, note = "",
         loadout = gear and NS.Loadouts.Store({ gear = gear }) or nil,

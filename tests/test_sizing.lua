@@ -161,7 +161,7 @@ local function mkRun(id, n)
         id = id, schema = 1, status = "complete", addon = "0.1.0", date = NOW - n * HOUR,
         race = { length = 180, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 26560000 + n, dps = 147555 + n, tail = 9 },
         flags = { lateCasts = {} }, spells = { { id = 29722, dmg = 7330000 } }, note = "",
     }
@@ -361,7 +361,7 @@ local function timelineRun(NS, id, dps, list, ago)
         id = id, schema = 3, status = "complete", addon = "0.1.0", date = NOW - ago * HOUR,
         race = { length = 60, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 60, dps = dps, tail = 2 },
         flags = { lateCasts = {} }, spells = { { id = 29722, dmg = dps * 50 } }, note = "",
         casts = { v = 1, list = NS.Casts.Encode(decoded), spells = SPELLS, dropped = 0 },

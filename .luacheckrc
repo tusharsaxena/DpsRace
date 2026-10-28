@@ -67,6 +67,10 @@ files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 -- The late-cast ignore list (#8): a typed spell's name and icon, the hearthstones' names, and the
 -- late-cast right-click menu.
 files["modules/LateIgnore.lua"] = { read_globals = { "C_Spell", "MenuUtil" } }
+files["modules/DummyList.lua"] = {
+    read_globals = { "time", "UnitExists", "UnitFactionGroup", "UnitIsPVP", "C_Map", "UnitHealthMax",
+                     "UnitCreatureType", "UnitReaction", "GetBuildInfo" },
+}
 -- The cast list (#14): each spell's base cooldown, the first time it is cast.
 files["modules/Casts.lua"] = { read_globals = { "GetSpellBaseCooldown" } }
 -- What was used (#13): the on-use slots, the bags, the item data and the helpful auras, read at the

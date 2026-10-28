@@ -57,8 +57,9 @@ local function enabled() return setting("enabled") == true end
 --- "Cleave" / "Single target", or an uncataloged target's own name (as the share line says it).
 local function categoryText(target)
     target = type(target) == "table" and target or {}
-    if (target.category == nil or target.category == "other") and target.name then return target.name end
-    return NS.Dummies.Label(target.category)
+    local category = NS.Dummies.CategoryOf(target)
+    if category == "other" and target.name then return target.name end
+    return NS.Dummies.Label(category)
 end
 
 local function flagsText(run)

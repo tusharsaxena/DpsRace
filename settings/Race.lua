@@ -7,12 +7,19 @@ local _, NS = ...
 local L = NS.L
 local D = NS.defaults.profile.race
 local PAGE = "race"
-local RACE, SCORING = L["Race"], L["Scoring rules"]
+local RACE, SCORING, DUMMIES = L["Race"], L["Scoring rules"], L["Training dummies"]
 
 -- The race lengths the HUD offers (modules/Hud_States.lua), as a numeric dropdown: "3:00" for 180.
 local function lengthValues()
     local out = {}
     for _, n in ipairs(NS.HudStates.PRESETS) do out[#out + 1] = { value = n, text = NS.Format.Length(n) } end
+    return out
+end
+
+-- The categories a new dummy can get, Automatic first (the dummy list's own, modules/DummyList.lua).
+local function categoryValues()
+    local out = { { value = "auto", text = L["Automatic"] } }
+    for _, k in ipairs(NS.DummyList.KINDS) do out[#out + 1] = { value = k, text = NS.Dummies.Label(k) } end
     return out
 end
 
@@ -78,6 +85,19 @@ NS.RegisterSchemaRows({
       validate = function(v) return NS.LateIgnore.Parse(v) ~= nil end,
       normalize = function(v) return NS.LateIgnore.Normalize(v) end,
       tooltip = L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] },
+
+    -- ── Training dummies ── (#9, modules/DummyList.lua) its own tab: the category a new dummy gets,
+    -- then the list itself, one plain string written WHOLE through the seam (the ignore list's shape),
+    -- read when a run's category is, never frozen into a run. The list row carries skipRender: the tab
+    -- draws it as the library's ID lists.
+    { path = NS.DummyList.CATEGORY_PATH, page = PAGE, group = DUMMIES, subgroup = L["New dummies"], type = "string",
+      label = L["Category for new dummies"], default = D.dummyCategory, values = categoryValues(),
+      tooltip = L["The category a dummy you add gets when you name none. Automatic reads it from the name (Cleave, Dungeoneer, PvP) and a boss-level creature, else Single target."] },
+    { path = NS.DummyList.PATH, page = PAGE, group = DUMMIES, subgroup = L["Your training dummies"], type = "string",
+      label = L["Training dummies"], default = D.dummies, skipRender = true,
+      validate = function(v) return NS.DummyList.Parse(v) ~= nil end,
+      normalize = function(v) return NS.DummyList.Normalize(v) end,
+      tooltip = L["Creatures counted as training dummies beyond the built-in ones, and built-ins switched off: creature ID:category, or -creature ID, comma-separated. Applies to every stored run: a run is categorized by its creature as the list is now."] },
 })
 
 -- The Late-cast ignore list's body, after the tab's rows (its heading is the row's subgroup, drawn

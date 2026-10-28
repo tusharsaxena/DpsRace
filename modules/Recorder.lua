@@ -100,6 +100,11 @@ local function npcIDFromGUID(guid)
     return tonumber(id)
 end
 
+--- The creature ID of `unit` (a target, a nameplate), or nil: no unit, no creature, or a sealed GUID.
+function Recorder.NpcIDOf(unit)
+    return npcIDFromGUID(ask(UnitGUID, unit))
+end
+
 --- The catalog entry of the cataloged training dummy `unit` is (#16: the target, a nameplate), or nil:
 --- no such unit, not a cataloged dummy, or a GUID that arrived secret (never parsed).
 --- @param unit string

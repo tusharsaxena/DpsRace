@@ -31,7 +31,7 @@ local function mkRun(id, casts)
         id = id, schema = 1, status = "complete", addon = "0.1.0", date = NOW - 3600,
         race = { length = 180, grace = 1.0 },
         char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
-        target = { npcID = 225983, name = "Cleave Training Dummy", category = "cleave" },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 18000000, dps = 100000, tail = 2 },
         flags = { lateCasts = late, reloaded = false, died = false },
         spells = { { id = INCINERATE, dmg = 18000000 } },
