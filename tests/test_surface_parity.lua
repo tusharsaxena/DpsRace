@@ -31,6 +31,23 @@ test("parity: the Options stub carries every public member of the live Helpers s
     })
 end)
 
+test("parity: the degraded load keeps the late-cast ignore list: the Race page draws quietly and /dr ignore adds by ID", function()
+    -- S-4 (#8): the Race page's list reaches only stubbed Helpers members, and with ResolveId stubbed
+    -- to nil LateIgnore.Resolve still takes a number, a link and "hearthstone" on its own.
+    local _, d = pair()
+    for _, name in ipairs({ "TextRow", "IdList", "InlineButtonPair", "RefreshPanel", "ResolveId" }) do
+        assertEqual(type(d.NS.Helpers[name]), "function", name .. " is not stubbed")
+    end
+    local panel = d.mocks.__subcategories and d.mocks.__subcategories["Race"]
+    if panel then panel:__fire("OnShow") end
+    assertEqual(d.NS.LateIgnore.Resolve("spell:29722"), 29722)
+    assertEqual(d.NS.LateIgnore.Resolve("hearthstone"), d.NS.LateIgnore.HEARTHSTONE)
+    d.NS.Slash:OnSlash("ignore add 29722")
+    assertTrue(d.NS.LateIgnore.IsIgnored(29722), "the degraded /dr ignore add did not land")
+    d.NS.Slash:OnSlash("ignore remove 29722")
+    assertFalse(d.NS.LateIgnore.IsIgnored(29722))
+end)
+
 test("parity: the Bus stub carries the library surface, and its record the instance's", function()
     local l, d = pair()
     T.assertSurfaceParity(d.NS.BusLib, "LibKa0s-Bus-1.0")

@@ -346,7 +346,7 @@ upstream change). None is ratified by this plan.
       `View.ApplyView`).
     - The STOP body's count case is in `test_hud.lua` (it needs the race fixture); `.luacheckrc` gained a
       per-file `C_Spell` read for `modules/LateIgnore.lua`.
-- [ ] **I2 Settings row and slash.**
+- [x] **I2 Settings row and slash.**
   - `settings/Race.lua`: row `{ path = "race.lateIgnore", page = "race", group = RACE,
     subgroup = L["Late-cast ignore list"], type = "string", skipRender = true, validate, normalize, tooltip }`.
     Tooltip says it applies to every stored run and runs keep their casts (unlike grace, which is frozen per
@@ -369,6 +369,25 @@ upstream change). None is ratified by this plan.
   - Tests: `test_settings.lua` (IdList spec, Defaults resets, suffix), `test_schema.lua` (row, default,
     validate rejects junk), `test_slash.lua` (every sub-verb and bad input), `test_disabled.lua`,
     `test_surface_parity.lua` (S-4). Gate green.
+  - **Done notes (I2, 2026-10-28), where the code differed from the plan:**
+    - The kind is `{ base = "spell", resolve = LateIgnore.Resolve }` with no `noun`: the library's spell
+      kind supplies "spell" and "spells" to a based kind (`libs/LibKa0s/OptionsIds.lua:121-127`).
+    - No IdList host in the collection draws a list-scoped reset. The nearest is Aura Master's "Restore this
+      category's starter list" button (`AuraMaster/settings/GeneralSpells.lua:594-607`). *Reset list* is a
+      lone `H.InlineButtonPair` under the list, as History's Purge history... is.
+    - The blurb over the list does not mention the right-click yet, because that menu is I3's. I3 adds
+      the hint when it ships the menu.
+    - `/dr ignore` is the last row of `NS.COMMANDS`, not behind `feature()`. It answers while disabled
+      through the descriptor's `liveVerbs` (the library's `LIVE_VERBS` plus `HOST_LIVE_VERBS = { "ignore" }`),
+      and the library-absent stub reads the same list. BankLedger's `profile` is the precedent. This is
+      not a deviation: slash-commands-§2 makes the feature-verb refusal a SHOULD, and an addon that
+      declines it for a verb "owes no register row". `tests/test_disabled.lua` counts `ignore` with the
+      live verbs, so it also answers normally under the `perf` hold, as `set` does.
+    - The slash lines name a spell through a new `LateIgnore.Label(id)`: "Feign Death (5384)",
+      "Hearthstone, all variants (8690)", "Unknown spell (424242)".
+    - No new Helpers member, so the stub needed nothing. `test_surface_parity.lua` gained a degraded-load
+      case: the Race page draws quietly and `/dr ignore add|remove` by ID lands.
+    - The help line and the docs for the verb are I4's (`docs/slash-dispatch.md`, README).
 - [ ] **I3 HUD and Results detail actions.**
   - `Hud_States.lua` `newChip` (:268-282): an `OnMouseUp` RightButton hook that calls `chip.menu(chip)` when
     set. Chips are pooled (`Chips:Set`, :290), so `Set` assigns `chip.menu = item.menu` (nil included) on

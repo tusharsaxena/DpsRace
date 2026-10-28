@@ -589,3 +589,100 @@ test("settings: the global reset confirms with options-ui-§12's one wording, ve
     assertEqual(d.button2, "No")
     assertTrue(d.timeout == 0 and d.whileDead == true and d.hideOnEscape == true)
 end)
+
+-- ── Race: the late-cast ignore list (#8) ─────────────────────────────────────────────────────────
+
+local IGNORE_DEFAULT = "66,1856,5384,8690,58984,110959"
+
+--- The Race page drawn once, with what its builder handed the ID list and the buttons, in draw order.
+local function drawRace(inst)
+    local NS, M = inst.NS, inst.mocks
+    local H = NS.Helpers
+    local drawn, spec, button = {}, nil, nil
+    local realList, realText, realPair = H.IdList, H.TextRow, H.InlineButtonPair
+    H.IdList = function(ctx, s, ...) spec = s drawn[#drawn + 1] = "list" return realList(ctx, s, ...) end
+    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.InlineButtonPair = function(ctx, a, ...) button = a drawn[#drawn + 1] = "button" return realPair(ctx, a, ...) end
+    local panel = M.__subcategories["Race"]
+    panel:Show()
+    panel:__fire("OnShow")
+    H.IdList, H.TextRow, H.InlineButtonPair = realList, realText, realPair
+    return spec, button, drawn
+end
+
+test("settings: Race draws the late-cast ignore list as the library's spell ID list, writing through LateIgnore", function()
+    local inst = T.load()
+    local NS = inst.NS
+    local LI = NS.LateIgnore
+    local spec, _, drawn = drawRace(inst)
+    assertTrue(spec ~= nil, "the Race tab drew no ID list")
+    assertEqual(table.concat(drawn, ","), "text,list,button", "the blurb, the list, then Reset list")
+    assertEqual(spec.kind.base, "spell", "a host kind over the library's spell kind")
+    assertTrue(spec.kind.resolve == LI.Resolve, "a typed name goes through LateIgnore.Resolve")
+    assertEqual(spec.label, "Ignore a spell")
+    assertEqual(spec.removeStyle, "icon")
+    assertEqual(spec.columns, 2)
+    assertTrue(type(spec.emptyText) == "string" and #spec.emptyText > 0, "no empty line")
+    assertTrue(type(spec.tooltip) == "string" and spec.tooltip:find("hearthstone", 1, true) ~= nil, spec.tooltip)
+    local cands = spec.candidates()
+    assertEqual(table.concat(cands, ","), table.concat(LI.KnownSpells(), ","), "the candidates are the known spells")
+    -- The entries: the six defaults, ascending; only 8690 carries the hearthstone suffix.
+    local ids, suffixes = {}, {}
+    for i, e in ipairs(spec.entries()) do
+        ids[i] = e.id
+        if e.suffix then suffixes[#suffixes + 1] = e.id .. "=" .. e.suffix end
+    end
+    assertEqual(table.concat(ids, ","), IGNORE_DEFAULT)
+    assertEqual(table.concat(suffixes, ";"), "8690=(all hearthstones, " .. #NS.HEARTHSTONE_SPELLS .. ")")
+    spec.onAdd(29722)
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,29722,58984,110959", "written whole, ascending")
+    spec.onRemove(8690)
+    assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,29722,58984,110959", "8690 goes as one entry")
+    assertEqual(#spec.entries(), 6)
+end)
+
+test("settings: Race's Reset list puts the six defaults back and touches no other Race setting", function()
+    local inst = T.load()
+    local NS = inst.NS
+    local _, button = drawRace(inst)
+    assertTrue(button ~= nil, "no Reset list button")
+    assertEqual(button.text, "Reset list")
+    for _, name in ipairs({ "Invisibility", "Vanish", "Feign Death", "hearthstone", "Shadowmeld", "Greater Invisibility" }) do
+        assertTrue(button.tooltip:find(name, 1, true) ~= nil, "the tooltip does not name " .. name)
+    end
+    assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
+    assertTrue(NS.SetByPath("race.grace", 2))
+    button.onClick()
+    assertEqual(NS.db.profile.race.lateIgnore, IGNORE_DEFAULT)
+    assertEqual(NS.db.profile.race.grace, 2, "the list's reset reset the grace")
+end)
+
+test("settings: Race's Defaults resets the ignore list too, and its tooltip says so", function()
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
+    NS.Helpers.RestoreDefaults("race")
+    assertEqual(NS.db.profile.race.lateIgnore, IGNORE_DEFAULT)
+    local tip = M.__subcategories["Race"].defaultsTooltip
+    assertTrue(tip:find("late-cast ignore list", 1, true) ~= nil, tip)
+end)
+
+test("settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others", function()
+    local inst = T.load()
+    local NS = inst.NS
+    drawRace(inst)
+    assert(NS.pageCtx.race, "the Race page drew no ctx")
+    local repainted = 0
+    local real = NS.Helpers.RefreshPanel
+    NS.Helpers.RefreshPanel = function(ctx, ...)
+        if ctx == NS.pageCtx.race then repainted = repainted + 1 end
+        return real(ctx, ...)
+    end
+    NS.LateIgnore.Ignore(29722)
+    assertEqual(repainted, 1, "an ignore from the HUD or the CLI repaints the list")
+    NS.AnnounceSettingsChanged("profile", "Other")
+    assertEqual(repainted, 2, "a profile switch repaints it")
+    assertTrue(NS.SetByPath("live.castDots", false))
+    assertEqual(repainted, 2, "another setting does not")
+    NS.Helpers.RefreshPanel = real
+end)

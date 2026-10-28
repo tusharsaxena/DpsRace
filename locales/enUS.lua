@@ -311,6 +311,21 @@ L["Sample data in the HUD and the Results window: /dr test [armed|running|result
 L["Play a whole sample race: /dr sim [%s]"] = "Play a whole sample race: /dr sim [%s]"
 L["Lock the race HUD in place"] = "Lock the race HUD in place"
 L["Unlock the race HUD to move and resize it"] = "Unlock the race HUD to move and resize it"
+L["The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"] =
+    "The late-cast ignore list: /dr ignore [show|add|remove|defaults] <spell ID, link or name>"
+L["Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"] =
+    "Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"
+L["The late-cast ignore list is empty."] = "The late-cast ignore list is empty."
+L["Late-cast ignore list:"] = "Late-cast ignore list:"
+L["More than one spell is named '%s'. Use its spell ID or a shift-clicked link."] =
+    "More than one spell is named '%s'. Use its spell ID or a shift-clicked link."
+L["No spell named '%s' is known. Use its spell ID or a shift-clicked link."] =
+    "No spell named '%s' is known. Use its spell ID or a shift-clicked link."
+L["%s is already ignored."] = "%s is already ignored."
+L["Late casts of %s no longer flag a run."] = "Late casts of %s no longer flag a run."
+L["%s is not on the list."] = "%s is not on the list."
+L["Late casts of %s flag a run again."] = "Late casts of %s flag a run again."
+L["The late-cast ignore list is back to its defaults."] = "The late-cast ignore list is back to its defaults."
 L["Nothing to cancel."] = "Nothing to cancel."
 L["Race canceled."] = "Race canceled."
 L["Race canceled: the run is deleted."] = "Race canceled: the run is deleted."
@@ -388,11 +403,24 @@ L["Your damage going quiet for this long after the buzzer, then landing again, f
 L["Late-cast ignore list"] = "Late-cast ignore list"
 L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] =
     "Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."
+L["(all hearthstones, %d)"] = "(all hearthstones, %d)"
+L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."] =
+    "Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."
+L["Ignore a spell"] = "Ignore a spell"
+L["A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."] =
+    "A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."
+L["No spell is ignored: every late cast flags its run."] =
+    "No spell is ignored: every late cast flags its run."
+L["Reset list"] = "Reset list"
+L["Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."] =
+    "Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."
+L["%s, all variants (%d)"] = "%s, all variants (%d)"
+L["%s (%d)"] = "%s (%d)"
 L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
 L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."
-L["Restore every Race setting on this profile to its addon default."] =
-    "Restore every Race setting on this profile to its addon default."
+L["Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."] =
+    "Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."
 L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
     "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 

@@ -80,9 +80,66 @@ NS.RegisterSchemaRows({
       tooltip = L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] },
 })
 
+-- The Late-cast ignore list's body, after the tab's rows (its heading is the row's subgroup, drawn
+-- just above): a blurb, the library's ID list (an add box over one line per listed spell, each with
+-- its X), then the list's own reset. The widget never writes: LateIgnore.Ignore, Unignore and Reset
+-- write the whole value. 8690 is one entry that stands for every hearthstone, so its line says so.
+local SPELL_KIND = { base = "spell", resolve = NS.LateIgnore.Resolve }
+
+local function ignoreEntries()
+    local LI, out = NS.LateIgnore, {}
+    local suffix = L["(all hearthstones, %d)"]:format(#(NS.HEARTHSTONE_SPELLS or {}))
+    for i, id in ipairs(LI.List()) do
+        out[i] = { id = id, suffix = id == LI.HEARTHSTONE and suffix or nil }
+    end
+    return out
+end
+
+local function afterRace(ctx)
+    local H, LI = NS.Helpers, NS.LateIgnore
+    H.TextRow(ctx, L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."])
+    H.IdList(ctx, {
+        kind        = SPELL_KIND,
+        label       = L["Ignore a spell"],
+        tooltip     = L["A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."],
+        emptyText   = L["No spell is ignored: every late cast flags its run."],
+        entries     = ignoreEntries,
+        candidates  = function() return LI.KnownSpells() end,
+        onAdd       = function(id) LI.Ignore(id) end,
+        onRemove    = function(id) LI.Unignore(id) end,
+        removeStyle = "icon",
+        columns     = 2,
+    })
+    -- The page's Defaults resets the grace, the restart gap and every other Race row with the list;
+    -- this resets the list alone, in the one write `/dr reset race.lateIgnore` makes.
+    H.InlineButtonPair(ctx, {
+        text    = L["Reset list"],
+        tooltip = L["Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."],
+        onClick = function() LI.Reset() end,
+    })
+end
+
 NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["Race"],
     panelName       = "DpsRaceRacePanel",
-    defaultsTooltip = L["Restore every Race setting on this profile to its addon default."],
+    defaultsTooltip = L["Restore every Race setting on this profile to its addon default, the late-cast ignore list among them."],
+    afterGroup      = { [RACE] = afterRace },
 })
+
+-- The list repaints when it changes from anywhere (the HUD's right-click, `/dr ignore`, `/dr set` or
+-- `reset`) and when the profile does (another profile, another list; core/Database.lua announces
+-- it as "profile"). A hidden page is only flagged, and repaints on its next show (RefreshPanel).
+local function repaint()
+    local ctx = NS.pageCtx[PAGE]
+    if ctx and NS.Helpers.RefreshPanel then NS.Helpers.RefreshPanel(ctx, true) end
+end
+
+do
+    local bus = NS.NewBusTarget()
+    if bus then
+        bus:RegisterMessage(NS.MSG.SETTINGS_CHANGED, function(_, path)
+            if path == NS.LateIgnore.PATH or path == "profile" then repaint() end
+        end)
+    end
+end

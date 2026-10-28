@@ -70,6 +70,25 @@ test("schema: an unknown path is refused and stores nothing", function()
     assertEqual(inst.NS.db.profile.no, nil)
 end)
 
+test("schema: the late-cast ignore list is one Race string row of spell IDs; junk is refused and stores nothing", function()
+    local inst = T.load()
+    local NSi = inst.NS
+    local row = assert(NSi.FindSchemaRow("race.lateIgnore"), "no ignore-list row")
+    assertEqual(row.type, "string")
+    assertEqual(row.page, "race")
+    assertEqual(row.subgroup, "Late-cast ignore list")
+    assertEqual(row.default, "66,1856,5384,8690,58984,110959")
+    assertEqual(row.default, NSi.defaults.profile.race.lateIgnore, "one literal, in defaults/Profile.lua")
+    assertTrue(row.skipRender, "the page draws it as an ID list")
+    for _, junk in ipairs({ "abc", "66,-1", "66;1856", "1.5", "0", "5384,spell" }) do
+        assertFalse(NSi.SetByPath("race.lateIgnore", junk), "accepted " .. junk)
+    end
+    assertFalse(NSi.SetByPath("race.lateIgnore", 5384), "a number is not the stored string")
+    assertEqual(NSi.db.profile.race.lateIgnore, row.default, "a refused write stored something")
+    assertTrue(NSi.SetByPath("race.lateIgnore", " 1856 , 66,66 "))
+    assertEqual(NSi.db.profile.race.lateIgnore, "66,1856", "normalized: trimmed, once each, ascending")
+end)
+
 test("schema: the Minimap row reads SHOWN and stores LibDBIcon's inverted `hide`", function()
     local inst = T.load()
     local NSi = inst.NS

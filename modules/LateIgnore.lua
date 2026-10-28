@@ -186,6 +186,14 @@ local function spellIcon(id)
     return ok and icon or nil
 end
 
+--- One spell as a line names it: "Feign Death (5384)", "Hearthstone, all variants (8690)" for 8690,
+--- "Unknown spell (424242)" when the client cannot name it. The slash verb's words (settings/Slash.lua).
+function LateIgnore.Label(id)
+    local name = spellName(id) or NS.L["Unknown spell"]
+    if id == HEARTH then return NS.L["%s, all variants (%d)"]:format(name, id) end
+    return NS.L["%s (%d)"]:format(name, id)
+end
+
 -- Whether a typed name is a hearthstone's: the word itself, or any variant's name in the client's
 -- locale. Several variants share a name (8690, 191329 and 401802 are all "Hearthstone"), so the
 -- name lookup below would answer "ambiguous".
