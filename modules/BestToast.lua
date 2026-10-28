@@ -37,7 +37,7 @@ BestToast.SAMPLE = "sample"
 local PAD, ICON, GAP, LINE_GAP = 10, 28, 8, 4
 local CLOSE_ROOM = 26                   -- the title's right inset, clear of the close mark
 BestToast.WIDTH = 340
-BestToast.HEIGHT = 52                   -- the title and the detail
+BestToast.HEIGHT = 72                   -- the title, the chips' row (Tbl.CHIP_H) and the DPS line
 BestToast.FLAGS_HEIGHT = 16             -- the flags' line, when the run has any
 local TROPHY_FALLBACK = "Interface\\Icons\\Achievement_Dungeon_GloryoftheHero"
 
@@ -74,30 +74,49 @@ local function field(t, key)
     return type(v) == "table" and v or {}
 end
 
---- "1:00 · 104.2K DPS, +4.2% over 100.0K"; without the gain when there is no previous best to name.
+--- "104.2K DPS, +4.2% better than previous best (100.0K)" in the gain's green; the DPS alone, in
+--- the text color, when there is no previous best to name.
+--- @return string text, table color
 local function detailText(run, pct, prev)
-    local dps = field(run, "result").dps or 0
+    local C = NS.ResultsTable.COLORS
+    local dps = NS.Format.Number(field(run, "result").dps or 0)
     local prevDps = field(prev, "result").dps
-    local text = L["%s DPS"]:format(NS.Format.Number(dps))
     if type(pct) == "number" and type(prevDps) == "number" then
-        text = L["%s DPS, %s over %s"]:format(NS.Format.Number(dps), "+" .. NS.Format.Pct(pct),
-            NS.Format.Number(prevDps))
+        local sign = pct < 0 and "" or "+"
+        return L["%s DPS, %s better than previous best (%s)"]:format(dps, sign .. NS.Format.Pct(pct),
+            NS.Format.Number(prevDps)), pct < 0 and C.red or C.green
     end
-    return NS.Format.Length(field(run, "race").length) .. MIDDOT .. text
+    return L["%s DPS"]:format(dps), C.text
+end
+
+--- "New best:" in the Spec best blue, then the spec and the class ("Beast Mastery Hunter") in the
+--- class color, as one escaped string.
+local function titleText(char)
+    local Tbl = NS.ResultsTable
+    local class = Tbl.ClassName(char.class)
+    local spec = char.spec and (tostring(char.spec) .. " " .. tostring(class or "")) or tostring(class or "?")
+    return ("|c%s%s|r |c%s%s|r"):format(Tbl.Hex(Tbl.COLORS.blue), L["New best:"],
+        Tbl.Hex(Tbl.ClassColor(char.class)), (spec:gsub("%s+$", "")))
 end
 
 --- What the toast says about `run`, beating `prev` by `pct` percent: plain strings only.
 --- @param run table  the run (complete, with a score)
 --- @param pct number|nil  Bests.Delta's percentage
 --- @param prev table|nil  the previous best (Bests.Delta's third return)
---- @return table payload  { runID, title, detail, flags }
+--- @return table payload  { runID, title, chips = { { text, color } x2 }, detail, detailColor, flags }
 function BestToast.Payload(run, pct, prev)
-    local char = field(run, "char")
+    local Tbl = NS.ResultsTable
+    local detail, detailColor = detailText(run, pct, prev)
+    local _, targetColor = Tbl.Badge(run.target)
     return {
-        runID  = run.id,
-        title  = L["New best: %s (%s)"]:format(tostring(char.spec or char.class or "?"), categoryText(run.target)),
-        detail = detailText(run, pct, prev),
-        flags  = flagsText(run),
+        runID       = run.id,
+        title       = titleText(field(run, "char")),
+        -- The target type and the race length as the Runs list's Target and Time chips color them.
+        chips       = { { categoryText(run.target), targetColor },
+                        { Tbl.LengthChip(field(run, "race").length) } },
+        detail      = detail,
+        detailColor = detailColor,
+        flags       = flagsText(run),
     }
 end
 
@@ -111,13 +130,19 @@ local function makeRows(frame)
     w.icon:SetSize(ICON, ICON)
     w.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -PAD)
     w.icon:SetTexture(NS.Icon("ph:trophy") or TROPHY_FALLBACK)
-    w.icon:SetVertexColor(Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
+    -- The trophy in the result card's *New best* blue (the Status column's Spec best).
+    local blue = NS.ResultsTable.COLORS.blue
+    w.icon:SetVertexColor(blue[1], blue[2], blue[3])
     local left = PAD + ICON + GAP
     w.title = Style.Text(frame, Style.FONT.TITLE)
     w.title:SetPoint("TOPLEFT", frame, "TOPLEFT", left, -PAD)
     w.title:SetPoint("RIGHT", frame, "RIGHT", -CLOSE_ROOM, 0)
+    -- The target and time chips, boxed as the Runs list draws them (Tbl.Chip).
+    w.chips = { NS.ResultsTable.Chip(frame), NS.ResultsTable.Chip(frame) }
+    w.chips[1]:SetPoint("TOPLEFT", w.title, "BOTTOMLEFT", 0, -LINE_GAP)
+    w.chips[2]:SetPoint("LEFT", w.chips[1], "RIGHT", NS.ResultsTable.CHIP_GAP, 0)
     w.detail = Style.Text(frame, Style.FONT.TEXT)
-    w.detail:SetPoint("TOPLEFT", w.title, "BOTTOMLEFT", 0, -LINE_GAP)
+    w.detail:SetPoint("TOPLEFT", w.chips[1], "BOTTOMLEFT", 0, -LINE_GAP)
     w.detail:SetPoint("RIGHT", frame, "RIGHT", -PAD, 0)
     w.flags = Style.Text(frame, Style.FONT.TEXT, NS.HudStates.FLAG_COLOR)
     w.flags:SetPoint("TOPLEFT", w.detail, "BOTTOMLEFT", 0, -LINE_GAP)
@@ -131,7 +156,14 @@ local function build(frame, p)
     if type(p) ~= "table" then return false end
     local w = frame.dpsRace or makeRows(frame)
     w.title:SetText(p.title or "")
+    local chips = type(p.chips) == "table" and p.chips or {}
+    for i, chip in ipairs(w.chips) do
+        local c = chips[i] or {}
+        NS.ResultsTable.SetChip(chip, c[1], c[2])
+    end
+    local color = p.detailColor or NS.ResultsTable.COLORS.text
     w.detail:SetText(p.detail or "")
+    w.detail:SetTextColor(color[1], color[2], color[3])
     w.flags:SetText(p.flags or "")
     w.flags:SetShown(p.flags ~= nil)
     return BestToast.WIDTH, BestToast.HEIGHT + (p.flags and BestToast.FLAGS_HEIGHT or 0)

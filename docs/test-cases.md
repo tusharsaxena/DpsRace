@@ -944,11 +944,12 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (11)
+### test_toast.lua (12)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
-- toast: the payload names the spec, the board, the time, the DPS and the gain over the old best
+- toast: the payload names the spec and class, the board's chips, the DPS and the gain over the old best
+- toast: with no previous best to name, the DPS line is the DPS alone in the text color
 - toast: a flagged run may toast, its flags on the last line as the result card words them
 - toast: it closes after Toast duration, plays its sound only with Play a sound on
 - toast: test mode holds the sample race's toast, and its end takes it down
@@ -1192,7 +1193,7 @@ Total.
 | test_settings.lua | 31 |
 | test_slash.lua | 30 |
 | test_share.lua | 13 |
-| test_toast.lua | 11 |
+| test_toast.lua | 12 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
@@ -1208,4 +1209,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **950** |
+| **Total** | **951** |

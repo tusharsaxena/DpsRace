@@ -462,8 +462,8 @@ L["Deleted %d runs."] = "Deleted %d runs."
 L["DPS Race %s"] = "DPS Race %s"
 L["%s DPS"] = "%s DPS"
 -- The new-best toast (#5, modules/BestToast.lua; General > New-best toast).
-L["New best: %s (%s)"] = "New best: %s (%s)"
-L["%s DPS, %s over %s"] = "%s DPS, %s over %s"
+L["New best:"] = "New best:"
+L["%s DPS, %s better than previous best (%s)"] = "%s DPS, %s better than previous best (%s)"
 L["New-best toast"] = "New-best toast"
 L["Show a toast for a new best"] = "Show a toast for a new best"
 L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."] =
