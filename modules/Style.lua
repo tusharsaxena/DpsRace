@@ -36,6 +36,9 @@ Style.FONT = {
     -- The section headings of the Results detail and the HUD (the owner's call, 2026-10-25: a step
     -- above GameFontNormal, so the sections read apart).
     SECTION = "GameFontNormalLarge",     -- a section heading (gold, 16px; HEADER is 10px)
+    -- An Insights chart's heading and its list panels' titles: LootHistory's Insights headings (the
+    -- owner's call, 2026-10-28: SECTION read too large there).
+    CHART   = "GameFontNormal",          -- an Insights chart heading (gold, 12px)
     NAME    = "GameFontHighlightLarge",  -- the character name heading the run detail (white, 16px)
     CAPTION = "GameFontDisableSmall",    -- footers, KPI captions, hints, axis labels (gray)
     FIGURE  = "GameFontNormalHuge",      -- a KPI figure (recolored by its caller)

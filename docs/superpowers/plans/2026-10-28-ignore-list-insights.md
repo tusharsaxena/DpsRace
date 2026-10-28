@@ -747,7 +747,45 @@ Found in the screenshots (decided here):
 - **V-l** World nameplates show through the Results window. Check the window's strata and backdrop alpha
   against LootHistory's browser and fix if it differs.
 
-- [ ] **V1** Charts module: V-a, V-b, V-c, V-e, V-i renderer, V-k. Tests.
+- [x] **V1** Charts module: V-a, V-b, V-c, V-e, V-i renderer, V-k. Tests.
+  - **Done notes (V1, 2026-10-28), where the code differed from the plan:**
+    - V-a: the strip's axis labels are level, not rotated. Each hangs centered under its column, a
+      gap below the axis line, in a 16 px band (`K.STRIP_LABEL_H`, was 44), so no label reaches a
+      column and the dead space under the strips is gone (V-k). The cause of the in-game overlap
+      (LootHistory's rotated label placed by `GetStringWidth`) was not verified; the level label
+      does not depend on a measured width.
+    - V-k: labels thin by room, not by a stride over the columns: a label shows only when it is
+      `K.STRIP_LABEL_PITCH` (40 px) or more past the last one shown, so neighbors like 10/23 and
+      10/24 never collide (the second is dropped; its hover still names the day). Slots stop
+      widening at `K.STRIP_SLOT_MAX` (48 px), with columns up to 36 px centered in them, so a few
+      buckets sit side by side from the left; the axis line spans the columns only
+      (`Charts.StripSlots`). DPS Progression has a legend under it, one chip per spec in its class
+      color, its hover naming the run count. Two specs of one class share a color; the chip's name
+      tells them apart.
+    - V-b: the host's heading and list panel title fonts are a new `Style.FONT.CHART`
+      (`GameFontNormal`, LootHistory's). The detail and HUD keep `SECTION`.
+    - V-c: a row may carry `sublabel`, a second, muted line under its label; a section with any
+      sublabel draws every row `K.BAR_H2` (26 px) tall. The tab does not use it yet: V2 decides
+      the labels with the board tabs (V-f), where Consistency's rows are specs.
+    - V-i: `ctx:renderRangeSection` and the pure `Charts.RangeScale` (lowest worst to highest best;
+      a single point opens 5% either side). A fill from worst to best (at least 3 px), a 2 px mark
+      at the average, and an optional scale line naming both ends under the track. The tab wiring
+      is V2's.
+    - V-e: ten cards, not eight, in three even rows: Races run, Time raced, Avg % of board best,
+      Clean runs; New bests set, Characters, Specs, Active days; Best DPS and Date range (both
+      wide). *Characters / Specs* became two cards and *Active days* left the Date range card, so
+      the grid fills. `Insights.CardGrid` packs the grid and, should a last row come up short,
+      shares it out among its cards. The card is LootHistory's: the figure on top, centered,
+      gold; the caption small below; 52 px. Colors: Clean runs and Avg % of board best green at
+      90% or more and red under 70%; New bests set green above 0; Best DPS in its run's class
+      color. The captions keep their sentence case (LootHistory's are lowercase). The Date range
+      figure keeps "Oct 23 to Oct 28" until V2's one date format (V-j).
+    - Locale keys: removed `%d / %d`, `Characters / Specs`, `%d characters and %d specs in these
+      runs.` and `%s · %d days`; added `Characters`, `Specs`, `Active days` and the two hover lines.
+    - Left for V3: smoke rows SM-DR-IN1 and IN4 still say eight cards and *Characters / Specs*, and
+      the docs do not name `Style.FONT.CHART`, the range section or the level strip labels.
+    - Gate: 1055 passed, 1 skipped (exit 0); luacheck 0/0; complexity suite green, every touched
+      function under CCN 15 (`Ctx.renderStrip` 10), its bundle discarded.
 - [ ] **V2** Insights tab: V-d, V-f, V-g, V-h, V-j, V-l. Tests.
 - [ ] **V3** Docs, smoke rows (replace the retired ones), test counts, then push.
 - [ ] **V4** Review and fixes.

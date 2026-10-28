@@ -1,7 +1,7 @@
 local _, NS = ...
 -- modules/Results_Insights.lua — the Results window's Insights tab (#12), in place of the Bests board
 -- (dropped by the owner, 2026-10-28; NS.Bests stays as a data module). LootHistory's Insights tab in
--- DpsRace's terms: a filter bar, eight stat cards and eleven chart sections (A to K) over the runs the
+-- DpsRace's terms: a filter bar, ten stat cards and eleven chart sections (A to K) over the runs the
 -- filters pass, all fed by one stats pass (docs/superpowers/plans/2026-10-28-ignore-list-insights.md,
 -- "Insights analysis").
 --
@@ -148,22 +148,40 @@ local function dps(v)
     return Format.Number(v)
 end
 
--- ── the cards (8, LootHistory's grid: 4 a row, a wide one spans 2) ──────────────────────────────
+-- ── the cards (10, LootHistory's: 4 a row, a wide one spans 2, the figure gold unless it means more)
 
 local DASH = "\226\128\148"
 
+-- Three even rows: the counts, then the context, then the two wide ones (Insights.CardGrid).
 local CARDS = {
     { key = "runs", caption = "Races run" },
     { key = "time", caption = "Time raced" },
-    { key = "best", caption = "Best DPS", wide = true },
     { key = "avg", caption = "Avg % of board best" },
     { key = "clean", caption = "Clean runs" },
     { key = "newBests", caption = "New bests set" },
-    { key = "people", caption = "Characters / Specs" },
+    { key = "chars", caption = "Characters" },
+    { key = "specs", caption = "Specs" },
+    { key = "activeDays", caption = "Active days" },
+    { key = "best", caption = "Best DPS", wide = true },
     { key = "span", caption = "Date range", wide = true },
 }
+Insights.CARDS = CARDS
 
--- Each card's figure, its hover (lines: a title, then strings) and, when it changes, its caption.
+-- A share's figure color: green at GOOD_SHARE or above, red under POOR_SHARE, else the gold default.
+local GOOD_SHARE, POOR_SHARE = 0.9, 0.7
+
+local function shareColor(x)
+    if x >= GOOD_SHARE then return C.green end
+    if x < POOR_SHARE then return C.red end
+    return nil
+end
+
+local function runsWord(n)
+    return n == 1 and L["1 run"] or L["%d runs"]:format(n)
+end
+
+-- Each card's figure, its hover (lines: a title, then strings), its caption when it changes, and its
+-- figure's color when it means something (nil: gold).
 local CARD_FILL = {
     runs = function(t)
         return tostring(t.runs), { L["Races run"], L["The runs these filters pass."] }
@@ -177,7 +195,7 @@ local CARD_FILL = {
         if not b then return DASH, { L["Best DPS"], L["No complete run in these filters."] } end
         local board = runBoard(b.run)
         return dps(b.dps), { L["Best DPS"], board, Tbl.Date(b.run.date, "%d %b %H:%M") },
-            L["%s \194\183 %s"]:format(L["Best DPS"], board)
+            L["%s \194\183 %s"]:format(L["Best DPS"], board), Tbl.ClassColor(b.run.char and b.run.char.class)
     end,
     avg = function(t)
         if t.oneBoard then
@@ -185,28 +203,65 @@ local CARD_FILL = {
         end
         if not t.avgPct then return DASH, { L["Avg % of board best"], L["No complete run in these filters."] } end
         return pct(t.avgPct), { L["Avg % of board best"],
-            L["Each complete run against the best on its own board (spec, target and length), averaged."] }
+            L["Each complete run against the best on its own board (spec, target and length), averaged."] },
+            nil, shareColor(t.avgPct)
     end,
     clean = function(t)
         if t.runs == 0 then return DASH end
         return pct(t.clean / t.runs), { L["Clean runs"], L["%d of %d runs carry no flag."]:format(t.clean, t.runs),
-            L["Late casts on the ignore list do not flag a run."] }
+            L["Late casts on the ignore list do not flag a run."] }, nil, shareColor(t.clean / t.runs)
     end,
     newBests = function(t)
         return tostring(t.newBests), { L["New bests set"],
-            L["Runs that beat an earlier best on their board, within these filters. A board's first run does not count."] }
+            L["Runs that beat an earlier best on their board, within these filters. A board's first run does not count."] },
+            nil, t.newBests > 0 and C.green or nil
     end,
-    people = function(t)
-        return L["%d / %d"]:format(t.chars, t.specs), { L["Characters / Specs"],
-            L["%d characters and %d specs in these runs."]:format(t.chars, t.specs) }
+    chars = function(t)
+        return tostring(t.chars), { L["Characters"], L["The characters with a run in these filters."] }
+    end,
+    specs = function(t)
+        return tostring(t.specs), { L["Specs"], L["The specs with a run in these filters."] }
+    end,
+    activeDays = function(t)
+        return tostring(t.activeDays), { L["Active days"], L["%d days with a run."]:format(t.activeDays) }
     end,
     span = function(t)
         if not t.first then return DASH end
         local text = L["%s to %s"]:format(Tbl.Date(t.first, "%b %d"), Tbl.Date(t.last, "%b %d"))
-        return L["%s \194\183 %d days"]:format(text, t.activeDays), { L["Date range"], text,
-            L["%d days with a run."]:format(t.activeDays) }
+        return text, { L["Date range"], text, runsWord(t.runs) }
     end,
 }
+
+-- The last row's cards share the whole row when they leave columns empty (fractional spans).
+local function stretchLastRow(cells, cols)
+    local lastRow, used, members = cells[#cells].row, 0, {}
+    for _, c in ipairs(cells) do
+        if c.row == lastRow then used, members[#members + 1] = used + c.span, c end
+    end
+    if used >= cols then return end
+    local col = 0
+    for _, c in ipairs(members) do
+        c.col, c.span = col, c.span * cols / used
+        col = col + c.span
+    end
+end
+
+--- The cards' grid: each def's { col, row, span } across `cols` columns (a wide def spans 2, and
+--- moves to the next row when it does not fit), and the number of rows. A last row left short is
+--- shared out among its cards, so no row stands half empty. Pure.
+--- @return table cells, number rows
+function Insights.CardGrid(defs, cols)
+    local cells, col, row = {}, 0, 0
+    for i, def in ipairs(defs) do
+        local span = def.wide and 2 or 1
+        if col + span > cols then col, row = 0, row + 1 end
+        cells[i] = { col = col, row = row, span = span }
+        col = col + span
+    end
+    if #cells == 0 then return cells, 0 end
+    stretchLastRow(cells, cols)
+    return cells, row + 1
+end
 
 -- ── the sections (A to K), each one turning the stats into its renderer's rows ──────────────────
 
@@ -248,13 +303,34 @@ local function progressionPerDay(list, raw)
     return out
 end
 
+-- A's legend: one chip per spec in its class color, in the order the specs first raced, the hover
+-- naming its run count. Two specs of one class share a color, so the chip's name tells them apart.
+local function progressionLegend(list)
+    local rows, bySpec = {}, {}
+    for _, e in ipairs(list) do
+        local char = e.run.char or {}
+        local key = char.specID or char.spec or "?"
+        local row = bySpec[key]
+        if not row then
+            row = { label = specName(char.specID, char.spec), color = Tbl.ClassColor(char.class), n = 0 }
+            bySpec[key], rows[#rows + 1] = row, row
+        end
+        row.n = row.n + 1
+    end
+    for _, row in ipairs(rows) do row.value = row.n == 1 and L["1 run"] or L["%d runs"]:format(row.n) end
+    return rows
+end
+
 local function layoutProgression(self, stats, y, w, pad)
     local list, raw = stats.progression, stats.totals.oneBoard ~= nil
     local buckets = #list > PROGRESS_DAYS_FROM and progressionPerDay(list, raw) or progressionPerRun(list, raw)
     local H = self.headers
     H.progression:SetText(raw and L["DPS Progression"] or L["DPS Progression (% of board best)"])
-    return self.ctx:renderStrip(self.ctx:Pool("progression"), H.progression, self.strips.progression, buckets,
+    y = self.ctx:renderStrip(self.ctx:Pool("progression"), H.progression, self.strips.progression, buckets,
         y, w, pad, (not raw) and 1 or nil)
+    if #buckets == 0 then return y end
+    return self.ctx:renderLegend(self.ctx:Pool("progressionLegend"), progressionLegend(list),
+        y + NS.InsightsCharts.K.SECTION_GAP, w, pad, pad)
 end
 
 -- B: the specs side by side on one (target, length) pair, by best DPS.
@@ -687,24 +763,24 @@ function View:placeScroll(width, height)
     self.empty:SetPoint("TOP", self.frame, "TOP", 0, -(self.barH + 24))
 end
 
--- The cards in a 4-column grid from `y` (a wide one spans 2); answers the cursor under them.
+-- The cards on Insights.CardGrid's 4 columns from `y`; answers the cursor under them.
 function View:layoutCards(y, w)
-    local colW = math.floor((w - PAD * 2 - CARD_GAP * (CARD_COLS - 1)) / CARD_COLS)
-    local col, rowY, cardH = 0, y, NS.InsightsCharts.K.CARD_H
-    for _, def in ipairs(CARDS) do
-        local span = def.wide and 2 or 1
-        if col + span > CARD_COLS then col, rowY = 0, rowY - cardH - CARD_GAP end
-        local card, cw = self.cards[def.key], colW * span + CARD_GAP * (span - 1)
+    local colW = (w - PAD * 2 - CARD_GAP * (CARD_COLS - 1)) / CARD_COLS
+    local cardH = NS.InsightsCharts.K.CARD_H
+    local cells, nRows = Insights.CardGrid(CARDS, CARD_COLS)
+    for i, def in ipairs(CARDS) do
+        local cell, card = cells[i], self.cards[def.key]
+        local cw = math.floor(colW * cell.span + CARD_GAP * (cell.span - 1))
         card.frame:ClearAllPoints()
-        card.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", PAD + col * (colW + CARD_GAP), rowY)
+        card.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", math.floor(PAD + cell.col * (colW + CARD_GAP)),
+            y - cell.row * (cardH + CARD_GAP))
         card.frame:SetWidth(cw)
         card.frame:Show()
-        local value, tip, caption = CARD_FILL[def.key](self.stats.totals)
+        local value, tip, caption, color = CARD_FILL[def.key](self.stats.totals)
         card.label:SetText(caption or L[def.caption])
-        self.ctx:setCard(card, value, tip, cw - 16)
-        col = col + span
+        self.ctx:setCard(card, value, tip, cw - 12, color)
     end
-    return rowY - cardH - 14
+    return y - nRows * (cardH + CARD_GAP) + CARD_GAP - 14
 end
 
 --- Bind and place every section off the stats for `w`; answers the cursor under the last. With no

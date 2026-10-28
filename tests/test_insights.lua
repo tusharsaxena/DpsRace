@@ -219,6 +219,100 @@ test("insights charts: a legend's chips start under the track, not the labels, a
     assertTrue(sameColor(chips[1].sw.__colorTex, rows[1].color))
 end)
 
+test("insights charts: a sublabel draws a second, muted line, and every row of its section grows", function()
+    local i = inst()
+    local K = i.Charts.K
+    local pool = i.ctx:Pool("bars")
+    local rows = {
+        { label = "Destruction", sublabel = "Cleave \194\183 2:00", color = { 0.53, 0.53, 0.93 }, frac = 1, value = "99.5%" },
+        { label = "Beast Mastery", color = { 0.67, 0.83, 0.45 }, frac = 0.9, value = "95.9%" },
+    }
+    local y = i.ctx:renderBarSection(pool, i.ctx:sectionHeader(nil, "Consistency"), rows, 0, 600, 8)
+    assertEqual(y, -K.HEADER_H - 2 * (K.BAR_H2 + K.BAR_GAP) - K.SECTION_GAP)
+    local a, b = pool.active[1], pool.active[2]
+    assertEqual(a.__height, K.BAR_H2)
+    assertEqual(b.__height, K.BAR_H2, "the rows stay even")
+    assertEqual(a.label.__text, "Destruction")
+    assertEqual(a.sub.__text, "Cleave \194\183 2:00")
+    assertTrue(a.sub:IsShown())
+    assertTrue(sameColor(a.sub.__color, i.host.colors.muted))
+    assertEqual(point(a.label)[1], "BOTTOMLEFT", "the label over the row's middle")
+    assertEqual(point(a.sub)[1], "TOPLEFT", "the sublabel under it")
+    assertFalse(b.sub:IsShown())
+    -- Reused without a sublabel: one line, centered, the row back to BAR_H.
+    i.ctx:ReleaseAll()
+    i.ctx:renderBarSection(pool, i.ctx:sectionHeader(nil, "x"), { SPECS[1] }, 0, 600, 8)
+    assertEqual(pool.active[1], a)
+    assertEqual(a.__height, K.BAR_H)
+    assertFalse(a.sub:IsShown())
+    assertEqual(point(a.label)[1], "LEFT")
+end)
+
+test("insights charts: RangeScale spans the lowest worst to the highest best, opening a point", function()
+    local C = inst().Charts
+    local lo, hi = C.RangeScale({ { lo = 300, hi = 400 }, { lo = 280, hi = 350 } })
+    assertEqual(lo, 280)
+    assertEqual(hi, 400)
+    lo, hi = C.RangeScale({ { lo = 200, hi = 200 } })
+    assertEqual(lo, 190)
+    assertEqual(hi, 210)
+    lo, hi = C.RangeScale({ { lo = 0, hi = 0 } })
+    assertEqual(lo, -1)
+    assertEqual(hi, 1)
+end)
+
+test("insights charts: a range section draws worst to best with an average mark, on a scale it names", function()
+    local i = inst()
+    local K = i.Charts.K
+    local pool, scale = i.ctx:Pool("range"), i.ctx:Pool("scale")
+    local rows = {
+        { label = "Beast Mastery", color = { 0.67, 0.83, 0.45 }, lo = 300, hi = 400, mark = 350, value = "350",
+          tip = { "Beast Mastery", "Worst 300", "Avg 350", "Best 400", "4 runs" } },
+        { label = "Blood", color = { 0.77, 0.12, 0.23 }, lo = 200, hi = 200, mark = 200, value = "200" },
+    }
+    local y = i.ctx:renderRangeSection(pool, i.ctx:sectionHeader(nil, "Consistency"), rows, -10, 600, 8, scale,
+        function(v) return "v" .. v end)
+    assertEqual(y, -10 - K.HEADER_H - 2 * (K.BAR_H + K.BAR_GAP) - K.RANGE_SCALE_H - K.SECTION_GAP)
+    local trackW = 600 - 16 - K.LABELW - K.VALW - 12
+    local a, b = pool.active[1], pool.active[2]
+    -- The scale is 200 to 400: Beast Mastery's fill from its middle to the end, its mark at 3/4.
+    assertEqual(point(a.fill)[4], trackW / 2)
+    assertEqual(a.fill.__width, trackW / 2)
+    assertEqual(point(a.mark)[4], trackW * 0.75)
+    assertTrue(a.mark:IsShown())
+    assertTrue(sameColor(a.mark.__colorTex, i.host.colors.body))
+    assertTrue(sameColor(a.fill.__colorTex, rows[1].color))
+    assertTrue(sameColor(a.label.__color, rows[1].color))
+    -- One run: the narrowest fill, at the scale's start.
+    assertEqual(b.fill.__width, K.RANGE_MIN_W)
+    assertEqual(point(b.fill)[4], 0)
+    local line = scale.active[1]
+    assertEqual(line.lo.__text, "v200")
+    assertEqual(line.hi.__text, "v400")
+    assertEqual(point(line)[4], 8 + K.LABELW + K.TRACK_GAP, "under the track, not the labels")
+    hover(a)
+    assertEqual(lastTip(i).lines[3], "Avg 350")
+    hover(b)
+    assertEqual(lastTip(i).lines[1], "Blood:  200")
+    -- No mark: hidden; no scale pool: no line; no rows: the header hides.
+    i.ctx:ReleaseAll()
+    rows[1].mark = nil
+    local header = i.ctx:sectionHeader(nil, "x")
+    y = i.ctx:renderRangeSection(pool, header, { rows[1] }, 0, 600, 8)
+    assertFalse(pool.active[1].mark:IsShown())
+    assertEqual(y, -K.HEADER_H - (K.BAR_H + K.BAR_GAP) - K.SECTION_GAP)
+    assertEqual(i.ctx:renderRangeSection(pool, header, {}, -5, 600, 8), -5)
+    assertFalse(header:IsShown())
+end)
+
+test("insights charts: a legend can start at a given edge (under a strip, not a bar track)", function()
+    local i = inst()
+    local legend = i.ctx:Pool("legend")
+    i.ctx:renderLegend(legend, { { label = "Beast Mastery", color = { 1, 0, 0 }, value = "28 runs" } }, -40, 600, 8, 8)
+    assertEqual(point(legend.active[1])[4], 8)
+    assertEqual(point(legend.active[1])[5], -40)
+end)
+
 test("insights charts: a stacked bar shows one segment per share, each hover naming its value", function()
     local i = inst()
     local pool = i.ctx:Pool("stacked")
@@ -260,9 +354,12 @@ test("insights charts: a strip draws one colored column per bucket, its hover ab
     assertEqual(y, -20 - K.HEADER_H - K.DAYSTRIP_H - K.STRIP_LABEL_H - K.SECTION_GAP)
     local bars = pool.active
     assertEqual(#bars, 3)
-    -- 300 px over 3 columns: 100 px a slot, the column capped at 14.
-    assertEqual(point(bars[2])[4], 100)
+    -- 300 px over 3 buckets: the slot stops at STRIP_SLOT_MAX (48), so the columns sit side by side,
+    -- each STRIP_BAR_MAX (36) wide and centered in its slot.
     assertEqual(bars[1].__width, K.STRIP_BAR_MAX)
+    assertEqual(point(bars[1])[4], (K.STRIP_SLOT_MAX - K.STRIP_BAR_MAX) / 2)
+    assertEqual(point(bars[2])[4], K.STRIP_SLOT_MAX + (K.STRIP_SLOT_MAX - K.STRIP_BAR_MAX) / 2)
+    assertEqual(strip.axisLine.__width, 3 * K.STRIP_SLOT_MAX, "the axis line spans the columns only")
     assertEqual(bars[2].fill.__height, K.DAYSTRIP_H - 2, "the tallest column fills the strip")
     assertEqual(bars[1].fill.__height, (K.DAYSTRIP_H - 2) / 2)
     assertTrue(sameColor(bars[1].fill.__colorTex, { 1, 0, 0 }))
@@ -275,18 +372,59 @@ test("insights charts: a strip draws one colored column per bucket, its hover ab
     assertTrue(sameColor(strip.axisLine.__colorTex, i.host.colors.axis))
 end)
 
-test("insights charts: a strip takes a fixed top, and thins its labels when the columns crowd", function()
+test("insights charts: a strip's labels are level, hung under the axis line, in the band it reserves", function()
     local i = inst()
+    local K = i.Charts.K
+    local pool = i.ctx:Pool("strip")
+    i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), i.ctx:strip(), {
+        { count = 1, label = "Oct 23", info = "a" }, { count = 2, label = "Oct 24", info = "b" },
+    }, 0, 316, 8)
+    local axis = pool.active[1].axis
+    local p = point(axis)
+    assertEqual(p[1], "TOP")
+    assertEqual(p[3], "BOTTOM", "hung from the column's base")
+    assertEqual(p[5], -(K.STRIP_AXIS_GAP + K.STRIP_LABEL_GAP), "below the axis line, never on a column")
+    assertEqual(axis.__justifyH, "CENTER")
+    -- A level label is one text line tall: the band under the axis holds it whole.
+    assertTrue(K.STRIP_LABEL_H >= K.STRIP_AXIS_GAP + K.STRIP_LABEL_GAP + 10)
+    assertTrue(K.STRIP_LABEL_H <= 20, "no dead space under the strip")
+end)
+
+test("insights charts: a strip takes a fixed top, and drops a label too close to the last one shown", function()
+    local i = inst()
+    local K = i.Charts.K
     local pool, strip = i.ctx:Pool("strip"), i.ctx:strip()
     local buckets = {}
     for n = 1, 60 do buckets[n] = { count = 0.5, label = tostring(n), info = tostring(n) } end
     i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), strip, buckets, 0, 316, 8, 2)
-    local K = i.Charts.K
     assertEqual(pool.active[1].fill.__height, (K.DAYSTRIP_H - 2) / 4, "0.5 of a top of 2")
-    -- 300 / 60 = 5 px a slot: a label every third column (11 px apart at least).
+    -- 300 / 60 = 5 px a slot: a label every eighth column (40 px apart at least).
     assertEqual(pool.active[1].axis.__text, "1")
     assertEqual(pool.active[2].axis.__text, "")
-    assertEqual(pool.active[4].axis.__text, "4")
+    assertEqual(pool.active[8].axis.__text, "")
+    assertEqual(pool.active[9].axis.__text, "9")
+    -- A run per column labels only where its day changes: two day labels on neighbors (10/23 on the
+    -- first run, 10/24 on the second) keep the first, and the next day change far enough on shows.
+    i.ctx:ReleaseAll()
+    local runs = {}
+    for n = 1, 40 do runs[n] = { count = 1, info = tostring(n) } end
+    runs[1].label, runs[2].label, runs[12].label = "10/23", "10/24", "10/25"
+    i.ctx:renderStrip(pool, i.ctx:sectionHeader(nil, "x"), strip, runs, 0, 816, 8)
+    assertEqual(pool.active[1].axis.__text, "10/23")
+    assertEqual(pool.active[2].axis.__text, "", "20 px from 10/23: dropped")
+    assertEqual(pool.active[12].axis.__text, "10/25")
+end)
+
+test("insights charts: StripSlots widens the columns up to a cap, and never below 2 px", function()
+    local C = inst().Charts
+    local K = C.K
+    local slot, barW = C.StripSlots(1000, 6)
+    assertEqual(slot, K.STRIP_SLOT_MAX)
+    assertEqual(barW, K.STRIP_BAR_MAX)
+    slot, barW = C.StripSlots(1050, 56)
+    assertEqual(slot, 1050 / 56)
+    assertEqual(barW, 1050 / 56 - 2)
+    assertEqual(select(2, C.StripSlots(100, 100)), 2)
 end)
 
 -- ── the list panel ──────────────────────────────────────────────────────────────────────────────
@@ -378,20 +516,29 @@ test("insights charts: a divider rules both sides of its centered title in the h
     assertEqual(i.ctx:sectionHeader(nil, "x").__fontObject, "HeadingFont")
 end)
 
-test("insights charts: a stat card's caption over its figure, the hover stating the figure", function()
+test("insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below", function()
     local i = inst()
     local card = i.ctx:card(nil, "Races run")
     assertEqual(card.label.__text, "Races run")
     assertEqual(card.label.__fontObject, "CaptionFont")
     assertEqual(card.frame.__height, i.Charts.K.CARD_H)
+    assertEqual(point(card.value)[1], "TOP", "the figure on top")
+    assertEqual(point(card.label)[1], "BOTTOM", "the caption under it")
+    assertEqual(card.value.__justifyH, "CENTER")
+    assertEqual(card.label.__justifyH, "CENTER")
+    assertTrue(sameColor(card.label.__color, i.host.colors.caption))
     i.ctx:setCard(card, "56")
     assertEqual(card.value.__text, "56")
     assertEqual(card.value.__fontObject, "FigureFont")
+    assertTrue(sameColor(card.value.__color, i.host.colors.heading), "gold by default")
     hover(card.frame)
     assertEqual(lastTip(i).lines[1], "Races run:  56")
-    i.ctx:setCard(card, "89%", { "Clean runs", "50 of 56" })
+    i.ctx:setCard(card, "89%", { "Clean runs", "50 of 56" }, nil, { 0.36, 0.86, 0.46 })
+    assertTrue(sameColor(card.value.__color, { 0.36, 0.86, 0.46 }), "colored when it means something")
     hover(card.frame)
     assertEqual(lastTip(i).lines[2], "50 of 56")
+    i.ctx:setCard(card, "57")
+    assertTrue(sameColor(card.value.__color, i.host.colors.heading), "back to gold")
 end)
 
 test("insights charts: the panel comes from the host, a plain frame without one", function()
@@ -419,6 +566,9 @@ test("insights charts: the DpsRace host pools through NS.Pool and draws in the w
     assertEqual(host.fonts.label, Style.FONT.TEXT)
     assertEqual(host.fonts.figure, Style.FONT.FIGURE)
     assertEqual(host.fonts.caption, Style.FONT.CAPTION)
+    -- LootHistory's heading size (the owner's call, 2026-10-28), the list panels' titles alike.
+    assertEqual(host.fonts.heading, "GameFontNormal")
+    assertEqual(host.fonts.panelTitle, host.fonts.heading)
     assertEqual(host.colors.heading, Style.GOLD)
     assertEqual(host.colors.body, Tbl.COLORS.text)
     local p = host.panel(i.content)
@@ -587,7 +737,7 @@ test("insights tab: a selection left with no runs falls back to All; the one jus
     assertNil(i.NS.db.profile.views, "a fallback never writes the saved view")
 end)
 
-test("insights tab: the cards state the eight figures, each hover naming its value", function()
+test("insights tab: the cards state the ten figures, each hover naming its value", function()
     local i = tab()
     local c = i.pane.cards
     assertEqual(c.runs.value.__text, "3")
@@ -595,14 +745,70 @@ test("insights tab: the cards state the eight figures, each hover naming its val
     assertEqual(c.best.label.__text, "Best DPS \194\183 Destruction \194\183 Cleave \194\183 3:00")
     assertEqual(c.clean.value.__text, "66.7%", "the Incinerate flags its run; the Feign Death does not")
     assertEqual(c.newBests.value.__text, "1")
-    assertEqual(c.people.value.__text, "2 / 2")
+    assertEqual(c.chars.value.__text, "2")
+    assertEqual(c.specs.value.__text, "2")
+    assertEqual(c.activeDays.value.__text, "3")
     assertEqual(c.avg.value.__text, "97.9%", "(150 / 160 + 1 + 1) / 3")
     assertEqual(c.clean.frame._tip[2], "2 of 3 runs carry no flag.", "the hover states the count")
     assertEqual(c.runs.frame._tip[1], "Races run")
+    assertEqual(c.activeDays.frame._tip[2], "3 days with a run.")
     -- One spec alone is one board: the raw average.
     i.pane:SetFilter("spec", 267)
     assertEqual(c.avg.label.__text, "Avg DPS")
     assertEqual(c.avg.value.__text, i.NS.Format.Number(155000))
+end)
+
+test("insights tab: a card's figure is gold, and colored where it means something", function()
+    local i = tab()
+    local c, C, GOLD = i.pane.cards, i.NS.ResultsTable.COLORS, i.NS.Style.GOLD
+    assertTrue(sameColor(c.runs.value.__color, GOLD))
+    assertTrue(sameColor(c.time.value.__color, GOLD))
+    assertTrue(sameColor(c.clean.value.__color, C.red), "66.7% clean: under 70%")
+    assertTrue(sameColor(c.avg.value.__color, C.green), "97.9% of board best: 90% or more")
+    assertTrue(sameColor(c.newBests.value.__color, C.green), "a new best set")
+    assertTrue(sameColor(c.best.value.__color, i.NS.ResultsTable.ClassColor("WARLOCK")), "the best's class color")
+    -- 80% sits between the bands: gold.
+    local runs = {}
+    for n = 1, 5 do runs[n] = mkRun("r" .. n, { date = NOW - n * HOUR }) end
+    runs[5].flags = { lateCasts = { { t = 1.6, spellID = 29722 } } }
+    i = tab(runs)
+    assertEqual(i.pane.cards.clean.value.__text, "80.0%")
+    assertTrue(sameColor(i.pane.cards.clean.value.__color, GOLD))
+    assertTrue(sameColor(i.pane.cards.newBests.value.__color, GOLD), "no new best: gold")
+end)
+
+test("insights tab: CardGrid packs four a row, and a short last row is shared out", function()
+    local Insights = tab(nil, { closed = true }).NS.ResultsInsights
+    local cells, rows = Insights.CardGrid(Insights.CARDS, 4)
+    assertEqual(rows, 3, "ten cards, two of them wide: three full rows")
+    for n, def in ipairs(Insights.CARDS) do
+        if def.wide then assertEqual(cells[n].span, 2, def.key .. " spans two") end
+    end
+    assertEqual(cells[#cells].col + cells[#cells].span, 4, "the last row is full")
+    -- Seven units: the last row's three cards share four columns.
+    cells, rows = Insights.CardGrid({ {}, {}, {}, {}, {}, { wide = true } }, 4)
+    assertEqual(rows, 2)
+    assertEqual(cells[5].span, 4 / 3)
+    assertEqual(cells[6].col, 4 / 3)
+    assertEqual(cells[6].span, 8 / 3)
+    assertEqual(cells[6].col + cells[6].span, 4)
+    -- A wide card that does not fit moves down whole, and the row above keeps its gap filled.
+    cells = Insights.CardGrid({ {}, {}, {}, { wide = true } }, 4)
+    assertEqual(cells[4].row, 1)
+    assertEqual(cells[4].span, 4)
+    assertEqual(#Insights.CardGrid({}, 4), 0)
+end)
+
+test("insights tab: the cards fill even rows across the content, none half empty", function()
+    local i = tab()
+    local c = i.pane.cards
+    local w = i.pane.width
+    local inner = w - 16
+    local function right(card) return point(card.frame)[4] + card.frame.__width end
+    assertEqual(point(c.runs.frame)[5], point(c.clean.frame)[5], "one row")
+    assertTrue(math.abs(right(c.clean) - (8 + inner)) <= 1, "the first row ends at the margin")
+    assertTrue(math.abs(right(c.span) - (8 + inner)) <= 1, "and so does the last")
+    assertEqual(point(c.best.frame)[5], point(c.span.frame)[5], "the two wide cards share the last row")
 end)
 
 test("insights tab: above 60 runs the progression is one column a day, the same day of two years apart", function()
@@ -617,6 +823,17 @@ test("insights tab: above 60 runs the progression is one column a day, the same 
     assertEqual(cols[1]._tip[2], "31 runs")
     assertEqual(cols[2]._tip[2], "30 runs")
     assertTrue(cols[1]._tip[1]:find("2025") ~= nil, "the hover names the year")
+end)
+
+test("insights tab: DPS Progression carries a legend of its specs in their class colors", function()
+    local i = tab()
+    local chips = active(i.pane, "progressionLegend")
+    assertEqual(#chips, 2)
+    assertEqual(chips[1].fs.__text, "Destruction")
+    assertEqual(chips[2].fs.__text, "Fire")
+    assertTrue(sameColor(chips[2].sw.__colorTex, i.NS.ResultsTable.ClassColor("MAGE")))
+    assertEqual(chips[1]._tip, "Destruction:  2 runs")
+    assertEqual(point(chips[1])[4], 8, "under the strip, from its left edge")
 end)
 
 test("insights tab: a section with nothing to show hides; Top Spells needs one spec", function()

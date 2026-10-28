@@ -20,8 +20,16 @@ local _, NS = ...
 --     label and value; a strip column its own `color`; a list row an `onClick`. renderStrip takes an
 --     optional fixed top.
 --   - A divider's title takes a larger font object from the host, not 1.5x the size read back.
---   - Added: a stat card (Results_Detail.lua's kpi() shape) and setCard; dropped: the per-character
+--   - Added: a stat card (LootHistory's Analytics.lua card: the figure on top, centered, gold unless
+--     the caller colors it, the caption small below) and setCard; dropped: the per-character
 --     companion and its stack builder (LootHistory's own data shape: the caller builds the rows).
+--   - The owner's feedback round (2026-10-28, plan step V1): a bar row may carry a `sublabel`, drawn
+--     as a second line under its label (the section's rows grow to K.BAR_H2); renderRangeSection
+--     draws worst-to-best bars with an average mark on a scale that is not 0-based; a strip's axis
+--     labels are level, not rotated, in a short band under the axis, and thinned by the room
+--     between them, not by a stride over the columns; a strip's slots stop widening at
+--     K.STRIP_SLOT_MAX, so a few buckets draw wide columns side by side; renderLegend takes its left
+--     edge.
 --
 -- HOST-AGNOSTIC (the owner's S-7 answer, 2026-10-28). Nothing above the host section at the end of
 -- this file reads NS or a client global but CreateFrame: the colors, the font objects, the tooltip,
@@ -46,15 +54,19 @@ NS.InsightsCharts = Charts
 
 local K = {
     BAR_H = 16, BAR_GAP = 3, SECTION_GAP = 16,
+    BAR_H2 = 26,            -- a bar row whose label takes two lines (a row with a `sublabel`)
     HEADER_H = 18,          -- a section heading's line, above its first bar
     TRACK_GAP = 6,          -- between a bar's label column and its track
     DAYSTRIP_H = 46,
-    STRIP_LABEL_H = 44,     -- reserved space under a strip for the rotated x-axis labels
+    STRIP_LABEL_H = 16,     -- the band under a strip's axis line that holds its level x-axis labels
     STRIP_AXIS_GAP = 2,     -- gap between the column bases and the separator line
-    STRIP_LABEL_GAP = 7,    -- gap between the separator line and the label text
-    LABEL_X_ADJUST = -2,    -- nudge to visually center the rotated label under the column
-    STRIP_BAR_MAX = 14,     -- a strip column's widest
-    STRIP_LABEL_PITCH = 11, -- the least room between two axis labels; closer ones are thinned out
+    STRIP_LABEL_GAP = 3,    -- gap between the separator line and the label text
+    STRIP_BAR_MAX = 36,     -- a strip column's widest
+    STRIP_SLOT_MAX = 48,    -- a strip slot's widest: a few buckets sit side by side, not far apart
+    STRIP_LABEL_PITCH = 40, -- the least room between two axis labels' centers; closer ones are dropped
+    RANGE_MIN_W = 3,        -- a range bar's narrowest (one run, or runs all alike)
+    RANGE_MARK_W = 2,       -- a range bar's average mark
+    RANGE_SCALE_H = 14,     -- the line under a range section naming its scale's two ends
     LIST_ROW_H = 16, LIST_MAX = 10,
     LIST_TITLE_H = 20,      -- a list panel's title band, above its first row
     LABELW = 108, VALW = 92,   -- fixed label/value columns in a horizontal bar; the track fills the rest
@@ -63,7 +75,7 @@ local K = {
     MAX_STACK_SEGS = 9,     -- segment ceiling per stacked bar
     CHIP_W = 120, CHIP_H = 14, LEGEND_ROW_H = 16,
     DIVIDER_H = 26,
-    CARD_H = 46,            -- Results_Detail.lua's KPI_H
+    CARD_H = 52,            -- LootHistory's card (Analytics.lua's cardH)
     MIN_HEADLINE_SIZE = 11, -- floor for a card's shrink-to-fit figure
 }
 Charts.K = K
@@ -219,11 +231,14 @@ end
 
 -- ── the factories ───────────────────────────────────────────────────────────────────────────────
 
--- A horizontal bar row's frame: fixed label (left) + value (right), the track between them.
+-- A horizontal bar row's frame: fixed label (left, with an optional second line under it) + value
+-- (right), the track between them.
 local function barFrame(ctx, parent)
     local bar = CreateFrame("Frame", nil, parent)
     bar:SetHeight(K.BAR_H)
     bar.label = text(bar, ctx.fonts.label, "LEFT")
+    bar.sub = text(bar, ctx.fonts.label, "LEFT")
+    paint(bar.sub, ctx.colors.muted)
     bar.track = bar:CreateTexture(nil, "BACKGROUND")
     fillColor(bar.track, ctx.colors.track)
     bar.value = text(bar, ctx.fonts.label, "RIGHT")
@@ -252,13 +267,32 @@ local function makeStackedBar(ctx, parent)
     return bar
 end
 
--- One vertical column in a strip, with its rotated axis label under the strip's axis line.
+-- A range bar: a bar row whose fill spans worst to best, with a thin mark at the average.
+local function makeRange(ctx, parent)
+    local bar = makeBar(ctx, parent)
+    bar.mark = bar:CreateTexture(nil, "OVERLAY")
+    return bar
+end
+
+-- A range section's scale line: its two ends' values, under the left and right ends of the track.
+local function makeScale(ctx, parent)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetHeight(K.RANGE_SCALE_H)
+    f.lo = text(f, ctx.fonts.axis, "LEFT")
+    f.lo:SetPoint("LEFT", 0, 0)
+    f.hi = text(f, ctx.fonts.axis, "RIGHT")
+    f.hi:SetPoint("RIGHT", 0, 0)
+    paint(f.lo, ctx.colors.muted)
+    paint(f.hi, ctx.colors.muted)
+    return f
+end
+
+-- One vertical column in a strip, with its level axis label under the strip's axis line.
 local function makeStripBar(ctx, parent)
     local f = CreateFrame("Frame", nil, parent)
     f.fill = f:CreateTexture(nil, "ARTWORK")
     f.fill:SetPoint("BOTTOM", 0, 0)
-    f.axis = text(f, ctx.fonts.axis, "LEFT")
-    f.axis:SetRotation(math.pi / 2)
+    f.axis = text(f, ctx.fonts.axis, "CENTER")
     paint(f.axis, ctx.colors.muted)
     hoverable(ctx, f, "ANCHOR_TOP")
     return f
@@ -342,19 +376,23 @@ function Ctx:strip(parent)
     return CreateFrame("Frame", nil, parent or self.content)
 end
 
---- A stat card: a small caption over a large figure, on the host's panel (Results_Detail.lua's
---- kpi()). Its hover states the figure (setCard).
+--- A stat card, LootHistory's: a large figure on top, centered and in the heading gold, over a small
+--- caption, on the host's panel. Its hover states the figure (setCard).
 --- @return table  { frame, label, value, caption }
-function Ctx:card(parent, caption, color)
+function Ctx:card(parent, caption)
     local f = self.panel(parent or self.content)
     f:SetHeight(K.CARD_H)
-    local label = text(f, self.fonts.caption, "LEFT")
+    local value = text(f, self.fonts.figure, "CENTER")
+    paint(value, self.colors.heading)
+    value:SetPoint("TOP", f, "TOP", 0, -9)
+    value:SetPoint("LEFT", f, "LEFT", 2, 0)
+    value:SetPoint("RIGHT", f, "RIGHT", -2, 0)
+    local label = text(f, self.fonts.caption, "CENTER")
     paint(label, self.colors.caption)
-    label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
+    label:SetPoint("BOTTOM", f, "BOTTOM", 0, 7)
+    label:SetPoint("LEFT", f, "LEFT", 4, 0)
+    label:SetPoint("RIGHT", f, "RIGHT", -4, 0)
     label:SetText(caption)
-    local value = text(f, self.fonts.figure, "LEFT")
-    paint(value, color or self.colors.body)
-    value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
     hoverable(self, f)
     return { frame = f, label = label, value = value, caption = caption }
 end
@@ -367,11 +405,12 @@ local function fitFigure(fs, maxW)
     if fit ~= size then fs:SetFont(file, fit, flags) end
 end
 
---- Set a card's figure and its hover (`tip`, else "caption: figure"); `maxW` shrinks an overflowing
---- figure to fit.
-function Ctx:setCard(card, value, tip, maxW)
+--- Set a card's figure, its color (`color`, else the heading gold) and its hover (`tip`, else
+--- "caption: figure"); `maxW` shrinks an overflowing figure to fit.
+function Ctx:setCard(card, value, tip, maxW, color)
     card.value:SetFontObject(self.fonts.figure)
     card.value:SetText(value)
+    paint(card.value, color or self.colors.heading)
     card.frame._tip = tip or Charts.tipText(card.caption, value)
     if maxW then fitFigure(card.value, maxW) end
 end
@@ -386,12 +425,20 @@ function Ctx:placeHeader(header, y, pad)
     return y - K.HEADER_H
 end
 
--- Lay out a bar row's label, value and track; returns the track's width.
-local function placeTrack(bar, content, pad, y, barW)
+-- A section's row height: two lines when any row carries a sublabel, so its rows stay even.
+local function rowHeight(rows)
+    for _, row in ipairs(rows) do
+        if row.sublabel then return K.BAR_H2 end
+    end
+    return K.BAR_H
+end
+
+-- Lay out a bar row `rowH` tall: its value and track, both centered on the row; returns the track's
+-- width. The label is bindBarText's.
+local function placeTrack(bar, content, pad, y, barW, rowH)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", content, "TOPLEFT", pad, y)
-    bar:SetWidth(barW)
-    bar.label:ClearAllPoints(); bar.label:SetPoint("LEFT", 0, 0); bar.label:SetWidth(K.LABELW)
+    bar:SetSize(barW, rowH or K.BAR_H)
     bar.value:ClearAllPoints(); bar.value:SetPoint("RIGHT", 0, 0); bar.value:SetWidth(K.VALW)
     local trackW = math.max(1, barW - K.LABELW - K.VALW - 12)
     bar.track:ClearAllPoints()
@@ -400,10 +447,30 @@ local function placeTrack(bar, content, pad, y, barW)
     return trackW
 end
 
--- A bar row's words: the truncated label in `labelColor`, the value, and the hover.
+-- The label column: one line centered on the row, or the label over its sublabel, both truncated.
+local function placeLabel(bar, row)
+    bar.label:ClearAllPoints()
+    bar.sub:ClearAllPoints()
+    bar.label:SetWidth(K.LABELW)
+    bar.label:SetText((Charts.truncate(row.label, K.LABEL_MAXCHARS)))
+    if not row.sublabel then
+        bar.label:SetPoint("LEFT", 0, 0)
+        bar.sub:SetText("")
+        bar.sub:Hide()
+        return
+    end
+    bar.label:SetPoint("BOTTOMLEFT", bar, "LEFT", 0, 1)
+    bar.sub:SetPoint("TOPLEFT", bar, "LEFT", 0, -1)
+    bar.sub:SetWidth(K.LABELW)
+    bar.sub:SetText((Charts.truncate(row.sublabel, K.LABEL_MAXCHARS)))
+    bar.sub:Show()
+end
+
+-- A bar row's words: the truncated label in `labelColor` (and its sublabel, muted), the value, and
+-- the hover.
 function Ctx:bindBarText(bar, row, labelColor)
     bar._tip = row.tip or Charts.tipText(row.label, row.value)
-    bar.label:SetText((Charts.truncate(row.label, K.LABEL_MAXCHARS)))
+    placeLabel(bar, row)
     paint(bar.label, labelColor)
     bar.value:SetText(row.value)
     paint(bar.value, self.colors.value)
@@ -418,24 +485,25 @@ local function longest(rows)
 end
 
 --- A horizontal-bar section: the heading, then one bar per row, the longest filling the track. rows:
---- ordered { label, color = {r,g,b}, labelColor = {r,g,b}|nil, frac (>= 0), value = string, tip }.
---- The label takes its bar's color unless the row gives one, so single bars are self-legending.
+--- ordered { label, sublabel|nil, color = {r,g,b}, labelColor = {r,g,b}|nil, frac (>= 0),
+--- value = string, tip }. The label takes its bar's color unless the row gives one, so single bars
+--- are self-legending; a sublabel is a second, muted line under it (every row then K.BAR_H2 tall).
 --- `legendPool` (optional) draws a legend of the rows under the bars. Skipped when rows is empty.
 --- @return number  the cursor under the section
 function Ctx:renderBarSection(pool, header, rows, y, w, pad, legendPool)
     if #rows == 0 then header:Hide(); return y end
-    local top = longest(rows)
+    local top, rowH = longest(rows), rowHeight(rows)
     y = self:placeHeader(header, y, pad)
     for _, row in ipairs(rows) do
         local bar = self:acquire(pool, makeBar)
         fillColor(bar.fill, row.color, 0.95)
         self:bindBarText(bar, row, row.labelColor or row.color)
-        local trackW = placeTrack(bar, self.content, pad, y, w - pad * 2)
+        local trackW = placeTrack(bar, self.content, pad, y, w - pad * 2, rowH)
         local frac = top > 0 and (row.frac or 0) / top or 0
         bar.fill:ClearAllPoints()
         bar.fill:SetPoint("LEFT", bar.track, "LEFT", 0, 0)
         bar.fill:SetSize(math.max(1, trackW * math.min(1, frac)), K.BAR_H - 4)
-        y = y - (K.BAR_H + K.BAR_GAP)
+        y = y - (rowH + K.BAR_GAP)
     end
     if legendPool then
         local leg = {}
@@ -471,22 +539,86 @@ end
 --- @return number  the cursor under the section
 function Ctx:renderStackedBarSection(pool, header, rows, y, w, pad)
     if #rows == 0 then header:Hide(); return y end
+    local rowH = rowHeight(rows)
     y = self:placeHeader(header, y, pad)
     for _, row in ipairs(rows) do
         local bar = self:acquire(pool, makeStackedBar)
         self:bindBarText(bar, row, row.labelColor or self.colors.body)
-        placeSegments(bar, placeTrack(bar, self.content, pad, y, w - pad * 2), row.segments or {})
-        y = y - (K.BAR_H + K.BAR_GAP)
+        placeSegments(bar, placeTrack(bar, self.content, pad, y, w - pad * 2, rowH), row.segments or {})
+        y = y - (rowH + K.BAR_GAP)
     end
     return y - K.SECTION_GAP
 end
 
---- A wrapped legend of swatch + label chips, starting at the track's left edge (under the bars, not
---- their labels). rows: { { label, color = {r,g,b}, value|nil } }. A long label is cut with an
---- ellipsis; the hover shows it whole, with the value.
+--- The scale a range section draws on: the lowest `lo` to the highest `hi` over the rows, so the
+--- track is not 0-based. When they meet, the scale opens 5% either side (at least 1). Pure.
+--- @return number, number  the scale's two ends
+function Charts.RangeScale(rows)
+    local lo, hi = math.huge, -math.huge
+    for _, row in ipairs(rows) do
+        lo, hi = math.min(lo, row.lo), math.max(hi, row.hi)
+    end
+    if hi > lo then return lo, hi end
+    local d = math.max(math.abs(hi) * 0.05, 1)
+    return lo - d, hi + d
+end
+
+-- Lay a range bar's fill (lo to hi, at least RANGE_MIN_W) and its mark along a track on [lo0, hi0].
+local function placeRange(bar, row, trackW, lo0, hi0, markColor)
+    local span = hi0 - lo0
+    local x1, x2 = trackW * (row.lo - lo0) / span, trackW * (row.hi - lo0) / span
+    local fillW = math.max(K.RANGE_MIN_W, x2 - x1)
+    x1 = math.max(0, math.min(x1, trackW - fillW))
+    bar.fill:ClearAllPoints()
+    bar.fill:SetPoint("LEFT", bar.track, "LEFT", x1, 0)
+    bar.fill:SetSize(fillW, K.BAR_H - 4)
+    fillColor(bar.fill, row.color, 0.95)
+    if not row.mark then bar.mark:Hide(); return end
+    bar.mark:ClearAllPoints()
+    bar.mark:SetPoint("CENTER", bar.track, "LEFT", trackW * (row.mark - lo0) / span, 0)
+    bar.mark:SetSize(K.RANGE_MARK_W, K.BAR_H)
+    fillColor(bar.mark, markColor)
+    bar.mark:Show()
+end
+
+-- The scale line under a range section: `fmt(lo0)` under the track's left end, `fmt(hi0)` its right.
+function Ctx:placeScale(pool, y, w, pad, lo0, hi0, fmt)
+    local f = self:acquire(pool, makeScale)
+    f:ClearAllPoints()
+    f:SetPoint("TOPLEFT", self.content, "TOPLEFT", pad + K.LABELW + K.TRACK_GAP, y)
+    f:SetWidth(math.max(1, w - pad * 2 - K.LABELW - K.VALW - 12))
+    f.lo:SetText(fmt(lo0))
+    f.hi:SetText(fmt(hi0))
+    return y - K.RANGE_SCALE_H
+end
+
+--- A section of range bars: per row, a bar from its worst (`lo`) to its best (`hi`) with a mark at
+--- its average (`mark`), on one scale from the lowest lo to the highest hi (Charts.RangeScale), so
+--- figures near each other do not all look full the way they do on a 0-based track. rows: ordered
+--- { label, sublabel|nil, color, labelColor|nil, lo, hi, mark|nil, value = string, tip }. With
+--- `scalePool` and `fmt`, a line under the bars names the scale's two ends. Skipped when rows is empty.
+--- @return number  the cursor under the section
+function Ctx:renderRangeSection(pool, header, rows, y, w, pad, scalePool, fmt)
+    if #rows == 0 then header:Hide(); return y end
+    local lo0, hi0 = Charts.RangeScale(rows)
+    local rowH = rowHeight(rows)
+    y = self:placeHeader(header, y, pad)
+    for _, row in ipairs(rows) do
+        local bar = self:acquire(pool, makeRange)
+        self:bindBarText(bar, row, row.labelColor or row.color)
+        placeRange(bar, row, placeTrack(bar, self.content, pad, y, w - pad * 2, rowH), lo0, hi0, self.colors.body)
+        y = y - (rowH + K.BAR_GAP)
+    end
+    if scalePool and fmt then y = self:placeScale(scalePool, y, w, pad, lo0, hi0, fmt) end
+    return y - K.SECTION_GAP
+end
+
+--- A wrapped legend of swatch + label chips, starting at `x0` (by default the track's left edge,
+--- under the bars, not their labels). rows: { { label, color = {r,g,b}, value|nil, tip|nil } }. A
+--- long label is cut with an ellipsis; the hover shows it whole, with the value.
 --- @return number  the cursor under the legend
-function Ctx:renderLegend(pool, rows, y, w, pad)
-    local x0 = pad + K.LABELW + K.TRACK_GAP
+function Ctx:renderLegend(pool, rows, y, w, pad, x0)
+    x0 = x0 or pad + K.LABELW + K.TRACK_GAP
     local x, rowY = x0, y
     for _, row in ipairs(rows) do
         if x + K.CHIP_W > w - pad then x = x0; rowY = rowY - K.LEGEND_ROW_H end
@@ -503,32 +635,37 @@ function Ctx:renderLegend(pool, rows, y, w, pad)
     return rowY - K.LEGEND_ROW_H - K.SECTION_GAP
 end
 
--- A strip column's rotated label: its top a gap below the axis line, hanging straight down, so
--- labels of different lengths all start at the line; centered on the column.
-local function placeAxisLabel(f, label, barW)
+-- A strip column's label: level, centered under the column, its top a gap below the axis line, so
+-- it sits in the band under the line and never reaches a column. (LootHistory rotates these and
+-- places them by the measured string width; in game they crossed the line, plan step V-a.)
+local function placeAxisLabel(f, label)
     if not label then
         f.axis:SetText("")
         f.axis:Hide()
         return
     end
     f.axis:SetText(label)
-    local tw = f.axis:GetStringWidth()
-    tw = type(tw) == "number" and tw or 0
     f.axis:ClearAllPoints()
-    f.axis:SetPoint("CENTER", f, "BOTTOMLEFT", barW / 2 + K.LABEL_X_ADJUST,
-        -(tw / 2) - K.STRIP_AXIS_GAP - K.STRIP_LABEL_GAP)
+    f.axis:SetPoint("TOP", f, "BOTTOM", 0, -(K.STRIP_AXIS_GAP + K.STRIP_LABEL_GAP))
     f.axis:Show()
 end
 
--- The axis line under a strip's columns, spanning the strip a small gap below their bases.
-function Ctx:placeAxisLine(strip)
+-- The axis line under a strip's columns, `width` long, a small gap below their bases.
+function Ctx:placeAxisLine(strip, width)
     strip.axisLine = strip.axisLine or strip:CreateTexture(nil, "ARTWORK")
     fillColor(strip.axisLine, self.colors.axis)
     strip.axisLine:ClearAllPoints()
     strip.axisLine:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", 0, -K.STRIP_AXIS_GAP)
-    strip.axisLine:SetPoint("BOTTOMRIGHT", strip, "BOTTOMRIGHT", 0, -K.STRIP_AXIS_GAP)
-    strip.axisLine:SetHeight(1)
+    strip.axisLine:SetSize(width, 1)
     strip.axisLine:Show()
+end
+
+--- A strip's geometry for `n` buckets across `innerW`: the slot (at most K.STRIP_SLOT_MAX, so a few
+--- buckets sit side by side) and the column's width in it (at most K.STRIP_BAR_MAX). Pure.
+--- @return number, number  slot, barW
+function Charts.StripSlots(innerW, n)
+    local slot = math.min(K.STRIP_SLOT_MAX, innerW / math.max(1, n))
+    return slot, math.max(2, math.min(K.STRIP_BAR_MAX, slot - 2))
 end
 
 local function tallest(buckets, top)
@@ -542,7 +679,8 @@ end
 
 --- A strip of vertical columns, one per bucket: { count, label|nil, info (the hover: a string or
 --- lines), color|nil }. A column's height is its count over `top` (the largest count, at least 1,
---- when nil); a zero column is a faint stub. Labels thin out when the columns crowd.
+--- when nil); a zero column is a faint stub. A label shows only K.STRIP_LABEL_PITCH or more past
+--- the last one shown, so two never collide.
 --- @return number  the cursor under the strip and its labels
 function Ctx:renderStrip(pool, header, strip, buckets, y, w, pad, top)
     if #buckets == 0 then header:Hide(); strip:Hide(); return y end
@@ -552,22 +690,24 @@ function Ctx:renderStrip(pool, header, strip, buckets, y, w, pad, top)
     strip:SetPoint("TOPLEFT", self.content, "TOPLEFT", pad, y)
     strip:SetSize(innerW, K.DAYSTRIP_H)
     strip:Show()
-    local slot = innerW / #buckets
-    local barW = math.max(2, math.min(K.STRIP_BAR_MAX, slot - 2))
-    local stride = math.max(1, math.ceil(K.STRIP_LABEL_PITCH / slot))
+    local slot, barW = Charts.StripSlots(innerW, #buckets)
+    local lastLabel = -math.huge
     top = tallest(buckets, top)
-    self:placeAxisLine(strip)
+    self:placeAxisLine(strip, slot * #buckets)
     for i, b in ipairs(buckets) do
         local f = self:acquire(pool, makeStripBar, strip)
+        local x = (i - 1) * slot + (slot - barW) / 2
         f:SetParent(strip)
         f:ClearAllPoints()
-        f:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", (i - 1) * slot, 0)
+        f:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", x, 0)
         f:SetSize(barW, K.DAYSTRIP_H)
         f.fill:SetSize(barW, math.max(1, math.min(1, b.count / top) * (K.DAYSTRIP_H - 2)))
         fillColor(f.fill, b.color or self.colors.bar)
         f.fill:SetAlpha(b.count == 0 and 0.12 or 0.9)
         f._tip = b.info
-        placeAxisLabel(f, (i - 1) % stride == 0 and b.label or nil, barW)
+        local room = b.label and x - lastLabel >= K.STRIP_LABEL_PITCH
+        if room then lastLabel = x end
+        placeAxisLabel(f, room and b.label or nil)
     end
     return y - K.DAYSTRIP_H - K.STRIP_LABEL_H - K.SECTION_GAP
 end
@@ -636,8 +776,8 @@ function Charts.Host()
             rule = { C.gold[1], C.gold[2], C.gold[3], 0.35 }, bar = C.blue,
         },
         fonts = {
-            label = F.TEXT, axis = F.CAPTION, heading = F.SECTION, divider = F.SECTION,
-            panelTitle = F.HEADER, caption = F.CAPTION, figure = F.FIGURE,
+            label = F.TEXT, axis = F.CAPTION, heading = F.CHART, divider = F.SECTION,
+            panelTitle = F.CHART, caption = F.CAPTION, figure = F.FIGURE,
         },
     }
 end
