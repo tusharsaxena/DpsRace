@@ -94,6 +94,7 @@ local SUITES = {
     "test_scoring",
     "test_bests",
     "test_late_ignore",
+    "test_late_ignore_ui",
     "test_race",
     "test_race_resume",
     "test_format",

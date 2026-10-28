@@ -404,8 +404,8 @@ L["Late-cast ignore list"] = "Late-cast ignore list"
 L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] =
     "Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."
 L["(all hearthstones, %d)"] = "(all hearthstones, %d)"
-L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."] =
-    "Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."
+L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."] =
+    "Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."
 L["Ignore a spell"] = "Ignore a spell"
 L["A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."] =
     "A spell ID, a shift-clicked spell link, or the name of a spell a run cast late. \"Hearthstone\" adds every hearthstone."
@@ -416,6 +416,24 @@ L["Put the list back to its six defaults: Invisibility, Vanish, Feign Death, eve
     "Put the list back to its six defaults: Invisibility, Vanish, Feign Death, every hearthstone, Shadowmeld and Greater Invisibility. The other Race settings are not touched."
 L["%s, all variants (%d)"] = "%s, all variants (%d)"
 L["%s (%d)"] = "%s (%d)"
+-- The late-cast ignore list's actions (#8): the right-click menu, the ignored casts' lines and chip.
+L["Ignored: %s"] = "Ignored: %s"
+L["Late casts"] = "Late casts"
+L["Ignore %s for late casts"] = "Ignore %s for late casts"
+L["Stop ignoring %s"] = "Stop ignoring %s"
+L["Stop ignoring all hearthstones"] = "Stop ignoring all hearthstones"
+L["Ignore for late casts"] = "Ignore for late casts"
+L["Right-click to ignore a spell for late casts, or count it again."] =
+    "Right-click to ignore a spell for late casts, or count it again."
+L["%d ignored"] = "%d ignored"
+L["Late casts on the ignore list: they flag nothing."] = "Late casts on the ignore list: they flag nothing."
+L["1 ignored late cast"] = "1 ignored late cast"
+L["%d ignored late casts"] = "%d ignored late casts"
+L["On the late-cast ignore list, so no flag. Right-click to count a spell again."] =
+    "On the late-cast ignore list, so no flag. Right-click to count a spell again."
+L["No flags"] = "No flags"
+L["A gray tick is a spell on the late-cast ignore list: ignored, so no flag."] =
+    "A gray tick is a spell on the late-cast ignore list: ignored, so no flag."
 L["Sticky-combat hint after (seconds)"] = "Sticky-combat hint after (seconds)"
 L["How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."] =
     "How long combat may hold after the buzzer before the HUD suggests ways to drop it. 5 to 60 seconds."

@@ -753,7 +753,8 @@ end
 
 --- A row's right-click menu (LootHistory's): Add Note (Edit Note once it has one), Share with the
 --- channels as a submenu, Compare With This Run (for the run in the detail; grayed on that run itself
---- and on a lost one), and Delete behind its confirmation.
+--- and on a lost one), Ignore for late casts as a submenu when the run has a late cast (#8; never on
+--- the sample history, D-7), and Delete behind its confirmation.
 --- @param r table  the run
 --- @param owner table  the row
 --- @return boolean opened
@@ -767,6 +768,9 @@ function Results.RowMenu(r, owner)
         if canShare() and NS.Share.Line(r) then NS.Share.FillMenu(shareMenu, r) else shareMenu:SetEnabled(false) end
         local cmp = root:CreateButton(L["Compare With This Run"], function() Results.CompareWith(r.id) end)
         if r.id == selected or not NS.ResultsCompare.Usable(r) then cmp:SetEnabled(false) end
+        if not Source.IsMock() and NS.LateIgnore.Offers(r) then
+            NS.LateIgnore.FillMenu(root:CreateButton(L["Ignore for late casts"]), r)
+        end
         root:CreateButton("|cffff5555" .. L["Delete"] .. "|r", function() Results.ConfirmDelete(r.id) end)
     end)
     return true

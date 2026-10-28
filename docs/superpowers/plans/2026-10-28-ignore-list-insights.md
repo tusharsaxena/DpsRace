@@ -388,7 +388,7 @@ upstream change). None is ratified by this plan.
     - No new Helpers member, so the stub needed nothing. `test_surface_parity.lua` gained a degraded-load
       case: the Race page draws quietly and `/dr ignore add|remove` by ID lands.
     - The help line and the docs for the verb are I4's (`docs/slash-dispatch.md`, README).
-- [ ] **I3 HUD and Results detail actions.**
+- [x] **I3 HUD and Results detail actions.**
   - `Hud_States.lua` `newChip` (:268-282): an `OnMouseUp` RightButton hook that calls `chip.menu(chip)` when
     set. Chips are pooled (`Chips:Set`, :290), so `Set` assigns `chip.menu = item.menu` (nil included) on
     every acquire. Otherwise a reused chip keeps the previous late-casts chip's menu. `ResultChips` (:1000): the late-casts chip gets `item.menu` built by a `LateIgnore.Menu(run)` helper
@@ -411,6 +411,29 @@ upstream change). None is ratified by this plan.
     Hide flagged and the Flagged badge re-scored, the detail menu, the RowMenu submenu, the StatusTip and
     `DETAIL.flags` ignored line), `test_toast.lua` (an all-ignored new best shows no flags line and no
     "ignored" chip, D-6), `test_tooltips.lua` if it pins the tip texts. Gate green.
+  - **Done notes (I3, 2026-10-28), where the code differed from the plan:**
+    - The menu lives in `LateIgnore.lua` as four calls: `MenuEntries(run)` (pure but for the spell names),
+      `Offers(run)`, `FillMenu(root, run)` (the HUD, the detail and the row menu's submenu share it) and
+      `Menu(run, owner)`, which takes the owner region `MenuUtil.CreateContextMenu` needs. Ignored entries
+      dedupe by the list entry that covers them, so two toy hearthstones under 8690 offer one "Stop ignoring
+      all hearthstones".
+    - The HUD chip's dimmed lines ride a new `tipLines` field on the chip item (`Chips:Set` sets `tip`,
+      `tipLines` and `menu` on every acquire). `States.FlagChips` items also carry `key`; the toast ignores it.
+    - The detail's right-click is on the whole Flags box, not an overlay on the `lateCasts` row: the box
+      already owns the flags hover (`DETAIL.flags`), and an overlay would split it. The menu's title says
+      *Late casts*, and the box tooltip carries the hint.
+    - The ignored casts are one more `FlagLines` entry (`key = "lateIgnored"`, `dim = true`), after the
+      counted line or first when none counts, so `has` in `layoutFlags` keeps the box with no flag.
+      `DETAIL.flags` counts only the real flags ("No flags" when there are none) and adds the dimmed line.
+    - The "late-cast tick tip" is the timing legend's *Late cast* item (ticks are textures with no hover of
+      their own). Its tip gains the gray-tick sentence and the run's `IgnoredText`.
+    - D-7 in the Results window reads `ResultsSource.IsMock()` (the detail's box, its tooltip hint and the
+      row menu); the HUD reads `v.preview`.
+    - The Race page's blurb now mentions the right-click (I2's note).
+    - Tests: the pure halves went into `test_late_ignore.lua`, the HUD right-click into `test_hud.lua`, and
+      the Results window half into a new `tests/test_late_ignore_ui.lua` (the detail box, the row submenu,
+      the sample history). `test_toast.lua` already pinned the all-ignored toast (I1). I4 owes its
+      `docs/testing.md` row.
 - [ ] **I4 Docs and smoke rows, then push.**
   - `docs/ARCHITECTURE.md` (settings table, module map, flags read path), `docs/schema.md`,
     `docs/settings-panel.md`, `docs/data-flow.md`, `docs/module-map.md`, `docs/slash-dispatch.md`,

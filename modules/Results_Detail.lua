@@ -114,6 +114,7 @@ Detail.FLAG_MAIN_H = 18             -- a main line (the 16px font)
 Detail.FLAG_SUB_H = 12              -- a detail line (the 10px caption)
 Detail.FLAG_PADX, Detail.FLAG_PADY, Detail.FLAG_GAP = FLAG_PADX, FLAG_PADY, FLAG_GAP
 Detail.FLAG_MAIN, Detail.FLAG_BODY = FLAG_MAIN, FLAG_BODY
+Detail.IGNORED = IGNORED   -- the ignored late casts' tick, and their line in the flags box
 
 -- ── pure: the note ──────────────────────────────────────────────────────────────────────────────
 
@@ -250,9 +251,25 @@ local EXPLAIN = {
     lost = function() return L["There is no score."] end,
 }
 
+-- The late casts the ignore list leaves uncounted (#8), as one dimmed line of the flags box: not a
+-- flag, but the box keeps it (and so shows with no flag at all), as the undo's place. Nil with none.
+local function ignoredLine(run)
+    local nameOf = NS.HudBreakdown.SpellName
+    local full = NS.Scoring.IgnoredText(run, nameOf)
+    if not full then return nil end
+    local _, ignored = NS.Scoring.SplitLate(run)
+    local parts = {}
+    for i, cast in ipairs(ignored) do parts[i] = L["+%.1fs %s"]:format(cast.t or 0, tostring(nameOf(cast.spellID))) end
+    local n = #ignored
+    return { key = "lateIgnored", dim = true, full = full, sub = table.concat(parts, ", "),
+             main = n == 1 and L["1 ignored late cast"] or L["%d ignored late casts"]:format(n),
+             text = L["On the late-cast ignore list, so no flag. Right-click to count a spell again."] }
+end
+
 --- The run's flags with what each means, in Scoring's order: { key, main, sub, text, full }. `main` is
 --- the flag's own line ("2 late casts"), `sub` its detail or "" (the late casts' offsets), `text` what
---- it means or "", `full` Scoring's one-line text (the tooltip's).
+--- it means or "", `full` Scoring's one-line text (the tooltip's). The ignored late casts follow the
+--- counted ones (first when none counts) as one more line, key "lateIgnored" and `dim`.
 function Detail.FlagLines(run)
     local out = {}
     for _, flag in ipairs(NS.Scoring.Flags(run, NS.HudBreakdown.SpellName)) do
@@ -260,6 +277,8 @@ function Detail.FlagLines(run)
         out[#out + 1] = { key = flag.key, main = flag.main or flag.text, sub = flag.sub or "",
                           text = explain and explain(run, flag) or "", full = flag.text }
     end
+    local ignored = ignoredLine(run)
+    if ignored then table.insert(out, (out[1] and out[1].key == "lateCasts") and 2 or 1, ignored) end
     return out
 end
 
@@ -596,6 +615,10 @@ local function wireTips(p)
         th[#th + 1] = hoverOver(p, item.fs, "legend", i)
     end
     hover(p, w.flags, "flags")
+    -- The late casts' menu (#8) on a right-click anywhere in the box; none for a sample run (D-7).
+    w.flags:HookScript("OnMouseUp", function(self, button)
+        if button == "RightButton" and p.run and not NS.ResultsSource.IsMock() then NS.LateIgnore.Menu(p.run, self) end
+    end)
     w.flagTitleHover = hoverOver(p, w.flagTitle, "flags")
     -- Over the note box's spot too: hidden while the box is open, so it never takes the box's clicks.
     w.noteHover = hoverOver(p, w.note, "note")
@@ -708,6 +731,9 @@ function Pane:fillScore(run)
     self:fillDelta(run)
 end
 
+-- Each part's color: the flag's own, or the ignored casts' gray for their line (#8).
+local FLAG_COLORS = { main = FLAG_MAIN, sub = C.amber, text = FLAG_BODY }
+
 -- Each flag's main line, its detail and what it means; a row left from a run with more flags hides.
 function Pane:fillFlags(run)
     local w = self.w
@@ -717,7 +743,9 @@ function Pane:fillFlags(run)
         local row, line = flagRow(self, i), lines[i] or {}
         for _, part in ipairs({ "main", "sub", "text" }) do
             local fs = part == "text" and row.body or row[part]
+            local c = line.dim and IGNORED or FLAG_COLORS[part]
             fs:SetText(line[part] or "")
+            fs:SetTextColor(c[1], c[2], c[3])
             fs:SetShown((line[part] or "") ~= "")
         end
     end

@@ -3,7 +3,8 @@
 -- Unignore and Reset through the seam; what a typed spell resolves to (a number, a link, a hearthstone's
 -- name, a default the character does not know, a degraded load); the known spells; and the read-time
 -- effect on the readers: the result card's chips, the share line, the Results detail's ticks and lines,
--- the cached boards, a profile switch (the STOP body's count is in tests/test_hud.lua).
+-- the cached boards, a profile switch (the STOP body's count is in tests/test_hud.lua); and the actions
+-- (I3): the late-cast menu, the ignored casts' line and every flags tooltip that shows it.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =
@@ -263,4 +264,128 @@ test("late ignore: a profile switch re-scores the flags by the other profile's l
     NS.db:SetProfile("Other")
     assertTrue(NS.ResultsRuns.IsFlagged(f))
     assertEqual(NS.Bests.Board({ cleanOnly = true })["253|boss|30"].id, "c", "the switch dropped the cached board")
+end)
+
+-- ── the actions (I3): the menu, the ignored line, the tooltips ─────────────────────────────────
+
+-- A tooltip's lines as plain text (a line is a string or { text, r, g, b }).
+local function texts(lines)
+    local out = {}
+    for i, line in ipairs(lines or {}) do out[i] = type(line) == "table" and line[1] or line end
+    return out
+end
+
+local function has(list, want)
+    for _, s in ipairs(list) do
+        if type(s) == "string" and s:find(want, 1, true) then return true end
+    end
+    return false
+end
+
+test("late ignore: the menu offers each counted spell once, the undo for each ignored one, nothing for a sealed cast", function()
+    local NS = fresh()
+    local r = storedRun(NS, "m", 1, 100, late({ 1.4, FEIGN }, { 2.0, INCINERATE }, { 2.5, INCINERATE }, { 3 },
+        { 4, TOY }))
+    local e = NS.LateIgnore.MenuEntries(r)
+    assertEqual(#e, 3)
+    assertEqual(e[1].text, "Ignore Incinerate for late casts")
+    assertEqual(e[1].id, INCINERATE)
+    assertTrue(e[1].ignore)
+    assertEqual(e[2].text, "Stop ignoring Feign Death")
+    assertFalse(e[2].ignore)
+    assertEqual(e[3].text, "Stop ignoring all hearthstones", "a variant only 8690 covers")
+    assertTrue(NS.LateIgnore.Menu(r, {}))
+    assertEqual(#NS.LateIgnore.MenuEntries(storedRun(NS, "c", 2, 100)), 0)
+    assertFalse(NS.LateIgnore.Menu(NS.db.global.runs.c, {}), "nothing to offer, no menu")
+end)
+
+test("late ignore: the menu's entries ignore and count again through the list", function()
+    local NS, M = fresh()
+    local r = storedRun(NS, "m", 1, 100, late({ 1.4, FEIGN }, { 2.0, INCINERATE }, { 4, TOY }))
+    assertTrue(NS.LateIgnore.Menu(r, {}))
+    local menu = M.__lastMenu
+    assertEqual(menu.titles[1], "Late casts")
+    menu:Click("Ignore Incinerate for late casts")
+    assertTrue(NS.LateIgnore.IsIgnored(INCINERATE))
+    menu:Click("Stop ignoring all hearthstones")
+    assertFalse(NS.LateIgnore.IsIgnored(HEARTH))
+    assertFalse(NS.LateIgnore.IsIgnored(TOY))
+    menu:Click("Stop ignoring Feign Death")
+    assertFalse(NS.LateIgnore.IsIgnored(FEIGN))
+    -- With no MenuUtil there is no menu, and no error.
+    M.MenuUtil = nil
+    assertFalse(NS.LateIgnore.Menu(r, {}))
+end)
+
+test("late ignore: IgnoredText names the ignored casts in one line, nil with none", function()
+    local NS = fresh()
+    local r = storedRun(NS, "m", 1, 100, late({ 20.6, FEIGN }, { 2.0, INCINERATE }, { 3.0, VANISH }))
+    assertEqual(NS.Scoring.IgnoredText(r, NS.HudBreakdown.SpellName), "Ignored: +20.6s Feign Death, +3.0s Vanish")
+    assertEqual(NS.Scoring.IgnoredText(r), "Ignored: +20.6s, +3.0s", "no resolver: the offsets")
+    assertNil(NS.Scoring.IgnoredText(r, nil, {}))
+    assertNil(NS.Scoring.IgnoredText(storedRun(NS, "c", 2, 100)))
+end)
+
+test("late ignore: the result card's late chip carries the menu and the dimmed lines; all ignored, a gray chip", function()
+    local NS = fresh()
+    local S = NS.HudStates
+    local mixed = storedRun(NS, "m", 1, 100, late({ 20.6, FEIGN }, { 2.0, INCINERATE }))
+    local chips = S.ResultChips({ run = mixed })
+    local chip = chips[1]
+    assertEqual(chip.text, "1 late cast")
+    assertTrue(type(chip.menu) == "function")
+    local lines = texts(chip.tipLines)
+    assertTrue(has(lines, "Ignored: +20.6s Feign Death"), table.concat(lines, "|"))
+    assertTrue(has(lines, "Right-click"), table.concat(lines, "|"))
+    assertNil(S.ResultChips({ run = mixed, preview = true })[1].menu, "no menu on the test-mode card (D-7)")
+    -- Every cast ignored: no flag, a gray chip that keeps the tooltip and the undo.
+    local feign = storedRun(NS, "f", 2, 100, late({ 1.4, FEIGN }))
+    chip = S.ResultChips({ run = feign })[1]
+    assertEqual(chip.text, "1 ignored")
+    assertEqual(chip.color, S.COLORS.dim)
+    assertTrue(type(chip.menu) == "function")
+    assertTrue(has(texts(chip.tipLines), "Ignored: +1.4s Feign Death"))
+    -- The toast's flag chips never carry it (D-6).
+    assertEqual(#S.FlagChips(feign), 0)
+    -- A clean run has neither.
+    assertEqual(S.ResultChips({ run = storedRun(NS, "c", 3, 100) })[1].text:match("^Time") ~= nil, true)
+end)
+
+test("late ignore: the detail's flags box keeps a dimmed ignored line, also when every cast is ignored", function()
+    local NS = fresh()
+    local D = NS.ResultsDetail
+    local lines = D.FlagLines(storedRun(NS, "m", 1, 100, late({ 20.6, FEIGN }, { 2.0, INCINERATE })))
+    assertEqual(#lines, 2)
+    assertEqual(lines[1].key, "lateCasts")
+    assertEqual(lines[2].key, "lateIgnored")
+    assertTrue(lines[2].dim)
+    assertEqual(lines[2].main, "1 ignored late cast")
+    assertEqual(lines[2].sub, "+20.6s Feign Death")
+    assertEqual(lines[2].full, "Ignored: +20.6s Feign Death")
+    lines = D.FlagLines(storedRun(NS, "f", 2, 100, late({ 1.4, FEIGN }, { 3, VANISH })))
+    assertEqual(#lines, 1, "the box still shows")
+    assertEqual(lines[1].main, "2 ignored late casts")
+end)
+
+test("late ignore: every flags tooltip shows the dimmed ignored line (D-6a)", function()
+    local NS = fresh()
+    local mixed = storedRun(NS, "m", 1, 100, late({ 20.6, FEIGN }, { 2.0, INCINERATE }))
+    local feign = storedRun(NS, "f", 2, 100, late({ 1.4, FEIGN }))
+    -- The Status cell.
+    local tip = texts(NS.ResultsRuns.StatusTip(mixed))
+    assertTrue(has(tip, "Ignored: +20.6s Feign Death"), table.concat(tip, "|"))
+    assertTrue(has(texts(NS.ResultsRuns.StatusTip(feign)), "Ignored: +1.4s Feign Death"))
+    -- The detail's Flags box: the flags counted without the ignored line, which follows them dimmed.
+    tip = texts(NS.ResultsTips.Detail("flags", mixed))
+    assertEqual(tip[1], "1 flag")
+    assertTrue(has(tip, "Ignored: +20.6s Feign Death"), table.concat(tip, "|"))
+    assertTrue(has(tip, "Right-click"), table.concat(tip, "|"))
+    tip = texts(NS.ResultsTips.Detail("flags", feign))
+    assertEqual(tip[1], "No flags")
+    assertTrue(has(tip, "Ignored: +1.4s Feign Death"))
+    -- The timing strip's late-cast legend says a gray tick is ignored, and names this run's.
+    tip = texts(NS.ResultsTips.Detail("legend", mixed, 4))
+    assertTrue(has(tip, "gray"), table.concat(tip, "|"))
+    assertTrue(has(tip, "Ignored: +20.6s Feign Death"))
+    assertEqual(#NS.ResultsTips.Detail("legend", storedRun(NS, "c", 3, 100), 4), 3, "no ignored cast: no run line")
 end)

@@ -620,6 +620,9 @@ function Runs.StatusTip(run)
         lines[1] = L["%s: %s \194\183 %s"]:format(text, target, time)
     end
     for _, flag in ipairs(Tbl.FlagTexts(run)) do lines[#lines + 1] = { flag, C.red[1], C.red[2], C.red[3] } end
+    -- The late casts the ignore list leaves uncounted (#8), dimmed: no flag, but still named.
+    local ignored = NS.Scoring.IgnoredText(run, NS.HudBreakdown.SpellName)
+    if ignored then lines[#lines + 1] = { ignored, C.dim[1], C.dim[2], C.dim[3] } end
     return lines
 end
 

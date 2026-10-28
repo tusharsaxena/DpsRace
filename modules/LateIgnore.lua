@@ -251,3 +251,71 @@ function LateIgnore.KnownSpells()
     for _, id in ipairs(LateIgnore.Parse(LateIgnore.DEFAULT) or {}) do add(id) end
     return out
 end
+
+-- ── the menu (the HUD result card's late-cast chip, the Results detail's Flags box and row menu) ─
+
+-- What one menu entry ignores or counts again: an Ignore per counted spell, an undo per ignored one.
+local function ignoreEntry(id)
+    local name = spellName(id) or NS.L["Unknown spell"]
+    return { text = NS.L["Ignore %s for late casts"]:format(name), id = id, ignore = true }
+end
+
+local function undoEntry(id, covering)
+    local L = NS.L
+    local text = covering == HEARTH and L["Stop ignoring all hearthstones"]
+        or L["Stop ignoring %s"]:format(spellName(id) or L["Unknown spell"])
+    return { text = text, id = id, ignore = false }
+end
+
+--- What a run's late-cast menu offers: one *Ignore <spell> for late casts* per spell its counted casts
+--- name, then one *Stop ignoring <spell>* per spell the list leaves uncounted (*Stop ignoring all
+--- hearthstones* when 8690 covers it: Unignore takes 8690 off). Each entry once, in the recorded order;
+--- a sealed cast (no spell ID) offers nothing.
+--- @return table entries  { { text, id, ignore = bool } }
+function LateIgnore.MenuEntries(run)
+    local out, seen = {}, {}
+    local counted, ignored = NS.Scoring.SplitLate(run)
+    for _, cast in ipairs(counted) do
+        local id = plainId(cast.spellID)
+        if id and not seen[id] then seen[id], out[#out + 1] = true, ignoreEntry(id) end
+    end
+    for _, cast in ipairs(ignored) do
+        local covering = LateIgnore.Covering(cast.spellID)
+        if covering and not seen[covering] then
+            seen[covering], out[#out + 1] = true, undoEntry(cast.spellID, covering)
+        end
+    end
+    return out
+end
+
+--- Whether `run` has anything for the menu to offer.
+function LateIgnore.Offers(run)
+    return #LateIgnore.MenuEntries(run) > 0
+end
+
+--- Add the run's entries to `root` (a menu, or a submenu's button): each one writes through Ignore or
+--- Unignore, and the SETTINGS_CHANGED that write announces redraws whatever shows the run.
+--- @return number count
+function LateIgnore.FillMenu(root, run)
+    local entries = LateIgnore.MenuEntries(run)
+    for _, e in ipairs(entries) do
+        local id, ignore = e.id, e.ignore
+        root:CreateButton(e.text, function()
+            if ignore then LateIgnore.Ignore(id) else LateIgnore.Unignore(id) end
+        end)
+    end
+    return #entries
+end
+
+--- Open the run's late-cast menu on `owner`, titled *Late casts*. Nothing opens with no MenuUtil (a
+--- client or a harness without it) or nothing to offer.
+--- @return boolean opened
+function LateIgnore.Menu(run, owner)
+    if not (owner and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    if not LateIgnore.Offers(run) then return false end
+    MenuUtil.CreateContextMenu(owner, function(_, root)
+        root:CreateTitle(NS.L["Late casts"])
+        LateIgnore.FillMenu(root, run)
+    end)
+    return true
+end

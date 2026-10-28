@@ -82,6 +82,19 @@ function Scoring.SplitLate(run, set)
     return counted, ignored
 end
 
+--- The ignored late casts as one line, "Ignored: +20.6s Feign Death, +3.0s Vanish", or nil when the
+--- ignore list leaves none. Every flags tooltip draws it dimmed (the HUD chip, the Status cell, the
+--- detail's Flags box and its timing legend), so they word it the same way.
+--- @param set table|nil  as SplitLate's
+--- @return string|nil
+function Scoring.IgnoredText(run, nameOf, set)
+    local _, ignored = Scoring.SplitLate(run, set)
+    if #ignored == 0 then return nil end
+    local parts = {}
+    for i, cast in ipairs(ignored) do parts[i] = lateEntry(cast, nameOf) end
+    return NS.L["Ignored: %s"]:format(table.concat(parts, ", "))
+end
+
 -- The late casts' flag: its text, then its count line and its offsets apart (the Results detail's
 -- flags box draws those two as separate lines). `list` is the counted casts.
 local function lateCastsText(list, nameOf)

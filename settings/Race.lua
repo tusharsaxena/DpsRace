@@ -97,7 +97,7 @@ end
 
 local function afterRace(ctx)
     local H, LI = NS.Helpers, NS.LateIgnore
-    H.TextRow(ctx, L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again."])
+    H.TextRow(ctx, L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."])
     H.IdList(ctx, {
         kind        = SPELL_KIND,
         label       = L["Ignore a spell"],
