@@ -226,13 +226,15 @@ local function progressionPerRun(list, raw)
     return out
 end
 
+-- A day is keyed with its year (history can keep runs for years, docs/schema.md history.keepDays), so
+-- the same date a year apart is two columns; the hover names the year.
 local function progressionPerDay(list, raw)
     local out, byDay = {}, {}
     for _, e in ipairs(list) do
-        local day = Tbl.Date(e.run.date, "%m/%d")
+        local day = Tbl.Date(e.run.date, "%Y-%m-%d")
         local b = byDay[day]
         if not b then
-            b = { label = day, sum = 0, n = 0, day = Tbl.Date(e.run.date, "%d %b") }
+            b = { label = Tbl.Date(e.run.date, "%m/%d"), sum = 0, n = 0, day = Tbl.Date(e.run.date, "%d %b %Y") }
             byDay[day] = b
             out[#out + 1] = b
         end

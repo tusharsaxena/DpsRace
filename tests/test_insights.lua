@@ -605,6 +605,20 @@ test("insights tab: the cards state the eight figures, each hover naming its val
     assertEqual(c.avg.value.__text, i.NS.Format.Number(155000))
 end)
 
+test("insights tab: above 60 runs the progression is one column a day, the same day of two years apart", function()
+    local runs = {}
+    for n = 1, 61 do
+        local year = n <= 31 and 2025 or 2026
+        runs[n] = mkRun("p" .. n, { date = os.time({ year = year, month = 10, day = 25, hour = 12, min = n }) })
+    end
+    local i = tab(runs)
+    local cols = active(i.pane, "progression")
+    assertEqual(#cols, 2, "one column for 25 Oct 2025 and one for 25 Oct 2026")
+    assertEqual(cols[1]._tip[2], "31 runs")
+    assertEqual(cols[2]._tip[2], "30 runs")
+    assertTrue(cols[1]._tip[1]:find("2025") ~= nil, "the hover names the year")
+end)
+
 test("insights tab: a section with nothing to show hides; Top Spells needs one spec", function()
     local i = tab()
     local pane, H = i.pane, i.pane.headers
