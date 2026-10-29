@@ -26,6 +26,9 @@ do
         "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
         "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua", "Toast.lua",
         "OptionsAppearance.lua", "OptionsSkinPicker.lua",
+        -- The skin engine core/SkinSetup.lua registers the owner with (skinning-§1).
+        "Skin.lua", "SkinDefs.lua", "SkinPaint.lua", "SkinPaintControls.lua", "SkinPaintExtras.lua",
+        "SkinEUI.lua", "SkinAce.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do present[path:match("([^/]+)$")] = true end
@@ -43,6 +46,18 @@ local function rooted(list)
     local out = {}
     for i, rel in ipairs(list) do out[i] = root .. "/" .. rel end
     return out
+end
+
+-- THE SKIN LIBRARY'S LOGIN RETRY, SETTLED AS THE CLIENT SETTLES IT. Since LibKa0s v1.78.0 the first
+-- RegisterOwner (core/SkinSetup.lua) makes LibKa0s-Skin-1.0's EllesmereUI retry frame, registered for
+-- ADDON_LOADED and PLAYER_LOGIN; the client fires PLAYER_LOGIN once, beside OnEnable, and the frame
+-- unregisters both. Delivering it there puts the frame where every real session has it, so the
+-- stand-down suites do not count the library's two events as this addon's (LootHistory's and
+-- PremadeGroupsFilterExtension's runners do the same).
+local function settleSkinLogin(mocks)
+    local skinLib = mocks.LibStub("LibKa0s-Skin-1.0", true)
+    local retry = skinLib and skinLib.__euiEventFrame
+    if retry and retry.__fire then retry:__fire("OnEvent", "PLAYER_LOGIN") end
 end
 
 --- One isolated instance: a fresh mock, a fresh NS, the client's lifecycle.
@@ -64,6 +79,7 @@ local function loadInstance(opts)
         local AceAddon = mocks.LibStub("AceAddon-3.0")
         AceAddon:InitializeAddon(NS)                 -- OnInitialize: DB, migrations, latch, panel
         if opts.enable ~= false then
+            settleSkinLogin(mocks)                   -- PLAYER_LOGIN, to the skin's retry frame
             AceAddon:EnableAddon(NS)                 -- OnEnable: the game events
             if mocks.__fireTimers then mocks.__fireTimers() end
         end
@@ -123,6 +139,7 @@ local SUITES = {
     "test_tooltips",
     "test_schema",
     "test_settings",
+    "test_skinsetup",
     "test_slash",
     "test_share",
     "test_toast",

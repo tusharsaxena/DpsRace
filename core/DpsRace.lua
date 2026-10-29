@@ -16,6 +16,10 @@ function NS:OnInitialize()
     self:InitDB()
     -- Before anything reads NS.db.profile (savedvariables-§1).
     self:RunMigrations()
+    -- The skin the active profile names (core/SkinSetup.lua), right after the store exists: the owner
+    -- registered at file load, before AceDB, and has worn Ka0s Default since. Before any page or
+    -- window is built, so the first paint is already the profile's skin.
+    NS.ApplySkinChoice()
     -- The stored switch takes its hold before OnEnable runs, so a disabled login registers nothing.
     NS.SyncEnabledHold()
     NS.Launcher:Register()

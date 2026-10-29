@@ -46,6 +46,10 @@ NS.__migrationSteps = STEPS   -- test seam only
 --- callbacks are SETUP and stay live while disabled). One line per act (debug-logging-§10).
 function NS.OnProfileChanged(event, _db, key)
     NS.Debug("Set", "%s '%s'", event or "profile", key or (NS.db and NS.db:GetCurrentProfile()) or "?")
+    -- FIRST, before anything redraws: the new profile's skin (core/SkinSetup.lua). Skin:SetChoice
+    -- repaints every recorded frame of this owner and fires OnLooksChanged whether or not a window
+    -- was ever built, so the skin cannot depend on one.
+    if NS.ApplySkinChoice then NS.ApplySkinChoice() end
     NS.SyncEnabledHold()
     if NS.OnVisibilityChanged then NS.OnVisibilityChanged() end
     -- Announced through settings/Schema.lua, the message's one sender.

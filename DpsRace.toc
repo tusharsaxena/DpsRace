@@ -5,7 +5,7 @@
 ## Version: 0.1.0
 ## IconTexture: Interface\AddOns\DpsRace\media\logos\dpsrace.logo.128.tga
 ## SavedVariables: DpsRaceDB, DpsRacePerfDB
-## OptionalDeps: Ace3, LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, LibDataBroker-1.1, LibDBIcon-1.0
+## OptionalDeps: Ace3, LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, LibDataBroker-1.1, LibDBIcon-1.0, EllesmereUI
 ## DefaultState: enabled
 ## Category-enUS: Combat
 ## X-License: MIT
@@ -49,6 +49,12 @@ core\EnvSetup.lua
 # LOAD-BEARING: after NS.PREFIX, before anything that prints; publishes NS.Util.print, which
 # core\DpsRace.lua reclaims at FILE SCOPE, and NS.LIBKA0S_MISSING, which the stubs below read.
 core\CoreSetup.lua
+# LOAD-BEARING: the LibKa0s-Skin-1.0 seam (skinning-§1). Registers the owner at FILE SCOPE (before
+# EllesmereUI dispatches its skins) and publishes NS.Skin, NS.SKIN_OPTIONS and NS.SKIN_SOURCE_OPTIONS,
+# which settings\General.lua reads at FILE SCOPE; every frame-building file reads NS.Skin, so it sits
+# above core\WidgetsSetup.lua and every module. Below core\CoreSetup.lua, whose NS.ApplySkin the
+# degraded facade's Shell calls and whose NS.Print the reload line uses (both at CALL time).
+core\SkinSetup.lua
 # LOAD-BEARING: the compat family's root (compat). Resolves LibKa0s-Compat-1.0 at FILE SCOPE and
 # publishes NS.Compat, whose guards core\Secrets.lua binds at FILE SCOPE; modules read it at CALL time.
 core\Compat.lua

@@ -71,6 +71,14 @@ local STORED = {
     ["toast.sound"]          = { "bool",   true },
     ["toast.duration"]       = { "number", 8,       3,    30,    1 },
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
+    -- General > Skin (skinning-§2/§3, core/SkinSetup.lua): skip-render rows the library's tab draws.
+    ["skin.source"]          = { "string", "ka0s" },
+    ["skin.skin"]            = { "string", "ka0s" },
+    ["skin.ignorePanel"]     = { "bool",   true },
+    ["skin.ignoreFonts"]     = { "bool",   false },
+    ["skin.font"]            = { "string", "" },
+    ["skin.texture"]         = { "string", "" },
+    ["skin.pickerSeen"]      = { "bool",   false },
     ["global.usage.hidden"]  = { "string", "" },
     ["race.lateIgnore"]      = { "string", "66,1856,5384,8690,58984,110959" },
     ["race.dummies"]         = { "string", "" },
@@ -367,10 +375,11 @@ local function tabsOf(NS, page)
     return table.concat(out, "|")
 end
 
-test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast", function()
+test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin", function()
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
-    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast",
+    -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
+    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
         "Keybindings is a host tab, not a schema one")
     assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's eleven rows and HUD Appearance's")
 end)
@@ -438,10 +447,10 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults names Master controls and the toast, and not the keys or the HUD", function()
+test("settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
-    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls and the "
-        .. "new-best toast. "
+    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls, the "
+        .. "new-best toast and the skin. "
         .. T.NS.Helpers.KEYBINDS_UNCHANGED)
     assertTrue(tip:find("live breakdown", 1, true) == nil and tip:find("HUD Appearance", 1, true) == nil, tip)
 end)

@@ -1013,12 +1013,12 @@ Total.
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast
+- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults names Master controls and the toast, and not the keys or the HUD
+- settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD
 - settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
@@ -1035,6 +1035,31 @@ Total.
 - settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
 - settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
 - settings: Race repaints when your training dummies change from anywhere
+
+### test_skinsetup.lua (22)
+
+- skin seam: the owner is the folder name, and NS.Skin is its facade
+- skin seam: the owner is registered at file load, before the profile store exists
+- skin seam: the read answers Ka0s Default before the profile store exists
+- skin seam: Core's window edge is handed the owner
+- skin seam: the dropdown and the test strip factories are handed the owner
+- skin seam: every owner token is namespaced dr. and registered with the owner
+- skin seam: under Ka0s Default each owner token is today's pixel
+- skin seam: under another skin a wash is that skin's role color at the wash's alpha
+- skin seam: the seven skin keys default to Ka0s Default, the picker unseen
+- skin seam: every skin key is a skip-render schema row on the Skin tab
+- skin seam: the skin row's values are every registered skin, in the library's order
+- skin seam: /dr set refuses a skin that is not registered and applies one that is
+- skin seam: /dr set reaches an exception, and only its own half
+- skin seam: the Skin tab is the library's, after New-best toast and before Keybindings
+- skin seam: one tab pick is one effective SetChoice, one repaint and no reload
+- skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
+- skin seam: another addon's copy to every Ka0s addon repaints this one once
+- skin seam: login applies the stored skin, exceptions and overrides
+- skin seam: a profile switch applies the new profile's skin, panel built or not
+- skin seam: Reset all settings puts the skin back on Ka0s Default and applies it
+- skin seam: the degraded facade answers every name the live facade carries
+- skin seam: each host-copy skin token is the live library's Ka0s Default value
 
 ### test_slash.lua (37)
 
@@ -1347,6 +1372,7 @@ Total.
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
+| test_skinsetup.lua | 22 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1365,4 +1391,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1087** |
+| **Total** | **1109** |
