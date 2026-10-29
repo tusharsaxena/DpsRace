@@ -409,7 +409,8 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   the skin's `Button` with their slots remapped by token name (primary, danger, a selected preset, each
   style's faded disabled look); the KPI boxes and cards `S.Card`, panels `S.Panel`, the detail strip's
   segments `S.Inset`; the waiting hint, the target badge and the flags box the caution callout
-  (`dr.callout.*`); the note box `S.EditBox`; the filter, compare and usage checkboxes `S.Checkbox`;
+  (`dr.callout.*`); the note box `S.EditBox`, and the idle body's custom-length box `S.EditBox` with
+  `stockDefault` (no box under Ka0s Default, as before the skin engine; another skin draws its input); the filter, compare and usage checkboxes `S.Checkbox`;
   every rule `S.Divider`; tooltip lines `gtip.*` (X8); the close controls the skin's own
   (`S.CloseButton`, hover `close.hot`, D-9).
 - **The HUD style** (skinning-§6, DR-03). The player-styled blocks (HUD > HUD Appearance's figures,
@@ -425,7 +426,7 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   skin, repaints every frame recorded for this owner and then fires `NS.Skin.OnLooksChanged`. One
   listener (`modules/Style.lua`) refills the live color tables, runs the host repaints registered
   through `Style.OnLooks` (markup built into strings, pooled rows, sort marks and chevrons, the title
-  strips, the Insights host) and then `HudAppearance.Changed`, which restyles both windows. Nothing
+  strips, the Insights host, whose palette is a getter the charts read at every draw) and then `HudAppearance.Changed`, which restyles both windows. Nothing
   keys off `SETTINGS_CHANGED`; there is no reload, OnUpdate or event involved.
 - **The first-run skin picker** (the owner's ruling O3). `NS.MaybeShowSkinPicker` shows the
   library's `O.SkinPicker` while the profile's `skin.pickerSeen` is false: two seconds after login on
@@ -658,12 +659,12 @@ Nothing is over the cap today. Ten files are in the 1000–1500 on-notice band: 
 `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll`, `test_results_timeline_controls`, `test_results_delta` and
 `test_results_sections` did),
 `tests/test_hud.lua` at 1478 (the waiting hint box's cases went to a new `test_hud_hint`, the Stop! and waiting tiles' to a new `test_hud_tiles`)
-and `tests/test_insights.lua` at 1212 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
+and `tests/test_insights.lua` at 1225 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1170 lines (a Bind nested in another stops, the
+seven addon files, `modules/Results_Table.lua` at 1171 lines (a Bind nested in another stops, the
 first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1449 (the zoom and the modal, then the scrollbar and the placement over the Results window, then the scroll arrows, 2026-10-27, then Ctrl+wheel, the `?` and the corridor colors, then the controls at one size and the zoom level's color, 2026-10-28; its suite's
 P12, P13, P14, P15 and P16 cases went to new `test_results_timeline_zoom`, `test_results_timeline_modal`, `test_results_timeline_view`, `test_results_timeline_scroll` and `test_results_timeline_controls` suites; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1218
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1242 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, and the late casts' menu and *ignored* chip),
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1243 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, and the late casts' menu and *ignored* chip),
 `modules/Results_Runs.lua` at 1114 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
 `modules/Hud.lua` at 1094 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
 `locales/enUS.lua` at 1069 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,

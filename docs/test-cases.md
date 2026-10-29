@@ -891,7 +891,7 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (58)
+### test_insights.lua (59)
 
 - insights charts: nothing above the host section reads NS or a client global but CreateFrame
 - insights charts: the header names the LootHistory source commit the port came from
@@ -900,6 +900,7 @@ Total.
 - insights charts: tipText states the value beside the full label
 - insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
 - insights charts: the ranked palette cycles, and a map keeps one color per key
+- insights charts: a palette getter is read at each draw, so a skin switch moves it
 - insights charts: a bar section scales to its longest bar and colors label and fill alike
 - insights charts: every bar's hover states its value; a row's own tip lines win
 - insights charts: an empty section hides its header and leaves the cursor where it was
@@ -1067,7 +1068,7 @@ Total.
 - every allow-list entry carries its reason
 - the gate is falsifiable: a planted literal of each shape is reported
 
-### test_skin.lua (9)
+### test_skin.lua (11)
 
 - skin: every owner token a source file names is registered
 - skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
@@ -1078,6 +1079,8 @@ Total.
 - skin: a switch moves every live color in place and re-tints what the host painted
 - skin: a data hue stays the same under every skin
 - skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
+- skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
+- skin: the custom-length box draws no box under Ka0s Default and the skin's box under another
 
 ### test_skin_hud.lua (9)
 
@@ -1412,14 +1415,14 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 58 |
+| test_insights.lua | 59 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
 | test_skinsetup.lua | 22 |
 | test_skin_literals.lua | 3 |
-| test_skin.lua | 9 |
+| test_skin.lua | 11 |
 | test_skin_hud.lua | 9 |
 | test_skin_picker.lua | 12 |
 | test_slash.lua | 37 |
@@ -1440,4 +1443,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1142** |
+| **Total** | **1145** |
