@@ -181,10 +181,13 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
     -- HUD > HUD Appearance: four font blocks of six, the spell bars' block of four and its row height,
     -- the damage chart's block of four with its height and column gap (each an `extra`, so it goes
-    -- with the block), the chart background's color pair, and the pace bar's block of four.
-    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4
-    -- History > Results table: two bar blocks of four and a font block of six.
-    local RESULTS_TABLE_ROWS = 2 * 4 + 6
+    -- with the block), the chart background's color pair, and the pace bar's block of four; and the
+    -- five "Use the skin's ..." companions (figures, spell text, spell bars, chart, pace; DR-03), each
+    -- the composer's own row, so it goes with its block.
+    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5
+    -- History > Results table: two bar blocks of four and a font block of six, each with its
+    -- "Use the skin's ..." companion (DR-03, D-16).
+    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 3
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
     -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;

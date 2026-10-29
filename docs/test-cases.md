@@ -1079,6 +1079,18 @@ Total.
 - skin: a data hue stays the same under every skin
 - skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
 
+### test_skin_hud.lua (9)
+
+- skin hud: the defaults list every companion, on, and the full-path list matches them
+- skin hud: the clocks keep their monospace face, with no companion (D-15)
+- skin hud: each companion is a bool row, default on, governing its picker
+- skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
+- skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM
+- skin hud: the Results table's bar cells and their text follow the skin too (D-16)
+- skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
+- skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
+- skin hud: the reset runs once, and a player's later pick is kept
+
 ### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
@@ -1393,6 +1405,7 @@ Total.
 | test_skinsetup.lua | 22 |
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 9 |
+| test_skin_hud.lua | 9 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1411,4 +1424,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1121** |
+| **Total** | **1130** |

@@ -74,6 +74,14 @@ NS.defaults = {
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
         -- the clocks in the debug console's monospace face, the figures and the spell rows in Blizzard's
         -- GameFontNormalHuge and GameFontHighlightSmall, the bars flat in the window's indigo.
+        --
+        -- FOLLOWING THE SKIN (skinning-§6, DR-03). Each face and texture but the two clocks' has the
+        -- composer's "Use the skin's ..." companion beside it (`fontFromSkin`, `barTextureFromSkin`),
+        -- default ON (X3) so a new or reset profile follows the skin the way an adopted one does after
+        -- the v6 reset (core/Database.lua): the skin's `hud.font` and `bar.texture`, the stored pick
+        -- kept for when the player turns it off (modules/Hud_Appearance.lua). Only the face and the
+        -- texture follow (X4): sizes, flags, shadows and colors stay the player's. The clocks keep
+        -- their monospace face and have no companion (D-15): their layout assumes a fixed advance.
         appearance = {
             -- The running clock pair. `fontSize` is the pair's; a clock shown alone draws half again
             -- as large (modules/Hud_States.lua).
@@ -83,34 +91,37 @@ NS.defaults = {
                         useClassColorFont = false, fontFlags = "", fontShadow = false },
             -- The running body's Damage and DPS live figures.
             figures = { font = "Friz Quadrata TT", fontSize = 20, fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
-                        useClassColorFont = false, fontFlags = "", fontShadow = true },
+                        useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
             -- The spell rows: the HUD's live and result lists and the Results window's breakdown.
             bars = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                     useClassColorBar = false, rowHeight = 18 },
+                     useClassColorBar = false, rowHeight = 18, barTextureFromSkin = true },
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "", fontShadow = true },
+                          useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
             -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
             -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
             -- smooth area), and the plot's background swatch (its composed class-color companion
             -- beside it, options-ui-§17).
             chart = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
                       useClassColorBar = false, height = 80, columnGap = 0,
-                      bgColor = { r = 0, g = 0, b = 0, a = 0.35 }, useClassColorBg = false },
+                      bgColor = { r = 0, g = 0, b = 0, a = 0.35 }, useClassColorBg = false,
+                      barTextureFromSkin = true },
             -- The pace bar's fill, its own block since 2026-10-25: the chart's look when it was split off.
             pace = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
-                     useClassColorBar = false },
+                     useClassColorBar = false, barTextureFromSkin = true },
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
         -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
         -- each class color is the run's own character's (the row describes that character). The fill is
-        -- the spell breakdown's (appearance.bars): its indigo on both bars.
+        -- the spell breakdown's (appearance.bars): its indigo on both bars. The three blocks are HUD style
+        -- for the one-time reset (D-16): each face and texture has its "Use the skin's ..." companion,
+        -- default on, as the HUD's blocks have.
         resultsTable = {
             damageBar = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                          useClassColorBar = false },
+                          useClassColorBar = false, barTextureFromSkin = true },
             dpsBar    = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                          useClassColorBar = false },
+                          useClassColorBar = false, barTextureFromSkin = true },
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "", fontShadow = true },
+                          useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
         },
         -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).

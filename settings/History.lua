@@ -81,7 +81,8 @@ NS.RegisterSchemaRows({
 -- ── Results table ── the Runs list's Damage and DPS bars (the owner's call, 2026-10-24, after
 -- MultiMeters' bars): each a composed bar block and their text a font block (options-ui-§16, §17), in
 -- the styled-tab order Fill, Font. The cells draw no background of their own (2026-10-25). Each class
--- color is the row's character's: the row describes that run (classColorSource "unit").
+-- color is the row's character's: the row describes that run (classColorSource "unit"). Each block's
+-- face or texture follows the skin through the composer's companion, default on (DR-03, D-16).
 local RESULTS_TABLE = L["Results table"]
 local RD = NS.defaults.profile.resultsTable
 local ROW_CLASS = { source = "unit" }
@@ -90,11 +91,11 @@ local tableRows = {}
 local function append(rows) for _, r in ipairs(rows) do tableRows[#tableRows + 1] = r end end
 local Hp = NS.Helpers
 append(Hp.BarGroup({ prefix = "resultsTable.damageBar.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["Damage bar"], order = 100, classColor = ROW_CLASS, defaults = RD.damageBar }))
+    subgroup = L["Damage bar"], order = 100, classColor = ROW_CLASS, defaults = RD.damageBar, fromSkin = true }))
 append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar }))
+    subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar, fromSkin = true }))
 append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText }))
+    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true }))
 for _, r in ipairs(tableRows) do
     r.onChange = redraw
     r.composed = true

@@ -1415,7 +1415,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(w.damage.value.__font.size, 20)
     local row = w.list.rows[1]
     assertEqual(row.__height, 18)
-    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\buttons\\white8x8", "flat: LSM's Solid")
+    -- The spell bars follow the skin (DR-03, X5): Ka0s Default's own bar texture.
+    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\addons\\dpsrace\\libs\\libka0s\\media\\textures\\ka0s-default",
+        "the skin's bar.texture")
     assertEqual(row.bar.__barColor[4], 0.85)
     assertEqual(row.name.__font.size, 10)
 

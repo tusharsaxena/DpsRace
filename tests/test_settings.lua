@@ -102,17 +102,20 @@ local STORED = {
     ["appearance.figures.useClassColorFont"] = { "bool", false },
     ["appearance.figures.fontFlags"] = { "string", "" },
     ["appearance.figures.fontShadow"] = { "bool", true },
+    ["appearance.figures.fontFromSkin"] = { "bool", true },
     ["appearance.spellText.font"] = { "string", "Friz Quadrata TT" },
     ["appearance.spellText.fontSize"] = { "number", 10, 6, 32, 1 },
     ["appearance.spellText.fontColor"] = { "color", "table" },
     ["appearance.spellText.useClassColorFont"] = { "bool", false },
     ["appearance.spellText.fontFlags"] = { "string", "" },
     ["appearance.spellText.fontShadow"] = { "bool", true },
+    ["appearance.spellText.fontFromSkin"] = { "bool", true },
     ["appearance.bars.barTexture"] = { "string", "Solid" },
     ["appearance.bars.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
+    ["appearance.bars.barTextureFromSkin"] = { "bool", true },
     ["appearance.chart.barTexture"] = { "string", "Solid" },
     ["appearance.chart.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.chart.barColor"] = { "color", "table" },
@@ -121,25 +124,30 @@ local STORED = {
     ["appearance.chart.columnGap"] = { "number", 0, 0, 3, 1 },
     ["appearance.chart.bgColor"] = { "color", "table" },
     ["appearance.chart.useClassColorBg"] = { "bool", false },
+    ["appearance.chart.barTextureFromSkin"] = { "bool", true },
     ["appearance.pace.barTexture"] = { "string", "Solid" },
     ["appearance.pace.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.pace.barColor"] = { "color", "table" },
     ["appearance.pace.useClassColorBar"] = { "bool", false },
+    ["appearance.pace.barTextureFromSkin"] = { "bool", true },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
     ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
     ["resultsTable.damageBar.barColor"] = { "color", "table" },
     ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.damageBar.barTextureFromSkin"] = { "bool", true },
     ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
     ["resultsTable.dpsBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
     ["resultsTable.dpsBar.barColor"] = { "color", "table" },
     ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
+    ["resultsTable.dpsBar.barTextureFromSkin"] = { "bool", true },
     ["resultsTable.barText.font"] = { "string", "Friz Quadrata TT" },
     ["resultsTable.barText.fontSize"] = { "number", 10, 6, 32, 1 },
     ["resultsTable.barText.fontColor"] = { "color", "table" },
     ["resultsTable.barText.useClassColorFont"] = { "bool", false },
     ["resultsTable.barText.fontFlags"] = { "string", "" },
     ["resultsTable.barText.fontShadow"] = { "bool", true },
+    ["resultsTable.barText.fontFromSkin"] = { "bool", true },
 }
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
@@ -183,10 +191,11 @@ test("settings: HUD Appearance's chart blocks: Damage chart (bar, height, column
     end
     assertEqual(table.concat(order, ","), table.concat({
         "appearance.chart.barTexture", "appearance.chart.barAlpha", "appearance.chart.barColor",
-        "appearance.chart.useClassColorBar", "appearance.chart.height", "appearance.chart.columnGap",
+        "appearance.chart.useClassColorBar", "appearance.chart.barTextureFromSkin",
+        "appearance.chart.height", "appearance.chart.columnGap",
         "appearance.chart.bgColor", "appearance.chart.useClassColorBg",
         "appearance.pace.barTexture", "appearance.pace.barAlpha", "appearance.pace.barColor",
-        "appearance.pace.useClassColorBar" }, ","))
+        "appearance.pace.useClassColorBar", "appearance.pace.barTextureFromSkin" }, ","))
     assertEqual(row(NS, "appearance.chart.bgColor").label, "Background color")
     assertTrue(row(NS, "appearance.chart.bgColor").hasAlpha ~= false, "the background swatch carries its alpha")
     assertEqual(row(NS, "appearance.chart.bgColor").default.a, 0.35, "the plot's old backdrop")
@@ -381,7 +390,8 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General holds M
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4, "the Race HUD tab's eleven rows and HUD Appearance's")
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5,
+        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.

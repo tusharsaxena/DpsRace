@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 5
+NS.SCHEMA_VERSION = 6
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
 -- `perProfile = true` and runs once for every stored profile.
@@ -37,6 +37,39 @@ local STEPS = {
     { to = 5, run = function(sv)
         local g = type(sv) == "table" and sv.global
         if type(g) == "table" and type(g.schema) == "number" and g.schema < 4 then g.schema = 4 end
+    end },
+    -- 5 -> 6: the one-time reset onto the skin (skinning-§6, the owner's ruling O2), per profile.
+    -- Every HUD and Results table face and texture follows the skin again, once, for every player:
+    -- each stored "Use the skin's ..." companion (modules/Hud_Appearance.lua's FROM_SKIN_KEYS) is set
+    -- back on through LibKa0s-Skin-1.0's ResetToSkin. The stored picks are kept (a companion off
+    -- brings them back) and the colors, sizes, flags and shadows are never touched (X4). The
+    -- account-wide stamp is what makes it once: a player who unticks a companion afterwards keeps that
+    -- pick, because this step never runs again.
+    --
+    -- ONLY A STORED COMPANION IS NAMED. The runner hands the RAW profile, which holds only what
+    -- differs from the defaults: an absent companion already reads its default, true (X3); and
+    -- ResetToSkin, handed a key that is absent, cannot tell it is a bool and writes its "@skin"
+    -- sentinel into it. Without the library the companions are set directly: they mean nothing until
+    -- it loads, and then they must already say "follow".
+    { to = 6, perProfile = true, run = function(_sv, profile)
+        if type(profile) ~= "table" then return end
+        local A = NS.HudAppearance
+        local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+        local resetToSkin = Skin and type(Skin.ResetToSkin) == "function" and Skin.ResetToSkin
+        local keys = {}
+        for _, path in ipairs(A and A.FROM_SKIN_KEYS or {}) do
+            local block, leaf = path:match("^(.+)%.([^.]+)$")
+            local t = profile
+            for part in block:gmatch("[^.]+") do t = type(t) == "table" and t[part] or nil end
+            if type(t) == "table" and type(t[leaf]) == "boolean" and t[leaf] ~= true then
+                keys[#keys + 1] = path
+                if not resetToSkin then t[leaf] = true end
+            end
+        end
+        if resetToSkin and #keys > 0 then resetToSkin(profile, keys) end
+        if #keys > 0 and NS.Debug then
+            NS.Debug("Set", "migrate v6: put %d HUD face(s) and texture(s) back on the skin", #keys)
+        end
     end },
 }
 NS.__migrationSteps = STEPS   -- test seam only
