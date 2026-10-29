@@ -40,7 +40,8 @@ local _, NS = ...
 --   host.hideTip  function()
 --   host.colors   { body, value, muted, heading, caption, rule, track, bar, axis } as { r, g, b[, a] }
 --   host.fonts    { label, axis, heading, divider, panelTitle, caption, figure }: font object names
---   host.palette  the ranked palette, a list of { r, g, b }
+--   host.palette  the ranked palette, a list of { r, g, b }, or a function answering one, read at
+--                 every draw (so a skin switch moves it with no rebuild)
 --   host.text     function(parent, font, justify) -> a FontString in that font object (optional)
 --   host.paint    function(fs, color): a label's color (and the host's face for it) (optional)
 --   host.fill     function(texture, color, alpha): a texture's flat color (optional)
@@ -183,12 +184,14 @@ function Charts.New(content, host)
     if type(host) ~= "table" or type(host.pool) ~= "table" then
         error("InsightsCharts.New: host.pool is required", 2)
     end
-    local palette = type(host.palette) == "table" and host.palette[1] and host.palette or DEFAULT_PALETTE
+    local paletteOf = type(host.palette) == "function" and host.palette or nil
+    local palette = not paletteOf and type(host.palette) == "table" and host.palette[1] and host.palette
+        or DEFAULT_PALETTE
     hostPaint, hostFill, hostText = host.paint or plainPaint, host.fill or plainFill, host.text or plainText
     return setmetatable({
         content = content, poolApi = host.pool, pools = {}, poolOrder = {},
         colors = merged(DEFAULT_COLORS, host.colors), fonts = merged(DEFAULT_FONTS, host.fonts),
-        palette = palette, panel = host.panel or plainPanel,
+        palette = palette, paletteOf = paletteOf, panel = host.panel or plainPanel,
         tip = host.tip or noop, hideTip = host.hideTip or noop,
     }, Ctx)
 end
@@ -222,7 +225,12 @@ end
 
 --- The palette color at 1-based `rank` (cycles).
 function Ctx:paletteColor(rank)
-    return self.palette[((rank - 1) % #self.palette) + 1]
+    local p = self.palette
+    if self.paletteOf then
+        p = self.paletteOf()
+        if type(p) ~= "table" or not p[1] then p = DEFAULT_PALETTE end
+    end
+    return p[((rank - 1) % #p) + 1]
 end
 
 --- { key -> palette color } by position in `orderedKeys`, so a key keeps one color across charts.
@@ -817,7 +825,7 @@ end
 --- colors (modules/Results_Table.lua's COLORS and the skin's chart tokens, every one a live skin
 --- color) and font objects (modules/Style.lua's FONT), its labels painted through the skin
 --- (Style.Paint: the skin's faces) and its textures through Style.Fill. The ranked palette is the
---- skin's `chart.series`. The meaning colors (class, category, length) are the rows' own, chosen by
+--- skin's `chart.series`, read at every draw. The meaning colors (class, category, length) are the rows' own, chosen by
 --- the caller.
 --- @return table
 function Charts.Host()
@@ -831,7 +839,7 @@ function Charts.Host()
         text = Style.PlainText,
         paint = function(fs, c) Style.Paint(fs, c, nil, true) end,
         fill = Style.Fill,
-        palette = NS.Skin.Token("chart.series"),
+        palette = function() return NS.Skin.Token("chart.series") end,
         colors = {
             body = C.text, value = C.text, muted = C.dim, heading = C.gold, caption = C.dim,
             rule = Style.Tok("section.rule"), bar = Style.Tok("dr.chart.bar"),
