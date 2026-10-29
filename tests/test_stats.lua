@@ -130,12 +130,12 @@ test("stats: the format 4 migration raises the stamp and rewrites no run", funct
     NS:InitDB()
     NS:RunMigrations()
     local g = NS.db.global
-    assertEqual(g.schemaVersion, 5)
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION)
     assertEqual(g.schema, 4)
     assertEqual(g.runs.old.schema, 3, "an old run was rewritten")
     assertNil(g.runs.old.stats)
     NS:RunMigrations()
-    assertEqual(g.schemaVersion, 5, "the step ran twice")
+    assertEqual(g.schemaVersion, NS.SCHEMA_VERSION, "the step ran twice")
 end)
 
 -- ── the display ─────────────────────────────────────────────────────────────────────────────────

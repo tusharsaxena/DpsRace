@@ -133,6 +133,20 @@ catalog is grown from the same captures:
   Perf.Note("key", debugprofilestop() - t0) end`. Every declared bucket must be reached by a real
   bracket. Record it in [performance.md](performance.md).
 
+## Add a colored surface
+
+- Read every color from the skin, never as a literal (anti-pattern #107): a label through
+  `Style.Paint` / `Style.Text` with a role, a texture through `Style.Fill` / `Style.Vertex`, a box or
+  button through the skin's primitive (`NS.Skin.Card`, `.Panel`, `.Button`, ... with `opts.tokens`
+  naming any other slots), a module-level palette entry through `Style.Tok(name)`.
+- A color no library token holds exactly becomes an owner token in `NS.SKIN_TOKENS`
+  (`core/SkinSetup.lua`): named `dr.*`, its `default` the Ka0s Default pixel, its `follow` the nearest
+  library role token. A library token the degraded facade must answer goes into `NS.SKIN_FALLBACK`.
+- What the library does not record (markup built into a string, a pooled row) repaints from a
+  `Style.OnLooks` handler. A data hue (class, quality, category) stays a hue (`Style.Hue`).
+- `test_skin_literals` fails on a literal; `test_skin` fails on a token a file names but nobody
+  registered. Add a smoke row to section 27 of [smoke-tests.md](smoke-tests.md).
+
 ## Add a locale string
 
 - Add `L["English text"] = "English text"` to `locales/enUS.lua`. The key is the English string.
@@ -155,6 +169,4 @@ catalog is grown from the same captures:
 - Use `/dev-copilot:wow-revendor-libka0s`. It copies `libs/LibKa0s/` and `tests/_kit/` from the
   library's tag, moves the `Bundles` line in root `CLAUDE.md` in the same commit, and prunes
   `media/icons/` to the `LibKa0s icons:` line. Never edit either vendored folder by hand;
-  `test_vendor_sync` catches it. The re-vendor that carries LibKa0s-Toast-1.0 also drops the TOC's
-  `libs\LibKa0s\Toast.lua` line, `test_vendor_sync`'s exception for it, the provenance note under
-  the `Bundles` line and its deviation row in `ARCHITECTURE.md` (the gate fails until it does).
+  `test_vendor_sync` catches it.

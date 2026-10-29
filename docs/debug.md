@@ -23,7 +23,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | Tag | Written by |
 |---|---|
 | `Init` | the console, once, when logging turns on: version, schema, profile, stored run count |
-| `Set` | the schema write seam, once per changed setting; `core/Database.lua` on a profile change |
+| `Set` | the schema write seam, once per changed setting; `core/Database.lua` on a profile change, and the v6 migration's count of HUD faces and textures it put back on the skin |
 | `Combat` | `NS:OnCombatChanged`, each combat edge |
 | `Cmd` | the slash dispatcher's own refusals |
 | `Cfg` | the options panel's combat lock |
@@ -92,7 +92,7 @@ race transition it heard); the Results window's the `Results` tag (the window an
 
 ### Caps
 
-The report stays at or under the library's `DIAG_MAX_LINES` (1200 in the vendored v1.77.0), below
+The report stays at or under the library's `DIAG_MAX_LINES` (1200 in the vendored v1.80.0), below
 the console's 3000-line buffer, so it never evicts itself. Each list is capped at
 `DIAG_MAX_PER_LIST` (40). A capped report ends with `truncated: N line(s) omitted, per-list caps
 hit=yes|no` and then the end marker.

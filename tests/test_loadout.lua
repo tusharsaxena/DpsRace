@@ -341,7 +341,8 @@ test("loadout: the detail draws the gear grid in the character frame's order, an
     local hood = cellOf(lo, 1)
     assertEqual(hood.name.__text, "Hood of the Test")
     assertEqual(hood.ilvl.__text, "639")
-    assertEqual(hood.name.__color[1], 0.4, "the quality's color (epic, 4)")
+    -- The skin's q.epic (Ka0s Default writes the client's own color out), ahead of the client's API.
+    assertEqual(hood.name.__color[1], (i.NS.QualityColor(4)), "the quality's color (epic, 4)")
     assertEqual(cellOf(lo, 2).name.__text, "Empty")
     assertFalse(cellOf(lo, 1).mark:IsShown(), "a highlight with no compare")
     assertEqual(lo.talents.__text, "Raid ST \194\183 Diabolist")

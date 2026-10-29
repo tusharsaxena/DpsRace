@@ -31,6 +31,7 @@ function NS.MakeDropdown(parent, width)
     return W.Dropdown(parent, width, {
         chevron = NS.Icon("chevron-down"),
         check   = NS.Icon("confirm"),
+        owner   = addonName,
     })
 end
 
@@ -50,7 +51,7 @@ NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 --- @return table|nil
 function NS.MakeTestStrip(parent, text)
     if not W then return nil end
-    return W.TestStrip(parent, { text = text, icon = NS.Icon("info") })
+    return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName })
 end
 
 -- The one copy window, its frame built on the first ShowCopy (the library's lazy handle), over the

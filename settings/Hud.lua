@@ -106,15 +106,22 @@ NS.RegisterSchemaRows({
 -- rows are a bar block with the row height appended after it, and a font block for their text. The
 -- bars and the text style the Results window's breakdown too. Every row's reaction is the one
 -- restyle (modules/Hud_Appearance.lua), read at CALL time.
+--
+-- FOLLOWING THE SKIN (skinning-§6, DR-03): every block but the two clocks takes the composer's
+-- `fromSkin = true`, which appends its "Use the skin's font" / "Use the skin's texture" companion on a
+-- line of its own, default on (defaults/Profile.lua, X3). While it is on the picker is disabled and
+-- shows the skin's value; the stored pick waits for the player to turn it off. The clocks keep their
+-- monospace face with no companion (D-15). Colors never follow the skin (X4).
 local APPEARANCE = L["HUD Appearance"]
 local AD = NS.defaults.profile.appearance
 local function restyle() NS.HudAppearance.Changed() end
 local PLAYER_CLASS = { source = "player" }
 
-local function fontBlock(block, subgroup, order, tooltips)
+local function fontBlock(block, subgroup, order, tooltips, fromSkin)
     return H.FontGroup({
         prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, subgroup = subgroup,
         order = order, classColor = PLAYER_CLASS, defaults = AD[block], tooltips = tooltips,
+        fromSkin = fromSkin,
     })
 end
 
@@ -125,22 +132,22 @@ local function append(rows)
 end
 append(fontBlock("elapsed", L["Elapsed clock"], 100, CLOCK_SIZE_TIP))
 append(fontBlock("left", L["Time left clock"], 200, CLOCK_SIZE_TIP))
-append(fontBlock("figures", L["Live figures"], 300))
+append(fontBlock("figures", L["Live figures"], 300, nil, true))
 append(H.BarGroup({
     prefix = "appearance.bars.", page = PAGE, group = APPEARANCE, subgroup = L["Spell bars"], order = 400,
-    classColor = PLAYER_CLASS, defaults = AD.bars,
+    classColor = PLAYER_CLASS, defaults = AD.bars, fromSkin = true,
     extra = { {
         path = "appearance.bars.rowHeight", type = "number", min = 12, max = 30, step = 1,
         label = L["Row height"], default = AD.bars.rowHeight, startsLine = true,
         tooltip = L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."],
     } },
 }))
-append(fontBlock("spellText", L["Spell text"], 500))
+append(fontBlock("spellText", L["Spell text"], 500, nil, true))
 -- The damage chart's columns (#2): a bar block with the plot's height and the column gap after it
 -- (a bar spacing, appended after the mandated four, options-ui-§16).
 append(H.BarGroup({
     prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Damage chart"], order = 600,
-    classColor = PLAYER_CLASS, defaults = AD.chart,
+    classColor = PLAYER_CLASS, defaults = AD.chart, fromSkin = true,
     extra = { {
         path = "appearance.chart.height", type = "number", min = 40, max = 160, step = 2,
         label = L["Chart height"], default = AD.chart.height, startsLine = true,
@@ -163,7 +170,7 @@ append(H.ColorPair({
 -- restyles it.
 append(H.BarGroup({
     prefix = "appearance.pace.", page = PAGE, group = APPEARANCE, subgroup = L["Pace bar"], order = 800,
-    classColor = PLAYER_CLASS, defaults = AD.pace,
+    classColor = PLAYER_CLASS, defaults = AD.pace, fromSkin = true,
 }))
 -- The appended rows, in the addon's own words; every other row is the library's.
 local OWN_WORDS = { ["appearance.bars.rowHeight"] = true, ["appearance.chart.height"] = true,

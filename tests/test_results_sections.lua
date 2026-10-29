@@ -288,7 +288,9 @@ test("sections: Flags is a section heading over the yellow box; each flag's main
     -- The heading: the plain word in FONT.SECTION (gold), its arrow beside it, on the content.
     assertEqual(w.flagTitle.__text, "Flags")
     assertEqual(w.flagTitle.__fontObject, F.SECTION)
-    assertEqual(w.flagTitle.__color, nil, "the heading keeps the font's own gold")
+    local head = i.NS.Style.Tok("text.heading")
+    assertEqual(w.flagTitle.__color[1] .. "," .. w.flagTitle.__color[2] .. "," .. w.flagTitle.__color[3],
+        head[1] .. "," .. head[2] .. "," .. head[3], "the heading is the skin's heading gold")
     assertEqual(x(w.flagTitle), D.INDENT)
     assertTrue(d.heads.flags:IsShown())
     -- The box one heading line under it, across the content's width.
@@ -303,7 +305,7 @@ test("sections: Flags is a section heading over the yellow box; each flag's main
     assertEqual(r1.body.__fontObject, F.TEXT)
     local C = i.NS.ResultsTable.COLORS
     local function rgb(fs) return table.concat({ fs.__color[1], fs.__color[2], fs.__color[3] }, ",") end
-    assertEqual(rgb(r1.sub), table.concat(C.amber, ","), "the detail's own hue")
+    assertEqual(rgb(r1.sub), table.concat({ C.amber[1], C.amber[2], C.amber[3] }, ","), "the detail's own hue")
     assertTrue(rgb(r1.sub) ~= rgb(r1.main) and rgb(r1.sub) ~= rgb(r1.body), "the detail reads apart from both")
     assertTrue(r1.body.__text:find("Incinerate started +1.4s after the buzzer", 1, true) ~= nil, r1.body.__text)
     -- The three lines stacked inside the box from config.

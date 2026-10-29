@@ -25,6 +25,9 @@ local function standDown()
         local m = NS[name]
         if m and m.Suspend then m.Suspend() end
     end
+    -- The first-run skin picker is a frame this addon shows: it goes down unmarked, so it comes back
+    -- on the next login the addon stands up for (core/SkinSetup.lua).
+    if NS.HideSkinPicker then NS.HideSkinPicker() end
 end
 
 --- Back up FROM CURRENT STATE, never from a snapshot taken at stand-down (performance-§6): a setting

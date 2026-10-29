@@ -9,6 +9,16 @@ local _, NS = ...
 -- between installs. It resolves at call time, and a name LSM does not know (a media addon removed)
 -- falls back to the shipped default's path, never to nothing: SetFont on a bad path draws no text.
 --
+-- FOLLOWING THE SKIN (skinning-§6, DR-03). A face or a texture with a "Use the skin's ..." companion
+-- (`<key>FromSkin`, the composer's `fromSkin`, default on: defaults/Profile.lua) draws the owner's skin
+-- token while the companion is on, through the facade's S.Resolve, which is override-aware (the Skin
+-- tab's own font or texture wins over the skin's): `hud.font` for a face, `bar.texture` for a bar. The
+-- stored pick is never rewritten, so turning the companion off brings it back. Only the face and the
+-- texture follow (X4): sizes, flags, shadows and colors stay the player's. Not S.BarTexture: it always
+-- paints the skin's texture and replays it on a switch, which would override a player who unticked the
+-- companion. A skin switch reaches every block through Style's one OnLooksChanged listener, which calls
+-- Changed() below (modules/Style.lua). The two clocks have no companion (D-15): they stay monospace.
+--
 -- COLORS through LibKa0s-Core's one resolver (options-ui-§17): the swatch, or the player's class
 -- color while the companion is on, the swatch's alpha kept either way. Every surface here is the
 -- player's own, so the class is always the player's.
@@ -26,6 +36,23 @@ local FALLBACK_FONT = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
 local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
 
 Appearance.stamp = 0
+
+-- Each media leaf that can follow the skin: the skin token it follows. The companion is the leaf plus
+-- `FromSkin`, stored beside it (OptionsCompose's naming).
+local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
+
+--- Every stored companion, by full path: the v6 reset's list (core/Database.lua). The clocks
+--- (`appearance.elapsed`, `appearance.left`) are absent by design (D-15).
+Appearance.FROM_SKIN_KEYS = {
+    "appearance.figures.fontFromSkin",
+    "appearance.spellText.fontFromSkin",
+    "appearance.bars.barTextureFromSkin",
+    "appearance.chart.barTextureFromSkin",
+    "appearance.pace.barTextureFromSkin",
+    "resultsTable.damageBar.barTextureFromSkin",
+    "resultsTable.dpsBar.barTextureFromSkin",
+    "resultsTable.barText.fontFromSkin",
+}
 
 local function setting(path)
     return NS.GetSetting and NS.GetSetting(path)
@@ -62,6 +89,23 @@ local function color(stored, useClass, class)
 end
 Appearance.Color = color
 
+--- The LSM name the block at `p` draws for media `leaf` ("font" | "barTexture"), and true when it is
+--- the skin's: its companion is on and the skin answered. Otherwise the stored pick. Without the
+--- library, or for a token the skin leaves unset, the facade answers the stored pick.
+--- @param p string  the block's prefix, with the dot
+--- @param leaf string
+--- @return string|nil, boolean
+function Appearance.MediaKey(p, leaf)
+    local stored = setting(p .. leaf)
+    local token, S = FOLLOWS[leaf], NS.Skin
+    if token and S and type(S.Resolve) == "function" then
+        local on = setting(p .. leaf .. "FromSkin") == true
+        local v = S.Resolve(token, stored, on)
+        if type(v) == "string" and v ~= "" then return v, on end
+    end
+    return stored, false
+end
+
 --- One font block, resolved: its path, size, flags, shadow and color.
 --- @param block string  "elapsed" | "left" | "figures" | "spellText"
 --- @return table { path, size, flags, shadow, r, g, b, a }
@@ -71,8 +115,8 @@ end
 
 --- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's.
 function Appearance.FontAt(p, def, class)
-    local name = setting(p .. "font")
-    local path = fetch("font", name) or fetch("font", def.font)
+    local name = Appearance.MediaKey(p, "font")
+    local path = fetch("font", name) or fetch("font", setting(p .. "font")) or fetch("font", def.font)
     if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
     local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true, class)
     local flags = setting(p .. "fontFlags")
@@ -113,7 +157,8 @@ function Appearance.BarAt(p, def, class)
     local r, g, b = color(setting(p .. "barColor"), setting(p .. "useClassColorBar") == true, class)
     local alpha = tonumber(setting(p .. "barAlpha")) or def.barAlpha
     return {
-        texture = fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
+        texture = fetch("statusbar", Appearance.MediaKey(p, "barTexture"))
+            or fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,
     }
 end

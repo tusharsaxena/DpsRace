@@ -10,7 +10,7 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Keybindings tab: the three key bindings |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
 | Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap) and the late-cast ignore list; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
@@ -39,10 +39,11 @@ the 300 px logo `media/logos/dpsrace.logo.tga`, the notes, and a *Slash Commands
 
 The header **Defaults** button restores every General row on the current profile, except the
 minimap row (launcher-§3). It never touches a key binding: its tooltip reads *Restore every General
-setting on this profile to its addon default: Master controls and the new-best toast. Key bindings
-are not changed.* (`O.KEYBINDS_UNCHANGED`, options-ui-§20).
+setting on this profile to its addon default: Master controls, the new-best toast and the skin. Key
+bindings are not changed.* (`O.KEYBINDS_UNCHANGED`, options-ui-§20). The skin's reset applies Ka0s
+Default at once and sets the first-run picker's memory back, so the picker shows at the next login.
 
-Tabs, in order: *Master controls*, *New-best toast*, *Keybindings*.
+Tabs, in order: *Master controls*, *New-best toast*, *Skin*, *Keybindings*.
 
 #### Tab: Master controls
 
@@ -81,6 +82,46 @@ case act after the rows.
 The place is not a row: test mode shows a sample toast held still, and a drag stores it in
 `profile.toast.point` (schema.md, named non-setting state); *Reset position* on Master controls clears
 it.
+
+#### Tab: Skin
+
+The skin this addon wears (skinning-§3), per profile. The tab is the library's
+(`H.AppearanceTab({ owner = "DpsRace", get = NS.SkinChoice, set = NS.WriteSkinChoice })`,
+`settings/General.lua`); its key is `Appearance`, its label *Skin* (LibKa0s OptionsAppearance), and it
+takes its rows' group's place in the strip: after New-best toast, before Keybindings. The addon draws
+none of it. Its body, top to bottom: **Skin source** (*Ka0s skins*, or *EllesmereUI*, disabled with
+the failing gate conditions listed while EllesmereUI cannot skin this addon), **Look** (the nine Ka0s
+skins, three to a line, each with its swatches), **Font and texture** (a *Font* and a *Texture*
+dropdown, *Skin's own (<its face>)* in a new profile), the Scope (*Ignore settings panel*, on in a new profile, and
+*Ignore fonts*), **Copy to every Ka0s addon…**, and the note that skins change every visual element
+and that HUD style options follow the skin unless the player sets them.
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| Skin source | `skin.source` | the library's choice grid (`skipRender`) | `ka0s` or `eui`. Ka0s to EllesmereUI applies live; EllesmereUI back to Ka0s asks for a reload (the library's) |
+| Skin | `skin.skin` | the library's choice grid (`skipRender`) | One of the registered skins (`NS.SKIN_OPTIONS`); a pick repaints every window, the HUD, the toast and the library's tool windows at once, with no reload |
+| Ignore settings panel | `skin.ignorePanel` | checkbox (`skipRender`) | On: this addon's settings pages keep the game's look; its windows still wear the skin |
+| Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override |
+| Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
+| Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
+| (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
+
+Each row's `onChange` applies only its own half (`core/SkinSetup.lua` says why), so a pick on the tab
+or another addon's copy is one repaint, and `/dr set skin.skin obsidian` still repaints. The HUD's
+player-styled blocks (HUD > HUD Appearance, History > Results table) follow the skin through their
+own *Use the skin's font* and *Use the skin's texture* companions, below.
+
+**The first-run skin picker** (LibKa0s OptionsSkinPicker, the owner's ruling O3). A small window,
+*Choose a skin for Ka0s DPS Race*, shown by `NS.MaybeShowSkinPicker` (`core/SkinSetup.lua`) while the
+profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the stand-down cancels) and
+after every profile event, never while the addon stands down, and in combat held for one
+`PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
+mode on as `/dr test` does, or shows the Results window when it is already on), a gear (opens this
+tab), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
+skins is loaded). A pick only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
+the close control and Escape put the old skin back. Apply, the gear, the close and Escape set
+`skin.pickerSeen`; `NS.HideSkinPicker` (the stand-down, and first on every profile event) takes it
+down without setting it.
 
 #### Tab: Keybindings
 
@@ -192,18 +233,28 @@ The HUD's look (the owner's call, 2026-10-24), after Race HUD on the HUD page. E
 library (options-ui-§16: `H.FontGroup`, `H.BarGroup`), so its rows, order and words are the
 canonical ones, and its class color is the player's (`classColorSource = "player"`). Every row's
 reaction is `NS.HudAppearance.Changed()`, which bumps the restyle stamp and redraws both windows.
-The defaults are the look shipped before the tab existed.
+The defaults are the look shipped before the tab existed, but for the face and texture that follow the
+skin.
+
+Every block but the two clocks is composed with `fromSkin = true` (DR-03), so the composer appends its
+*Use the skin's font* (`fontFromSkin`) or *Use the skin's texture* (`barTextureFromSkin`)
+companion, on by default, and grays the block's own *Font* or *Bar texture* picker while it is on.
+On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.MediaKey`, through
+`NS.Skin.Resolve`); off, the stored pick, which a companion never rewrites. Only the face and the
+texture follow: sizes, flags, shadows and every color stay the player's (X4). The two clocks have no
+companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Oxanium
+SemiBold and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
 
 | Subsection | Schema prefix | Rows | Styles |
 |---|---|---|---|
 | *Elapsed clock* | `appearance.elapsed.` | the font block (*Font*, *Font size*, *Font color*, *Use class color*, *Font flags*, *Font shadow*); JetBrains Mono 26, green | the running body's elapsed clock. *Font size* is the pair's; a clock shown alone draws half again as large (its tooltip says so, through the composer's `tooltips`) |
 | *Time left clock* | `appearance.left.` | the font block; JetBrains Mono 26, red | the time-left clock, the same way |
-| *Live figures* | `appearance.figures.` | the font block; Friz Quadrata 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
-| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
-| *Spell text* | `appearance.spellText.` | the font block; Friz Quadrata 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
-| *Damage chart* | `appearance.chart.` | the bar block; solid, 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height (the columns' and the best-pace line's: the plot is one 13 px icon row taller, on top) and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
+| *Live figures* | `appearance.figures.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
+| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
+| *Spell text* | `appearance.spellText.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
+| *Damage chart* | `appearance.chart.` | the bar block with *Use the skin's texture*; the skin's texture (stored pick solid), 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height (the columns' and the best-pace line's: the plot is one 13 px icon row taller, on top) and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
 | *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
-| *Pace bar* | `appearance.pace.` | the bar block; the chart's old look (solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
+| *Pace bar* | `appearance.pace.` | the bar block with *Use the skin's texture*; the chart's old look (the skin's texture, stored pick solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
 Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 
@@ -228,13 +279,14 @@ pass on the same target type) to 100% (that type's largest), linear between them
 and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
 Font. Each class color is the row's character's: the row describes that run
 (`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.
-Every row's reaction is `NS.Results.Refresh()`.
+Every row's reaction is `NS.Results.Refresh()`. Each block carries its *Use the skin's ...* companion,
+on by default, as HUD Appearance's do (D-16: the Results table counts as HUD style for the reset).
 
 | Subsection | Schema prefix | Rows | Default |
 |---|---|---|---|
-| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Bar opacity*, *Bar color*, *Use class color*) | solid, 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
+| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*) | the skin's texture (stored pick solid), 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
 | *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
-| *Bar text* | `resultsTable.barText.` | the font block | Friz Quadrata 10, white, shadowed; a dash keeps the column's muted gray |
+| *Bar text* | `resultsTable.barText.` | the font block with *Use the skin's font* | the skin's face (stored pick Friz Quadrata) 10, white, shadowed; a dash keeps the column's muted gray |
 
 The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
 own.
@@ -253,7 +305,9 @@ The page's Defaults button restores *Days to keep*, the Results table tab's rows
 ### Profiles
 
 Untabbed: AceDBOptions' own table, drawn by AceConfigDialog into the library's panel. No Defaults
-button. See [profiles.md](profiles.md).
+button. AceConfigDialog acquires its widgets past the Options proxy, so `settings/Profiles.lua` paints
+the tree after every `Open` (`NS.SkinPaintAceTree`, `Skin:PaintAceTree` with this owner; nothing when
+the library is absent), and it follows the skin as the other pages do. See [profiles.md](profiles.md).
 
 ## The launcher and the key bindings
 

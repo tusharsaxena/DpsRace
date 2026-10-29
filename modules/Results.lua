@@ -44,7 +44,7 @@ Results.VIEWS = {
 Results.MIN_HEIGHT = 420
 Results.DETAIL_WIDTH = 440      -- the detail pane's width when it sits beside the list
 Results.FRAME_NAME = "DpsRaceResults"
-Results.COVER_ALPHA = 0.45      -- the dim cover over the window while the ability timeline is open
+-- The dim cover over the window while the ability timeline is open: the skin's `dr.cover.dim`.
 Results.TABS = { "runs", "insights" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
@@ -52,7 +52,6 @@ local Style = NS.Style
 local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
 -- The footer's hint; on the Runs tab the run count goes before it.
 local HINT = L["Click a row for details \194\183 right-click for options"]
-local C = NS.ResultsTable.COLORS
 
 local ui                 -- the built window
 local tab = "runs"       -- the tab shown (never saved: no migration when Bests became Insights)
@@ -166,7 +165,9 @@ local function buildTab(name)
 end
 
 local function tabButton(name, label, i)
-    -- LootHistory's tab: GameFontNormal, gold and underlined when active, gray when not.
+    -- LootHistory's tab (its Browser tabs, not the skin's Tab primitive, which would lay a backing
+    -- under it): GameFontNormal, the skin's `tab.onText` and its `tab.onLine` underline when active,
+    -- `tab.text` when not.
     local b = CreateFrame("Button", nil, ui.frame)
     b:SetSize(Style.TAB_W, TAB_H)
     b:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 7 + (i - 1) * Style.TAB_PITCH, -HEADER_H)
@@ -174,7 +175,7 @@ local function tabButton(name, label, i)
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
     b.underline = b:CreateTexture(nil, "OVERLAY")
-    b.underline:SetColorTexture(C.gold[1], C.gold[2], C.gold[3], 1)
+    Style.Fill(b.underline, "tab.onLine")
     b.underline:SetHeight(2)
     b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 8, 0)
     b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
@@ -183,17 +184,19 @@ local function tabButton(name, label, i)
 end
 
 local function buildChrome(f)
-    -- The title centered in the title bar (GameFontNormal, the header gold), as LootHistory's is.
-    f.title = Style.Text(f, Style.FONT.TITLE, C.gold, "CENTER")
+    -- The title centered in the title bar, as LootHistory's is: the skin's Shell paints it and the
+    -- divider (`title.text`, the title face; `divider`).
+    f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race \226\128\148 Results"])
     f.divider = f:CreateTexture(nil, "ARTWORK")
     f.divider:SetHeight(1)
     f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
     f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
-    -- The close control is gold under the pointer, as the HUD's controls are (modules/Style.lua).
+    -- The close control is the skin's (Core's, its hover `close.hot`); the view toggle beside it
+    -- turns the accent under the pointer, as the HUD's controls do (modules/Style.lua).
     ui.controls = Style.NewStrip()
-    ui.close = Style.AddToStrip(ui.controls, NS.MakeCloseButton(f, function() Results.Hide() end))
+    ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
     -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
@@ -216,7 +219,7 @@ local function buildChrome(f)
     tabButton("insights", L["Insights"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H - TAB_H)
     line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H - TAB_H)
 end
@@ -224,7 +227,7 @@ end
 local function buildFooter(f)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
     line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
     ui.footLeft = Style.Text(f, Style.FONT.CAPTION)
@@ -419,8 +422,7 @@ end
 local function paintTabs()
     for _, name in ipairs(Results.TABS) do
         local b, on = ui.tabs[name], name == tab
-        local c = on and C.gold or Style.TAB_IDLE
-        b.label:SetTextColor(c[1], c[2], c[3])
+        Style.Paint(b.label, on and "tab.onText" or "tab.text", Style.FONT.TAB)
         b.underline:SetShown(on)
         local pane = ui.panes[name]
         if pane then pane.frame:SetShown(on) end
@@ -586,7 +588,7 @@ function onHide()
 end
 
 -- THE MODAL COVER (P13, the owner's call, 2026-10-27). While the ability timeline is open over the
--- window (one strata above it, core/Constants.lua LAYERS), a black texture at COVER_ALPHA dims the
+-- window (one strata above it, core/Constants.lua LAYERS), the skin's `dr.cover.dim` dims the
 -- whole window and its frame takes the mouse and the wheel at W + LEVEL.COVER, over the grip and
 -- every content level: no hover, click or scroll reaches the window behind, so no Results tooltip
 -- shows through. A click on it does nothing (the timeline's close control and Escape close the
@@ -602,7 +604,7 @@ local function ensureCover()
     c:SetScript("OnMouseWheel", function() end)
     c.dim = c:CreateTexture(nil, "BACKGROUND")
     c.dim:SetAllPoints(c)
-    c.dim:SetColorTexture(0, 0, 0, Results.COVER_ALPHA)
+    Style.Fill(c.dim, "dr.cover.dim")
     ui.cover = c
     return c
 end
@@ -776,7 +778,10 @@ function Results.RowMenu(r, owner)
         if not Source.IsMock() and NS.LateIgnore.Offers(r) then
             NS.LateIgnore.FillMenu(root:CreateButton(L["Ignore for late casts"]), r)
         end
-        root:CreateButton("|cffff5555" .. L["Delete"] .. "|r", function() Results.ConfirmDelete(r.id) end)
+        -- A destructive item in the skin's `sem.danger` (ff5555 in Ka0s Default): the menu is the
+        -- client's own (skinning-§7), only the line written on it is the skin's.
+        root:CreateButton((NS.SkinEscape("sem.danger") or "") .. L["Delete"] .. "|r",
+            function() Results.ConfirmDelete(r.id) end)
     end)
     return true
 end

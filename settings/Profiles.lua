@@ -32,9 +32,14 @@ local function build(mainCategory)
     container.frame:ClearAllPoints()
     container.frame:SetPoint("TOPLEFT", ctx.body, "TOPLEFT", 8, -8)
     container.frame:SetPoint("BOTTOMRIGHT", ctx.body, "BOTTOMRIGHT", -8, 8)
+    -- AceConfigDialog acquires the manager's widgets from AceGUI itself, past the Options instance's
+    -- owner proxy, so the tree is painted for this addon's skin right after it is drawn (skinning-§3;
+    -- nothing while the settings panel is left the client's). Each widget goes back to the shared
+    -- pool stock when the next Open releases it, and a skin switch re-renders the page.
     H.SetRenderer(ctx, function()
         container.frame:Show()
         AceConfigDialog:Open(APP, container)
+        NS.SkinPaintAceTree(container)
     end)
     return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, L["Profiles"])
 end

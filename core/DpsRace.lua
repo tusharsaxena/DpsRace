@@ -16,6 +16,10 @@ function NS:OnInitialize()
     self:InitDB()
     -- Before anything reads NS.db.profile (savedvariables-§1).
     self:RunMigrations()
+    -- The skin the active profile names (core/SkinSetup.lua), right after the store exists: the owner
+    -- registered at file load, before AceDB, and has worn Ka0s Default since. Before any page or
+    -- window is built, so the first paint is already the profile's skin.
+    NS.ApplySkinChoice()
     -- The stored switch takes its hold before OnEnable runs, so a disabled login registers nothing.
     NS.SyncEnabledHold()
     NS.Launcher:Register()
@@ -38,6 +42,10 @@ function NS:OnEnable()
     NS.AutoArm.Resume()
     -- The final seconds' marks, for a race the resume left running.
     NS.Countdown.Resume()
+    -- The first-run skin picker (core/SkinSetup.lua), once per session on a profile that has not
+    -- closed it: two seconds in, off the login spike, on an AceTimer the stand-down cancels. The
+    -- stored skin was applied in OnInitialize; in combat the show holds for PLAYER_REGEN_ENABLED.
+    addon:ScheduleTimer(function() NS.MaybeShowSkinPicker() end, 2)
 end
 
 -- ── Game events ─────────────────────────────────────────────────────────────────────────────────

@@ -85,8 +85,13 @@ NS.SafeRegisterUnitEvent = lib.SafeRegisterUnitEvent
 NS.SafeRegisterEvents    = lib.SafeRegisterEvents
 
 -- The shared window edge, published flat so a re-skin lands everywhere at once (standalone-windows).
+-- WRAPPED, TO SAY WHO IS ASKING (skinning-§1): with no skin table, Core paints the frame through the
+-- skin owner core/SkinSetup.lua registers (Core minor 13: the owner's `S.Shell`), so the window wears
+-- this addon's skin and follows a switch. A skin table of the caller's own is drawn as given.
 NS.SKIN      = lib.SKIN
-NS.ApplySkin = lib.ApplySkin
+NS.ApplySkin = function(frame, skin)
+    return lib.ApplySkin(frame, skin, addonName)
+end
 -- The bottom-right sizing grip the HUD is resized with (standalone-windows).
 NS.MakeResizable = lib.MakeResizable
 -- A toplevel DIALOG window re-raises a shown StaticPopup when it shows, so a confirmation shown first

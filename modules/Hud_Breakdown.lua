@@ -31,7 +31,7 @@ local L = NS.L
 Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2
 local PCT_WIDTH = 44
-local TRACK_COLOR = { 1, 1, 1, 0.04 }
+local TRACK_COLOR = "dr.list.track"   -- the skin's faint track behind a bar
 local FONT = NS.Style.FONT
 
 --- The configured row height, and the pitch from one row's top to the next (both config, never a
@@ -75,10 +75,12 @@ local function newRow(parent)
     local bar = CreateFrame("StatusBar", nil, row)
     local track = bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(bar)
-    track:SetColorTexture(TRACK_COLOR[1], TRACK_COLOR[2], TRACK_COLOR[3], TRACK_COLOR[4])
+    NS.Style.Fill(track, TRACK_COLOR)
     row.icon, row.bar = icon, bar
-    row.name = NS.Style.Text(bar, FONT.TEXT, nil, "LEFT")
-    row.amount = NS.Style.Text(bar, FONT.TEXT, nil, "RIGHT")
+    -- The spell's name and amount are the player's Spell text block (HUD Appearance): plain labels the
+    -- skin never paints. The share is a caption, the skin's.
+    row.name = NS.Style.PlainText(bar, FONT.TEXT, "LEFT")
+    row.amount = NS.Style.PlainText(bar, FONT.TEXT, "RIGHT")
     row.pct = NS.Style.Text(bar, FONT.CAPTION, nil, "RIGHT")
     return row
 end
@@ -144,7 +146,7 @@ local function paintStripe(list, row, i)
         row.stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
         row.stripe:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -Breakdown.ROW_GAP)
     end
-    row.stripe:SetVertexColor(1, 1, 1, list.stripe(i))
+    NS.Style.Vertex(row.stripe, "dr.list.stripe", list.stripe(i))
 end
 
 -- A row's hover, wired once per pooled row of a list with a `tip` hook.

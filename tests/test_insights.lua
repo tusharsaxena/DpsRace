@@ -146,6 +146,19 @@ test("insights charts: the ranked palette cycles, and a map keeps one color per 
     assertEqual(m.cleave, i.host.palette[2])
 end)
 
+test("insights charts: a palette getter is read at each draw, so a skin switch moves it", function()
+    local i = inst()
+    local a, b = { { 1, 0, 0 } }, { { 0, 0, 1 }, { 0, 1, 0 } }
+    local now = a
+    i.host.palette = function() return now end
+    local ctx = i.Charts.New(i.content, i.host)
+    assertEqual(ctx:paletteColor(1), a[1])
+    now = b
+    assertEqual(ctx:paletteColor(2), b[2], "the new palette, no rebuild")
+    now = nil
+    assertTrue(ctx:paletteColor(1) ~= nil, "a getter that answers nothing falls back to the default palette")
+end)
+
 -- ── the bar sections ────────────────────────────────────────────────────────────────────────────
 
 local SPECS = {
@@ -630,8 +643,19 @@ test("insights charts: the DpsRace host pools through NS.Pool and draws in the w
     assertEqual(host.fonts.panelTitle, host.fonts.heading)
     assertEqual(host.colors.heading, Style.GOLD)
     assertEqual(host.colors.body, Tbl.COLORS.text)
+    -- Every color a live skin color: the chart tokens for the track, the axis and the rule, the
+    -- owner's bar blue, the skin's ranked palette; and the skin's seams for labels and textures.
+    assertEqual(host.colors.track, Style.Tok("chart.track"))
+    assertEqual(host.colors.axis, Style.Tok("chart.axis"))
+    assertEqual(host.colors.rule, Style.Tok("section.rule"))
+    assertEqual(host.colors.bar, Style.Tok("dr.chart.bar"))
+    assertEqual(host.palette(), i.NS.Skin.Token("chart.series"), "the skin's palette, read when a chart draws")
+    assertEqual(host.fill, Style.Fill)
+    assertEqual(host.text, Style.PlainText)
+    -- The window's flat panel: the skin's Panel, recorded for this owner (a skin switch repaints it).
     local p = host.panel(i.content)
-    assertTrue(p.__backdropColor ~= nil, "the window's flat panel")
+    local rec = i.mocks.LibStub("LibKa0s-Skin-1.0").painted[p]
+    assertTrue(rec ~= nil and rec.owner == "DpsRace" and rec.calls.Panel ~= nil, "the window's flat panel")
 end)
 
 test("insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor", function()

@@ -83,14 +83,16 @@ Chart.RESERVE = Chart.ICON + Chart.ICON_GAP   -- the plot's headroom on top: one
 
 -- The plot is a fill with no edge (the owner's call, 2026-10-26: the faint gray border is gone).
 Chart.PLOT_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8x8" }
-local PACE_TRACK = { 1, 1, 1, 0.08 }   -- the pace bar's empty part
-local DIAGONAL = { 0.9, 0.9, 0.92, 0.4 }
-local TICK = { 1, 1, 1, 0.85 }
-local AHEAD = { 0.36, 0.86, 0.46, 0.85 }    -- the KPI's green: past the tick
-local BEHIND = { 1.0, 0.32, 0.32, 0.85 }    -- the KPI's red: the shortfall to the tick
+-- The skin's colors (core/SkinSetup.lua's owner tokens and the race's meaning hues).
+local PACE_TRACK = "dr.chart.grid"     -- the pace bar's empty part
+local DIAGONAL = "dr.chart.diag"       -- best's pace
+local TICK = "dr.pace.tick"            -- on pace
+local AHEAD = "dr.ahead"               -- the KPI's green: past the tick
+local BEHIND = "sem.statusBad"         -- the KPI's red: the shortfall to the tick
+local PACE_A = 0.85                    -- both halves' opacity (the bar's own, every skin)
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local ICON_CROP = { 0.08, 0.92, 0.08, 0.92 }   -- the icon art without its baked-in border
-local MARK_BG = { 0, 0, 0, 0.75 }              -- a +n mark's square, dark under its white count
+local MARK_BG = "handle.bg"                    -- a +n mark's square, dark under its white count
 
 local D = NS.defaults.profile.appearance.chart
 local LIVE = NS.defaults.profile.live
@@ -459,7 +461,7 @@ Strip.__index = Strip
 local function newLine(frame, color)
     local l = frame:CreateLine(nil, "OVERLAY")
     l:SetThickness(Chart.DIAGONAL_W)
-    l:SetColorTexture(color[1], color[2], color[3], color[4])
+    Style.Fill(l, color)
     return l
 end
 
@@ -695,7 +697,7 @@ local function newMark(over)
     f:EnableMouse(true)
     f.bg = f:CreateTexture(nil, "ARTWORK")
     f.bg:SetAllPoints(f)
-    f.bg:SetColorTexture(MARK_BG[1], MARK_BG[2], MARK_BG[3], MARK_BG[4])
+    Style.Fill(f.bg, MARK_BG)
     f.text = Style.Text(f, FONT.TEXT, nil, "CENTER")
     f.text:SetPoint("CENTER", f, "CENTER", 0, 0)
     f:SetScript("OnEnter", markEnter)
@@ -802,13 +804,13 @@ function Chart.NewPace(parent)
     p.bar = CreateFrame("Frame", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
-    track:SetColorTexture(PACE_TRACK[1], PACE_TRACK[2], PACE_TRACK[3], PACE_TRACK[4])
+    Style.Fill(track, PACE_TRACK)
     p.behind = halfBar(p.bar)
     p.ahead = halfBar(p.bar)
     p.ahead:SetStatusBarTexture(WHITE)
-    p.ahead:SetStatusBarColor(AHEAD[1], AHEAD[2], AHEAD[3], AHEAD[4])
+    p.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))   -- again on every restyle (SetRange)
     p.shortfall = p.behind:CreateTexture(nil, "ARTWORK")
-    p.shortfall:SetColorTexture(BEHIND[1], BEHIND[2], BEHIND[3], BEHIND[4])
+    Style.Fill(p.shortfall, BEHIND, PACE_A)
     p.behind:SetStatusBarTexture(WHITE)
     anchorShortfall(p)
     -- The tick on its own frame over both halves: a child frame draws over its parent's regions.
@@ -816,7 +818,7 @@ function Chart.NewPace(parent)
     p.over:SetAllPoints(p.bar)
     p.over:SetFrameLevel(p.bar:GetFrameLevel() + 2)
     p.tick = p.over:CreateTexture(nil, "OVERLAY")
-    p.tick:SetColorTexture(TICK[1], TICK[2], TICK[3], TICK[4])
+    Style.Fill(p.tick, TICK)
     p.tick:SetWidth(2)
     p.tick:SetPoint("TOP", p.bar, "TOP", 0, 2)
     p.tick:SetPoint("BOTTOM", p.bar, "BOTTOM", 0, -2)
@@ -866,6 +868,7 @@ function Pace:SetRange(lo, hi)
         self.behind:SetStatusBarTexture(look.texture)
         self.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
         self.ahead:SetStatusBarTexture(look.texture)
+        self.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))
         anchorShortfall(self)
     end
     local mid = (lo + hi) / 2

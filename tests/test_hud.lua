@@ -1357,11 +1357,11 @@ test("hud: a title-bar control turns gold under the pointer and back at rest, a 
         local v = b.icon.__vertex
         return v ~= nil and v[1] == c[1] and v[2] == c[2] and v[3] == c[3] and (v[4] == nil or v[4] == 1)
     end
-    local controls = { u.close, u.lock, u.settings, u.results }
+    local controls = { u.lock, u.settings, u.results }
     for _, b in ipairs(controls) do assertTrue(is(b, REST), "a control is not at rest") end
     u.results:__fire("OnEnter")
     assertTrue(is(u.results, GOLD), "the hovered control is gold")
-    assertTrue(is(u.settings, REST) and is(u.lock, REST) and is(u.close, REST), "only the hovered one")
+    assertTrue(is(u.settings, REST) and is(u.lock, REST), "only the hovered one")
     assertTrue(f.M.GameTooltip:IsShown(), "the tooltip stays")
     -- The pointer moves to the next control and the old control's leave arrives after its enter.
     u.settings:__fire("OnEnter")
@@ -1370,11 +1370,13 @@ test("hud: a title-bar control turns gold under the pointer and back at rest, a 
     assertTrue(is(u.results, REST))
     u.settings:__fire("OnLeave")
     for _, b in ipairs(controls) do assertTrue(is(b, REST), "back at rest") end
-    -- The close control's own hover (the library's red) is repainted gold, and back to its gray.
+    -- The close control is the skin's own (D-9: S.CloseButton through Core, its hover `close.hot`,
+    -- which LibKa0s's own suites pin): not on the strip, so never the strip's gold.
+    assertFalse(is(u.close, GOLD), "the close control at rest")
     u.close:__fire("OnEnter")
-    assertTrue(is(u.close, GOLD), "the close control is gold under the pointer")
+    assertFalse(is(u.close, GOLD), "the close control is not the strip's gold under the pointer")
+    assertTrue(is(u.lock, REST) and is(u.settings, REST) and is(u.results, REST), "the strip unmoved")
     u.close:__fire("OnLeave")
-    assertTrue(is(u.close, REST))
     -- Lock swaps the padlock's art, not its tint.
     f.Hud.SetLocked(true)
     u.lock:__fire("OnEnter")
@@ -1413,7 +1415,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertEqual(w.damage.value.__font.size, 20)
     local row = w.list.rows[1]
     assertEqual(row.__height, 18)
-    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\buttons\\white8x8", "flat: LSM's Solid")
+    -- The spell bars follow the skin (DR-03, X5): Ka0s Default's own bar texture.
+    assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\addons\\dpsrace\\libs\\libka0s\\media\\textures\\ka0s-default",
+        "the skin's bar.texture")
     assertEqual(row.bar.__barColor[4], 0.85)
     assertEqual(row.name.__font.size, 10)
 

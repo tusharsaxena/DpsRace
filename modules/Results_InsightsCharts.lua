@@ -40,8 +40,13 @@ local _, NS = ...
 --   host.hideTip  function()
 --   host.colors   { body, value, muted, heading, caption, rule, track, bar, axis } as { r, g, b[, a] }
 --   host.fonts    { label, axis, heading, divider, panelTitle, caption, figure }: font object names
---   host.palette  the ranked palette, a list of { r, g, b }
--- Any color, font or palette left out takes LootHistory's Ka0s Default value. tests/test_insights.lua
+--   host.palette  the ranked palette, a list of { r, g, b }, or a function answering one, read at
+--                 every draw (so a skin switch moves it with no rebuild)
+--   host.text     function(parent, font, justify) -> a FontString in that font object (optional)
+--   host.paint    function(fs, color): a label's color (and the host's face for it) (optional)
+--   host.fill     function(texture, color, alpha): a texture's flat color (optional)
+-- Any color, font or palette left out takes LootHistory's Ka0s Default value, and a missing text,
+-- paint or fill draws the plain way (the font object's face, SetTextColor, SetColorTexture). tests/test_insights.lua
 -- fails on an NS read above the host section. Charts.Host() is DpsRace's own table.
 --
 -- POOLED. Every widget a render draws comes from a pool the context names (ctx:Pool(name)), and
@@ -145,15 +150,20 @@ local function merged(defaults, given)
     return out
 end
 
-local function paint(fs, c) fs:SetTextColor(c[1], c[2], c[3], c[4] or 1) end
-local function fillColor(tex, c, a) tex:SetColorTexture(c[1], c[2], c[3], a or c[4] or 1) end
-
-local function text(parent, font, justify)
+local function plainPaint(fs, c) fs:SetTextColor(c[1], c[2], c[3], c[4] or 1) end
+local function plainFill(tex, c, a) tex:SetColorTexture(c[1], c[2], c[3], a or c[4] or 1) end
+local function plainText(parent, font, justify)
     local fs = parent:CreateFontString(nil, "OVERLAY", font)
     fs:SetJustifyH(justify or "LEFT")
     fs:SetWordWrap(false)
     return fs
 end
+
+-- The drawing seams, the last host's (Charts.New): one host per addon.
+local hostPaint, hostFill, hostText = plainPaint, plainFill, plainText
+local function paint(fs, c) hostPaint(fs, c) end
+local function fillColor(tex, c, a) hostFill(tex, c, a) end
+local function text(parent, font, justify) return hostText(parent, font, justify) end
 
 local function noop() end
 
@@ -174,11 +184,14 @@ function Charts.New(content, host)
     if type(host) ~= "table" or type(host.pool) ~= "table" then
         error("InsightsCharts.New: host.pool is required", 2)
     end
-    local palette = type(host.palette) == "table" and host.palette[1] and host.palette or DEFAULT_PALETTE
+    local paletteOf = type(host.palette) == "function" and host.palette or nil
+    local palette = not paletteOf and type(host.palette) == "table" and host.palette[1] and host.palette
+        or DEFAULT_PALETTE
+    hostPaint, hostFill, hostText = host.paint or plainPaint, host.fill or plainFill, host.text or plainText
     return setmetatable({
         content = content, poolApi = host.pool, pools = {}, poolOrder = {},
         colors = merged(DEFAULT_COLORS, host.colors), fonts = merged(DEFAULT_FONTS, host.fonts),
-        palette = palette, panel = host.panel or plainPanel,
+        palette = palette, paletteOf = paletteOf, panel = host.panel or plainPanel,
         tip = host.tip or noop, hideTip = host.hideTip or noop,
     }, Ctx)
 end
@@ -212,7 +225,12 @@ end
 
 --- The palette color at 1-based `rank` (cycles).
 function Ctx:paletteColor(rank)
-    return self.palette[((rank - 1) % #self.palette) + 1]
+    local p = self.palette
+    if self.paletteOf then
+        p = self.paletteOf()
+        if type(p) ~= "table" or not p[1] then p = DEFAULT_PALETTE end
+    end
+    return p[((rank - 1) % #p) + 1]
 end
 
 --- { key -> palette color } by position in `orderedKeys`, so a key keeps one color across charts.
@@ -796,16 +814,18 @@ end
 local function cursorTip(owner, lines, anchor)
     local tip = GameTooltip
     if not tip then return end
-    local gold = NS.Style.GOLD
+    local r, g, b = NS.Style.Rgb("gtip.title")
     tip:SetOwner(owner, anchor)
-    tip:SetText(lines[1], gold[1], gold[2], gold[3], 1, true)
+    tip:SetText(lines[1], r, g, b, 1, true)
     NS.Style.AddTipLines(tip, lines, 2)
     tip:Show()
 end
 
 --- The host table for DpsRace's Results window: NS.Pool, the window's flat panel, its tooltip, its
---- colors (modules/Results_Table.lua's COLORS) and font objects (modules/Style.lua's FONT). The ranked
---- palette is the default. The meaning colors (class, category, length) are the rows' own, chosen by
+--- colors (modules/Results_Table.lua's COLORS and the skin's chart tokens, every one a live skin
+--- color) and font objects (modules/Style.lua's FONT), its labels painted through the skin
+--- (Style.Paint: the skin's faces) and its textures through Style.Fill. The ranked palette is the
+--- skin's `chart.series`, read at every draw. The meaning colors (class, category, length) are the rows' own, chosen by
 --- the caller.
 --- @return table
 function Charts.Host()
@@ -816,9 +836,14 @@ function Charts.Host()
         panel = function(parent) return Tbl.Panel(parent) end,
         tip = cursorTip,
         hideTip = Tbl.HideTip,
+        text = Style.PlainText,
+        paint = function(fs, c) Style.Paint(fs, c, nil, true) end,
+        fill = Style.Fill,
+        palette = function() return NS.Skin.Token("chart.series") end,
         colors = {
             body = C.text, value = C.text, muted = C.dim, heading = C.gold, caption = C.dim,
-            rule = { C.gold[1], C.gold[2], C.gold[3], 0.35 }, bar = C.blue,
+            rule = Style.Tok("section.rule"), bar = Style.Tok("dr.chart.bar"),
+            track = Style.Tok("chart.track"), axis = Style.Tok("chart.axis"),
         },
         fonts = {
             label = F.TEXT, axis = F.CAPTION, heading = F.CHART, divider = F.SECTION,

@@ -553,7 +553,7 @@ Total.
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
-- results: the close control turns gold under the pointer and back to its gray
+- results: the close control is the skin's own, never the title strip's gold (D-9)
 
 ### test_results_fit.lua (5)
 
@@ -891,7 +891,7 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (58)
+### test_insights.lua (59)
 
 - insights charts: nothing above the host section reads NS or a client global but CreateFrame
 - insights charts: the header names the LootHistory source commit the port came from
@@ -900,6 +900,7 @@ Total.
 - insights charts: tipText states the value beside the full label
 - insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
 - insights charts: the ranked palette cycles, and a map keeps one color per key
+- insights charts: a palette getter is read at each draw, so a skin switch moves it
 - insights charts: a bar section scales to its longest bar and colors label and fill alike
 - insights charts: every bar's hover states its value; a row's own tip lines win
 - insights charts: an empty section hides its header and leaves the cursor where it was
@@ -1013,12 +1014,12 @@ Total.
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls then New-best toast
+- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
 - settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults names Master controls and the toast, and not the keys or the HUD
+- settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD
 - settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
@@ -1035,6 +1036,78 @@ Total.
 - settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
 - settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
 - settings: Race repaints when your training dummies change from anywhere
+
+### test_skinsetup.lua (22)
+
+- skin seam: the owner is the folder name, and NS.Skin is its facade
+- skin seam: the owner is registered at file load, before the profile store exists
+- skin seam: the read answers Ka0s Default before the profile store exists
+- skin seam: Core's window edge is handed the owner
+- skin seam: the dropdown and the test strip factories are handed the owner
+- skin seam: every owner token is namespaced dr. and registered with the owner
+- skin seam: under Ka0s Default each owner token is today's pixel
+- skin seam: under another skin a wash is that skin's role color at the wash's alpha
+- skin seam: the seven skin keys default to Ka0s Default, the picker unseen
+- skin seam: every skin key is a skip-render schema row on the Skin tab
+- skin seam: the skin row's values are every registered skin, in the library's order
+- skin seam: /dr set refuses a skin that is not registered and applies one that is
+- skin seam: /dr set reaches an exception, and only its own half
+- skin seam: the Skin tab is the library's, after New-best toast and before Keybindings
+- skin seam: one tab pick is one effective SetChoice, one repaint and no reload
+- skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
+- skin seam: another addon's copy to every Ka0s addon repaints this one once
+- skin seam: login applies the stored skin, exceptions and overrides
+- skin seam: a profile switch applies the new profile's skin, panel built or not
+- skin seam: Reset all settings puts the skin back on Ka0s Default and applies it
+- skin seam: the degraded facade answers every name the live facade carries
+- skin seam: each host-copy skin token is the live library's Ka0s Default value
+
+### test_skin_literals.lua (3)
+
+- no color literal outside core/SkinSetup.lua and the named allow-list
+- every allow-list entry carries its reason
+- the gate is falsifiable: a planted literal of each shape is reported
+
+### test_skin.lua (11)
+
+- skin: every owner token a source file names is registered
+- skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
+- skin: Ka0s Default draws each flat button's fill, edge and label as before, enabled and disabled
+- skin: the buttons are the skin's Button, their slots remapped by token name
+- skin: Ka0s Default draws the faint box, the callout and the badge as before
+- skin: the live colors are Ka0s Default's own values for the HUD and the Results list
+- skin: a switch moves every live color in place and re-tints what the host painted
+- skin: a data hue stays the same under every skin
+- skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
+- skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
+- skin: the custom-length box draws no box under Ka0s Default and the skin's box under another
+
+### test_skin_hud.lua (9)
+
+- skin hud: the defaults list every companion, on, and the full-path list matches them
+- skin hud: the clocks keep their monospace face, with no companion (D-15)
+- skin hud: each companion is a bool row, default on, governing its picker
+- skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
+- skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM
+- skin hud: the Results table's bar cells and their text follow the skin too (D-16)
+- skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
+- skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
+- skin hud: the reset runs once, and a player's later pick is kept
+
+### test_skin_picker.lua (12)
+
+- skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
+- skin picker: an unseen profile shows it; a seen one does not
+- skin picker: it shows once after login, on a two-second AceTimer the stand-down cancels
+- skin picker: in combat a start waits for PLAYER_REGEN_ENABLED, once
+- skin picker: the stand-down drops a held start and shows nothing while the addon is off
+- skin picker: a new profile and a reset profile show it again
+- skin picker: the harness login shows the library's window
+- skin picker: the player's close marks it seen; this addon's own hide does not
+- skin picker: a profile that has seen it takes a shown picker down, unmarked
+- skin picker: the eye turns test mode on, and with it on shows the Results window
+- skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
+- skin picker: degraded, no picker shows and the Profiles paint is a no-op
 
 ### test_slash.lua (37)
 
@@ -1226,12 +1299,11 @@ Total.
 - load order: every derived path exists on disk
 - load order: no libs/ path leaked into the addon's own list
 
-### test_vendor_sync.lua (4)
+### test_vendor_sync.lua (3)
 
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
-- libs/LibKa0s/Toast.lua, vendored alone, is the LibKa0s branch's file byte for byte
 
 ### test_eol.lua (2)
 
@@ -1343,11 +1415,16 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 58 |
+| test_insights.lua | 59 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
+| test_skinsetup.lua | 22 |
+| test_skin_literals.lua | 3 |
+| test_skin.lua | 11 |
+| test_skin_hud.lua | 9 |
+| test_skin_picker.lua | 12 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1359,11 +1436,11 @@ Total.
 | test_surface_parity.lua | 17 |
 | test_perf_harness.lua | 4 |
 | test_loadorder.lua | 4 |
-| test_vendor_sync.lua | 4 |
+| test_vendor_sync.lua | 3 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1088** |
+| **Total** | **1145** |

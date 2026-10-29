@@ -342,6 +342,7 @@ local function newRow(p, x, i)
     row.check.label = Tbl.Text(row, FONT.TEXT, C.text)
     row.check.label:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
     row.check:SetScript("OnClick", function() toggle(x, i) end)
+    NS.Skin.Checkbox(row.check)   -- the skin's check box (D-13), after its click script
     for _, f in ipairs({ row, row.check }) do
         f:HookScript("OnEnter", function() rowTip(p, row) end)
         f:HookScript("OnLeave", Tbl.HideTip)

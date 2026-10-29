@@ -20,25 +20,39 @@ local L = NS.L
 local Style = NS.Style
 local FONT = Style.FONT
 
+-- The HUD's palette, every entry a live skin color (modules/Style.lua): the body text and its dim
+-- gray, the header gold, and the race's meaning hues (core/SkinSetup.lua's owner tokens, whose Ka0s
+-- Default values are the colors these drew before the skin engine).
 local C = {
-    text  = { 0.93, 0.93, 0.95 },
-    dim   = { 0.62, 0.62, 0.68 },
+    text  = Style.Tok("dr.text"),
+    dim   = Style.Tok("dr.dim"),
     gold  = Style.GOLD,
-    amber = { 1.0, 0.72, 0.29 },
-    red   = { 1.0, 0.32, 0.32 },
-    green = { 0.36, 0.86, 0.46 },
-    info  = { 0.56, 0.72, 1.0 },
+    amber = Style.Tok("dr.caution"),
+    red   = Style.Tok("sem.statusBad"),
+    green = Style.Tok("dr.ahead"),
+    info  = Style.Tok("dr.info"),
 }
 States.COLORS = C
 
-local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
-local PANEL_BG, PANEL_EDGE = { 1, 1, 1, 0.03 }, { 1, 1, 1, 0.10 }
--- The plain button is LootHistory's bar button (a dark fill, the window's divider gray for an edge,
--- white GameFontHighlightSmall that turns gold under the pointer); primary and danger keep a tinted edge.
+-- The flat box a KPI, a panel and a card stand in: a faint wash under a faint edge (the slot remap
+-- of LibKa0s-Skin-1.0's Card and Panel, D-3).
+local BOX = { bg = "list.boxDim", border = "dr.box.border" }
+-- The buttons, each the skin's Button (LootHistory's bar button: a dark fill, the window's divider
+-- gray for an edge, a white label that turns gold under the pointer) with the slots a style or a
+-- state paints from another token: primary and danger keep a tinted box, a selected preset a gold
+-- edge and label, and a disabled one its box and label faded (the dr.*.off* tokens).
 local BUTTON_STYLES = {
-    normal  = { bg = { 0.1, 0.1, 0.12, 0.9 }, edge = { 0.24, 0.24, 0.27, 0.9 }, text = { 1, 1, 1 } },
-    primary = { bg = { 1, 0.82, 0, 0.12 }, edge = { 1, 0.82, 0, 0.75 }, text = C.gold },
-    danger  = { bg = { 1, 0.32, 0.32, 0.08 }, edge = { 1, 0.32, 0.32, 0.6 }, text = C.red },
+    normal  = { on = {}, off = { bg = "dr.btn.offBg", border = "dr.btn.offBorder", disabled = "dr.btn.offText" } },
+    primary = { primary = true,
+                on = { bg = "dr.primary.bg", border = "dr.primary.border", hover = "dr.primary.hover" },
+                off = { bg = "dr.primary.offBg", border = "dr.primary.offBorder", disabled = "dr.primary.offText" } },
+    danger  = { on = { bg = "dr.danger.bg", border = "dr.danger.border", text = "dr.danger.text",
+                       hover = "dr.danger.hover" },
+                off = { bg = "dr.danger.offBg", border = "dr.danger.offBorder", disabled = "dr.danger.offText" } },
+}
+local SELECTED = {
+    on = { border = "dr.sel.border", text = "btnPrimary.text", hover = "btnPrimary.text" },
+    off = { bg = "dr.btn.offBg", border = "dr.primary.offBorder", disabled = "dr.primary.offText" },
 }
 local BIG = 40           -- the clock and STOP
 -- The running body's two clocks side by side ("both"): up to seven monospace glyphs each (a race
@@ -108,7 +122,7 @@ end
 -- ── widgets ─────────────────────────────────────────────────────────────────────────────────────
 
 local function paintText(fs, c)
-    fs:SetTextColor(c[1], c[2], c[3])
+    Style.Paint(fs, c)
 end
 
 --- A label in one of the shared font objects (modules/Style.lua), recolored when `color` is given.
@@ -119,39 +133,56 @@ local function text(parent, font, color, justify)
     return fs
 end
 
--- A race clock or STOP: the one label kept in its own monospace face and size (modules/Style.lua).
-local function bigText(parent, size, color)
+-- A race clock or STOP: the one label kept in its own monospace face and size (modules/Style.lua),
+-- the skin's `font.mono` (Ka0s Default's JetBrains Mono, the shipped face), drawn again on a skin
+-- change. Its color is the race's meaning, a live table the body tints it with on every draw.
+local bigTexts = setmetatable({}, { __mode = "k" })   -- fs -> its size
+
+local function monoFace()
+    local name = NS.Skin.Token("font.mono")
+    return (type(name) == "string" and NS.MediaFont and NS.MediaFont(name))
+        or (NS.Constants and NS.Constants.FONT_MONO) or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+end
+
+Style.OnLooks(function()
+    local face = monoFace()
+    for fs, size in pairs(bigTexts) do fs:SetFont(face, size, "") end
+end)
+
+-- `styled`: a clock a HUD Appearance block restyles (the running body's), whose face is the
+-- player's from its first draw and never the skin's.
+local function bigText(parent, size, color, styled)
     local fs = parent:CreateFontString(nil, "OVERLAY")
-    local face = NS.Constants and NS.Constants.FONT_MONO or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-    fs:SetFont(face, size, "")
-    paintText(fs, color)
+    fs:SetFont(monoFace(), size, "")
+    if not styled then bigTexts[fs] = size end
+    fs:SetTextColor(Style.Rgb(color))
     fs:SetJustifyH("CENTER")
     return fs
 end
 
-local function panel(parent, bg, edge)
+--- A flat box through the skin: its Panel, or with `kind` its Card (a KPI, the target card) or its
+--- Inset (the detail's strip), the slots remapped to `tokens` (default BOX).
+local function panel(parent, tokens, kind)
     local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    if f.SetBackdrop then
-        f:SetBackdrop(FLAT)
-        bg, edge = bg or PANEL_BG, edge or PANEL_EDGE
-        f:SetBackdropColor(bg[1], bg[2], bg[3], bg[4])
-        f:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4])
-    end
+    local paint = kind == "card" and NS.Skin.Card or kind == "inset" and NS.Skin.Inset or NS.Skin.Panel
+    paint(f, { tokens = tokens or BOX })
     return f
 end
+States.Panel = panel
 
+-- Paint `b` through the skin's Button for its style and state, only when either moved: the
+-- library records the call and follows the hover and the enabled state itself.
 local function paintButton(b)
-    local s, on = b.style, b:IsEnabled()
-    local edge = (b.selected and C.gold) or s.edge
-    b:SetBackdropColor(s.bg[1], s.bg[2], s.bg[3], on and s.bg[4] or s.bg[4] * 0.4)
-    b:SetBackdropBorderColor(edge[1], edge[2], edge[3], on and (edge[4] or 1) or 0.25)
-    local t = ((b.selected or (b.hot and on)) and C.gold) or s.text
-    b.label:SetTextColor(t[1], t[2], t[3], on and 1 or 0.4)
+    local on = b:IsEnabled() and true or false
+    local key = (b.selected and "sel" or b.styleName) .. (on and ":on" or ":off")
+    if b.painted == key then return end
+    b.painted = key
+    local s = b.selected and SELECTED or b.style
+    NS.Skin.Button(b, { primary = b.style.primary and not b.selected, tokens = on and s.on or s.off })
 end
 
 local function setHot(b, on)
     b.hot = on
-    paintButton(b)
 end
 
 -- A button's tooltip (b.tip = { title, text, ... }), shown under the pointer, disabled or not. The
@@ -162,21 +193,23 @@ local function showTip(b)
     if not (tip and GameTooltip) then return end
     if type(tip) ~= "table" then tip = { tostring(tip) } end
     GameTooltip:SetOwner(b, "ANCHOR_TOP")
-    GameTooltip:SetText(tip[1], 1, 1, 1)
-    Style.AddTipLines(GameTooltip, tip, 2, Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
+    GameTooltip:SetText(tip[1], Style.Rgb("gtip.value"))
+    Style.AddTipLines(GameTooltip, tip, 2, Style.Rgb("gtip.title"))
     GameTooltip:Show()
 end
 
 --- A flat button: a label, a style, and a click that a disabled button never runs. Its label is
---- GameFontHighlightSmall and turns gold under the pointer (LootHistory's bar button).
-local function button(parent, label, onClick, style)
+--- the skin's button text in the body face (GameFontHighlightSmall's size, `font` another's) and
+--- turns the hover color under the pointer (LootHistory's bar button, the skin's Button).
+local function button(parent, label, onClick, style, font)
     local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    if b.SetBackdrop then b:SetBackdrop(FLAT) end
     b:SetHeight(BUTTON_HEIGHT)
-    b.style = BUTTON_STYLES[style or "normal"]
-    b.label = Style.Text(b, FONT.TEXT, b.style.text, "CENTER")
+    b.styleName = style or "normal"
+    b.style = BUTTON_STYLES[b.styleName]
+    b.label = Style.PlainText(b, font or FONT.TEXT, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
+    b.text = b.label   -- the label the skin's Button paints (its `btn.text`)
     b:SetScript("OnClick", function(self)
         if self:IsEnabled() then onClick(self) end
     end)
@@ -208,13 +241,16 @@ end
 --- GameFontNormalHuge figure over a GameFontDisableSmall caption). A `captioned` box is
 --- KPI_CAPTIONED_HEIGHT tall, with a row under the value in the caption font (k.caption).
 local function kpi(parent, label, valueColor, captioned)
-    local f = panel(parent)
+    local f = panel(parent, nil, "card")
     f:SetHeight(captioned and KPI_CAPTIONED_HEIGHT or KPI_HEIGHT)
     local k = { frame = f }
     k.label = Style.Text(f, FONT.CAPTION)
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     k.label:SetText(label)
-    k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text)
+    -- A figure the Live figures block styles (`valueColor` false: the running body's) is a plain
+    -- label the skin never paints; every other is the skin's.
+    if valueColor == false then k.value = Style.PlainText(f, FONT.FIGURE)
+    else k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text) end
     k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD + (captioned and KPI_CAPTION_H or 0))
     if captioned then
         k.caption = Style.Text(f, FONT.CAPTION)
@@ -230,9 +266,11 @@ local function setKpi(k, value, caption)
 end
 
 --- Two KPIs side by side at `y`, halves by anchor (no width needed); `captioned` gives both the
---- caption row, so the pair keeps one height.
+--- caption row, so the pair keeps one height. `rightColor` false: both figures are the Live figures
+--- block's (kpi).
 local function kpiPair(parent, y, leftLabel, rightLabel, rightColor, captioned)
-    local a, b = kpi(parent, leftLabel, nil, captioned), kpi(parent, rightLabel, rightColor, captioned)
+    local a = kpi(parent, leftLabel, rightColor == false and false or nil, captioned)
+    local b = kpi(parent, rightLabel, rightColor, captioned)
     a.frame:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     a.frame:SetPoint("TOPRIGHT", parent, "TOP", -4, y)
     b.frame:SetPoint("TOPLEFT", parent, "TOP", 4, y)
@@ -265,7 +303,7 @@ local RESULT_ROWS_TOP = KPI_HEIGHT + GAP + 2 * (CHIP_HEIGHT + CHIP_GAP) + 4
 local RESULT_ROWS_BOTTOM = LINK_HEIGHT + GAP
 
 local function newChip(parent)
-    local f = panel(parent)
+    local f = Style.FlatBox(parent)
     f:SetHeight(CHIP_HEIGHT)
     f.label = Style.Text(f, FONT.TEXT, C.text, "CENTER")
     f.label:SetPoint("CENTER", f, "CENTER", 0, 0)
@@ -273,7 +311,8 @@ local function newChip(parent)
     f:SetScript("OnEnter", function(self)
         if not self.tip or not GameTooltip then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(self.tip, 1, 1, 1, 1, true)
+        local r, g, b = Style.Rgb("gtip.value")
+        GameTooltip:SetText(self.tip, r, g, b, 1, true)
         for _, line in ipairs(self.tipLines or {}) do GameTooltip:AddLine(line[1], line[2], line[3], line[4], true) end
         GameTooltip:Show()
     end)
@@ -305,8 +344,7 @@ function Chips:Set(list)
         local s, c = item.text, item.color or C.text
         chip.label:SetText(s)
         paintText(chip.label, c)
-        chip:SetBackdropBorderColor(c[1], c[2], c[3], 0.55)
-        chip:SetBackdropColor(c[1], c[2], c[3], 0.08)
+        Style.TintBox(chip, c, Style.CHIP_EDGE_A)
         -- Set on every acquire, nil included: a pooled chip never keeps the last item's menu.
         chip.tip, chip.text, chip.tipLines, chip.menu = item.tip, s, item.tipLines, item.menu
         local w = math.floor(textWidth(chip.label, s) + 14)
@@ -341,7 +379,7 @@ end
 local CARD_HEIGHT = 46
 
 local function targetCard(parent, y)
-    local f = panel(parent)
+    local f = panel(parent, nil, "card")
     f:SetHeight(CARD_HEIGHT)
     f:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     f:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
@@ -349,7 +387,7 @@ local function targetCard(parent, y)
     card.name = Style.Text(f, FONT.HEADING)
     card.name:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
     card.name:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
-    card.badge = panel(f, { 1, 0.72, 0.29, 0.08 }, { 1, 0.72, 0.29, 0.6 })
+    card.badge = panel(f, { bg = "dr.callout.badge", border = "dr.callout.borderStrong" })
     card.badge:SetHeight(16)
     card.badge:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 6)
     card.badgeText = Style.Text(card.badge, FONT.TEXT, C.amber, "CENTER")
@@ -414,8 +452,8 @@ local function footerButtons(body, specs)
     return out
 end
 
-local function wideButton(body, label, onClick, style, height)
-    local b = button(body.frame, label, onClick, style)
+local function wideButton(body, label, onClick, style, height, font)
+    local b = button(body.frame, label, onClick, style, font)
     b:SetHeight(height or BUTTON_HEIGHT)
     return b
 end
@@ -451,6 +489,8 @@ function Builders.idle(parent)
     w.customBox = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     w.customBox:SetAutoFocus(false)
     w.customBox:SetFontObject(FONT.TEXT)
+    -- No box under Ka0s Default (stockDefault), as before the skin engine; another skin draws its input.
+    NS.Skin.EditBox(w.customBox, { padInput = false, stockDefault = true })
     w.customBox:SetJustifyH("CENTER")
     w.customBox:SetMaxLetters(6)
     w.customBox:SetScript("OnEnterPressed", function(self) act("customLength", self:GetText()) end)
@@ -461,8 +501,7 @@ function Builders.idle(parent)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
-    w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT)
-    w.arm.label:SetFontObject(FONT.TITLE)
+    w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT, FONT.TITLE)
     w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
     w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
@@ -733,14 +772,14 @@ end
 function Builders.running(parent)
     local body = newBody(parent, "running")
     local f, w = body.frame, body.w
-    w.clock = bigText(f, BIG, C.red)
+    w.clock = bigText(f, BIG, C.red, true)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
     -- "both": elapsed (green) in the left half, time left (red) in the right, a caption under each.
     -- Halves by anchor, as the KPI pair below: no width is read.
-    w.elapsed = bigText(f, CLOCK_PAIR, C.green)
+    w.elapsed = bigText(f, CLOCK_PAIR, C.green, true)
     w.elapsed:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -6)
     w.elapsed:SetPoint("TOPRIGHT", f, "TOP", -4, -6)
-    w.left = bigText(f, CLOCK_PAIR, C.red)
+    w.left = bigText(f, CLOCK_PAIR, C.red, true)
     w.left:SetPoint("TOPLEFT", f, "TOP", 4, -6)
     w.left:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -6)
     w.elapsedCap = Style.Text(f, FONT.CAPTION, nil, "CENTER")
@@ -749,7 +788,7 @@ function Builders.running(parent)
     w.leftCap = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.leftCap:SetPoint("TOP", w.left, "BOTTOM", 0, -3)
     w.leftCap:SetText(L["Left"])
-    w.damage, w.dps = kpiPair(f, -52, L["Damage"], L["DPS \194\183 Live"])
+    w.damage, w.dps = kpiPair(f, -52, L["Damage"], L["DPS \194\183 Live"], false)
     w.rows = CreateFrame("Frame", nil, f)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RUNNING_ROWS_TOP)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
@@ -943,10 +982,10 @@ function Builders.waiting(parent)
     w.title = Style.Text(f, FONT.TITLE, nil, "CENTER")
     w.title:SetPoint("TOP", f, "TOP", 0, -10)
     w.tail, w.combat = kpiPair(f, -WAITING_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
-    w.hint = panel(f, { 1, 0.72, 0.29, 0.07 }, { 1, 0.72, 0.29, 0.35 })
+    w.hint = panel(f, { bg = "dr.callout.bg", border = "dr.callout.border" })
     w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -WAITING_HINT_Y)
     w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -WAITING_HINT_Y)
-    w.hintText = text(w.hint, FONT.TEXT, { 0.95, 0.85, 0.67 })
+    w.hintText = text(w.hint, FONT.TEXT, Style.Tok("dr.callout.text"))
     w.hintText:SetPoint("TOPLEFT", w.hint, "TOPLEFT", HINT_PADX, -HINT_PADY)
     w.hintText:SetPoint("TOPRIGHT", w.hint, "TOPRIGHT", -HINT_PADX, -HINT_PADY)
     w.hintText:SetJustifyV("TOP")
@@ -1024,8 +1063,8 @@ local function lateExtras(v)
     local LI, run, lines = NS.LateIgnore, v.run, {}
     local menu = v.preview ~= true and LI.Offers(run) and function(owner) LI.Menu(run, owner) end or nil
     local ignored = NS.Scoring.IgnoredText(run, NS.HudBreakdown.SpellName)
-    if ignored then lines[#lines + 1] = { ignored, C.dim[1], C.dim[2], C.dim[3] } end
-    if menu then lines[#lines + 1] = { L["Right-click to ignore a spell for late casts, or count it again."], C.dim[1], C.dim[2], C.dim[3] } end
+    if ignored then lines[#lines + 1] = { ignored, Style.Rgb(C.dim) } end
+    if menu then lines[#lines + 1] = { L["Right-click to ignore a spell for late casts, or count it again."], Style.Rgb(C.dim) } end
     return menu, lines[1] and lines or nil
 end
 

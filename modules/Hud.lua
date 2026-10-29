@@ -410,8 +410,9 @@ local function placeControl(b, f, slot)
     b:SetPoint("RIGHT", f, "TOPRIGHT", -6 - slot * NS.Style.CONTROL_PITCH, -HEADER_H / 2)
 end
 
--- The title bar: the title centered (GameFontNormal, gold once ApplySkin tints it), the divider, and
--- the four controls on the right, each gold under the pointer (one shared strip, modules/Style.lua).
+-- The title bar: the title centered (the skin's Shell paints it and the divider), and the four
+-- controls on the right: the close control is the skin's own (S.CloseButton through Core, its hover
+-- `close.hot`), the other three turn the accent under the pointer (one shared strip, modules/Style.lua).
 local function buildHeader(f)
     local Style = NS.Style
     f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
@@ -424,7 +425,7 @@ local function buildHeader(f)
     ui.controls = Style.NewStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
     if close then placeControl(close, f, 0) end
-    ui.close = Style.AddToStrip(ui.controls, close)
+    ui.close = close
     ui.lock = Style.ControlButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
     ui.settings = Style.ControlButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
     ui.results = Style.ControlButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
@@ -449,7 +450,7 @@ end
 local function buildFooter(f)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
     line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
     -- The footer's two lines are GameFontDisableSmall, as every Ka0s window's footer is.

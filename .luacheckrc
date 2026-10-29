@@ -170,6 +170,8 @@ files["settings/Slash.lua"] = { ignore = { "212/self" }, read_globals = { "UnitE
 
 -- `NS:InitDB` / `NS:RunMigrations` are colon-called from OnInitialize and read NS.db, not the receiver.
 files["core/Database.lua"] = { ignore = { "212/self" } }
+-- The item qualities' client colors, under the skin's q.* tokens (NS.QualityColor).
+files["core/SkinSetup.lua"] = { read_globals = { "ITEM_QUALITY_COLORS" } }
 
 -- AceEvent invokes a handler registered by method name as `self[name](self, event, ...)`.
 files["core/DpsRace.lua"] = { ignore = { "212/self" } }

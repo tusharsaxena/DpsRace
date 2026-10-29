@@ -1,7 +1,7 @@
-local _, NS = ...
+local addonName, NS = ...
 -- settings/General.lua — the General page (its first tab is `Master controls`, options-ui-§15, then
--- `New-best toast` (#5), and its last `Keybindings`, options-ui-§20) and the landing page's spec,
--- NS.LANDING (options-ui-§5).
+-- `New-best toast` (#5), the library's Skin tab (skinning-§3), and its last `Keybindings`,
+-- options-ui-§20) and the landing page's spec, NS.LANDING (options-ui-§5).
 
 local L = NS.L
 local H = NS.Helpers
@@ -135,6 +135,65 @@ NS.RegisterSchemaRows({
       onChange = function() NS.BestToast.Refresh() end },
 })
 
+-- ── Skin ── (skinning-§2/§3, core/SkinSetup.lua) the skin this addon wears, per profile. The tab is
+-- the library's O.AppearanceTab, which draws every row below itself (its choice grids, the Scope's
+-- check boxes, the Font and texture dropdowns), so each row carries `skipRender`; they stay schema
+-- rows so the defaults resolve, every reset reaches them, and `/dr get|set skin.skin` validates
+-- against `values`. Their group is the tab's key, so the tab takes the group's place in the strip:
+-- after New-best toast, before Keybindings.
+--
+-- Each onChange applies ONLY its own half (core/SkinSetup.lua says why): the tab and another addon's
+-- "Copy to every Ka0s addon" call Skin:SetChoice before they write, so the write is a no-op, and a
+-- bare `/dr set` still repaints.
+local SKIN_TAB = H.AppearanceTab({ owner = addonName, get = NS.SkinChoice, set = NS.WriteSkinChoice })
+local SKIN = SKIN_TAB.key
+local SD = D.skin
+
+--- A validator for a row whose value is one of `options`' values.
+local function oneOf(options)
+    return function(v)
+        for _, o in ipairs(options) do if o.value == v then return true end end
+        return false
+    end
+end
+
+NS.RegisterSchemaRows({
+    { path = "skin.source", page = PAGE, group = SKIN, type = "string", skipRender = true,
+      label = L["Skin source"], default = SD.source, values = NS.SKIN_SOURCE_OPTIONS,
+      validate = oneOf(NS.SKIN_SOURCE_OPTIONS),
+      tooltip = L["Where this addon's look comes from: the Ka0s skin chosen below, or EllesmereUI."],
+      onChange = function(v) NS.ApplySkinChoice(v, nil) end },
+    { path = "skin.skin", page = PAGE, group = SKIN, type = "string", skipRender = true,
+      label = L["Skin"], default = SD.skin, values = NS.SKIN_OPTIONS, validate = oneOf(NS.SKIN_OPTIONS),
+      tooltip = L["The Ka0s skin this addon wears. Changes every window and panel right away."],
+      onChange = function(v) NS.ApplySkinChoice(nil, v) end },
+    -- The Scope's two exceptions (LibKa0s-Skin-1.0 minor 5).
+    { path = "skin.ignorePanel", page = PAGE, group = SKIN, type = "bool", skipRender = true,
+      label = L["Ignore settings panel"], default = SD.ignorePanel,
+      tooltip = L["Keep this addon's settings panel in the game's own look. Its windows still wear the skin."],
+      onChange = function(v) NS.ApplySkinIgnore(v, nil) end },
+    { path = "skin.ignoreFonts", page = PAGE, group = SKIN, type = "bool", skipRender = true,
+      label = L["Ignore fonts"], default = SD.ignoreFonts,
+      tooltip = L["Keep every font in this addon as the game draws it. The skin still colors the text."],
+      onChange = function(v) NS.ApplySkinIgnore(nil, v) end },
+    -- The Font and texture overrides (LibKa0s-Skin-1.0 minor 6): free text, not a list of `values`,
+    -- because a media pack may register its keys after this file loads and `/dr set` takes any key;
+    -- "" is the skin's own.
+    { path = "skin.font", page = PAGE, group = SKIN, type = "string", skipRender = true,
+      label = L["Font"], default = SD.font,
+      tooltip = L["The font this addon's text uses, over the skin's own. Empty keeps the skin's."],
+      onChange = function(v) NS.ApplySkinOverride(v, nil) end },
+    { path = "skin.texture", page = PAGE, group = SKIN, type = "string", skipRender = true,
+      label = L["Texture"], default = SD.texture,
+      tooltip = L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."],
+      onChange = function(v) NS.ApplySkinOverride(nil, v) end },
+    -- The first-run skin picker's memory: set when the picker closes, so it shows once per profile.
+    -- Drawn by nothing; a reset puts it back to false.
+    { path = "skin.pickerSeen", page = PAGE, group = SKIN, type = "bool", skipRender = true,
+      label = L["Skin picker seen"], default = SD.pickerSeen,
+      tooltip = L["Whether the first-run skin picker was closed on this profile."] },
+})
+
 -- After the toast's rows: a sample toast, run as a real one is (one-shot, options-ui-§21's *Test <thing>*).
 local function afterToast(ctx)
     H.InlineButtonPair(ctx, {
@@ -152,14 +211,15 @@ local function build(mainCategory)
         defaultsButton  = true,
         -- A page reset (options-ui-§13). Defaults never reaches a key: the game keeps them, not the
         -- profile (options-ui-§20).
-        defaultsTooltip = L["Restore every General setting on this profile to its addon default: Master controls and the new-best toast."]
+        defaultsTooltip = L["Restore every General setting on this profile to its addon default: Master controls, the new-best toast and the skin."]
             .. " " .. H.KEYBINDS_UNCHANGED,
     })
     ctx.panel.defaultsOnClick = function() H.RestoreDefaults(PAGE, ctx) end
     -- Every page renders through the tabbed renderer, a one-tab page included (options-ui-§13). The
     -- Keybindings tab is a host tab the library draws from NS.BINDINGS; with no `before` it is the
     -- strip's last, after every schema tab (options-ui-§20).
-    local tabs = { H.KeybindingsTab({ bindings = NS.BINDINGS }) }
+    -- The Skin tab is keyed by its rows' group, so it takes that group's place, before Keybindings.
+    local tabs = { SKIN_TAB, H.KeybindingsTab({ bindings = NS.BINDINGS }) }
     H.SetRenderer(ctx, function(c)
         H.ClearScroll(c)
         H.RenderTabbedSchema(c, PAGE, { [H.MASTER_GROUP] = masterTail, [TOAST] = afterToast }, nil, { tabs = tabs })
