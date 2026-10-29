@@ -715,7 +715,7 @@ test("compare: every spell row alternates the Results list's stripe, compared an
     seed(i, { mkRun("best", 300), mkRun("low", 100, { spells = spells }) })
     i.R.ShowRun("low")
     local d = detail(i)
-    local alpha = i.NS.ResultsTable.STRIPE_ALPHA
+    local alpha = i.NS.ResultsTable.StripeAlpha(2)   -- the skin's dr.list.stripe
     assertTrue(alpha > 0)
     -- Plain: the breakdown list's rows, top down.
     assertTrue(d.w.list.parent:IsShown())

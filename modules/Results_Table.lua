@@ -31,25 +31,25 @@ Tbl.SCROLLBAR_W = 8
 Tbl.ICON = 16
 Tbl.WHEEL_ROWS = 3          -- rows one notch of the mouse wheel moves
 
-local FLAT = { bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 }
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 Tbl.WHITE = WHITE
--- The list's stripe: every other row faintly tinted; the detail's spell rows share it.
-Tbl.STRIPE_ALPHA = 0.025
-
---- The stripe's alpha for the row at `index` (1-based): the tint on every even row, none on the odd.
-function Tbl.StripeAlpha(index)
-    return index % 2 == 0 and Tbl.STRIPE_ALPHA or 0
-end
+-- The list's stripe: every other row faintly tinted (the skin's `dr.list.stripe`); the detail's spell
+-- rows share it.
+Tbl.StripeAlpha = Style.StripeAlpha
+Tbl.Stripe = Style.Stripe
 local CLASS_ATLAS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 
+-- The window's palette. The chrome and meaning colors are the HUD's live skin colors
+-- (modules/Hud_States.lua). Blue and the four status hues are DATA hues (skinning rung 4: "each
+-- status a distinct color", the owner's call, 2026-10-25), the same under every skin.
+local HC = NS.HudStates.COLORS
 local C = {
-    text  = { 0.93, 0.93, 0.95 },
-    dim   = { 0.62, 0.62, 0.68 },
+    text  = HC.text,
+    dim   = HC.dim,
     gold  = Style.GOLD,
-    amber = { 1.0, 0.72, 0.29 },
-    green = { 0.36, 0.86, 0.46 },
-    red   = { 1.0, 0.32, 0.32 },
+    amber = HC.amber,
+    green = HC.green,
+    red   = HC.red,
     blue  = { 0.40, 0.66, 1.0 },
     -- The Status tags' own hues (the owner's call, 2026-10-25: each status a distinct color).
     violet = { 0.74, 0.47, 1.0 },
@@ -90,17 +90,9 @@ Tbl.CATEGORY_COLORS = {
 Tbl.Text = Style.Text
 Tbl.FONT = FONT
 
---- A flat panel (the HUD's): a 1px edge over a faint fill.
-function Tbl.Panel(parent, bg, edge)
-    local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    if f.SetBackdrop then
-        f:SetBackdrop(FLAT)
-        bg, edge = bg or { 1, 1, 1, 0.03 }, edge or { 1, 1, 1, 0.10 }
-        f:SetBackdropColor(bg[1], bg[2], bg[3], bg[4])
-        f:SetBackdropBorderColor(edge[1], edge[2], edge[3], edge[4])
-    end
-    return f
-end
+--- A flat panel (the HUD's, modules/Hud_States.lua): the skin's Panel, or its Card or Inset (`kind`),
+--- the slots remapped to `tokens` ({ bg =, border = } token names; default the faint wash and edge).
+Tbl.Panel = NS.HudStates.Panel
 
 --- The class color, else the window's text color.
 function Tbl.ClassColor(class)
@@ -237,7 +229,8 @@ function Tbl.SideTip(window, row, lines)
     local tip = GameTooltip
     if not tip or type(lines) ~= "table" or not lines[1] then return end
     tip:SetOwner(window, "ANCHOR_NONE")
-    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    local r, g, b = Style.Rgb("gtip.title")
+    tip:SetText(lines[1], r, g, b, 1, true)
     addLines(tip, lines, 2)
     tip:Show()
     placeSide(tip, window, row)
@@ -251,7 +244,10 @@ function Tbl.SpellTip(window, row, id, lines)
     tip:SetOwner(window, "ANCHOR_NONE")
     local shown = type(id) == "number" and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
     if shown and tip.NumLines then shown = (tip:NumLines() or 0) > 0 end
-    if not shown then tip:SetText(NS.HudBreakdown.SpellName(id), 1, 1, 1, 1, true) end
+    if not shown then
+        local r, g, b = Style.Rgb("gtip.value")
+        tip:SetText(NS.HudBreakdown.SpellName(id), r, g, b, 1, true)
+    end
     if type(lines) == "table" and lines[1] then
         tip:AddLine(" ")
         addLines(tip, lines, 1)
@@ -265,7 +261,8 @@ function Tbl.BelowTip(owner, lines)
     local tip = GameTooltip
     if not tip or type(lines) ~= "table" or not lines[1] then return end
     tip:SetOwner(owner, "ANCHOR_BOTTOM")
-    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    local r, g, b = Style.Rgb("gtip.title")
+    tip:SetText(lines[1], r, g, b, 1, true)
     addLines(tip, lines, 2)
     tip:Show()
 end
@@ -320,7 +317,7 @@ end
 -- 2026-10-25). A column whose text returns chips draws up to that many more boxed chips after the tag (no column
 -- uses it today); a `trail` column draws plain text after the last box (the Time column's tail).
 function Cells.badge(row, col)
-    local cell = { box = Tbl.Panel(row) }
+    local cell = { box = Style.FlatBox(row) }
     cell.box:SetHeight(Tbl.CHIP_H)
     cell.fs = Tbl.Text(cell.box, FONT.TEXT, C.amber, "CENTER")
     cell.fs:SetPoint("CENTER", cell.box, "CENTER", 0, 0)
@@ -336,15 +333,12 @@ function Cells.badge(row, col)
 end
 
 local function paint(fs, color)
-    color = color or C.text
-    fs:SetTextColor(color[1], color[2], color[3])
+    Style.Paint(fs, color or C.text)
 end
 
 -- A box's tint: its edge and a faint fill in `color`.
 local function tint(box, color)
-    if not box.SetBackdropBorderColor then return end
-    box:SetBackdropBorderColor(color[1], color[2], color[3], 0.6)
-    box:SetBackdropColor(color[1], color[2], color[3], 0.08)
+    Style.TintBox(box, color, Style.BADGE_EDGE_A)
 end
 
 -- ── chips ───────────────────────────────────────────────────────────────────────────────────────
@@ -356,7 +350,7 @@ Tbl.CHIP_GAP = 4            -- the gap between two boxes, and between a box and 
 
 --- A chip in `parent`, hidden until Tbl.SetChip paints it.
 function Tbl.Chip(parent)
-    local chip = Tbl.Panel(parent)
+    local chip = Style.FlatBox(parent)
     chip:SetHeight(Tbl.CHIP_H)
     chip.fs = Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
     chip.fs:SetPoint("CENTER", chip, "CENTER", 0, 0)
@@ -527,7 +521,7 @@ local function bindIcon(cell, icon, color)
     cell.icon:SetShown(path ~= nil)
     if not path then return 0 end
     cell.icon:SetTexture(path)
-    cell.icon:SetVertexColor(color[1], color[2], color[3])
+    Style.Vertex(cell.icon, color, 1)
     return BADGE_ICON + 2
 end
 
@@ -627,16 +621,23 @@ function Tbl.Columns(columns, width)
     return out
 end
 
--- The sort marks: the catalog's arrows inline after the label, tinted the header gold (an inline
--- texture ignores its FontString's color), Blizzard's arrows beneath them (LootHistory's).
-local ARROW_UP = " " .. Style.IconMarkup("sort-up", "Interface\\Buttons\\Arrow-Up-Up", Style.GOLD)
-local ARROW_DOWN = " " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", Style.GOLD)
+-- The sort marks: the catalog's arrows inline after the label, tinted the skin's `icon.arrow` (an
+-- inline texture ignores its FontString's color), Blizzard's arrows beneath them (LootHistory's).
+-- Markup is a string, so both are built again on a skin change (tables registered below redraw
+-- their headers then).
+local ARROW_UP, ARROW_DOWN
+local function buildArrows()
+    local c = Style.Tok("icon.arrow")
+    ARROW_UP = " " .. Style.IconMarkup("sort-up", "Interface\\Buttons\\Arrow-Up-Up", c)
+    ARROW_DOWN = " " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", c)
+end
+buildArrows()
 
 -- A column header: GameFontNormalSmall in the header gold, Title Case, the sort mark after its label.
 local function newHeader(t, i, col)
     local b = CreateFrame("Button", nil, t.header)
     b:SetHeight(Tbl.HEADER_H)
-    b.label = Tbl.Text(b, FONT.HEADER, C.gold, col.justify)
+    b.label = Tbl.Text(b, FONT.HEADER, Style.Tok("list.header.text"), col.justify)
     b.label:SetText(col.label or "")
     b.col = col
     if col.sort then
@@ -647,8 +648,9 @@ local function newHeader(t, i, col)
         local about = NS.ResultsTips and NS.ResultsTips.About(col)
         if not (GameTooltip and about) then return end
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:AddLine(col.label ~= "" and col.label or about.title or "", C.gold[1], C.gold[2], C.gold[3])
-        GameTooltip:AddLine(about.text, 0.9, 0.9, 0.9, true)
+        GameTooltip:AddLine(col.label ~= "" and col.label or about.title or "", Style.Rgb("gtip.title"))
+        local r, g, bl = Style.Rgb("gtip.body")
+        GameTooltip:AddLine(about.text, r, g, bl, true)
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", hideTip)
@@ -662,11 +664,11 @@ local function rowBackground(row)
     row.bg:SetTexture(WHITE)
     row.sel = row:CreateTexture(nil, "BORDER")
     row.sel:SetAllPoints(row)
-    row.sel:SetColorTexture(1, 0.82, 0, 0.10)
+    Style.Fill(row.sel, "dr.list.sel")   -- the selection and hover washes: the list's own (D-5)
     row.sel:Hide()
     local hl = row:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints(row)
-    hl:SetColorTexture(1, 1, 1, 0.04)
+    Style.Fill(hl, "dr.list.hover")
 end
 
 local function newRow(t)
@@ -680,7 +682,7 @@ local function newRow(t)
         row.cells[i] = row.cells[col.key]
     end
     -- A group header (LootHistory's): its chevron, label and count across the row; a click folds it.
-    row.groupLabel = Tbl.Text(row, FONT.HEADER, C.gold)
+    row.groupLabel = Tbl.Text(row, FONT.HEADER, Style.GOLD)
     row.groupLabel:SetPoint("LEFT", row, "LEFT", Tbl.PAD, 0)
     row.groupLabel:Hide()
     -- Left: select (a header folds its group). Right: the row's menu (LootHistory's).
@@ -708,6 +710,11 @@ local function newRow(t)
     return row
 end
 
+-- Every list ever made (weakly held), for a skin change: its header's sort mark, whose markup was
+-- built again.
+local tables = setmetatable({}, { __mode = "k" })
+Style.OnLooks(function() for t in pairs(tables) do t:paintHeader() end end)
+
 local function buildScrollbar(t)
     local bar = CreateFrame("Slider", nil, t.frame)
     bar:SetOrientation("VERTICAL")
@@ -717,7 +724,7 @@ local function buildScrollbar(t)
     bar:SetValueStep(1)
     if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(true) end
     local thumb = bar:CreateTexture(nil, "OVERLAY")
-    thumb:SetColorTexture(1, 1, 1, 0.25)
+    Style.Fill(thumb, "dr.scroll.thumb")
     thumb:SetSize(Tbl.SCROLLBAR_W - 2, 28)
     bar:SetThumbTexture(thumb)
     bar:SetScript("OnValueChanged", function(_, value)
@@ -751,7 +758,7 @@ function Tbl.New(parent, columns, opts)
     t.header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     t.header:SetHeight(Tbl.HEADER_H)
     local line = t.header:CreateTexture(nil, "ARTWORK")
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetHeight(1)
     line:SetPoint("BOTTOMLEFT", t.header, "BOTTOMLEFT", 0, 0)
     line:SetPoint("BOTTOMRIGHT", t.header, "BOTTOMRIGHT", 0, 0)
@@ -766,6 +773,7 @@ function Tbl.New(parent, columns, opts)
     t.empty:SetText(opts.empty or "")
     buildScrollbar(t)
     t:paintHeader()
+    tables[t] = true
     return t
 end
 
@@ -1032,22 +1040,29 @@ local function showCells(row, on)
     end
 end
 
--- The disclosure marks: the catalog's chevrons, tinted the header gold (an inline texture ignores
--- its FontString's color), Blizzard's minus and plus beneath them.
-local CHEVRON_OPEN = Style.IconMarkup("chevron-down", "Interface\\Buttons\\UI-MinusButton-Up", Style.GOLD)
-local CHEVRON_SHUT = Style.IconMarkup("chevron-right", "Interface\\Buttons\\UI-PlusButton-Up", Style.GOLD)
+-- The disclosure marks: the catalog's chevrons, tinted the skin's `icon.arrow` (an inline texture
+-- ignores its FontString's color), Blizzard's minus and plus beneath them; built again on a skin
+-- change, as the sort marks are.
+local CHEVRON_OPEN, CHEVRON_SHUT
+local function buildChevrons()
+    local c = Style.Tok("icon.arrow")
+    CHEVRON_OPEN = Style.IconMarkup("chevron-down", "Interface\\Buttons\\UI-MinusButton-Up", c)
+    CHEVRON_SHUT = Style.IconMarkup("chevron-right", "Interface\\Buttons\\UI-PlusButton-Up", c)
+end
+buildChevrons()
+Style.OnLooks(function() buildArrows(); buildChevrons() end)
 
 local function bindHeader(row, g)
     row.run, row.group = nil, g
     row.sel:Hide()
     showCells(row, false)
-    row.groupLabel:SetText(("%s  %s  |cff808080(%d)|r"):format(g.collapsed and CHEVRON_SHUT or CHEVRON_OPEN,
-        g.label, g.count))
+    row.groupLabel:SetText(("%s  %s  %s(%d)|r"):format(g.collapsed and CHEVRON_SHUT or CHEVRON_OPEN,
+        g.label, NS.SkinEscape("text.disabled") or "", g.count))
     row.groupLabel:Show()
 end
 
 function Table:bindRow(row, run, index)
-    row.bg:SetVertexColor(1, 1, 1, self.stripe and Tbl.StripeAlpha(index) or 0)
+    Style.Stripe(row.bg, self.stripe and index or 1)
     if run.group then return bindHeader(row, run.group) end
     row.run, row.index, row.group = run, index, nil
     row.groupLabel:Hide()

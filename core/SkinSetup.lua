@@ -31,6 +31,9 @@ local addonName, NS = ...
 --                           one's `default`.
 --   NS.SkinColor(name)      a color token as a call site writes it (three components when opaque).
 --   NS.SkinEscape(name)     a color token as a "|cffrrggbb" escape, rounded to the byte.
+--   NS.QualityColor(q)      an item quality's r, g, b: the skin's q.* token where it sets one (a
+--                           legibility override), else the client's ITEM_QUALITY_COLORS; nil for none
+--                           (LootHistory's).
 --
 -- ── WHERE IT LOADS ───────────────────────────────────────────────────────────────────────────
 --
@@ -71,6 +74,30 @@ NS.SKIN_FALLBACK = {
     ["win.inner"]  = { 0.24, 0.24, 0.27, 0.85 },
     ["title.text"] = { 1, 0.82, 0, 1 },
     ["divider"]    = { 0.24, 0.24, 0.27, 0.85 },
+    -- The colors the windows read themselves (modules/Style.lua's live tables, DR-02).
+    ["text.body"]        = { 0.9, 0.9, 0.9, 1 },
+    ["text.muted"]       = { 0.7, 0.7, 0.72, 1 },
+    ["text.heading"]     = { 1, 0.82, 0, 1 },
+    ["text.accent"]      = { 1, 0.82, 0, 1 },
+    ["text.disabled"]    = { 0.5, 0.5, 0.5, 1 },
+    ["text.highlight"]   = { 1, 1, 1, 1 },
+    ["gtip.title"]       = { 1, 0.82, 0, 1 },
+    ["gtip.body"]        = { 0.9, 0.9, 0.9, 1 },
+    ["gtip.value"]       = { 1, 1, 1, 1 },
+    ["icon.tint"]        = { 0.7, 0.7, 0.72, 1 },
+    ["icon.arrow"]       = { 1, 0.82, 0, 1 },
+    ["icon.border"]      = { 0, 0, 0, 1 },
+    ["tab.text"]         = { 0.7, 0.7, 0.72, 1 },
+    ["tab.onText"]       = { 1, 0.82, 0, 1 },
+    ["tab.onLine"]       = { 1, 0.82, 0, 1 },
+    ["list.header.text"] = { 1, 0.82, 0, 1 },
+    ["btnPrimary.text"]  = { 1, 0.82, 0, 1 },
+    ["section.rule"]     = { 1, 0.82, 0, 0.35 },
+    ["handle.bg"]        = { 0, 0, 0, 0.75 },
+    ["chart.track"]      = { 1, 1, 1, 0.06 },
+    ["chart.axis"]       = { 0.45, 0.45, 0.5, 0.8 },
+    ["sem.statusBad"]    = { 1, 0.32, 0.32, 1 },
+    ["sem.danger"]       = { 1, 1 / 3, 1 / 3, 1 },
 }
 
 -- ── the owner tokens (skinning-§1, LibKa0s-Skin-1.0 minor 7) ─────────────────────────────────
@@ -155,6 +182,56 @@ NS.SKIN_TOKENS = {
     ["dr.danger.border"] = { default = rgba(RED, 0.6), follow = "btn.border", skins = wash("sem.statusBad", 0.6) },
     ["dr.danger.text"]   = { default = rgba(RED, 1), follow = "sem.statusBad" },
     ["dr.danger.hover"]  = { default = GOLD, follow = "btn.hover" },
+    -- The other buttons' slots (modules/Hud_States.lua): a primary button's gold wash and edge (gold
+    -- under the pointer too), a selected preset's gold edge, and every style's disabled look, its box
+    -- and label faded (fill x0.4, edge 0.25, label 0.4).
+    ["dr.primary.bg"]        = { default = rgba(GOLD, 0.12), follow = "btnPrimary.bg" },
+    ["dr.primary.border"]    = { default = rgba(GOLD, 0.75), follow = "btnPrimary.border" },
+    ["dr.primary.hover"]     = { default = GOLD, follow = "btnPrimary.hover" },
+    ["dr.sel.border"]        = { default = GOLD, follow = "btnPrimary.border" },
+    ["dr.btn.offBg"]         = { default = { 0.1, 0.1, 0.12, 0.36 }, follow = "btn.bg" },
+    ["dr.btn.offBorder"]     = { default = { 0.24, 0.24, 0.27, 0.25 }, follow = "btn.border" },
+    ["dr.btn.offText"]       = { default = { 1, 1, 1, 0.4 }, follow = "text.disabled" },
+    ["dr.primary.offBg"]     = { default = rgba(GOLD, 0.048), follow = "btnPrimary.bg" },
+    ["dr.primary.offBorder"] = { default = rgba(GOLD, 0.25), follow = "btnPrimary.border" },
+    ["dr.primary.offText"]   = { default = rgba(GOLD, 0.4), follow = "text.disabled" },
+    ["dr.danger.offBg"]      = { default = rgba(RED, 0.032), follow = "btn.bg", skins = wash("sem.statusBad", 0.032) },
+    ["dr.danger.offBorder"]  = { default = rgba(RED, 0.25), follow = "btn.border", skins = wash("sem.statusBad", 0.25) },
+    ["dr.danger.offText"]    = { default = rgba(RED, 0.4), follow = "text.disabled" },
+    -- The HUD's and the Results window's body text and its dim gray; the flat boxes' faint edge.
+    ["dr.text"]       = { default = { 0.93, 0.93, 0.95, 1 }, follow = "text.body" },
+    ["dr.dim"]        = { default = { 0.62, 0.62, 0.68, 1 }, follow = "text.muted" },
+    ["dr.box.border"] = { default = { 1, 1, 1, 0.10 }, follow = "list.boxEdge" },
+    -- The Results list (and the spell rows that share it): the stripe, the hover and selection
+    -- washes, and the scroll thumb (D-5's values, kept).
+    ["dr.list.stripe"]  = { default = { 1, 1, 1, 0.025 }, follow = "list.stripe" },
+    ["dr.list.hover"]   = { default = { 1, 1, 1, 0.04 }, follow = "list.hover" },
+    ["dr.list.sel"]     = { default = rgba(GOLD, 0.10), follow = "list.sel" },
+    ["dr.scroll.thumb"] = { default = { 1, 1, 1, 0.25 }, follow = "scroll.thumb" },
+    ["dr.list.track"]   = { default = { 1, 1, 1, 0.04 }, follow = "chart.track" },
+    -- The run detail: its pane's dim wash, and the timing strip's two segments and their edge.
+    ["dr.pane.bg"]       = { default = { 0, 0, 0, 0.15 }, follow = "panel.bg" },
+    -- The dim cover over the Results window while the ability timeline is open (D-8's .45, kept).
+    ["dr.cover.dim"]     = { default = { 0, 0, 0, 0.45 }, follow = "cover.dim" },
+    -- The Insights charts' bars (D-7's blue, kept).
+    ["dr.chart.bar"]     = { default = { 0.40, 0.66, 1.0, 1 }, follow = "chart.bar" },
+    -- The compare's see-through line between the two runs' columns.
+    ["dr.sep"]           = { default = { 0.5, 0.5, 0.5, 0.18 }, follow = "divider" },
+    -- The ability timeline and the HUD's pace bar: the faint grid and the legend's faint rule, and
+    -- the timeline's own scroll bar (a lighter track and thumb than the Results list's).
+    ["dr.chart.grid"]      = { default = { 1, 1, 1, 0.08 }, follow = "chart.grid" },
+    -- The damage chart's best-pace diagonal and the pace bar's on-pace tick (D-7's values, kept).
+    ["dr.chart.diag"]      = { default = { 0.9, 0.9, 0.92, 0.4 }, follow = "chart.marker" },
+    ["dr.pace.tick"]       = { default = { 1, 1, 1, 0.85 }, follow = "chart.crosshair" },
+    ["dr.rule"]            = { default = { 1, 1, 1, 0.08 }, follow = "divider" },
+    ["dr.scroll.track"]    = { default = { 1, 1, 1, 0.10 }, follow = "scroll.track" },
+    ["dr.scroll.thumbAlt"] = { default = { 1, 1, 1, 0.35 }, follow = "scroll.thumb" },
+    ["dr.strip.seg"]     = { default = { 0.07, 0.07, 0.1, 1 }, follow = "input.bg" },
+    ["dr.strip.segEdge"] = { default = { 1, 1, 1, 0.08 }, follow = "input.border" },
+    -- An empty gear or loadout slot's edge.
+    ["dr.slot.empty"]    = { default = { 0.07, 0.07, 0.1, 1 }, follow = "input.bg" },
+    -- The badge on the target card: the callout's wash a little stronger.
+    ["dr.callout.badge"]        = { default = rgba(AMBER, 0.08), follow = "list.hover", skins = wash("sem.warn", 0.08) },
     -- DR-G1: the opaque modal shell (the ability timeline, the gear view).
     ["dr.modal.bg"]      = { default = rgba(WIN_BG, 1), follow = "win.bg", skins = modal("win.bg") },
     ["dr.modal.inner"]   = { default = opaque(WIN_INNER, WIN_BG), follow = "win.inner", skins = modal("win.inner") },
@@ -181,6 +258,24 @@ function NS.SkinEscape(name)
     if r == nil then return nil end
     local function byte(v) return math.floor(v * 255 + 0.5) end
     return ("|cff%02x%02x%02x"):format(byte(r), byte(g), byte(b))
+end
+
+-- The six qualities the skin schema names (q.poor .. q.legendary); every other quality (artifact,
+-- heirloom, token) is the client's color under every skin.
+local QUALITY_TOKEN = { [0] = "q.poor", "q.common", "q.uncommon", "q.rare", "q.epic", "q.legendary" }
+
+--- An item quality's r, g, b. The q.* tokens: Ka0s Default writes the client's own colors out (since
+--- LibKa0s SkinDefs minor 8), a skin may override them for legibility. nil for a quality the client
+--- has no color for, so a caller keeps its own fallback.
+function NS.QualityColor(q)
+    local name = QUALITY_TOKEN[q]
+    if name then
+        local r, g, b = NS.Skin.Color(name)
+        if r ~= nil then return r, g, b end
+    end
+    local c = ITEM_QUALITY_COLORS and q ~= nil and ITEM_QUALITY_COLORS[q]
+    if c then return c.r, c.g, c.b end
+    return nil
 end
 
 NS.SKIN_SOURCE_OPTIONS = {

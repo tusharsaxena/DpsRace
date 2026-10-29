@@ -39,7 +39,9 @@ Loadout.LEFT = { 1, 2, 3, 15, 5, 9, 16, 17 }
 Loadout.RIGHT = { 10, 6, 7, 8, 11, 12, 13, 14, 18 }
 
 local OPTIONAL = { [18] = true }
-local EMPTY_BG = { 0.07, 0.07, 0.1, 1 }
+local Style = NS.Style
+local EMPTY_BG = Style.Tok("dr.slot.empty")   -- an empty slot's edge
+local CHANGED_A = 0.16                         -- a changed slot's caution wash (D-4: the data's opacity)
 local SEP = " \194\183 "
 
 -- ── pure ────────────────────────────────────────────────────────────────────────────────────────
@@ -155,6 +157,8 @@ local function itemInfo(link)
 end
 
 local function qualityColor(q)
+    local qr, qg, qb = NS.QualityColor(q)
+    if qr then return qr, qg, qb end
     local api = type(C_Item) == "table" and C_Item or {}
     if type(q) == "number" and type(api.GetItemQualityColor) == "function" then
         local ok, r, g, b = pcall(api.GetItemQualityColor, q)
@@ -235,11 +239,14 @@ local function itemTip(p, cell)
     if not cell.link then return tip(p, cell, "empty") end
     tt:SetOwner(cell, "ANCHOR_RIGHT")
     local shown = tt.SetHyperlink and pcall(tt.SetHyperlink, tt, cell.link)
-    if not shown then tt:SetText(Loadout.ItemName(cell.link) or "?", 1, 1, 1, 1, true) end
+    if not shown then
+        local r, g, b = Style.Rgb("gtip.value")
+        tt:SetText(Loadout.ItemName(cell.link) or "?", r, g, b, 1, true)
+    end
     local note = cell.changed and NS.ResultsTips.Loadout("changed", p.run, p:CompareTarget(), cell.slot)
     if note then
         tt:AddLine(" ")
-        NS.Style.AddTipLines(tt, note, 1, 1, 0.72, 0.29)
+        Style.AddTipLines(tt, note, 1, Style.Rgb(C.amber))
     end
     tt:Show()
 end
@@ -258,7 +265,7 @@ local function newCell(p, host)
     local cell = CreateFrame("Button", nil, host)
     cell.mark = cell:CreateTexture(nil, "BACKGROUND")
     cell.mark:SetAllPoints(cell)
-    cell.mark:SetColorTexture(C.amber[1], C.amber[2], C.amber[3], 0.16)
+    Style.Fill(cell.mark, C.amber, CHANGED_A)
     cell.edge = cell:CreateTexture(nil, "BORDER")
     cell.edge:SetSize(Loadout.ICON + 2, Loadout.ICON + 2)
     cell.edge:SetPoint("LEFT", cell, "LEFT", 1, 0)
@@ -332,20 +339,20 @@ local function fillCell(cell, slot, link, changed)
     cell.slot, cell.link, cell.changed = slot, link, changed and true or false
     cell.mark:SetShown(cell.changed)
     if not link then
-        cell.edge:SetColorTexture(EMPTY_BG[1], EMPTY_BG[2], EMPTY_BG[3], EMPTY_BG[4])
+        Style.Fill(cell.edge, EMPTY_BG)
         cell.icon:SetTexture(nil)
         cell.ilvl:SetText("")
         cell.name:SetText(L["Empty"])
-        cell.name:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+        Style.Paint(cell.name, C.dim)
         return
     end
     local icon, q, ilvl = itemInfo(link)
-    local r, g, b = qualityColor(q)
-    cell.edge:SetColorTexture(r, g, b, 1)
+    local quality = { qualityColor(q) }   -- the skin's q.* where it sets one, drawn as given
+    Style.Fill(cell.edge, quality, 1)
     cell.icon:SetTexture(icon)
     cell.ilvl:SetText(type(ilvl) == "number" and tostring(math.floor(ilvl)) or "")
     cell.name:SetText(Loadout.ItemName(link) or "?")
-    cell.name:SetTextColor(r, g, b)
+    Style.Paint(cell.name, quality)
 end
 
 --- Read `p.run`'s loadout (and, while comparing, the other run's) and paint the parts.
@@ -366,8 +373,7 @@ function Loadout.Fill(p)
     end
     for i = #x.cellList + 1, #x.cells do x.cells[i]:Hide() end
     x.talents:SetText(Loadout.TalentsText(talents))
-    local tc = talents and C.text or C.dim
-    x.talents:SetTextColor(tc[1], tc[2], tc[3])
+    Style.Paint(x.talents, talents and C.text or C.dim)
     NS.HudStates.SetEnabled(x.view, (Loadout.CanView(talents)))
     NS.HudStates.SetEnabled(x.copy, talents ~= nil and talents.importString ~= nil)
     x.different = other ~= nil and Loadout.TalentsDiffer(talents, otherTalents)

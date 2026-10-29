@@ -112,6 +112,13 @@ return function(T)
                 self.__font = { path = path, size = size, flags = flags }
                 return true
             end)
+            -- What SetFont was last told, as the client answers it (the skin's S.Font reads the size
+            -- a string already has, to keep it); nothing before a SetFont.
+            rawset(o, "GetFont", function(self)
+                local f = self.__font
+                if f then return f.path, f.size, f.flags end
+                return nil
+            end)
             rawset(o, "SetFrameStrata", function(self, strata) self.__strata = strata; return self end)
             rawset(o, "EnableMouse", function(self, on) self.__mouse = on and true or false; return self end)
             rawset(o, "CreateAnimationGroup", function(self) return W.NewAnimationGroup(self) end)

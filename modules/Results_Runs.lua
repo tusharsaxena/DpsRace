@@ -800,6 +800,8 @@ local function checkbox(view, parent, spec)
     b.label:SetPoint("LEFT", b, "RIGHT", 1, 0)
     Tbl.SetCheckLabel(b, L[spec.label])
     b:SetScript("OnClick", function() view:SetFilter(spec.key, not view.filters[spec.key]) end)
+    -- The skin's check box (its square box under Ka0s Default too, D-13), after the click script.
+    NS.Skin.Checkbox(b)
     b.key = spec.key
     return b
 end
@@ -810,7 +812,7 @@ local function buildBar(view)
     bar:SetPoint("TOPRIGHT", view.frame, "TOPRIGHT", 0, 0)
     bar:SetHeight(FILTER_H)
     local line = bar:CreateTexture(nil, "ARTWORK")
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetHeight(1)
     line:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
     line:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)

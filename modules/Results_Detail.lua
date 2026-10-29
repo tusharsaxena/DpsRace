@@ -94,7 +94,9 @@ Detail.ICON = ICON
 Detail.KPI_H = KPI_H
 Detail.KPI_GAP = KPI_GAP
 local DASH = "\226\128\148"
-local RED = { 1.0, 0.32, 0.32 }
+local RED = C.red                      -- a late cast: the meaning's red, the skin's
+-- The strip's line types are DATA hues (skinning rung 4), the same under every skin: the ignored
+-- casts' gray, the combat end, the restart and the race's own fill.
 local IGNORED = { 0.55, 0.55, 0.55 }   -- a late cast the ignore list leaves uncounted (#8)
 local CYAN = { 0.3, 0.85, 1.0 }
 local VIOLET = { 0.78, 0.5, 1.0 }
@@ -105,9 +107,10 @@ local LINE_INSET = 4
 local RACE = { 0.53, 0.53, 0.93 }
 -- The flags box (the owner's call, 2026-10-27, UT-P11): under its Flags heading, each flag's main line
 -- in FONT.SECTION pale amber, its detail (the late casts' offsets) in FONT.CAPTION amber, then what it
--- means in FONT.TEXT; the three read apart by size and hue.
-local FLAG_MAIN = { 0.95, 0.84, 0.65 }
-local FLAG_BODY = { 0.94, 0.84, 0.65 }
+-- means in FONT.TEXT; the three read apart by size and hue. The box is the skin's caution callout
+-- (dr.callout.*), whose cream is both pale lines' (D-18).
+local FLAG_MAIN = NS.Style.Tok("dr.callout.text")
+local FLAG_BODY = FLAG_MAIN
 local FLAG_PADX, FLAG_PADY = 9, 7   -- inside the box
 local FLAG_GAP = 6                  -- between two flags
 Detail.FLAG_MAIN_H = 18             -- a main line (the 16px font)
@@ -395,7 +398,7 @@ function Pane:AddHeading(key, title, click, parent)
     local arrow = Style.ControlButton(parent or self.content, "chevron-down", "-", L["Collapse this section"],
         function() self:ToggleSection(key) end)
     arrow:SetSize(Detail.ARROW, Detail.ARROW)
-    arrow.icon:SetVertexColor(Style.GOLD[1], Style.GOLD[2], Style.GOLD[3])
+    Style.Vertex(arrow.icon, "icon.arrow")
     arrow:SetPoint("RIGHT", title, "LEFT", Detail.ARROW - Detail.INDENT, 0)
     if click then
         click:EnableMouse(true)
@@ -429,7 +432,7 @@ function Pane:ToggleSection(key)
 end
 
 local function kpi(parent, label, color)
-    local f = Tbl.Panel(parent)
+    local f = Tbl.Panel(parent, nil, "card")
     f:SetHeight(KPI_H)
     -- LootHistory's Insights card: a GameFontNormalHuge figure over a GameFontDisableSmall caption.
     local k = { frame = f, label = Tbl.Text(f, FONT.CAPTION), value = Tbl.Text(f, FONT.FIGURE, color or C.text) }
@@ -466,7 +469,7 @@ local function buildHeader(p, c)
     w.badgeIcon:SetSize(BADGE_ICON, BADGE_ICON)
     w.badgeIcon:SetPoint("LEFT", w.badge, "LEFT", 0, 0)
     w.badgeIcon:SetTexture(NS.Icon("ph:trophy"))
-    w.badgeIcon:SetVertexColor(C.blue[1], C.blue[2], C.blue[3])
+    NS.Style.Vertex(w.badgeIcon, C.blue, 1)
     w.badgeText = Tbl.Text(w.badge, FONT.SECTION, C.blue)
     w.badgeText:SetPoint("LEFT", w.badgeIcon, "RIGHT", 6, 0)
     w.badgeText:SetText(L["New best"])
@@ -478,16 +481,16 @@ end
 local function legendItem(c, color, label)
     local item = { swatch = c:CreateTexture(nil, "ARTWORK"), fs = Tbl.Text(c, FONT.CAPTION) }
     item.swatch:SetSize(9, 9)
-    item.swatch:SetColorTexture(color[1], color[2], color[3], 0.8)
+    NS.Style.Fill(item.swatch, color, 0.8)
     item.fs:SetText(label)
     item.text = label
     return item
 end
 
-local function stripMark(parent, color, width)
+local function stripMark(parent, color, alpha)
     local t = parent:CreateTexture(nil, "OVERLAY")
-    t:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
-    t:SetWidth(width or LINE_W)
+    NS.Style.Fill(t, color, alpha or 1)
+    t:SetWidth(LINE_W)
     return t
 end
 
@@ -497,17 +500,18 @@ local function buildTiming(p, c)
     w.timingLabel:SetText(L["Timing"])
     w.strip = CreateFrame("Frame", nil, c)
     w.strip:SetHeight(STRIP_H)
-    w.segA = Tbl.Panel(w.strip, { 0.07, 0.07, 0.1, 1 }, { 1, 1, 1, 0.08 })
-    w.segB = Tbl.Panel(w.strip, { 0.07, 0.07, 0.1, 1 }, { 1, 1, 1, 0.08 })
+    local SEG = { bg = "dr.strip.seg", border = "dr.strip.segEdge" }
+    w.segA = Tbl.Panel(w.strip, SEG, "inset")
+    w.segB = Tbl.Panel(w.strip, SEG, "inset")
     -- The marks' own frame, above the segments: a child frame draws over its parent's textures
     -- whatever their layer, so marks made on the strip itself sat hidden under the opaque segments.
     w.marks = CreateFrame("Frame", nil, w.strip)
     w.marks:SetAllPoints(w.strip)
     w.marks:SetFrameLevel(w.strip:GetFrameLevel() + 2)
     local m = w.marks
-    w.raceFill = stripMark(m, { RACE[1], RACE[2], RACE[3], 0.5 })
-    w.tail = stripMark(m, { C.amber[1], C.amber[2], C.amber[3], 0.45 })
-    w.grace = stripMark(m, { C.green[1], C.green[2], C.green[3], 0.8 })
+    w.raceFill = stripMark(m, RACE, 0.5)
+    w.tail = stripMark(m, C.amber, 0.45)
+    w.grace = stripMark(m, C.green, 0.8)
     w.combatEnd = stripMark(m, CYAN)
     w.restart = stripMark(m, VIOLET)
     w.ticks = NS.Pool.New()
@@ -538,7 +542,7 @@ local function buildFlags(p, c)
     -- The heading, like every other section's; the yellow box under it holds the flags.
     w.flagTitle = Tbl.Text(c, FONT.SECTION)
     w.flagTitle:SetText(L["Flags"])
-    w.flags = Tbl.Panel(c, { 1, 0.72, 0.29, 0.06 }, { 1, 0.72, 0.29, 0.35 })
+    w.flags = Tbl.Panel(c, { bg = "dr.callout.bg", border = "dr.callout.border" })
     w.flagRows = {}
     w.noteTitle = Tbl.Text(c, FONT.SECTION)
     w.noteTitle:SetText(L["Note"])
@@ -548,11 +552,8 @@ local function buildFlags(p, c)
     w.noteBox:SetFontObject(FONT.TEXT)
     w.noteBox:SetMaxLetters(Detail.NOTE_MAX)
     w.noteBox:SetHeight(20)
-    if w.noteBox.SetBackdrop then
-        w.noteBox:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
-        w.noteBox:SetBackdropColor(0.1, 0.1, 0.12, 0.9)
-        w.noteBox:SetBackdropBorderColor(1, 0.82, 0, 0.9)
-    end
+    -- The skin's input box: its edge at rest, the focus gold while it has the keys (D-14).
+    NS.Skin.EditBox(w.noteBox)
     w.noteBox:SetTextInsets(6, 6, 0, 0)
     w.noteBox:SetScript("OnEnterPressed", function(self) p:saveNote(self:GetText()) end)
     w.noteBox:SetScript("OnEscapePressed", function() p:closeNote() end)
@@ -642,7 +643,7 @@ end
 --- @param hooks table  { back(), share(run), delete(run), saveNote(run, text) -> stored, canShare(),
 ---                       clearPick(), timeline(pane), deltaContext(run) -> the Runs view's context or nil }
 function Detail.Build(parent, hooks)
-    local frame = Tbl.Panel(parent, { 0, 0, 0, 0.15 }, { 0.24, 0.24, 0.27, 0.85 })
+    local frame = Tbl.Panel(parent, { bg = "dr.pane.bg", border = "divider" })
     -- Its own band over the Runs pane it sits inside in wide mode (core/Constants.lua LAYERS), set
     -- before any child is built so every child is born in it.
     frame:SetFrameLevel(parent:GetFrameLevel() + NS.Constants.LAYERS.LEVEL.DETAIL)
@@ -692,7 +693,7 @@ function Pane:fillDelta(run)
     self.deltaCtx = self:deltaContext(run)
     local text, color, top = NS.ResultsRuns.DeltaBox(run, self.deltaCtx)
     w.deltaBox.value:SetText(text)
-    w.deltaBox.value:SetTextColor(color[1], color[2], color[3])
+    NS.Style.Paint(w.deltaBox.value, color)
     w.badge:SetShown(top)
 end
 
@@ -710,7 +711,7 @@ function Pane:fillHeader(run)
     w.spec:SetShown(specIcon ~= nil)
     w.name:SetText(char.name or "?")
     local color = Tbl.ClassColor(char.class)
-    w.name:SetTextColor(color[1], color[2], color[3])
+    NS.Style.Paint(w.name, color)
     self.specName = specName   -- named by the spec icon's tooltip, never drawn beside the name
     local a, b, c, chips = Detail.Meta(run)
     w.meta[1]:SetText(a)
@@ -745,7 +746,7 @@ function Pane:fillFlags(run)
             local fs = part == "text" and row.body or row[part]
             local c = line.dim and IGNORED or FLAG_COLORS[part]
             fs:SetText(line[part] or "")
-            fs:SetTextColor(c[1], c[2], c[3])
+            NS.Style.Paint(fs, c)
             fs:SetShown((line[part] or "") ~= "")
         end
     end
@@ -1008,8 +1009,7 @@ function Pane:layoutStripMarks(pos)
     NS.Pool.ReleaseAll(w.ticks)
     for i, x in ipairs(pos.late) do
         local tick = NS.Pool.Acquire(w.ticks, function() return stripMark(w.marks, RED) end)
-        local color = pos.lateIgnored[i] and IGNORED or RED
-        tick:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+        NS.Style.Fill(tick, pos.lateIgnored[i] and IGNORED or RED, 1)
         placeMark(tick, w.strip, x, LINE_INSET)
     end
 end

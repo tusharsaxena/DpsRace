@@ -152,10 +152,11 @@ Timeline.DIM = 0.4
 -- The zoom level's color (P17, the owner's call, 2026-10-28): at 1x the caption gray it always had
 -- (GameFontDisableSmall's); above it from GOLD at the first step to HOT (the Delta column's red) at
 -- the last, by the step's place in ZOOMS.
-Timeline.LEVEL_REST = { 0.5, 0.5, 0.5 }
+Timeline.LEVEL_REST = Style.Tok("text.disabled")
 Timeline.HOT = C.red
 
--- The two runs' colors: this run gold, the compared run blue (the mock's).
+-- The two runs' colors: this run gold, the compared run blue (the mock's). They and the corridors are
+-- the runs' identity, DATA hues (skinning rung 4), the same under every skin.
 Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
 Timeline.OTHER = { 0.35, 0.66, 1.0 }
 -- The corridors behind them (P16, the owner's call, 2026-10-28: the faint white track read as nobody's):
@@ -164,26 +165,15 @@ Timeline.OTHER = { 0.35, 0.66, 1.0 }
 Timeline.CORRIDOR = { this = { 0.30, 0.24, 0.02, 0.45 }, other = { 0.06, 0.16, 0.32, 0.45 } }
 local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted (the legend's swatches)
 local WHITE = "Interface\\Buttons\\WHITE8x8"                      -- a cast's tick, tinted
-local TRACK = { 1, 1, 1, 0.06 }
-local GRID = { 1, 1, 1, 0.08 }
+local TRACK = Style.Tok("chart.track")
+local GRID = Style.Tok("dr.chart.grid")
 local HEADER_H = Style.TITLE_BAR_H
 local SEP = " \194\183 "
 
--- The shared skin made opaque: its fill at alpha 1, and its inner border and divider blended over that
--- fill to alpha 1, so they read as they do on the other windows and nothing behind shows through.
-local function opaque(c, under)
-    if type(c) ~= "table" then return c end
-    local a = c[4] or 1
-    return { c[1] * a + under[1] * (1 - a), c[2] * a + under[2] * (1 - a), c[3] * a + under[3] * (1 - a), 1 }
-end
-Timeline.SKIN = {}
-for k, v in pairs(NS.SKIN or {}) do Timeline.SKIN[k] = v end
-if type(Timeline.SKIN.bg) == "table" then
-    local bg = Timeline.SKIN.bg
-    Timeline.SKIN.bg = { bg[1], bg[2], bg[3], 1 }
-    Timeline.SKIN.innerBorder = opaque(Timeline.SKIN.innerBorder, bg)
-    Timeline.SKIN.divider = opaque(Timeline.SKIN.divider, bg)
-end
+-- The skin's Shell made opaque (DR-G1, LibKa0s-Skin-1.0's slot remap): the skin's window fill at
+-- alpha 1, its inner rule and divider blended over that fill to alpha 1 (core/SkinSetup.lua's
+-- dr.modal.* owner tokens), so they read as on the other windows and nothing behind shows through.
+Timeline.SHELL = { tokens = { bg = "dr.modal.bg", inner = "dr.modal.inner", divider = "dr.modal.divider" } }
 
 local ui        -- the built window
 local pane      -- the detail pane the window follows
@@ -485,29 +475,28 @@ local layout, resize
 
 -- A corridor (a strip's track, a lane) in its run's CORRIDOR color, read now: `side` "a" this run's.
 local function paint(tex, side)
-    local c = Timeline.CORRIDOR[side == "a" and "this" or "other"] or TRACK
-    tex:SetColorTexture(c[1], c[2], c[3], c[4] or 1)
+    Style.Fill(tex, Timeline.CORRIDOR[side == "a" and "this" or "other"] or TRACK)
 end
 
 local function disc(parent, color, size, layer)
     local t = parent:CreateTexture(nil, layer or "OVERLAY")
     t:SetTexture(DISC)
-    t:SetVertexColor(color[1], color[2], color[3], 0.95)
+    Style.Vertex(t, color, 0.95)
     t:SetSize(size, size)
     return t
 end
 
 local function buildChrome(f)
-    f.title = Style.Text(f, FONT.TITLE, C.gold, "CENTER")
+    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["Ability timeline"])
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line, { token = "dr.modal.divider" })
     line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
     line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
     ui.controls = Style.NewStrip()
-    ui.close = Style.AddToStrip(ui.controls, NS.MakeCloseButton(f, function() Timeline.Hide() end))
+    ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
@@ -539,7 +528,7 @@ local function buildLegend(f)
     ui.note:SetPoint("TOPLEFT", f, "TOPLEFT", Timeline.PAD, -HEADER_H - Timeline.LEGEND_H)
     ui.legendLine = f:CreateTexture(nil, "ARTWORK")
     ui.legendLine:SetHeight(1)
-    ui.legendLine:SetColorTexture(1, 1, 1, 0.08)
+    Style.Fill(ui.legendLine, "dr.rule")
 end
 
 -- One *Casts* strip: its track (its run's corridor, painted as it is placed), its run's name in the
@@ -566,14 +555,17 @@ local function helpTip(self)
     local tip, lines = GameTooltip, Timeline.HelpLines()
     if not tip then return end
     tip:SetOwner(self, "ANCHOR_TOP")
-    tip:SetText(lines[1], C.gold[1], C.gold[2], C.gold[3], 1, true)
+    local r, g, b = Style.Rgb("gtip.title")
+    tip:SetText(lines[1], r, g, b, 1, true)
     Style.AddTipLines(tip, lines, 2)
     tip:Show()
 end
 
--- The client's font face at `size` px on `fs` (its font object's color kept): the `?` and the level.
+-- The skin's body face at `size` px on `fs` (its color kept): the `?` and the level. The skin keeps
+-- the size a string has when it is first painted, so this is the first and only face it is given.
 local function sizeFont(fs, size)
     fs:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size, "")
+    NS.Skin.Font(fs)
 end
 
 -- `-` or `+` drawn as strokes (P17): the control's icon a BAR across, and for `+` a `stroke` down
@@ -630,7 +622,7 @@ local function buildZoom()
     ui.zoomIn:SetPoint("RIGHT", ui.zoomReset, "LEFT", -2, 0)
     ui.zoomOut = strokes(control(nil, "-", L["Zoom out (or Ctrl+mouse wheel down)"], function() Timeline.ZoomBy(-1) end))
     ui.zoomOut:SetPoint("RIGHT", ui.zoomIn, "LEFT", -2, 0)
-    ui.zoomText = Style.Text(ui.content, FONT.CAPTION, nil, "RIGHT")
+    ui.zoomText = Style.PlainText(ui.content, FONT.CAPTION, "RIGHT")
     sizeFont(ui.zoomText, Timeline.LEVEL_SIZE)
     ui.zoomText:SetPoint("RIGHT", ui.zoomOut, "LEFT", -6, 0)
 end
@@ -657,9 +649,9 @@ local function buildBar(f)
     bar:SetScript("OnMouseWheel", onWheel)
     bar.track = bar:CreateTexture(nil, "BACKGROUND")
     bar.track:SetAllPoints(bar)
-    bar.track:SetColorTexture(TRACK[1], TRACK[2], TRACK[3], 0.10)
+    Style.Fill(bar.track, "dr.scroll.track")
     bar.thumb = bar:CreateTexture(nil, "OVERLAY")
-    bar.thumb:SetColorTexture(1, 1, 1, 0.35)
+    Style.Fill(bar.thumb, "dr.scroll.thumbAlt")
     bar:SetThumbTexture(bar.thumb)
     -- Ours (applyPan) set it while `syncing`; the player's drag or click scrolls.
     bar:SetScript("OnValueChanged", function(_, value)
@@ -753,7 +745,7 @@ local function ensureWindow()
     buildChrome(f)
     buildLegend(f)
     buildBody(f)
-    NS.ApplySkin(f, Timeline.SKIN)
+    NS.Skin.Shell(f, Timeline.SHELL)
     f:SetScript("OnHide", onHide)
     -- The wheel anywhere in the window (the scroll frame and the scrollbar take it too).
     f:EnableMouseWheel(true)
@@ -1079,7 +1071,7 @@ local function placeZoom(g)
     local i = ui.zoomI or 1
     local c = Timeline.ZoomColor(i)
     ui.zoomText:SetText(L["%sx"]:format(("%g"):format(g.zoom)))
-    ui.zoomText:SetTextColor(c[1], c[2], c[3])
+    Style.Paint(ui.zoomText, c)
     ui.zoomIn:SetAlpha(i < #Timeline.ZOOMS and 1 or Timeline.DIM)
     ui.zoomOut:SetAlpha(i > 1 and 1 or Timeline.DIM)
     ui.zoomReset:SetAlpha(i > 1 and 1 or Timeline.DIM)
@@ -1110,7 +1102,7 @@ end
 local function newLine(layer)
     return function()
         local t = layer:CreateTexture(nil, "BACKGROUND")
-        t:SetColorTexture(GRID[1], GRID[2], GRID[3], GRID[4])
+        Style.Fill(t, GRID)
         t:SetWidth(1)
         return t
     end

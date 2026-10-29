@@ -41,7 +41,8 @@ Countdown.TEXTURE = "Interface\\Timer\\BigTimerNumbers"
 Countdown.GLOW = "Interface\\Timer\\BigTimerNumbersGlow"
 -- Where the numbers sit: the middle of the screen, a little above the character.
 Countdown.OFFSET_Y = 150
--- The fallback number's size, and its color (the BigGold digits' gold).
+-- The fallback number's size, and its color (the BigGold digits' gold). The countdown is the client's
+-- own start-timer art and stays Blizzard's under every skin (skinning-§7, D-11), the fallback with it.
 Countdown.FONT_SIZE = 110
 local GOLD = { 1, 0.82, 0 }
 

@@ -553,7 +553,7 @@ Total.
 - results: the library-absent load still draws the window, with no dropdowns or close control
 - results: the diagnostics state section names the tab, the layout and the selection
 - results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
-- results: the close control turns gold under the pointer and back to its gray
+- results: the close control is the skin's own, never the title strip's gold (D-9)
 
 ### test_results_fit.lua (5)
 
@@ -1061,6 +1061,24 @@ Total.
 - skin seam: the degraded facade answers every name the live facade carries
 - skin seam: each host-copy skin token is the live library's Ka0s Default value
 
+### test_skin_literals.lua (3)
+
+- no color literal outside core/SkinSetup.lua and the named allow-list
+- every allow-list entry carries its reason
+- the gate is falsifiable: a planted literal of each shape is reported
+
+### test_skin.lua (9)
+
+- skin: every owner token a source file names is registered
+- skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
+- skin: Ka0s Default draws each flat button's fill, edge and label as before, enabled and disabled
+- skin: the buttons are the skin's Button, their slots remapped by token name
+- skin: Ka0s Default draws the faint box, the callout and the badge as before
+- skin: the live colors are Ka0s Default's own values for the HUD and the Results list
+- skin: a switch moves every live color in place and re-tints what the host painted
+- skin: a data hue stays the same under every skin
+- skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
+
 ### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
@@ -1373,6 +1391,8 @@ Total.
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
 | test_skinsetup.lua | 22 |
+| test_skin_literals.lua | 3 |
+| test_skin.lua | 9 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1391,4 +1411,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1109** |
+| **Total** | **1121** |

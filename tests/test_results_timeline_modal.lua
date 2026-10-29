@@ -211,18 +211,30 @@ end)
 -- ── the skin ────────────────────────────────────────────────────────────────────────────────────
 
 test("timeline modal: the timeline's skin is opaque, nothing of the Results window shows through", function()
-    local i, _, u = opened()
-    local SKIN = i.NS.ResultsTimeline.SKIN
-    assertEqual(SKIN.bg[4], 1)
-    assertEqual(SKIN.innerBorder[4], 1)
-    assertEqual(SKIN.divider[4], 1)
-    assertEqual(SKIN.border[4], 1)
-    assertEqual(u.frame.__backdropColor[4], 1, "the fill drawn at alpha 1")
-    assertEqual(u.frame.innerBorder.__borderColor[4], 1, "the inner border at alpha 1")
-    -- The blend keeps the shared look: the inner border reads as it does over the shared fill.
-    local base = i.NS.SKIN
-    local a = base.innerBorder[4]
-    local want = base.innerBorder[1] * a + base.bg[1] * (1 - a)
-    assertTrue(math.abs(SKIN.innerBorder[1] - want) < 1e-9, "blended over the fill")
-    assertTrue(base.bg[4] < 1, "the shared skin itself is untouched")
+    -- Under the kit's paint recorder, so the Shell's backdrop is readable.
+    local i, _, u = opened(function(m) dofile(T.root .. "/tests/_kit/mock_paint.lua")(m) end)
+    local NS = i.NS
+    -- The skin's Shell with its fill, inner rule and divider remapped to the opaque owner tokens
+    -- (DR-G1); the gear view wears the same.
+    local tokens = NS.ResultsTimeline.SHELL.tokens
+    assertEqual(tokens.bg, "dr.modal.bg")
+    assertEqual(tokens.inner, "dr.modal.inner")
+    assertEqual(tokens.divider, "dr.modal.divider")
+    assertEqual(NS.ResultsGear.SHELL, NS.ResultsTimeline.SHELL)
+    -- Every one opaque, in Ka0s Default and in every other skin's own entry.
+    for _, name in ipairs({ "dr.modal.bg", "dr.modal.inner", "dr.modal.divider" }) do
+        local def = NS.SKIN_TOKENS[name]
+        assertEqual(def.default[4], 1, name .. ": Ka0s Default at alpha 1")
+        for key, c in pairs(def.skins or {}) do assertEqual(c[4], 1, name .. ": " .. key .. " at alpha 1") end
+        assertEqual(select(4, NS.Skin.Color(name)), 1, name .. " resolves opaque")
+    end
+    local r, g, b, a = u.frame:GetBackdropColor()
+    local fill = NS.Skin.Token("dr.modal.bg")
+    assertEqual(a, 1, "the fill drawn at alpha 1")
+    assertTrue(r == fill[1] and g == fill[2] and b == fill[3], "the fill is the opaque token's")
+    -- The blend keeps the shared look: the inner rule reads as it does over the shared fill.
+    local bg, inner = NS.Skin.Token("win.bg"), NS.Skin.Token("win.inner")
+    local want = inner[1] * inner[4] + bg[1] * (1 - inner[4])
+    assertTrue(math.abs(NS.Skin.Token("dr.modal.inner")[1] - want) < 1e-9, "blended over the fill")
+    assertTrue(bg[4] < 1, "the shared window fill itself is untouched")
 end)

@@ -382,15 +382,16 @@ local function layoutConsistency(self, board, y, w, pad)
         self.ctx:Pool("consistencyScale"), dps)
 end
 
--- A board tab: LootHistory's tab look in the small font, gold and underlined when picked, gray when
--- not. Pooled through the chart context; the click and the hover are the bind's.
+-- A board tab: LootHistory's tab look in the small font, the skin's `tab.onText` and `tab.onLine`
+-- underline when picked, `tab.text` when not. Pooled through the chart context; the click and the
+-- hover are the bind's.
 local function makeBoardTab(ctx, parent)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(BOARD_TAB_W, BOARD_TAB_H)
     b.label = Tbl.Text(b, Tbl.FONT.TEXT, nil, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 1)
     b.underline = b:CreateTexture(nil, "OVERLAY")
-    b.underline:SetColorTexture(C.gold[1], C.gold[2], C.gold[3], 1)
+    NS.Style.Fill(b.underline, "tab.onLine")
     b.underline:SetHeight(2)
     b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 8, 0)
     b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
@@ -417,9 +418,8 @@ local function placeBoardTabs(self, tabs, y, w, pad)
         b:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y)
         local on, name = t.key == self.boardKey, L["%s \194\183 %s"]:format(NS.Dummies.Label(t.category),
             Format.Length(t.length))
-        local c = on and C.gold or NS.Style.TAB_IDLE
         b.label:SetText(name)
-        b.label:SetTextColor(c[1], c[2], c[3])
+        NS.Style.Paint(b.label, on and "tab.onText" or "tab.text")
         b.underline:SetShown(on)
         b._tip, b._onClick = { name, runsWord(t.n) }, function() self:SelectBoard(t.key) end
         x = x + BOARD_TAB_W
@@ -627,6 +627,8 @@ local function checkbox(view, parent, spec)
     b.label:SetPoint("LEFT", b, "RIGHT", 1, 0)
     Tbl.SetCheckLabel(b, L[spec.label])
     b:SetScript("OnClick", function() view:SetFilter(spec.key, not view.filters[spec.key]) end)
+    -- The skin's check box (its square box under Ka0s Default too, D-13), after the click script.
+    NS.Skin.Checkbox(b)
     b.key = spec.key
     return b
 end
@@ -637,7 +639,7 @@ local function buildBar(view)
     bar:SetPoint("TOPRIGHT", view.frame, "TOPRIGHT", 0, 0)
     bar:SetHeight(FILTER_H)
     local line = bar:CreateTexture(nil, "ARTWORK")
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line)
     line:SetHeight(1)
     line:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
     line:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
@@ -687,7 +689,7 @@ local function buildBody(view)
     view.chrome[#view.chrome + 1] = view.strips.progression
     view.chrome[#view.chrome + 1] = view.strips.perDay
     view.boardRule = view.content:CreateTexture(nil, "ARTWORK")
-    view.boardRule:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(view.boardRule)
     view.boardRule:SetHeight(1)
     view.chrome[#view.chrome + 1] = view.boardRule
     view.empty = Tbl.Text(frame, Tbl.FONT.EMPTY, nil, "CENTER")

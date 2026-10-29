@@ -1456,18 +1456,20 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(d.w.list.rows[1].name.__fontObject, "GameFontHighlightSmall", "a breakdown row")
 end)
 
-test("results: the close control turns gold under the pointer and back to its gray", function()
+test("results: the close control is the skin's own, never the title strip's gold (D-9)", function()
     local i = inst()
     i.R.Show()
     local close = assert(ui(i).close, "no close control")
-    local GOLD, REST = i.NS.Style.GOLD, i.NS.Style.REST
+    -- S.CloseButton through Core paints it (`close.rest`, `close.hot` under the pointer; LibKa0s's
+    -- suites pin those): the strip the view toggle is on never repaints it.
+    local GOLD = i.NS.Style.GOLD
     local function is(c)
         local v = close.icon.__vertex
         return v ~= nil and v[1] == c[1] and v[2] == c[2] and v[3] == c[3]
     end
-    assertTrue(is(REST), "at rest")
+    assertFalse(is(GOLD), "at rest")
     close:__fire("OnEnter")
-    assertTrue(is(GOLD), "under the pointer")
+    assertFalse(is(GOLD), "under the pointer")
     close:__fire("OnLeave")
-    assertTrue(is(REST), "back at rest")
+    assertFalse(is(GOLD), "back at rest")
 end)

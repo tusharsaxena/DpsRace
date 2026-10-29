@@ -74,8 +74,9 @@ Gear.MARK_ENCHANT = "Interface\\Icons\\Trade_Engraving"
 Gear.MARK_FALLBACK = "Interface\\Icons\\INV_Misc_QuestionMark"
 
 local HEADER_H = Style.TITLE_BAR_H
-local EMPTY_BG = { 0.07, 0.07, 0.1, 1 }
-local MARK_EDGE = { 0, 0, 0, 1 }
+local EMPTY_BG = Style.Tok("dr.slot.empty")   -- an empty slot's edge
+local MARK_EDGE = Style.Tok("icon.border")     -- a mark's 1px edge
+local CHANGED_A = 0.16                         -- a changed item's caution wash (D-4: the data's opacity)
 local SEP = " \194\183 "
 
 local ui        -- the built window
@@ -247,6 +248,8 @@ end
 local function qualityColor(link)
     local api = itemAPI()
     local q = ask(api.GetItemQualityByID, link) or tonumber(link:match("|cnIQ(%d+):") or "")
+    local qr, qg, qb = NS.QualityColor(q)
+    if qr then return qr, qg, qb end
     if type(q) == "number" and type(api.GetItemQualityColor) == "function" then
         local ok, r, g, b = pcall(api.GetItemQualityColor, q)
         if ok and type(r) == "number" then return r, g, b end
@@ -261,19 +264,19 @@ end
 
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
 
-Gear.SKIN = NS.ResultsTimeline.SKIN   -- the shared skin made opaque, as the timeline wears it
+Gear.SHELL = NS.ResultsTimeline.SHELL   -- the skin's Shell made opaque, as the timeline wears it
 
 local function buildChrome(f)
-    f.title = Style.Text(f, FONT.TITLE, C.gold, "CENTER")
+    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["Gear view"])
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetColorTexture(0.24, 0.24, 0.27, 0.85)
+    NS.Skin.Divider(line, { token = "dr.modal.divider" })
     line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
     line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
     ui.controls = Style.NewStrip()
-    ui.close = Style.AddToStrip(ui.controls, NS.MakeCloseButton(f, function() Gear.Hide() end))
+    ui.close = NS.MakeCloseButton(f, function() Gear.Hide() end)   -- the skin's own hover (D-9)
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     local drag = CreateFrame("Frame", nil, f)
     drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
@@ -361,7 +364,7 @@ local function ensureWindow()
     ui.body:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -(HEADER_H + Gear.LEGEND_H + Gear.PAD))
     ui.body:SetSize(1, 1)
     buildStats(ui.body)
-    NS.ApplySkin(f, Gear.SKIN)
+    NS.Skin.Shell(f, Gear.SHELL)
     f:SetScript("OnHide", onHide)
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Gear.FRAME_NAME) end
     debug("window built")
@@ -379,10 +382,13 @@ local function slotTip(cell)
     end
     tt:SetOwner(cell, "ANCHOR_RIGHT")
     local shown = tt.SetHyperlink and pcall(tt.SetHyperlink, tt, cell.link)
-    if not shown then tt:SetText(NS.ResultsLoadout.ItemName(cell.link) or "?", 1, 1, 1, 1, true) end
+    if not shown then
+        local r, g, b = Style.Rgb("gtip.value")
+        tt:SetText(NS.ResultsLoadout.ItemName(cell.link) or "?", r, g, b, 1, true)
+    end
     if cell.notes and cell.notes[1] then
         tt:AddLine(" ")
-        Style.AddTipLines(tt, cell.notes, 1, C.amber[1], C.amber[2], C.amber[3])
+        Style.AddTipLines(tt, cell.notes, 1, Style.Rgb(C.amber))
     end
     tt:Show()
 end
@@ -410,7 +416,7 @@ local function newCell(body)
     cell:SetSize(Gear.SLOT_W, Gear.PITCH - 4)
     cell.tint = cell:CreateTexture(nil, "BACKGROUND")
     cell.tint:SetAllPoints(cell)
-    cell.tint:SetColorTexture(C.amber[1], C.amber[2], C.amber[3], 0.16)
+    Style.Fill(cell.tint, C.amber, CHANGED_A)
     cell.edge = cell:CreateTexture(nil, "BORDER")
     cell.edge:SetSize(Gear.ICON + 2, Gear.ICON + 2)
     cell.icon = cell:CreateTexture(nil, "ARTWORK")
@@ -455,8 +461,7 @@ local function paintMarks(cell, marks)
         m.edge:SetShown(mark ~= nil)
         m.icon:SetShown(mark ~= nil)
         if mark then
-            local e = mark.changed and C.amber or MARK_EDGE
-            m.edge:SetColorTexture(e[1], e[2], e[3], 1)
+            Style.Fill(m.edge, mark.changed and C.amber or MARK_EDGE, 1)
             m.icon:SetTexture(markTexture(mark))
             if m.icon.SetDesaturated then m.icon:SetDesaturated(mark.missing == true) end
             m.icon:SetAlpha(mark.missing and 0.35 or 1)
@@ -478,22 +483,22 @@ local function fillCell(cell, slot, link, diff, label, otherLink)
     cell.tint:SetShown(cell.changed)
     cell.notes = Gear.NoteLines(diff, label, otherLink and NS.ResultsLoadout.ItemName(otherLink))
     if not link then
-        cell.edge:SetColorTexture(EMPTY_BG[1], EMPTY_BG[2], EMPTY_BG[3], EMPTY_BG[4])
+        Style.Fill(cell.edge, EMPTY_BG)
         cell.icon:SetTexture(nil)
         cell.ilvl:SetText("")
         cell.name:SetText(L["Empty"])
-        cell.name:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+        Style.Paint(cell.name, C.dim)
         return paintMarks(cell, {})
     end
     local r, g, b = qualityColor(link)
-    cell.edge:SetColorTexture(r, g, b, 1)
+    local q = { r, g, b }   -- the item's quality (the skin's q.* where it sets one), drawn as given
+    Style.Fill(cell.edge, q, 1)
     cell.icon:SetTexture(ask(itemAPI().GetItemIconByID, link))
     local ilvl = ilvlOf(link)
     cell.ilvl:SetText(type(ilvl) == "number" and tostring(math.floor(ilvl)) or "")
-    local ic = ilvlColor(diff and diff.ilvl)
-    cell.ilvl:SetTextColor(ic[1], ic[2], ic[3])
+    Style.Paint(cell.ilvl, ilvlColor(diff and diff.ilvl))
     cell.name:SetText(NS.ResultsLoadout.ItemName(link) or "?")
-    cell.name:SetTextColor(r, g, b)
+    Style.Paint(cell.name, q)
     paintMarks(cell, Gear.Marks(Gear.ParseLink(link), diff))
 end
 
@@ -524,11 +529,9 @@ local function fillStats(stats, otherStats)
             local row = ui.statRows[i]
             row.label:SetText(r.label)
             row.value:SetText(r.text)
-            local vc = stats and C.text or C.dim
-            row.value:SetTextColor(vc[1], vc[2], vc[3])
+            Style.Paint(row.value, stats and C.text or C.dim)
             row.delta:SetText(r.delta or "")
-            local dc = deltaColor(r.sign)
-            row.delta:SetTextColor(dc[1], dc[2], dc[3])
+            Style.Paint(row.delta, deltaColor(r.sign))
             row.data = r
         end
     end
@@ -544,10 +547,10 @@ local function fillLegend(run, other, kind)
     ui.otherLabel = other and Compare.OtherLabel(kind) or nil
     if other then
         ui.legendB:SetText(L["vs %s"]:format(ui.otherLabel .. SEP .. Compare.ShortLabel(other)))
-        ui.legendB:SetTextColor(C.blue[1], C.blue[2], C.blue[3])
+        Style.Paint(ui.legendB, C.blue)
     else
         ui.legendB:SetText(L["No run to compare with"])
-        ui.legendB:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+        Style.Paint(ui.legendB, C.dim)
     end
 end
 
@@ -639,6 +642,9 @@ function Gear.DetailChanged(p)
     if p.run == nil then return Gear.Hide() end
     draw()
 end
+
+-- A new skin: the q.* quality colors may move, so an open view draws again.
+Style.OnLooks(function() if Gear.IsShown() and pane and pane.run then draw() end end)
 
 --- Master scale on the window. Nothing before it is built: the first open applies it.
 function Gear.ApplyScale()

@@ -131,9 +131,8 @@ local function makeRows(frame)
     w.icon:SetSize(ICON, ICON)
     w.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -PAD)
     w.icon:SetTexture(NS.Icon("ph:trophy") or TROPHY_FALLBACK)
-    -- The trophy in the result card's *New best* blue (the Status column's Spec best).
-    local blue = NS.ResultsTable.COLORS.blue
-    w.icon:SetVertexColor(blue[1], blue[2], blue[3])
+    -- The trophy in the result card's *New best* blue (the Status column's Spec best: a data hue).
+    Style.Vertex(w.icon, NS.ResultsTable.COLORS.blue, 1)
     local left = PAD + ICON + GAP
     w.title = Style.Text(frame, Style.FONT.TITLE)
     w.title:SetPoint("TOPLEFT", frame, "TOPLEFT", left, -PAD)
@@ -162,9 +161,8 @@ local function build(frame, p)
         local c = chips[i] or {}
         NS.ResultsTable.SetChip(chip, c[1], c[2])
     end
-    local color = p.detailColor or NS.ResultsTable.COLORS.text
     w.detail:SetText(p.detail or "")
-    w.detail:SetTextColor(color[1], color[2], color[3])
+    NS.Style.Paint(w.detail, p.detailColor or NS.ResultsTable.COLORS.text)
     w.flags:SetText(p.flags or "")
     w.flags:SetShown(p.flags ~= nil)
     return BestToast.WIDTH, BestToast.HEIGHT + (p.flags and BestToast.FLAGS_HEIGHT or 0)
