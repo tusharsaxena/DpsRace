@@ -45,9 +45,10 @@ local function mkRun(NS, id, dps, fields)
 end
 
 -- "this" under "best" on one board; the timeline open on "this".
-local function opened(mutate)
+local function opened(mutate, before)
     local i = inst(mutate)
     local NS = i.NS
+    if before then before(i) end
     NS.db.global.runs.this = mkRun(NS, "this", 100)
     NS.db.global.runs.best = mkRun(NS, "best", 300, { date = NOW - 2 * HOUR })
     NS.Bests.Invalidate()
@@ -93,10 +94,12 @@ test("timeline modal: the timeline sits one strata above the Results window, the
 end)
 
 test("timeline modal: opening it re-raises a shown StaticPopup (frame-layering-§4)", function()
-    local popup = { raised = 0, shown = true }
+    -- Hidden through the load: the first-run skin picker shows on the login fuse the harness fires,
+    -- and it re-raises a shown popup itself (LibKa0s OptionsSkinPicker); this counts the timeline's.
+    local popup = { raised = 0, shown = false }
     function popup:IsShown() return self.shown end
     function popup:Raise() self.raised = self.raised + 1 end
-    local i = opened(function(m) m.StaticPopup1 = popup end)
+    local i = opened(function(m) m.StaticPopup1 = popup end, function() popup.shown = true end)
     assertEqual(popup.raised, 1, "a delete confirmation shown first stays answerable")
     i.TL.Hide()
     popup.shown = false

@@ -143,6 +143,7 @@ local SUITES = {
     "test_skin_literals",
     "test_skin",
     "test_skin_hud",
+    "test_skin_picker",
     "test_slash",
     "test_share",
     "test_toast",

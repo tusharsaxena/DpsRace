@@ -42,6 +42,10 @@ function NS:OnEnable()
     NS.AutoArm.Resume()
     -- The final seconds' marks, for a race the resume left running.
     NS.Countdown.Resume()
+    -- The first-run skin picker (core/SkinSetup.lua), once per session on a profile that has not
+    -- closed it: two seconds in, off the login spike, on an AceTimer the stand-down cancels. The
+    -- stored skin was applied in OnInitialize; in combat the show holds for PLAYER_REGEN_ENABLED.
+    addon:ScheduleTimer(function() NS.MaybeShowSkinPicker() end, 2)
 end
 
 -- ── Game events ─────────────────────────────────────────────────────────────────────────────────

@@ -79,12 +79,19 @@ NS.__migrationSteps = STEPS   -- test seam only
 --- callbacks are SETUP and stay live while disabled). One line per act (debug-logging-§10).
 function NS.OnProfileChanged(event, _db, key)
     NS.Debug("Set", "%s '%s'", event or "profile", key or (NS.db and NS.db:GetCurrentProfile()) or "?")
+    -- The first-run skin picker goes down first, unmarked (core/SkinSetup.lua), so a preview it had
+    -- pending is put back before the new profile's skin is applied below.
+    if NS.HideSkinPicker then NS.HideSkinPicker() end
     -- FIRST, before anything redraws: the new profile's skin (core/SkinSetup.lua). Skin:SetChoice
     -- repaints every recorded frame of this owner and fires OnLooksChanged whether or not a window
     -- was ever built, so the skin cannot depend on one.
     if NS.ApplySkinChoice then NS.ApplySkinChoice() end
     NS.SyncEnabledHold()
     if NS.OnVisibilityChanged then NS.OnVisibilityChanged() end
+    -- The first-run skin picker: a new or reset profile starts from the defaults, `pickerSeen` false,
+    -- so it shows again over the new profile's skin; one that has seen it stays down. After the
+    -- hold, so a profile with the addon switched off shows nothing.
+    if NS.MaybeShowSkinPicker then NS.MaybeShowSkinPicker() end
     -- Announced through settings/Schema.lua, the message's one sender.
     if NS.AnnounceSettingsChanged then NS.AnnounceSettingsChanged("profile", key) end
 end

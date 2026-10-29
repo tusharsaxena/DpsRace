@@ -1091,6 +1091,21 @@ Total.
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
+### test_skin_picker.lua (12)
+
+- skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
+- skin picker: an unseen profile shows it; a seen one does not
+- skin picker: it shows once after login, on a two-second AceTimer the stand-down cancels
+- skin picker: in combat a start waits for PLAYER_REGEN_ENABLED, once
+- skin picker: the stand-down drops a held start and shows nothing while the addon is off
+- skin picker: a new profile and a reset profile show it again
+- skin picker: the harness login shows the library's window
+- skin picker: the player's close marks it seen; this addon's own hide does not
+- skin picker: a profile that has seen it takes a shown picker down, unmarked
+- skin picker: the eye turns test mode on, and with it on shows the Results window
+- skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
+- skin picker: degraded, no picker shows and the Profiles paint is a no-op
+
 ### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
@@ -1406,6 +1421,7 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 9 |
 | test_skin_hud.lua | 9 |
+| test_skin_picker.lua | 12 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1424,4 +1440,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1130** |
+| **Total** | **1142** |
