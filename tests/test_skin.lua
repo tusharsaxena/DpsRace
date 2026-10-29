@@ -211,3 +211,25 @@ test("skin: the escapes and the markup a token feeds keep the literals' bytes un
     assertTrue(mark:find(":255:209:0|t", 1, true) ~= nil, "Ka0s Default's gold arrow: " .. mark)
     assertEqual(NS.SkinEscape("sem.danger"), "|cffff5555", "the Delete line's red, as the literal it replaced")
 end)
+
+test("skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow", function()
+    local inst = painted()
+    local NS, M = inst.NS, inst.mocks
+    local Style = NS.Style
+    local base = inst.Skin:ResolveSkin("ka0s")["icon.arrow"]
+    local key
+    for _, def in ipairs(inst.Skin:Skins()) do
+        local a = inst.Skin:ResolveSkin(def.key)["icon.arrow"]
+        if def.key ~= "ka0s" and type(a) == "table" and rgba(a) ~= rgba(base) then key = def.key break end
+    end
+    assertTrue(key ~= nil, "a shipped skin moves icon.arrow")
+    local t = NS.ResultsTable.New(M.CreateFrame("Frame"),
+        { { key = "dps", label = "DPS", width = 60, sort = function(r) return r.dps end } },
+        { sortKey = "dps", sortDesc = true })
+    switch(inst, key)
+    local want = "DPS " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", Style.Tok("icon.arrow"))
+    assertEqual(t.heads[1].label:GetText(), want, "the header's arrow is the new skin's")
+    switch(inst, "ka0s")
+    want = "DPS " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", Style.Tok("icon.arrow"))
+    assertEqual(t.heads[1].label:GetText(), want, "and Ka0s Default's gold again")
+end)

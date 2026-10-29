@@ -623,8 +623,8 @@ end
 
 -- The sort marks: the catalog's arrows inline after the label, tinted the skin's `icon.arrow` (an
 -- inline texture ignores its FontString's color), Blizzard's arrows beneath them (LootHistory's).
--- Markup is a string, so both are built again on a skin change (tables registered below redraw
--- their headers then).
+-- Markup is a string, so both are built again on a skin change, by a listener registered here, ahead
+-- of the one below that redraws every header (Style.OnLooks runs its listeners in registration order).
 local ARROW_UP, ARROW_DOWN
 local function buildArrows()
     local c = Style.Tok("icon.arrow")
@@ -632,6 +632,7 @@ local function buildArrows()
     ARROW_DOWN = " " .. Style.IconMarkup("sort-down", "Interface\\Buttons\\Arrow-Down-Up", c)
 end
 buildArrows()
+Style.OnLooks(buildArrows)
 
 -- A column header: GameFontNormalSmall in the header gold, Title Case, the sort mark after its label.
 local function newHeader(t, i, col)
@@ -1050,7 +1051,7 @@ local function buildChevrons()
     CHEVRON_SHUT = Style.IconMarkup("chevron-right", "Interface\\Buttons\\UI-PlusButton-Up", c)
 end
 buildChevrons()
-Style.OnLooks(function() buildArrows(); buildChevrons() end)
+Style.OnLooks(buildChevrons)
 
 local function bindHeader(row, g)
     row.run, row.group = nil, g
