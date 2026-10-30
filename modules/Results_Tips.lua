@@ -226,7 +226,8 @@ end
 -- ── the run detail ──────────────────────────────────────────────────────────────────────────────
 -- The detail pane's hovers (modules/Results_Detail.lua), the same lines as the tables' where the two
 -- show the same thing. The spells are the client's own spell tooltip with Tips.Spell's lines after
--- it, beside the window; everything else is under the element it names (Results_Table's BelowTip).
+-- it, beside the window, as the Spell breakdown heading's (DR-05); everything else is under the element
+-- it names (Results_Table's BelowTip).
 
 local function dimLine(text) return { text, NS.Style.Rgb("dr.dim") } end
 
@@ -507,7 +508,8 @@ end
 
 -- ── the compare ─────────────────────────────────────────────────────────────────────────────────
 -- The detail's compare (modules/Results_Compare.lua): the toggle, Clear Pick, the different-board
--- note and the score table under themselves; a compared spell row after the client's spell tooltip.
+-- note and the score table beside the window (DR-05); a compared spell row after the client's spell
+-- tooltip, there too.
 
 local function otherName(kind)
     if kind == "picked" then return L["the run you picked"] end

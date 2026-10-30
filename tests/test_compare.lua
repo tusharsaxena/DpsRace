@@ -485,11 +485,13 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     assertEqual(lines[3], "Difference: -20,000")
     assertEqual(Tips.CompareSpell({ id = 1, dmgB = 5, delta = -5 }, "picked")[1][1], "This run: not cast")
 
-    -- Drawn: the score table's hover under itself, a row's beside the window after the spell.
+    -- Drawn: every hover of the section beside the window, right of it (DR-05, the owner's call,
+    -- 2026-10-30: the score table's opened under itself, over the spell table), a row's after the spell.
     local shown = {}
     i.mocks.GameTooltip = setmetatable({}, { __index = function(_, k)
-        return function(_, a, b)
+        return function(_, a, b, c)
             if k == "SetOwner" then shown = { owner = a, anchor = b } end
+            if k == "SetPoint" then shown.placed = { a, b, c } end
             if k == "SetSpellByID" then shown.spell = a end
             if k == "NumLines" then return 4 end
             if k == "GetWidth" or k == "GetEffectiveScale" then return 1 end
@@ -503,9 +505,14 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     window.GetRight = function() return 1200 end
     window.GetTop = function() return 800 end
     window.GetEffectiveScale = function() return 1 end
-    d.cmp.score:__fire("OnEnter")
-    assertEqual(shown.owner, d.cmp.score)
-    assertEqual(shown.anchor, "ANCHOR_BOTTOM")
+    local x = d.cmp
+    for name, part in pairs({ toggle = x.toggle, clear = x.clear, boards = x.boardsHover, score = x.score }) do
+        shown = {}
+        part:__fire("OnEnter")
+        assertTrue(shown.owner == window and shown.anchor == "ANCHOR_NONE", name .. ": owned by the window, not the part")
+        assertTrue(shown.placed and shown.placed[1] == "TOPLEFT" and shown.placed[2] == window
+            and shown.placed[3] == "TOPRIGHT", name .. ": right of the window")
+    end
     d.cmp.rows.active[1]:__fire("OnEnter")
     assertEqual(shown.spell, 29722, "a compared row shows its spell's tooltip")
     assertEqual(shown.anchor, "ANCHOR_NONE")

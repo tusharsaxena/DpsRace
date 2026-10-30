@@ -285,13 +285,15 @@ end
 
 -- ── the parts ───────────────────────────────────────────────────────────────────────────────────
 
--- `frame`'s hover: the compare tooltip for `key` under it (NS.ResultsTips.Compare).
+-- `frame`'s hover: the compare tooltip for `key` (NS.ResultsTips.Compare) beside the window, level with
+-- the part, as the compared rows' (DR-05, the owner's call, 2026-10-30: every tooltip of the Spell
+-- breakdown section sits right of the window; the score table's opened under itself, over the spells).
 local function hover(p, frame, key)
     frame:EnableMouse(true)
     frame:HookScript("OnEnter", function(self)
         local other, kind = p:CompareTarget(true)
         local lines = NS.ResultsTips.Compare(key, p.run, other, kind)
-        if lines then Tbl.BelowTip(self, lines) end
+        if lines then Tbl.SideTip(Tbl.WindowOf(p.frame), self, lines) end
     end)
     frame:HookScript("OnLeave", Tbl.HideTip)
     return frame

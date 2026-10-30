@@ -1050,6 +1050,9 @@ test("results: every detail element has a tooltip; spells show the client's spel
     assertEqual(tip.placed[1], "TOPLEFT", "the spell tooltip sits beside the window")
     assertTrue(tip.lines[2] == "\226\128\162 7,330,000 damage", "the exact damage follows the spell, on a bullet")
     assertEqual(tip.lines[4], "\226\128\162 #1 of 2 spells")
+    -- The Spell breakdown heading: beside the window, as every tooltip of its section (DR-05).
+    d.w.spellsTitleHover:__fire("OnEnter")
+    assertTrue(tip.anchor == "ANCHOR_NONE" and tip.placed[1] == "TOPLEFT", "the breakdown heading's beside the window")
     -- Anything else: under itself.
     d.w.dps.frame:__fire("OnEnter")
     assertEqual(tip.anchor, "ANCHOR_BOTTOM")
