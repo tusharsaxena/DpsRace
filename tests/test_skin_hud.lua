@@ -137,11 +137,18 @@ test("skin hud: Ignore fonts gives each face block its stored face, the textures
     assertEqual((A.MediaKey("appearance.figures.", "font")), NS.Skin.Token("hud.font"))
 end)
 
-test("skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM", function()
+test("skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks
     local A = NS.HudAppearance
     local LSM = M.LibStub("LibSharedMedia-3.0")
+    -- The HUD faces this addon's blocks follow (LibKa0s v1.82.0, D-02): Ka0s Default's Prototype,
+    -- Obsidian's Expressway, WoW Forever's Fira Sans SemiBold (its body is Fira Sans Medium).
+    assertEqual(NS.Skin.Token("hud.font"), "Ka0s Prototype")
+    local Skin = M.LibStub("LibKa0s-Skin-1.0")
+    assertEqual(Skin:ResolveSkin("obsidian")["hud.font"], "Ka0s Expressway")
+    assertEqual(Skin:ResolveSkin("forever")["hud.font"], "Ka0s Fira Sans SemiBold")
+    assertEqual(Skin:ResolveSkin("forever")["font.body"], "Ka0s Fira Sans Medium")
     local face = LSM:Fetch("font", NS.Skin.Token("hud.font"))
     local bar = LSM:Fetch("statusbar", NS.Skin.Token("bar.texture"))
     assertTrue(face ~= nil and bar ~= nil, "the library registers the skin's media")
@@ -185,7 +192,9 @@ test("skin hud: a skin switch restyles the blocks and moves the face, never a co
     local after = A.Font("figures")
     assertEqual(("%.3f %.3f %.3f %.3f"):format(after.r, after.g, after.b, after.a),
         ("%.3f %.3f %.3f %.3f"):format(before.r, before.g, before.b, before.a), "the player's color holds")
-    assertEqual(after.size, before.size, "the player's size holds")
+    -- The stored size holds; the drawn one is the new skin's HUD scale of it (LibKa0s v1.82.0, D-09).
+    assertEqual(NS.GetSetting("appearance.figures.fontSize"), before.size, "the player's size holds")
+    assertEqual(after.size, NS.Skin.HudFontSize(before.size, true), "drawn at the skin's HUD scale")
 end)
 
 -- ── the one-time reset (O2) ─────────────────────────────────────────────────────────────────────
@@ -211,8 +220,8 @@ test("skin hud: the v6 step puts every stored companion back on, keeping the pic
     }
     local bare = {}
     local inst = migrated({ Old = off, Bare = bare })
-    assertEqual(inst.NS.db.global.schemaVersion, 6)
-    assertEqual(inst.NS.SCHEMA_VERSION, 6)
+    -- The store migrates on to the current version (v7, the font flags, follows; test_skin_fonts).
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
     local a = off.appearance
     assertEqual(a.figures.fontFromSkin, true)
     assertEqual(a.bars.barTextureFromSkin, true)
@@ -237,5 +246,5 @@ test("skin hud: the reset runs once, and a player's later pick is kept", functio
     p.appearance.spellText.fontFromSkin = false
     NS:RunMigrations()
     assertEqual(p.appearance.spellText.fontFromSkin, false, "the reset ran twice")
-    assertEqual(NS.db.global.schemaVersion, 6)
+    assertEqual(NS.db.global.schemaVersion, NS.SCHEMA_VERSION)
 end)

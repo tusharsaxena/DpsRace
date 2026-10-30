@@ -23,7 +23,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | Tag | Written by |
 |---|---|
 | `Init` | the console, once, when logging turns on: version, schema, profile, stored run count |
-| `Set` | the schema write seam, once per changed setting; `core/Database.lua` on a profile change, and the v6 migration's count of HUD faces and textures it put back on the skin |
+| `Set` | the schema write seam, once per changed setting; `core/Database.lua` on a profile change, the v6 migration's count of HUD faces and textures it put back on the skin, and the v7 migration's count of font flags it put on From skin |
 | `Combat` | `NS:OnCombatChanged`, each combat edge |
 | `Cmd` | the slash dispatcher's own refusals |
 | `Cfg` | the options panel's combat lock |

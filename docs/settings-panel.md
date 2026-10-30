@@ -244,13 +244,19 @@ companion, on by default, and grays the block's own *Font* or *Bar texture* pick
 On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.MediaKey`, through
 `NS.Skin.Resolve`), except that while the Skin tab's *Ignore fonts* is on a font block draws its own
 *Font* (the texture still follows; the grayed picker previews that stored face); off, the stored pick,
-which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.81.0): Ka0s Default
-Oxanium SemiBold, Obsidian Inter SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast
+which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.82.0): Ka0s Default
+Prototype, Obsidian Expressway, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast
 Atkinson Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW
 Default Friz Quadrata. Only the face and the
-texture follow: sizes, flags, shadows and every color stay the player's (X4). The two clocks have no
-companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Oxanium
-SemiBold and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
+texture follow: sizes, flags, shadows and every color stay the player's (X4), with two readings the
+library makes without rewriting them. Every block's *Font flags* (the clocks' too) leads with
+*From skin*, the default (LibKa0s v1.82.0, D-07), which draws the Skin tab's *Font outline*: outlined
+under *All text* and *HUD text only*, none under *Off*, outlined while *Ignore fonts* is on; a flag the
+player picks wins. And a block drawing the skin's face draws its *Font size* at the skin's HUD scale
+(D-09: Obsidian 13 for Ka0s Default's 12, Glass 11), so its text is as wide in every skin; its own face
+and *Ignore fonts* draw the size as set. The two clocks have no
+companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Prototype
+and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
 
 | Subsection | Schema prefix | Rows | Styles |
 |---|---|---|---|

@@ -111,7 +111,9 @@ NS.RegisterSchemaRows({
 -- `fromSkin = true`, which appends its "Use the skin's font" / "Use the skin's texture" companion on a
 -- line of its own, default on (defaults/Profile.lua, X3). While it is on the picker is disabled and
 -- shows the skin's value; the stored pick waits for the player to turn it off. The clocks keep their
--- monospace face with no companion (D-15). Colors never follow the skin (X4).
+-- monospace face with no companion (D-15). Colors never follow the skin (X4). Every font block,
+-- the clocks too, takes `flagsFromSkin` (LibKa0s v1.82.0, D-07): its Font flags row leads with
+-- *From skin*, the default, which draws the Skin tab's Font outline.
 local APPEARANCE = L["HUD Appearance"]
 local AD = NS.defaults.profile.appearance
 local function restyle() NS.HudAppearance.Changed() end
@@ -121,7 +123,7 @@ local function fontBlock(block, subgroup, order, tooltips, fromSkin)
     return H.FontGroup({
         prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, subgroup = subgroup,
         order = order, classColor = PLAYER_CLASS, defaults = AD[block], tooltips = tooltips,
-        fromSkin = fromSkin,
+        fromSkin = fromSkin, flagsFromSkin = true,
     })
 end
 

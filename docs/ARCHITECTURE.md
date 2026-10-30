@@ -426,6 +426,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   (v1.81.0, R-4). Only the face and the texture follow (X4): sizes, flags, shadows and colors stay the player's. The two race clocks
   have no companion and keep their monospace face (D-15). Migration 5 -> 6 turns every stored
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
+  LibKa0s v1.82.0 reads two of the player's values through the skin without rewriting them: a
+  *Font flags* of *From skin* (`"@skin"`, every block's default, the clocks' too; D-07) draws the Skin
+  tab's Font outline (`S.FontFlags`, as HUD text), and a block drawing the skin's HUD face draws its
+  stored size at the skin's HUD scale (`S.HudFontSize`, D-09: Obsidian's 13 over Ka0s Default's 12),
+  so every skin's HUD text is as wide as Ka0s Default's. Migration 6 -> 7 moves a stored old-default
+  flag (`""`) onto *From skin*, once per profile.
 - **Repaint flow.** `NS.ApplySkinChoice` runs right after the migrations in `NS:OnInitialize` and
   first on every profile event (`NS.OnProfileChanged`), applying the stored Scope and overrides with
   the stored skin, and from each Skin tab row with only its own half. `Skin:SetChoice` resolves the

@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 6
+NS.SCHEMA_VERSION = 7
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
 -- `perProfile = true` and runs once for every stored profile.
@@ -71,6 +71,29 @@ local STEPS = {
         if resetToSkin and #keys > 0 then resetToSkin(profile, keys) end
         if #keys > 0 and NS.Debug then
             NS.Debug("Set", "migrate v6: put %d HUD face(s) and texture(s) back on the skin", #keys)
+        end
+    end },
+    -- 6 -> 7: Font flags onto *From skin* (LibKa0s v1.82.0, D-07, Addendum 01), per profile. Each font
+    -- block's `fontFlags` (modules/Hud_Appearance.lua's FONT_FLAGS_KEYS) defaulted to "" (None) and
+    -- now defaults to "@skin", which draws the Skin tab's Font outline. A stored flag equal to the old
+    -- default moves onto From skin; a flag the player changed (anything else) stays. An absent flag
+    -- already reads the new default and is left absent. Once, through the account-wide stamp, so a
+    -- None the player picks afterwards is kept.
+    { to = 7, perProfile = true, run = function(_sv, profile)
+        if type(profile) ~= "table" then return end
+        local A = NS.HudAppearance
+        local moved = 0
+        for _, path in ipairs(A and A.FONT_FLAGS_KEYS or {}) do
+            local block, leaf = path:match("^(.+)%.([^.]+)$")
+            local t = profile
+            for part in block:gmatch("[^.]+") do t = type(t) == "table" and t[part] or nil end
+            if type(t) == "table" and t[leaf] == "" then
+                t[leaf] = "@skin"
+                moved = moved + 1
+            end
+        end
+        if moved > 0 and NS.Debug then
+            NS.Debug("Set", "migrate v7: put %d font flag(s) on From skin", moved)
         end
     end },
 }

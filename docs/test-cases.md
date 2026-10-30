@@ -1089,11 +1089,24 @@ Total.
 - skin hud: each companion is a bool row, default on, governing its picker
 - skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
 - skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
-- skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM
+- skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM
 - skin hud: the Results table's bar cells and their text follow the skin too (D-16)
 - skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
+
+### test_skin_fonts.lua (10)
+
+- skin fonts: every font block carries size, color, class color, flags and shadow
+- skin fonts: every Font flags row leads with From skin and defaults to it
+- skin fonts: From skin follows the Font outline; a picked flag wins
+- skin fonts: while Ignore fonts is on, From skin draws the outline
+- skin fonts: the drawn FontString takes the resolved flags
+- skin fonts: without the library From skin draws the outline
+- skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
+- skin fonts: the v7 step runs once, so a None picked afterwards is kept
+- skin fonts: a block on the skin's face draws the skin's HUD scale; its own face the stored size
+- skin fonts: the clocks keep their stored size in every skin
 
 ### test_skin_picker.lua (12)
 
@@ -1447,6 +1460,7 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 11 |
 | test_skin_hud.lua | 10 |
+| test_skin_fonts.lua | 10 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
@@ -1468,4 +1482,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1162** |
+| **Total** | **1172** |

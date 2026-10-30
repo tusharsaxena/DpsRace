@@ -16,7 +16,14 @@ local _, NS = ...
 -- While the Skin tab's Ignore fonts is on, the library answers no `hud.font` (LibKa0s v1.81.0, R-1),
 -- so a face block draws its stored pick even with its companion on; the textures still follow. The
 -- stored pick is never rewritten, so turning the companion off brings it back. Only the face and the
--- texture follow (X4): sizes, flags, shadows and colors stay the player's. Not S.BarTexture: it always
+-- texture follow (X4): sizes, flags, shadows and colors stay the player's, with two library-read
+-- exceptions (LibKa0s v1.82.0). FLAGS: a block's Font flags of *From skin* ("@skin", the default,
+-- D-07) draws the Skin tab's Font outline through S.FontFlags, read as HUD text (hud.outline: every
+-- block here is the HUD's style, the Results table's bar text included); a flag the player picks
+-- draws as picked. SIZE: a block drawing the skin's HUD face draws its stored size through
+-- S.HudFontSize (D-09), scaled by the skin's HUD size over Ka0s Default's so every skin's HUD text is
+-- as wide as Ka0s Default's; a block on its own face, the clocks and Ignore fonts draw the stored
+-- size. The stored size is never rewritten. Not S.BarTexture: it always
 -- paints the skin's texture and replays it on a switch, which would override a player who unticked the
 -- companion. A skin switch reaches every block through Style's one OnLooksChanged listener, which calls
 -- Changed() below (modules/Style.lua). The two clocks have no companion (D-15): they stay monospace.
@@ -39,9 +46,21 @@ local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
 
 Appearance.stamp = 0
 
+-- The composer's *From skin* value for Font flags (LibKa0s-Skin-1.0's FROM_SKIN).
+local FROM_SKIN = "@skin"
+
 -- Each media leaf that can follow the skin: the skin token it follows. The companion is the leaf plus
 -- `FromSkin`, stored beside it (OptionsCompose's naming).
 local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
+
+--- Every font block's Font flags, by full path: the v7 step's list (core/Database.lua).
+Appearance.FONT_FLAGS_KEYS = {
+    "appearance.elapsed.fontFlags",
+    "appearance.left.fontFlags",
+    "appearance.figures.fontFlags",
+    "appearance.spellText.fontFlags",
+    "resultsTable.barText.fontFlags",
+}
 
 --- Every stored companion, by full path: the v6 reset's list (core/Database.lua). The clocks
 --- (`appearance.elapsed`, `appearance.left`) are absent by design (D-15).
@@ -120,15 +139,23 @@ end
 
 --- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's.
 function Appearance.FontAt(p, def, class)
-    local name = Appearance.MediaKey(p, "font")
+    local name, fromSkin = Appearance.MediaKey(p, "font")
     local path = fetch("font", name) or fetch("font", setting(p .. "font")) or fetch("font", def.font)
     if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
     local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true, class)
+    local S = NS.Skin
+    local size = tonumber(setting(p .. "fontSize")) or def.fontSize
+    if S and type(S.HudFontSize) == "function" then size = S.HudFontSize(size, fromSkin) end
     local flags = setting(p .. "fontFlags")
+    if S and type(S.FontFlags) == "function" then
+        flags = S.FontFlags(flags)
+    elseif type(flags) ~= "string" or flags == FROM_SKIN then
+        flags = "OUTLINE"
+    end
     return {
         path = path or FALLBACK_FONT,
-        size = tonumber(setting(p .. "fontSize")) or def.fontSize,
-        flags = type(flags) == "string" and flags or "",
+        size = size,
+        flags = flags,
         shadow = setting(p .. "fontShadow") == true,
         r = r, g = g, b = b, a = a,
     }
