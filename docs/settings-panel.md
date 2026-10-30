@@ -101,7 +101,7 @@ and that HUD style options follow the skin unless the player sets them.
 | Skin source | `skin.source` | the library's choice grid (`skipRender`) | `ka0s` or `eui`. Ka0s to EllesmereUI applies live; EllesmereUI back to Ka0s asks for a reload (the library's) |
 | Skin | `skin.skin` | the library's choice grid (`skipRender`) | One of the registered skins (`NS.SKIN_OPTIONS`); a pick repaints every window, the HUD, the toast and the library's tool windows at once, with no reload |
 | Ignore settings panel | `skin.ignorePanel` | checkbox (`skipRender`) | On: this addon's settings pages keep the game's look; its windows still wear the skin |
-| Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override |
+| Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override. The HUD Appearance and Results table blocks draw their own *Font* even with *Use the skin's font* on |
 | Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
 | Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
 | (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
@@ -111,8 +111,9 @@ or another addon's copy is one repaint, and `/dr set skin.skin obsidian` still r
 player-styled blocks (HUD > HUD Appearance, History > Results table) follow the skin through their
 own *Use the skin's font* and *Use the skin's texture* companions, below.
 
-**The first-run skin picker** (LibKa0s OptionsSkinPicker, the owner's ruling O3). A small window,
-*Choose a skin for Ka0s DPS Race*, shown by `NS.MaybeShowSkinPicker` (`core/SkinSetup.lua`) while the
+**The first-run skin picker** (LibKa0s OptionsSkinPicker, the owner's ruling O3). A small window
+titled *Choose a skin*, with *Ka0s DPS Race* on its own line above the skin dropdown (LibKa0s v1.81.0,
+R-11: the window widens to the name, never cutting it off), shown by `NS.MaybeShowSkinPicker` (`core/SkinSetup.lua`) while the
 profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the stand-down cancels) and
 after every profile event, never while the addon stands down, and in combat held for one
 `PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
@@ -240,7 +241,12 @@ Every block but the two clocks is composed with `fromSkin = true` (DR-03), so th
 *Use the skin's font* (`fontFromSkin`) or *Use the skin's texture* (`barTextureFromSkin`)
 companion, on by default, and grays the block's own *Font* or *Bar texture* picker while it is on.
 On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.MediaKey`, through
-`NS.Skin.Resolve`); off, the stored pick, which a companion never rewrites. Only the face and the
+`NS.Skin.Resolve`), except that while the Skin tab's *Ignore fonts* is on a font block draws its own
+*Font* (the texture still follows; the grayed picker previews that stored face); off, the stored pick,
+which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.81.0): Ka0s Default
+Oxanium SemiBold, Obsidian Inter SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast
+Atkinson Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW
+Default Friz Quadrata. Only the face and the
 texture follow: sizes, flags, shadows and every color stay the player's (X4). The two clocks have no
 companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Oxanium
 SemiBold and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
