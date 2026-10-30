@@ -11,13 +11,13 @@ the catalog (spec §4.6).
 |---|---|---|
 | 2026-10-24 | 0.1.0 (branch `feat/pve-v0.1.0`, tip ef6aaf1), client 12.0.5 (120105) | Full pass by the owner: every row passed, after the smoke-pass feedback round (live DPS rungs, clock modes, center countdown, restyle, title-bar hover) |
 | 2026-10-28 | 0.1.0 (master, tip 653eb86: the late-cast ignore list #8 and Insights #12), client 12.1.5 | Full pass by the owner: every row passed, including every row pending since 2026-10-24 |
-| 2026-10-30 | 0.1.0 (branch `feat/2026-10-30-skin-library-followups`, tip fc245db: LibKa0s v1.81.0), client 12.1.5 | pass (owner-marked 2026-10-30): every row of the skinning rollout, skin overrides and skin library follow-ups passed |
+| 2026-10-30 | 0.1.0 (branch `feat/2026-10-30-skin-library-followups`, tip fc245db: LibKa0s v1.81.0), client 12.1.5 | pass (owner-marked 2026-10-30): every row of the skinning rollout, skin overrides and skin library follow-ups passed, and the training-dummy rows (SM-DR-TD1 to TD9, S4, SM-DR-LY2, K9) |
 
 ### Pending sign-off
 
-Rows for your own training dummies (#9, branch `feat/2026-10-28-target-dummies`), not yet run:
-section 26's SM-DR-TD1 to SM-DR-TD9 (new), S4 and SM-DR-LY2 (rewritten: the Race page has two tabs)
-and K9 (rewritten: an added creature prints its category).
+On 2026-10-30 the owner reported that the rows for your own training dummies (#9, branch
+`feat/2026-10-28-target-dummies`) passed: section 26's SM-DR-TD1 to SM-DR-TD9, S4, SM-DR-LY2 and K9,
+recorded in the Sign-off table as pass (owner-marked 2026-10-30). None is owed.
 
 On 2026-10-30 the owner reported that every check of the skinning rollout (LibKa0s v1.80.0, branch
 `feat/2026-10-29-skinning-rollout`), skin overrides and skin library follow-ups (LibKa0s v1.81.0, branch
