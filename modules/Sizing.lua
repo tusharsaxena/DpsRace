@@ -1,4 +1,4 @@
-local _, NS = ...
+local addonName, NS = ...
 -- modules/Sizing.lua — smooth resizing: the one pattern every window this addon owns is sized by (the
 -- Results window, the ability timeline and the Race HUD; the owner's call, 2026-10-26).
 --
@@ -98,9 +98,12 @@ function Sizing.MakeResizable(frame, opts)
         opts.redraw()
         if opts.done then opts.done(w, h) end
     end
+    -- owner (LibKa0s-Core-1.0 minor 14): the grip takes this addon's skin's `icon.grip` tint and
+    -- follows a skin switch, like the library's own windows; Ka0s Default and WoW Default keep the
+    -- client's art.
     local grip = NS.MakeResizable(frame, {
         minWidth = opts.minWidth, minHeight = opts.minHeight, canResize = opts.canResize,
-        onResize = changed, onResizeStop = released,
+        onResize = changed, onResizeStop = released, owner = addonName,
     })
     hookGrip(grip, frame, s, opts.canResize)
     if grip then hookHide(frame, s, opts) end

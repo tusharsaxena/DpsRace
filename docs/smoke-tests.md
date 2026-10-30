@@ -25,7 +25,8 @@ General page's Skin tab, and the close control's red hover).
 Rows for the skin library follow-ups (LibKa0s v1.81.0, branch `feat/2026-10-30-skin-library-followups`),
 not yet run: section 27's SM-DR-SK25 (new: each skin's HUD face) and SM-DR-SK1, SK4, SK9, SK10 and
 SK12 (rewritten: the picker's title and name line, the custom-length box under Ka0s Default, the HUD
-face per skin, *Ignore fonts* on the HUD, and the library's windows under *Ignore fonts*).
+face per skin, *Ignore fonts* on the HUD, and the library's windows under *Ignore fonts*), SM-DR-SK26
+(new: the resize grips take the skin) and SK13 (its tooltip lines now read the skin's tokens).
 
 ## How to run it
 
@@ -658,3 +659,4 @@ Contrast, Ember, WoW Default, WoW Midnight and WoW Forever.
 | SM-DR-SK23 | Run a race with the HUD open under Glass and switch to High Contrast on the panel during it (open it before combat) | The HUD repaints in combat with no taint error and no blocked-action message; the race times and reads normally | The error text |
 | SM-DR-SK24 | `/dr get skin.skin`; `/dr set skin.skin obsidian`; `/dr set skin.skin frob`; `/dr reset skin.skin` | The get prints the stored key; *obsidian* repaints at once; *frob* is refused and nothing changes; the reset puts Ka0s Default back and repaints | The chat lines |
 | SM-DR-SK25 | On a fresh client start, with the HUD in test mode (`/dr test running`) and the Results window open on its Runs list, pick each skin in turn on General > *Skin* | The HUD's live figures, the spell text and the Results bars' text draw that skin's own HUD face (each block's *Use the skin's font* ticked): Ka0s Default Oxanium SemiBold, Obsidian Inter SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast Atkinson Hyperlegible Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW Default the game's Friz Quadrata. Each face reads well at the HUD's size under its outline (the owner judges, LibKa0s v1.81.0 R-4); no fallback squares; the clocks keep their monospace face | The skin and a screenshot of the HUD |
+| SM-DR-SK26 | Unlock the HUD and open the Results window and the ability timeline; look at the three corner grips and the debug console's (`/dr debug`) under Ka0s Default, then Ember, then WoW Default | Under Ember all four grips are tinted alike in Ember's grip color, and switching skins repaints them at once; under Ka0s Default and WoW Default all four show the client's own grip art. Each grip still takes the drag | A screenshot of each window's grip under Ember |
