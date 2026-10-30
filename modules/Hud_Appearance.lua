@@ -18,9 +18,11 @@ local _, NS = ...
 -- stored pick is never rewritten, so turning the companion off brings it back. Only the face and the
 -- texture follow (X4): sizes, flags, shadows and colors stay the player's, with two library-read
 -- exceptions (LibKa0s v1.82.0). FLAGS: a block's Font flags of *From skin* ("@skin", the default,
--- D-07) draws the Skin tab's Font outline through S.FontFlags, read as HUD text (hud.outline: every
--- block here is the HUD's style, the Results table's bar text included); a flag the player picks
--- draws as picked. SIZE: a block drawing the skin's HUD face draws its stored size through
+-- D-07) draws the Skin tab's Font outline through S.FontFlags: as HUD text (hud.outline) on the HUD,
+-- as window text (font.outline, `where` "window") in the Results window, which draws the Runs list's
+-- bar text and the detail's spell rows, so *HUD text only* drops their outline (D-06). The two
+-- clocks are the mono role, which the Font outline never outlines (D-06, critic C4): their From skin
+-- draws no outline. A flag the player picks draws as picked. SIZE: a block drawing the skin's HUD face draws its stored size through
 -- S.HudFontSize (D-09), scaled by the skin's HUD size over Ka0s Default's so every skin's HUD text is
 -- as wide as Ka0s Default's; a block on its own face, the clocks and Ignore fonts draw the stored
 -- size. The stored size is never rewritten. Not S.BarTexture: it always
@@ -54,6 +56,9 @@ local FROM_SKIN = "@skin"
 local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
 
 --- Every font block's Font flags, by full path: the v7 step's list (core/Database.lua).
+-- The clocks' blocks: the mono role, never outlined by the Font outline (D-06).
+local MONO = { ["appearance.elapsed."] = true, ["appearance.left."] = true }
+
 Appearance.FONT_FLAGS_KEYS = {
     "appearance.elapsed.fontFlags",
     "appearance.left.fontFlags",
@@ -132,13 +137,26 @@ end
 
 --- One font block, resolved: its path, size, flags, shadow and color.
 --- @param block string  "elapsed" | "left" | "figures" | "spellText"
+--- @param where string|nil  "window" when it draws in the Results window (S.FontFlags'); nil: HUD text
 --- @return table { path, size, flags, shadow, r, g, b, a }
-function Appearance.Font(block)
-    return Appearance.FontAt("appearance." .. block .. ".", D[block])
+function Appearance.Font(block, where)
+    return Appearance.FontAt("appearance." .. block .. ".", D[block], nil, where)
 end
 
---- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's.
-function Appearance.FontAt(p, def, class)
+-- The flags the block at `p` draws: a picked flag as picked; From skin (or nothing stored) none on a
+-- mono clock, else the Font outline through S.FontFlags as `where`'s text; OUTLINE without it.
+local function fontFlags(p, S, where)
+    local flags = setting(p .. "fontFlags")
+    local picked = type(flags) == "string" and flags ~= FROM_SKIN
+    if picked then return flags end
+    if MONO[p] then return "" end
+    if S and type(S.FontFlags) == "function" then return S.FontFlags(flags, where) end
+    return "OUTLINE"
+end
+
+--- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's;
+--- `where` as Font's.
+function Appearance.FontAt(p, def, class, where)
     local name, fromSkin = Appearance.MediaKey(p, "font")
     local path = fetch("font", name) or fetch("font", setting(p .. "font")) or fetch("font", def.font)
     if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
@@ -146,16 +164,10 @@ function Appearance.FontAt(p, def, class)
     local S = NS.Skin
     local size = tonumber(setting(p .. "fontSize")) or def.fontSize
     if S and type(S.HudFontSize) == "function" then size = S.HudFontSize(size, fromSkin) end
-    local flags = setting(p .. "fontFlags")
-    if S and type(S.FontFlags) == "function" then
-        flags = S.FontFlags(flags)
-    elseif type(flags) ~= "string" or flags == FROM_SKIN then
-        flags = "OUTLINE"
-    end
     return {
         path = path or FALLBACK_FONT,
         size = size,
-        flags = flags,
+        flags = fontFlags(p, S, where),
         shadow = setting(p .. "fontShadow") == true,
         r = r, g = g, b = b, a = a,
     }

@@ -601,7 +601,7 @@ function Runs.BarStyle(block, run)
     local class = run.char and run.char.class or false
     local p = "resultsTable."
     local fill = A.BarAt(p .. block .. ".", D[block], class)
-    fill.font = A.FontAt(p .. "barText.", D.barText, class)
+    fill.font = A.FontAt(p .. "barText.", D.barText, class, "window")   -- window text (D-06)
     return fill
 end
 

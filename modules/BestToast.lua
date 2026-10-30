@@ -214,15 +214,24 @@ local function makeRows(frame)
 end
 
 --- The class icon (the character-creation atlas) and the spec icon, each hidden when the client has
---- nothing to draw; a hidden one takes no room, so the words close up on "New best:".
-local function setIcons(w, p)
-    local B = BestToast
+--- nothing to draw; a hidden one takes no room: each element anchors to the last one shown, so the
+--- words close up on "New best:" one ICON_GAP away.
+local function setIcons(frame, w, p)
     local hasClass = p.class ~= nil and NS.ResultsTable.SetClassIcon(w.class, p.class) or false
     if not hasClass then w.class:Hide() end
-    w.class:SetWidth(hasClass and B.CLASS_ICON or 0.001)
+    local hasSpec = p.specIcon ~= nil
     w.spec:SetTexture(p.specIcon)
-    w.spec:SetShown(p.specIcon ~= nil)
-    w.spec:SetWidth(p.specIcon ~= nil and B.CLASS_ICON or 0.001)
+    w.spec:SetShown(hasSpec)
+    w.spec:ClearAllPoints()
+    if hasClass then
+        w.spec:SetPoint("LEFT", w.class, "RIGHT", 2, 0)
+    else
+        w.spec:SetPoint("LEFT", w.title, "RIGHT", ICON_GAP, 0)
+    end
+    local last = hasSpec and w.spec or hasClass and w.class or w.title
+    w.who:ClearAllPoints()
+    w.who:SetPoint("LEFT", last, "RIGHT", ICON_GAP, 0)
+    w.who:SetPoint("RIGHT", frame, "RIGHT", -CLOSE_ROOM, 0)
 end
 
 --- The shell's builder: fill the rows, answer the frame's size from the constants above.
@@ -231,7 +240,7 @@ local function build(frame, p)
     local w = frame.dpsRace or makeRows(frame)
     w.title:SetText(p.title or "")
     w.who:SetText(p.who or "")
-    setIcons(w, p)
+    setIcons(frame, w, p)
     local chips = type(p.chips) == "table" and p.chips or {}
     for i, chip in ipairs(w.chips) do
         local c = chips[i] or {}

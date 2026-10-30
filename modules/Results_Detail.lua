@@ -670,7 +670,7 @@ function Detail.Build(parent, hooks)
     buildHeader(p, c)
     NS.ResultsCompare.Build(p, c)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end,
-        NS.ResultsTable.StripeAlpha)
+        NS.ResultsTable.StripeAlpha, "window")   -- window text to the Font outline (D-06)
     p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
     p.w.chart:SetShown(false)
     buildTiming(p, c)

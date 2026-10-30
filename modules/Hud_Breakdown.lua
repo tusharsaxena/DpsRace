@@ -89,8 +89,8 @@ end
 
 -- The row's configured look (HUD Appearance), applied once per Changed(): its height, the icon's size
 -- (the row's, less a pixel each side), the bar's fill and the spell text. The share keeps its caption
--- gray: it is a caption, not the spell's text.
-local function restyle(row)
+-- gray: it is a caption, not the spell's text. `where` is the list's (Breakdown.New).
+local function restyle(row, where)
     local A = NS.HudAppearance
     if not A or row.stamp == A.stamp then return end
     row.stamp, row.mode = A.stamp, nil
@@ -101,7 +101,7 @@ local function restyle(row)
     local fill = A.Bar()
     row.bar:SetStatusBarTexture(fill.texture)
     row.bar:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
-    local text = A.Font("spellText")
+    local text = A.Font("spellText", where)
     A.ApplyFont(row.name, text)
     A.ApplyFont(row.amount, text)
 end
@@ -136,9 +136,12 @@ List.__index = List
 --- @param tip function|nil  tip(row, spell, rank, liveID): a row's hover, a result row's plain record
 ---   and rank, or a live row's (possibly secret) ID alone (none: rows take no mouse)
 --- @param stripe function|nil  stripe(index): the alpha of the row's tint (none: no stripes)
+--- @param where string|nil  "window" for a list in the Results window: its spell text is window text
+---   to the Font outline (D-06); nil: HUD text
 --- @return table list
-function Breakdown.New(parent, tip, stripe)
-    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, stripe = stripe }, List)
+function Breakdown.New(parent, tip, stripe, where)
+    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, stripe = stripe,
+        where = where }, List)
 end
 
 -- A row's stripe, made once per pooled row of a list with a `stripe` hook: the row and the gap under it.
@@ -158,13 +161,17 @@ local function wireTip(list, row)
     row.tipWired = true
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
+        list.hover = self
         if self.spell then
             list.tip(self, self.spell, self.rank)
         elseif self.liveID ~= nil then
             list.tip(self, nil, nil, self.liveID)
         end
     end)
-    row:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    row:SetScript("OnLeave", function(self)
+        if list.hover == self then list.hover = nil end
+        if GameTooltip then GameTooltip:Hide() end
+    end)
 end
 
 --- Release every row.
@@ -181,7 +188,7 @@ end
 function List:acquire(i, icons, pct)
     local parent = self.parent
     local row = NS.Pool.Acquire(self.pool, function() return newRow(parent) end)
-    restyle(row)
+    restyle(row, self.where)
     local y = -(i - 1) * Breakdown.Pitch()
     row:ClearAllPoints()
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
@@ -228,7 +235,24 @@ function List:ShowLive(live, n, icons, offset)
         setIcon(row, icons, s.spellID)
         row.liveID = s.spellID   -- a handle for the hover only: tested for nil, never compared
     end
+    self:retip()
     return #self.rows
+end
+
+-- The live list re-sorts under a resting pointer, so the hovered row's tooltip is re-run on each
+-- redraw for the spell it draws now; the secret ID is never compared, only handed on. A hovered row
+-- no longer drawn hides the tooltip.
+function List:retip()
+    local row = self.hover
+    if not row or not self.tip then return end
+    for i = 1, #self.rows do
+        if self.rows[i] == row then
+            if row.liveID ~= nil then self.tip(row, nil, nil, row.liveID) end
+            return
+        end
+    end
+    self.hover = nil
+    if GameTooltip then GameTooltip:Hide() end
 end
 
 -- One read-result row: plain numbers, its bar scaled to the top spell, its share of `damage`.

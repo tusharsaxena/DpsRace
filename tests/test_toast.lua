@@ -351,6 +351,23 @@ test("toast: a class or spec the client cannot draw leaves no icon", function()
     local w = f.toast:Frame().dpsRace
     assertFalse(w.class:IsShown(), "no coordinates for that class in this client")
     assertFalse(w.spec:IsShown(), "no spec ID, so no icon")
+    -- red under: the hidden icons kept their fixed offsets, a 10 px hole before the words.
+    local at = w.who.__points[1]
+    assertTrue(at[2] == w.title and at[3] == "RIGHT", "the words close up on New best:")
+    assertEqual(at[4], 4, "one icon gap after it")
+end)
+
+test("toast: a spec icon without a class icon sits one gap after New best:", function()
+    local f = fixture()
+    local p = f.BT.Payload({ id = "x", status = "complete", char = { class = "PALADIN", spec = "Holy" },
+        target = { category = "single" }, race = { length = 60 }, result = { dps = 1 } }, nil, nil)
+    p.specIcon = 136186
+    f.BT.Instance():Show(p, { key = "x" })
+    local w = f.toast:Frame().dpsRace
+    assertTrue(w.spec:IsShown())
+    local at = w.spec.__points[1]
+    assertTrue(at[2] == w.title and at[3] == "RIGHT" and at[4] == 4, "the spec icon after New best:")
+    assertTrue(w.who.__points[1][2] == w.spec, "the words after the spec icon")
 end)
 
 test("toast: the rows' text draws at the scaled sizes", function()

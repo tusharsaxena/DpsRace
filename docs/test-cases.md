@@ -374,9 +374,10 @@ Total.
 - hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
 - hud hint: the box resizes when the hint's text changes, and not on every redraw
 
-### test_hud_tips.lua (2)
+### test_hud_tips.lua (3)
 
 - hud: a live spell row's hover shows the client's spell tooltip right of the HUD, its secret ID untouched
+- hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now
 - hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
 
 ### test_hud_tiles.lua (9)
@@ -1102,12 +1103,14 @@ Total.
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
-### test_skin_fonts.lua (10)
+### test_skin_fonts.lua (12)
 
 - skin fonts: every font block carries size, color, class color, flags and shadow
 - skin fonts: every Font flags row leads with From skin and defaults to it
 - skin fonts: From skin follows the Font outline; a picked flag wins
-- skin fonts: while Ignore fonts is on, From skin draws the outline
+- skin fonts: the mono clocks are never outlined by the Font outline; a picked flag wins
+- skin fonts: while Ignore fonts is on, From skin draws the library's stock flags
+- skin fonts: the Results detail's breakdown list draws its spell rows as window text
 - skin fonts: the drawn FontString takes the resolved flags
 - skin fonts: without the library From skin draws the outline
 - skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
@@ -1209,7 +1212,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (18)
+### test_toast.lua (19)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
@@ -1228,6 +1231,7 @@ Total.
 - toast: the trophy is as tall as the three rows, the rows evenly spaced and padded
 - toast: the class and spec icons sit beside the spec and class words
 - toast: a class or spec the client cannot draw leaves no icon
+- toast: a spec icon without a class icon sits one gap after New best:
 - toast: the rows' text draws at the scaled sizes
 
 ### test_preview.lua (23)
@@ -1435,7 +1439,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 73 |
 | test_hud_hint.lua | 6 |
-| test_hud_tips.lua | 2 |
+| test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
@@ -1473,13 +1477,13 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
-| test_skin_fonts.lua | 10 |
+| test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
-| test_toast.lua | 18 |
+| test_toast.lua | 19 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
@@ -1495,4 +1499,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1181** |
+| **Total** | **1185** |

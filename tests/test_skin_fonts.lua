@@ -6,8 +6,10 @@
 --     text) is the composer's FontGroup with `flagsFromSkin`: its Font flags row leads with
 --     *From skin* ("@skin") and defaults to it, beside size, color with its class-color companion and
 --     shadow (D-07's minimum set);
---   - From skin draws through S.FontFlags, so it follows the Skin tab's Font outline (all and HUD:
---     OUTLINE; off: none) and answers OUTLINE while Ignore fonts is on; a flag the player picked wins;
+--   - From skin draws through S.FontFlags, so it follows the Skin tab's Font outline: HUD text (all and
+--     HUD: OUTLINE; off: none; Ignore fonts: OUTLINE), and the Results window's bar text and spell rows
+--     as window text (HUD text only and Ignore fonts: none); the mono clocks are never outlined by it
+--     (D-06); a flag the player picked wins;
 --   - the v7 step moves a stored flag equal to the old default ("") onto From skin, once per profile,
 --     and leaves a flag the player changed (Addendum 01);
 --   - a block drawing the skin's HUD face draws its size through S.HudFontSize (scaled by the skin's
@@ -38,7 +40,7 @@ local function fontOf(NS, p)
     local A = NS.HudAppearance
     local block = p:match("^appearance%.(.-)%.$")
     if block then return A.Font(block) end
-    return A.FontAt(p, NS.defaults.profile.resultsTable.barText)
+    return A.FontAt(p, NS.defaults.profile.resultsTable.barText, nil, "window")   -- the Results window's
 end
 
 -- ── the minimum set (D-07) ──────────────────────────────────────────────────────────────────────
@@ -67,15 +69,30 @@ end)
 
 -- ── From skin through the Font outline ──────────────────────────────────────────────────────────
 
+-- The HUD's blocks, read as HUD text; the Results table's bar text, drawn in the Results window, read
+-- as window text; the clocks, the mono role (D-06, critic C4).
+local HUD_BLOCKS = { "appearance.figures.", "appearance.spellText." }
+local CLOCKS = { "appearance.elapsed.", "appearance.left." }
+local WINDOW_BAR = "resultsTable.barText."
+
+local function flagsOf(NS, list)
+    local out = {}
+    for _, p in ipairs(list) do out[#out + 1] = fontOf(NS, p).flags end
+    return out
+end
+
 test("skin fonts: From skin follows the Font outline; a picked flag wins", function()
+    -- red under: every block read as HUD text, so HUD text only kept the Results window's bar text
+    -- and spell rows outlined (D-06).
     local NS = T.load().NS
-    for _, p in ipairs(BLOCKS) do
-        assertEqual(fontOf(NS, p).flags, "OUTLINE", p .. " all text: outlined")
-    end
+    local A = NS.HudAppearance
+    for _, f in ipairs(flagsOf(NS, HUD_BLOCKS)) do assertEqual(f, "OUTLINE", "all text: HUD outlined") end
+    assertEqual(fontOf(NS, WINDOW_BAR).flags, "OUTLINE", "all text: the Results bar text outlined")
+    assertEqual(A.Font("spellText", "window").flags, "OUTLINE", "all text: the detail's spell rows outlined")
     assertTrue(NS.SetByPath("skin.outline", "hud"))
-    for _, p in ipairs(BLOCKS) do
-        assertEqual(fontOf(NS, p).flags, "OUTLINE", p .. " HUD text only: still outlined (HUD text)")
-    end
+    for _, f in ipairs(flagsOf(NS, HUD_BLOCKS)) do assertEqual(f, "OUTLINE", "HUD text only: HUD outlined") end
+    assertEqual(fontOf(NS, WINDOW_BAR).flags, "", "HUD text only: the Results bar text plain")
+    assertEqual(A.Font("spellText", "window").flags, "", "HUD text only: the detail's spell rows plain")
     assertTrue(NS.SetByPath("skin.outline", "off"))
     for _, p in ipairs(BLOCKS) do
         assertEqual(fontOf(NS, p).flags, "", p .. " off: no outline")
@@ -87,11 +104,44 @@ test("skin fonts: From skin follows the Font outline; a picked flag wins", funct
     assertEqual(fontOf(NS, "appearance.spellText.").flags, "", "a picked None stays None under All text")
 end)
 
-test("skin fonts: while Ignore fonts is on, From skin draws the outline", function()
+test("skin fonts: the mono clocks are never outlined by the Font outline; a picked flag wins", function()
+    -- red under: the clocks' From skin resolving through the Font outline (D-06 never outlines the
+    -- mono role), which outlined every profile's clocks under the default All text.
+    local NS = T.load().NS
+    for _, mode in ipairs({ "all", "hud", "off" }) do
+        assertTrue(NS.SetByPath("skin.outline", mode))
+        for _, f in ipairs(flagsOf(NS, CLOCKS)) do assertEqual(f, "", mode .. ": the clocks plain") end
+    end
+    assertTrue(NS.SetByPath("skin.ignoreFonts", true))
+    for _, f in ipairs(flagsOf(NS, CLOCKS)) do assertEqual(f, "", "Ignore fonts: the clocks plain") end
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFlags", "OUTLINE"))
+    assertEqual(fontOf(NS, "appearance.elapsed.").flags, "OUTLINE", "a picked flag wins")
+end)
+
+test("skin fonts: while Ignore fonts is on, From skin draws the library's stock flags", function()
     local NS = T.load().NS
     assertTrue(NS.SetByPath("skin.outline", "off"))
     assertTrue(NS.SetByPath("skin.ignoreFonts", true))
-    assertEqual(fontOf(NS, "appearance.figures.").flags, "OUTLINE")
+    assertEqual(fontOf(NS, "appearance.figures.").flags, "OUTLINE", "HUD text: FontGroup's old default")
+    assertEqual(fontOf(NS, WINDOW_BAR).flags, "", "window text: its stock flags")
+end)
+
+test("skin fonts: the Results detail's breakdown list draws its spell rows as window text", function()
+    local inst = T.load()
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("skin.outline", "hud"))
+    local A = NS.HudAppearance
+    local apply = A.ApplyFont
+    local function rowFlags(where)
+        local flags
+        A.ApplyFont = function(fs, font, ...) flags = font.flags return apply(fs, font, ...) end
+        local list = NS.HudBreakdown.New(inst.mocks.CreateFrame("Frame"), nil, nil, where)
+        list:acquire(1, false, false)
+        A.ApplyFont = apply
+        return flags
+    end
+    assertEqual(rowFlags(nil), "OUTLINE", "the HUD's list: HUD text")
+    assertEqual(rowFlags("window"), "", "a window list: window text")
 end)
 
 test("skin fonts: the drawn FontString takes the resolved flags", function()

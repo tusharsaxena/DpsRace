@@ -433,7 +433,10 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
   LibKa0s v1.82.0 reads two of the player's values through the skin without rewriting them: a
   *Font flags* of *From skin* (`"@skin"`, every block's default, the clocks' too; D-07) draws the Skin
-  tab's Font outline (`S.FontFlags`, as HUD text), and a block drawing the skin's HUD face draws its
+  tab's Font outline (`S.FontFlags`: as HUD text on the HUD, as window text for the Results window's
+  Runs bar text and its detail's spell rows, so *HUD text only* leaves those plain; D-06). The two
+  clocks are the mono role, which the Font outline never outlines (D-06): their *From skin* draws no
+  outline, and a flag picked on them draws as picked. And a block drawing the skin's HUD face draws its
   stored size at the skin's HUD scale (`S.HudFontSize`, D-09: Obsidian's 13 over Ka0s Default's 12),
   so every skin's HUD text is as wide as Ka0s Default's. Migration 6 -> 7 moves a stored old-default
   flag (`""`) onto *From skin*, once per profile.

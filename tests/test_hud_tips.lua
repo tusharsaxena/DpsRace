@@ -91,6 +91,30 @@ test("hud: a live spell row's hover shows the client's spell tooltip right of th
     assertEqual(#f.W.SecretGeometryReads(), 0)
 end)
 
+test("hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now", function()
+    -- red under: the tooltip built only in OnEnter, so the list re-sorting under a resting pointer
+    -- left it naming the spell the row held when the pointer arrived.
+    local f = hud()
+    running(f, 30)
+    pump(f, 1)
+    local list = body(f).w.list
+    local row = list.rows[1]
+    local tip = recordingTip(f, true)
+    row:GetScript("OnEnter")(row)
+    assertTrue(tip.spell ~= nil, "the hover's own tooltip")
+    tip.spell = nil
+    pump(f, 1)
+    local held
+    for i = 1, list:Count() do if list.rows[i] == row then held = i end end
+    assertTrue(held ~= nil, "the hovered row is still drawn")
+    assertTrue(T.isSecret(tip.spell), "re-run with the row's current secret ID, handed on as is")
+    row:GetScript("OnLeave")(row)
+    tip.spell = nil
+    pump(f, 1)
+    assertNil(tip.spell, "no tooltip after the pointer leaves")
+    assertEqual(#f.W.SecretGeometryReads(), 0)
+end)
+
 test("hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share", function()
     local f = hud()
     local run = resolved(f)
