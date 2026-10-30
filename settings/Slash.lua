@@ -30,6 +30,10 @@ end
 NS.COMMANDS = {
     { "help",        L["Show this help"],                          function() cli:PrintHelp() end },
     { "config",      L["Open the settings panel"],                 function() NS.OpenOptionsPanel() end },
+    -- The reserved `skin` verb (LibKa0s v1.82.0's O.SkinVerb, ruling D-16), right after `config`: the
+    -- skin picker a new profile shows, on demand (core/SkinSetup.lua's NS.RunSkinVerb). Not a live
+    -- verb, so the dispatcher refuses it while disabled; behind feature() for the perf hold's line.
+    { "skin",        L["Choose a skin: open the skin picker"],     feature(function() NS.RunSkinVerb() end) },
     { "enable",      L["Turn the addon on"],                       function() doEnabled(true) end },
     { "disable",     L["Turn the addon off without unloading it"], function() doEnabled(false) end },
     { "list",        L["List every setting"],                      function() cli:CliList() end },

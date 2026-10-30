@@ -41,7 +41,8 @@ capture's `perf` hold alone never prints the disabled line. While disabled:
   `ignore` and `targetdummy`, which read and write one setting as `get` and `set` do (`HOST_LIVE_VERBS`, appended to the
   library's `LIVE_VERBS` as the descriptor's `liveVerbs`; slash-commands-§2 makes the feature-verb
   refusal a SHOULD, and declining it for a verb owes no register row);
-- a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`) prints
+- a **feature** verb (`arm`, `cancel`, `hud`, `results`, `target`, `test`, `sim`, `lock`, `unlock`), and
+  the reserved `skin` verb (LibKa0s v1.82.0's `O.SkinVerb`, not one of the library's live verbs), prints
   one line, `Ka0s DPS Race is disabled — enable it with /dr enable`, and does nothing else
   (slash-commands-§2, §7).
 

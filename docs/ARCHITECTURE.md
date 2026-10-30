@@ -218,6 +218,7 @@ in `settings/Slash.lua`, in its declared order:
 |---|---|
 | `help` | Show this help |
 | `config` | Open the settings panel |
+| `skin` | Choose a skin: open the skin picker (the reserved verb, LibKa0s v1.82.0's `O.SkinVerb`, D-16): the picker a new profile shows, whatever `skin.pickerSeen` says. Refused while disabled; in combat the library's gray line on every call |
 | `enable` | Turn the addon on |
 | `disable` | Turn the addon off without unloading it |
 | `list` | List every setting |
@@ -242,6 +243,8 @@ in `settings/Slash.lua`, in its declared order:
 
 The nine feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
 disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
+`skin` is refused the same two ways: it is reserved (every skinned Ka0s addon carries it, after
+`config`) but not one of the library's live verbs.
 `ignore` and `targetdummy`, last, are not feature verbs: each reads and writes one setting, as `get`
 and `set` do, so they answer while the addon is disabled (the descriptor's `liveVerbs`;
 `targetdummy`'s `add` and `capture` also write a capture to `global.dummies.captures`).

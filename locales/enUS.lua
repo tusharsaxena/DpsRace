@@ -42,6 +42,8 @@ L["Restore every General setting on this profile to its addon default: Master co
 -- Slash verbs (settings/Slash.lua): the descriptions the help index and the landing page print
 L["Show this help"] = "Show this help"
 L["Open the settings panel"] = "Open the settings panel"
+-- The reserved `skin` verb's help: LibKa0s's SKIN_PICKER_STRINGS.VERB_HELP, one wording for every host.
+L["Choose a skin: open the skin picker"] = "Choose a skin: open the skin picker"
 L["Turn the addon on"] = "Turn the addon on"
 L["Turn the addon off without unloading it"] = "Turn the addon off without unloading it"
 L["List every setting"] = "List every setting"

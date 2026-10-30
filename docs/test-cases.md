@@ -1123,6 +1123,15 @@ Total.
 - outline: Reset all settings puts the outline back on All text and applies it
 - outline: without the library the apply seam answers false and the default still stores
 
+### test_skin_verb.lua (6)
+
+- skin verb: the row sits right after config, with the library's help words
+- skin verb: /dr skin shows the picker on a profile that has closed it
+- skin verb: NS.RunSkinVerb hands O.SkinVerb this addon's first-run spec
+- skin verb: in combat every call prints the library's gray line and shows nothing
+- skin verb: refused while the addon is disabled, and no picker shows
+- skin verb: without LibKa0s the verb prints the library-absent line
+
 ### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
@@ -1440,6 +1449,7 @@ Total.
 | test_skin_hud.lua | 10 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
+| test_skin_verb.lua | 6 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 13 |
@@ -1458,4 +1468,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1156** |
+| **Total** | **1162** |
