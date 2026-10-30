@@ -26,10 +26,16 @@ local C = Tbl.COLORS
 local FONT = NS.Style.FONT
 
 Compare.VALUE_W = 80        -- each figure column's least width, in the score table and the compared breakdown
--- The Difference column's least width: the amount and the % ("-710.2K -100.0%", 15 characters at
--- Tbl.BadgeWidth's 6 px and its 4 px pad), at the right of both tables; it fits the 440 px detail of
--- the expanded view at its 1344 px minimum (tests/test_compare.lua).
-Compare.DIFF_W = 94
+-- The Difference (DR-06, the owner's call, 2026-10-30): two right-aligned columns under one shared
+-- header, the amount, then DIFF_GAP, then the %. The % column is PCT_W wide: a signed three-digit %
+-- with one decimal ("+100.0%", "-100.0%") at Tbl.BadgeWidth's 6 px a character and its 4 px pad,
+-- which holds the widest skin's measured width (High Contrast's Atkinson, 40.8 px at its body size
+-- over Ka0s Default's, about 2 more with the outline; tests/test_compare.lua). The column's least
+-- width holds the widest likely amount ("-710.2K", 46 px the same way) beside it, at the right of
+-- both tables; it fits the 440 px detail of the expanded view at its 1344 px minimum.
+Compare.PCT_W = 46
+Compare.DIFF_GAP = 4
+Compare.DIFF_W = 96
 -- The flex layout (the owner's calls, 2026-10-27): the tables fill the detail at any width. The name
 -- column takes NAME_SHARE of the width, at most NAME_MAX and never more than the figures leave at
 -- their least; the three figure columns grow alike over the rest. In the expanded view's 416 px detail
@@ -269,14 +275,20 @@ end
 local function escape(c) return NS.Style.HueEscape(c) .. "%s|r" end
 local PCT_UP, PCT_DOWN = escape(Compare.BAR_UP), escape(Compare.BAR_DOWN)
 
---- The Difference cell (the owner's call, 2026-10-26): the amount, then a space and the % in the
---- bars' muted green or red ("+78.3K +2.3%"); the amount alone with no % (the other run's figure is
---- 0 or missing) or no difference; a dash with no amount. The amount takes its color from paint().
-function Compare.DiffText(delta, pct)
+--- The Difference's amount cell (DR-06): the signed amount ("+78.3K"), "0" for none, a dash with no
+--- amount. It takes its color from paint().
+function Compare.DiffAmount(delta)
     if type(delta) ~= "number" then return DASH end
+    return Compare.DeltaText(delta)
+end
+
+--- The Difference's % cell (DR-06; the owner's call, 2026-10-26, for its color): the % in the bars'
+--- muted green or red ("+2.3%"); empty with no amount, no difference, or no % (the other run's
+--- figure is 0 or missing).
+function Compare.DiffPct(delta, pct)
     pct = num(pct)
-    if delta == 0 or not pct then return Compare.DeltaText(delta) end
-    return Compare.DeltaText(delta) .. " " .. (delta > 0 and PCT_UP or PCT_DOWN):format(pctText(pct))
+    if type(delta) ~= "number" or delta == 0 or not pct then return "" end
+    return (delta > 0 and PCT_UP or PCT_DOWN):format(pctText(pct))
 end
 
 local function paint(fs, value)
@@ -318,13 +330,14 @@ local function buildBar(p, c, x)
 end
 
 -- Each column's justify, headers and figures alike: the name, this run (right, against the other's
--- column), the other run (left, against this run's), the difference.
-Compare.JUSTIFY = { "LEFT", "RIGHT", "LEFT", "RIGHT" }
+-- column), the other run (left, against this run's), the difference's amount and its % (DR-06).
+Compare.JUSTIFY = { "LEFT", "RIGHT", "LEFT", "RIGHT", "RIGHT" }
+local HEADS, CELLS = 4, 5   -- a header line's strings (one Difference over both), a figure line's
 
--- A table's header line: four FontStrings in `font`, justified as their columns.
-local function heads(f, font, colors)
+-- A table's line: `n` FontStrings in `font`, justified as their columns.
+local function heads(f, font, colors, n)
     local out = {}
-    for j, justify in ipairs(Compare.JUSTIFY) do out[j] = Tbl.Text(f, font, colors and colors[j], justify) end
+    for j = 1, n do out[j] = Tbl.Text(f, font, colors and colors[j], Compare.JUSTIFY[j]) end
     return out
 end
 
@@ -352,14 +365,14 @@ local function buildScore(p, c, x)
     x.rule = f:CreateTexture(nil, "ARTWORK")
     NS.Skin.Divider(x.rule)
     x.scoreSep = newSep(f)
-    x.head = heads(f, FONT.HEADER)
+    x.head = heads(f, FONT.HEADER, nil, HEADS)
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
     x.lines = {}
     -- Each label in the spell names' white and font, after its icon (the spell icons' size and x).
     local labels = { { L["Damage"], Compare.DAMAGE_ICON }, { L["DPS"], Compare.DPS_ICON } }
     for i, def in ipairs(labels) do
-        local line = heads(f, FONT.TEXT, { C.text, C.text, C.text, C.dim })
+        local line = heads(f, FONT.TEXT, { C.text, C.text, C.text, C.dim, C.dim }, CELLS)
         line[1]:SetText(def[1])
         line.icon = f:CreateTexture(nil, "ARTWORK")
         line.icon:SetTexture(def[2])
@@ -370,7 +383,7 @@ end
 
 local function buildSpells(_, c, x)
     x.spellHost = CreateFrame("Frame", nil, c)
-    x.spellHead = heads(x.spellHost, FONT.HEADER)
+    x.spellHead = heads(x.spellHost, FONT.HEADER, nil, HEADS)
     x.spellHead[1]:SetText(L["Spell"])
     x.spellHead[2]:SetText(L["This run"])
     x.spellHead[4]:SetText(L["Difference"])
@@ -408,7 +421,8 @@ function Compare.Fill(p)
         local v, d = values[i], diffs[i]
         line[2]:SetText(figure(v[1]))
         line[3]:SetText(figure(v[2]))
-        line[4]:SetText(Compare.DiffText(d.delta, d.pct))
+        line[4]:SetText(Compare.DiffAmount(d.delta))
+        line[5]:SetText(Compare.DiffPct(d.delta, d.pct))
         paint(line[4], d.delta)
     end
 end
@@ -448,7 +462,9 @@ end
 --- tables (the score table's and the spell table's headers and every line under them), so their
 --- columns line up. The name column runs from the left edge to this run's; a spell row's name then
 --- steps past its icon. This run's figure stops PAD short of its right edge, the other's starts PAD
---- into its column: each sits off the edge its bar grows from.
+--- into its column: each sits off the edge its bar grows from. The Difference splits in two (DR-06):
+--- the amount (4) up to DIFF_GAP short of the % (5), which takes the last PCT_W; its header spans
+--- both (Compare.HeadCell).
 --- @return number x, number width, string justify
 function Compare.Cell(j, width)
     local cols, pad = columns(width), Compare.PAD
@@ -456,7 +472,19 @@ function Compare.Cell(j, width)
     if j == 1 then return 0, cols.name, justify end
     if j == 2 then return cols[1], vw - pad, justify end
     if j == 3 then return cols[2] + pad, vw - pad, justify end
-    return cols[3], cols.diff, justify
+    if j == 4 then return cols[3], cols.diff - Compare.PCT_W - Compare.DIFF_GAP, justify end
+    return width - Compare.PCT_W, Compare.PCT_W, justify
+end
+
+--- A header line's column `j` across `width`: Cell's, but the one Difference header over both of its
+--- columns, right-aligned over the % (DR-06).
+--- @return number x, number width, string justify
+function Compare.HeadCell(j, width)
+    if j == HEADS then
+        local cols = columns(width)
+        return cols[3], cols.diff, Compare.JUSTIFY[j]
+    end
+    return Compare.Cell(j, width)
 end
 
 --- A spell icon's side in the compared rows, and the score labels' icons with them: the configured
@@ -489,10 +517,10 @@ local function placeSep(sep, parent, x, h)
     sep:Show()
 end
 
--- A header or line of four FontStrings at `y` in `parent`, each in its column's box (Compare.Cell).
+-- A header line's four FontStrings at `y` in `parent`, each in its column's box (Compare.HeadCell).
 local function placeLine(set, parent, y, width)
-    for j = 1, 4 do
-        local cx, w = Compare.Cell(j, width)
+    for j = 1, HEADS do
+        local cx, w = Compare.HeadCell(j, width)
         place(set[j], parent, cx, y, w)
     end
 end
@@ -543,7 +571,7 @@ local function placeScoreLine(line, parent, y, lineH, cw, cols)
     line.icon:SetSize(icon, icon)
     line.icon:ClearAllPoints()
     line.icon:SetPoint("LEFT", parent, "TOPLEFT", 0, mid)
-    for j = 1, 4 do
+    for j = 1, CELLS do
         local cx, w = Compare.Cell(j, cw)
         if j == 1 then cx, w = icon + 4, math.max(20, cols[1] - icon - 8) end
         line[j]:ClearAllPoints()
@@ -585,7 +613,7 @@ local function newRow(host)
     row.bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -NS.HudBreakdown.ROW_GAP)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.bar = newBar(row)
-    row.texts = heads(row, FONT.TEXT, { C.text, C.text, C.text, C.dim })
+    row.texts = heads(row, FONT.TEXT, { C.text, C.text, C.text, C.dim, C.dim }, CELLS)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         if not self.data then return end
@@ -620,7 +648,8 @@ local function fillRow(row, data, index, cw, rowH, maxPct)
     t[1]:SetText(NS.HudBreakdown.SpellName(data.id))
     t[2]:SetText(Compare.SpellFigure(data.dmgA, data.shareA))
     t[3]:SetText(Compare.SpellFigure(data.dmgB, data.shareB))
-    t[4]:SetText(Compare.DiffText(data.delta, data.pct))
+    t[4]:SetText(Compare.DiffAmount(data.delta))
+    t[5]:SetText(Compare.DiffPct(data.delta, data.pct))
     paint(t[4], data.delta)
     row.data = data
 end
