@@ -47,10 +47,12 @@ local STEPS = {
     -- pick, because this step never runs again.
     --
     -- ONLY A STORED COMPANION IS NAMED. The runner hands the RAW profile, which holds only what
-    -- differs from the defaults: an absent companion already reads its default, true (X3); and
-    -- ResetToSkin, handed a key that is absent, cannot tell it is a bool and writes its "@skin"
-    -- sentinel into it. Without the library the companions are set directly: they mean nothing until
-    -- it loads, and then they must already say "follow".
+    -- differs from the defaults: an absent companion already reads its default, true (X3), and is
+    -- left absent. (LibKa0s before v1.81.0 also wrote its "@skin" sentinel into an absent key it was
+    -- handed; v1.81.0 sets a named `...FromSkin` key to true instead, R-6. The filter stays: this step
+    -- already shipped and must give a profile that migrates late the same result, D-19.) Without the
+    -- library the companions are set directly: they mean nothing until it loads, and then they must
+    -- already say "follow".
     { to = 6, perProfile = true, run = function(_sv, profile)
         if type(profile) ~= "table" then return end
         local A = NS.HudAppearance

@@ -1082,12 +1082,13 @@ Total.
 - skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
 - skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included
 
-### test_skin_hud.lua (9)
+### test_skin_hud.lua (10)
 
 - skin hud: the defaults list every companion, on, and the full-path list matches them
 - skin hud: the clocks keep their monospace face, with no companion (D-15)
 - skin hud: each companion is a bool row, default on, governing its picker
 - skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
+- skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
 - skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM
 - skin hud: the Results table's bar cells and their text follow the skin too (D-16)
 - skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
@@ -1423,7 +1424,7 @@ Total.
 | test_skinsetup.lua | 22 |
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 11 |
-| test_skin_hud.lua | 9 |
+| test_skin_hud.lua | 10 |
 | test_skin_picker.lua | 12 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
@@ -1443,4 +1444,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1145** |
+| **Total** | **1146** |
