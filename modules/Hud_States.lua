@@ -769,6 +769,23 @@ local function drawLive(body)
     body.w.count:SetText(liveCount(body, rows))
 end
 
+-- A spell row's hover on the running and result bodies (DR-03, the owner's call, 2026-10-30): the
+-- client's full spell tooltip right of the HUD, level with the row (ResultsTable.SpellTip). A result
+-- row's plain record adds its damage, share and place (ResultsTips.Spell), as the Results detail's
+-- rows do; a live row hands only its spell's ID, which may be secret, and SpellTip never compares or
+-- type-tests it. Both modules are read at call time (they load after this one).
+local function spellTip(body)
+    return function(row, spell, rank, liveID)
+        local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
+        if not Tbl then return end
+        local window = Tbl.WindowOf(row)
+        if not spell then return Tbl.SpellTip(window, row, liveID, nil) end
+        local run = type(body.shownRun) == "table" and body.shownRun or {}
+        local count = type(run.spells) == "table" and #run.spells or nil
+        Tbl.SpellTip(window, row, spell.id, Tips and Tips.Spell(spell, run, rank, count))
+    end
+end
+
 -- RUNNING: the race clock (hud.clock), live damage and DPS, the live breakdown with no % (screen 04).
 function Builders.running(parent)
     local body = newBody(parent, "running")
@@ -795,7 +812,7 @@ function Builders.running(parent)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
-    w.list = NS.HudBreakdown.New(w.rows)
+    w.list = NS.HudBreakdown.New(w.rows, spellTip(body))
     w.pace = NS.HudChart.NewPace(f)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
@@ -1114,7 +1131,7 @@ function Builders.result(parent)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
-    w.list = NS.HudBreakdown.New(w.rows)
+    w.list = NS.HudBreakdown.New(w.rows, spellTip(body))
     w.pace = NS.HudChart.NewPace(f)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)

@@ -1095,7 +1095,7 @@ test("results: the timing legend is two rows, the bars' colors over the lines', 
     for n = 1, #Detail.LEGEND do assertTrue(named[n], Detail.LEGEND[n] .. " is in no row") end
 end)
 
-test("results: the live HUD's spell rows take no mouse", function()
+test("results: a spell list built without a tip hook takes no mouse", function()
     local i = inst()
     local list = i.NS.HudBreakdown.New(i.mocks.CreateFrame("Frame"))
     list:ShowResult({ spells = { { id = 29722, dmg = 10 } }, result = { damage = 10 } }, 1, true)

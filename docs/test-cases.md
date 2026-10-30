@@ -374,6 +374,11 @@ Total.
 - hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
 - hud hint: the box resizes when the hint's text changes, and not on every redraw
 
+### test_hud_tips.lua (2)
+
+- hud: a live spell row's hover shows the client's spell tooltip right of the HUD, its secret ID untouched
+- hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
+
 ### test_hud_tiles.lua (9)
 
 - hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
@@ -537,7 +542,7 @@ Total.
 - results: every detail element has a tooltip; spells show the client's spell tooltip beside the window
 - results: the timing strip's marks draw above its two segments
 - results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines
-- results: the live HUD's spell rows take no mouse
+- results: a spell list built without a tip hook takes no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: the Insights tab is built on first show, counts the runs and shows the empty state with none
@@ -1429,6 +1434,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 73 |
 | test_hud_hint.lua | 6 |
+| test_hud_tips.lua | 2 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
@@ -1488,4 +1494,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1178** |
+| **Total** | **1180** |

@@ -13,9 +13,11 @@ local _, NS = ...
 -- (MultiMeters' measured layout rule), so a row is placed from its index and the config constants
 -- below, and nothing here ever asks a row, a bar or a label for its size or position.
 --
--- HOVER IS OPT-IN AND RESULT-ONLY. A list built with a `tip` hook (the Results detail's) takes the
--- mouse on its rows and hands the hook a READ RESULT's plain spell record; the live HUD passes none,
--- so its rows stay click-through and a live (secret) spell ID never reaches a tooltip.
+-- HOVER IS OPT-IN. A list built with a `tip` hook (the Results detail's, the HUD's running and result
+-- bodies', DR-03) takes the mouse on its rows. A READ RESULT's row hands the hook its plain spell
+-- record and rank; a LIVE row hands it only the spell's ID, which may be secret (`tip(row, nil, nil,
+-- id)`): the hook passes it straight to ResultsTable.SpellTip, which never compares or type-tests it
+-- and reads plain geometry only. A list built without one keeps its rows click-through.
 --
 -- STRIPES ARE OPT-IN TOO. A list built with a `stripe` hook (the Results detail's, the Results list's
 -- tint) tints every other row by its index; the HUD passes none and draws no stripe.
@@ -131,7 +133,8 @@ List.__index = List
 
 --- A list of spell rows drawn into `parent`, top down.
 --- @param parent table
---- @param tip function|nil  tip(row, spell, rank): a result row's hover (none: rows take no mouse)
+--- @param tip function|nil  tip(row, spell, rank, liveID): a row's hover, a result row's plain record
+---   and rank, or a live row's (possibly secret) ID alone (none: rows take no mouse)
 --- @param stripe function|nil  stripe(index): the alpha of the row's tint (none: no stripes)
 --- @return table list
 function Breakdown.New(parent, tip, stripe)
@@ -154,7 +157,13 @@ local function wireTip(list, row)
     if row.tipWired then return end
     row.tipWired = true
     row:EnableMouse(true)
-    row:SetScript("OnEnter", function(self) if self.spell then list.tip(self, self.spell, self.rank) end end)
+    row:SetScript("OnEnter", function(self)
+        if self.spell then
+            list.tip(self, self.spell, self.rank)
+        elseif self.liveID ~= nil then
+            list.tip(self, nil, nil, self.liveID)
+        end
+    end)
     row:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
 end
 
@@ -178,7 +187,7 @@ function List:acquire(i, icons, pct)
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
     row:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
     setMode(row, icons, pct)
-    row.spell, row.rank = nil, nil
+    row.spell, row.rank, row.liveID = nil, nil, nil
     if self.tip then wireTip(self, row) end
     if self.stripe then paintStripe(self, row, i) end
     self.rows[i] = row
@@ -217,6 +226,7 @@ function List:ShowLive(live, n, icons, offset)
         row.amount:SetText(NS.Format.Number(s.total))
         row.pct:SetText("")
         setIcon(row, icons, s.spellID)
+        row.liveID = s.spellID   -- a handle for the hover only: tested for nil, never compared
     end
     return #self.rows
 end

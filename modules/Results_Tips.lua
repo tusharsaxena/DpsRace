@@ -344,6 +344,16 @@ function Tips.Cast(cast)
     return { castName(cast), L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
 end
 
+--- What follows the client's spell tooltip on a damage chart's cooldown icon (DR-03): the time it was
+--- cast on the race clock, "(pet)" after a pet's. Nil for anything but a cast.
+--- @param cast table  { t, id, pet }
+--- @return table|nil
+function Tips.CastAfter(cast)
+    if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
+    local at = L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
+    return { cast.pet and L["%s (pet)"]:format(at) or at }
+end
+
 --- A +n mark's tooltip on the damage chart: how many casts it stands for, then each one's spell and
 --- time on the race clock, on bullets. Nil for anything but a list of casts.
 --- @param casts table  { { t, id, pet }, ... }

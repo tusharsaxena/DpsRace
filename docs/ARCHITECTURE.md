@@ -508,7 +508,11 @@ is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06).
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
   (`modules/Format.lua`, the one instance) and `C_Spell`'s name and icon lookups; the one question it
-  asks of one is `== nil`. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
+  asks of one is `== nil`. A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
+  its spell's ID, possibly secret, to `ResultsTable.SpellTip`, which tests it for nil and passes it to
+  the client's `GameTooltip:SetSpellByID` (pcall'd; the name through `C_Spell` when the client
+  refuses), adds no line of a live value, and reads its placement (the row's top, the window's edge,
+  the tooltip's width) through `NS.Secrets.PlainNumber`, a secret answer counting as nothing. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
@@ -572,8 +576,9 @@ is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06).
   time over the plain length across the configured width (`HudChart.IconX`, `ResultsTimeline.MarkX`),
   never read back off a frame. The chart's icons (C_Spell's texture for the plain stored or live ID)
   take the mouse wherever the chart is drawn, the running HUD included (a plain, non-secure frame),
-  and like the timeline's hover frames show tooltips built from plain cast records (the timeline's name cell and cast icons the client's
-  spell tooltip by the stored ID). The timeline window is plain and non-secure like the Results
+  and like the timeline's hover frames show tooltips built from plain cast records (the chart's icons,
+  the timeline's name cell and its cast icons the client's spell tooltip by the stored ID, beside the
+  window, DR-03). The timeline window is plain and non-secure like the Results
   window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop. Neither
   window's `UISpecialFrames` entry is ever removed or rewritten for the modal's Escape order (a write to
   that shared table from addon code would taint Blizzard's own entries): the Results window shows
