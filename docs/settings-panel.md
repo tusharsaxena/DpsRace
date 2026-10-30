@@ -104,6 +104,7 @@ and that HUD style options follow the skin unless the player sets them.
 | Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override. The HUD Appearance and Results table blocks draw their own *Font* even with *Use the skin's font* on |
 | Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
 | Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
+| Font outline | `skin.outline` | the library's dropdown under *Reset font* / *Reset texture* (`skipRender`) | `all` (the default), `hud` or `off`: where the skin outlines this addon's text (LibKa0s v1.82.0, D-06). *HUD text only* keeps the outline on the HUD and the toast and drops it from window text; *Off* drops it everywhere. Grayed while *Ignore fonts* is on. A font block whose *Font flags* is *From skin* follows it |
 | (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
 
 Each row's `onChange` applies only its own half (`core/SkinSetup.lua` says why), so a pick on the tab

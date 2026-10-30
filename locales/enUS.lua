@@ -1062,6 +1062,9 @@ L["The font this addon's text uses, over the skin's own. Empty keeps the skin's.
 L["Texture"] = "Texture"
 L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."] =
     "The texture this addon's bars use, over the skin's own. Empty keeps the skin's."
+L["Font outline"] = "Font outline"
+L["Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."] =
+    "Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."
 L["Skin picker seen"] = "Skin picker seen"
 L["Whether the first-run skin picker was closed on this profile."] =
     "Whether the first-run skin picker was closed on this profile."

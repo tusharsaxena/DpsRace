@@ -78,6 +78,7 @@ local STORED = {
     ["skin.ignoreFonts"]     = { "bool",   false },
     ["skin.font"]            = { "string", "" },
     ["skin.texture"]         = { "string", "" },
+    ["skin.outline"]         = { "string", "all" },
     ["skin.pickerSeen"]      = { "bool",   false },
     ["global.usage.hidden"]  = { "string", "" },
     ["race.lateIgnore"]      = { "string", "66,1856,5384,8690,58984,110959" },
