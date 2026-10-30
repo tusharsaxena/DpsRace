@@ -1,0 +1,63 @@
+Independent review (skin-library-followups M2, DpsRace): I found no major issues. The DpsRace branch feat/2026-10-30-skin-library-followups (78cd417 DR-RV, 6e3b894 DR-01, a8fbe49 DR-02) is correct and complete against R-1..R-12, D-01..D-20, the DpsRace inventory and v1.81.0's "What a consumer owes". There are two minor follow-ups and two nits below.
+
+**Gate (re-run at tip a8fbe49)**
+- Tests: ka0s-bounded lua tests/run.lua gave 1146 passed, 0 failed, 1 skipped (1147 total).
+- Lint: ka0s-bounded luacheck . gave 0 warnings / 0 errors in 148 files.
+- Line cap: the largest file is tests/test_hud.lua at 1478 lines.
+- Counts: the README badge (1146) and docs/test-cases.md Total (1146) match.
+- Commit subjects carry DR-RV, DR-01 and DR-02, and each has the session trailers.
+
+**Vendor**
+- I extracted git archive v1.81.0 into my scratchpad. Neither libs/LibKa0s nor tests/_kit has any file that differs (diff -rq --strip-trailing-cr).
+- The only "Only in" lines are under media/icons, which is the declared prune (28 icon files kept).
+- No facade name is added, so the degraded-facade parity test stays green.
+
+**Workarounds**
+- R-2: the only stockDefault caller (modules/Hud_States.lua) is deleted. git grep finds no stockDefault or `stock =` outside libs, tests/_kit and docs.
+- R-6: the v6 ResetToSkin guard in core/Database.lua is kept, as D-19 and the opt-in rule require. DpsRace names the `...FromSkin` keys directly, so under v1.81.0 the library sets them to true. Only the comment changed, and it is accurate.
+- R-1, R-3, R-5, R-7, R-8 and R-9 had no DpsRace workaround, so nothing was owed and none is wrongly removed.
+
+**R-1: Ignore fonts reaches the HUD.** I traced the tag's lib:Resolve (LibKa0s/Skin.lua around line 896).
+- While the owner ignores fonts, `hudFontIgnored` makes Resolve answer the passed value. The new MediaKey passes nil, so it falls through to `return stored, false`, and FontAt draws the stored face.
+- A stray "@skin" gives "@skin", false, which falls back to the block's default. That is the same as before.
+- bar.texture is not gated, so textures keep following the skin.
+- In every other case the new MediaKey answers what the old one did: companion off with a stored pick, companion off with the sentinel, a token the skin leaves unset, and the degraded facade's Resolve. The only change is the second return under Ignore fonts, which no production caller reads.
+- DpsRace reads no hud.outline and no BarStyle font, so the outline half has no surface here.
+
+**Scope, Ka0s Default and the picker**
+- D-01..D-03 hold. DpsRace places no owned Dropdown, TestStrip or S.Text on a settings page, so no `panel = true` is owed. The test strip and dropdowns sit on HUD and Results windows and keep their skin (D-01).
+- Ka0s Default under DpsRace now paints the Ka0s input box on the Custom length box. No stock look remains.
+- R-11 needs no addon code.
+
+**Tests genuinely fail without the change**
+- I ran the suite from a scratch copy of the branch with master's modules/Hud_Appearance.lua swapped in. "skin hud: Ignore fonts gives each face block its stored face..." goes red. The other failures in that run were environmental, because the scratch copy is not a git checkout.
+- The test also pins the texture still following the skin and A.stamp moving.
+- Re-adding stockDefault does not turn the custom-box test red. That is expected: the library ignores the key, so its deletion in DR-01 is dead-code removal, and the test pins the library's new look (it is red on v1.80.0).
+
+**Smoke checks and docs**
+- SM-DR-SK25 is new, and SK1, SK4, SK9, SK10 and SK12 are rewritten.
+- The HUD faces in SK9 and SK25 match HUD_FACE in the tag's SkinDefs.lua.
+- SK12 matches the D-13 list for the tool windows and widgets DpsRace uses (it has no sim panel).
+- None is marked passed. The new header says "not yet run".
+- The doc rows in inventory §4 are all addressed. The v1.80.0 mentions kept as history match the inventory's instruction.
+
+The implementer's note about the shared scratchpad ('lk181') is a process issue for the lead: sibling M2 implementers should confirm their vendor gates. It is not a DpsRace defect, because this repo's vendor gate is clean.
+Findings: [minor] DR-01 (inventory §1 R-7 'lead's call') modules/Results_Tips.lua:49,147,167,197,231,376,490,579,718; modules/Results_Timeline.lua:412,414,858; modules/Results_Usage.lua:295; docs/smoke-tests.md SM-DR-SK13: Thirteen Results tooltip lines are still written as literal { text, r, g, b } tables, in Ka0s gold (1, 0.82, 0) and dim gray (0.62, 0.62, 0.68). Under Ember they stay Ka0s colors, which contradicts SM-DR-SK13 ('The tooltip lines DPS Race writes take Ember's colors'). The implementer correctly left them, because no ruling covers them. But nothing records the gap: there is no GitHub issue, no follow-up item and no note on SK13. The owner's smoke run will fail SK13 with no explanation on record. | [minor] DR-01 / DR-RV consumer surface (LK-06b, Core minor 14) modules/Sizing.lua:101 (NS.MakeResizable call); callers modules/Hud.lua:487, modules/Results.lua:308, modules/Results_Timeline.lua:757: v1.81.0 gives Core.MakeResizable an opts.owner that tints the resize grip from icon.grip. The library's own windows (debug console, perf panel, copy windows) now pass it, so their grips take the skin under the seven non-Ka0s, non-WoW-Default skins. DpsRace's three resizable windows still call it with no owner, so their grips keep the client's art under every skin. The changelog lists this as optional ('may pass'), and Ka0s Default and WoW Default are unaffected. But neither the commits nor the docs mention it, and the result is a visible mismatch inside one addon under e.g. Ember: the HUD and Results grips stay stock while the console's grip is tinted. | [nit] DR-01 tests (R-4 consumer side) tests/test_skin_hud.lua (otherSkin helper, the 'a skin switch restyles the blocks and moves the face' test): No DpsRace test pins R-4, a HUD face per skin. The skin-switch test only needs some skin whose hud.font differs from Ka0s Default, which was already true under v1.80.0 because every other skin used Friz. The inventory suggested optionally tightening it to 'two non-Ka0s skins differ'. Only the smoke checks (SK9, SK25) cover R-4 here. The library's own suites pin the values, so this is optional. | [nit] DR-02 docs docs/ARCHITECTURE.md, HUD style paragraph ('(v1.81.0, R-4). Only the face and the texture follow (X4): ... The two race clocks'): The rewrapped paragraph leaves one line well over the file's ~100-column wrap. It reads correctly, so this is formatting only.
+Fix round: Both findings are real, and I fixed both in DpsRace on feat/2026-10-30-skin-library-followups. Nothing was pushed, and no other repo was touched.
+
+Finding 1 (DR-01, a3f5f84): I fixed it in code instead of filing an issue. Filing one would have meant a GitHub write, and the bundle note would have meant touching Ka0sAddonsCommonTasks, which this task forbids.
+- All 13 literal `{ text, r, g, b }` tooltip lines now read tokens at build time:
+  - gold becomes `Style.Rgb("gtip.title")`
+  - dim gray becomes `Style.Rgb("dr.dim")`
+- Files: modules/Results_Tips.lua and modules/Results_Usage.lua (through `NS.Style`, since neither has a local `Style`), and modules/Results_Timeline.lua.
+- Under Ka0s Default nothing changes. `gtip.title` is GOLD (1, 0.82, 0), and `dr.dim` defaults to (0.62, 0.62, 0.68) and follows `text.muted` under other skins.
+- tests/test_skin_literals.lua gains a third shape: a 4-entry table whose first entry is non-numeric and whose last three are numeric literals. Its falsifiable test now plants a literal line table (caught), a token one (passes) and a plain `{ 1, 0.82, 0, 1 }` color constant (passes). The gate finds no false positives in the tree.
+- SM-DR-SK13 should now pass as written. Because of that, the bundle's 06_SMOKE_TESTS.md does not need the "expected to fail" note.
+
+Finding 2 (DR-RV, fc245db):
+- modules/Sizing.lua now takes `addonName` from `...` and passes `owner = addonName` in its `NS.MakeResizable` opts. The HUD, Results and timeline grips now take the skin's `icon.grip` tint and follow skin switches, like the library's windows. Ka0s Default and WoW Default keep the client's art.
+- docs/smoke-tests.md:
+  - new row SM-DR-SK26: the four grips under Ka0s Default, Ember and WoW Default, plus a drag check
+  - the follow-ups status paragraph now lists SK26 and the SK13 change
+
+Files changed: /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/modules/Results_Tips.lua, /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/modules/Results_Timeline.lua, /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/modules/Results_Usage.lua, /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/tests/test_skin_literals.lua, /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/modules/Sizing.lua, /mnt/d/Profile/Users/Tushar/Documents/GIT/DpsRace/docs/smoke-tests.md. They are all still CRLF. Commit message files: /tmp/claude-1000/dr-fix1.txt and /tmp/claude-1000/dr-fix2.txt.
