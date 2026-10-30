@@ -348,11 +348,14 @@ end
 Tbl.CHIP_H = 16
 Tbl.CHIP_GAP = 4            -- the gap between two boxes, and between a box and the text after it
 
---- A chip in `parent`, hidden until Tbl.SetChip paints it.
-function Tbl.Chip(parent)
+--- A chip in `parent`, hidden until Tbl.SetChip paints it. `scale` (the new-best toast's, DR-04) draws
+--- it that much larger: its height, its word's size and its width.
+function Tbl.Chip(parent, scale)
     local chip = Style.FlatBox(parent)
-    chip:SetHeight(Tbl.CHIP_H)
-    chip.fs = Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
+    chip.scale = scale
+    chip:SetHeight(Tbl.CHIP_H * (scale or 1))
+    chip.fs = scale and Style.ScaledText(chip, FONT.TEXT, scale, C.text, "CENTER")
+        or Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
     chip.fs:SetPoint("CENTER", chip, "CENTER", 0, 0)
     chip:Hide()
     return chip
@@ -369,7 +372,7 @@ function Tbl.SetChip(chip, s, color, maxW)
     chip.fs:SetText(s)
     paint(chip.fs, color)
     tint(chip, color)
-    local w = Tbl.BadgeWidth(s, true)
+    local w = math.floor(Tbl.BadgeWidth(s, true) * (chip.scale or 1) + 0.5)
     if type(maxW) == "number" and w > maxW then w = math.max(14, math.floor(maxW)) end
     chip:SetWidth(w)
     chip.fs:SetWidth(w - 6)

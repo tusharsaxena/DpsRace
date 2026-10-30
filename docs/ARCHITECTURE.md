@@ -96,7 +96,12 @@ complete run that beats an earlier best on its board (`Bests.Delta` names a gain
 does not toast) shows a toast near the top of the screen with the spec, the board, the time, the DPS
 and the gain over the old best, whether or not the HUD is open; the shell queues, times, pauses under
 the pointer and closes it. Its rows are General > *New-best toast* (`toast.*`), test mode shows a
-sample to drag into place (`profile.toast.point`), and *Test toast* plays one through.
+sample to drag into place (`profile.toast.point`), and *Test toast* plays one through. Since DR-04
+(2026-10-30, the owner's Addendum 03) the toast is 25% larger, every size in it scaled by
+`BestToast.SCALE` (its faces through `Style.ScaledText`, its chips through `Tbl.Chip(parent, scale)`),
+the trophy as tall as its three rows, the rows evenly spaced and padded, and the class and spec icons
+beside the spec and class words; its final height is `BestToast.HEIGHT`, 90 px, which DropWatcher's
+toast matches.
 The 2026-10-28 ignore-list pass ([`superpowers/plans/2026-10-28-ignore-list-insights.md`](superpowers/plans/2026-10-28-ignore-list-insights.md))
 added the late-cast ignore list (#8, `modules/LateIgnore.lua`): the spells whose casts after the grace
 never flag a run. It is one profile setting, `race.lateIgnore`, a comma-separated string of spell IDs

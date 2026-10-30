@@ -1203,7 +1203,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (13)
+### test_toast.lua (18)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
@@ -1218,6 +1218,11 @@ Total.
 - toast: a drag stores the place in the profile in UIParent units; Reset position clears it
 - toast: a profile switch follows the new profile's switch: a toast up goes, test mode's comes back
 - toast: the stand-down takes the toast down and drops what waits; a result while down shows none
+- toast: 25% larger, its height the named constant, every size scaled by the same factor
+- toast: the trophy is as tall as the three rows, the rows evenly spaced and padded
+- toast: the class and spec icons sit beside the spec and class words
+- toast: a class or spec the client cannot draw leaves no icon
+- toast: the rows' text draws at the scaled sizes
 
 ### test_preview.lua (23)
 
@@ -1467,7 +1472,7 @@ Total.
 | test_skin_verb.lua | 6 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
-| test_toast.lua | 13 |
+| test_toast.lua | 18 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
@@ -1483,4 +1488,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1173** |
+| **Total** | **1178** |

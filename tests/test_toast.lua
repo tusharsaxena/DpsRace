@@ -91,8 +91,12 @@ test("toast: the payload names the spec and class, the board's chips, the DPS an
     local new = run(f, "new", 200, 104200)
     local _, _, prev = NS.Bests.Delta(new)
     local p = f.BT.Payload(new, 4.2, prev)
-    assertEqual(p.title, ("|c%sNew best:|r |c%sDestruction %s|r"):format(Tbl.Hex(Tbl.COLORS.blue),
-        Tbl.Hex(Tbl.ClassColor("WARLOCK")), Tbl.ClassName("WARLOCK")), "the words in blue, spec and class in class color")
+    -- DR-04: the class and spec icons sit between the two halves, so the words are two strings.
+    assertEqual(p.title, ("|c%sNew best:|r"):format(Tbl.Hex(Tbl.COLORS.blue)), "the words in blue")
+    assertEqual(p.who, ("|c%sDestruction %s|r"):format(Tbl.Hex(Tbl.ClassColor("WARLOCK")),
+        Tbl.ClassName("WARLOCK")), "spec and class in class color")
+    assertEqual(p.class, "WARLOCK", "the class token, for its icon")
+    assertEqual(p.specIcon, 136186, "the spec's icon, through GetSpecializationInfoByID")
     assertEqual(p.chips[1][1], "Single target")
     assertEqual(p.chips[1][2], select(2, Tbl.Badge(new.target)), "the target chip in the Runs list's category color")
     assertEqual(p.chips[2][1], "1:00")
@@ -104,6 +108,7 @@ test("toast: the payload names the spec and class, the board's chips, the DPS an
     result(f, new)
     local w = f.toast:Frame().dpsRace
     assertEqual(w.title:GetText(), p.title)
+    assertEqual(w.who:GetText(), p.who)
     assertEqual(w.chips[1].fs:GetText(), "Single target")
     assertEqual(w.chips[2].fs:GetText(), "1:00")
     assertTrue(w.chips[1]:IsShown() and w.chips[2]:IsShown())
@@ -272,4 +277,91 @@ test("toast: the stand-down takes the toast down and drops what waits; a result 
     assertTrue(f.NS.SetByPath("enabled", true))
     result(f, run(f, "d", 500, 140000))
     assertEqual(shownKey(f), "d", "back after the stand-up")
+end)
+
+-- ── the layout (DR-04, Addendum 03, image-60) ────────────────────────────────────────────────────
+
+--- The y offset of `region`'s first point (each row is anchored once, TOPLEFT on the frame).
+local function topOf(region)
+    local pt = region.__points and region.__points[1]
+    return pt and pt[5]
+end
+
+test("toast: 25% larger, its height the named constant, every size scaled by the same factor", function()
+    -- red under: the 72 px toast of the first release, or a size left unscaled.
+    local f = fixture()
+    local BT = f.BT
+    assertEqual(BT.SCALE, 1.25)
+    assertEqual(BT.HEIGHT, 90, "72 x 1.25: the height DropWatcher's toast matches (DW-05)")
+    assertEqual(BT.HEIGHT, 2 * BT.PAD + BT.ROWS_H, "even padding above the first row and below the last")
+    assertEqual(BT.CHIP_H, f.NS.ResultsTable.CHIP_H * BT.SCALE, "the chips 25% taller")
+    assertEqual(BT.TITLE_SIZE, 12 * BT.SCALE, "the title's 12 px face, scaled")
+    assertEqual(BT.TEXT_SIZE, 10 * BT.SCALE, "the text's 10 px face, scaled")
+    assertTrue(BT.WIDTH >= 340 * BT.SCALE, "at least 25% wider, then widened for the trophy")
+end)
+
+test("toast: the trophy is as tall as the three rows, the rows evenly spaced and padded", function()
+    local f = fixture()
+    local BT = f.BT
+    run(f, "old", 100, 100000)
+    result(f, run(f, "new", 200, 110000))
+    local w = f.toast:Frame().dpsRace
+    assertEqual(BT.ROWS_H, BT.TITLE_H + BT.ROW_GAP + BT.CHIP_H + BT.ROW_GAP + BT.TEXT_H)
+    assertEqual(w.icon.__width, BT.ROWS_H, "the trophy's width")
+    assertEqual(w.icon.__height, BT.ROWS_H, "the trophy as tall as the headline, the tags and the DPS line")
+    assertEqual(topOf(w.icon), -BT.PAD, "level with the first row")
+    assertEqual(topOf(w.title), -BT.PAD, "the headline under the top padding")
+    assertEqual(w.title.__height, BT.TITLE_H)
+    local chipTop, detailTop = topOf(w.chips[1]), topOf(w.detail)
+    assertEqual(chipTop, -(BT.PAD + BT.TITLE_H + BT.ROW_GAP), "the tags one gap under the headline")
+    assertEqual(w.chips[1].__height, BT.CHIP_H)
+    assertEqual(detailTop, chipTop - BT.CHIP_H - BT.ROW_GAP, "the DPS line one equal gap under the tags")
+    assertEqual(w.detail.__height, BT.TEXT_H)
+    assertEqual(-detailTop + BT.TEXT_H + BT.PAD, BT.HEIGHT, "the bottom padding equals the top")
+    local left = BT.PAD + BT.ROWS_H + BT.GAP
+    assertEqual(w.title.__points[1][4], left, "the rows start right of the trophy")
+    assertEqual(w.chips[1].__points[1][4], left)
+    assertEqual(w.detail.__points[1][4], left)
+end)
+
+test("toast: the class and spec icons sit beside the spec and class words", function()
+    local f = fixture()
+    local BT = f.BT
+    run(f, "old", 100, 100000)
+    result(f, run(f, "new", 200, 110000))
+    local w = f.toast:Frame().dpsRace
+    assertTrue(w.class:IsShown(), "the class icon")
+    assertEqual(table.concat(w.class.__texCoord, ","), table.concat(f.M.CLASS_ICON_TCOORDS.WARLOCK, ","))
+    assertTrue(w.spec:IsShown(), "the spec icon")
+    assertEqual(w.spec.__texture, 136186)
+    assertEqual(w.class.__width, BT.CLASS_ICON)
+    assertEqual(w.class.__height, BT.CLASS_ICON)
+    local function anchor(region) return region.__points[1] end
+    assertTrue(anchor(w.class)[2] == w.title and anchor(w.class)[3] == "RIGHT", "the class icon after New best:")
+    assertTrue(anchor(w.spec)[2] == w.class and anchor(w.spec)[3] == "RIGHT", "the spec icon after the class icon")
+    assertTrue(anchor(w.who)[2] == w.spec and anchor(w.who)[3] == "RIGHT", "the words after the icons")
+end)
+
+test("toast: a class or spec the client cannot draw leaves no icon", function()
+    local f = fixture()
+    local p = f.BT.Payload({ id = "x", status = "complete", char = { class = "PALADIN", spec = "Holy" },
+        target = { category = "single" }, race = { length = 60 }, result = { dps = 1 } }, nil, nil)
+    assertNil(p.specIcon)
+    f.BT.Instance():Show(p, { key = "x" })
+    local w = f.toast:Frame().dpsRace
+    assertFalse(w.class:IsShown(), "no coordinates for that class in this client")
+    assertFalse(w.spec:IsShown(), "no spec ID, so no icon")
+end)
+
+test("toast: the rows' text draws at the scaled sizes", function()
+    local f = fixture()
+    local BT = f.BT
+    run(f, "old", 100, 100000)
+    result(f, run(f, "new", 200, 110000))
+    local w = f.toast:Frame().dpsRace
+    local function size(fs) local _, s = fs:GetFont() return s end
+    assertEqual(size(w.title), BT.TITLE_SIZE, "the headline")
+    assertEqual(size(w.who), BT.TITLE_SIZE, "the spec and class")
+    assertEqual(size(w.detail), BT.TEXT_SIZE, "the DPS line")
+    assertEqual(size(w.chips[1].fs), BT.TEXT_SIZE, "a tag's word")
 end)
