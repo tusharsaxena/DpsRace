@@ -24,6 +24,9 @@ On 2026-10-30 the owner reported that every check of the skinning rollout (LibKa
 `feat/2026-10-30-skin-library-followups`) passed: section 27's SM-DR-SK1 to SM-DR-SK26, and S3, H6, W16
 and SM-DR-TA17, recorded in the Sign-off table as pass (owner-marked 2026-10-30).
 
+Owed: section 28's rows for the skin fonts and feedback build (LibKa0s v1.82.0, branch
+`feat/2026-10-30-skin-fonts-feedback`), none run yet.
+
 ## How to run it
 
 - Set `/console scriptErrors 1` first, and keep `/dr debug on` for the whole pass. The debug console
@@ -656,3 +659,22 @@ Contrast, Ember, WoW Default, WoW Midnight and WoW Forever.
 | SM-DR-SK24 | `/dr get skin.skin`; `/dr set skin.skin obsidian`; `/dr set skin.skin frob`; `/dr reset skin.skin` | The get prints the stored key; *obsidian* repaints at once; *frob* is refused and nothing changes; the reset puts Ka0s Default back and repaints | The chat lines |
 | SM-DR-SK25 | On a fresh client start, with the HUD in test mode (`/dr test running`) and the Results window open on its Runs list, pick each skin in turn on General > *Skin* | The HUD's live figures, the spell text and the Results bars' text draw that skin's own HUD face (each block's *Use the skin's font* ticked): Ka0s Default Oxanium SemiBold, Obsidian Inter SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast Atkinson Hyperlegible Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW Default the game's Friz Quadrata. Each face reads well at the HUD's size under its outline (the owner judges, LibKa0s v1.81.0 R-4); no fallback squares; the clocks keep their monospace face | The skin and a screenshot of the HUD |
 | SM-DR-SK26 | Unlock the HUD and open the Results window and the ability timeline; look at the three corner grips and the debug console's (`/dr debug`) under Ka0s Default, then Ember, then WoW Default | Under Ember all four grips are tinted alike in Ember's grip color, and switching skins repaints them at once; under Ka0s Default and WoW Default all four show the client's own grip art. Each grip still takes the drag | A screenshot of each window's grip under Ember |
+
+## 28. The 2026-10-30 build: skin fonts and feedback (LibKa0s v1.82.0)
+
+LibKa0s v1.82.0 (Ka0sAddonsCommonTasks `docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK`): new faces
+(Ka0s Default Prototype, Obsidian Expressway, WoW Forever Fira Sans Medium), every skin's text sized
+to Ka0s Default's width, the window text outlined by default (the Skin tab's *Font outline*), the
+`/dr skin` verb, and the font blocks' *From skin* flags. Start from a **fresh client start** after
+installing the build (the new faces register only at start), with `/console scriptErrors 1` on and
+`/dr debug on`; every row also fails on a Lua error or a taint warning. Use a profile that has played
+before the build and has a HUD Appearance *Font flags* of its own picked on one block (for SF2). The
+Result column is the owner's to fill.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-SF1 | General > *Skin*: look at *Font outline* under *Reset font* / *Reset texture*; pick *HUD text only*, then *Off*, then *All text*, with the HUD (`/dr test running`) and the Results window open; tick *Ignore fonts* and look at the dropdown | It reads *All text* on a profile that never set it. *HUD text only* drops the outline from the Results window's and the settings panel's text at once and keeps it on the HUD's figures, spell text and clocks; *Off* drops it everywhere; *All text* brings it back; no reload. Under *Ignore fonts* the dropdown is grayed. `/dr get skin.outline` prints the pick; a `/reload` and a profile switch keep each profile's own | The mode, a screenshot of the HUD and the Results window | |
+| SM-DR-SF2 | HUD > *HUD Appearance*: open each font block (*Elapsed clock*, *Time left clock*, *Live figures*, *Spell text*) and History > *Results table* > *Bar text*; look at *Font flags* | Each offers *From skin* first; a block you never changed shows *From skin* (its text outlined as SF1's mode says), and the block whose flags you had picked keeps your pick, in every mode. Each block still has *Font size*, *Font color* with *Use class color*, *Font flags* and *Font shadow* | The block, its *Font flags* value and what it drew | |
+| SM-DR-SF3 | `/dr skin` on a profile that has closed the first-run picker; again while in combat on a dummy; `/dr disable` then `/dr skin`; `/dr enable`; `/dr help` | The *Choose a skin* picker opens on demand; Apply saves the pick as the first-run picker does. In combat it shows nothing and prints one gray line on every call. Disabled, it prints the one disabled line. `help` lists `skin` right after `config` | The printed lines | |
+| SM-DR-SF4 | With the HUD (`/dr test running` and `/dr test result`), the Results window (Runs, Insights, a run's detail with every section open) and the new-best toast (*Test toast*) open, pick each skin in turn on General > *Skin*, ending on Ka0s Default | Every window's text is about as wide in each skin as under Ka0s Default (the sizes are measured to match it): no label or figure clips, wraps where it did not, or overlaps a neighbor in any skin, with the outline on. The faces are Ka0s Default Prototype, Obsidian Expressway and WoW Forever Fira Sans (Medium body, SemiBold titles and HUD), with no fallback squares | The skin, the window and a screenshot | |
+| SM-DR-SF5 | With *Live figures* and *Spell text* on *Use the skin's font* and the HUD running a race, switch Ka0s Default to Obsidian, then Glass; untick *Use the skin's font* on *Live figures*; tick *Ignore fonts* | Under Obsidian the figures and spell text draw a little larger (Expressway at the skin's HUD scale), under Glass a little smaller, about as wide as under Ka0s Default; *Font size* on the panel never changes. Unticked, the figures draw at the size set in every skin; under *Ignore fonts* too. The clocks never change size | The skin, the size set and a screenshot | |

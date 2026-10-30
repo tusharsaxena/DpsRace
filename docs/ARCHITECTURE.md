@@ -476,7 +476,9 @@ box shows its edge at rest and gold only with the keys (D-14). Every other pixel
 LibKa0s v1.81.0 (the skin library follow-ups) adds two more: the idle body's custom-length box draws
 the skin's input box (the stock look is retired, R-2), and the strings the library newly paints in
 the skin's face (the dropdown menu's rows, the test strip's line, the debug console's and perf panel's
-labels) read Oxanium where the template drew Friz Quadrata (D-13).
+labels) read Oxanium where the template drew Friz Quadrata (D-13). LibKa0s v1.82.0 (the skin fonts
+batch) retires Oxanium: Ka0s Default draws Prototype for body, titles and the HUD, and its window text
+is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06).
 
 ## Taint Notes
 
