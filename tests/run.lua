@@ -149,6 +149,7 @@ local SUITES = {
     "test_skin_outline",
     "test_skin_verb",
     "test_glyphs",
+    "test_refactor_pins",
     "test_slash",
     "test_share",
     "test_toast",

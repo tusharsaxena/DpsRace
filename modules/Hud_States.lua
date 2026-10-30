@@ -1119,6 +1119,16 @@ function States.ResultChips(v)
     return list
 end
 
+-- The result card's two KPIs for `run`: dashes for a lost run, else its damage and DPS. True when lost.
+local function resultKpis(w, run)
+    run = run or {}
+    local result = run.result or {}
+    local lost = run.status == "lost"
+    setKpi(w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
+    setKpi(w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
+    return lost
+end
+
 -- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the four acts (screen 07).
 function Builders.result(parent)
     local body = newBody(parent, "result")
@@ -1166,11 +1176,7 @@ function Builders.result(parent)
         -- The chips first: the stack under them starts where they end.
         self.w.chips:Set(States.ResultChips(v))
         Builders.resultExtras(self, v)
-        local run = v.run or {}
-        local result = run.result or {}
-        local lost = run.status == "lost"
-        setKpi(self.w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
-        setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
+        local lost = resultKpis(self.w, v.run)
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         self.w.spellsTitle:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end

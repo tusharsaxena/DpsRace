@@ -228,6 +228,22 @@ local function store()
     return g.dummies.captures
 end
 
+-- The player's position on map `mapID` as two plain fractions, or nil (no map, no API, a sealed read).
+local function playerXY(mapID)
+    local map = C_Map
+    if not (mapID and map and map.GetPlayerMapPosition) then return nil end
+    local pos = ask(map.GetPlayerMapPosition, mapID, "player")
+    if type(pos) ~= "table" or type(pos.GetXY) ~= "function" then return nil end
+    local ok, px, py = pcall(pos.GetXY, pos)
+    if not ok then return nil end
+    return Secrets.PlainNumber(px), Secrets.PlainNumber(py)
+end
+
+-- A map fraction as a percentage to two places, or nil.
+local function percent(v)
+    return v and math.floor(v * 10000 + 0.5) / 100 or nil
+end
+
 --- What the game says now about `unit` and where the player stands: every field a sealed read leaves
 --- out. Reads only.
 --- @return table|nil read  nil when the unit is no creature
@@ -240,15 +256,7 @@ function DummyList.Read(unit)
     local faction, pvp = ask(UnitFactionGroup, unit), ask(UnitIsPVP, unit)
     if Secrets.IsSealed(pvp) or type(pvp) ~= "boolean" then pvp = nil end
     local where = NS.Recorder.SnapshotWhere()
-    local x, y
-    local map = C_Map
-    if where.mapID and map and map.GetPlayerMapPosition then
-        local pos = ask(map.GetPlayerMapPosition, where.mapID, "player")
-        if type(pos) == "table" and type(pos.GetXY) == "function" then
-            local ok, px, py = pcall(pos.GetXY, pos)
-            if ok then x, y = Secrets.PlainNumber(px), Secrets.PlainNumber(py) end
-        end
-    end
+    local x, y = playerXY(where.mapID)
     return {
         npcID = id, name = t.name, level = t.level, classification = t.classification,
         health = Secrets.PlainNumber(ask(UnitHealthMax, unit)),
@@ -257,8 +265,7 @@ function DummyList.Read(unit)
         faction = Secrets.PlainString(faction),
         reaction = Secrets.PlainNumber(ask(UnitReaction, unit, "player")),
         mapID = where.mapID, zone = where.zone, subzone = where.subzone,
-        x = x and math.floor(x * 10000 + 0.5) / 100 or nil,
-        y = y and math.floor(y * 10000 + 0.5) / 100 or nil,
+        x = percent(x), y = percent(y),
     }
 end
 
@@ -302,26 +309,37 @@ function DummyList.NameOf(id)
     return d and d.name or nil
 end
 
+-- The lowest creature ID a capture or the catalog names `want` (lowercase), or nil.
+local function lowestNamed(want)
+    local found
+    local function consider(cid, name)
+        if type(name) == "string" and name:lower() == want and (not found or cid < found) then found = cid end
+    end
+    for cid, c in pairs(store() or {}) do
+        if type(c) == "table" then consider(cid, c.name) end
+    end
+    for cid, d in pairs(NS.Dummies.BY_ID) do consider(cid, d.name) end
+    return found
+end
+
+-- A typed creature ID within 1..MAX_ID, `false` for digits out of range, nil for no digits.
+local function typedID(text)
+    local id = tonumber(text:match("^%d+$") or "")
+    if not id then return nil end
+    if id < 1 or id > DummyList.MAX_ID then return false end
+    return id
+end
+
 --- A typed creature: a number, else a captured name (case-insensitive; the lowest ID when several
 --- share it). Answers `id` or `nil, reason` ("empty", "notFound").
 function DummyList.Resolve(text)
     if type(text) == "number" then text = tostring(text) end
     text = type(text) == "string" and text:match("^%s*(.-)%s*$") or ""
     if text == "" then return nil, "empty" end
-    local id = tonumber(text:match("^%d+$") or "")
-    if id then
-        if id < 1 or id > DummyList.MAX_ID then return nil, "notFound" end
-        return id
-    end
-    local want, found = text:lower(), nil
-    for cid, c in pairs(store() or {}) do
-        if type(c) == "table" and type(c.name) == "string" and c.name:lower() == want then
-            if not found or cid < found then found = cid end
-        end
-    end
-    for cid, d in pairs(NS.Dummies.BY_ID) do
-        if d.name:lower() == want and (not found or cid < found) then found = cid end
-    end
+    local id = typedID(text)
+    if id then return id end
+    if id == false then return nil, "notFound" end
+    local found = lowestNamed(text:lower())
     if found then return found end
     return nil, "notFound"
 end

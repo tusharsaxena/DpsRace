@@ -79,42 +79,64 @@ end
 
 local function isNumber(arg) return arg:match("^%s*%-?%d*%.?%d+%s*$") ~= nil end
 
---- Every offending line of one source text: { line = n, text = what was found }.
-local function scan(src)
-  local lines, hits = {}, {}
-  for ln in (src .. "\n"):gmatch("(.-)\n") do lines[#lines + 1] = code(ln) end
-  local stripped = table.concat(lines, "\n")
+-- The line number of byte `s` in `stripped`.
+local function lineAt(stripped, s)
+  return select(2, stripped:sub(1, s):gsub("\n", "")) + 1
+end
+
+-- True when any of `positions` in the argument list is a numeric literal.
+local function numericAt(list, positions)
+  for _, p in ipairs(positions) do
+    if list[p] and isNumber(list[p]) then return true end
+  end
+  return false
+end
+
+-- A color setter called with a numeric literal in one of its color positions.
+local function scanColorCalls(stripped, lines, hits)
   for name, positions in pairs(COLOR_ARGS) do
     local init = 1
     while true do
       local s, e, args = stripped:find("[:%.]" .. name .. "%s*(%b())", init)
       if not s then break end
       init = e + 1
-      local list = splitArgs(args:sub(2, -2))
-      for _, p in ipairs(positions) do
-        if list[p] and isNumber(list[p]) then
-          local n = select(2, stripped:sub(1, s):gsub("\n", "")) + 1
-          hits[#hits + 1] = { line = n, text = lines[n] }
-          break
-        end
+      if numericAt(splitArgs(args:sub(2, -2)), positions) then
+        local n = lineAt(stripped, s)
+        hits[#hits + 1] = { line = n, text = lines[n] }
       end
     end
   end
-  for n, ln in ipairs(lines) do
-    if ln:find("|c[fF][fF]") then hits[#hits + 1] = { line = n, text = ln } end
-  end
+end
+
+-- A `{ name, r, g, b }` row: a key that is no number or assignment, then three numeric literals.
+local function isColorRow(list)
+  if #list ~= 4 or isNumber(list[1]) or list[1]:find("=", 1, true) then return false end
+  return isNumber(list[2]) and isNumber(list[3]) and isNumber(list[4])
+end
+
+local function scanColorRows(stripped, lines, hits)
   local init = 1
   while true do
     local s, _, body = stripped:find("(%b{})", init)
     if not s then break end
     init = s + 1
-    local list = splitArgs(body:sub(2, -2))
-    if #list == 4 and not isNumber(list[1]) and not list[1]:find("=", 1, true)
-      and isNumber(list[2]) and isNumber(list[3]) and isNumber(list[4]) then
-      local n = select(2, stripped:sub(1, s):gsub("\n", "")) + 1
+    if isColorRow(splitArgs(body:sub(2, -2))) then
+      local n = lineAt(stripped, s)
       hits[#hits + 1] = { line = n, text = lines[n] }
     end
   end
+end
+
+--- Every offending line of one source text: { line = n, text = what was found }.
+local function scan(src)
+  local lines, hits = {}, {}
+  for ln in (src .. "\n"):gmatch("(.-)\n") do lines[#lines + 1] = code(ln) end
+  local stripped = table.concat(lines, "\n")
+  scanColorCalls(stripped, lines, hits)
+  for n, ln in ipairs(lines) do
+    if ln:find("|c[fF][fF]") then hits[#hits + 1] = { line = n, text = ln } end
+  end
+  scanColorRows(stripped, lines, hits)
   return hits
 end
 

@@ -100,18 +100,28 @@ end
 -- A swatch through its class-color companion. With `class` (a class token: a stored run's character)
 -- the class is that one, the surface describing that character; without it, the player's, through
 -- LibKa0s-Core's resolver. An unresolvable class falls through to the swatch; its alpha always holds.
+local function swatch(stored, alpha)
+    local s = type(stored) == "table" and stored or {}
+    return s.r or 1, s.g or 1, s.b or 1, alpha or s.a or 1
+end
+
+-- The named class's RAID_CLASS_COLORS entry when it carries a color, else nil.
+local function classEntry(class)
+    local c = type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class]
+    if type(c) == "table" and type(c.r) == "number" then return c end
+    return nil
+end
+
 local function color(stored, useClass, class)
-    local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
     if class ~= nil then
-        local s = type(stored) == "table" and stored or {}
-        local a = s.a or 1
-        local c = useClass and type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class]
-        if type(c) == "table" and type(c.r) == "number" then return c.r, c.g, c.b, a end
-        return s.r or 1, s.g or 1, s.b or 1, a
+        local a = type(stored) == "table" and stored.a or 1
+        local c = useClass and classEntry(class)
+        if c then return c.r, c.g, c.b, a end
+        return swatch(stored, a)
     end
+    local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
     if core and core.ResolveColor then return core.ResolveColor(stored, useClass) end
-    stored = type(stored) == "table" and stored or {}
-    return stored.r or 1, stored.g or 1, stored.b or 1, stored.a or 1
+    return swatch(stored)
 end
 Appearance.Color = color
 

@@ -383,21 +383,31 @@ local function dummyName(id)
 end
 
 -- The capture as one line: what the game said, then where.
+-- The capture's level part ("level 70 elite", "skull level"), or nil with no level.
+local function captureLevel(r)
+    if not r.level then return nil end
+    local lvl = r.level == -1 and L["skull level"] or L["level %d"]:format(r.level)
+    if r.classification and r.classification ~= "normal" then
+        return L["%s %s"]:format(lvl, r.classification)
+    end
+    return lvl
+end
+
+-- The capture's place part ("Zone, Subzone 12.3, 45.6"), or nil with no zone.
+local function captureWhere(r)
+    local where = r.subzone and r.subzone ~= "" and r.zone and L["%s, %s"]:format(r.zone, r.subzone) or r.zone
+    if where and r.x and r.y then where = L["%s %.1f, %.1f"]:format(where, r.x, r.y) end
+    return where
+end
+
 local function captureLine(r)
     local parts = { dummyName(r.npcID) }
-    if r.level then
-        local lvl = r.level == -1 and L["skull level"] or L["level %d"]:format(r.level)
-        parts[#parts + 1] = r.classification and r.classification ~= "normal"
-            and L["%s %s"]:format(lvl, r.classification) or lvl
-    end
-    if r.health then parts[#parts + 1] = L["%s health"]:format(NS.Format.Number(r.health)) end
-    if r.creatureType then parts[#parts + 1] = r.creatureType end
-    if r.pvp ~= nil then parts[#parts + 1] = r.pvp and L["PvP flagged"] or L["not PvP flagged"] end
-    local where = r.subzone and r.subzone ~= "" and r.zone and L["%s, %s"]:format(r.zone, r.subzone) or r.zone
-    if where then
-        if r.x and r.y then where = L["%s %.1f, %.1f"]:format(where, r.x, r.y) end
-        parts[#parts + 1] = where
-    end
+    local function add(part) if part then parts[#parts + 1] = part end end
+    add(captureLevel(r))
+    if r.health then add(L["%s health"]:format(NS.Format.Number(r.health))) end
+    add(r.creatureType)
+    if r.pvp ~= nil then add(r.pvp and L["PvP flagged"] or L["not PvP flagged"]) end
+    add(captureWhere(r))
     return table.concat(parts, " \194\183 ")
 end
 

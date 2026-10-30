@@ -1159,6 +1159,13 @@ Total.
 
 - glyphs: display strings use only characters every shipped skin face draws
 
+### test_refactor_pins.lua (4)
+
+- pins: without the skin library the v6 step sets each stored companion on in place
+- pins: Color with a class reads that class's color, else the swatch, the stored alpha held
+- pins: Resolve answers the lowest ID a name is captured under, and refuses an ID past MAX_ID
+- pins: the capture line names each part it has, in order, and leaves out what it has not
+
 ### test_slash.lua (37)
 
 - slash: bare /dr opens the settings panel
@@ -1486,6 +1493,7 @@ Total.
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
 | test_glyphs.lua | 1 |
+| test_refactor_pins.lua | 4 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
 | test_toast.lua | 19 |
@@ -1504,4 +1512,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1186** |
+| **Total** | **1190** |
