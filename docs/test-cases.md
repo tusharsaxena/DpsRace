@@ -1080,7 +1080,7 @@ Total.
 - skin: a data hue stays the same under every skin
 - skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
 - skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
-- skin: the custom-length box draws no box under Ka0s Default and the skin's box under another
+- skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included
 
 ### test_skin_hud.lua (9)
 

@@ -234,13 +234,15 @@ test("skin: a skin switch redraws the sorted column's arrow in the new skin's ic
     assertEqual(t.heads[1].label:GetText(), want, "and Ka0s Default's gold again")
 end)
 
-test("skin: the custom-length box draws no box under Ka0s Default and the skin's box under another", function()
+test("skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included", function()
     local inst = painted()
     local NS, M = inst.NS, inst.mocks
     local box = NS.HudStates.Build("idle", M.CreateFrame("Frame")).w.customBox
-    assertEqual(M.__paint(box).backdrop, nil, "Ka0s Default: no box, as before the skin engine")
+    assertTrue(M.__paint(box).backdrop ~= nil, "Ka0s Default draws its input box (the stock look is retired)")
+    assertEqual(rgba(M.__paint(box).backdropBorderColor), rgba(NS.Skin.Token("input.border")),
+        "Ka0s Default: the input edge at rest")
     switch(inst, otherSkin(inst))
     assertTrue(M.__paint(box).backdrop ~= nil, "another skin draws its input box")
     switch(inst, "ka0s")
-    assertEqual(M.__paint(box).backdrop, nil, "back on Ka0s Default: the box given back")
+    assertTrue(M.__paint(box).backdrop ~= nil, "back on Ka0s Default: still boxed")
 end)

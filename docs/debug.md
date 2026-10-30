@@ -92,7 +92,7 @@ race transition it heard); the Results window's the `Results` tag (the window an
 
 ### Caps
 
-The report stays at or under the library's `DIAG_MAX_LINES` (1200 in the vendored v1.80.0), below
+The report stays at or under the library's `DIAG_MAX_LINES` (1200 in the vendored v1.81.0), below
 the console's 3000-line buffer, so it never evicts itself. Each list is capped at
 `DIAG_MAX_PER_LIST` (40). A capped report ends with `truncated: N line(s) omitted, per-list caps
 hit=yes|no` and then the end marker.
