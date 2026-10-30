@@ -246,3 +246,42 @@ test("skin: the custom-length box draws the skin's input box under every skin, K
     switch(inst, "ka0s")
     assertTrue(M.__paint(box).backdrop ~= nil, "back on Ka0s Default: still boxed")
 end)
+
+test("skin: the Arm Race label is opaque once enabled, in every skin (D-25, image-55..57)", function()
+    -- The owner's item 16: Arm Race read as disabled in three skins. The cause was the library's
+    -- (LibKa0s v1.82.0, LK-14): its button paint set the enabled label color with three numbers,
+    -- and the client keeps a FontString's alpha then, so a label painted once disabled (the
+    -- dr.primary.offText token, alpha 0.4) stayed at 0.4 after it was enabled. The kit's paint
+    -- recorder keeps that alpha too (revision 45), so this goes red on the old library. Every skin,
+    -- with the button disabled before each enable, and across a switch made while it is disabled.
+    local inst = painted()
+    local NS, M = inst.NS, inst.mocks
+    local States = NS.HudStates
+    local arm = States.Build("idle", M.CreateFrame("Frame")).w.arm
+    assertEqual(arm.label:GetText(), "Arm Race")
+    local function check(key, why)
+        local want = NS.Skin.Token("btnPrimary.text")
+        local r, g, b, a = arm.label:GetTextColor()
+        assertTrue(near(a, 1), key .. why .. ": the label is opaque (alpha " .. tostring(a) .. ")")
+        assertEqual(rgba(r, g, b, 1), rgba(want[1], want[2], want[3], 1), key .. why .. ": btnPrimary.text")
+    end
+    for _, def in ipairs(inst.Skin:Skins()) do
+        switch(inst, def.key)
+        States.SetEnabled(arm, false)
+        -- Disabled, the label draws the disabled token (Ka0s Default's at 0.4 alpha; another skin's
+        -- follows text.disabled).
+        assertEqual(rgba(arm.label:GetTextColor()), rgba(NS.Skin.Token("dr.primary.offText")),
+            def.key .. ": disabled, the disabled token")
+        States.SetEnabled(arm, true)
+        check(def.key, " (enabled after disabled)")
+        States.SetEnabled(arm, false)
+    end
+    -- Disabled under one skin, switched while disabled, then enabled.
+    switch(inst, "obsidian")
+    States.SetEnabled(arm, false)
+    switch(inst, "glass")
+    States.SetEnabled(arm, true)
+    check("glass", " (switched while disabled)")
+    switch(inst, "ka0s")
+    check("ka0s", " (switched back while enabled)")
+end)

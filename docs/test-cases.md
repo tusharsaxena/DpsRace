@@ -1068,7 +1068,7 @@ Total.
 - every allow-list entry carries its reason
 - the gate is falsifiable: a planted literal of each shape is reported
 
-### test_skin.lua (11)
+### test_skin.lua (12)
 
 - skin: every owner token a source file names is registered
 - skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
@@ -1081,6 +1081,7 @@ Total.
 - skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
 - skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
 - skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included
+- skin: the Arm Race label is opaque once enabled, in every skin (D-25, image-55..57)
 
 ### test_skin_hud.lua (10)
 
@@ -1458,7 +1459,7 @@ Total.
 | test_settings.lua | 37 |
 | test_skinsetup.lua | 22 |
 | test_skin_literals.lua | 3 |
-| test_skin.lua | 11 |
+| test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
 | test_skin_fonts.lua | 10 |
 | test_skin_picker.lua | 12 |
@@ -1482,4 +1483,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1172** |
+| **Total** | **1173** |
