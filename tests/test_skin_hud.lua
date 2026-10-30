@@ -6,6 +6,8 @@
 --     companion, default on, as a schema row beside its picker, the picker governed by it;
 --   - while a companion is on the block draws the skin's `hud.font` / `bar.texture` through the
 --     facade, and the stored pick comes back when it is off; the stored pick is never rewritten;
+--   - while Ignore fonts is on a face block draws its stored pick even with its companion on, and
+--     says it is not the skin's; the textures still follow (LibKa0s v1.81.0, R-1);
 --   - a skin switch restyles the blocks (Appearance.stamp) and moves the face, never a color;
 --   - the v6 step puts every stored companion back on, once, keeps the picks and the colors, never
 --     writes the "@skin" sentinel, and a player's later pick survives the next login.
@@ -99,6 +101,40 @@ test("skin hud: a companion on draws the skin's face or texture, off the stored 
         assertFalse(on, path)
         assertEqual(NS.GetSetting(p .. leaf), stored, path .. ": the pick is never rewritten")
     end
+end)
+
+test("skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)", function()
+    -- LibKa0s v1.81.0 (LK-01): while the owner ignores fonts, Resolve answers the stored face for
+    -- hud.font whatever the companion says. red under: MediaKey answering the skin's face, or saying
+    -- it is the skin's, while Ignore fonts is on; or the texture half dropping the skin with it.
+    local inst = T.load()
+    local NS, M = inst.NS, inst.mocks
+    local A = NS.HudAppearance
+    local LSM = M.LibStub("LibSharedMedia-3.0")
+    local stamp = A.stamp
+    local skinFace = LSM:Fetch("font", NS.Skin.Token("hud.font"))
+    assertTrue(NS.SetByPath("skin.ignoreFonts", true))
+    assertTrue(A.stamp ~= stamp, "the toggle restyles the HUD live")
+    for path, leaf in pairs(FOLLOWING) do
+        local p = prefixOf(path)
+        assertEqual(NS.GetSetting(path), true, path .. ": the companion stays on")
+        local name, on = A.MediaKey(p, leaf)
+        if leaf == "font" then
+            assertEqual(name, NS.GetSetting(p .. leaf), path .. ": the stored face")
+            assertFalse(on, path .. " says it is not the skin's")
+        else
+            assertEqual(name, NS.Skin.Token(TOKEN[leaf]), path .. ": the skin's texture still")
+            assertTrue(on, path .. " says it is the skin's")
+        end
+    end
+    -- Friz Quadrata by default: the mock LSM does not register it, so the shipped fallback path.
+    local own = LSM:Fetch("font", NS.GetSetting("appearance.figures.font"), true) or "Fonts\\FRIZQT__.TTF"
+    assertEqual(A.Font("figures").path, own, "the figures draw their own Font")
+    assertTrue(own ~= skinFace, "and not the skin's face")
+    assertEqual(A.Bar().texture, LSM:Fetch("statusbar", NS.Skin.Token("bar.texture")))
+    -- Off again, the skin's face comes back.
+    assertTrue(NS.SetByPath("skin.ignoreFonts", false))
+    assertEqual((A.MediaKey("appearance.figures.", "font")), NS.Skin.Token("hud.font"))
 end)
 
 test("skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM", function()

@@ -292,7 +292,7 @@ local function rowTip(p, row)
     local tt, data = GameTooltip, row.data
     if not (tt and data) then return end
     local lines = NS.ResultsTips.Usage("row", p.run, data) or {}
-    if p.usage.editing and data.itemID then lines[#lines + 1] = { L["Right-click: never show this item."], 0.62, 0.62, 0.68 } end
+    if p.usage.editing and data.itemID then lines[#lines + 1] = { L["Right-click: never show this item."], NS.Style.Rgb("dr.dim") } end
     local shown = false
     if data.itemID then
         tt:SetOwner(row, "ANCHOR_RIGHT")

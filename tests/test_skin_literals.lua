@@ -13,6 +13,9 @@
 --      it is the surface's opacity, the same under every skin, and is left alone on purpose.
 --   2. A `|cff` (any case) escape in code, i.e. markup that names a color byte for byte. Comments
 --      are stripped first; NS.SkinEscape builds the escapes a token feeds.
+--   3. A TOOLTIP LINE TABLE with a literal color: `{ text, r, g, b }`, the shape Style.AddTipLines
+--      and the Results tips feed to AddLine, where text is not a number and r, g, b all are.
+--      `{ label, 0.62, 0.62, 0.68 }` fails; `{ label, Style.Rgb("dr.dim") }` passes.
 --
 -- core/SkinSetup.lua is out of scope: it IS the seam, and its host copy of the Ka0s Default tokens
 -- (NS.SKIN_FALLBACK) and NS.SkinEscape's format are the literals every other file reads through.
@@ -100,6 +103,18 @@ local function scan(src)
   for n, ln in ipairs(lines) do
     if ln:find("|c[fF][fF]") then hits[#hits + 1] = { line = n, text = ln } end
   end
+  local init = 1
+  while true do
+    local s, _, body = stripped:find("(%b{})", init)
+    if not s then break end
+    init = s + 1
+    local list = splitArgs(body:sub(2, -2))
+    if #list == 4 and not isNumber(list[1]) and not list[1]:find("=", 1, true)
+      and isNumber(list[2]) and isNumber(list[3]) and isNumber(list[4]) then
+      local n = select(2, stripped:sub(1, s):gsub("\n", "")) + 1
+      hits[#hits + 1] = { line = n, text = lines[n] }
+    end
+  end
   return hits
 end
 
@@ -164,11 +179,15 @@ test("the gate is falsifiable: a planted literal of each shape is reported", fun
     "fs:SetTextColor(NS.SkinColor(\"text.body\"))   -- 0.9, 0.9, 0.9 in a comment",
     "tex:SetColorTexture(r, g, b, 0.95)",
     "-- |cffffffff in a comment",
+    'lines[#lines + 1] = { label, 0.62, 0.62, 0.68 }',
+    'lines[#lines + 1] = { label, Style.Rgb("dr.dim") }',
+    "local c = { 1, 0.82, 0, 1 }",
   }, "\n")
   local hits = scan(planted)
   local lines = {}
   for _, h in ipairs(hits) do lines[#lines + 1] = h.line end
   table.sort(lines)
-  assertEqual(table.concat(lines, ","), "2,3,5,6,7",
-    "the literal lines and only those (a token call, an alpha literal and a comment pass)")
+  assertEqual(table.concat(lines, ","), "2,3,5,6,7,11",
+    "the literal lines and only those (a token call, an alpha literal, a comment and a plain "
+    .. "color table pass)")
 end)

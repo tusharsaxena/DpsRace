@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.80.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.81.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -409,15 +409,18 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   the skin's `Button` with their slots remapped by token name (primary, danger, a selected preset, each
   style's faded disabled look); the KPI boxes and cards `S.Card`, panels `S.Panel`, the detail strip's
   segments `S.Inset`; the waiting hint, the target badge and the flags box the caution callout
-  (`dr.callout.*`); the note box `S.EditBox`, and the idle body's custom-length box `S.EditBox` with
-  `stockDefault` (no box under Ka0s Default, as before the skin engine; another skin draws its input); the filter, compare and usage checkboxes `S.Checkbox`;
+  (`dr.callout.*`); the note box `S.EditBox`, and the idle body's custom-length box `S.EditBox` (the skin's input box
+  under every skin, Ka0s Default included: LibKa0s v1.81.0 retired the stock look, R-2); the filter,
+  compare and usage checkboxes `S.Checkbox`;
   every rule `S.Divider`; tooltip lines `gtip.*` (X8); the close controls the skin's own
   (`S.CloseButton`, hover `close.hot`, D-9).
 - **The HUD style** (skinning-§6, DR-03). The player-styled blocks (HUD > HUD Appearance's figures,
   spell text, spell bars, chart and pace bar; History > Results table's two bars and their text)
   carry a *Use the skin's font* / *Use the skin's texture* companion, on by default (X3), and draw the
-  skin's `hud.font` or `bar.texture` through `HudAppearance.MediaKey` while it is on. Only the face and
-  the texture follow (X4): sizes, flags, shadows and colors stay the player's. The two race clocks
+  skin's `hud.font` or `bar.texture` through `HudAppearance.MediaKey` while it is on, unless the Skin
+  tab's *Ignore fonts* is on, which makes a face block draw its stored *Font* (the library answers no
+  `hud.font` then, LibKa0s v1.81.0, R-1; the textures still follow). Each skin names its own HUD face
+  (v1.81.0, R-4). Only the face and the texture follow (X4): sizes, flags, shadows and colors stay the player's. The two race clocks
   have no companion and keep their monospace face (D-15). Migration 5 -> 6 turns every stored
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
 - **Repaint flow.** `NS.ApplySkinChoice` runs right after the migrations in `NS:OnInitialize` and
@@ -461,6 +464,10 @@ HUD's following blocks draw Oxanium SemiBold and the Ka0s Default bar in place o
 Solid (X5, O2); the close control turns the skin's red under the pointer, no longer gold (D-9, which
 retired the close-hover deviation row); the checkboxes are the skin's square box (D-13); and the note
 box shows its edge at rest and gold only with the keys (D-14). Every other pixel is what it was.
+LibKa0s v1.81.0 (the skin library follow-ups) adds two more: the idle body's custom-length box draws
+the skin's input box (the stock look is retired, R-2), and the strings the library newly paints in
+the skin's face (the dropdown menu's rows, the test strip's line, the debug console's and perf panel's
+labels) read Oxanium where the template drew Friz Quadrata (D-13).
 
 ## Taint Notes
 

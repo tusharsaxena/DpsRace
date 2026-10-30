@@ -12,7 +12,9 @@ local _, NS = ...
 -- FOLLOWING THE SKIN (skinning-§6, DR-03). A face or a texture with a "Use the skin's ..." companion
 -- (`<key>FromSkin`, the composer's `fromSkin`, default on: defaults/Profile.lua) draws the owner's skin
 -- token while the companion is on, through the facade's S.Resolve, which is override-aware (the Skin
--- tab's own font or texture wins over the skin's): `hud.font` for a face, `bar.texture` for a bar. The
+-- tab's own font or texture wins over the skin's): `hud.font` for a face, `bar.texture` for a bar.
+-- While the Skin tab's Ignore fonts is on, the library answers no `hud.font` (LibKa0s v1.81.0, R-1),
+-- so a face block draws its stored pick even with its companion on; the textures still follow. The
 -- stored pick is never rewritten, so turning the companion off brings it back. Only the face and the
 -- texture follow (X4): sizes, flags, shadows and colors stay the player's. Not S.BarTexture: it always
 -- paints the skin's texture and replays it on a switch, which would override a player who unticked the
@@ -90,18 +92,21 @@ end
 Appearance.Color = color
 
 --- The LSM name the block at `p` draws for media `leaf` ("font" | "barTexture"), and true when it is
---- the skin's: its companion is on and the skin answered. Otherwise the stored pick. Without the
---- library, or for a token the skin leaves unset, the facade answers the stored pick.
+--- the skin's: its companion is on and the skin answered. Otherwise the stored pick, false. The
+--- skin is asked with no stored value, so its answer is the skin's or nothing: while the owner
+--- ignores fonts the library answers nil for `hud.font` (LibKa0s v1.81.0, R-1), and a face block
+--- draws its stored pick (a stray "@skin" sentinel in it names no face, so FontAt falls back to the
+--- block's default). A token the skin leaves unset reads the same way.
 --- @param p string  the block's prefix, with the dot
 --- @param leaf string
 --- @return string|nil, boolean
 function Appearance.MediaKey(p, leaf)
     local stored = setting(p .. leaf)
     local token, S = FOLLOWS[leaf], NS.Skin
-    if token and S and type(S.Resolve) == "function" then
-        local on = setting(p .. leaf .. "FromSkin") == true
-        local v = S.Resolve(token, stored, on)
-        if type(v) == "string" and v ~= "" then return v, on end
+    if token and S and type(S.Resolve) == "function"
+        and (setting(p .. leaf .. "FromSkin") == true or (stored ~= nil and stored == S.FROM_SKIN)) then
+        local v = S.Resolve(token, nil, true)
+        if type(v) == "string" and v ~= "" then return v, true end
     end
     return stored, false
 end

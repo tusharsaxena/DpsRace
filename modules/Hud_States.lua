@@ -489,8 +489,9 @@ function Builders.idle(parent)
     w.customBox = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     w.customBox:SetAutoFocus(false)
     w.customBox:SetFontObject(FONT.TEXT)
-    -- No box under Ka0s Default (stockDefault), as before the skin engine; another skin draws its input.
-    NS.Skin.EditBox(w.customBox, { padInput = false, stockDefault = true })
+    -- The skin's input box under every skin, Ka0s Default included (LibKa0s v1.81.0 retired the stock
+    -- look, R-2); no insets, the box is narrow and centered.
+    NS.Skin.EditBox(w.customBox, { padInput = false })
     w.customBox:SetJustifyH("CENTER")
     w.customBox:SetMaxLetters(6)
     w.customBox:SetScript("OnEnterPressed", function(self) act("customLength", self:GetText()) end)
