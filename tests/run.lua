@@ -25,7 +25,7 @@ do
         "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsTabs.lua",
         "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
         "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua", "Toast.lua",
-        "OptionsAppearance.lua", "OptionsSkinPicker.lua",
+        "OptionsAppearance.lua", "OptionsSkinPicker.lua", "OptionsSwitch.lua",
         -- The skin engine core/SkinSetup.lua registers the owner with (skinning-§1).
         "Skin.lua", "SkinDefs.lua", "SkinPaint.lua", "SkinPaintControls.lua", "SkinPaintExtras.lua",
         "SkinEUI.lua", "SkinAce.lua",

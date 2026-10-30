@@ -471,7 +471,7 @@ if not Skin then
         "GetAccentColor", "GetPanelColor", "GetFont",
         "TitleBar", "Divider", "Footer", "Card", "Slider", "NavItem", "Drawer", "ListRow", "MenuFrame",
         "Tooltip", "Strip", "Cover", "Text", "ChartStyle", "BarStyle", "IconBorder", "GlowColor",
-        "BarTexture",
+        "BarTexture", "FontFlags", "HudFontSize",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -492,6 +492,17 @@ if not Skin then
     S.GetFont = function() return STANDARD_TEXT_FONT end
     S.ChartStyle = function() return {} end
     S.BarStyle = function() return {} end
+    -- LibKa0s v1.82.0 (SkinPaintExtras minor 7): never nil, since SetFont refuses a nil flag or size.
+    -- A picked flag draws as stored; From skin (or nothing stored) is the outline the library defaults
+    -- to. A positive size draws as stored; anything else is Ka0s Default's HUD size.
+    S.FontFlags = function(v)
+        if type(v) == "string" and v ~= S.FROM_SKIN then return v end
+        return "OUTLINE"
+    end
+    S.HudFontSize = function(size)
+        local n = tonumber(size)
+        return (n and n > 0) and n or 12
+    end
 
     NS.Skin = S
     function NS.ApplySkinChoice() return false, false end
