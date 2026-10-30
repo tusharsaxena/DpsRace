@@ -97,9 +97,7 @@ local function fetch(kind, name)
     return nil
 end
 
--- A swatch through its class-color companion. With `class` (a class token: a stored run's character)
--- the class is that one, the surface describing that character; without it, the player's, through
--- LibKa0s-Core's resolver. An unresolvable class falls through to the swatch; its alpha always holds.
+-- A stored swatch's r, g, b and alpha (`alpha` when given, else its own, else 1).
 local function swatch(stored, alpha)
     local s = type(stored) == "table" and stored or {}
     return s.r or 1, s.g or 1, s.b or 1, alpha or s.a or 1
@@ -112,6 +110,9 @@ local function classEntry(class)
     return nil
 end
 
+-- A swatch through its class-color companion. With `class` (a class token: a stored run's character)
+-- the class is that one, the surface describing that character; without it, the player's, through
+-- LibKa0s-Core's resolver. An unresolvable class falls through to the swatch; its alpha always holds.
 local function color(stored, useClass, class)
     if class ~= nil then
         local a = type(stored) == "table" and stored.a or 1

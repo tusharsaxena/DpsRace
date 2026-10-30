@@ -886,8 +886,6 @@ function View:CaptureView()
     return { filters = filters, sortKey = self.list.sortKey, sortDesc = self.list.sortDesc }
 end
 
---- Apply `v` (CaptureView's shape), or the stock view for nil. A stored key the view no longer
---- knows is dropped; a missing one takes its default.
 -- The view's sort, the stock one standing in for what `v` leaves out, a renamed column followed.
 local function viewSort(v)
     local sortKey = v.sortKey or Runs.STOCK_SORT.key
@@ -897,6 +895,8 @@ local function viewSort(v)
     return sortKey, desc
 end
 
+--- Apply `v` (CaptureView's shape), or the stock view for nil. A stored key the view no longer
+--- knows is dropped; a missing one takes its default.
 function View:ApplyView(v)
     v = type(v) == "table" and v or {}
     local stored = type(v.filters) == "table" and v.filters or {}

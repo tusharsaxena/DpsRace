@@ -485,9 +485,6 @@ function Usage.Unhide(itemID)
     return writeHidden(ids) and true or false
 end
 
---- Every item the stored runs list (used or a candidate), each once, newest run first: the names the
---- settings' ID list can resolve and suggest (the client has no item-name search).
---- @return table ids
 -- The stored runs carrying a usage record, newest first.
 local function runsWithUsage()
     local runs = NS.db and NS.db.global and NS.db.global.runs
@@ -507,6 +504,9 @@ local function appendItemIDs(entries, out, seen)
     end
 end
 
+--- Every item the stored runs list (used or a candidate), each once, newest run first: the names the
+--- settings' ID list can resolve and suggest (the client has no item-name search).
+--- @return table ids
 function Usage.KnownItems()
     local out, seen = {}, {}
     for _, run in ipairs(runsWithUsage()) do
