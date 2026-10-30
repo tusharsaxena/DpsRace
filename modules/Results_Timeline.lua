@@ -409,9 +409,9 @@ function Timeline.IconLines(cast, label, over)
     if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
     local at = L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
     local lines = { cast.pet and L["%s (pet)"]:format(at) or at }
-    if label then lines[#lines + 1] = { label, 0.62, 0.62, 0.68 } end
+    if label then lines[#lines + 1] = { label, Style.Rgb("dr.dim") } end
     if over then
-        lines[#lines + 1] = { L["Too many casts here for %d rows: this icon overlaps others."]:format(Timeline.MAX_STACK), 1, 0.82, 0 }
+        lines[#lines + 1] = { L["Too many casts here for %d rows: this icon overlaps others."]:format(Timeline.MAX_STACK), Style.Rgb("gtip.title") }
     end
     return lines
 end
@@ -855,7 +855,7 @@ end
 --- A tick's tooltip: the spell and its time (ResultsTips.Cast), then which run it is.
 function Timeline.MarkLines(cast, label)
     local lines = NS.ResultsTips.Cast(cast)
-    if lines and label then lines[#lines + 1] = { label, 0.62, 0.62, 0.68 } end
+    if lines and label then lines[#lines + 1] = { label, Style.Rgb("dr.dim") } end
     return lines
 end
 

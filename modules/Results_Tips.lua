@@ -46,7 +46,7 @@ end
 -- character's previous run on the spec. A run from before #6 says it has none.
 local function loadoutLines(run, lines)
     if type(run.loadout) ~= "table" then
-        lines[#lines + 1] = { L["Gear and talents: not recorded"], 0.62, 0.62, 0.68 }
+        lines[#lines + 1] = { L["Gear and talents: not recorded"], NS.Style.Rgb("dr.dim") }
         return
     end
     local _, talents = NS.ResultsSource.LoadoutOf(run)
@@ -144,7 +144,7 @@ function CELL.dps(run)
     end
     if type(r.meterDps) == "number" then
         lines[#lines + 1] = { L["Blizzard's meter said %s (over its whole session, idle time included)."]:format(
-            grouped(r.meterDps)), 0.62, 0.62, 0.68 }
+            grouped(r.meterDps)), NS.Style.Rgb("dr.dim") }
     end
     return lines
 end
@@ -164,7 +164,7 @@ function CELL.used(run)
     for _, e in ipairs(entries) do
         lines[#lines + 1] = U.InlineIcon(e) .. " " .. L["%s: %s"]:format(U.Name(e), U.Detail(e))
     end
-    lines[#lines + 1] = { L["Edit the list in the run's detail."], 0.62, 0.62, 0.68 }
+    lines[#lines + 1] = { L["Edit the list in the run's detail."], NS.Style.Rgb("dr.dim") }
     return lines
 end
 
@@ -194,7 +194,7 @@ end
 --- A group header's tooltip.
 function Tips.Group(g)
     return { g.label, g.count == 1 and L["1 run"] or L["%d runs"]:format(g.count),
-             { L["Click to fold or unfold the group."], 0.62, 0.62, 0.68 } }
+             { L["Click to fold or unfold the group."], NS.Style.Rgb("dr.dim") } }
 end
 
 -- ── the headers ─────────────────────────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ end
 -- show the same thing. The spells are the client's own spell tooltip with Tips.Spell's lines after
 -- it, beside the window; everything else is under the element it names (Results_Table's BelowTip).
 
-local function dimLine(text) return { text, 0.62, 0.62, 0.68 } end
+local function dimLine(text) return { text, NS.Style.Rgb("dr.dim") } end
 
 local function joined(...)
     local out = {}
@@ -373,7 +373,7 @@ end
 function Tips.TimelineRow(row, otherLabel)
     local lines = {}
     local cd = NS.ResultsTimeline.CooldownText(row)
-    if cd ~= "" then lines[1] = { L["Cooldown %s"]:format(cd), 1, 0.82, 0 } end
+    if cd ~= "" then lines[1] = { L["Cooldown %s"]:format(cd), NS.Style.Rgb("gtip.title") } end
     lines[#lines + 1] = castsLine(L["This run"], row.countA or 0)
     if otherLabel then lines[#lines + 1] = castsLine(otherLabel, row.countB or 0) end
     return lines
@@ -487,7 +487,7 @@ end
 --- @return table
 function Tips.Spell(spell, run, rank, count)
     local dmg, damage = spell.dmg or 0, result(run).damage
-    local lines = { { L["%s damage"]:format(grouped(dmg)), 1, 0.82, 0 } }
+    local lines = { { L["%s damage"]:format(grouped(dmg)), NS.Style.Rgb("gtip.title") } }
     if type(damage) == "number" and damage > 0 then
         lines[#lines + 1] = L["%.1f%% of the run's damage"]:format(dmg / damage * 100)
     end
@@ -576,7 +576,7 @@ end
 function Tips.CompareSpell(row, kind)
     local delta = row.delta or 0
     local sign = delta > 0 and "+" or ""
-    return { { sideLine(L["This run"], row.dmgA, row.shareA), 1, 0.82, 0 },
+    return { { sideLine(L["This run"], row.dmgA, row.shareA), NS.Style.Rgb("gtip.title") },
              sideLine(NS.ResultsCompare.OtherLabel(kind), row.dmgB, row.shareB),
              L["Difference: %s"]:format(sign .. grouped(delta)) }
 end
@@ -715,7 +715,7 @@ function USAGE.row(_, row)
         lines[#lines + 1] = dimLine(L["Not used: tick it if you did use it."])
         return lines
     end
-    lines[#lines + 1] = { U.Detail(e), 1, 0.82, 0 }
+    lines[#lines + 1] = { U.Detail(e), NS.Style.Rgb("gtip.title") }
     if SOURCE[e.src] then lines[#lines + 1] = dimLine(L[SOURCE[e.src]]) end
     return lines
 end
