@@ -183,8 +183,8 @@ test("skin fonts: the v7 step moves a stored old-default flag onto From skin, an
     }
     local bare = {}
     local inst = migrated({ Old = old, Bare = bare })
-    assertEqual(inst.NS.db.global.schemaVersion, 7)
-    assertEqual(inst.NS.SCHEMA_VERSION, 7)
+    assertEqual(inst.NS.db.global.schemaVersion, inst.NS.SCHEMA_VERSION)
+    assertTrue(inst.NS.SCHEMA_VERSION >= 7)
     assertEqual(old.appearance.elapsed.fontFlags, FROM_SKIN)
     assertEqual(old.appearance.figures.fontFlags, FROM_SKIN)
     assertEqual(old.resultsTable.barText.fontFlags, FROM_SKIN)

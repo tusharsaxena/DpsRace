@@ -310,3 +310,54 @@ test("bar style: a page's Defaults, a profile reset and a profile copy reach the
     assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "a reset clears it")
     assertEqual(NS.GetSetting("compare.best.borderSize"), 1)
 end)
+
+-- ── the v8 step ─────────────────────────────────────────────────────────────────────────────────
+
+local function migrated(profiles)
+    local i = T.load({ init = false })
+    _G.DpsRaceDB = { global = { schemaVersion = 7, schema = 4 }, profiles = profiles }
+    i.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    i.NS:InitDB()
+    i.NS:RunMigrations()
+    return i
+end
+
+test("bar style: v8 copies a stored spell-bar fill to the detail, and a bare profile stays bare", function()
+    local color = { r = 0.1, g = 0.2, b = 0.3, a = 1 }
+    local custom = { appearance = { bars = { barTexture = "Blizzard", barTextureFromSkin = false, barAlpha = 0.5,
+        barColor = color, useClassColorBar = true, rowHeight = 22 } } }
+    local bare, other = {}, { appearance = { figures = { fontSize = 22 } } }
+    local i = migrated({ Custom = custom, Bare = bare, Other = other })
+    assertEqual(i.NS.db.global.schemaVersion, i.NS.SCHEMA_VERSION)
+    local d = custom.resultsDetail.spellBars
+    assertEqual(d.barTexture, "Blizzard")
+    assertEqual(d.barTextureFromSkin, false)
+    assertEqual(d.barAlpha, 0.5)
+    assertEqual(d.useClassColorBar, true)
+    assertEqual(d.barColor.g, 0.2)
+    assertTrue(d.barColor ~= color, "the two blocks share no table")
+    assertEqual(d.rowHeight, nil, "the row height stays the HUD's block's")
+    assertEqual(custom.appearance.bars.barAlpha, 0.5, "the HUD's block keeps its own")
+    assertEqual(next(bare), nil, "an untouched profile reads the new defaults")
+    assertEqual(other.resultsDetail, nil)
+end)
+
+test("bar style: v8 holds a partly stripped swatch at the color the player saw", function()
+    local p = { appearance = { bars = { barColor = { r = 0.9 } } },
+                resultsTable = { damageBar = { barColor = { b = 0.1 } }, dpsBar = { barAlpha = 0.4 } } }
+    migrated({ P = p })
+    local c = p.appearance.bars.barColor
+    assertEqual(c.r, 0.9); assertEqual(c.g, 0.29); assertEqual(c.b, 0.45)
+    assertEqual(p.resultsDetail.spellBars.barColor.g, 0.29, "the detail's copy too")
+    local t = p.resultsTable.damageBar.barColor
+    assertEqual(t.r, 0.29); assertEqual(t.b, 0.1)
+    assertEqual(p.resultsTable.dpsBar.barColor, nil, "no swatch stored, none written")
+end)
+
+test("bar style: v8 runs once: a later pick on the detail's block is kept", function()
+    local p = { appearance = { bars = { barAlpha = 0.5 } } }
+    local i = migrated({ P = p })
+    p.resultsDetail.spellBars.barAlpha = 0.7
+    i.NS:RunMigrations()
+    assertEqual(p.resultsDetail.spellBars.barAlpha, 0.7)
+end)
