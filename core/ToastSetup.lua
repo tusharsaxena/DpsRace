@@ -37,8 +37,3 @@ function NS.NewToast(d)
     return Toast:New(d)
 end
 
---- Whether the seam can show anything at all.
---- @return boolean
-function NS.HasToast()
-    return Toast ~= nil
-end

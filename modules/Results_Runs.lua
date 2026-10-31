@@ -29,7 +29,6 @@ Runs.DEFAULTS = {
     -- time (the owner's call, 2026-10-25).
     group = "full",
 }
-Runs.DATE_RANGES = { "all", "today", "7d", "30d" }
 local DAY = 86400
 local DASH = "\226\128\148"
 
@@ -226,7 +225,7 @@ function Runs.WithAll(list, label, current)
     return list
 end
 
---- The date range dropdown's four options, widest first (Runs.DATE_RANGES).
+--- The date range dropdown's four options, widest first.
 function Runs.DateOptions()
     return {
         { value = "all", label = L["All time"] }, { value = "today", label = L["Today"] },

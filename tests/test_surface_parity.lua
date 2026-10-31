@@ -134,13 +134,12 @@ test("parity: the Core seam carries every member this addon reads, on both arms"
 end)
 
 test("parity: the Widgets seam answers on both arms, nil being a real answer", function()
-    -- members from: grep -rhoE "NS\.(MakeDropdown|MakeTestStrip|CloseMenu|HasWidgets)" core/ modules/
+    -- members from: grep -rhoE "NS\.(MakeDropdown|MakeTestStrip|CloseMenu)" core/ modules/
     bothArms("NS", function(NS) return NS end, {
-        MakeDropdown = "function", MakeTestStrip = "function", CloseMenu = "function", HasWidgets = "function",
+        MakeDropdown = "function", MakeTestStrip = "function", CloseMenu = "function",
     })
     local l, d = pair()
-    assertTrue(l.NS.HasWidgets(), "the live load has no Widgets library")
-    assertFalse(d.NS.HasWidgets())
+    assertTrue(l.NS.MakeDropdown(l.mocks.UIParent, 100) ~= nil, "the live load has no Widgets library")
     assertEqual(d.NS.MakeDropdown(d.mocks.UIParent, 100), nil, "the stub drew a dead dropdown")
     assertEqual(d.NS.MakeTestStrip(d.mocks.UIParent, "x"), nil)
     d.NS.CloseMenu()
@@ -164,8 +163,7 @@ end)
 
 test("parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing", function()
     local l, d = pair()
-    assertTrue(l.NS.HasToast(), "the live load has no Toast library")
-    assertFalse(d.NS.HasToast())
+    assertTrue(l.NS.BestToast.Instance() ~= l.NS.ToastStub, "the live load has no Toast library")
     assertTrue(d.NS.BestToast.Instance() == d.NS.ToastStub, "the degraded load holds the stub")
     T.assertSurfaceParity(l.NS.BestToast.Instance(), d.NS.ToastStub, "Toast instance")
     assertFalse(d.NS.BestToast.Test(), "the stub shows nothing")
