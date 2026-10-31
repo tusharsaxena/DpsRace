@@ -43,6 +43,7 @@ Casts.PREPULL = 10
 local on = false
 local raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
 local early = {}
+local known = {}   -- base cooldowns a sample race gave at the arm ({ [id] = ms }): asked of no client
 
 local function debug(fmt, ...)
     if NS.Debug then NS.Debug("Casts", fmt, ...) end
@@ -63,11 +64,14 @@ end
 
 -- ── the capture ─────────────────────────────────────────────────────────────────────────────────
 
---- A new race is armed: the list starts empty and casts are heard from now.
-function Casts.Begin()
+--- A new race is armed: the list starts empty and casts are heard from now. `known` gives base
+--- cooldowns the client need not be asked for: a sample race's made-up rotation.
+--- @param given table|nil  { [id] = ms }
+function Casts.Begin(given)
     on = true
     raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
     early = {}
+    known = given or {}
 end
 
 -- Whether a cast heard at `at` falls inside the pre-pull window (or after the start).
@@ -110,7 +114,7 @@ end
 function Casts.Reset()
     on = false
     raw, guids, channel, cooldowns, dropped, origin = {}, {}, nil, {}, 0, nil
-    early = {}
+    early, known = {}, {}
 end
 
 --- Whether casts are being heard now.
@@ -136,7 +140,7 @@ end
 
 local function add(id, pet, t)
     raw[#raw + 1] = { at = t, id = id, pet = pet }
-    if cooldowns[id] == nil then cooldowns[id] = baseCooldown(id) or false end
+    if cooldowns[id] == nil then cooldowns[id] = known[id] or baseCooldown(id) or false end
 end
 
 -- One SUCCEEDED: filtered, deduped, then kept.

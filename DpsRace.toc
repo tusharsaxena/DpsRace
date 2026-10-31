@@ -196,8 +196,12 @@ modules\Share.lua
 # HUD's flag chips, the style and the settings at CALL time.
 modules\BestToast.lua
 # The sample data test mode and the sim draw (B5): a made-up run history and HUD race, never stored.
-# Reached at CALL time only.
+# LOAD-BEARING: captures NS.MockRotations (its rotation data) at FILE SCOPE.
+modules\MockRotations.lua
 modules\MockRuns.lua
+# A sample race on the race's own surface. LOAD-BEARING: reads NS.Race.STATE at FILE SCOPE, so it follows
+# modules\Race.lua; everything else at CALL time.
+modules\SampleRace.lua
 # Test mode and the sim's shell (T9, B5). LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED)
 # at FILE SCOPE through core\Bus.lua; drives the HUD (modules\Hud.lua) and the Results window's source
 # (modules\Results_Source.lua) at CALL time.

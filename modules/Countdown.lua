@@ -25,8 +25,8 @@ local _, NS = ...
 -- timer is broadcast to the group and no Blizzard handler runs (taint). A client that cannot load the
 -- sheet gets a large outlined number in the standard font instead.
 --
--- TEST MODE (modules/Preview.lua) may show the numbers in its scripted running phase through
--- Countdown.Preview(timeLeft), silently, and ends them with Countdown.EndPreview().
+-- THE SIM (modules/SampleRace.lua) runs the same marks: its RACE_STATE_CHANGED arrives here, and the
+-- race whose clock the marks read is NS.SampleRace while it runs. A frozen test-mode race counts nothing.
 --
 -- Nothing here reads a meter value: the marks are GetTime() arithmetic on the race's own clock.
 
@@ -63,7 +63,7 @@ for _, m in ipairs(Countdown.CUES) do IS_CUE[m] = true end
 local ui           -- the built frame (nil until the first number)
 local timers = {}  -- mark -> C_Timer handle, while the race runs
 local shown        -- the number on screen, or nil
-local owner        -- "race" | "preview" | nil: who put it there
+local owner        -- "race" | nil: whether the race put it there
 
 local function debug(fmt, ...)
     if NS.Debug then NS.Debug("Countdown", fmt, ...) end
@@ -260,8 +260,15 @@ local function cancel()
     end
 end
 
+-- The race the marks read: the sim's sample race while one runs, else the real one.
+local function theRace()
+    local sample = NS.SampleRace
+    if sample and sample.On() and not sample.Held() then return sample end
+    return NS.Race
+end
+
 local function racing()
-    return not NS.IsStoodDown() and NS.Race.State() == NS.Race.STATE.RUNNING
+    return not NS.IsStoodDown() and theRace().State() == NS.Race.STATE.RUNNING
 end
 
 --- One mark, `m` seconds left: the cue once, then the number. The settings are read as it fires.
@@ -285,7 +292,7 @@ end
 local function schedule()
     cancel()
     if not racing() then return stopRace() end
-    local left = NS.Race.TimeLeft()
+    local left = theRace().TimeLeft()
     if not left then return stopRace() end
     owner = "race"
     local numbers = numbersOn()
@@ -306,29 +313,9 @@ end
 function Countdown.Shown() return shown end
 
 --- The race-settings rows' reaction (race.centerCountdown, race.finalCountdown, race.countdownCue):
---- re-arm the race's marks from the new values. Test mode reads them on its next beat.
+--- re-arm the race's marks from the new values.
 function Countdown.Refresh()
-    if owner == "preview" then return end
     if racing() then schedule() else stopRace() end
-end
-
---- Test mode's running phase: show the number for `left` seconds left, silently, while the setting
---- allows and the sample race is in the window. Never over a real race.
---- @param left number|nil
-function Countdown.Preview(left)
-    if owner == "race" then return end
-    if type(left) ~= "number" or not numbersOn() or NS.IsStoodDown() then return Countdown.EndPreview() end
-    local now = math.ceil(left - EPS)
-    if now < 1 or now > window() then return Countdown.EndPreview() end
-    owner = "preview"
-    display(now)
-end
-
---- Test mode left its running phase or ended: its number goes.
-function Countdown.EndPreview()
-    if owner ~= "preview" then return end
-    owner = nil
-    hide()
 end
 
 --- The lifecycle's stand-down: every timer canceled, the number hidden.

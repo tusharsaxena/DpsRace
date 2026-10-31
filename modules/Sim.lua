@@ -1,11 +1,13 @@
 local _, NS = ...
 -- modules/Sim.lua — `/dr sim [scenario]` (B5, the owner's call, 2026-10-25): a whole sample race played
--- through the HUD's bodies (armed, running, Stop!, waiting, the result card), then the Results window
--- on the sim's run beside the sample history, so best and compare have something to stand on.
+-- through the race's own views and messages (armed, running, Stop!, waiting, the result card), then the
+-- Results window on the sim's run beside the sample history, so best and compare have something to
+-- stand on.
 --
 -- The preview shell (modules/Preview.lua) owns the switch, the end conditions and the windows; this
--- file holds the scenarios and plays the script. The sim's run joins the sample history in memory
--- only (modules/Results_Source.lua) and never reaches the store or the race engine.
+-- file holds the scenarios and moves modules/SampleRace.lua on the clock. The phases are not scripted
+-- here: the race moves itself by its plan, and the HUD picks Stop! or Waiting as it does for a real
+-- race. The run lives in the sample history in memory only, and never reaches the store or NS.Race.
 
 local Sim = {}
 NS.Sim = Sim
@@ -15,23 +17,28 @@ local MockRuns = NS.MockRuns
 
 -- The scenarios, in the order help lists them. `factor` sets the sample's DPS against the history's
 -- best on its board (the player's spec, the target type, 0:30); `first` races a board with no runs.
+-- `tail` and `combatEnd` are seconds after the buzzer; `sticky` holds combat past race.hintDelay.
 Sim.SCENARIOS = {
-    { key = "newbest", factor = 1.04, desc = "beats the best" },
-    { key = "behind", factor = 0.93, desc = "complete, behind the best" },
-    { key = "first", category = "boss", desc = "the first race on its board: no best, no pace bar" },
+    { key = "newbest", factor = 1.04, tail = 3.1, combatEnd = 4.2, desc = "beats the best" },
+    { key = "behind", factor = 0.93, tail = 2.4, combatEnd = 5.2, desc = "complete, behind the best" },
+    { key = "first", category = "boss", tail = 1.8, combatEnd = 3.6, desc = "the first race on its board: no best, no pace bar" },
     { key = "incomplete", factor = 0.96, status = "incomplete", endAt = 18, desc = "combat ends before the buzzer" },
     { key = "died", factor = 0.90, status = "incomplete", endAt = 12, died = true, desc = "you die mid-race" },
-    { key = "flagged", factor = 0.98, late = { { t = 1.4, spellID = 29722 } }, desc = "a late cast after the buzzer" },
-    { key = "shared", factor = 0.99, shared = true, desc = "a shared session: no chart, no pace bar" },
+    { key = "flagged", factor = 0.98, tail = 2.8, combatEnd = 4.6, late = { { t = 1.4 } }, desc = "a late cast after the buzzer" },
+    { key = "shared", factor = 0.99, tail = 3.4, combatEnd = 4.8, shared = true, desc = "a shared session: no chart, no pace bar" },
+    { key = "sticky", factor = 0.97, tail = 2.6, sticky = true, desc = "combat holds on: the drop-combat hint" },
 }
 Sim.DEFAULT = "newbest"
+-- How long the armed body holds before the sample race's clock starts.
+Sim.ARM_HOLD = 3
 -- How long the result card holds before the Results window opens on the sim's run.
 Sim.RESULT_HOLD = 4
--- How often the script redraws the clock and the live figures (the HUD's own clock runs at 20 Hz; a
--- sim needs only to look alive).
-Sim.TICK = 0.1
+-- How long past the hint's delay a sticky combat lasts.
+Sim.STICKY_EXTRA = 3
+-- How often the clock moves the sample race on (the HUD's own tick, modules/Hud.lua).
+Sim.TICK = 0.05
 
-local ticker, script, phase, phaseAt, sample, scenario
+local ticker, sample, scenario, resultAt, finished
 
 local function find(key)
     for _, s in ipairs(Sim.SCENARIOS) do
@@ -53,37 +60,24 @@ end
 --- The scenario playing, or nil.
 function Sim.Scenario() return scenario end
 
---- The sample race scenario `key` runs against `runs` (MockRuns.Race's sample).
+local function combatEnd(s)
+    if not s.sticky then return s.combatEnd end
+    return (tonumber(NS.GetSetting("race.hintDelay")) or 0) + Sim.STICKY_EXTRA
+end
+
+--- The sample race scenario `key` runs against `dataset` (MockRuns.Race's sample).
 --- @param key string
---- @param runs table  the sample history
+--- @param dataset table  the sample history (MockRuns.Dataset's)
 --- @return table sample
-function Sim.Sample(key, runs)
+function Sim.Sample(key, dataset)
     local s = find(key) or find(Sim.DEFAULT)
     local category = s.category or "single"
+    local runs = dataset.runs
     local best = MockRuns.BoardBest(runs, category)
     local dps = best and s.factor and best.result.dps * s.factor or MockRuns.DPS
     return MockRuns.Race({ id = "sim-" .. s.key, category = category, dps = math.floor(dps), status = s.status,
-                           endAt = s.endAt, late = s.late, died = s.died, shared = s.shared }, runs)
-end
-
--- The script for a scenario: each phase's body and how long it holds; `results` opens the Results
--- window and ends the script. A run that stops before its buzzer skips Stop! and reads its result
--- out of combat.
-local function scriptFor(s)
-    if s.status == "incomplete" then
-        return { { key = "armed", secs = 3 }, { key = "running", secs = s.endAt }, { key = "waiting", secs = 3 },
-                 { key = "result", secs = Sim.RESULT_HOLD }, { key = "results" } }
-    end
-    return { { key = "armed", secs = 3 }, { key = "running", secs = MockRuns.LENGTH },
-             { key = "stop", secs = MockRuns.STOP_SECS }, { key = "waiting", secs = 4 },
-             { key = "result", secs = Sim.RESULT_HOLD }, { key = "results" } }
-end
-
-local function figures(key, t)
-    local f = MockRuns.Figures(sample, key, t)
-    -- An incomplete run's combat is over: the waiting body reads the result, with no drop-combat hint.
-    if key == "waiting" and sample.run.status == "incomplete" then f.inCombat, f.hint = false, nil end
-    return f
+                           endAt = s.endAt, tail = s.tail, combatEnd = combatEnd(s), late = s.late, died = s.died,
+                           shared = s.shared }, runs, dataset.loadouts)
 end
 
 local function cancelTicker()
@@ -91,27 +85,23 @@ local function cancelTicker()
     ticker = nil
 end
 
--- The script's end: the sim's run joins the sample history and the Results window opens on it; the
--- HUD keeps the result card.
+-- The script's end: the Results window opens on the sim's run; the HUD keeps the result card.
 local function finish()
     cancelTicker()
-    local rec = not sample.shared and MockRuns.Slices(sample.run, sample.stopAt) or nil
-    NS.ResultsSource.Add(sample.run, rec)
+    finished = true
     NS.Preview.OpenResults(sample.run.id)
 end
 
---- One beat of the script: move on when the phase is over, then redraw.
+local RESOLVED = { [NS.Race.STATE.RESULT] = true, [NS.Race.STATE.IDLE] = true }
+
+--- One beat: the race moves on, the HUD hears its meter, and the card's hold runs out.
 local function beat()
-    if not (NS.Preview.IsActive() and script) then return cancelTicker() end
-    local now = GetTime()
-    local step = script[phase]
-    while step.secs and now - phaseAt >= step.secs do
-        phaseAt = phaseAt + step.secs
-        phase = phase + 1
-        step = script[phase]
-    end
-    if step.key == "results" then return finish() end
-    NS.Preview.Draw(step.key, sample.run, figures(step.key, now - phaseAt))
+    if not (NS.Preview.IsActive() and sample) then return cancelTicker() end
+    local Race = NS.SampleRace
+    if Race.Advance() then NS.Hud.MeterUpdated() end
+    if not RESOLVED[Race.State()] then return end
+    resultAt = resultAt or GetTime()
+    if GetTime() - resultAt >= Sim.RESULT_HOLD then finish() end
 end
 Sim.Beat = beat
 
@@ -121,37 +111,22 @@ function Sim.Begin(key, dataset)
     cancelTicker()
     local s = find(key) or find(Sim.DEFAULT)
     scenario = s.key
-    sample = Sim.Sample(s.key, dataset.runs)
-    script, phase, phaseAt = scriptFor(s), 1, GetTime()
-    beat()
+    sample, resultAt, finished = Sim.Sample(s.key, dataset), nil, false
+    NS.SampleRace.Start(sample, Sim.ARM_HOLD)
     ticker = C_Timer.NewTicker(Sim.TICK, beat)
-end
-
---- Stop Now on the sim's Stop! or waiting body (Round C, modules/Hud.lua Act.stopNow): the script
---- jumps to the result card, which then holds and opens the Results window as ever.
---- @return boolean jumped
-function Sim.SkipToResult()
-    if not script then return false end
-    local step = script[phase]
-    if not step or (step.key ~= "stop" and step.key ~= "waiting") then return false end
-    for i, s in ipairs(script) do
-        if s.key == "result" then phase = i end
-    end
-    phaseAt = GetTime()
-    beat()
-    return true
 end
 
 --- Stop the script where it is (the preview's stop and switch).
 function Sim.Cancel()
     cancelTicker()
-    script, sample, scenario = nil, nil, nil
+    sample, scenario, resultAt, finished = nil, nil, nil, false
 end
 
 --- What the sim is doing, for the diagnostics report and the suites.
 function Sim.Diagnose()
-    local step = script and script[phase]
-    return { scenario = scenario or "none", phase = step and step.key or "none", ticking = ticker ~= nil }
+    local phase = "none"
+    if sample then phase = finished and "results" or NS.Hud.Diagnose().body end
+    return { scenario = scenario or "none", phase = phase, ticking = ticker ~= nil }
 end
 
 --- The usage line: every scenario, the default first.

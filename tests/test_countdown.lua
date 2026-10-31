@@ -248,7 +248,7 @@ end)
 
 -- ── test mode ───────────────────────────────────────────────────────────────────────────────────
 
-test("countdown: the sim demonstrates it in its running phase, and it stops with the sim", function()
+test("countdown: the sim runs the real marks in its running phase, cue included, and they stop with it", function()
     local f = fixture()
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     local P = f.NS.MockRuns
@@ -259,7 +259,7 @@ test("countdown: the sim demonstrates it in its running phase, and it stops with
     assertEqual(f.C.Shown(), 10)
     f:advance(4)
     assertEqual(f.C.Shown(), 6)
-    assertEqual(#f.W.SoundTimes(CUE_SOUND), 0, "test mode plays no sound")
+    assertEqual(#f.W.SoundTimes(CUE_SOUND), 5, "the sim's seconds cue as a race's do")
     assertTrue(f.NS.Preview.Stop())
     assertNil(f.C.Shown())
     assertFalse(frameShown(f))

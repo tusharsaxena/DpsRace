@@ -11,20 +11,21 @@ local _, NS = ...
 --         Stop!, waiting, the result card), then the Results window on the sim's run beside the same
 --         history (modules/Sim.lua holds the scenarios and the script).
 --
--- Both draw through the windows' own render paths: the HUD's bodies through NS.Hud.Render, the
--- Results window through its source seam (modules/Results_Source.lua), routed to the sample history
--- while either is on and back to the store when it ends; each window lays its test-mode strip over
--- itself meanwhile.
+-- Both run the race's own path with made-up input: a sample race (modules/SampleRace.lua) stands where
+-- NS.Race stands, so the HUD builds its views as for a real race and every receiver of the race's
+-- messages acts as it does live; test mode holds that race frozen at one moment. The Results window
+-- reads its source seam (modules/Results_Source.lua), routed to the sample history while either is on
+-- and back to the store when it ends; each window lays its test-mode strip over itself meanwhile.
 --
 -- Test mode also shows the sample race's new-best toast, held still to be dragged into place
--- (modules/BestToast.lua, #5); the sim and the end of test mode take it down.
+-- (modules/BestToast.lua, #5); the sim shows the real toast at its result, and each end takes it down.
 --
 -- Session-only and on until turned off. It ENDS on combat (core/DpsRace.lua's PLAYER_REGEN_DISABLED),
 -- on arming a real race, on its own switch, on Reset all settings (the row's default), on closing the
 -- HUD or its sample Cancel (modules/Hud.lua's acts, which never touch the real race), and silently on
 -- the stand-down. A start is refused in combat and while a real race is armed, running or waiting for
--- its result. It never touches the race engine and never writes a run, a note or a view: the sample
--- lives only in memory.
+-- its result. It never moves NS.Race and never writes a run, a note or a view: the sample lives only
+-- in memory.
 
 local Preview = { active = false }
 NS.Preview = Preview
@@ -76,15 +77,6 @@ local function repaintPanel()
     if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
 end
 
---- Draw `key`'s body with `run` and `figures` on the HUD (the sim's and the static test's one path).
---- The center countdown shows in the sim's last seconds, silently, and goes with its buzzer.
-function Preview.Draw(key, run, figures)
-    NS.Hud.Render(key, run, figures)
-    local C = NS.Countdown
-    if not C then return end
-    if key == "running" and mode == "sim" then C.Preview(figures.timeLeft) else C.EndPreview() end
-end
-
 --- The Results window on the sample history, opened if it was not (and closed again at the end).
 --- `id` opens that run's detail.
 function Preview.OpenResults(id)
@@ -105,13 +97,13 @@ end
 -- The static HUD: the sample race beating the history's best on its board (the most a body draws:
 -- the chart against the best's pace, the pace bar and the delta chip).
 local function drawStill()
-    local t = state == "running" and Preview.STILL_AT or 0
-    Preview.Draw(state, sample.run, NS.MockRuns.Figures(sample, state, t))
+    NS.SampleRace.Hold(sample, state, state == "running" and Preview.STILL_AT or 0)
+    NS.Hud.Render()
 end
 
 local function startTest(want)
     state = isState(want) and want or (isState(state) and state or Preview.DEFAULT_STATE)
-    sample = NS.Sim.Sample("newbest", dataset.runs)
+    sample = NS.Sim.Sample("newbest", dataset)
     drawStill()
     Preview.OpenResults()
     -- The sample race's new-best toast, held for placing (#5).
@@ -143,7 +135,8 @@ end
 
 local function stopSim()
     if NS.Sim then NS.Sim.Cancel() end
-    if NS.Countdown then NS.Countdown.EndPreview() end
+    NS.SampleRace.Clear()
+    if NS.Countdown then NS.Countdown.Refresh() end
 end
 
 --- Turn the preview on, or switch an active one to the queued mode in place. Refused (one line) in
@@ -240,8 +233,8 @@ end
 do
     local bus = NS.NewBusTarget()
     if bus then
-        bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, _, _, to)
-            if to == NS.Race.STATE.ARMED and Preview.active then
+        bus:RegisterMessage(NS.MSG.RACE_STATE_CHANGED, function(_, run, _, to)
+            if to == NS.Race.STATE.ARMED and Preview.active and not (run and run.sample) then
                 NS.Print(L["Test mode ended: a race was armed."])
                 Preview.Stop("race")
             end

@@ -160,7 +160,7 @@ test("preview: test mode opens the Results window on the sample history, with it
     local pane = u.panes.runs
     assertEqual(pane.filters.char, "all", "the sample history opens on every character")
     assertEqual(pane.filters.spec, "all")
-    assertEqual(pane:Count(), #f.NS.MockRuns.HISTORY, "every sample run listed")
+    assertEqual(pane:Count(), #f.NS.MockRuns.HISTORY, "every sample run listed: a race still running is not, as live")
     for _, run in ipairs(pane.filtered) do
         assertTrue(run.id ~= "real-1", "a stored run mixed into the sample")
     end
@@ -398,12 +398,10 @@ test("preview: over a real result card its controls never touch the real race", 
     assertFalse(f.Preview.IsActive(), "CANCEL in test mode ends test mode")
     assertTrue(f.Preview.Start({ mode = "test", state = "result" }))
     assertEqual(current(f), "result")
-    local card = ui(f).body.result.w
-    assertFalse(card.newRace:IsEnabled(), "the sample card offers NEW RACE")
-    assertFalse(card.details:IsEnabled(), "the sample card offers DETAILS")
-    f.Hud.Act.newRace()
     f.Hud.Act.details()
-    assertEqual(f.Race.State(), "result", "the preview's NEW RACE armed a real race")
+    f.Hud.Act.newRace()
+    assertEqual(f.Race.State(), "result", "the preview's NEW RACE touched the real race")
+    assertEqual(current(f), "idle", "NEW RACE goes to the Arm screen, as a real card's does")
     f.Hud.Act.close()
     assertEqual(f.Race.State(), "result", "closing the preview dismissed the real result")
     assertFalse(f.Preview.IsActive(), "closing the window test mode runs on ends it")

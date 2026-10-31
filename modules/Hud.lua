@@ -77,7 +77,6 @@ local autoShown = false        -- the window was opened by onArm, not by the pla
 -- going back to idle leaves it open, and only HideAwayFromDummy (or the player) closes it.
 local dummyShown = false
 local closes = 0               -- how many times the player closed the window (AutoArm's manual-close rule)
-local preview                  -- what Hud.Render pushed while test mode is on
 local pick = {}                -- the idle body's choices: length, target, editing
 local dropNames                -- Hud.OwnedDropSpells() for this race, asked once (reset on arm)
 -- pick.target is the target of the moment only while the window is shown (the one
@@ -151,6 +150,18 @@ local function previewOn()
     return NS.Preview ~= nil and NS.Preview.IsActive() == true
 end
 
+-- THE RACE ON SCREEN. While test mode or the sim is on it is the sample race (modules/SampleRace.lua):
+-- the same queries, so every view below is built by one path, whichever race it shows.
+local function raceNow()
+    local sample = NS.SampleRace
+    if previewOn() and sample and sample.On() then return sample end
+    return NS.Race
+end
+
+local function sampleOn()
+    return raceNow() ~= NS.Race
+end
+
 -- ── sounds ──────────────────────────────────────────────────────────────────────────────────────
 
 local function play(kitName, fallback)
@@ -173,15 +184,17 @@ end
 local BODY_OF = { idle = "idle", armed = "armed", running = "running", result = "result" }
 
 local function inCombat()
+    if sampleOn() then return NS.SampleRace.InCombat() end
     return UnitAffectingCombat("player") and true or false
 end
 
 -- Seconds since the run's last damage update (the stored stamp), or since the buzzer when none came.
 local function quietFor(run)
-    local elapsed = NS.Race.Elapsed()
+    local race = raceNow()
+    local elapsed = race.Elapsed()
     local last = run and run.race and run.race.lastDamage
     if not elapsed then return 0 end
-    if type(last) ~= "number" then return NS.Race.SinceBuzzer() or 0 end
+    if type(last) ~= "number" then return race.SinceBuzzer() or 0 end
     return elapsed - last
 end
 
@@ -189,7 +202,7 @@ end
 --- once the tail has gone quiet (for combat to end, or for the read); a run that ended before the
 --- buzzer waits for its read.
 local function stopPhase(run)
-    if NS.Race.SinceBuzzer() == nil then return "waiting" end
+    if raceNow().SinceBuzzer() == nil then return "waiting" end
     if quietFor(run) >= NS.Scoring.QUIET_BEFORE_READ then return "waiting" end
     return "stop"
 end
@@ -227,12 +240,12 @@ local function stopView(v)
     local run = v.run
     v.key = stopPhase(run)
     v.tail = tailOf(run)
-    v.sinceBuzzer = NS.Race.SinceBuzzer()
+    v.sinceBuzzer = raceNow().SinceBuzzer()
     v.endedEarly = v.sinceBuzzer == nil
     v.endedAt = run.result and run.result.endedAt
     v.lateCasts = run.flags and run.flags.lateCasts
     v.grace = run.race and run.race.grace
-    v.stopNow = NS.Race.StopRequested()
+    v.stopNow = raceNow().StopRequested()
     local delay = setting("race.hintDelay")
     if v.key == "waiting" and v.inCombat and (v.sinceBuzzer or 0) >= delay then v.hint = hintText() end
 end
@@ -266,7 +279,8 @@ end
 local function resultView(v)
     local run = v.run
     if run.status == "complete" then v.delta, v.isNew = NS.Bests.Delta(run) end
-    v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function"
+    -- A sample's made-up numbers never reach a chat channel.
+    v.canShare = NS.Share ~= nil and type(NS.Share.Prompt) == "function" and not run.sample
     v.icons = setting("live.icons") ~= false
     -- The race's chart again (#2), when the HUD shows charts and the run has its slices this session.
     if setting("live.chart") ~= false then v.chart = NS.HudChart.ResultView(run) end
@@ -275,9 +289,10 @@ local function resultView(v)
 end
 
 local function runningView(v)
-    v.timeLeft = NS.Race.TimeLeft()
+    local race = raceNow()
+    v.timeLeft = race.TimeLeft()
     local length = v.run and v.run.race and v.run.race.length
-    local elapsed = NS.Race.Elapsed()
+    local elapsed = race.Elapsed()
     if elapsed and length then elapsed = math.min(elapsed, length) end
     v.elapsed = elapsed
     v.live = liveData
@@ -296,8 +311,9 @@ local function commonView(v)
 end
 
 local function raceView()
-    local state = NS.Race.State()
-    local v = { state = state, run = NS.Race.Current(), inCombat = inCombat() }
+    local race = raceNow()
+    local state = race.State()
+    local v = { state = state, run = race.Current(), inCombat = inCombat(), preview = previewOn() or nil }
     commonView(v)
     if state == S().STOPPING then
         stopView(v)
@@ -310,36 +326,7 @@ local function raceView()
     return v
 end
 
--- The sample's chart without its cooldown icons: a copy, as the preview owns the one it pushed.
-local function withoutCooldowns(chart)
-    if not chart or not chart.cooldowns then return chart end
-    local out = {}
-    for k, x in pairs(chart) do out[k] = x end
-    out.cooldowns = nil
-    return out
-end
-
--- Test mode: the body Hud.Render pushed, its figures as given (the preview owns them).
-local function previewView()
-    local v = { state = preview.key, run = preview.run, inCombat = false, preview = true }
-    commonView(v)
-    for k, x in pairs(preview.extra or {}) do v[k] = x end
-    -- The sample honors the chart, pace and cooldown icon settings, as a real race's views do (#2, #3, #14).
-    if setting("live.chart") == false then v.chart = nil end
-    if setting("live.paceBar") == false then v.pace = nil end
-    if setting("live.castDots") == false then v.chart = withoutCooldowns(v.chart) end
-    v.key = BODY_OF[preview.key] or preview.key
-    if v.key == "stopping" then v.key = "stop" end
-    if v.key == "idle" then idleView(v) end
-    return v
-end
-
-local function buildView()
-    if previewOn() and preview then return previewView() end
-    preview = nil
-    return raceView()
-end
-Hud.View = buildView
+Hud.View = raceView
 
 -- ── the window ──────────────────────────────────────────────────────────────────────────────────
 
@@ -597,7 +584,7 @@ end
 
 --- Draw the body for the current view. `full` also redraws the live rows (a tick does not).
 local function render(full)
-    local v = buildView()
+    local v = raceView()
     local body = showBody(v.key)
     body:Update(v)
     if full and body.SetLive then body:SetLive(v.live, v.rows, v.icons) end
@@ -618,8 +605,17 @@ function resized(width, height)
     if windowShown() then render(true) end
 end
 
+-- A frozen test-mode race reads nothing: its one moment comes through Hud.Render.
 local function liveWanted()
-    return windowShown() and not NS.IsStoodDown() and not previewOn() and NS.Race.State() == S().RUNNING
+    local race = raceNow()
+    if sampleOn() and race.Held() then return false end
+    return windowShown() and not NS.IsStoodDown() and race.State() == S().RUNNING
+end
+
+-- The live read: the meter's, or the sample race's while it stands where the race does.
+local function readMeter()
+    if sampleOn() then return NS.SampleRace.ReadLive() end
+    return NS.Meter.ReadLive()
 end
 
 local function cancelLive()
@@ -638,7 +634,8 @@ local LIVE_RETRY = 0.1
 
 local function scheduleSlice()
     if sliceTimer or not liveWanted() then return end
-    local run, elapsed = NS.Race.Current(), NS.Race.Elapsed()
+    local race = raceNow()
+    local run, elapsed = race.Current(), race.Elapsed()
     local at = NS.Slices.NextBoundary(run)
     if not (at and elapsed) or at >= run.race.length then return end
     sliceTimer = C_Timer.NewTimer(math.max(LIVE_RETRY, at - elapsed), function()
@@ -651,7 +648,8 @@ end
 
 local function capture(fresh, elapsed)
     if not fresh then return end
-    NS.Slices.Capture(NS.Race.Current(), elapsed or NS.Race.Elapsed(), fresh.total)
+    local race = raceNow()
+    NS.Slices.Capture(race.Current(), elapsed or race.Elapsed(), fresh.total)
 end
 
 --- One live read and redraw: the running body's figures and rows from NS.Meter.ReadLive (opaque).
@@ -660,7 +658,7 @@ function readLive()
     if not liveWanted() then return end
     local t0 = Perf.on and debugprofilestop()
     lastRead = GetTime()
-    local fresh = NS.Meter.ReadLive()
+    local fresh = readMeter()
     capture(fresh)
     liveData = fresh or liveData
     local body = ui.body.running
@@ -674,9 +672,10 @@ Hud.ReadLive = readLive
 
 -- The buzzer: one last read fills the bucket that ends on it, while the window is on screen.
 local function captureBuzzer()
-    if not windowShown() or NS.IsStoodDown() or previewOn() or NS.Race.SinceBuzzer() == nil then return end
-    local run = NS.Race.Current()
-    if run and run.race then capture(NS.Meter.ReadLive(), run.race.length) end
+    local race = raceNow()
+    if not windowShown() or NS.IsStoodDown() or race.SinceBuzzer() == nil then return end
+    local run = race.Current()
+    if run and run.race then capture(readMeter(), run.race.length) end
 end
 
 --- A meter update: coalesced into at most one read per 1/live.hz seconds (spec §10).
@@ -696,15 +695,20 @@ local function onAceEvent(event)
     Hud.Refresh()
 end
 
+-- A sample race's updates come from its script: no client meter event is heard for it.
 local function wantedEvents()
     if not windowShown() or NS.IsStoodDown() then return "none" end
-    if liveWanted() then return "live" end
+    if liveWanted() and not sampleOn() then return "live" end
     return "idle"
 end
 
 local function syncEvents()
     local want = wantedEvents()
-    if want ~= "live" then cancelLive() end
+    if not liveWanted() then cancelLive() end
+    if sampleOn() and liveWanted() then
+        requestLive()
+        scheduleSlice()
+    end
     if want == registered then return end
     if events then events:UnregisterAllEvents() end
     registered = want
@@ -722,7 +726,7 @@ end
 
 local function onUpdate(_, elapsed)
     tickAcc = tickAcc + (elapsed or 0)
-    local period = NS.Race.State() == S().STOPPING and Hud.STOP_TICK or Hud.TICK
+    local period = raceNow().State() == S().STOPPING and Hud.STOP_TICK or Hud.TICK
     if tickAcc < period - 1e-9 then return end
     tickAcc = 0
     local t0 = Perf.on and debugprofilestop()
@@ -732,8 +736,10 @@ end
 Hud.Tick = function() tickAcc = Hud.STOP_TICK; onUpdate(nil, 0) end
 
 local function syncTicker()
-    local state = NS.Race.State()
-    local want = windowShown() and not previewOn() and (state == S().RUNNING or state == S().STOPPING)
+    local race = raceNow()
+    local state = race.State()
+    local want = windowShown() and (state == S().RUNNING or state == S().STOPPING)
+        and not (sampleOn() and race.Held())
     if want and not ticking then
         tickAcc = 0
         ui.frame:SetScript("OnUpdate", onUpdate)
@@ -826,16 +832,16 @@ function Hud.ResetPosition()
     if ui then applyPlacement() end
 end
 
---- Draw `state`'s body with the given run (and figures) instead of the race's: test mode's entry
---- point (modules/Preview.lua). Ignored unless test mode is on. `extra` carries the figures a body
---- reads off its view (timeLeft, live, tail, sinceBuzzer, inCombat, hint, delta, isNew ...).
---- @param state string  a Race.STATE value, or "stop" / "waiting"
---- @param run table|nil
---- @param extra table|nil
-function Hud.Render(state, run, extra)
-    preview = { key = state, run = run, extra = extra }
+--- The sample race moved to a held moment (modules/Preview.lua): its one live read, and a redraw. A
+--- frozen race has no live reads of its own; the views themselves are the race's.
+function Hud.Render()
+    liveData = sampleOn() and readMeter() or nil
     Hud.Refresh()
 end
+
+--- A sample race's meter update (modules/SampleRace.lua through Sim): the throttled read, as the
+--- client's event gets.
+function Hud.MeterUpdated() requestLive() end
 
 --- The lifecycle's stand-down: the window hides, and every registration, timer and the OnUpdate go.
 --- A window the addon opened (onArm, test mode) is dropped: the race or preview it opened for is gone
@@ -933,16 +939,23 @@ end
 local deleting   -- the run id whose delete the card's popup accepted, for the one RUNS_CHANGED it fires
 local backToIdle -- defined with the acts below
 
-local function onRunsChanged()
+local function runsChanged(race, get)
     local accepted = deleting
     deleting = nil
-    if NS.Race.State() ~= S().RESULT then return end
-    local run = NS.Race.Current()
+    if race.State() ~= S().RESULT then return end
+    local run = race.Current()
     if not run then return end
-    if NS.Recorder.Get(run.id) ~= nil then return Hud.Refresh() end
+    if get(run.id) ~= nil then return Hud.Refresh() end
     debug("the result card's run %s was deleted", tostring(run.id))
     if accepted == run.id then return backToIdle(run) end
-    NS.Race.Cancel()
+    race.Cancel()
+end
+
+local function onRunsChanged() runsChanged(NS.Race, NS.Recorder.Get) end
+
+--- The sample history changed (modules/Results_Source.lua): a sample's RUNS_CHANGED.
+function Hud.SampleChanged()
+    if sampleOn() then runsChanged(NS.SampleRace, NS.ResultsSource.Get) end
 end
 
 do
@@ -1017,22 +1030,16 @@ function Act.customLength(text)
 end
 
 -- In test mode the bodies are the sample's: Cancel ends test mode (and the sim), never the real
--- race the preview may be covering (a result card), and the sample card's New Race and Details
--- (drawn disabled) do nothing.
+-- race the preview may be covering (a result card).
 function Act.cancel()
     if previewOn() then return NS.Preview.Stop() end
     return NS.Race.Cancel()
 end
 Act.discard = Act.cancel
 
---- Stop Now on the Stop! and waiting screens (Round C): the result as it reads now (Race.StopNow). In
---- the sim it jumps the script to the result card (modules/Sim.lua SkipToResult).
+--- Stop Now on the Stop! and waiting screens (Round C): the result as it reads now (Race.StopNow).
 function Act.stopNow()
-    if previewOn() then
-        if NS.Sim and NS.Preview.Mode() == "sim" then return NS.Sim.SkipToResult() end
-        return false
-    end
-    local acted = NS.Race.StopNow()
+    local acted = raceNow().StopNow()
     Hud.Refresh()
     return acted
 end
@@ -1049,8 +1056,9 @@ function Act.lock() return NS.ToggleLock() end
 function Act.settings() return NS.OpenOptionsPanel() end
 function Act.results() return NS.ToggleResults() end
 function Act.details()
-    if previewOn() then return false end
-    openRun(NS.Race.Current())
+    local run = raceNow().Current()
+    if previewOn() then return run and NS.Preview.OpenResults(run.id) end
+    openRun(run)
 end
 
 --- New Race: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
@@ -1058,35 +1066,41 @@ end
 --- the idle body is set to the same length, so Arm Race repeats the race.
 function backToIdle(run)
     local length = run and run.race and run.race.length or currentLength()
+    local race = raceNow()
     -- Kept open through the idle edge: the onArm close is for a race that is over, not this one.
     autoShown, dummyShown = false, false
-    if NS.Race.State() == S().RESULT then NS.Race.Cancel() end
-    Act.pickLength(length)
+    if race.State() == S().RESULT then race.Cancel() end
+    -- A sample's length is not the player's pick: nothing of it reaches the profile.
+    if run and run.sample then
+        Hud.Refresh()
+    else
+        Act.pickLength(length)
+    end
     return true
 end
 
 function Act.newRace()
-    if previewOn() then return false end
-    return backToIdle(NS.Race.Current())
+    return backToIdle(raceNow().Current())
 end
 
 --- Delete on the result card (Round C): the Results window's own confirmation (Results.ConfirmDelete,
 --- whose Accept deletes through the source seam and Recorder.Delete); the store's RUNS_CHANGED then
 --- takes the HUD back to the Arm Race screen (onRunsChanged). The card's mark is set only by that
---- popup's Accept, so a canceled popup leaves a later delete elsewhere an outside one. The sample
---- card has nothing to delete.
+--- popup's Accept, so a canceled popup leaves a later delete elsewhere an outside one. A sample run
+--- leaves the sample history (the source's own delete, in memory).
 local function markDeleting(id) deleting = id end
 
 function Act.delete()
-    if previewOn() or NS.Race.State() ~= S().RESULT then return false end
-    local run, R = NS.Race.Current(), NS.Results
+    local race = raceNow()
+    if race.State() ~= S().RESULT then return false end
+    local run, R = race.Current(), NS.Results
     if not (run and R and type(R.ConfirmDelete) == "function") then return false end
     return R.ConfirmDelete(run.id, markDeleting)
 end
 
 function Act.share()
-    local run = NS.Race.Current()
-    if run and NS.Share and type(NS.Share.Prompt) == "function" then NS.Share.Prompt(run) end
+    local run = raceNow().Current()
+    if run and not run.sample and NS.Share and type(NS.Share.Prompt) == "function" then NS.Share.Prompt(run) end
 end
 
 --- What the HUD is doing, for the diagnostics report: the body on screen, the event set it holds

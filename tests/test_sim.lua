@@ -1,6 +1,6 @@
 -- tests/test_sim.lua — modules/Sim.lua, `/dr sim [scenario]` (B5): a whole sample race through the
--- HUD's bodies, then the Results window on the sim's run beside the sample history; each scenario
--- reaches its bodies and its result, nothing reaches SavedVariables or the race engine, and the
+-- race's own views and messages, then the Results window on the sim's run beside the sample history;
+-- each scenario reaches its bodies and its result, nothing reaches SavedVariables or NS.Race, and the
 -- preview's end conditions end it.
 
 local T = _G.DPSRACE_TEST
@@ -32,6 +32,7 @@ end
 local function play(f, secs)
     local seen, last = {}, nil
     for _ = 1, (secs or 60) * 10 do
+        f.Hud.Tick()
         local key = current(f)
         if key ~= last then
             seen[#seen + 1] = key
@@ -48,7 +49,7 @@ test("sim: each scenario plays its bodies, then opens the Results window on its 
     local want = {
         newbest = "armed,running,stop,waiting,result", behind = "armed,running,stop,waiting,result",
         first = "armed,running,stop,waiting,result", flagged = "armed,running,stop,waiting,result",
-        shared = "armed,running,stop,waiting,result",
+        shared = "armed,running,stop,waiting,result", sticky = "armed,running,stop,waiting,result",
         incomplete = "armed,running,waiting,result", died = "armed,running,waiting,result",
     }
     for _, key in ipairs(T.NS.Sim.Names()) do
@@ -57,13 +58,14 @@ test("sim: each scenario plays its bodies, then opens the Results window on its 
         f.NS.NewBusTarget():RegisterMessage(f.NS.MSG.RUN_SAVED, function() saved = saved + 1 end)
         sim(f, key)
         assertEqual(f.Preview.Mode(), "sim", key)
-        assertEqual(play(f), want[key], key)
+        assertEqual(play(f, key == "sticky" and 80 or 60), want[key], key)
         assertEqual(f.Sim.Diagnose().phase, "results", key)
         assertEqual(f.Sim.Diagnose().ticking, false, key .. ": the script kept ticking")
         assertTrue(f.R.IsShown(), key .. ": no Results window")
         assertEqual(f.R.Selected(), "sim-" .. key, key)
         assertTrue(f.NS.ResultsSource.Get("sim-" .. key) ~= nil, key)
         assertEqual(f.NS.ResultsSource.All()[1].id, "sim-" .. key, key .. ": the newest run")
+        assertEqual(f.Hud.Diagnose().events, "idle", key .. ": a sample race hears no client meter event")
         assertEqual(current(f), "result", key .. ": the HUD keeps the result card")
         assertTrue(f.Preview.IsActive(), key .. ": the sim stays on until turned off")
         assertEqual(saved, 0, key)
@@ -97,7 +99,7 @@ end)
 test("sim: behind finishes under the best with a minus chip", function()
     local f = fixture()
     sim(f, "behind")
-    f:advance(3 + 30 + 3 + 4 + 0.5)
+    f:advance(3 + 30 + 9)
     assertEqual(current(f), "result")
     assertTrue(chips(f)[1]:find("vs best", 1, true) ~= nil and chips(f)[1]:sub(1, 1) == "-", chips(f)[1])
 end)
@@ -134,6 +136,7 @@ test("sim: flagged shows the late cast after the buzzer and on the card", functi
     local f = fixture()
     sim(f, "flagged")
     f:advance(3 + 30 + 2)
+    f.Hud.Tick()
     assertEqual(current(f), "stop")
     local stop = ui(f).body.stop.w.chips:Texts()
     assertTrue(stop[1]:find("1 late cast", 1, true) ~= nil, stop[1])
@@ -236,43 +239,60 @@ test("sim: switching to test mode stops the script; a sim restarts in place", fu
     assertEqual(current(f), "armed", "the new sim starts at the top")
 end)
 
-test("sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim", function()
-    for _, key in ipairs({ "stop", "waiting" }) do
-        local f = fixture()
-        sim(f, "newbest")
-        local guard = 0
-        while current(f) ~= key and guard < 600 do
-            f:advance(0.1)
-            guard = guard + 1
-        end
-        assertEqual(current(f), key)
-        ui(f).body[key].w.stopNow:__fire("OnClick")
-        assertEqual(current(f), "result", key .. ": Stop Now did not reach the result card")
-        assertEqual(f.Sim.Diagnose().phase, "result")
-        assertEqual(f.Race.State(), "idle", "the race engine moved")
-        f:advance(f.Sim.RESULT_HOLD + 0.2)
-        assertTrue(f.R.IsShown(), key .. ": the result card's hold still opens the Results window")
-        assertEqual(next(f.NS.db.global.runs), nil, "a sim run reached the store")
-    end
+test("sim: Stop Now reads as a real race's: in combat at the combat end, out of it at once; Cancel ends the sim", function()
+    local f = fixture()
+    sim(f, "behind")
+    while current(f) ~= "stop" do f:advance(0.1) end
+    ui(f).body.stop.w.stopNow:__fire("OnClick")
+    assertEqual(current(f), "stop", "in combat nothing can be read")
+    assertFalse(ui(f).body.stop.w.stopNow:IsEnabled(), "Stop Now, pressed, grays until the read")
+    assertTrue(f.Hud.View().stopNow, "the view says it reads at the combat end")
+    f:advance(5.3)
+    assertEqual(current(f), "result", "read at the combat end, without the quiet")
+    assertEqual(f.Race.State(), "idle", "NS.Race moved")
+
+    local o = fixture()
+    sim(o, "newbest")
+    while o.NS.SampleRace.State() ~= "stopping" or o.NS.SampleRace.InCombat() do o:advance(0.1) end
+    o.Hud.Act.stopNow()
+    assertEqual(current(o), "result", "out of combat it reads at once")
+    o:advance(o.Sim.RESULT_HOLD + 0.2)
+    assertTrue(o.R.IsShown(), "the result card's hold still opens the Results window")
+    assertEqual(next(o.NS.db.global.runs), nil, "a sim run reached the store")
+
     local g = fixture()
     sim(g, "newbest")
     while current(g) ~= "stop" do g:advance(0.1) end
     ui(g).body.stop.w.cancel:__fire("OnClick")
     assertFalse(g.Preview.IsActive(), "Cancel ends the sim")
     assertEqual(g.Sim.Diagnose().ticking, false)
-    assertFalse(g.Sim.SkipToResult(), "nothing to skip once it ended")
 end)
 
-test("sim: the sample result card's Delete is grayed and does nothing", function()
+test("sim: the sample card's Delete asks, leaves the sample history and goes to the Arm screen", function()
     local f = fixture()
-    local shown = 0
-    f.M.StaticPopup_Show = function() shown = shown + 1 end
+    local accept
+    f.M.StaticPopup_Show = function(_, _, _, data) accept = data end
+    sim(f, "newbest")
+    while current(f) ~= "result" do f:advance(0.1) end
+    assertTrue(ui(f).body.result.w.delete:IsEnabled(), "the card's Delete works on a sample as on a run")
+    assertTrue(f.Hud.Act.delete())
+    accept.onAccept(accept.id)
+    assertTrue(f.R.DeleteRun(accept.id))
+    assertEqual(f.NS.ResultsSource.Get("sim-newbest"), nil)
+    assertEqual(current(f), "idle", "the card goes, as a real one's does")
+    assertTrue(f.Preview.IsActive(), "the preview stays on")
+    assertEqual(next(f.NS.db.global.runs), nil)
+end)
+
+test("sim: the sample card's Details opens its run, and Share stays refused", function()
+    local f = fixture()
     sim(f, "newbest")
     while current(f) ~= "result" do f:advance(0.1) end
     local w = ui(f).body.result.w
-    assertFalse(w.delete:IsEnabled(), "the sample card offers Delete")
-    assertFalse(f.Hud.Act.delete())
-    assertEqual(shown, 0)
+    assertTrue(w.details:IsEnabled(), "Details works")
+    f.Hud.Act.details()
+    assertEqual(f.R.Selected(), "sim-newbest")
+    assertFalse(w.share:IsEnabled(), "made-up numbers never reach a chat channel")
 end)
 
 test("sim: the result card draws the best's diagonal with a best before the run, and none on a first race", function()

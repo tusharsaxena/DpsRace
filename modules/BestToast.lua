@@ -68,6 +68,7 @@ BestToast.FLAGS_HEIGHT = BestToast.ROW_GAP + BestToast.TEXT_H   -- 16: the flags
 local TROPHY_FALLBACK = "Interface\\Icons\\Achievement_Dungeon_GloryoftheHero"
 
 local toast       -- the shell's instance (or the seam's stub)
+local sampleKey   -- the sim's run a real toast is up for (gone with the preview)
 local preview     -- test mode's payload while it is on (shown again when the toast is turned back on)
 
 local function debug(fmt, ...)
@@ -306,6 +307,7 @@ function BestToast.OnResult(run)
     local pct, isNew, prev = NS.Bests.Delta(run)
     if not (isNew and pct ~= nil) then return false end
     debug("new best %s: %+.1f%%", tostring(run.id), pct)
+    if run.sample then sampleKey = run.id end
     return toast:Show(BestToast.Payload(run, pct, prev), { key = run.id }) == true
 end
 
@@ -333,10 +335,12 @@ function BestToast.ShowPreview(sample)
     if enabled() then toast:Preview(preview) end
 end
 
---- Test mode ended: its toast goes.
+--- Test mode or the sim ended: its toast goes.
 function BestToast.EndPreview()
     preview = nil
     toast:Remove(NS.TOAST_PREVIEW)
+    if sampleKey then toast:Remove(sampleKey) end
+    sampleKey = nil
 end
 
 --- *Test toast*: a sample toast queued as a real one is (its countdown, its sound), movable while it

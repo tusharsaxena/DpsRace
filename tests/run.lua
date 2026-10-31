@@ -157,6 +157,7 @@ local SUITES = {
     "test_toast",
     "test_preview",
     "test_sim",
+    "test_sample_parity",
     "test_launcher",
     "test_keybinds",
     "test_disabled",

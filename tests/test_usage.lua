@@ -529,7 +529,10 @@ end)
 -- ── the samples ─────────────────────────────────────────────────────────────────────────────────
 
 test("usage: the sample history and the sim's race carry casts and usage", function()
-    local inst = T.load({ mutate = stock })
+    local inst = T.load({ mutate = function(m)
+        stock(m)
+        m.__context.classToken = "WARLOCK"
+    end })
     local NS = inst.NS
     local data = NS.MockRuns.Dataset()
     local with, without = 0, 0
@@ -548,10 +551,11 @@ test("usage: the sample history and the sim's race carry casts and usage", funct
     assertEqual(with, #data.runs - 1)
     local mine = data.runs[1]
     assertTrue(mine.casts.list:find("p3110", 1, true) ~= nil, "the imp's casts")
-    assertTrue(mine.casts.list:find("^%-160:6353") ~= nil, "a pre-pull cast first")
+    assertTrue(mine.casts.list:find("^%-1%d%d:6353") ~= nil, "a pre-pull cast first")
     assertEqual(kinds(mine.usage.used), "gear:cast,potion:cast,flask:buff,food:buff", "no enchant")
-    near(mine.usage.used[1].times[1], NS.MockRuns.GEAR_AT)
-    local sample = NS.Sim.Sample("newbest", data.runs)
+    local gearAt = mine.usage.used[1].times[1] - NS.MockRuns.GEAR_AT
+    assertTrue(gearAt >= 0 and gearAt <= 0.2, "the gear's use, a little off the mark run to run")
+    local sample = NS.Sim.Sample("newbest", data)
     assertTrue(#NS.Casts.Important(sample.run) > 0, "the sim's race has cooldown casts")
     assertNil(F.findSecret(data))
 end)
