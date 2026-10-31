@@ -279,6 +279,10 @@ test("countdown: the sim race's buzzer clears it, the setting holds in the sim, 
     assertTrue(h.NS.Preview.Start())
     h:advance(30)
     assertNil(h.C.Shown(), "a still running body counts nothing down")
+    -- A settings row's reaction asks again: a held race is still no race of the marks'.
+    h.C.Refresh()
+    assertEqual(h.C.Diagnose().scheduled, 0, "a still running body armed the marks")
+    assertEqual(h.C.Diagnose().owner, "none")
 
     local g = fixture()
     g.NS.db.profile.race.centerCountdown = false

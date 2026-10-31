@@ -341,6 +341,104 @@ test("sample parity: a sim neither ends itself on its own arm nor arms AutoArm's
     assertTrue(f.Preview.IsActive(), "its own ARMED ended it")
     assertEqual(f.Race.State(), "idle")
     assertEqual(f.Sim.Diagnose().ticking, true)
+
+    -- The rule's idle edge: beside a dummy, a sample going idle is no race ending.
+    local g = fixture("WARLOCK")
+    assertTrue(g.NS.SetByPath("hud.autoShow", true))
+    g.M.__setTarget({ guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" })
+    g.M.__fire("PLAYER_TARGET_CHANGED")
+    assertTrue(g.Hud.ShownNearDummy())
+    sim(g, "newbest")
+    until_(g, function() return current(g) == "result" end)
+    local claims, real = 0, g.Hud.ShowNearDummy
+    g.Hud.ShowNearDummy = function(...) claims = claims + 1; return real(...) end
+    assertTrue(g.Hud.Act.newRace())
+    assertEqual(g.NS.SampleRace.State(), "idle")
+    assertEqual(claims, 0, "AutoArm acted on the sample's idle edge")
+    g.Hud.ShowNearDummy = real
+end)
+
+test("sample parity: New Race on a sample's card leaves the player's length alone", function()
+    local f = fixture("WARLOCK")
+    f.NS.db.profile.race.lastLength = 60
+    sim(f, "newbest")
+    until_(f, function() return current(f) == "result" end)
+    assertTrue(f.Hud.Act.newRace())
+    assertEqual(current(f), "idle")
+    assertEqual(f.NS.db.profile.race.lastLength, 60, "the sample's 0:30 reached the profile")
+end)
+
+test("sample parity: test mode's replay is silent: no race message, no chat line, no toast of its own", function()
+    local f = fixture("WARLOCK")
+    local sent = {}
+    local bus = f.NS.NewBusTarget()
+    for _, name in ipairs({ "RACE_STATE_CHANGED", "RACE_BUZZER", "RACE_RESULT", "RUN_SAVED" }) do
+        bus:RegisterMessage(f.NS.MSG[name], function() sent[name] = (sent[name] or 0) + 1 end)
+    end
+    f.M.__resetPrinted()
+    assertTrue(f.Preview.Start({ mode = "test", state = "result" }))
+    for _, state in ipairs({ "running", "armed", "result" }) do assertTrue(f.Preview.SetState(state)) end
+    assertEqual(next(sent), nil, "a replay spoke on the bus")
+    assertFalse(table.concat(f.M.__printed(), "\n"):find("new best", 1, true) ~= nil, "a replay spoke in chat")
+end)
+
+test("sample parity: the sample's charts leave NS.Slices with it", function()
+    local f = fixture("WARLOCK")
+    local Source, Slices = f.NS.ResultsSource, f.NS.Slices
+    assertTrue(f.Preview.Start())
+    local id = next(f.Preview.Dataset().slices)
+    assertTrue(Slices.Get(id) ~= nil, "seeded")
+    assertTrue(f.Preview.Stop())
+    assertEqual(Slices.Get(id), nil, "the sample history's chart outlived it")
+
+    assertTrue(Source.Use({ slices = { first = { count = 1 } } }))
+    assertTrue(Source.Use({ slices = { second = { count = 1 } } }))
+    assertEqual(Slices.Get("first"), nil, "a second Use kept the first's chart")
+    assertTrue(Slices.Get("second") ~= nil)
+    assertTrue(Source.Restore())
+    assertEqual(Slices.Get("second"), nil)
+end)
+
+test("sample parity: the sim's buzzer makes the race's one last read, on the sample's path", function()
+    local f = fixture("WARLOCK")
+    -- A throttled read just past the boundary can fill the bucket first, so the bucket proves nothing.
+    -- The read itself does: only the HUD's edge runs between the stopping state and RACE_BUZZER.
+    local Slices, real = f.NS.Slices, f.NS.Slices.Capture
+    local edge, done = nil, false
+    Slices.Capture = function(run, elapsed, total)
+        if f.NS.SampleRace.State() == "stopping" and not done then edge = { elapsed, total } end
+        return real(run, elapsed, total)
+    end
+    f.NS.NewBusTarget():RegisterMessage(f.NS.MSG.RACE_BUZZER, function() done = true end)
+    sim(f, "newbest")
+    until_(f, function() return done end)
+    Slices.Capture = real
+    assertTrue(edge ~= nil, "no read at the buzzer")
+    assertEqual(edge[1], f.NS.SampleRace.Current().race.length)
+    assertTrue(edge[2] ~= nil, "the read at the buzzer came back empty")
+end)
+
+test("sample parity: Details on a sample's card opens the preview's window, closed with the preview", function()
+    local f = fixture("WARLOCK")
+    sim(f, "newbest")
+    until_(f, function() return current(f) == "result" end)
+    assertFalse(f.R.wanted == true)
+    f.Hud.Act.details()
+    assertTrue(f.R.wanted == true)
+    assertEqual(f.R.Selected(), "sim-newbest")
+    assertTrue(f.Preview.Stop())
+    assertFalse(f.R.wanted == true, "the card's Details left a sample window behind")
+end)
+
+test("sample parity: Share on a sample's card reaches nothing", function()
+    local f = fixture("WARLOCK")
+    sim(f, "newbest")
+    until_(f, function() return current(f) == "result" end)
+    local asked, real = 0, f.NS.Share.Prompt
+    f.NS.Share.Prompt = function() asked = asked + 1 end
+    f.Hud.Act.share()
+    f.NS.Share.Prompt = real
+    assertEqual(asked, 0, "a made-up run reached the share prompt")
 end)
 
 test("sample parity: the sample card honors Show spell icons, and every setting while it is held", function()
@@ -459,6 +557,16 @@ test("sample parity: a held race reads nothing and holds no timer; the sim's tim
     f.Preview.Stop()
     assertEqual(f.NS.Slices.Get("sim-newbest"), nil, "its buckets go with it")
     assertEqual(f.NS.Casts.Collecting(), false)
+
+    sim(f, "newbest")
+    f:advance(f.Sim.ARM_HOLD + 5)
+    assertEqual(f.Sim.Diagnose().ticking, true)
+    assertTrue(f.NS.Countdown.Diagnose().scheduled > 0, "the sim's marks are armed")
+    assertTrue(f.Preview.Stop())
+    assertEqual(f.Sim.Diagnose().ticking, false)
+    assertEqual(f.NS.Countdown.Diagnose().scheduled, 0)
+    assertEqual(#f.M.__timers(), 0, "a timer outlived the sim")
+    assertTrue(f.Hud.Diagnose().events ~= "live", "the HUD kept the race's events")
 end)
 
 test("sample parity: arming a real race from under a sim keeps that race's cast list", function()
