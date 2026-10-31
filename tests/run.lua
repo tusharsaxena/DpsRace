@@ -32,6 +32,8 @@ do
         "Skin.lua", "SkinOwnerTokens.lua", "SkinDefs.lua", "SkinDefsOthers.lua", "SkinPaint.lua",
         "SkinPaintControls.lua", "SkinPaintExtras.lua",
         "SkinEUI.lua", "SkinAce.lua",
+        -- The Insights tab's chart widgets, through core/ChartsSetup.lua.
+        "Charts.lua", "ChartsRender.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do present[path:match("([^/]+)$")] = true end
