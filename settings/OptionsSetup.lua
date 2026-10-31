@@ -127,6 +127,7 @@ if not lib then
     Helpers.MasterControls = function() return {}, function() end end
     Helpers.ColorPair, Helpers.FontGroup = function() return {} end, function() return {} end
     Helpers.BorderGroup, Helpers.BarGroup = function() return {} end, function() return {} end
+    Helpers.PositionBlock  = function() return {}, function() end end
     Helpers.RestoreAllDefaults = function()
         NS.Bulk.Run("reset", "all", function(info)
             for _, row in ipairs(NS.Schema) do

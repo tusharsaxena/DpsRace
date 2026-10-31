@@ -22,12 +22,15 @@ do
         "Core.lua", "Env.lua", "Lifecycle.lua", "Bus.lua", "Schema.lua", "Pool.lua", "Media.lua",
         "Widgets.lua", "DebugLog.lua", "DebugLogDiagnostics.lua", "DebugLogGates.lua",
         "Slash.lua", "SlashParse.lua", "Launcher.lua",
-        "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsTabs.lua",
+        "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsFlow.lua", "OptionsTabs.lua",
+        "OptionsTabbed.lua",
         "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
         "Perf.lua", "PerfSampler.lua", "PerfCommands.lua", "PerfPanel.lua", "Toast.lua",
-        "OptionsAppearance.lua", "OptionsSkinPicker.lua", "OptionsSwitch.lua", "OptionsMedia.lua",
+        "OptionsAppearance.lua", "OptionsSkinPicker.lua", "OptionsSkinPickerRows.lua",
+        "OptionsSwitch.lua", "OptionsMedia.lua",
         -- The skin engine core/SkinSetup.lua registers the owner with (skinning-§1).
-        "Skin.lua", "SkinDefs.lua", "SkinPaint.lua", "SkinPaintControls.lua", "SkinPaintExtras.lua",
+        "Skin.lua", "SkinOwnerTokens.lua", "SkinDefs.lua", "SkinDefsOthers.lua", "SkinPaint.lua",
+        "SkinPaintControls.lua", "SkinPaintExtras.lua",
         "SkinEUI.lua", "SkinAce.lua",
     }
     local present = {}
