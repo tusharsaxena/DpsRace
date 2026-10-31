@@ -554,12 +554,12 @@ test("settings: Purge history… is refused while a race is armed", function()
     assertEqual(#NS.Recorder.All(), 1, "an accept left over from before the arm still deleted")
 end)
 
-test("settings: History ends with Purge history…, after the stored count, under no heading of its own", function()
+test("settings: History opens with the stored count above its rows, and ends with Purge history… under no heading of its own", function()
     local inst = T.load()
     local H, M = inst.NS.Helpers, inst.mocks
     local drawn = {}
     local realText, realSection, realPair = H.TextRow, H.Section, H.InlineButtonPair
-    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = text return realText(ctx, text, ...) end
     H.Section = function(ctx, text, ...) drawn[#drawn + 1] = "section:" .. tostring(text) return realSection(ctx, text, ...) end
     local button
     H.InlineButtonPair = function(ctx, a, ...)
@@ -570,7 +570,9 @@ test("settings: History ends with Purge history…, after the stored count, unde
     M.__subcategories["History"]:__fire("OnShow")
     for _, d in ipairs(drawn) do assertTrue(d ~= "section:Danger zone", "the builder still draws Danger zone") end
     assertEqual(drawn[#drawn], "button", "Purge history… is not the tab's last act")
-    assertEqual(drawn[#drawn - 1], "text", "the stored count does not come just before the button")
+    assertTrue(tostring(drawn[1]):find("^Stored now") ~= nil, "the stored count does not open the tab")
+    assertEqual(drawn[2], "section:Sharing", "the tab's first block does not follow the count")
+    assertTrue(tostring(drawn[#drawn - 1]):find("^Stored now") == nil, "the count is still drawn after the rows")
     assertEqual(button.text, "Purge history\226\128\166")
     assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
 end)

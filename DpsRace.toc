@@ -68,6 +68,9 @@ core\WidgetsSetup.lua
 # The new-best toast's shell (#5): reads LibStub (LibKa0s-Toast-1.0) at FILE SCOPE and publishes
 # NS.NewToast, which modules\BestToast.lua calls at FILE SCOPE.
 core\ToastSetup.lua
+# The Insights charts (LibKa0s#66): reads LibStub (LibKa0s-Charts-1.0) at FILE SCOPE, and NS.Style,
+# NS.ResultsTable and NS.Pool at CALL time only (NS.ChartsHost).
+core\ChartsSetup.lua
 # LOAD-BEARING: core\PerfSetup.lua hands NS.lifecycle to LibKa0s-Perf-1.0, which RAISES at :New
 # without it, so the latch is built first.
 core\LifecycleSetup.lua
@@ -182,9 +185,6 @@ modules\Results_Gear.lua
 # captures NS.ResultsRuns at FILE SCOPE (and reads NS.Dummies there), so it follows modules\Results_Runs.lua;
 # reaches NS.Bests, NS.Scoring and NS.LateIgnore at CALL time.
 modules\Results_InsightsData.lua
-# The Insights tab's chart widgets (#12), ported from LootHistory and drawn through a host table: reads
-# NS.Style, NS.ResultsTable and NS.Pool at CALL time only (Charts.Host).
-modules\Results_InsightsCharts.lua
 # The Insights tab (#12): captures NS.ResultsTable and NS.Format at FILE SCOPE; reaches its data and
 # chart halves (above) at CALL time, and the shell builds it at CALL time.
 modules\Results_Insights.lua

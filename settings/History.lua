@@ -69,8 +69,8 @@ StaticPopupDialogs[POPUP] = {
 -- Days to keep is read at login and after each saved run (spec §7); lowering it never deletes on the
 -- spot, so a slip of the slider costs nothing until the player races again.
 NS.RegisterSchemaRows({
-    -- Sharing first, so the stored count and Purge history… (drawn after the group's rows) stay
-    -- under Storage, the rows they belong to.
+    -- Sharing first, so Purge history… (drawn after the group's rows) stays under Storage, the rows
+    -- it belongs to.
     { path = "share.talentsLink", page = PAGE, group = GROUP, subgroup = L["Sharing"], type = "bool",
       label = L["Include talents link"], default = NS.defaults.profile.share.talentsLink,
       tooltip = L["Add the run's talent loadout to the shared line as a link others can click to see the talent tree. When the line and the link would be too long for one chat message, the link follows as a second one."] },
@@ -175,11 +175,16 @@ local function afterUsage(ctx)
     })
 end
 
--- After the group's rows: the stored count, then Purge history… as the tab's last act. No heading
--- over it: a heading is declared by a row, never drawn by a builder over an act (options-ui-§7, §21).
+-- The stored count opens the tab: what you have, above what is kept of it (LibKa0s#59's before-group
+-- seam, DPS-P17). The seam is the group's, so it sits over the tab's first heading.
+local function beforeHistory(ctx)
+    NS.Helpers.TextRow(ctx, History.StoredLine())
+end
+
+-- After the group's rows: Purge history… as the tab's last act. No heading over it: a heading is
+-- declared by a row, never drawn by a builder over an act (options-ui-§7, §21).
 local function afterHistory(ctx)
     local H = NS.Helpers
-    H.TextRow(ctx, History.StoredLine())
     H.InlineButtonPair(ctx, {
         text    = L["Purge history\226\128\166"],
         tooltip = L["Deletes every stored run. Asks for confirmation. Personal bests go with them."],
@@ -193,6 +198,7 @@ NS.RegisterTabbedPage({
     panelName       = "DpsRaceHistoryPanel",
     defaultsTooltip = L["Restore Days to keep, the Results table's and the Run detail's look and the hidden items to their addon defaults. Stored runs are not touched."],
     afterGroup      = { [GROUP] = afterHistory, [USAGE] = afterUsage },
+    beforeGroup     = { [GROUP] = beforeHistory },
 })
 
 -- The stored count repaints when the store changes, and the hidden-items list when it changes from

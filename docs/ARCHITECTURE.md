@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.83.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.84.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -132,9 +132,10 @@ PvP flag, zone and position); the catalog in `defaults/Dummies.lua` is grown fro
 out of SavedVariables, never guessed. The Race page's *Training dummies* tab edits the list.
 The same branch then replaced the Results window's Bests tab with *Insights* (#12). The board UI is
 gone; `NS.Bests` stays as the data module behind the toast, the HUD's delta, *Spec best*, the compare
-and prune protection. Insights is three files: `modules/Results_InsightsData.lua` (pure: the faceted
-filters and one stats pass, `Compute`, over the runs they pass), `modules/Results_InsightsCharts.lua`
-(the chart widgets, ported from LootHistory and drawn through a host table; Documented deviations) and
+and prune protection. Insights is three halves: `modules/Results_InsightsData.lua` (pure: the faceted
+filters and one stats pass, `Compute`, over the runs they pass), `core/ChartsSetup.lua`
+(`NS.Charts`, `LibKa0s-Charts-1.0`, promoted from this addon's port at v1.84.0, and `NS.ChartsHost()`,
+the window's look as that major's host table) and
 `modules/Results_Insights.lua` (the tab: a filter bar, ten cards and ten sections, Spec Comparison and
 Consistency under a row of board tabs, one per target and length). Every figure
 that mixes boards is a run's percent of its board's best, flags come from the ignore-aware
@@ -167,7 +168,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the eleven `*Setup.lua` descriptors (`SkinSetup.lua` the skin seam), the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded; `Dummies.lua`, the training-dummy catalog (`Lookup` answers it with the profile's own list, `CategoryOf` a stored run's category now); `Hearthstones.lua`, every hearthstone variant's spell ID (#8) |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` and `Results_TimelineData` (the ability timeline window and its pure half), `Results_Gear` (the gear view window), `Results_InsightsData`, `Results_InsightsCharts` and `Results_Insights` (the Insights tab: its stats pass, its chart widgets and the tab), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` and `Results_TimelineData` (the ability timeline window and its pure half), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass, its chart widgets and the tab), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -691,7 +692,6 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | Rule | What differs | Why | Decided | Re-check trigger |
 |---|---|---|---|---|
 | `standalone-windows` (MUST persist window position and size in SavedVariables, restored on open) | The ability timeline (`modules/Results_Timeline.lua`) stores neither: every open places it exactly over the Results window, that window's anchor and its size in the view shown (`Results.Placement`), clamped to the timeline's minimums; a move or a resize lasts while it is open. `profile.windows.timeline` is gone from the defaults and nothing writes it. The gear view (`modules/Results_Gear.lua`, #17, 2026-10-28) is the same kind of modal and stores nothing either: its size is its content's (not resizable) and every open centers it over the Results window; a move lasts while it is open. The Results window and the HUD persist theirs as before | The owner asked on 2026-10-27 (UT-P14, the fifth test round) for the timeline to always open centered over the Results window at that window's dimensions in its expanded or collapsed view, so it overlays it exactly. Since P13 it is a modal over the Results window (frame-layering T6), not a main window kept up on its own, and a stored place would put it off the window it covers | 2026-10-27, accepted by the owner as a deviation (not an upstream change) | The standard carves modals over their opener out of the persistence rule (then this row goes), or the timeline becomes a window kept open on its own again |
-| `library-stack-§7` (*What earns promotion into a Ka0s-owned lib*: a shape two addons need goes into LibKa0s) | The Insights tab's chart widgets (`modules/Results_InsightsCharts.lua`: the bar, stacked bar, range, strip, list panel and legend renderers, their pooled factories, the section chrome and a stat card) are a private copy of LootHistory's `modules/AnalyticsCharts.lua` and `modules/AnalyticsFormat.lua` at commit 2319fd6, so two addons now carry the same chart shapes and LibKa0s ships none of them. The copy keeps LootHistory's names, and its header lists what the port changed. The renderers read nothing of DpsRace's own: the colors, font objects, tooltip, panel and pool come from one host table (`Charts.Host()` is DpsRace's), and `tests/test_insights.lua` fails on an `NS` read above the host section | The owner's call on S-7 (`docs/superpowers/plans/2026-10-28-ignore-list-insights.md`, Standards flags): copy now and promote later, since this branch does not touch LibKa0s. BankLedger may use the same widgets, so the promotion issue, LibKa0s#66, names LootHistory, DpsRace, BankLedger and DropWatcher as consumers, and the host table is the seam a library version would take | 2026-10-28, accepted by the owner as a temporary deviation | The next LibKa0s re-vendor, or LibKa0s#66 (the promotion issue) landing: adopt the library's widgets and drop this file and this row |
 
 ### Files over the 1500-line cap
 
@@ -707,7 +707,7 @@ first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `module
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
 2026-10-28 passes their own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`, then `LateIgnore`, then `Results_InsightsData`,
-`Results_InsightsCharts` and `Results_Insights`, then `DummyList`), rather than grow these. The
+`Results_Insights` and a chart file since promoted to `LibKa0s-Charts-1.0`, then `DummyList`), rather than grow these. The
 2026-10-29 skinning rollout moved each file to the skin in place (most by a few lines; the timeline
 shed its hand-built opaque skin) and put its cases in new suites (`test_skinsetup`, `test_skin_literals`,
 `test_skin`, `test_skin_hud`, `test_skin_picker`) rather than in `test_hud` or `test_results`. On

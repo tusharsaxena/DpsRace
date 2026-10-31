@@ -495,7 +495,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   leaks in; *Clean only* is the ignore-aware *Hide flagged*) → `InsightsData.Compute` (one pass over
   the runs through `REDUCERS`, then `FINALIZERS`) → the ten cards and the sections A to K (H, Top
   Spells, was removed in the owner's feedback round), each drawn by a renderer of
-  `modules/Results_InsightsCharts.lua`. B (Spec Comparison) and C (Consistency, a worst-to-best
+  `LibKa0s-Charts-1.0`. B (Spec Comparison) and C (Consistency, a worst-to-best
   range per spec with its average marked) draw one board: the tab picked from `stats.boardTabs`, one
   per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. The most raced pair
   (`stats.boardTop`) opens first, and `View.boardKey` keeps a pick while the filters leave it

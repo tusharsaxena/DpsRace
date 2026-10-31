@@ -915,12 +915,10 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (59)
+### test_insights.lua (58)
 
-- insights charts: nothing above the host section reads NS or a client global but CreateFrame
-- insights charts: the header names the LootHistory source commit the port came from
-- insights charts: New wants a host pool, and fills the colors and fonts it is not given
-- insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis
+- insights charts: New fills the colors and fonts it is not given, and writes no host table
+- insights charts: truncate counts glyphs, not bytes, and ends in three periods inside the cap
 - insights charts: tipText states the value beside the full label
 - insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
 - insights charts: the ranked palette cycles, and a map keeps one color per key
@@ -973,6 +971,7 @@ Total.
 - insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
 - insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback
 - insights tab: a load with no library draws no dropdown, and the tab still works
+- insights tab: with no library the empty state says why there are no charts
 - insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
 - insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
 - insights tab: the wheel scrolls the content, clamped to it
@@ -1048,7 +1047,7 @@ Total.
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
-- settings: History ends with Purge history…, after the stored count, under no heading of its own
+- settings: History opens with the stored count above its rows, and ends with Purge history… under no heading of its own
 - settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
 - settings: History repaints when the hidden items change from anywhere, and not for other settings
 - settings: Days to keep says it is account-wide, and its label carries no suffix
@@ -1572,7 +1571,7 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 59 |
+| test_insights.lua | 58 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1608,4 +1607,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1258** |
+| **Total** | **1257** |

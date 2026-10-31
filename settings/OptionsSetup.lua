@@ -94,7 +94,7 @@ end
 --- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
 --- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
 --- the stub's no-op.
---- @param spec table { key, title, panelName, defaultsTooltip, afterGroup? }
+--- @param spec table { key, title, panelName, defaultsTooltip, afterGroup?, beforeGroup? }
 NS.pageCtx = NS.pageCtx or {}   -- each built page's ctx, by key, for a page that repaints off the bus
 function NS.RegisterTabbedPage(spec)
     NS.RegisterOptionsPage(spec.key, spec.title, function(mainCategory)
@@ -108,7 +108,7 @@ function NS.RegisterTabbedPage(spec)
         ctx.panel.defaultsOnClick = function() H.RestoreDefaults(spec.key, ctx) end
         H.SetRenderer(ctx, function(c)
             H.ClearScroll(c)
-            H.RenderTabbedSchema(c, spec.key, spec.afterGroup)
+            H.RenderTabbedSchema(c, spec.key, spec.afterGroup, nil, { beforeGroup = spec.beforeGroup })
         end)
         NS.pageCtx[spec.key] = ctx
         return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, spec.title)

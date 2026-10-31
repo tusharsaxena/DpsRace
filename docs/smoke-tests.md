@@ -77,7 +77,7 @@ section 32's for the findings remediation (branch `feat/2026-10-31-findings-reme
 | S12 | Profiles: create, switch, copy and delete a profile | Each works; run history is unchanged by all of them (it is account-wide) | The Results count before and after |
 | SM-DR-LY1 | Open HUD > Race HUD; hover *Show the race HUD* and the page's *Defaults* | A *Display* heading over *Show the race HUD* \| *Race clock*, then a *Live breakdown* heading over *Spell rows shown* \| *Show spell icons* and *Show live DPS* \| *Live reads per second*. The show mode's tooltip ends with the *General visibility* sentence; the Defaults tooltip names the Race HUD tab (display and live breakdown) and HUD Appearance. General's Defaults tooltip names Master controls and the new-best toast and ends *Key bindings are not changed.* Change a live row, press the HUD page's *Defaults*: it goes back | A screenshot of the tab |
 | SM-DR-LY2 | Open Race | Two tabs, *Race* and *Training dummies*; the *Race* tab headed *Length*, *Countdown*, *At the buzzer*, *Scoring rules* in that order: *Countdown cue sound* alone on its line, then *Center-screen countdown* \| *Center countdown from (seconds)*; *Buzzer raid warning and sound* \| *Sticky-combat hint after (seconds)* (its tooltip ends *5 to 60 seconds.*); *Late-cast grace (seconds)* \| *Damage-restart gap (seconds)*; then a *Late-cast ignore list* heading over a one-line blurb, the *Ignore a spell* box, the six default spells two to a line and *Reset list*. No *Scoring rules* tab | A screenshot of the page |
-| SM-DR-LY3 | Open History; hover *Days to keep* and the last button | *Sharing* with *Include talents link*, then *Storage* with *Days to keep*, the stored-count line, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
+| SM-DR-LY3 | Open History; hover *Days to keep* and the last button | The stored-count line, *Sharing* with *Include talents link*, then *Storage* with *Days to keep*, then *Purge history…* last, with no *Danger zone* heading. The slider's tooltip opens *Account-wide: shared by every profile.* The button still asks first and deletes every run on accept | A screenshot of the tab |
 | SM-DR-LY4 | Before the pass, note every value on HUD > Race HUD, Race and History (or `/dr list`); after it, compare, then `/reload` and compare again | No setting is lost or changed by the new layout, `/dr list` shows the live rows under *hud › Race HUD*, and every value survives the `/reload` | The row that differs |
 
 ## 3. Launcher, key bindings and slash
@@ -584,7 +584,7 @@ and a second profile (*Other*) for SM-DR-IL8. Keep `/console scriptErrors 1` on 
 ## 25. The 2026-10-28 build: the Insights tab (#12)
 
 The Results window's second tab, in place of the Bests board (`modules/Results_Insights.lua`, with its
-stats in `Results_InsightsData.lua` and its charts in `Results_InsightsCharts.lua`). Best on a profile
+stats in `Results_InsightsData.lua` and its charts drawn by `LibKa0s-Charts-1.0`). Best on a profile
 with runs on two or more characters, several specs, dummy types and lengths, a few days apart, and at
 least one run with a late cast. Keep `/console scriptErrors 1` on.
 
@@ -761,3 +761,13 @@ Pure moves and removals with nothing new to see: the ability timeline's pure hal
 |---|---|---|---|---|
 | SM-DR-FX1 | Open the Timeline for a run with casts and compare it with another; zoom with the controls and Ctrl+wheel, hover a tick, a *Casts* icon and the `?`; open it on a run with no compared run | The lanes, axis, legend, zoom color and every tooltip draw as before, and the legend's note shows when there is nothing to compare | The Lua error, or a screenshot | |
 | SM-DR-FX2 | With the Widgets and Toast libraries loaded as shipped, open a Results dropdown and show the *Test toast*; load a Runs view filtered by each date range | The dropdowns open, the toast shows, and the date filter still offers its four ranges | The Lua error, or a screenshot | |
+
+## 33. The 2026-10-31 build: LibKa0s v1.84.0
+
+The Insights charts now come from the library, and the History tab's stored count moved. Branch `feat/2026-10-31-findings-remediation`. With `/console scriptErrors 1` on. The headless pass compared every drawn value of the Insights tab before and after the swap; only the client can show the faces and the bars.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-LK1 | Open History's first tab with some runs stored, then finish a race with it open | The *Stored now* line opens the tab above the *Sharing* heading, and its count moves with the new run. *Purge history…* is still the last thing on the tab | A screenshot of the tab | |
+| SM-DR-LK2 | Open the Insights tab with runs on two or more specs and characters; hover a card, a bar, a strip column, a legend chip and a list row; click a list row; switch skins with it open | Every section looks as it did, each hover states its value, the click opens the run, and the switch recolors the charts with no reload | A screenshot, and which section differs | |
+| SM-DR-LK3 | In Insights, find a bar label over 16 characters (a long character or spec name), and a legend chip over 13 | The cut label ends in three periods, not the ellipsis glyph, and the hover shows it whole | A screenshot | |
