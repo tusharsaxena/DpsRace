@@ -582,7 +582,8 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 - **test** (`Preview.Mode() == "test"`): static. The sample race is replayed silently to one moment
   and frozen there (`SampleRace.Hold`): running by default, 18 s into a 0:30 race beating the history's
   best on its board (`Sim.Sample("newbest")`), or armed or the result card. No timer runs, and a held
-  body reads every setting as a live one does. The Results window opens on the sample.
+  body reads every setting as a live one does. The Results window opens on the sample, and the sample
+  history follows the state held: the run is in it as `running` or `complete`, and out of it while armed.
 - **sim** (`Preview.Mode() == "sim"`, `modules/Sim.lua`): the scenario's sample race (`newbest`,
   `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; its DPS set against the
   history's best on its board) arms for 3 s, runs 30 s, and then follows its plan as a race would:
@@ -592,7 +593,8 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   `C_Timer` ticker at 20 Hz moves it on, and the Results window opens on the run 4 s after the card
   while the HUD keeps it. *Stop Now* is `Race.StopNow`'s rule: in combat it grays and reads at the combat
   end; out of combat it reads at once. *Cancel* ends the sim. New Race, Details and Delete on the
-  sample card work as on a real card, in memory; New Race never touches the remembered length.
+  sample card work as on a real card, in memory; New Race never touches the remembered length, and a
+  card dismissed by New Race or Delete ends the script, so the Results window does not open after it.
 - **The marker**: while either is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
   Widgets library the title reads *DPS Race · Test* instead, never both. The Results window lays its

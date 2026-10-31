@@ -1108,10 +1108,11 @@ Total.
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
-### test_bar_style.lua (17)
+### test_bar_style.lua (18)
 
 - bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
-- bar style: the compare's defaults are the old hues, brighter, opaque and flat
+- bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
+- bar style: a compare column draws the skin's texture by default, in its own color
 - bar style: the default look keeps the skin's two tracks and draws no border
 - bar style: the HUD's and the detail's spell rows are separate blocks, live
 - bar style: the detail's spell rows draw their block, track and border
@@ -1327,7 +1328,7 @@ Total.
 - sim: the sample card's Details opens its run, and Share stays refused
 - sim: the result card draws the best's diagonal with a best before the run, and none on a first race
 
-### test_sample_parity.lua (23)
+### test_sample_parity.lua (32)
 
 - sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
 - sample parity: a sim's new best is not a flat factor of its history: its rows differ too
@@ -1347,8 +1348,17 @@ Total.
 - sample parity: complete runs go out of combat before the read, and the hint waits for its delay
 - sample parity: the race's messages reach the buzzer, the chat lines and the toast, and no RUN_SAVED
 - sample parity: a sim neither ends itself on its own arm nor arms AutoArm's rule
+- sample parity: New Race on a sample's card leaves the player's length alone
+- sample parity: test mode's replay is silent: no race message, no chat line, no toast of its own
+- sample parity: the sample's charts leave NS.Slices with it
+- sample parity: the sim's buzzer makes the race's one last read, on the sample's path
+- sample parity: Details on a sample's card opens the preview's window, closed with the preview
+- sample parity: Share on a sample's card reaches nothing
 - sample parity: the sample card honors Show spell icons, and every setting while it is held
 - sample parity: a change to the sample history reaches the card, as RUNS_CHANGED does a real one
+- sample parity: a sim's card dismissed by New Race or Delete opens no Results window after it
+- sample parity: a held state's history is the same moment's: the board, the row and the card agree
+- sample parity: a state switch redraws an open Results window on the moment held
 - sample parity: the HUD's reads go through its throttle: live.hz bounds them
 - sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
 - sample parity: arming a real race from under a sim keeps that race's cast list
@@ -1554,7 +1564,7 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
-| test_bar_style.lua | 17 |
+| test_bar_style.lua | 18 |
 | test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
@@ -1567,7 +1577,7 @@ Total.
 | test_toast.lua | 19 |
 | test_preview.lua | 23 |
 | test_sim.lua | 14 |
-| test_sample_parity.lua | 23 |
+| test_sample_parity.lua | 32 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -1581,4 +1591,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1247** |
+| **Total** | **1257** |
