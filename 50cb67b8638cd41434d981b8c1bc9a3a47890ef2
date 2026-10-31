@@ -1,0 +1,4 @@
+Independent review of DR-F05 (e4c1336, branch feat/2026-10-31-font-pickers-skin-faces): two low findings, both verified real, none rejected.
+1. modules/Results_Compare.lua Compare.BestSide ranked by total damage only, so an incomplete run with more damage than the complete board best turned the column headed Best run yellow (Bests counts only complete runs; Scoring.Dps divides an incomplete run by endedAt). Reproduced by a test, seen red. FIXED: BestSide takes kind, "best" answers other, "runnerUp" this, "picked" or no kind keeps the total-damage rule; SM-DR-FP12, module-map and testing updated.
+2. docs/smoke-tests.md SM-DR-UT39 still stated the retired per-table scale. FIXED (row states the one scale across both tables).
+Gate at this head: 1206 passed, 0 failed, 1 skipped; luacheck 0/0; Results_Compare.lua 738 lines; complexity suite pass, max CCN 15 (run on the same tree before commit, its bundle discarded). Smoke not run.
