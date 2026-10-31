@@ -981,8 +981,7 @@ local function stopButtons(body)
 end
 
 -- How many of the race's late casts so far count (the ignore list's are left out, #8) and the first
--- counted one's offset. Filtered here rather than in modules/Hud.lua: test mode's and the sim's STOP
--- view (modules/MockRuns.lua) hands its raw list straight to this body.
+-- counted one's offset. Filtered here, at the one body that draws them.
 local function countedLate(list)
     local set, n, first = NS.LateIgnore.Set(), 0, nil
     for _, cast in ipairs(type(list) == "table" and list or {}) do

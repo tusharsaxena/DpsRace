@@ -35,8 +35,9 @@ MockRuns.DPS = 147600
 local LUCK, DRIFT_FROM, DRIFT_EVERY, SKIP, CRIT, TRAVEL = 0.16, 0.25, 0.06, 0.05, 0.25, 0.3
 -- No hit lands before the clock: the first damage is what starts it.
 local FIRST_HIT = 0.05
--- The most damage-over-time ticks a run's tail lands, and their spacing target (s).
-local TAIL_HITS, TAIL_GAP = 8, 1.5
+-- The most damage-over-time ticks a run's tail lands, their spacing target (s), and their size against
+-- the spell's own hit (the tail is the end of a fight, not a second one).
+local TAIL_HITS, TAIL_GAP, TAIL_SIZE = 8, 1.5, 0.4
 
 local ROTATIONS = NS.MockRotations
 
@@ -239,10 +240,11 @@ local function tailHits(plan, rows, o, r)
     if not (row and tail and tail > 0) then return end
     local fade = o.restartedAt and math.min(3, o.restartedAt / 2) or tail
     local n = math.min(TAIL_HITS, math.ceil(fade / TAIL_GAP))
-    for i = 1, n do addHit(plan, plan.length + fade * i / n, row.id, row.hit, r) end
+    local size = row.hit * TAIL_SIZE
+    for i = 1, n do addHit(plan, plan.length + fade * i / n, row.id, size, r) end
     if not o.restartedAt then return end
-    addHit(plan, plan.length + o.restartedAt, row.id, row.hit, r)
-    addHit(plan, plan.length + tail, row.id, row.hit, r)
+    addHit(plan, plan.length + o.restartedAt, row.id, size, r)
+    addHit(plan, plan.length + tail, row.id, size, r)
 end
 
 -- The hits scaled to `damage` exactly (the largest takes the rounding), in time order.
