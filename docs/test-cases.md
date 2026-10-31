@@ -606,21 +606,24 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (24)
+### test_compare.lua (27)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
 - compare: rows sort by the run's damage, then the other's, then the id
 - compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
 - compare: the figures and their % difference; none against a zero or missing figure
-- compare: the Difference is two cells, the amount, then the % in the bars' muted green or red
+- compare: the Difference is two cells, the amount, then the % in its muted green or red
 - compare: the default is the best on the run's board; for the best itself, the runner-up
 - compare: a picked run wins while it is stored and not the run itself
 - compare: the toggle sets the run beside the best: the score table and the compared breakdown
 - compare: This run right, Best run left; each header at its column's x, width and justify
 - compare: one header row: Spell heads the first column, the first spell row hangs at the table's top
 - compare: the score table has no box, its columns are the spell table's, and a rule sits between them
-- compare: one bar per row, on the higher run's side, its length the row's % difference against the table's
+- compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale
+- compare: Damage, DPS and the spells size their bars on one scale (DR-F05)
+- compare: the run with the more total damage is blue on every row, the other gold (DR-F05)
+- compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)
 - compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped
 - compare: the % column holds a signed three-digit % with one decimal in every skin
 - compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
@@ -1156,7 +1159,7 @@ Total.
 - skin verb: refused while the addon is disabled, and no picker shows
 - skin verb: without LibKa0s the verb prints the library-absent line
 
-### test_hud_element_tips.lua (10)
+### test_hud_element_tips.lua (11)
 
 - hud tips: the idle body names every length, the target, Arm and Results
 - hud tips: the armed body names its clock, target and Cancel
@@ -1164,6 +1167,7 @@ Total.
 - hud tips: a clock's tooltip goes with the clock when the mode changes
 - hud tips: the Stop! and waiting tiles say which reading they show
 - hud tips: the Stop! chips and the result's verdict chip say what they count
+- hud tips: the verdict chip's words hold when there was no best to beat, and on a tie
 - hud tips: the result card names its figures, chart, pace bar, heading and four buttons
 - hud tips: a heading's zone hides with its heading
 - hud tips: the title bar's controls and the footer's lines
@@ -1477,7 +1481,7 @@ Total.
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 10 |
-| test_compare.lua | 24 |
+| test_compare.lua | 27 |
 | test_loadout.lua | 27 |
 | test_stats.lua | 9 |
 | test_casts.lua | 10 |
@@ -1506,7 +1510,7 @@ Total.
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
-| test_hud_element_tips.lua | 10 |
+| test_hud_element_tips.lua | 11 |
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
 | test_slash.lua | 37 |
@@ -1527,4 +1531,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1201** |
+| **Total** | **1205** |

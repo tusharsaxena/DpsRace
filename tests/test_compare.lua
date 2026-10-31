@@ -139,11 +139,11 @@ test("compare: the figures and their % difference; none against a zero or missin
     assertEqual(i.Cmp.Kpis(mkRun("a", 110), nil).dpsDelta, nil, "no amount without the other run")
 end)
 
-test("compare: the Difference is two cells, the amount, then the % in the bars' muted green or red", function()
+test("compare: the Difference is two cells, the amount, then the % in its muted green or red", function()
     local i = inst()
     local Cmp = i.Cmp
     -- DR-06 (the owner's call, 2026-10-30): two columns under one header. The escapes are the bars'
-    -- own colors (Compare.BAR_UP / BAR_DOWN) as hex.
+    -- colors (Compare.DIFF_UP / DIFF_DOWN) as hex, which DR-F05 took off the bars and left here.
     assertEqual(Cmp.DiffAmount(78300), "+78.3K")
     assertEqual(Cmp.DiffPct(78300, 2.34), "|cff8fcc94+2.3%|r", "ahead: the % in the soft green")
     assertEqual(Cmp.DiffAmount(-710200), "-710.2K")
@@ -154,7 +154,7 @@ test("compare: the Difference is two cells, the amount, then the % in the bars' 
     assertEqual(Cmp.DiffAmount(nil), DASH, "no amount: a dash")
     assertEqual(Cmp.DiffPct(nil, 3), "", "and no %")
     assertTrue(Cmp.DiffText == nil, "the one-cell Difference is gone")
-    local up, down = Cmp.BAR_UP, Cmp.BAR_DOWN
+    local up, down = Cmp.DIFF_UP, Cmp.DIFF_DOWN
     assertEqual(("%02x%02x%02x"):format(math.floor(up[1] * 255 + 0.5), math.floor(up[2] * 255 + 0.5),
         math.floor(up[3] * 255 + 0.5)), "8fcc94")
     assertEqual(("%02x%02x%02x"):format(math.floor(down[1] * 255 + 0.5), math.floor(down[2] * 255 + 0.5),
@@ -353,7 +353,7 @@ test("compare: the score table has no box, its columns are the spell table's, an
     end
 end)
 
-test("compare: one bar per row, on the higher run's side, its length the row's % difference against the table's", function()
+test("compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale", function()
     local i = inst()
     local low = mkRun("low", 100, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 500 },
                                                { id = 4, dmg = 800 } } })
@@ -384,7 +384,7 @@ test("compare: one bar per row, on the higher run's side, its length the row's %
     assertEqual(up.__points[1][4] + up.__width, tx + tw + Cmp.PAD, "this run's bar grows left from its right edge")
     assertEqual(down.__points[1][4], byID[1].texts[3].__points[1][4] - Cmp.PAD,
         "the best's bar grows right from its left edge")
-    -- The score table: its own scale, damage and DPS both -66.7%, so both fill the column.
+    -- The score table: on the one scale, damage and DPS both -66.7%, the spells' largest too.
     local dmg = x.lines[1].bar
     assertEqual(dmg.side, "other")
     assertEqual(dmg.__width, vw, "the table's largest % fills its column")
@@ -408,6 +408,104 @@ test("compare: one bar per row, on the higher run's side, its length the row's %
     assertEqual(Cmp.Scaled(nil, 0, 10), nil, "no difference: no bar")
     diff, scale = Cmp.Scaled(nil, 40, 0)
     assertEqual(diff / scale, 1, "no % anywhere in the table: still the whole column")
+end)
+
+-- A two-sided run pair for the DR-F05 bars: `this` and `other` its dps, spell 1 this run 10000 against
+-- 20000 (-50%), spell 2 this run 30000 against 20000 (+50%), spell 3 this run's alone, spell 4 the
+-- other's alone.
+local function barPair(i, this, other)
+    local a = mkRun("a", this, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 800 } } })
+    local b = mkRun("b", other, { spells = { { id = 1, dmg = 20000 }, { id = 2, dmg = 20000 }, { id = 4, dmg = 900 } } })
+    seed(i, { a, b })
+    i.R.ShowRun("a")
+    local d = detail(i)
+    d:SetComparing(true)
+    local byID = {}
+    for _, row in ipairs(d.cmp.rows.active) do byID[row.data.id] = row end
+    return d, byID
+end
+
+local function assertTint(i, bar, hue, what)
+    local got = bar.__colorTex
+    assertEqual(got[1], hue[1], what .. ": red")
+    assertEqual(got[2], hue[2], what .. ": green")
+    assertEqual(got[3], hue[3], what .. ": blue")
+    assertEqual(got[4], i.Cmp.BAR_ALPHA, what .. ": the bars' see-through alpha")
+end
+
+test("compare: Damage, DPS and the spells size their bars on one scale (DR-F05)", function()
+    local i = inst()
+    local d, byID = barPair(i, 80, 100)      -- both score lines -20%, the spell rows' -100% the largest
+    local x, Cmp = d.cmp, i.Cmp
+    local vw = Cmp.Columns(d.content.__width).value
+    assertEqual(Cmp.BarScale({ { pct = -20 } }, { { pct = 50 }, { pct = -100 } }), 100, "the largest of both tables")
+    assertEqual(Cmp.BarScale({ { pct = -20 } }, nil), 20, "no spells: the score lines' own")
+    local rule = vw / 5
+    assertTrue(math.abs(x.lines[1].bar.__width - rule) < 1e-9, "Damage at -20% is a fifth of a column on a 100% scale")
+    assertTrue(math.abs(x.lines[2].bar.__width - rule) < 1e-9, "DPS the same")
+    assertEqual(x.lines[1].bar.side, "other", "and on the higher run's side")
+    assertEqual(byID[1].bar.__width, vw / 2, "a -50% spell, half the column on the same scale")
+    assertEqual(byID[2].bar.__width, vw / 2, "a +50% spell the same")
+    assertEqual(byID[4].bar.__width, vw, "the largest: the other run's lone spell, -100%")
+    assertEqual(byID[3].bar.__width, vw, "a spell the other never cast takes the whole scale")
+    assertEqual(byID[3].bar.side, "this")
+end)
+
+test("compare: the run with the more total damage is blue on every row, the other gold (DR-F05)", function()
+    local i = inst()
+    local TL = i.NS.ResultsTimeline
+    local gold, blue = TL.THIS, TL.OTHER
+    -- The other run is best: this run's column gold, the other's blue, row by row whoever leads it.
+    local d, byID = barPair(i, 80, 100)
+    local x = d.cmp
+    assertEqual(i.Cmp.BestSide(d.run, x.other), "other")
+    assertTint(i, x.lines[1].bar, blue, "the other's Damage bar")
+    assertTint(i, x.lines[2].bar, blue, "the other's DPS bar")
+    assertTint(i, byID[1].bar, blue, "a spell the other leads")
+    assertTint(i, byID[2].bar, gold, "a spell this run leads, in this run's column")
+    assertTint(i, byID[3].bar, gold, "this run's lone spell")
+    assertTint(i, byID[4].bar, blue, "the other's lone spell")
+    -- This run is best: the same rows swap.
+    i = inst()
+    TL = i.NS.ResultsTimeline
+    d, byID = barPair(i, 100, 80)
+    x = d.cmp
+    assertEqual(i.Cmp.BestSide(d.run, x.other), "this")
+    assertTint(i, x.lines[1].bar, blue, "this run's Damage bar")
+    assertTint(i, x.lines[2].bar, blue, "this run's DPS bar")
+    assertTint(i, byID[1].bar, gold, "a spell the other leads, in the other's column")
+    assertTint(i, byID[2].bar, blue, "a spell this run leads")
+    -- The pure rule: one call per comparison, total damage, this run on a tie or a missing side.
+    local Cmp = i.Cmp
+    local function total(n) return { result = { damage = n } } end
+    assertEqual(Cmp.BestSide(total(5), total(5)), "this", "an exact tie: this run")
+    assertEqual(Cmp.BestSide(total(5), total(6)), "other")
+    assertEqual(Cmp.BestSide(total(5), {}), "this", "a side with no damage")
+    assertEqual(Cmp.BestSide({}, total(6)), "other")
+    assertEqual(Cmp.BarColor("this", "this"), TL.OTHER, "the best's side, the timeline's blue")
+    assertEqual(Cmp.BarColor("other", "this"), TL.THIS, "the other side, the timeline's gold")
+    assertEqual(Cmp.BarColor("other", "other"), TL.OTHER)
+end)
+
+test("compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)", function()
+    local i = inst()
+    -- A picked run above this one on a different board: still total damage, not the board.
+    local a = mkRun("a", 100, { spells = { { id = 1, dmg = 10000 } } })
+    local b = mkRun("b", 120, { spells = { { id = 1, dmg = 20000 } }, race = { length = 60, grace = 1 },
+                                result = { damage = 120 * 180, dps = 120, tail = 2 } })
+    seed(i, { a, b })
+    i.R.ShowRun("a")
+    local d = detail(i)
+    d.pickID = "b"
+    d:SetComparing(true)
+    local x, TL = d.cmp, i.NS.ResultsTimeline
+    assertEqual(x.kind, "picked")
+    assertTint(i, x.lines[1].bar, TL.OTHER, "the picked run has the more damage")
+    local row = x.rows.active[1]
+    -- Behind on a row: the amount in the table's red, the % in the muted red, whichever run is blue.
+    assertEqual(row.texts[5].__text, "|cffdb8585-50.0%|r", "the muted red is unchanged")
+    local red = i.NS.ResultsTable.COLORS.red
+    assertEqual(row.texts[4].__color[1], red[1], "the amount's red")
 end)
 
 test("compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped", function()
