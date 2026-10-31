@@ -177,9 +177,9 @@ pinBar("resultsTable.dpsBar.", false)
 pinBar("resultsDetail.spellBars.", true)
 pinFill("resultsDetail.spellBars.", 0.9, true)
 pinBar("compare.best.", false)
-pinFill("compare.best.", 1, false)
+pinFill("compare.best.", 1, true)
 pinBar("compare.other.", false)
-pinFill("compare.other.", 1, false)
+pinFill("compare.other.", 1, true)
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
     local NS = T.NS

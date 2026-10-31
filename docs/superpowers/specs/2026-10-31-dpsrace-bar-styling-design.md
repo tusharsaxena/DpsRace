@@ -19,7 +19,8 @@ Branch `feat/2026-10-31-dpsrace-bar-styling`. The owner's request of 2026-10-31.
 - The HUD's rows and the Results detail's rows share `appearance.bars`, one block. Ask 3 splits it.
 - The compare's bars are flat data hues today (`Compare.BAR_BEST`, `BAR_OTHER`), not skin colors.
 - `ka0s-default.tga`, Ka0s Default's bar texture, averages 0.69 white. A compare bar following the skin's
-  texture would come out darker than today's flat bar, so ask 2 needs the compare to stay flat by default.
+  texture comes out darker than today's flat bar. The owner accepted that on 2026-10-31: the texture
+  follows the skin even when the drawn shade differs from the one asked for.
 
 ## Design
 
@@ -59,8 +60,8 @@ skin. The table and the compare draw no track today (the owner's call, 2026-10-2
 and the swatch's alpha is 0 by default. Ticking the companion there draws `dr.list.track`. Every border's
 `borderStyleFromSkin` defaults on (skinning-§6) and Ka0s Default's `bar.borderStyle` is *None*, so no border
 draws under Ka0s Default. Thickness and border color are the player's (X4). `compare.*.barTextureFromSkin`
-defaults **off**, `barTexture` *Solid*: see the findings. The companion is one tick away and the owner can
-flip the default. Every other bar stays on.
+defaults **on** like every other bar (the owner's call, 2026-10-31), with `barTexture` *Solid* as the stored
+pick. The v8 profile format never shipped, so no migration resets it.
 
 **Where a background and border draw.** Over the bar's whole length, not the fill: the row on a spell list,
 the cell on the table, and each run's column on a compare line. A compare line has both tracks, each in its

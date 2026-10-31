@@ -92,7 +92,7 @@ local function hue(r, g, b)
     return 60 * (4 + (r - g) / d)
 end
 
-test("bar style: the compare's defaults are the old hues, brighter, opaque and flat", function()
+test("bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture", function()
     local C = T.NS.defaults.profile.compare
     local function check(block, r, g, b, what)
         local c = block.barColor
@@ -101,13 +101,25 @@ test("bar style: the compare's defaults are the old hues, brighter, opaque and f
         assertEqual(math.floor(c.b * 255 + 0.5), b, what)
         assertEqual(block.barAlpha, 1, what)
         assertEqual(block.barTexture, "Solid", what)
-        assertEqual(block.barTextureFromSkin, false, what .. ": a skin's texture would darken it")
+        assertEqual(block.barTextureFromSkin, true, what .. ": the owner's call: it follows the skin")
     end
     check(C.best, 42, 70, 107, "best")
     check(C.other, 83, 69, 0, "other")
     assertTrue(math.abs(hue(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b) - hue(32, 54, 82)) < 1)
     assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1)
     assertTrue(C.best.barColor.b > 82 / 255 and C.other.barColor.r > 64 / 255, "brighter than they shipped")
+end)
+
+test("bar style: a compare column draws the skin's texture by default, in its own color", function()
+    local i = inst()
+    local Compare, defaults = i.NS.ResultsCompare, i.NS.defaults.profile.compare
+    for _, side in ipairs({ "this", "other" }) do
+        local look = Compare.Look(side, "this")
+        assertEqual(look.texture, i.A.Bar().texture, side .. ": not the texture the spell rows follow the skin to")
+        local block = defaults[Compare.BarBlock(side, "this")]
+        assertEqual(look.r, block.barColor.r, side)
+        assertEqual(look.b, block.barColor.b, side)
+    end
 end)
 
 test("bar style: the default look keeps the skin's two tracks and draws no border", function()

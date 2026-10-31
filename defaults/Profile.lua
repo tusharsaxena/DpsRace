@@ -42,12 +42,12 @@ local function tableBar()
     return styled(blueFill(), noTrack(), false)
 end
 
--- A compare bar: flat and opaque, in the New best text's and the headings' hue at about the race bars'
--- weight, so the white figures read over it. Its texture does not follow the skin by default: Ka0s
--- Default's bar averages 0.69 white, which would draw it darker than these values say.
+-- A compare bar: opaque, in the New best text's and the headings' hue at about the race bars' weight,
+-- so the white figures read over it. Its texture follows the skin, as every bar's does (the owner's
+-- call, 2026-10-31): a skin's texture may draw it a little off these values, and that is accepted.
 local function compareBar(r, g, b)
     return styled({ barTexture = "Solid", barAlpha = 1, barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
-                    useClassColorBar = false, barTextureFromSkin = false }, noTrack(), false)
+                    useClassColorBar = false, barTextureFromSkin = true }, noTrack(), false)
 end
 
 local hudSpellBars = spellBars()
