@@ -82,21 +82,24 @@ NS.defaults = {
         -- kept for when the player turns it off (modules/Hud_Appearance.lua). Only the face and the
         -- texture follow (X4): sizes, flags, shadows and colors stay the player's. The clocks keep
         -- their monospace face and have no companion (D-15): their layout assumes a fixed advance.
+        -- FONT FLAGS (LibKa0s v1.82.0, D-07): every block's `fontFlags` defaults to "@skin", the
+        -- composer's *From skin*, which draws the Skin tab's Font outline (skin.outline) through
+        -- S.FontFlags; a flag the player picks wins. "" (None) was the default before the v7 step.
         appearance = {
             -- The running clock pair. `fontSize` is the pair's; a clock shown alone draws half again
             -- as large (modules/Hud_States.lua).
             elapsed = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 0.36, g = 0.86, b = 0.46, a = 1 },
-                        useClassColorFont = false, fontFlags = "", fontShadow = false },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false },
             left    = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 1.0, g = 0.32, b = 0.32, a = 1 },
-                        useClassColorFont = false, fontFlags = "", fontShadow = false },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false },
             -- The running body's Damage and DPS live figures.
             figures = { font = "Friz Quadrata TT", fontSize = 20, fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
-                        useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
             -- The spell rows: the HUD's live and result lists and the Results window's breakdown.
             bars = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
                      useClassColorBar = false, rowHeight = 18, barTextureFromSkin = true },
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
+                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
             -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
             -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
             -- smooth area), and the plot's background swatch (its composed class-color companion
@@ -121,7 +124,7 @@ NS.defaults = {
             dpsBar    = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
                           useClassColorBar = false, barTextureFromSkin = true },
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "", fontShadow = true, fontFromSkin = true },
+                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
         },
         -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
@@ -135,10 +138,11 @@ NS.defaults = {
         -- The skin this addon wears (skinning-§2: per addon, per profile; core/SkinSetup.lua), on
         -- General > Skin (settings/General.lua): the source and the skin, Ka0s Default by default; the
         -- Scope's two exceptions (the settings panel left the client's, the fonts skinned); the font
-        -- and texture overrides, an LSM key each, "" for the skin's own; and `pickerSeen`, false on
-        -- every profile, old and new (owner ruling O3), so the first-run skin picker shows once.
+        -- and texture overrides, an LSM key each, "" for the skin's own; the Font outline, "hud" text only,
+        -- "all" text or "off" (LibKa0s v1.82.0, Skin minor 9, ruling D-06; the default since v1.83.0); and `pickerSeen`,
+        -- false on every profile, old and new (owner ruling O3), so the first-run skin picker shows once.
         skin = { source = "ka0s", skin = "ka0s", ignorePanel = true, ignoreFonts = false,
-                 font = "", texture = "", pickerSeen = false },
+                 font = "", texture = "", outline = "hud", pickerSeen = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
         -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and

@@ -53,7 +53,8 @@ local _, NS = ...
 -- profile reset and Reset all settings. Opening the note box (Add Note) opens a folded Note.
 --
 -- EVERY ELEMENT HAS A TOOLTIP (the owner's call, 2026-10-25), its lines from modules/Results_Tips.lua:
--- a spell row shows the client's own spell tooltip beside the window, level with the row; anything
+-- a spell row shows the client's own spell tooltip beside the window, level with the row, and so does
+-- every other tooltip of the Spell breakdown section (its heading, the compare's parts: DR-05); anything
 -- else shows under itself. A text or a texture takes the mouse through a hover frame laid over it.
 
 local Detail = {}
@@ -361,11 +362,19 @@ Detail.LEGEND_ROWS = { { 1, 2 }, { 3, 4, 5, 6 } }
 
 -- ── hovers ──────────────────────────────────────────────────────────────────────────────────────
 
+-- The keys whose tooltip opens beside the window, level with the element, as the spell rows' do: the
+-- Spell breakdown section's (DR-05, the owner's call, 2026-10-30: every tooltip of that section, its
+-- heading included, sits right of the window, never under the pointer). The compare's parts are
+-- modules/Results_Compare.lua's.
+local SIDE_KEYS = { breakdown = true }
+
 -- `index` may be a function: what it answers at hover time (the Delta box's context).
 local function showTip(p, owner, key, index)
     if type(index) == "function" then index = index() end
     local lines = NS.ResultsTips.Detail(key, p.run, index)
-    if lines then Tbl.BelowTip(owner, lines) end
+    if not lines then return end
+    if SIDE_KEYS[key] then return Tbl.SideTip(Tbl.WindowOf(p.frame), owner, lines) end
+    Tbl.BelowTip(owner, lines)
 end
 
 -- `frame`'s hover: the tooltip for `key` under it. Hooked, so a button keeps its own hover look.
@@ -661,7 +670,7 @@ function Detail.Build(parent, hooks)
     buildHeader(p, c)
     NS.ResultsCompare.Build(p, c)
     p.w.list = NS.HudBreakdown.New(CreateFrame("Frame", nil, c), function(row, spell, rank) spellTip(p, row, spell, rank) end,
-        NS.ResultsTable.StripeAlpha)
+        NS.ResultsTable.StripeAlpha, "window")   -- window text to the Font outline (D-06)
     p.w.chart = NS.HudChart.New(c, FONT.SECTION, SECTION_H)
     p.w.chart:SetShown(false)
     buildTiming(p, c)

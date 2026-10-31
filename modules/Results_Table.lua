@@ -207,14 +207,25 @@ Tbl.WindowOf = windowOf
 -- on (modules/Style.lua).
 local addLines = Style.AddTipLines
 
--- The shown tooltip beside `window`, level with `row`: its right, or its left without the room.
+-- A geometry answer as a plain number, or nil: the HUD's live spell rows (DR-03) hand this file a
+-- tooltip that may show a secret spell, and a frame that shows a secret answers secret geometry, which
+-- no arithmetic or comparison may touch (core/Secrets.lua). Every read here goes through it.
+local function plainGeom(frame, method)
+    local fn = frame and frame[method]
+    if type(fn) ~= "function" then return nil end
+    return NS.Secrets.PlainNumber(fn(frame))
+end
+
+-- The shown tooltip beside `window`, level with `row`: its right, or its left without the room. A
+-- geometry read that is not plain counts as nothing (level with the window's top, no width).
 local function placeSide(tip, window, row)
     local dy = 0
-    if row and row.GetTop and window.GetTop then dy = (row:GetTop() or 0) - (window:GetTop() or 0) end
-    local scale = window:GetEffectiveScale() or 1
-    local right = (window:GetRight() or 0) * scale
-    local room = (UIParent and UIParent:GetRight() or 0) * (UIParent and UIParent:GetEffectiveScale() or 1)
-    local width = (tip:GetWidth() or 0) * (tip:GetEffectiveScale() or 1)
+    local rowTop, winTop = plainGeom(row, "GetTop"), plainGeom(window, "GetTop")
+    if rowTop and winTop then dy = rowTop - winTop end
+    local scale = plainGeom(window, "GetEffectiveScale") or 1
+    local right = (plainGeom(window, "GetRight") or 0) * scale
+    local room = (plainGeom(UIParent, "GetRight") or 0) * (plainGeom(UIParent, "GetEffectiveScale") or 1)
+    local width = (plainGeom(tip, "GetWidth") or 0) * (plainGeom(tip, "GetEffectiveScale") or 1)
     tip:ClearAllPoints()
     if right + width + 4 <= room then
         tip:SetPoint("TOPLEFT", window, "TOPRIGHT", 4, dy)
@@ -237,13 +248,16 @@ function Tbl.SideTip(window, row, lines)
 end
 
 --- The client's own tooltip for spell `id`, then `lines` (each a string or { text, r, g, b }), placed
---- as SideTip places its. A spell the client cannot show gets its name instead.
+--- as SideTip places its. A spell the client cannot show gets its name instead. `id` may be SECRET
+--- (the HUD's live spell rows, DR-03): it is only tested for nil, handed to the client's SetSpellByID
+--- (pcall'd) and to the name lookup, never compared or type-tested, and the placement reads plain
+--- geometry only.
 function Tbl.SpellTip(window, row, id, lines)
     local tip = GameTooltip
     if not tip then return end
     tip:SetOwner(window, "ANCHOR_NONE")
-    local shown = type(id) == "number" and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
-    if shown and tip.NumLines then shown = (tip:NumLines() or 0) > 0 end
+    local shown = id ~= nil and tip.SetSpellByID and pcall(tip.SetSpellByID, tip, id)
+    if shown and tip.NumLines then shown = (plainGeom(tip, "NumLines") or 0) > 0 end
     if not shown then
         local r, g, b = Style.Rgb("gtip.value")
         tip:SetText(NS.HudBreakdown.SpellName(id), r, g, b, 1, true)
@@ -348,11 +362,14 @@ end
 Tbl.CHIP_H = 16
 Tbl.CHIP_GAP = 4            -- the gap between two boxes, and between a box and the text after it
 
---- A chip in `parent`, hidden until Tbl.SetChip paints it.
-function Tbl.Chip(parent)
+--- A chip in `parent`, hidden until Tbl.SetChip paints it. `scale` (the new-best toast's, DR-04) draws
+--- it that much larger: its height, its word's size and its width.
+function Tbl.Chip(parent, scale)
     local chip = Style.FlatBox(parent)
-    chip:SetHeight(Tbl.CHIP_H)
-    chip.fs = Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
+    chip.scale = scale
+    chip:SetHeight(Tbl.CHIP_H * (scale or 1))
+    chip.fs = scale and Style.ScaledText(chip, FONT.TEXT, scale, C.text, "CENTER")
+        or Tbl.Text(chip, FONT.TEXT, C.text, "CENTER")
     chip.fs:SetPoint("CENTER", chip, "CENTER", 0, 0)
     chip:Hide()
     return chip
@@ -369,7 +386,7 @@ function Tbl.SetChip(chip, s, color, maxW)
     chip.fs:SetText(s)
     paint(chip.fs, color)
     tint(chip, color)
-    local w = Tbl.BadgeWidth(s, true)
+    local w = math.floor(Tbl.BadgeWidth(s, true) * (chip.scale or 1) + 0.5)
     if type(maxW) == "number" and w > maxW then w = math.max(14, math.floor(maxW)) end
     chip:SetWidth(w)
     chip.fs:SetWidth(w - 6)

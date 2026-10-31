@@ -92,7 +92,7 @@ takes its rows' group's place in the strip: after New-best toast, before Keybind
 none of it. Its body, top to bottom: **Skin source** (*Ka0s skins*, or *EllesmereUI*, disabled with
 the failing gate conditions listed while EllesmereUI cannot skin this addon), **Look** (the nine Ka0s
 skins, three to a line, each with its swatches), **Font and texture** (a *Font* and a *Texture*
-dropdown, *Skin's own (<its face>)* in a new profile), the Scope (*Ignore settings panel*, on in a new profile, and
+dropdown, *Skin's default (<its face>)* in a new profile), the Scope (*Ignore settings panel*, on in a new profile, and
 *Ignore fonts*), **Copy to every Ka0s addon…**, and the note that skins change every visual element
 and that HUD style options follow the skin unless the player sets them.
 
@@ -102,8 +102,9 @@ and that HUD style options follow the skin unless the player sets them.
 | Skin | `skin.skin` | the library's choice grid (`skipRender`) | One of the registered skins (`NS.SKIN_OPTIONS`); a pick repaints every window, the HUD, the toast and the library's tool windows at once, with no reload |
 | Ignore settings panel | `skin.ignorePanel` | checkbox (`skipRender`) | On: this addon's settings pages keep the game's look; its windows still wear the skin |
 | Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override. The HUD Appearance and Results table blocks draw their own *Font* even with *Use the skin's font* on |
-| Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
-| Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
+| Font | `skin.font` | the library's `Ka0sMedia_Font` picker, each row in its own face (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
+| Texture | `skin.texture` | the library's `Ka0sMedia_Statusbar` picker, each row showing its texture (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
+| Font outline | `skin.outline` | the library's dropdown under *Reset font* / *Reset texture* (`skipRender`) | `hud` (the default since LibKa0s v1.83.0, D-10), `all` or `off`: where the skin outlines this addon's text (LibKa0s v1.82.0, D-06). *HUD text only* keeps the outline on the HUD and the toast and drops it from window text; *Off* drops it everywhere. Grayed while *Ignore fonts* is on. A font block whose *Font flags* is *From skin* follows it |
 | (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
 
 Each row's `onChange` applies only its own half (`core/SkinSetup.lua` says why), so a pick on the tab
@@ -118,9 +119,10 @@ profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the s
 after every profile event, never while the addon stands down, and in combat held for one
 `PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
 mode on as `/dr test` does, or shows the Results window when it is already on), a gear (opens this
-tab), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
-skins is loaded). A pick only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
-the close control and Escape put the old skin back. Apply, the gear, the close and Escape set
+tab), the Skin tab's own rows (LibKa0s v1.83.0, LK-A3: *Font*, *Texture* and *Font outline*, then the
+Scope's two checkboxes), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
+skins is loaded). A pick or a row's change only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
+the close control and Escape put back what the window opened with. Apply, the gear, the close and Escape set
 `skin.pickerSeen`; `NS.HideSkinPicker` (the stand-down, and first on every profile event) takes it
 down without setting it.
 
@@ -224,7 +226,7 @@ cooldown icons*; *Show pace bar*; *Pace bar range*.
 | Live reads per second | `live.hz` | slider 2 to 10 | The coalesced live read's rate (spec §10) |
 | *Chart and pace* heading | | | |
 | Show damage chart | `live.chart` | checkbox | The running HUD's damage chart (#2): a column per bucket of the race (at most 60), scaled to the board's best x 1.15 with its level and average-pace diagonal, or with no best to the damage so far. Hidden on a shared session, and when it would leave fewer than three spell rows; then only the plot hides, and the *Damage profile* heading stays over the pace bar. Also gates the HUD result card's chart (with a best before the run, that best's diagonal on a max covering both the run's damage and the best's, x 1.15; Round C); the Results detail shows it whatever this says |
-| Show cooldown icons | `live.castDots` | checkbox | The ability's icon (12 px) along the top of the damage chart at each cast of an ability whose base cooldown is 29 s or more (#14: the big cooldowns, an on-use trinket, a potion), at its time on the race clock (a pre-pull cast on 0:00); a later icon that would overlap the one before it drops to the first row below with room, as many rows as the plot holds (the *Chart height* and one icon row the plot keeps on top, so a single row never covers the columns), and a crowd past the last row shows as one *+n* mark whose tooltip lists each cast and its time. Live on the running HUD, on the result card and in the Results detail; in all three hovering an icon names the spell and its time (*Cast at 0:12*). Off hides them in all three, and in test mode's sample charts. Reaction: `NS.Hud.Refresh()` and `NS.Results.Refresh()` |
+| Show cooldown icons | `live.castDots` | checkbox | The ability's icon (12 px) along the top of the damage chart at each cast of an ability whose base cooldown is 29 s or more (#14: the big cooldowns, an on-use trinket, a potion), at its time on the race clock (a pre-pull cast on 0:00); a later icon that would overlap the one before it drops to the first row below with room, as many rows as the plot holds (the *Chart height* and one icon row the plot keeps on top, so a single row never covers the columns), and a crowd past the last row shows as one *+n* mark whose tooltip lists each cast and its time. Live on the running HUD, on the result card and in the Results detail; in all three hovering an icon shows the game's full spell tooltip, then its time (*Cast at 0:12*), right of the window (DR-03). Off hides them in all three, and in test mode's sample charts. Reaction: `NS.Hud.Refresh()` and `NS.Results.Refresh()` |
 | Show pace bar | `live.paceBar` | checkbox | The running HUD's pace bar (#3), under the *Damage profile* heading and above the plot: it runs from pace x (2 - range) to pace x range around the best's average damage by now (*Pace bar range*), its tick fixed in the middle marking *on pace*. Also gates the HUD result card's pace bar (the final damage against the best before the run: the previous best when the run just became the best), in the same place, under the heading and above the plot. Hidden with no best, on a shared session and on a lost run's card |
 | Pace bar range | `live.paceRange` | slider 1.1 to 2.0, step 0.05 | How far either side of the best's pace so far the pace bar reaches (default 1.5 = ±50%): it runs from pace x (2 - range) to pace x range, the tick fixed in the middle. A value stored above 2.0 reads as 2.0. Its own line. Reaction: `NS.Hud.Refresh()` |
 
@@ -243,13 +245,19 @@ companion, on by default, and grays the block's own *Font* or *Bar texture* pick
 On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.MediaKey`, through
 `NS.Skin.Resolve`), except that while the Skin tab's *Ignore fonts* is on a font block draws its own
 *Font* (the texture still follows; the grayed picker previews that stored face); off, the stored pick,
-which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.81.0): Ka0s Default
-Oxanium SemiBold, Obsidian Inter SemiBold, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast
-Atkinson Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW
-Default Friz Quadrata. Only the face and the
-texture follow: sizes, flags, shadows and every color stay the player's (X4). The two clocks have no
-companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Oxanium
-SemiBold and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
+which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.83.0): Ka0s Default
+Prototype, Obsidian Expressway, Azeroth Open Sans Semibold, Glass Avant Garde, High Contrast
+Doris PP, Ember Emblem, WoW Midnight Segoe UI Semibold, WoW Forever Fira Sans SemiBold, WoW
+Default Ka0s Friz Quadrata TT. Only the face and the
+texture follow: sizes, flags, shadows and every color stay the player's (X4), with two readings the
+library makes without rewriting them. Every block's *Font flags* (the clocks' too) leads with
+*From skin*, the default (LibKa0s v1.82.0, D-07), which draws the Skin tab's *Font outline*: outlined
+under *All text* and *HUD text only*, none under *Off*, outlined while *Ignore fonts* is on; a flag the
+player picks wins. And a block drawing the skin's face draws its *Font size* at the skin's HUD scale
+(D-09: Obsidian 13 for Ka0s Default's 12, Glass 11), so its text is as wide in every skin; its own face
+and *Ignore fonts* draw the size as set. The two clocks have no
+companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Prototype
+and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
 
 | Subsection | Schema prefix | Rows | Styles |
 |---|---|---|---|

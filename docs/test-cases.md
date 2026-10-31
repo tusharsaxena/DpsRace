@@ -374,6 +374,12 @@ Total.
 - hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
 - hud hint: the box resizes when the hint's text changes, and not on every redraw
 
+### test_hud_tips.lua (3)
+
+- hud: a live spell row's hover shows the client's spell tooltip right of the HUD, its secret ID untouched
+- hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now
+- hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
+
 ### test_hud_tiles.lua (9)
 
 - hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
@@ -537,7 +543,7 @@ Total.
 - results: every detail element has a tooltip; spells show the client's spell tooltip beside the window
 - results: the timing strip's marks draw above its two segments
 - results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines
-- results: the live HUD's spell rows take no mouse
+- results: a spell list built without a tip hook takes no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
 - results: the Insights tab is built on first show, counts the runs and shows the empty state with none
@@ -600,21 +606,27 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (22)
+### test_compare.lua (28)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
 - compare: rows sort by the run's damage, then the other's, then the id
 - compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
 - compare: the figures and their % difference; none against a zero or missing figure
-- compare: the Difference cell is the amount, then the % in the bars' muted green or red
+- compare: the Difference is two cells, the amount, then the % in its muted green or red
 - compare: the default is the best on the run's board; for the best itself, the runner-up
 - compare: a picked run wins while it is stored and not the run itself
 - compare: the toggle sets the run beside the best: the score table and the compared breakdown
 - compare: This run right, Best run left; each header at its column's x, width and justify
+- compare: one header row: Spell heads the first column, the first spell row hangs at the table's top
 - compare: the score table has no box, its columns are the spell table's, and a rule sits between them
-- compare: one bar per row, on the higher run's side, its length the row's % difference against the table's
+- compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale
+- compare: Damage, DPS and the spells size their bars on one scale (DR-F05)
+- compare: the run with the more total damage is blue on every row, the other gold (DR-F05)
+- compare: the column headed Best run is blue even when this run has more damage (DR-F05)
+- compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)
 - compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped
+- compare: the % column holds a signed three-digit % with one decimal in every skin
 - compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
 - compare: the row menu's pick, the different-board note and Clear Pick
 - compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
@@ -1047,7 +1059,7 @@ Total.
 - skin seam: every owner token is namespaced dr. and registered with the owner
 - skin seam: under Ka0s Default each owner token is today's pixel
 - skin seam: under another skin a wash is that skin's role color at the wash's alpha
-- skin seam: the seven skin keys default to Ka0s Default, the picker unseen
+- skin seam: the eight skin keys default to Ka0s Default, the picker unseen
 - skin seam: every skin key is a skip-render schema row on the Skin tab
 - skin seam: the skin row's values are every registered skin, in the library's order
 - skin seam: /dr set refuses a skin that is not registered and applies one that is
@@ -1068,7 +1080,7 @@ Total.
 - every allow-list entry carries its reason
 - the gate is falsifiable: a planted literal of each shape is reported
 
-### test_skin.lua (11)
+### test_skin.lua (12)
 
 - skin: every owner token a source file names is registered
 - skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
@@ -1081,6 +1093,7 @@ Total.
 - skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
 - skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
 - skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included
+- skin: the Arm Race label is opaque once enabled, in every skin (D-25, image-55..57)
 
 ### test_skin_hud.lua (10)
 
@@ -1089,11 +1102,26 @@ Total.
 - skin hud: each companion is a bool row, default on, governing its picker
 - skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
 - skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
-- skin hud: under Ka0s Default the blocks draw Oxanium and the Ka0s Default bar through LSM
+- skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM
 - skin hud: the Results table's bar cells and their text follow the skin too (D-16)
 - skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
+
+### test_skin_fonts.lua (12)
+
+- skin fonts: every font block carries size, color, class color, flags and shadow
+- skin fonts: every Font flags row leads with From skin and defaults to it
+- skin fonts: From skin follows the Font outline; a picked flag wins
+- skin fonts: the mono clocks are never outlined by the Font outline; a picked flag wins
+- skin fonts: while Ignore fonts is on, From skin draws the library's stock flags
+- skin fonts: the Results detail's breakdown list draws its spell rows as window text
+- skin fonts: the drawn FontString takes the resolved flags
+- skin fonts: without the library From skin draws the default outline, HUD text only
+- skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
+- skin fonts: the v7 step runs once, so a None picked afterwards is kept
+- skin fonts: a block on the skin's face draws the skin's HUD scale; its own face the stored size
+- skin fonts: the clocks keep their stored size in every skin
 
 ### test_skin_picker.lua (12)
 
@@ -1109,6 +1137,53 @@ Total.
 - skin picker: the eye turns test mode on, and with it on shows the Results window
 - skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
 - skin picker: degraded, no picker shows and the Profiles paint is a no-op
+
+### test_skin_outline.lua (10)
+
+- outline: a fresh profile stores HUD text only, the library's default, and applies it
+- outline: the schema row is a skip-render Skin tab row offering the library's modes, in order
+- outline: the write seam stores media.outline, and leaves it alone when it is nil
+- outline: another addon's copy reaches the store through WriteChoice
+- outline: the row's write applies the mode live, and only its own half
+- outline: /dr set refuses a mode the library does not know
+- outline: the stored mode is applied at login
+- outline: a profile switch applies the incoming profile's mode, and back
+- outline: Reset all settings puts the outline back on HUD text only and applies it
+- outline: without the library the apply seam answers false and the default still stores
+
+### test_skin_verb.lua (6)
+
+- skin verb: the row sits right after config, with the library's help words
+- skin verb: /dr skin shows the picker on a profile that has closed it
+- skin verb: NS.RunSkinVerb hands O.SkinVerb this addon's first-run spec
+- skin verb: in combat every call prints the library's gray line and shows nothing
+- skin verb: refused while the addon is disabled, and no picker shows
+- skin verb: without LibKa0s the verb prints the library-absent line
+
+### test_hud_element_tips.lua (11)
+
+- hud tips: the idle body names every length, the target, Arm and Results
+- hud tips: the armed body names its clock, target and Cancel
+- hud tips: the running body names its clocks, figures, chart, pace bar, headings and captions
+- hud tips: a clock's tooltip goes with the clock when the mode changes
+- hud tips: the Stop! and waiting tiles say which reading they show
+- hud tips: the Stop! chips and the result's verdict chip say what they count
+- hud tips: the verdict chip's words hold when there was no best to beat, and on a tie
+- hud tips: the result card names its figures, chart, pace bar, heading and four buttons
+- hud tips: a heading's zone hides with its heading
+- hud tips: the title bar's controls and the footer's lines
+- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry
+
+### test_glyphs.lua (1)
+
+- glyphs: display strings use only characters every shipped skin face draws
+
+### test_refactor_pins.lua (4)
+
+- pins: without the skin library the v6 step sets each stored companion on in place
+- pins: Color with a class reads that class's color, else the swatch, the stored alpha held
+- pins: Resolve answers the lowest ID a name is captured under, and refuses an ID past MAX_ID
+- pins: the capture line names each part it has, in order, and leaves out what it has not
 
 ### test_slash.lua (37)
 
@@ -1167,7 +1242,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (13)
+### test_toast.lua (19)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
@@ -1182,6 +1257,12 @@ Total.
 - toast: a drag stores the place in the profile in UIParent units; Reset position clears it
 - toast: a profile switch follows the new profile's switch: a toast up goes, test mode's comes back
 - toast: the stand-down takes the toast down and drops what waits; a result while down shows none
+- toast: 25% larger, its height the named constant, every size scaled by the same factor
+- toast: the trophy is as tall as the three rows, the rows evenly spaced and padded
+- toast: the class and spec icons sit beside the spec and class words
+- toast: a class or spec the client cannot draw leaves no icon
+- toast: a spec icon without a class icon sits one gap after New best:
+- toast: the rows' text draws at the scaled sizes
 
 ### test_preview.lua (23)
 
@@ -1388,6 +1469,7 @@ Total.
 | test_format.lua | 8 |
 | test_hud.lua | 73 |
 | test_hud_hint.lua | 6 |
+| test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
@@ -1400,7 +1482,7 @@ Total.
 | test_results_delta.lua | 4 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 10 |
-| test_compare.lua | 22 |
+| test_compare.lua | 28 |
 | test_loadout.lua | 27 |
 | test_stats.lua | 9 |
 | test_casts.lua | 10 |
@@ -1423,12 +1505,18 @@ Total.
 | test_settings.lua | 37 |
 | test_skinsetup.lua | 22 |
 | test_skin_literals.lua | 3 |
-| test_skin.lua | 11 |
+| test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
+| test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
+| test_skin_outline.lua | 10 |
+| test_skin_verb.lua | 6 |
+| test_hud_element_tips.lua | 11 |
+| test_glyphs.lua | 1 |
+| test_refactor_pins.lua | 4 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
-| test_toast.lua | 13 |
+| test_toast.lua | 19 |
 | test_preview.lua | 23 |
 | test_sim.lua | 13 |
 | test_launcher.lua | 8 |
@@ -1444,4 +1532,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1146** |
+| **Total** | **1206** |

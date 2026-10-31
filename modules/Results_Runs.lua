@@ -601,7 +601,7 @@ function Runs.BarStyle(block, run)
     local class = run.char and run.char.class or false
     local p = "resultsTable."
     local fill = A.BarAt(p .. block .. ".", D[block], class)
-    fill.font = A.FontAt(p .. "barText.", D.barText, class)
+    fill.font = A.FontAt(p .. "barText.", D.barText, class, "window")   -- window text (D-06)
     return fill
 end
 
@@ -886,6 +886,15 @@ function View:CaptureView()
     return { filters = filters, sortKey = self.list.sortKey, sortDesc = self.list.sortDesc }
 end
 
+-- The view's sort, the stock one standing in for what `v` leaves out, a renamed column followed.
+local function viewSort(v)
+    local sortKey = v.sortKey or Runs.STOCK_SORT.key
+    sortKey = RENAMED_SORT[sortKey] or sortKey
+    local desc = v.sortDesc
+    if desc == nil then desc = Runs.STOCK_SORT.desc end
+    return sortKey, desc
+end
+
 --- Apply `v` (CaptureView's shape), or the stock view for nil. A stored key the view no longer
 --- knows is dropped; a missing one takes its default.
 function View:ApplyView(v)
@@ -896,10 +905,7 @@ function View:ApplyView(v)
         if value == nil then value = def end
         self.filters[k] = value
     end
-    local sortKey = v.sortKey or Runs.STOCK_SORT.key
-    sortKey = RENAMED_SORT[sortKey] or sortKey
-    local desc = v.sortDesc
-    if desc == nil then desc = Runs.STOCK_SORT.desc end
+    local sortKey, desc = viewSort(v)
     if self.list.column and self.list:column(sortKey) then
         self.list.sortKey, self.list.sortDesc = sortKey, desc and true or false
         self.list:paintHeader()

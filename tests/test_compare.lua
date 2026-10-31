@@ -8,7 +8,7 @@
 -- seeded straight into the store in spec §7's shape.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
+local test, assertEqual, assertTrue, assertFalse, assertNil = T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
 
 local NOW = os.time()
@@ -139,16 +139,22 @@ test("compare: the figures and their % difference; none against a zero or missin
     assertEqual(i.Cmp.Kpis(mkRun("a", 110), nil).dpsDelta, nil, "no amount without the other run")
 end)
 
-test("compare: the Difference cell is the amount, then the % in the bars' muted green or red", function()
+test("compare: the Difference is two cells, the amount, then the % in its muted green or red", function()
     local i = inst()
     local Cmp = i.Cmp
-    -- The escapes are the bars' own colors (Compare.BAR_UP / BAR_DOWN) as hex.
-    assertEqual(Cmp.DiffText(78300, 2.34), "+78.3K |cff8fcc94+2.3%|r", "ahead: the % in the soft green")
-    assertEqual(Cmp.DiffText(-710200, -14.44), "-710.2K |cffdb8585-14.4%|r", "behind: the % in the soft red")
-    assertEqual(Cmp.DiffText(5000, nil), "+5.0K", "no % against an other figure of 0 or missing")
-    assertEqual(Cmp.DiffText(0, 0), "0", "no difference: no %")
-    assertEqual(Cmp.DiffText(nil, 3), DASH, "no amount: a dash")
-    local up, down = Cmp.BAR_UP, Cmp.BAR_DOWN
+    -- DR-06 (the owner's call, 2026-10-30): two columns under one header. The escapes are the bars'
+    -- colors (Compare.DIFF_UP / DIFF_DOWN) as hex, which DR-F05 took off the bars and left here.
+    assertEqual(Cmp.DiffAmount(78300), "+78.3K")
+    assertEqual(Cmp.DiffPct(78300, 2.34), "|cff8fcc94+2.3%|r", "ahead: the % in the soft green")
+    assertEqual(Cmp.DiffAmount(-710200), "-710.2K")
+    assertEqual(Cmp.DiffPct(-710200, -14.44), "|cffdb8585-14.4%|r", "behind: the % in the soft red")
+    assertEqual(Cmp.DiffPct(5000, nil), "", "no % against an other figure of 0 or missing")
+    assertEqual(Cmp.DiffAmount(0), "0")
+    assertEqual(Cmp.DiffPct(0, 0), "", "no difference: no %")
+    assertEqual(Cmp.DiffAmount(nil), DASH, "no amount: a dash")
+    assertEqual(Cmp.DiffPct(nil, 3), "", "and no %")
+    assertTrue(Cmp.DiffText == nil, "the one-cell Difference is gone")
+    local up, down = Cmp.DIFF_UP, Cmp.DIFF_DOWN
     assertEqual(("%02x%02x%02x"):format(math.floor(up[1] * 255 + 0.5), math.floor(up[2] * 255 + 0.5),
         math.floor(up[3] * 255 + 0.5)), "8fcc94")
     assertEqual(("%02x%02x%02x"):format(math.floor(down[1] * 255 + 0.5), math.floor(down[2] * 255 + 0.5),
@@ -222,8 +228,10 @@ test("compare: the toggle sets the run beside the best: the score table and the 
     assertEqual(x.head[3].__text, "Best run")
     assertEqual(x.lines[1][2].__text, "18.0K", "this run's damage")
     assertEqual(x.lines[1][3].__text, "54.0K", "the best's damage")
-    assertEqual(x.lines[1][4].__text, "-36.0K |cffdb8585-66.7%|r", "the damage difference, then its %")
-    assertEqual(x.lines[2][4].__text, "-200 |cffdb8585-66.7%|r", "the DPS difference, then its %")
+    assertEqual(x.lines[1][4].__text, "-36.0K", "the damage difference")
+    assertEqual(x.lines[1][5].__text, "|cffdb8585-66.7%|r", "then its % in a column of its own (DR-06)")
+    assertEqual(x.lines[2][4].__text, "-200", "the DPS difference")
+    assertEqual(x.lines[2][5].__text, "|cffdb8585-66.7%|r")
     assertEqual(x.lines[2][4].__color[1], 1.0, "a slower run's difference is red")
     local _, active = i.NS.Pool.Counts(x.rows)
     assertEqual(active, 2, "one compared row per spell")
@@ -231,7 +239,8 @@ test("compare: the toggle sets the run beside the best: the score table and the 
     assertEqual(rows[1].texts[1].__text, "Incinerate")
     assertEqual(rows[1].texts[2].__text, "10.0K |cff9e9ead55.6%|r", "the damage, then its share in the caption gray")
     assertEqual(rows[1].texts[3].__text, "30.0K |cff9e9ead55.6%|r")
-    assertEqual(rows[1].texts[4].__text, "-20.0K |cffdb8585-66.7%|r")
+    assertEqual(rows[1].texts[4].__text, "-20.0K")
+    assertEqual(rows[1].texts[5].__text, "|cffdb8585-66.7%|r")
     local red = i.NS.ResultsTable.COLORS.red
     assertEqual(rows[1].texts[4].__color[1], red[1], "the amount in the table's red")
     assertEqual(rows[1].texts[4].__color[2], red[2])
@@ -251,21 +260,51 @@ test("compare: This run right, Best run left; each header at its column's x, wid
     d:SetComparing(true)
     local x = d.cmp
     assertEqual(x.head[3].__text, "Best run", "the compared column's name")
-    assertEqual(x.spellHead[3].__text, "Best run")
-    local justify = { "LEFT", "RIGHT", "LEFT", "RIGHT" }
+    local justify = { "LEFT", "RIGHT", "LEFT", "RIGHT", "RIGHT" }
     local function same(head, cell, j, what)
         assertEqual(head.__justifyH, justify[j], what .. " header " .. j .. "'s justify")
         assertEqual(cell.__justifyH, justify[j], what .. " column " .. j .. "'s justify")
         assertEqual(head.__points[1][4], cell.__points[1][4], what .. " column " .. j .. ": the header's x")
         assertEqual(head.__width, cell.__width, what .. " column " .. j .. ": the header's width")
     end
-    for j = 2, 4 do
+    for j = 2, 3 do
         same(x.head[j], x.lines[1][j], j, "score")
         same(x.head[j], x.lines[2][j], j, "score")
-        same(x.spellHead[j], x.rows.active[1].texts[j], j, "spell")
+        same(x.head[j], x.rows.active[1].texts[j], j, "spell")
     end
-    local thisX, thisW = x.spellHead[2].__points[1][4], x.spellHead[2].__width
-    assertTrue(x.spellHead[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
+    -- The one Difference header (DR-06): from the amount's left to the %'s right, right-aligned.
+    for _, case in ipairs({ { x.head, x.lines[1] }, { x.head, x.lines[2] }, { x.head, x.rows.active[1].texts } }) do
+        local head, amount, pct = case[1][4], case[2][4], case[2][5]
+        assertEqual(head.__justifyH, "RIGHT")
+        assertEqual(amount.__justifyH, "RIGHT", "the amount right-aligned")
+        assertEqual(pct.__justifyH, "RIGHT", "the % right-aligned")
+        assertEqual(head.__points[1][4], amount.__points[1][4], "the Difference header starts over the amount")
+        assertEqual(head.__points[1][4] + head.__width, pct.__points[1][4] + pct.__width, "and ends over the %")
+    end
+    local thisX, thisW = x.head[2].__points[1][4], x.head[2].__width
+    assertTrue(x.head[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
+end)
+
+test("compare: one header row: Spell heads the first column, the first spell row hangs at the table's top", function()
+    -- red under: the second header row over the spell rows (the owner's 2026-10-31 batch, DR-F03).
+    for _, view in ipairs({ "expanded", "collapsed" }) do
+        local i = inst()
+        seed(i, { mkRun("best", 300), mkRun("low", 100) })
+        i.NS.db.profile.windows.results = { view = view }
+        i.R.ShowRun("low")
+        local d = detail(i)
+        d:SetComparing(true)
+        local x = d.cmp
+        assertNil(x.spellHead, view .. ": a second header row")
+        assertEqual(x.head[1].__text, "Spell", view .. ": the first column's header")
+        assertEqual(x.head[2].__text, "This run")
+        assertEqual(x.head[4].__text, "Difference")
+        assertEqual(x.head[1].__justifyH, "LEFT")
+        assertEqual(x.rows.active[1].__points[1][5], 0, view .. ": the first spell row's y in its table")
+        d:SetComparing(false)
+        assertTrue(d.w.list.parent:IsShown(), view .. ": the plain list keeps its own form")
+        assertFalse(x.score:IsShown(), view .. ": the header row goes with the compare")
+    end
 end)
 
 test("compare: the score table has no box, its columns are the spell table's, and a rule sits between them", function()
@@ -282,17 +321,23 @@ test("compare: the score table has no box, its columns are the spell table's, an
         -- Both tables hang off the pane's left edge, so a column's x is the same number in each.
         assertEqual(x.score.__points[1][4], 0, view .. ": the score table's left edge")
         assertEqual(x.spellHost.__points[1][4], 0, view .. ": the spell table's left edge")
-        for j = 2, 4 do
-            local cx, w, justify = Cmp.Cell(j, cw)
-            for _, fs in ipairs({ x.head[j], x.lines[1][j], x.lines[2][j], x.spellHead[j], x.rows.active[1].texts[j] }) do
+        local function sameBox(list, cx, w, justify, j)
+            for _, fs in ipairs(list) do
                 assertEqual(fs.__points[1][4], cx, view .. ": column " .. j .. "'s x differs between the tables")
                 assertEqual(fs.__width, w, view .. ": column " .. j .. "'s width differs between the tables")
                 assertEqual(fs.__justifyH, justify, view .. ": column " .. j .. "'s justify differs between the tables")
             end
         end
-        assertEqual(x.head[1].__points[1][4], x.spellHead[1].__points[1][4], view .. ": the name columns' x")
-        assertEqual(x.head[1].__width, x.spellHead[1].__width, view .. ": the name columns' width")
-        -- The rule: one pixel, across the table, under the DPS line and above the spell header.
+        for j = 2, 5 do
+            local cx, w, justify = Cmp.Cell(j, cw)
+            sameBox({ x.lines[1][j], x.lines[2][j], x.rows.active[1].texts[j] }, cx, w, justify, j)
+        end
+        for j = 2, 4 do
+            local cx, w, justify = Cmp.HeadCell(j, cw)
+            sameBox({ x.head[j] }, cx, w, justify, j)
+        end
+        assertEqual(x.head[1].__text, "Spell", view .. ": the first column's header")
+        -- The rule: one pixel, across the table, under the DPS line and above the spell rows.
         local rule = x.rule
         assertTrue(rule:IsShown(), view .. ": no rule between the tables")
         assertEqual(rule.__height, 1)
@@ -303,12 +348,12 @@ test("compare: the score table has no box, its columns are the spell table's, an
         local dpsBottom = x.lines[2][2].__points[1][5] - Cmp.ScoreLineH() / 2
         assertTrue(ruleY < dpsBottom, view .. ": the rule runs through the DPS line")
         local scoreY, hostY = x.score.__points[1][5], x.spellHost.__points[1][5]
-        assertTrue(hostY < scoreY + ruleY - 1, view .. ": the spell header sits on the rule")
+        assertTrue(hostY < scoreY + ruleY - 1, view .. ": the first spell row sits on the rule")
         assertTrue(x.lines[1].bar:IsShown(), view .. ": the score table's bars are gone")
     end
 end)
 
-test("compare: one bar per row, on the higher run's side, its length the row's % difference against the table's", function()
+test("compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale", function()
     local i = inst()
     local low = mkRun("low", 100, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 500 },
                                                { id = 4, dmg = 800 } } })
@@ -332,13 +377,14 @@ test("compare: one bar per row, on the higher run's side, its length the row's %
     assertTrue(math.abs(up.__width - vw * 25 / (200 / 3)) < 1e-9, "the length is the %'s share of the largest %")
     assertEqual(only.side, "this")
     assertEqual(only.__width, vw, "a row with no % takes the whole scale")
-    assertEqual(byID[4].texts[4].__text, "+800", "and shows no %")
+    assertEqual(byID[4].texts[4].__text, "+800")
+    assertEqual(byID[4].texts[5].__text, "", "and shows no %")
     -- This run's bar ends at its column's right edge; the other's starts at its column's left edge.
     local tx, tw = byID[2].texts[2].__points[1][4], byID[2].texts[2].__width
     assertEqual(up.__points[1][4] + up.__width, tx + tw + Cmp.PAD, "this run's bar grows left from its right edge")
     assertEqual(down.__points[1][4], byID[1].texts[3].__points[1][4] - Cmp.PAD,
         "the best's bar grows right from its left edge")
-    -- The score table: its own scale, damage and DPS both -66.7%, so both fill the column.
+    -- The score table: on the one scale, damage and DPS both -66.7%, the spells' largest too.
     local dmg = x.lines[1].bar
     assertEqual(dmg.side, "other")
     assertEqual(dmg.__width, vw, "the table's largest % fills its column")
@@ -364,8 +410,132 @@ test("compare: one bar per row, on the higher run's side, its length the row's %
     assertEqual(diff / scale, 1, "no % anywhere in the table: still the whole column")
 end)
 
+-- A two-sided run pair for the DR-F05 bars: `this` and `other` its dps, spell 1 this run 10000 against
+-- 20000 (-50%), spell 2 this run 30000 against 20000 (+50%), spell 3 this run's alone, spell 4 the
+-- other's alone.
+local function barPair(i, this, other)
+    local a = mkRun("a", this, { spells = { { id = 1, dmg = 10000 }, { id = 2, dmg = 30000 }, { id = 3, dmg = 800 } } })
+    local b = mkRun("b", other, { spells = { { id = 1, dmg = 20000 }, { id = 2, dmg = 20000 }, { id = 4, dmg = 900 } } })
+    seed(i, { a, b })
+    i.R.ShowRun("a")
+    local d = detail(i)
+    d:SetComparing(true)
+    local byID = {}
+    for _, row in ipairs(d.cmp.rows.active) do byID[row.data.id] = row end
+    return d, byID
+end
+
+local function assertTint(i, bar, hue, what)
+    local got = bar.__colorTex
+    assertEqual(got[1], hue[1], what .. ": red")
+    assertEqual(got[2], hue[2], what .. ": green")
+    assertEqual(got[3], hue[3], what .. ": blue")
+    assertEqual(got[4], i.Cmp.BAR_ALPHA, what .. ": the bars' alpha")
+end
+
+test("compare: Damage, DPS and the spells size their bars on one scale (DR-F05)", function()
+    local i = inst()
+    local d, byID = barPair(i, 80, 100)      -- both score lines -20%, the spell rows' -100% the largest
+    local x, Cmp = d.cmp, i.Cmp
+    local vw = Cmp.Columns(d.content.__width).value
+    assertEqual(Cmp.BarScale({ { pct = -20 } }, { { pct = 50 }, { pct = -100 } }), 100, "the largest of both tables")
+    assertEqual(Cmp.BarScale({ { pct = -20 } }, nil), 20, "no spells: the score lines' own")
+    local rule = vw / 5
+    assertTrue(math.abs(x.lines[1].bar.__width - rule) < 1e-9, "Damage at -20% is a fifth of a column on a 100% scale")
+    assertTrue(math.abs(x.lines[2].bar.__width - rule) < 1e-9, "DPS the same")
+    assertEqual(x.lines[1].bar.side, "other", "and on the higher run's side")
+    assertEqual(byID[1].bar.__width, vw / 2, "a -50% spell, half the column on the same scale")
+    assertEqual(byID[2].bar.__width, vw / 2, "a +50% spell the same")
+    assertEqual(byID[4].bar.__width, vw, "the largest: the other run's lone spell, -100%")
+    assertEqual(byID[3].bar.__width, vw, "a spell the other never cast takes the whole scale")
+    assertEqual(byID[3].bar.side, "this")
+end)
+
+test("compare: the run with the more total damage is blue on every row, the other gold (DR-F05)", function()
+    local i = inst()
+    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
+    -- The other run is best: this run's column gold, the other's blue, row by row whoever leads it.
+    local d, byID = barPair(i, 80, 100)
+    local x = d.cmp
+    assertEqual(i.Cmp.BestSide(d.run, x.other), "other")
+    assertTint(i, x.lines[1].bar, blue, "the other's Damage bar")
+    assertTint(i, x.lines[2].bar, blue, "the other's DPS bar")
+    assertTint(i, byID[1].bar, blue, "a spell the other leads")
+    assertTint(i, byID[2].bar, gold, "a spell this run leads, in this run's column")
+    assertTint(i, byID[3].bar, gold, "this run's lone spell")
+    assertTint(i, byID[4].bar, blue, "the other's lone spell")
+    -- This run is best: the same rows swap.
+    i = inst()
+    d, byID = barPair(i, 100, 80)
+    x = d.cmp
+    assertEqual(i.Cmp.BestSide(d.run, x.other), "this")
+    assertTint(i, x.lines[1].bar, blue, "this run's Damage bar")
+    assertTint(i, x.lines[2].bar, blue, "this run's DPS bar")
+    assertTint(i, byID[1].bar, gold, "a spell the other leads, in the other's column")
+    assertTint(i, byID[2].bar, blue, "a spell this run leads")
+    -- The pure rule: one call per comparison, total damage, this run on a tie or a missing side.
+    local Cmp = i.Cmp
+    local function total(n) return { result = { damage = n } } end
+    assertEqual(Cmp.BestSide(total(5), total(5)), "this", "an exact tie: this run")
+    assertEqual(Cmp.BestSide(total(5), total(6)), "other")
+    assertEqual(Cmp.BestSide(total(5), {}), "this", "a side with no damage")
+    assertEqual(Cmp.BestSide({}, total(6)), "other")
+    assertEqual(Cmp.BarColor("this", "this"), i.NS.ResultsCompare.BAR_BEST, "the best's side, the dark blue")
+    assertEqual(Cmp.BarColor("other", "this"), i.NS.ResultsCompare.BAR_OTHER, "the other side, the dark gold")
+    assertEqual(Cmp.BarColor("other", "other"), i.NS.ResultsCompare.BAR_BEST)
+end)
+
+test("compare: the column headed Best run is blue even when this run has more damage (DR-F05)", function()
+    local i = inst()
+    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
+    -- An incomplete run ended early with more damage than the complete best: the board's best is
+    -- still the other run, so the kind answers, not the totals.
+    local best = mkRun("best", 100)
+    local partial = mkRun("partial", 90, { status = "incomplete", result = { damage = 105 * 180, dps = 108.6, endedAt = 174 } })
+    seed(i, { best, partial })
+    i.R.ShowRun("partial")
+    local d = detail(i)
+    d:SetComparing(true)
+    local x = d.cmp
+    assertEqual(x.kind, "best")
+    assertEqual(i.Cmp.BestSide(partial, best, x.kind), "other", "the other run holds the board")
+    assertEqual(x.bars.best, "other", "the pane passes the kind")
+    assertTint(i, x.lines[1].bar, gold, "this run's Damage bar, more damage but not the best")
+    -- The pure rule by kind: only a picked run (or no kind) falls to the totals.
+    local Cmp = i.Cmp
+    local function total(n) return { result = { damage = n } } end
+    assertEqual(Cmp.BestSide(total(6), total(5), "best"), "other", "the board's best, whatever the totals")
+    assertEqual(Cmp.BestSide(total(5), total(5), "best"), "other", "a tie with the board's best")
+    assertEqual(Cmp.BestSide(total(5), total(6), "runnerUp"), "this", "this run holds the board")
+    assertEqual(Cmp.BestSide(total(5), total(6), "picked"), "other", "a pick: the totals")
+    assertEqual(Cmp.BestSide(total(6), total(5), "picked"), "this")
+    assertEqual(Cmp.BarColor(x.bars.best, x.bars.best), blue, "the best's column")
+end)
+
+test("compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)", function()
+    local i = inst()
+    -- A picked run above this one on a different board: still total damage, not the board.
+    local a = mkRun("a", 100, { spells = { { id = 1, dmg = 10000 } } })
+    local b = mkRun("b", 120, { spells = { { id = 1, dmg = 20000 } }, race = { length = 60, grace = 1 },
+                                result = { damage = 120 * 180, dps = 120, tail = 2 } })
+    seed(i, { a, b })
+    i.R.ShowRun("a")
+    local d = detail(i)
+    d.pickID = "b"
+    d:SetComparing(true)
+    local x = d.cmp
+    assertEqual(x.kind, "picked")
+    assertTint(i, x.lines[1].bar, i.NS.ResultsCompare.BAR_BEST, "the picked run has the more damage")
+    local row = x.rows.active[1]
+    -- Behind on a row: the amount in the table's red, the % in the muted red, whichever run is blue.
+    assertEqual(row.texts[5].__text, "|cffdb8585-50.0%|r", "the muted red is unchanged")
+    local red = i.NS.ResultsTable.COLORS.red
+    assertEqual(row.texts[4].__color[1], red[1], "the amount's red")
+end)
+
 test("compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped", function()
-    local W = "-710.2K -100.0%"   -- the widest likely cell: a six-figure amount and a three-digit %
+    -- The widest likely cells: a six-figure amount and a signed three-digit % with one decimal.
+    local AMOUNT, PCT = "-710.2K", "-100.0%"
     for _, view in ipairs({ "expanded", "collapsed" }) do
         local i = inst()
         seed(i, { mkRun("best", 300), mkRun("low", 100) })
@@ -380,19 +550,52 @@ test("compare: the Difference column fits the detail at both views' minimum widt
         if view == "expanded" then
             assertEqual(cw, i.R.DETAIL_WIDTH - 24, "expanded: the 440 px detail less its pads")
         end
-        assertTrue(Tbl.BadgeWidth(W) <= Cmp.DIFF_W, view .. ": the widest Difference runs past its column")
-        local function fits(fs, right, what)
-            local plain = fs.__text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+        assertTrue(Tbl.BadgeWidth(AMOUNT) + Cmp.DIFF_GAP + Cmp.PCT_W <= Cmp.DIFF_W,
+            view .. ": the widest Difference runs past its column")
+        local function fits(fs, right, what, text)
+            local plain = (text or fs.__text):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
             assertTrue(Tbl.BadgeWidth(plain) <= fs.__width, view .. ": " .. what .. " is clipped")
             assertTrue(fs.__points[1][4] + fs.__width <= right, view .. ": " .. what .. " runs past the pane")
         end
-        for n = 1, 2 do fits(x.lines[n][4], cw, "score line " .. n .. "'s Difference") end
-        for _, row in ipairs(x.rows.active) do fits(row.texts[4], cw, "a spell's Difference") end
+        -- Two right-aligned columns (DR-06): the amount, DIFF_GAP, then the % ending at the pane's edge.
+        local function pair(set, what)
+            local amount, pct = set[4], set[5]
+            fits(amount, cw, what .. "'s amount", AMOUNT)
+            fits(pct, cw, what .. "'s %", PCT)
+            assertEqual(amount.__justifyH, "RIGHT", what .. ": the amount right-aligned")
+            assertEqual(pct.__justifyH, "RIGHT", what .. ": the % right-aligned")
+            assertEqual(pct.__width, Cmp.PCT_W, what .. ": the % column's width")
+            assertEqual(pct.__points[1][4] + pct.__width, cw, what .. ": the % ends at the pane's edge")
+            assertEqual(amount.__points[1][4] + amount.__width + Cmp.DIFF_GAP, pct.__points[1][4],
+                what .. ": a tight gap between the two")
+        end
+        for n = 1, 2 do pair(x.lines[n], "score line " .. n) end
+        for _, row in ipairs(x.rows.active) do pair(row.texts, "a spell") end
         fits(x.head[4], cw, "the score header")
-        fits(x.spellHead[4], cw, "the spell header")
+        -- One shared header over both columns, right-aligned over the %.
+        local cols = Cmp.Columns(cw)
+        for _, set in ipairs({ x.head }) do
+            assertEqual(set[4].__points[1][4], cols[3], view .. ": the Difference header starts over the amount")
+            assertEqual(set[4].__width, cols.diff, view .. ": and spans both columns")
+            assertEqual(set[4].__justifyH, "RIGHT")
+            assertNil(set[5], view .. ": no second header")
+        end
         assertTrue(x.lines[1][1].__width >= Tbl.BadgeWidth("Damage"), view .. ": the score table's names are squeezed")
         assertTrue(x.rows.active[1].texts[1].__width >= 40, view .. ": the spell names are squeezed")
     end
+end)
+
+test("compare: the % column holds a signed three-digit % with one decimal in every skin", function()
+    local i = inst()
+    local Cmp, Tbl = i.Cmp, i.NS.ResultsTable
+    -- Measured on the shipped faces at each skin's body size over Ka0s Default's (GameFontHighlightSmall,
+    -- 10 px at Ka0s Default): "+100.0%" is 40.8 px at the widest (High Contrast's Atkinson), 38.0 under
+    -- Ka0s Default, 33.5 under Obsidian; the outline adds about 2. The 6 px a character estimate holds them.
+    for _, s in ipairs({ "+100.0%", "-100.0%" }) do
+        assertTrue(Tbl.BadgeWidth(s) <= Cmp.PCT_W, s .. " runs past the % column")
+    end
+    assertTrue(Cmp.PCT_W >= 43, "under the widest measured skin's width with its outline")
+    assertTrue(Cmp.DIFF_GAP > 0 and Cmp.DIFF_GAP <= Cmp.PAD, "a tight gap")
 end)
 
 test("compare: the best compares with the runner-up; a run alone on its board has the toggle disabled", function()
@@ -403,7 +606,8 @@ test("compare: the best compares with the runner-up; a run alone on its board ha
     assertEqual(d.cmp.toggle.label.__text, "Compare vs runner-up")
     d:SetComparing(true)
     assertEqual(d.cmp.head[3].__text, "Runner-up")
-    assertEqual(d.cmp.lines[2][4].__text, "+200 |cff8fcc94+200.0%|r")
+    assertEqual(d.cmp.lines[2][4].__text, "+200")
+    assertEqual(d.cmp.lines[2][5].__text, "|cff8fcc94+200.0%|r")
     assertEqual(d.cmp.lines[2][4].__color[2], i.NS.ResultsTable.COLORS.green[2], "the amount in the table's green")
     i.R.ShowRun("solo")
     assertFalse(d.cmp.toggle:IsEnabled(), "nothing to compare with, and the toggle is live")
@@ -485,11 +689,13 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     assertEqual(lines[3], "Difference: -20,000")
     assertEqual(Tips.CompareSpell({ id = 1, dmgB = 5, delta = -5 }, "picked")[1][1], "This run: not cast")
 
-    -- Drawn: the score table's hover under itself, a row's beside the window after the spell.
+    -- Drawn: every hover of the section beside the window, right of it (DR-05, the owner's call,
+    -- 2026-10-30: the score table's opened under itself, over the spell table), a row's after the spell.
     local shown = {}
     i.mocks.GameTooltip = setmetatable({}, { __index = function(_, k)
-        return function(_, a, b)
+        return function(_, a, b, c)
             if k == "SetOwner" then shown = { owner = a, anchor = b } end
+            if k == "SetPoint" then shown.placed = { a, b, c } end
             if k == "SetSpellByID" then shown.spell = a end
             if k == "NumLines" then return 4 end
             if k == "GetWidth" or k == "GetEffectiveScale" then return 1 end
@@ -503,9 +709,14 @@ test("compare: the toggle, Clear Pick, the note, the score table and each compar
     window.GetRight = function() return 1200 end
     window.GetTop = function() return 800 end
     window.GetEffectiveScale = function() return 1 end
-    d.cmp.score:__fire("OnEnter")
-    assertEqual(shown.owner, d.cmp.score)
-    assertEqual(shown.anchor, "ANCHOR_BOTTOM")
+    local x = d.cmp
+    for name, part in pairs({ toggle = x.toggle, clear = x.clear, boards = x.boardsHover, score = x.score }) do
+        shown = {}
+        part:__fire("OnEnter")
+        assertTrue(shown.owner == window and shown.anchor == "ANCHOR_NONE", name .. ": owned by the window, not the part")
+        assertTrue(shown.placed and shown.placed[1] == "TOPLEFT" and shown.placed[2] == window
+            and shown.placed[3] == "TOPRIGHT", name .. ": right of the window")
+    end
     d.cmp.rows.active[1]:__fire("OnEnter")
     assertEqual(shown.spell, 29722, "a compared row shows its spell's tooltip")
     assertEqual(shown.anchor, "ANCHOR_NONE")
@@ -553,14 +764,14 @@ test("compare: the columns flex with the width: the name column a share of it up
     end
     -- The expanded minimum's detail (440 less its pads): the name its share (the owner's 2026-10-27
     -- call: P11's 152 px was too wide), the figures a little past their least.
-    check(i.R.DETAIL_WIDTH - 24, 134, Cmp.VALUE_W + 6, Cmp.DIFF_W + 6)
-    check(440, 140, Cmp.VALUE_W + 12, Cmp.DIFF_W + 12)
+    check(i.R.DETAIL_WIDTH - 24, 135, Cmp.VALUE_W + 5, Cmp.DIFF_W + 5)
+    check(440, 141, Cmp.VALUE_W + 11, Cmp.DIFF_W + 11)
     -- A spell's name there keeps about 115 px of text past its icon (Cell's x less the icon and its pads).
     local text = Cmp.Columns(i.R.DETAIL_WIDTH - 24)[1] - (i.NS.HudBreakdown.RowHeight() - 2) - 8
     assertTrue(text >= 110 and text <= 120, "the expanded view's name text: " .. text)
-    -- A 1200 px collapsed detail (1176 of content): the name at its cap (and the rounding's pixel), the
+    -- A 1200 px collapsed detail (1176 of content): the name at its cap (and the rounding's pixels), the
     -- figures every other pixel, grown alike.
-    check(1176, Cmp.NAME_MAX + 1, Cmp.VALUE_W + 237, Cmp.DIFF_W + 237)
+    check(1176, Cmp.NAME_MAX + 2, Cmp.VALUE_W + 236, Cmp.DIFF_W + 236)
     -- Between: the name at its cap, the figures grown alike.
     local c = Cmp.Columns(700)
     assertTrue(c.name >= Cmp.NAME_MAX and c.name < Cmp.NAME_MAX + 3, "the name at its most (and the rounding's pixels)")
@@ -583,14 +794,17 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         assertEqual(cw, case.cw, case.view .. ": the detail's content width")
         local cols = Cmp.Columns(cw)
         local row = x.rows.active[1]
-        for j = 2, 4 do
-            local cx, w = Cmp.Cell(j, cw)
-            assertEqual(x.spellHead[j].__points[1][4], cx, case.view .. ": column " .. j .. "'s x")
-            assertEqual(x.spellHead[j].__width, w, case.view .. ": column " .. j .. "'s width")
+        for j = 2, 5 do
+            local cx = Cmp.Cell(j, cw)
             assertEqual(row.texts[j].__points[1][4], cx, case.view .. ": a row's column " .. j)
             assertEqual(x.lines[1][j].__points[1][4], cx, case.view .. ": the score table shares column " .. j)
         end
-        assertEqual(row.texts[4].__points[1][4] + row.texts[4].__width, cw, case.view .. ": Difference at the right edge")
+        for j = 2, 4 do
+            local cx, w = Cmp.HeadCell(j, cw)
+            assertEqual(x.head[j].__points[1][4], cx, case.view .. ": column " .. j .. "'s x")
+            assertEqual(x.head[j].__width, w, case.view .. ": column " .. j .. "'s width")
+        end
+        assertEqual(row.texts[5].__points[1][4] + row.texts[5].__width, cw, case.view .. ": Difference at the right edge")
         assertEqual(x.head[1].__width, cols.name, case.view .. ": the score table's name column")
         assertEqual(row.texts[1].__width, cols[1] - (i.NS.HudBreakdown.RowHeight() - 2) - 8, case.view .. ": a spell's name column")
         -- The separator: one per table, the same x, through every line at full height.
@@ -599,7 +813,7 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         assertEqual(Cmp.SEP_W, 1)
         assertTrue(Cmp.SEP_COLOR[4] >= 0.15 and Cmp.SEP_COLOR[4] <= 0.2, "the separator's alpha, dim")
         for _, t in ipairs({ { x.scoreSep, x.score, Cmp.ROW_H + 2 * Cmp.ScoreLineH() }, { x.spellSep, x.spellHost,
-                Cmp.ROW_H + #x.data * i.NS.HudBreakdown.Pitch() } }) do
+                #x.data * i.NS.HudBreakdown.Pitch() } }) do
             local sep, parent, h = t[1], t[2], t[3]
             assertTrue(sep:IsShown(), case.view .. ": no separator")
             assertEqual(sep.__points[1][2], parent)
@@ -609,8 +823,8 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
             assertEqual(sep.__vertex[1], Cmp.SEP_COLOR[1], case.view .. ": the separator's gray")
             assertEqual(sep.__vertex[4], Cmp.SEP_COLOR[4], case.view .. ": the separator's alpha")
         end
-        local thisRight = x.spellHead[2].__points[1][4] + x.spellHead[2].__width + Cmp.PAD
-        assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.spellHead[3].__points[1][4] - Cmp.PAD,
+        local thisRight = x.head[2].__points[1][4] + x.head[2].__width + Cmp.PAD
+        assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.head[3].__points[1][4] - Cmp.PAD,
             case.view .. ": the separator sits between the runs' columns")
     end
 end)

@@ -57,8 +57,9 @@ local _, NS = ...
 -- the casts it stands for, its hover listing each with its time (ResultsTips.CastCrowd): nothing is
 -- dropped (the owner's second test round, 2026-10-26: a potion, a trinket and Bestial Wrath in one second
 -- showed two icons). Pooled frames on the overlay, each icon with its art and a
--- hover (the spell and its time, ResultsTips.Cast) everywhere the chart is drawn, the running HUD
--- included (a plain frame); moved only when the list, the length or the geometry changed. The icon is
+-- hover everywhere the chart is drawn, the running HUD included (a plain frame): the client's full
+-- spell tooltip, then its time (ResultsTips.CastAfter), beside the window it sits in, level with the
+-- icon (ResultsTable.SpellTip, DR-03), a +n mark's list beside it too; moved only when the list, the length or the geometry changed. The icon is
 -- C_Spell's for the cast's plain stored ID. Live from Casts.Live() (re-read only when the race heard
 -- another cast), and after the race from the run's record; *Show cooldown icons* (live.castDots) turns
 -- them off everywhere.
@@ -513,6 +514,10 @@ function Strip:SetParts(head, plot)
     head, plot = head and true or false, plot and true or false
     self.title:SetShown(head)
     self.note:SetShown(head)
+    -- A body's hover zones over the two labels (Hud_States' chartTips): a label takes no mouse itself.
+    if self.headZones then
+        for _, zone in ipairs(self.headZones) do zone:SetShown(head) end
+    end
     self.plot:SetShown(plot)
     for _, fs in ipairs(self.axis) do fs:SetShown(plot) end
     self.shown = plot
@@ -660,21 +665,26 @@ end
 
 -- ── the cooldown icons ──────────────────────────────────────────────────────────────────────────
 
--- An icon's hover: the spell and its time on the race clock (modules/Results_Tips.lua Cast), under
--- the icon. Both are read at call time (the Results modules load after this one).
+-- An icon's hover (DR-03, the owner's call, 2026-10-30): the client's full spell tooltip, then the
+-- time it was cast on the race clock (modules/Results_Tips.lua CastAfter), right of the window the
+-- chart sits in (the HUD or the Results window), level with the icon. The cast's ID is plain (the
+-- cast events, spec §2). Both modules are read at call time (they load after this one).
 local function iconEnter(icon)
     local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
-    if icon.cast and Tbl and Tips then Tbl.BelowTip(icon, Tips.Cast(icon.cast)) end
+    if icon.cast and Tbl and Tips then
+        Tbl.SpellTip(Tbl.WindowOf(icon), icon, icon.cast.id, Tips.CastAfter(icon.cast))
+    end
 end
 
 local function iconLeave()
     if NS.ResultsTable then NS.ResultsTable.HideTip() end
 end
 
--- A +n mark's hover: every cast it stands for, each with its time, on bullets.
+-- A +n mark's hover: every cast it stands for, each with its time, on bullets, beside the window as
+-- an icon's is.
 local function markEnter(mark)
     local Tbl, Tips = NS.ResultsTable, NS.ResultsTips
-    if mark.casts and Tbl and Tips then Tbl.BelowTip(mark, Tips.CastCrowd(mark.casts)) end
+    if mark.casts and Tbl and Tips then Tbl.SideTip(Tbl.WindowOf(mark), mark, Tips.CastCrowd(mark.casts)) end
 end
 
 -- An icon: a plain frame on the overlay (it takes the mouse for its tooltip) holding the spell's art.

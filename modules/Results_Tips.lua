@@ -226,7 +226,8 @@ end
 -- ── the run detail ──────────────────────────────────────────────────────────────────────────────
 -- The detail pane's hovers (modules/Results_Detail.lua), the same lines as the tables' where the two
 -- show the same thing. The spells are the client's own spell tooltip with Tips.Spell's lines after
--- it, beside the window; everything else is under the element it names (Results_Table's BelowTip).
+-- it, beside the window, as the Spell breakdown heading's (DR-05); everything else is under the element
+-- it names (Results_Table's BelowTip).
 
 local function dimLine(text) return { text, NS.Style.Rgb("dr.dim") } end
 
@@ -342,6 +343,16 @@ end
 function Tips.Cast(cast)
     if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
     return { castName(cast), L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0)) }
+end
+
+--- What follows the client's spell tooltip on a damage chart's cooldown icon (DR-03): the time it was
+--- cast on the race clock, "(pet)" after a pet's. Nil for anything but a cast.
+--- @param cast table  { t, id, pet }
+--- @return table|nil
+function Tips.CastAfter(cast)
+    if type(cast) ~= "table" or type(cast.id) ~= "number" then return nil end
+    local at = L["Cast at %s"]:format(NS.ResultsUsage.Clock(tonumber(cast.t) or 0))
+    return { cast.pet and L["%s (pet)"]:format(at) or at }
 end
 
 --- A +n mark's tooltip on the damage chart: how many casts it stands for, then each one's spell and
@@ -497,7 +508,8 @@ end
 
 -- ── the compare ─────────────────────────────────────────────────────────────────────────────────
 -- The detail's compare (modules/Results_Compare.lua): the toggle, Clear Pick, the different-board
--- note and the score table under themselves; a compared spell row after the client's spell tooltip.
+-- note and the score table beside the window (DR-05); a compared spell row after the client's spell
+-- tooltip, there too.
 
 local function otherName(kind)
     if kind == "picked" then return L["the run you picked"] end

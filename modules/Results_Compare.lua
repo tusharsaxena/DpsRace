@@ -26,10 +26,16 @@ local C = Tbl.COLORS
 local FONT = NS.Style.FONT
 
 Compare.VALUE_W = 80        -- each figure column's least width, in the score table and the compared breakdown
--- The Difference column's least width: the amount and the % ("-710.2K -100.0%", 15 characters at
--- Tbl.BadgeWidth's 6 px and its 4 px pad), at the right of both tables; it fits the 440 px detail of
--- the expanded view at its 1344 px minimum (tests/test_compare.lua).
-Compare.DIFF_W = 94
+-- The Difference (DR-06, the owner's call, 2026-10-30): two right-aligned columns under one shared
+-- header, the amount, then DIFF_GAP, then the %. The % column is PCT_W wide: a signed three-digit %
+-- with one decimal ("+100.0%", "-100.0%") at Tbl.BadgeWidth's 6 px a character and its 4 px pad,
+-- which holds the widest skin's measured width (High Contrast's Atkinson, 40.8 px at its body size
+-- over Ka0s Default's, about 2 more with the outline; tests/test_compare.lua). The column's least
+-- width holds the widest likely amount ("-710.2K", 46 px the same way) beside it, at the right of
+-- both tables; it fits the 440 px detail of the expanded view at its 1344 px minimum.
+Compare.PCT_W = 46
+Compare.DIFF_GAP = 4
+Compare.DIFF_W = 96
 -- The flex layout (the owner's calls, 2026-10-27): the tables fill the detail at any width. The name
 -- column takes NAME_SHARE of the width, at most NAME_MAX and never more than the figures leave at
 -- their least; the three figure columns grow alike over the rest. In the expanded view's 416 px detail
@@ -49,11 +55,16 @@ Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
 Compare.GAP = 6             -- between this run's column and the other's
 Compare.PAD = 4             -- a figure's inset from the edge its column's bar grows from
--- The difference bars (the owner's call, 2026-10-26): flat, muted and see-through, so the white
--- figures read over them; the Results window's soft green and soft red (the 3:00 and 0:30 length hues),
+-- The difference bars (the owner's calls, 2026-10-26 and DR-F05): flat and opaque, in the hues of the
+-- New best text (#61A4F8) and the headings (#F8CC00) darkened to the race bars' weight (their fill reads
+-- #2F2F4D on screen, luminance 50), so the white figures read over them (Compare.BarColor).
+Compare.BAR_ALPHA = 1
+Compare.BAR_BEST = { 32 / 255, 54 / 255, 82 / 255 }
+Compare.BAR_OTHER = { 64 / 255, 53 / 255, 0 }
+-- The Difference's %: the Results window's soft green and soft red (the 3:00 and 0:30 length hues),
 -- DATA hues (skinning rung 4: the higher and the lower run), the same under every skin.
-Compare.BAR_UP = { 0.56, 0.80, 0.58, 0.40 }     -- this run is higher
-Compare.BAR_DOWN = { 0.86, 0.52, 0.52, 0.40 }   -- the other run is higher
+Compare.DIFF_UP = { 0.56, 0.80, 0.58 }     -- this run is higher
+Compare.DIFF_DOWN = { 0.86, 0.52, 0.52 }   -- the other run is higher
 -- The score lines' labels (the owner's call, 2026-10-27): each starts with a built-in game icon at the
 -- spell icons' size and x, so *Damage* and *DPS* line up with the spell names under them. Plain
 -- textures from the client's icon set, no media of the addon's own.
@@ -162,7 +173,16 @@ function Compare.MaxPct(rows)
     return top
 end
 
---- A row's difference on its table's scale, as Compare.Bar takes it: its `pct` against `maxPct`; a
+--- The one length of a full bar (DR-F05): the largest absolute `pct` of the score lines and the spell
+--- rows together, so every row of the compare sizes its bar by the same rule.
+--- @param scoreRows table|nil  Compare.ScoreRows
+--- @param spellRows table|nil  Compare.Spells
+--- @return number maxPct
+function Compare.BarScale(scoreRows, spellRows)
+    return math.max(Compare.MaxPct(scoreRows), Compare.MaxPct(spellRows))
+end
+
+--- A row's difference on the one scale, as Compare.Bar takes it: its `pct` against `maxPct`; a
 --- row with no % (the other run's figure is 0 or missing) takes the whole scale, its side from
 --- `delta`. Nothing (nil, 0) when `delta` is 0 or unknown.
 --- @return number|nil diff, number maxDiff
@@ -175,12 +195,34 @@ end
 
 --- One row's difference bar: the column it sits in, "this" when `diff` is above 0 (this run is
 --- higher) or "other" below it, nil when equal or unknown; and its length, `diff`'s size against
---- `maxDiff` (the table's largest) across `width`, never past it.
+--- `maxDiff` (the largest of every row) across `width`, never past it.
 --- @return string|nil side, number length
 function Compare.Bar(diff, maxDiff, width)
     diff, maxDiff = num(diff), num(maxDiff)
     if not (diff and maxDiff) or diff == 0 or maxDiff <= 0 then return nil, 0 end
     return diff > 0 and "this" or "other", math.min(width, width * math.abs(diff) / maxDiff)
+end
+
+--- Which of the two runs is the best (DR-F05), decided once per comparison. `kind` answers when it
+--- knows: "best" means the other run holds the board, "runnerUp" that this run does, even when an
+--- incomplete run out-damaged the best in a shorter time. A picked run, or no kind, falls to total
+--- damage, a missing total counting 0: "other" only when the other run has strictly more; a tie is
+--- this run's.
+--- @param kind string|nil  Compare.Target's kind
+--- @return string side  "this" | "other"
+function Compare.BestSide(run, other, kind)
+    if kind == "best" then return "other" end
+    if kind == "runnerUp" then return "this" end
+    local a, b = num(resultOf(run).damage) or 0, num(resultOf(other).damage) or 0
+    return b > a and "other" or "this"
+end
+
+--- A bar's hue by the column it sits in: the best run's column blue, the other's gold, on every row
+--- whichever run leads that row.
+--- @param side string  the bar's column, "this" | "other"
+--- @param best string  Compare.BestSide's answer
+function Compare.BarColor(side, best)
+    return side == best and Compare.BAR_BEST or Compare.BAR_OTHER
 end
 
 --- Whether a run can take part in a compare: a stored record with a result (a lost run has none).
@@ -267,16 +309,22 @@ end
 
 -- A color escape for a data hue `c` around one %s.
 local function escape(c) return NS.Style.HueEscape(c) .. "%s|r" end
-local PCT_UP, PCT_DOWN = escape(Compare.BAR_UP), escape(Compare.BAR_DOWN)
+local PCT_UP, PCT_DOWN = escape(Compare.DIFF_UP), escape(Compare.DIFF_DOWN)
 
---- The Difference cell (the owner's call, 2026-10-26): the amount, then a space and the % in the
---- bars' muted green or red ("+78.3K +2.3%"); the amount alone with no % (the other run's figure is
---- 0 or missing) or no difference; a dash with no amount. The amount takes its color from paint().
-function Compare.DiffText(delta, pct)
+--- The Difference's amount cell (DR-06): the signed amount ("+78.3K"), "0" for none, a dash with no
+--- amount. It takes its color from paint().
+function Compare.DiffAmount(delta)
     if type(delta) ~= "number" then return DASH end
+    return Compare.DeltaText(delta)
+end
+
+--- The Difference's % cell (DR-06; the owner's call, 2026-10-26, for its color): the % in its
+--- muted green or red ("+2.3%"); empty with no amount, no difference, or no % (the other run's
+--- figure is 0 or missing).
+function Compare.DiffPct(delta, pct)
     pct = num(pct)
-    if delta == 0 or not pct then return Compare.DeltaText(delta) end
-    return Compare.DeltaText(delta) .. " " .. (delta > 0 and PCT_UP or PCT_DOWN):format(pctText(pct))
+    if type(delta) ~= "number" or delta == 0 or not pct then return "" end
+    return (delta > 0 and PCT_UP or PCT_DOWN):format(pctText(pct))
 end
 
 local function paint(fs, value)
@@ -285,13 +333,15 @@ end
 
 -- ── the parts ───────────────────────────────────────────────────────────────────────────────────
 
--- `frame`'s hover: the compare tooltip for `key` under it (NS.ResultsTips.Compare).
+-- `frame`'s hover: the compare tooltip for `key` (NS.ResultsTips.Compare) beside the window, level with
+-- the part, as the compared rows' (DR-05, the owner's call, 2026-10-30: every tooltip of the Spell
+-- breakdown section sits right of the window; the score table's opened under itself, over the spells).
 local function hover(p, frame, key)
     frame:EnableMouse(true)
     frame:HookScript("OnEnter", function(self)
         local other, kind = p:CompareTarget(true)
         local lines = NS.ResultsTips.Compare(key, p.run, other, kind)
-        if lines then Tbl.BelowTip(self, lines) end
+        if lines then Tbl.SideTip(Tbl.WindowOf(p.frame), self, lines) end
     end)
     frame:HookScript("OnLeave", Tbl.HideTip)
     return frame
@@ -316,13 +366,14 @@ local function buildBar(p, c, x)
 end
 
 -- Each column's justify, headers and figures alike: the name, this run (right, against the other's
--- column), the other run (left, against this run's), the difference.
-Compare.JUSTIFY = { "LEFT", "RIGHT", "LEFT", "RIGHT" }
+-- column), the other run (left, against this run's), the difference's amount and its % (DR-06).
+Compare.JUSTIFY = { "LEFT", "RIGHT", "LEFT", "RIGHT", "RIGHT" }
+local HEADS, CELLS = 4, 5   -- a header line's strings (one Difference over both), a figure line's
 
--- A table's header line: four FontStrings in `font`, justified as their columns.
-local function heads(f, font, colors)
+-- A table's line: `n` FontStrings in `font`, justified as their columns.
+local function heads(f, font, colors, n)
     local out = {}
-    for j, justify in ipairs(Compare.JUSTIFY) do out[j] = Tbl.Text(f, font, colors and colors[j], justify) end
+    for j = 1, n do out[j] = Tbl.Text(f, font, colors and colors[j], Compare.JUSTIFY[j]) end
     return out
 end
 
@@ -342,7 +393,8 @@ local function newSep(f)
 end
 
 -- The score table (the owner's call, 2026-10-26): no box, its columns the spell table's (Compare.Cell),
--- and a faint rule under it, the window's divider gray, between its lines and the spell table's header.
+-- and a faint rule under it, the window's divider gray, between its lines and the spell rows. Its
+-- header is the one header row of both tables (DR-F03), so *Spell* heads the name column.
 local function buildScore(p, c, x)
     x.score = CreateFrame("Frame", nil, c)
     hover(p, x.score, "score")
@@ -350,14 +402,15 @@ local function buildScore(p, c, x)
     x.rule = f:CreateTexture(nil, "ARTWORK")
     NS.Skin.Divider(x.rule)
     x.scoreSep = newSep(f)
-    x.head = heads(f, FONT.HEADER)
+    x.head = heads(f, FONT.HEADER, nil, HEADS)
+    x.head[1]:SetText(L["Spell"])
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
     x.lines = {}
     -- Each label in the spell names' white and font, after its icon (the spell icons' size and x).
     local labels = { { L["Damage"], Compare.DAMAGE_ICON }, { L["DPS"], Compare.DPS_ICON } }
     for i, def in ipairs(labels) do
-        local line = heads(f, FONT.TEXT, { C.text, C.text, C.text, C.dim })
+        local line = heads(f, FONT.TEXT, { C.text, C.text, C.text, C.dim, C.dim }, CELLS)
         line[1]:SetText(def[1])
         line.icon = f:CreateTexture(nil, "ARTWORK")
         line.icon:SetTexture(def[2])
@@ -368,10 +421,6 @@ end
 
 local function buildSpells(_, c, x)
     x.spellHost = CreateFrame("Frame", nil, c)
-    x.spellHead = heads(x.spellHost, FONT.HEADER)
-    x.spellHead[1]:SetText(L["Spell"])
-    x.spellHead[2]:SetText(L["This run"])
-    x.spellHead[4]:SetText(L["Difference"])
     x.spellSep = newSep(x.spellHost)
     x.rows = NS.Pool.New()
 end
@@ -399,14 +448,17 @@ function Compare.Fill(p)
     NS.Style.Paint(x.toggle.label, on and C.text or C.dim)
     x.toggle:SetChecked(p:Comparing())
     x.head[3]:SetText(Compare.OtherLabel(kind))
-    x.spellHead[3]:SetText(Compare.OtherLabel(kind))
     local k = other and Compare.Kpis(p.run, other) or {}
     local values, diffs = { { k.damageA, k.damageB }, { k.dpsA, k.dpsB } }, Compare.ScoreRows(k)
+    -- One comparison, one scale and one best, whichever the row (DR-F05).
+    x.diffs = diffs
+    x.bars = { maxPct = Compare.BarScale(diffs, x.data), best = Compare.BestSide(p.run, other, kind) }
     for i, line in ipairs(x.lines) do
         local v, d = values[i], diffs[i]
         line[2]:SetText(figure(v[1]))
         line[3]:SetText(figure(v[2]))
-        line[4]:SetText(Compare.DiffText(d.delta, d.pct))
+        line[4]:SetText(Compare.DiffAmount(d.delta))
+        line[5]:SetText(Compare.DiffPct(d.delta, d.pct))
         paint(line[4], d.delta)
     end
 end
@@ -443,10 +495,12 @@ function Compare.SeparatorX(width)
 end
 
 --- Column `j`'s text box across `width`: its left x, width and justify, the one geometry of both
---- tables (the score table's and the spell table's headers and every line under them), so their
+--- tables (the one header row and every line under it, score and spell alike), so their
 --- columns line up. The name column runs from the left edge to this run's; a spell row's name then
 --- steps past its icon. This run's figure stops PAD short of its right edge, the other's starts PAD
---- into its column: each sits off the edge its bar grows from.
+--- into its column: each sits off the edge its bar grows from. The Difference splits in two (DR-06):
+--- the amount (4) up to DIFF_GAP short of the % (5), which takes the last PCT_W; its header spans
+--- both (Compare.HeadCell).
 --- @return number x, number width, string justify
 function Compare.Cell(j, width)
     local cols, pad = columns(width), Compare.PAD
@@ -454,7 +508,19 @@ function Compare.Cell(j, width)
     if j == 1 then return 0, cols.name, justify end
     if j == 2 then return cols[1], vw - pad, justify end
     if j == 3 then return cols[2] + pad, vw - pad, justify end
-    return cols[3], cols.diff, justify
+    if j == 4 then return cols[3], cols.diff - Compare.PCT_W - Compare.DIFF_GAP, justify end
+    return width - Compare.PCT_W, Compare.PCT_W, justify
+end
+
+--- A header line's column `j` across `width`: Cell's, but the one Difference header over both of its
+--- columns, right-aligned over the % (DR-06).
+--- @return number x, number width, string justify
+function Compare.HeadCell(j, width)
+    if j == HEADS then
+        local cols = columns(width)
+        return cols[3], cols.diff, Compare.JUSTIFY[j]
+    end
+    return Compare.Cell(j, width)
 end
 
 --- A spell icon's side in the compared rows, and the score labels' icons with them: the configured
@@ -487,23 +553,26 @@ local function placeSep(sep, parent, x, h)
     sep:Show()
 end
 
--- A header or line of four FontStrings at `y` in `parent`, each in its column's box (Compare.Cell).
+-- A header line's four FontStrings at `y` in `parent`, each in its column's box (Compare.HeadCell).
 local function placeLine(set, parent, y, width)
-    for j = 1, 4 do
-        local cx, w = Compare.Cell(j, width)
+    for j = 1, HEADS do
+        local cx, w = Compare.HeadCell(j, width)
         place(set[j], parent, cx, y, w)
     end
 end
 
--- A line's difference bar, at `y` from `point` of `parent`: in this run's column it grows left from
--- the column's right edge, in the other's right from its left edge; hidden when the runs are equal.
-local function placeBar(bar, parent, point, y, h, cols, diff, maxDiff)
+-- A line's difference bar, at `y` from `point` of `parent`, the one rule of every row: `row`'s { pct,
+-- delta } on `scale` (Compare.Fill's x.bars). In this run's column it grows left from the column's
+-- right edge, in the other's right from its left edge, in its column's hue; hidden when the runs are
+-- equal.
+local function placeBar(bar, parent, point, y, h, cols, row, scale)
     local vw = cols.value
+    local diff, maxDiff = Compare.Scaled(row.pct, row.delta, scale.maxPct)
     local side, len = Compare.Bar(diff, maxDiff, vw)
     bar.side = side
     bar:SetShown(side ~= nil)
     if not side then return end
-    NS.Style.Fill(bar, side == "this" and Compare.BAR_UP or Compare.BAR_DOWN)
+    NS.Style.Fill(bar, Compare.BarColor(side, scale.best), Compare.BAR_ALPHA)
     bar:ClearAllPoints()
     bar:SetPoint(point, parent, point, side == "this" and cols[1] + vw - len or cols[2], y)
     bar:SetWidth(len)
@@ -541,7 +610,7 @@ local function placeScoreLine(line, parent, y, lineH, cw, cols)
     line.icon:SetSize(icon, icon)
     line.icon:ClearAllPoints()
     line.icon:SetPoint("LEFT", parent, "TOPLEFT", 0, mid)
-    for j = 1, 4 do
+    for j = 1, CELLS do
         local cx, w = Compare.Cell(j, cw)
         if j == 1 then cx, w = icon + 4, math.max(20, cols[1] - icon - 8) end
         line[j]:ClearAllPoints()
@@ -558,15 +627,12 @@ local function layoutScore(p, y, cw)
     place(x.score, p.content, 0, y)
     x.score:SetSize(cw, -ruleY + 1)
     local cols = columns(cw)
-    local diffs = Compare.ScoreRows(x.other and Compare.Kpis(p.run, x.other))
-    local maxPct = Compare.MaxPct(diffs)
     placeLine(x.head, x.score, 0, cw)
     for n, set in ipairs(x.lines) do
         local ly = -rowH - (n - 1) * lineH
         placeScoreLine(set, x.score, ly, lineH, cw, cols)
-        local d = diffs[n]
         -- The bar fills the line less its last pixel, so the two lines' bars never touch.
-        placeBar(set.bar, x.score, "TOPLEFT", ly, lineH - 1, cols, Compare.Scaled(d.pct, d.delta, maxPct))
+        placeBar(set.bar, x.score, "TOPLEFT", ly, lineH - 1, cols, x.diffs[n], x.bars)
     end
     placeSep(x.scoreSep, x.score, Compare.SeparatorX(cw), height)
     place(x.rule, x.score, 0, ruleY, cw)
@@ -583,7 +649,7 @@ local function newRow(host)
     row.bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -NS.HudBreakdown.ROW_GAP)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.bar = newBar(row)
-    row.texts = heads(row, FONT.TEXT, { C.text, C.text, C.text, C.dim })
+    row.texts = heads(row, FONT.TEXT, { C.text, C.text, C.text, C.dim, C.dim }, CELLS)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         if not self.data then return end
@@ -594,7 +660,7 @@ local function newRow(host)
     return row
 end
 
-local function fillRow(row, data, index, cw, rowH, maxPct)
+local function fillRow(row, data, index, cw, rowH, scale)
     local cols, icon = columns(cw), Compare.IconSize()
     row:SetSize(cw, rowH)
     NS.Style.Stripe(row.bg, index)
@@ -614,11 +680,12 @@ local function fillRow(row, data, index, cw, rowH, maxPct)
             fs:SetWidth(w)
         end
     end
-    placeBar(row.bar, row, "LEFT", 0, rowH, cols, Compare.Scaled(data.pct, data.delta, maxPct))
+    placeBar(row.bar, row, "LEFT", 0, rowH, cols, data, scale)
     t[1]:SetText(NS.HudBreakdown.SpellName(data.id))
     t[2]:SetText(Compare.SpellFigure(data.dmgA, data.shareA))
     t[3]:SetText(Compare.SpellFigure(data.dmgB, data.shareB))
-    t[4]:SetText(Compare.DiffText(data.delta, data.pct))
+    t[4]:SetText(Compare.DiffAmount(data.delta))
+    t[5]:SetText(Compare.DiffPct(data.delta, data.pct))
     paint(t[4], data.delta)
     row.data = data
 end
@@ -629,19 +696,17 @@ local function layoutSpells(p, y, cw)
     local rowH, pitch = NS.HudBreakdown.RowHeight(), NS.HudBreakdown.Pitch()
     local host = x.spellHost
     place(host, p.content, 0, y)
-    host:SetSize(cw, Compare.ROW_H + math.max(1, #data * pitch))
-    placeLine(x.spellHead, host, 0, cw)
-    placeSep(x.spellSep, host, Compare.SeparatorX(cw), Compare.ROW_H + #data * pitch)
-    local maxPct = Compare.MaxPct(data)
+    host:SetSize(cw, math.max(1, #data * pitch))
+    placeSep(x.spellSep, host, Compare.SeparatorX(cw), #data * pitch)
     NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
     for i, d in ipairs(data) do
         local row = NS.Pool.Acquire(x.rows, function() return newRow(host) end)
         row.pane = p
         row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -Compare.ROW_H - (i - 1) * pitch)
-        fillRow(row, d, i, cw, rowH, maxPct)
+        row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -(i - 1) * pitch)
+        fillRow(row, d, i, cw, rowH, x.bars)
     end
-    return y - Compare.ROW_H - #data * pitch - 8
+    return y - #data * pitch - 8
 end
 
 --- While comparing: the score table and the compared breakdown at `y`; answers the y beneath.

@@ -1,0 +1,21 @@
+Ka0s DPS Race — offline perf  (v0.1.0, label 'pre-merge')
+
+scenario                    iters     ms/iter notes/iter  bytes/iter
+raceEventCaptureOff          2000     0.00234       0.00         0.3
+raceEventCaptureOn           2000     0.00331       1.00         0.3
+hudTickCaptureOff            2000     0.02048       0.00       800.3
+hudTickCaptureOn             2000     0.02076       1.00       800.3
+hudLiveCaptureOff            2000     0.10162       0.00      7264.4
+hudLiveCaptureOn             2000     0.10045       1.00      7264.4
+combatEventCaptureOff        2000     0.11892       0.00      3376.5
+combatEventCaptureOn         2000     0.10826       1.00      3376.5
+raceInputStoodDown           2000     0.00018       0.00         0.0
+
+timings are for orientation only — compare scenarios within a run, never across machines
+
+4 assertions FAILED:
+  - hudLiveCaptureOff allocated 7264.4 bytes/iter, over its 7000-byte ceiling
+  - hudLiveCaptureOn allocated 7264.4 bytes/iter, over its 7000-byte ceiling
+  - combatEventCaptureOff allocated 3376.5 bytes/iter, over its 3000-byte ceiling
+  - combatEventCaptureOn allocated 3376.5 bytes/iter, over its 3000-byte ceiling
+wrote docs/automated-tests/20261031-202021/perf.json

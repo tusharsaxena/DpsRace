@@ -16,7 +16,16 @@ local _, NS = ...
 -- While the Skin tab's Ignore fonts is on, the library answers no `hud.font` (LibKa0s v1.81.0, R-1),
 -- so a face block draws its stored pick even with its companion on; the textures still follow. The
 -- stored pick is never rewritten, so turning the companion off brings it back. Only the face and the
--- texture follow (X4): sizes, flags, shadows and colors stay the player's. Not S.BarTexture: it always
+-- texture follow (X4): sizes, flags, shadows and colors stay the player's, with two library-read
+-- exceptions (LibKa0s v1.82.0). FLAGS: a block's Font flags of *From skin* ("@skin", the default,
+-- D-07) draws the Skin tab's Font outline through S.FontFlags: as HUD text (hud.outline) on the HUD,
+-- as window text (font.outline, `where` "window") in the Results window, which draws the Runs list's
+-- bar text and the detail's spell rows, so *HUD text only* drops their outline (D-06). The two
+-- clocks are the mono role, which the Font outline never outlines (D-06, critic C4): their From skin
+-- draws no outline. A flag the player picks draws as picked. SIZE: a block drawing the skin's HUD face draws its stored size through
+-- S.HudFontSize (D-09), scaled by the skin's HUD size over Ka0s Default's so every skin's HUD text is
+-- as wide as Ka0s Default's; a block on its own face, the clocks and Ignore fonts draw the stored
+-- size. The stored size is never rewritten. Not S.BarTexture: it always
 -- paints the skin's texture and replays it on a switch, which would override a player who unticked the
 -- companion. A skin switch reaches every block through Style's one OnLooksChanged listener, which calls
 -- Changed() below (modules/Style.lua). The two clocks have no companion (D-15): they stay monospace.
@@ -39,9 +48,24 @@ local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
 
 Appearance.stamp = 0
 
+-- The composer's *From skin* value for Font flags (LibKa0s-Skin-1.0's FROM_SKIN).
+local FROM_SKIN = "@skin"
+
 -- Each media leaf that can follow the skin: the skin token it follows. The companion is the leaf plus
 -- `FromSkin`, stored beside it (OptionsCompose's naming).
 local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
+
+--- Every font block's Font flags, by full path: the v7 step's list (core/Database.lua).
+-- The clocks' blocks: the mono role, never outlined by the Font outline (D-06).
+local MONO = { ["appearance.elapsed."] = true, ["appearance.left."] = true }
+
+Appearance.FONT_FLAGS_KEYS = {
+    "appearance.elapsed.fontFlags",
+    "appearance.left.fontFlags",
+    "appearance.figures.fontFlags",
+    "appearance.spellText.fontFlags",
+    "resultsTable.barText.fontFlags",
+}
 
 --- Every stored companion, by full path: the v6 reset's list (core/Database.lua). The clocks
 --- (`appearance.elapsed`, `appearance.left`) are absent by design (D-15).
@@ -73,21 +97,32 @@ local function fetch(kind, name)
     return nil
 end
 
+-- A stored swatch's r, g, b and alpha (`alpha` when given, else its own, else 1).
+local function swatch(stored, alpha)
+    local s = type(stored) == "table" and stored or {}
+    return s.r or 1, s.g or 1, s.b or 1, alpha or s.a or 1
+end
+
+-- The named class's RAID_CLASS_COLORS entry when it carries a color, else nil.
+local function classEntry(class)
+    local c = type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class]
+    if type(c) == "table" and type(c.r) == "number" then return c end
+    return nil
+end
+
 -- A swatch through its class-color companion. With `class` (a class token: a stored run's character)
 -- the class is that one, the surface describing that character; without it, the player's, through
 -- LibKa0s-Core's resolver. An unresolvable class falls through to the swatch; its alpha always holds.
 local function color(stored, useClass, class)
-    local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
     if class ~= nil then
-        local s = type(stored) == "table" and stored or {}
-        local a = s.a or 1
-        local c = useClass and type(RAID_CLASS_COLORS) == "table" and RAID_CLASS_COLORS[class]
-        if type(c) == "table" and type(c.r) == "number" then return c.r, c.g, c.b, a end
-        return s.r or 1, s.g or 1, s.b or 1, a
+        local a = type(stored) == "table" and stored.a or 1
+        local c = useClass and classEntry(class)
+        if c then return c.r, c.g, c.b, a end
+        return swatch(stored, a)
     end
+    local core = LibStub and LibStub("LibKa0s-Core-1.0", true)
     if core and core.ResolveColor then return core.ResolveColor(stored, useClass) end
-    stored = type(stored) == "table" and stored or {}
-    return stored.r or 1, stored.g or 1, stored.b or 1, stored.a or 1
+    return swatch(stored)
 end
 Appearance.Color = color
 
@@ -113,22 +148,38 @@ end
 
 --- One font block, resolved: its path, size, flags, shadow and color.
 --- @param block string  "elapsed" | "left" | "figures" | "spellText"
+--- @param where string|nil  "window" when it draws in the Results window (S.FontFlags'); nil: HUD text
 --- @return table { path, size, flags, shadow, r, g, b, a }
-function Appearance.Font(block)
-    return Appearance.FontAt("appearance." .. block .. ".", D[block])
+function Appearance.Font(block, where)
+    return Appearance.FontAt("appearance." .. block .. ".", D[block], nil, where)
 end
 
---- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's.
-function Appearance.FontAt(p, def, class)
-    local name = Appearance.MediaKey(p, "font")
+-- The flags the block at `p` draws: a picked flag as picked; From skin (or nothing stored) none on a
+-- mono clock, else the Font outline through S.FontFlags as `where`'s text; without it the default
+-- outline, HUD text only (D-10).
+local function fontFlags(p, S, where)
+    local flags = setting(p .. "fontFlags")
+    local picked = type(flags) == "string" and flags ~= FROM_SKIN
+    if picked then return flags end
+    if MONO[p] then return "" end
+    if S and type(S.FontFlags) == "function" then return S.FontFlags(flags, where) end
+    return where == "window" and "" or "OUTLINE"
+end
+
+--- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's;
+--- `where` as Font's.
+function Appearance.FontAt(p, def, class, where)
+    local name, fromSkin = Appearance.MediaKey(p, "font")
     local path = fetch("font", name) or fetch("font", setting(p .. "font")) or fetch("font", def.font)
     if not path and def.font == "JetBrains Mono" then path = NS.Constants and NS.Constants.FONT_MONO end
     local r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true, class)
-    local flags = setting(p .. "fontFlags")
+    local S = NS.Skin
+    local size = tonumber(setting(p .. "fontSize")) or def.fontSize
+    if S and type(S.HudFontSize) == "function" then size = S.HudFontSize(size, fromSkin) end
     return {
         path = path or FALLBACK_FONT,
-        size = tonumber(setting(p .. "fontSize")) or def.fontSize,
-        flags = type(flags) == "string" and flags or "",
+        size = size,
+        flags = fontFlags(p, S, where),
         shadow = setting(p .. "fontShadow") == true,
         r = r, g = g, b = b, a = a,
     }

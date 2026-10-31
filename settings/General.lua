@@ -187,6 +187,14 @@ NS.RegisterSchemaRows({
       label = L["Texture"], default = SD.texture,
       tooltip = L["The texture this addon's bars use, over the skin's own. Empty keeps the skin's."],
       onChange = function(v) NS.ApplySkinOverride(nil, v) end },
+    -- The Font outline (LibKa0s-Skin-1.0 minor 9, ruling D-06), drawn by the tab as its "Font outline"
+    -- dropdown: where the skin outlines this addon's text. The library's three modes, in its order, so
+    -- `/dr set skin.outline` validates against them.
+    { path = "skin.outline", page = PAGE, group = SKIN, type = "string", skipRender = true,
+      label = L["Font outline"], default = SD.outline, values = NS.SKIN_OUTLINE_OPTIONS,
+      validate = oneOf(NS.SKIN_OUTLINE_OPTIONS),
+      tooltip = L["Where the skin outlines this addon's text: all of it, its HUD text only, or nowhere."],
+      onChange = function(v) NS.ApplySkinOutline(v) end },
     -- The first-run skin picker's memory: set when the picker closes, so it shows once per profile.
     -- Drawn by nothing; a reset puts it back to false.
     { path = "skin.pickerSeen", page = PAGE, group = SKIN, type = "bool", skipRender = true,

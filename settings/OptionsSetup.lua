@@ -129,6 +129,9 @@ if not lib then
     -- queue), and HideSkinPicker is a no-op.
     Helpers.SkinPicker     = function() return nil end
     Helpers.HideSkinPicker = function() end
+    -- The reserved `/dr skin` verb (LibKa0s v1.82.0, OptionsSkinPicker minor 3, ruling D-16): no picker
+    -- without the library, so it answers nil, "absent" and NS.RunSkinVerb prints the library-absent line.
+    Helpers.SkinVerb       = function() return nil, "absent" end
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel

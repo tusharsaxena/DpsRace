@@ -23,6 +23,14 @@ local _, NS = ...
 -- PLAIN VALUES ONLY. The payload is text made from the stored run (every number on it went through
 -- NS.Secrets on its way in) and the previous best's; nothing here reads the meter. The frame's size
 -- is this file's constants, never read back off a FontString.
+--
+-- THE LAYOUT (DR-04, the owner's Addendum 03, image-60): the first release's toast 25% larger, every
+-- size in it scaled by SCALE (the padding, the faces, the chips, the gaps), with three changes. The
+-- trophy is as tall as the three rows (the headline, the target and time chips, the DPS line), and
+-- the toast is widened by what that adds. The rows are fixed-height slots, their text centered in
+-- them, one equal ROW_GAP between each pair, and the same PAD above the first and below the last.
+-- The class and spec icons sit between "New best:" and the spec and class words. HEIGHT is the final
+-- height, the figure DropWatcher's toast matches (DW-05).
 
 local BestToast = {}
 NS.BestToast = BestToast
@@ -34,11 +42,29 @@ local MIDDOT = " \194\183 "
 BestToast.SAMPLE = "sample"
 
 -- The frame's geometry (the shell's frame; the close mark is the shell's, top-right, 18 px, 4 px in).
-local PAD, ICON, GAP, LINE_GAP = 10, 28, 8, 4
-local CLOSE_ROOM = 26                   -- the title's right inset, clear of the close mark
-BestToast.WIDTH = 340
-BestToast.HEIGHT = 72                   -- the title, the chips' row (Tbl.CHIP_H) and the DPS line
-BestToast.FLAGS_HEIGHT = 16             -- the flags' line, when the run has any
+-- Each figure is the first release's (in the comment) times SCALE, rounded to the pixel.
+local SCALE = 1.25
+BestToast.SCALE = SCALE
+BestToast.PAD = 13                      -- 10: every edge, so the top and bottom padding match
+BestToast.GAP = 10                      -- 8: between the trophy and the rows
+BestToast.ROW_GAP = 6                   -- 4: one gap between each pair of rows (a little over 5)
+BestToast.TITLE_SIZE = 12 * SCALE       -- GameFontNormal's 12 px: the headline and the spec and class
+BestToast.TEXT_SIZE = 10 * SCALE        -- GameFontHighlightSmall's 10 px: the chips, the DPS and flags
+BestToast.TITLE_H = 17                  -- the headline's slot: its 15 px face and a pixel each side
+BestToast.CHIP_H = 16 * SCALE           -- Tbl.CHIP_H's 16: the chips' row
+BestToast.TEXT_H = 15                   -- the DPS line's (and the flags') slot: 12.5 px and a margin
+BestToast.CLASS_ICON = 16               -- the class and spec icons, a pixel under the headline's slot
+local ICON_GAP = 4                      -- between "New best:", the two icons and the words
+-- The three rows, and the trophy as tall as them.
+BestToast.ROWS_H = BestToast.TITLE_H + BestToast.ROW_GAP + BestToast.CHIP_H + BestToast.ROW_GAP
+    + BestToast.TEXT_H
+local CLOSE_ROOM = 32                   -- 26: the words' right inset, clear of the close mark
+local CONTENT_W = 355                   -- 284: the rows' width right of the trophy
+BestToast.WIDTH = BestToast.PAD + BestToast.ROWS_H + BestToast.GAP + CONTENT_W + BestToast.PAD
+-- THE FINAL HEIGHT (72 x 1.25 = 90): the padding, the three rows and the padding. DropWatcher's
+-- new-loot toast matches it (Ka0sAddonsCommonTasks docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK, DW-05).
+BestToast.HEIGHT = BestToast.PAD + BestToast.ROWS_H + BestToast.PAD
+BestToast.FLAGS_HEIGHT = BestToast.ROW_GAP + BestToast.TEXT_H   -- 16: the flags' line, when any
 local TROPHY_FALLBACK = "Interface\\Icons\\Achievement_Dungeon_GloryoftheHero"
 
 local toast       -- the shell's instance (or the seam's stub)
@@ -90,28 +116,41 @@ local function detailText(run, pct, prev)
     return L["%s DPS"]:format(dps), C.text
 end
 
---- "New best:" in the Spec best blue, then the spec and the class ("Beast Mastery Hunter") in the
---- class color, as one escaped string.
-local function titleText(char)
+--- "New best:" in the Spec best blue, as an escaped string.
+local function titleText()
+    local Tbl = NS.ResultsTable
+    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.COLORS.blue), L["New best:"])
+end
+
+--- The spec and the class ("Beast Mastery Hunter") in the class color, as an escaped string: the words
+--- after the class and spec icons (DR-04).
+local function whoText(char)
     local Tbl = NS.ResultsTable
     local class = Tbl.ClassName(char.class)
     local spec = char.spec and (tostring(char.spec) .. " " .. tostring(class or "")) or tostring(class or "?")
-    return ("|c%s%s|r |c%s%s|r"):format(Tbl.Hex(Tbl.COLORS.blue), L["New best:"],
-        Tbl.Hex(Tbl.ClassColor(char.class)), (spec:gsub("%s+$", "")))
+    return ("|c%s%s|r"):format(Tbl.Hex(Tbl.ClassColor(char.class)), (spec:gsub("%s+$", "")))
 end
 
 --- What the toast says about `run`, beating `prev` by `pct` percent: plain strings only.
 --- @param run table  the run (complete, with a score)
 --- @param pct number|nil  Bests.Delta's percentage
 --- @param prev table|nil  the previous best (Bests.Delta's third return)
---- @return table payload  { runID, title, chips = { { text, color } x2 }, detail, detailColor, flags }
+--- @return table payload  { runID, title, who, class, specIcon, chips = { { text, color } x2 },
+---                          detail, detailColor, flags }
 function BestToast.Payload(run, pct, prev)
     local Tbl = NS.ResultsTable
     local detail, detailColor = detailText(run, pct, prev)
     local _, targetColor = Tbl.Badge(run.target)
+    local char = field(run, "char")
+    local _, specIcon = Tbl.SpecInfo(char.specID, char.spec)
     return {
         runID       = run.id,
-        title       = titleText(field(run, "char")),
+        title       = titleText(),
+        -- The spec and class words, and what their two icons draw (DR-04): the class token (the
+        -- character-creation atlas, Tbl.SetClassIcon) and the spec's icon (GetSpecializationInfoByID).
+        who         = whoText(char),
+        class       = char.class,
+        specIcon    = specIcon,
         -- The target type and the race length as the Runs list's Target and Time chips color them.
         chips       = { { categoryText(run.target), targetColor },
                         { Tbl.LengthChip(field(run, "race").length) } },
@@ -123,32 +162,76 @@ end
 
 -- ── the content ─────────────────────────────────────────────────────────────────────────────────
 
--- The rows, made once on the shell's frame (stashed on it) and filled on every toast.
-local function makeRows(frame)
+--- A row's text in a slot `h` tall, its words centered in it, anchored once at `y` on the frame.
+local function slotText(frame, font, color, x, y, h)
     local Style = NS.Style
+    local fs = Style.ScaledText(frame, font, SCALE, color)
+    fs:SetHeight(h)
+    if fs.SetJustifyV then fs:SetJustifyV("MIDDLE") end
+    fs:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
+    return fs
+end
+
+-- The rows, made once on the shell's frame (stashed on it) and filled on every toast. Every row is
+-- anchored to the frame at its own y, so the gaps and the padding are the constants above and never
+-- what a string measured.
+local function makeRows(frame)
+    local Style, B = NS.Style, BestToast
     local w = {}
     w.icon = frame:CreateTexture(nil, "ARTWORK")
-    w.icon:SetSize(ICON, ICON)
-    w.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -PAD)
+    w.icon:SetSize(B.ROWS_H, B.ROWS_H)
+    w.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", B.PAD, -B.PAD)
     w.icon:SetTexture(NS.Icon("ph:trophy") or TROPHY_FALLBACK)
     -- The trophy in the result card's *New best* blue (the Status column's Spec best: a data hue).
     Style.Vertex(w.icon, NS.ResultsTable.COLORS.blue, 1)
-    local left = PAD + ICON + GAP
-    w.title = Style.Text(frame, Style.FONT.TITLE)
-    w.title:SetPoint("TOPLEFT", frame, "TOPLEFT", left, -PAD)
-    w.title:SetPoint("RIGHT", frame, "RIGHT", -CLOSE_ROOM, 0)
-    -- The target and time chips, boxed as the Runs list draws them (Tbl.Chip).
-    w.chips = { NS.ResultsTable.Chip(frame), NS.ResultsTable.Chip(frame) }
-    w.chips[1]:SetPoint("TOPLEFT", w.title, "BOTTOMLEFT", 0, -LINE_GAP)
-    w.chips[2]:SetPoint("LEFT", w.chips[1], "RIGHT", NS.ResultsTable.CHIP_GAP, 0)
-    w.detail = Style.Text(frame, Style.FONT.TEXT)
-    w.detail:SetPoint("TOPLEFT", w.chips[1], "BOTTOMLEFT", 0, -LINE_GAP)
-    w.detail:SetPoint("RIGHT", frame, "RIGHT", -PAD, 0)
-    w.flags = Style.Text(frame, Style.FONT.TEXT, NS.HudStates.FLAG_COLOR)
-    w.flags:SetPoint("TOPLEFT", w.detail, "BOTTOMLEFT", 0, -LINE_GAP)
-    w.flags:SetPoint("RIGHT", frame, "RIGHT", -PAD, 0)
+    local left = B.PAD + B.ROWS_H + B.GAP
+    local chipY = -(B.PAD + B.TITLE_H + B.ROW_GAP)
+    local detailY = chipY - B.CHIP_H - B.ROW_GAP
+    -- The headline: "New best:", the class and spec icons, then the spec and class words. The first
+    -- string has one point, so it is as wide as its words and the icons follow them.
+    w.title = slotText(frame, Style.FONT.TITLE, nil, left, -B.PAD, B.TITLE_H)
+    w.class = frame:CreateTexture(nil, "ARTWORK")
+    w.class:SetSize(B.CLASS_ICON, B.CLASS_ICON)
+    w.class:SetPoint("LEFT", w.title, "RIGHT", ICON_GAP, 0)
+    w.spec = frame:CreateTexture(nil, "ARTWORK")
+    w.spec:SetSize(B.CLASS_ICON, B.CLASS_ICON)
+    w.spec:SetPoint("LEFT", w.class, "RIGHT", 2, 0)
+    w.who = Style.ScaledText(frame, Style.FONT.TITLE, SCALE)
+    w.who:SetHeight(B.TITLE_H)
+    if w.who.SetJustifyV then w.who:SetJustifyV("MIDDLE") end
+    w.who:SetPoint("LEFT", w.spec, "RIGHT", ICON_GAP, 0)
+    w.who:SetPoint("RIGHT", frame, "RIGHT", -CLOSE_ROOM, 0)
+    -- The target and time chips, boxed as the Runs list draws them (Tbl.Chip), at the toast's scale.
+    w.chips = { NS.ResultsTable.Chip(frame, SCALE), NS.ResultsTable.Chip(frame, SCALE) }
+    w.chips[1]:SetPoint("TOPLEFT", frame, "TOPLEFT", left, chipY)
+    w.chips[2]:SetPoint("LEFT", w.chips[1], "RIGHT", math.floor(NS.ResultsTable.CHIP_GAP * SCALE + 0.5), 0)
+    w.detail = slotText(frame, Style.FONT.TEXT, nil, left, detailY, B.TEXT_H)
+    w.detail:SetPoint("RIGHT", frame, "RIGHT", -B.PAD, 0)
+    w.flags = slotText(frame, Style.FONT.TEXT, NS.HudStates.FLAG_COLOR, left, detailY - B.FLAGS_HEIGHT, B.TEXT_H)
+    w.flags:SetPoint("RIGHT", frame, "RIGHT", -B.PAD, 0)
     frame.dpsRace = w
     return w
+end
+
+--- The class icon (the character-creation atlas) and the spec icon, each hidden when the client has
+--- nothing to draw; a hidden one takes no room: each element anchors to the last one shown, so the
+--- words close up on "New best:" one ICON_GAP away.
+local function setIcons(frame, w, p)
+    local hasClass = p.class ~= nil and NS.ResultsTable.SetClassIcon(w.class, p.class) or false
+    if not hasClass then w.class:Hide() end
+    local hasSpec = p.specIcon ~= nil
+    w.spec:SetTexture(p.specIcon)
+    w.spec:SetShown(hasSpec)
+    w.spec:ClearAllPoints()
+    if hasClass then
+        w.spec:SetPoint("LEFT", w.class, "RIGHT", 2, 0)
+    else
+        w.spec:SetPoint("LEFT", w.title, "RIGHT", ICON_GAP, 0)
+    end
+    local last = hasSpec and w.spec or hasClass and w.class or w.title
+    w.who:ClearAllPoints()
+    w.who:SetPoint("LEFT", last, "RIGHT", ICON_GAP, 0)
+    w.who:SetPoint("RIGHT", frame, "RIGHT", -CLOSE_ROOM, 0)
 end
 
 --- The shell's builder: fill the rows, answer the frame's size from the constants above.
@@ -156,6 +239,8 @@ local function build(frame, p)
     if type(p) ~= "table" then return false end
     local w = frame.dpsRace or makeRows(frame)
     w.title:SetText(p.title or "")
+    w.who:SetText(p.who or "")
+    setIcons(frame, w, p)
     local chips = type(p.chips) == "table" and p.chips or {}
     for i, chip in ipairs(w.chips) do
         local c = chips[i] or {}

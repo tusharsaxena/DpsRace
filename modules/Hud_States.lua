@@ -17,6 +17,7 @@ local States = {}
 NS.HudStates = States
 
 local L = NS.L
+local Tips = NS.HudTips
 local Style = NS.Style
 local FONT = Style.FONT
 
@@ -197,6 +198,36 @@ local function showTip(b)
     Style.AddTipLines(GameTooltip, tip, 2, Style.Rgb("gtip.title"))
     GameTooltip:Show()
 end
+
+--- The same tooltip on any frame (a figure's tile, the target card, the custom box, a control the
+--- library built): `tip` a { title, line, ... } of fixed words (modules/Hud_Tips.lua). Hooked, so a
+--- hover the frame already has stays.
+--- @param frame table
+--- @param tip table
+--- @return table frame
+function States.AddTip(frame, tip)
+    frame.tip = tip
+    frame:EnableMouse(true)
+    frame:HookScript("OnEnter", showTip)
+    frame:HookScript("OnLeave", function(self)
+        if self.tip and GameTooltip then GameTooltip:Hide() end
+    end)
+    return frame
+end
+
+--- A label takes no mouse, so its tooltip sits on an empty frame over it. Hide it with the label: a
+--- frame anchored to a hidden label still answers the mouse. Never over a label a live value is
+--- written to: that text's size may be secret, and the tile around it takes the tip instead.
+--- @param parent table
+--- @param region table
+--- @param tip table
+--- @return table zone
+function States.TipZone(parent, region, tip)
+    local zone = CreateFrame("Frame", nil, parent)
+    zone:SetAllPoints(region)
+    return States.AddTip(zone, tip)
+end
+local addTip, tipZone = States.AddTip, States.TipZone
 
 --- A flat button: a label, a style, and a click that a disabled button never runs. Its label is
 --- the skin's button text in the body face (GameFontHighlightSmall's size, `font` another's) and
@@ -394,6 +425,7 @@ local function targetCard(parent, y)
     card.badgeText:SetPoint("CENTER", card.badge, "CENTER", 0, 0)
     card.npc = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
     card.npc:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 8)
+    addTip(f, Tips.target)
     return card
 end
 
@@ -480,12 +512,15 @@ function Builders.idle(parent)
     local body = newBody(parent, "idle")
     local f, w = body.frame, body.w
     w.lengthCap = caption(f, L["Race Length"], 0)
+    w.lengthTip = tipZone(f, w.lengthCap, Tips.lengthCap)
     w.presets = {}
     for i, n in ipairs(States.PRESETS) do
         w.presets[i] = button(f, NS.Format.Length(n), function() act("pickLength", n) end)
         w.presets[i].length = n
+        w.presets[i].tip = { NS.Format.Length(n), Tips.preset }
     end
     w.custom = button(f, L["Custom"], function() act("openCustom") end)
+    w.custom.tip = Tips.custom
     w.customBox = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     w.customBox:SetAutoFocus(false)
     w.customBox:SetFontObject(FONT.TEXT)
@@ -496,8 +531,10 @@ function Builders.idle(parent)
     w.customBox:SetMaxLetters(6)
     w.customBox:SetScript("OnEnterPressed", function(self) act("customLength", self:GetText()) end)
     w.customBox:SetScript("OnEscapePressed", function() act("closeCustom") end)
+    addTip(w.customBox, Tips.customBox)
     w.customBox:Hide()
     w.targetCap = caption(f, L["Target"], -IDLE_TARGET_Y)
+    w.targetTip = tipZone(f, w.targetCap, Tips.target)
     w.card = targetCard(f, -IDLE_CARD_Y)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
@@ -505,6 +542,7 @@ function Builders.idle(parent)
     w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT, FONT.TITLE)
     w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
     w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
+    w.arm.tip = Tips.arm
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
     w.reason:SetPoint("TOPRIGHT", w.arm, "BOTTOMRIGHT", 0, -4)
@@ -513,6 +551,7 @@ function Builders.idle(parent)
     w.results:SetHeight(LINK_HEIGHT)
     w.results:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.results:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+    w.results.tip = Tips.results
 
     function body.Layout(self, width)
         local cell = math.floor((width - 2 * 6) / 3)
@@ -552,9 +591,11 @@ function Builders.armed(parent)
     local f, w = body.frame, body.w
     w.clock = bigText(f, BIG, C.text)
     w.clock:SetPoint("TOP", f, "TOP", 0, -4)
+    w.clockTip = tipZone(f, w.clock, Tips.armedClock)
     w.sub = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.sub:SetPoint("TOP", f, "TOP", 0, -52)
     w.sub:SetText(L["First hit starts the clock"])
+    w.subTip = tipZone(f, w.sub, Tips.armedSub)
     w.card = targetCard(f, -74, false)
     w.note = text(f, FONT.TEXT, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -128)
@@ -563,12 +604,33 @@ function Builders.armed(parent)
     w.cancel = wideButton(body, L["Cancel"], function() act("cancel") end)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+    w.cancel.tip = Tips.cancel
     function body.Update(self, v)
         local run = v.run or {}
         self.w.clock:SetText(NS.Format.Clock(run.race and run.race.length or 0))
         setTarget(self.w.card, run.target)
     end
     return body
+end
+
+-- A clock's hover, the clock and the caption under it.
+local function clockZone(parent, clock, cap, tip)
+    local zone = tipZone(parent, clock, tip)
+    zone:ClearAllPoints()
+    zone:SetPoint("TOPLEFT", clock, "TOPLEFT", 0, 0)
+    zone:SetPoint("TOPRIGHT", clock, "TOPRIGHT", 0, 0)
+    zone:SetPoint("BOTTOM", cap, "BOTTOM", 0, 0)
+    return zone
+end
+
+-- The chart's and the pace bar's hovers on a body. The plot and the bar take theirs on their overlays:
+-- every live value is drawn by a bar under them, and the cooldown icons, the overlay's children, keep
+-- their own hover. The pace tip is the bar's, and the note beside the heading names the bar.
+local function chartTips(f, w, paceTip)
+    local chart = w.chart
+    chart.headZones = { tipZone(f, chart.title, Tips.profile), tipZone(f, chart.note, paceTip) }
+    addTip(chart.over, Tips.profile)
+    addTip(w.pace.over, paceTip)
 end
 
 -- The running clock (hud.clock): "left" or "elapsed" is one big clock in its color; anything else is
@@ -580,6 +642,11 @@ local function setClocks(w, v)
     local both = mode ~= "left" and mode ~= "elapsed"
     for _, key in ipairs(PAIR) do w[key]:SetShown(both) end
     w.clock:SetShown(not both)
+    -- Each hover goes with its clock (States.TipZone).
+    w.elapsedTip:SetShown(both)
+    w.leftTip:SetShown(both)
+    w.clockTip:SetShown(not both)
+    if not both then w.clockTip.tip = mode == "elapsed" and Tips.elapsed or Tips.left end
     if both then
         w.elapsed:SetText(NS.Format.Clock(elapsed))
         w.left:SetText(NS.Format.Clock(left))
@@ -769,6 +836,23 @@ local function drawLive(body)
     body.w.count:SetText(liveCount(body, rows))
 end
 
+-- A spell row's hover on the running and result bodies (DR-03, the owner's call, 2026-10-30): the
+-- client's full spell tooltip right of the HUD, level with the row (ResultsTable.SpellTip). A result
+-- row's plain record adds its damage, share and place (ResultsTips.Spell), as the Results detail's
+-- rows do; a live row hands only its spell's ID, which may be secret, and SpellTip never compares or
+-- type-tests it. Both modules are read at call time (they load after this one).
+local function spellTip(body)
+    return function(row, spell, rank, liveID)
+        local Tbl, RunTips = NS.ResultsTable, NS.ResultsTips
+        if not Tbl then return end
+        local window = Tbl.WindowOf(row)
+        if not spell then return Tbl.SpellTip(window, row, liveID, nil) end
+        local run = type(body.shownRun) == "table" and body.shownRun or {}
+        local count = type(run.spells) == "table" and #run.spells or nil
+        Tbl.SpellTip(window, row, spell.id, RunTips and RunTips.Spell(spell, run, rank, count))
+    end
+end
+
 -- RUNNING: the race clock (hud.clock), live damage and DPS, the live breakdown with no % (screen 04).
 function Builders.running(parent)
     local body = newBody(parent, "running")
@@ -789,19 +873,26 @@ function Builders.running(parent)
     w.leftCap = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     w.leftCap:SetPoint("TOP", w.left, "BOTTOM", 0, -3)
     w.leftCap:SetText(L["Left"])
+    w.clockTip = tipZone(f, w.clock, Tips.clock)
+    w.elapsedTip = clockZone(f, w.elapsed, w.elapsedCap, Tips.elapsed)
+    w.leftTip = clockZone(f, w.left, w.leftCap, Tips.left)
     w.damage, w.dps = kpiPair(f, -52, L["Damage"], L["DPS \194\183 Live"], false)
+    addTip(w.damage.frame, Tips.liveDamage)
+    addTip(w.dps.frame, Tips.liveDps)
     w.rows = CreateFrame("Frame", nil, f)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RUNNING_ROWS_TOP)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RUNNING_ROWS_BOTTOM)
     -- A backstop only: the rows are already capped to the region (rowsFor), never measured.
     w.rows:SetClipsChildren(true)
-    w.list = NS.HudBreakdown.New(w.rows)
+    w.list = NS.HudBreakdown.New(w.rows, spellTip(body))
     w.pace = NS.HudChart.NewPace(f)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
+    chartTips(f, w, Tips.pace)
     w.chart:SetShown(false)
     w.spellsTitle = Style.Text(f, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
+    w.spellsTip = tipZone(f, w.spellsTitle, Tips.liveSpells)
     -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -814,9 +905,12 @@ function Builders.running(parent)
     w.order:SetText(L["Live order \194\183 % after the race"])
     w.count = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
     w.count:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, BUTTON_HEIGHT + 8)
+    w.orderTip = tipZone(f, w.order, Tips.order)
+    w.countTip = tipZone(f, w.count, Tips.count)
     w.cancel = wideButton(body, L["Cancel"], function() act("cancel") end)
     w.cancel:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
     w.cancel:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+    w.cancel.tip = Tips.cancel
 
     function body.Layout(self, width, height) self.width, self.height = width, height end
 
@@ -855,6 +949,8 @@ end
 -- race), and the time in combat since the buzzer (since the buzzer), or a dash once combat is over
 -- (combat ended). Plain numbers from GetTime(), never a meter value; the unit joins the figure's string.
 local function setStopFigures(w, v)
+    w.tail.frame.tip = v.endedEarly and Tips.combatEnded or Tips.damageStopped
+    w.combat.frame.tip = v.inCombat and Tips.inCombat or Tips.outOfCombat
     if v.endedEarly then
         w.tail.label:SetText(L["Combat Ended"])
         setKpi(w.tail, NS.Format.Length(v.endedAt or 0), L["into the race"])
@@ -905,7 +1001,10 @@ function Builders.stop(parent)
     w.big = bigText(f, BIG + 8, C.red)
     w.big:SetPoint("TOP", f, "TOP", 0, -2)
     w.big:SetText(L["STOP"])
+    w.bigTip = tipZone(f, w.big, Tips.stop)
     w.tail, w.combat = kpiPair(f, -STOP_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
+    addTip(w.tail.frame, Tips.damageStopped)
+    addTip(w.combat.frame, Tips.inCombat)
     w.chips = chips(f, -STOP_CHIPS_Y)
     w.note = text(f, FONT.TEXT, C.dim)
     w.note:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -STOP_NOTE_Y)
@@ -928,11 +1027,11 @@ function Builders.stop(parent)
         self.shownKey = key
         local list = {}
         if late == 1 then
-            list[1] = { text = L["1 late cast \194\183 +%.1fs"]:format(first), color = C.amber }
+            list[1] = { text = L["1 late cast \194\183 +%.1fs"]:format(first), color = C.amber, tip = Tips.lateChip }
         elseif late > 1 then
-            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(late, first), color = C.amber }
+            list[1] = { text = L["%d late casts \194\183 +%.1fs"]:format(late, first), color = C.amber, tip = Tips.lateChip }
         end
-        list[#list + 1] = { text = L["Grace %.1fs"]:format(grace), color = C.info }
+        list[#list + 1] = { text = L["Grace %.1fs"]:format(grace), color = C.info, tip = Tips.graceChip }
         self.w.chips:Set(list)
         self.w.note:SetText(L["Damage still landing (DoTs, travel time) counts. Casts that start more than %.1fs after the buzzer are flagged on the result."]:format(grace))
     end
@@ -982,7 +1081,10 @@ function Builders.waiting(parent)
     local f, w = body.frame, body.w
     w.title = Style.Text(f, FONT.TITLE, nil, "CENTER")
     w.title:SetPoint("TOP", f, "TOP", 0, -10)
+    w.titleTip = tipZone(f, w.title, Tips.pending)
     w.tail, w.combat = kpiPair(f, -WAITING_KPI_Y, L["Damage Stopped"], L["In Combat"], nil, true)
+    addTip(w.tail.frame, Tips.damageStopped)
+    addTip(w.combat.frame, Tips.inCombat)
     w.hint = panel(f, { bg = "dr.callout.bg", border = "dr.callout.border" })
     w.hint:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -WAITING_HINT_Y)
     w.hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -WAITING_HINT_Y)
@@ -1078,14 +1180,25 @@ local function ignoredChip(run, menu, lines)
              tip = L["Late casts on the ignore list: they flag nothing."] }
 end
 
+-- The card's verdict against the best (Bests.Delta). A new best with no figure had nothing to beat: the
+-- first complete run on its board, or an earlier best of 0 DPS. A delta of 0 is a tie, not a shortfall.
+local function verdictChip(v)
+    if v.isNew then
+        if v.delta then
+            return { text = L["New best +%.1f%%"]:format(v.delta), color = C.green, tip = Tips.newBestChip }
+        end
+        return { text = L["New best"], color = C.green, tip = Tips.firstBestChip }
+    end
+    if not v.delta then return nil end
+    local tied = v.delta == 0
+    return { text = L["%+.1f%% vs best"]:format(v.delta), color = tied and C.dim or C.red,
+             tip = tied and Tips.tiedChip or Tips.behindChip }
+end
+
 --- The result card's chips: the best delta, the flags, the tail (spec §6.1).
 function States.ResultChips(v)
     local run, list = v.run, {}
-    if v.isNew then
-        list[1] = { text = v.delta and L["New best +%.1f%%"]:format(v.delta) or L["New best"], color = C.green }
-    elseif v.delta then
-        list[1] = { text = L["%+.1f%% vs best"]:format(v.delta), color = C.red }
-    end
+    list[1] = verdictChip(v)
     local menu, lines = lateExtras(v)
     local flags = States.FlagChips(run)
     if not (flags[1] and flags[1].key == "lateCasts") then list[#list + 1] = ignoredChip(run, menu, lines) end
@@ -1102,11 +1215,23 @@ function States.ResultChips(v)
     return list
 end
 
+-- The result card's two KPIs for `run`: dashes for a lost run, else its damage and DPS. True when lost.
+local function resultKpis(w, run)
+    run = run or {}
+    local result = run.result or {}
+    local lost = run.status == "lost"
+    setKpi(w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
+    setKpi(w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
+    return lost
+end
+
 -- RESULT: damage, DPS, the delta and flag chips, the top spells with %, and the four acts (screen 07).
 function Builders.result(parent)
     local body = newBody(parent, "result")
     local f, w = body.frame, body.w
     w.damage, w.dps = kpiPair(f, 0, L["Damage"], L["DPS"], C.green)
+    addTip(w.damage.frame, Tips.resultDamage)
+    addTip(w.dps.frame, Tips.resultDps)
     w.chips = chips(f, -KPI_HEIGHT - GAP)
     w.lost = Style.Text(f, FONT.TEXT, C.red)
     w.lost:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
@@ -1114,13 +1239,15 @@ function Builders.result(parent)
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -RESULT_ROWS_TOP)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
     w.rows:SetClipsChildren(true)
-    w.list = NS.HudBreakdown.New(w.rows)
+    w.list = NS.HudBreakdown.New(w.rows, spellTip(body))
     w.pace = NS.HudChart.NewPace(f)
     w.pace:SetShown(false)
     w.chart = NS.HudChart.New(f)
+    chartTips(f, w, Tips.resultPace)
     w.chart:SetShown(false)
     w.spellsTitle = Style.Text(f, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
+    w.spellsTip = tipZone(f, w.spellsTitle, Tips.resultSpells)
     -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
@@ -1131,9 +1258,9 @@ function Builders.result(parent)
     -- The four acts in one row, the same width each (Round C): Delete asks first (the Results
     -- window's own confirmation, modules/Hud.lua Act.delete).
     local links = footerButtons(body, {
-        { L["New Race"], function() act("newRace") end, "primary" },
-        { L["Details"], function() act("details") end },
-        { L["Share"], function() act("share") end },
+        { L["New Race"], function() act("newRace") end, "primary", tip = Tips.newRace },
+        { L["Details"], function() act("details") end, tip = Tips.details },
+        { L["Share"], function() act("share") end, tip = Tips.share },
         { L["Delete"], function() act("delete") end, "danger",
           tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
@@ -1149,13 +1276,10 @@ function Builders.result(parent)
         -- The chips first: the stack under them starts where they end.
         self.w.chips:Set(States.ResultChips(v))
         Builders.resultExtras(self, v)
-        local run = v.run or {}
-        local result = run.result or {}
-        local lost = run.status == "lost"
-        setKpi(self.w.damage, lost and DASH or NS.Format.Number(result.damage or 0))
-        setKpi(self.w.dps, lost and DASH or NS.Format.Number(result.dps or 0))
+        local lost = resultKpis(self.w, v.run)
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         self.w.spellsTitle:SetShown(not lost)
+        self.w.spellsTip:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
         self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
         if lost then self.w.list:Clear() else self:DrawRows() end

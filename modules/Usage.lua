@@ -485,24 +485,33 @@ function Usage.Unhide(itemID)
     return writeHidden(ids) and true or false
 end
 
---- Every item the stored runs list (used or a candidate), each once, newest run first: the names the
---- settings' ID list can resolve and suggest (the client has no item-name search).
---- @return table ids
-function Usage.KnownItems()
+-- The stored runs carrying a usage record, newest first.
+local function runsWithUsage()
     local runs = NS.db and NS.db.global and NS.db.global.runs
     local list = {}
     for _, run in pairs(type(runs) == "table" and runs or {}) do
         if type(run) == "table" and type(run.usage) == "table" then list[#list + 1] = run end
     end
     table.sort(list, function(a, b) return (tonumber(a.date) or 0) > (tonumber(b.date) or 0) end)
+    return list
+end
+
+-- Append each entry's item ID in `entries` (a usage list, or anything else) to `out`, once.
+local function appendItemIDs(entries, out, seen)
+    for _, e in ipairs(type(entries) == "table" and entries or {}) do
+        local id = type(e) == "table" and e.itemID
+        if type(id) == "number" and not seen[id] then seen[id], out[#out + 1] = true, id end
+    end
+end
+
+--- Every item the stored runs list (used or a candidate), each once, newest run first: the names the
+--- settings' ID list can resolve and suggest (the client has no item-name search).
+--- @return table ids
+function Usage.KnownItems()
     local out, seen = {}, {}
-    for _, run in ipairs(list) do
-        for _, key in ipairs({ "used", "candidates" }) do
-            for _, e in ipairs(type(run.usage[key]) == "table" and run.usage[key] or {}) do
-                local id = type(e) == "table" and e.itemID
-                if type(id) == "number" and not seen[id] then seen[id], out[#out + 1] = true, id end
-            end
-        end
+    for _, run in ipairs(runsWithUsage()) do
+        appendItemIDs(run.usage.used, out, seen)
+        appendItemIDs(run.usage.candidates, out, seen)
     end
     return out
 end

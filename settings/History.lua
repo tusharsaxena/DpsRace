@@ -95,7 +95,8 @@ append(Hp.BarGroup({ prefix = "resultsTable.damageBar.", page = PAGE, group = RE
 append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESULTS_TABLE,
     subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar, fromSkin = true }))
 append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true }))
+    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true,
+    flagsFromSkin = true }))
 for _, r in ipairs(tableRows) do
     r.onChange = redraw
     r.composed = true

@@ -86,13 +86,17 @@ local function ids(icons)
     return table.concat(out, ",")
 end
 
--- Hover `frame` with ResultsTable.BelowTip caught: answers what it was handed.
+-- Hover `frame` with ResultsTable.SpellTip and SideTip caught (DR-03: an icon's is the client's spell
+-- tooltip and its time, a +n mark's its list, both beside the window): answers what it was handed.
 local function hover(f, frame)
     local shown
-    local real = f.NS.ResultsTable.BelowTip
-    f.NS.ResultsTable.BelowTip = function(owner, l) shown = { owner = owner, lines = l } end
+    local Tbl = f.NS.ResultsTable
+    local spell, side, below = Tbl.SpellTip, Tbl.SideTip, Tbl.BelowTip
+    Tbl.SpellTip = function(window, row, id, l) shown = { kind = "spell", window = window, owner = row, id = id, lines = l } end
+    Tbl.SideTip = function(window, row, l) shown = { kind = "side", window = window, owner = row, lines = l } end
+    Tbl.BelowTip = function(owner, l) shown = { kind = "below", owner = owner, lines = l } end
     frame:GetScript("OnEnter")(frame)
-    f.NS.ResultsTable.BelowTip = real
+    Tbl.SpellTip, Tbl.SideTip, Tbl.BelowTip = spell, side, below
     return shown
 end
 
@@ -369,7 +373,8 @@ test("chart icons: on the short plot the crowd's overflow is a +n mark whose too
     near(p[5], f.NS.HudChart.IconY(3))
     assertEqual(drawn(chart), #f.NS.Casts.Live() - 2, "every cooldown drawn (the two rotational casts have none)")
     local shown = hover(f, m.frame)
-    assertTrue(shown ~= nil and shown.owner == m.frame, "the tooltip under the mark")
+    assertTrue(shown ~= nil and shown.kind == "side" and shown.owner == m.frame, "beside the window, level with the mark")
+    assertTrue(shown.window == f.Hud.__ui().frame, "the HUD's window")
     assertEqual(shown.lines[1], "2 cooldowns here")
     assertEqual(#shown.lines, 3)
     assertEqual(shown.lines[2], f.NS.HudBreakdown.SpellName(m.casts[1].id) .. " at 0:06")
@@ -417,9 +422,11 @@ test("chart icons: a running HUD icon's tooltip names the spell and its time", f
     local icons = body(f).w.chart:Icons()
     assertTrue(icons[2].frame.__mouse, "it takes the mouse on the HUD too")
     local shown = hover(f, icons[2].frame)
-    assertTrue(shown ~= nil and shown.owner == icons[2].frame, "the tooltip under the icon")
-    assertEqual(shown.lines[1], f.NS.HudBreakdown.SpellName(INFERNAL))
-    assertEqual(shown.lines[2], "Cast at 0:01")
+    assertTrue(shown ~= nil and shown.kind == "spell", "the client's spell tooltip (DR-03)")
+    assertTrue(shown.window == f.Hud.__ui().frame and shown.owner == icons[2].frame, "right of the HUD, level with the icon")
+    assertEqual(shown.id, INFERNAL)
+    assertEqual(#shown.lines, 1)
+    assertEqual(shown.lines[1], "Cast at 0:01", "then the time it was cast")
     -- The real tooltip, through the client's GameTooltip, reads no geometry off a secret.
     icons[2].frame:GetScript("OnEnter")(icons[2].frame)
     icons[2].frame:GetScript("OnLeave")(icons[2].frame)
@@ -500,8 +507,10 @@ test("chart icons: an icon's tooltip on the card and in the detail names the spe
     local card = body(f).w.chart:Icons()
     assertTrue(card[2].frame.__mouse, "the card's take the mouse")
     local shown = hover(f, card[2].frame)
-    assertTrue(shown ~= nil and shown.owner == card[2].frame, "the tooltip under the card's icon")
-    assertEqual(shown.lines[2], "Cast at 0:01")
+    assertTrue(shown ~= nil and shown.kind == "spell" and shown.owner == card[2].frame, "the card's: the spell tooltip")
+    assertTrue(shown.window == f.Hud.__ui().frame, "right of the HUD")
+    assertEqual(shown.id, INFERNAL)
+    assertEqual(shown.lines[1], "Cast at 0:01")
     local R = f.NS.Results
     R.ShowRun(run.id)
     local icons = R.__ui().detail.w.chart:Icons()
@@ -513,8 +522,13 @@ test("chart icons: an icon's tooltip on the card and in the detail names the spe
     assertEqual(f.NS.ResultsTips.Cast({ t = 3, id = 3110, pet = true })[1], "Spell 3110 (pet)")
     assertNil(f.NS.ResultsTips.Cast(nil))
     shown = hover(f, icons[2].frame)
-    assertTrue(shown ~= nil and shown.owner == icons[2].frame, "the tooltip under the detail's icon")
-    assertEqual(shown.lines[2], "Cast at 0:01")
+    assertTrue(shown ~= nil and shown.kind == "spell" and shown.owner == icons[2].frame, "the detail's: the spell tooltip")
+    assertTrue(shown.window == R.__ui().frame, "right of the Results window")
+    assertEqual(shown.id, INFERNAL)
+    assertEqual(shown.lines[1], "Cast at 0:01")
+    assertEqual(f.NS.ResultsTips.CastAfter({ t = 3, id = 3110, pet = true })[1], "Cast at 0:03 (pet)", "a pet's")
+    assertEqual(f.NS.ResultsTips.CastAfter({ t = -1.6, id = SOUL_FIRE })[1], "Cast at -0:02", "a pre-pull cast")
+    assertNil(f.NS.ResultsTips.CastAfter(nil))
     -- A released icon hovers to nothing.
     icons[2].frame.cast = nil
     assertNil(hover(f, icons[2].frame))
