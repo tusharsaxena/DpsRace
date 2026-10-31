@@ -487,6 +487,34 @@ test("compare: the run with the more total damage is blue on every row, the othe
     assertEqual(Cmp.BarColor("other", "other"), TL.OTHER)
 end)
 
+test("compare: the column headed Best run is blue even when this run has more damage (DR-F05)", function()
+    local i = inst()
+    local TL = i.NS.ResultsTimeline
+    local gold, blue = TL.THIS, TL.OTHER
+    -- An incomplete run ended early with more damage than the complete best: the board's best is
+    -- still the other run, so the kind answers, not the totals.
+    local best = mkRun("best", 100)
+    local partial = mkRun("partial", 90, { status = "incomplete", result = { damage = 105 * 180, dps = 108.6, endedAt = 174 } })
+    seed(i, { best, partial })
+    i.R.ShowRun("partial")
+    local d = detail(i)
+    d:SetComparing(true)
+    local x = d.cmp
+    assertEqual(x.kind, "best")
+    assertEqual(i.Cmp.BestSide(partial, best, x.kind), "other", "the other run holds the board")
+    assertEqual(x.bars.best, "other", "the pane passes the kind")
+    assertTint(i, x.lines[1].bar, gold, "this run's Damage bar, more damage but not the best")
+    -- The pure rule by kind: only a picked run (or no kind) falls to the totals.
+    local Cmp = i.Cmp
+    local function total(n) return { result = { damage = n } } end
+    assertEqual(Cmp.BestSide(total(6), total(5), "best"), "other", "the board's best, whatever the totals")
+    assertEqual(Cmp.BestSide(total(5), total(5), "best"), "other", "a tie with the board's best")
+    assertEqual(Cmp.BestSide(total(5), total(6), "runnerUp"), "this", "this run holds the board")
+    assertEqual(Cmp.BestSide(total(5), total(6), "picked"), "other", "a pick: the totals")
+    assertEqual(Cmp.BestSide(total(6), total(5), "picked"), "this")
+    assertEqual(Cmp.BarColor(x.bars.best, x.bars.best), blue, "the best's column")
+end)
+
 test("compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)", function()
     local i = inst()
     -- A picked run above this one on a different board: still total damage, not the board.

@@ -200,10 +200,16 @@ function Compare.Bar(diff, maxDiff, width)
     return diff > 0 and "this" or "other", math.min(width, width * math.abs(diff) / maxDiff)
 end
 
---- Which of the two runs is the best (DR-F05): decided once per comparison, by total damage, a missing
---- total counting 0. "other" only when the other run has strictly more; a tie is this run's.
+--- Which of the two runs is the best (DR-F05), decided once per comparison. `kind` answers when it
+--- knows: "best" means the other run holds the board, "runnerUp" that this run does, even when an
+--- incomplete run out-damaged the best in a shorter time. A picked run, or no kind, falls to total
+--- damage, a missing total counting 0: "other" only when the other run has strictly more; a tie is
+--- this run's.
+--- @param kind string|nil  Compare.Target's kind
 --- @return string side  "this" | "other"
-function Compare.BestSide(run, other)
+function Compare.BestSide(run, other, kind)
+    if kind == "best" then return "other" end
+    if kind == "runnerUp" then return "this" end
     local a, b = num(resultOf(run).damage) or 0, num(resultOf(other).damage) or 0
     return b > a and "other" or "this"
 end
@@ -445,7 +451,7 @@ function Compare.Fill(p)
     local values, diffs = { { k.damageA, k.damageB }, { k.dpsA, k.dpsB } }, Compare.ScoreRows(k)
     -- One comparison, one scale and one best, whichever the row (DR-F05).
     x.diffs = diffs
-    x.bars = { maxPct = Compare.BarScale(diffs, x.data), best = Compare.BestSide(p.run, other) }
+    x.bars = { maxPct = Compare.BarScale(diffs, x.data), best = Compare.BestSide(p.run, other, kind) }
     for i, line in ipairs(x.lines) do
         local v, d = values[i], diffs[i]
         line[2]:SetText(figure(v[1]))

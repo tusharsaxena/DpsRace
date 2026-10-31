@@ -623,6 +623,7 @@ Total.
 - compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale
 - compare: Damage, DPS and the spells size their bars on one scale (DR-F05)
 - compare: the run with the more total damage is blue on every row, the other gold (DR-F05)
+- compare: the column headed Best run is blue even when this run has more damage (DR-F05)
 - compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)
 - compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped
 - compare: the % column holds a signed three-digit % with one decimal in every skin
