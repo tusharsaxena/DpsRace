@@ -1264,7 +1264,6 @@ function Builders.result(parent)
           tip = { L["Delete"], L["Remove this run from history, after a confirmation. A best it holds goes with it."] } },
     })
     w.newRace, w.details, w.share, w.delete = links[1], links[2], links[3], links[4]
-    -- The sample card of test mode has no run to start a new race from, open or delete (modules/Hud.lua Act).
     function body.Layout(self, width, height)
         self.w.chips.width = width
         self.width, self.height = width, height
