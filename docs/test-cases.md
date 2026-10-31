@@ -976,6 +976,11 @@ Total.
 - insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
 - insights tab: the wheel scrolls the content, clamped to it
 
+### test_switched_sections.lua (2)
+
+- switched sections: Race clock draws only the clock blocks it picks, and a hidden one comes back
+- switched sections: a hidden clock block's rows stay in the schema, so a reset reaches them
+
 ### test_sizing.lua (13)
 
 - sizing: a size change the grip did not start redraws at once
@@ -1572,6 +1577,7 @@ Total.
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
 | test_insights.lua | 58 |
+| test_switched_sections.lua | 2 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1607,4 +1613,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1257** |
+| **Total** | **1259** |

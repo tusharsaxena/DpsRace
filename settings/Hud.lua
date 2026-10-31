@@ -133,8 +133,15 @@ local appearanceRows = {}
 local function append(rows)
     for _, r in ipairs(rows) do appearanceRows[#appearanceRows + 1] = r end
 end
-append(fontBlock("elapsed", L["Elapsed clock"], 100, CLOCK_SIZE_TIP))
-append(fontBlock("left", L["Time left clock"], 200, CLOCK_SIZE_TIP))
+-- A clock block draws only while Race clock picks it (options-ui-§22): it styles nothing else, the
+-- armed and stop screens keep their own. The rows stay in the schema, so a reset still reaches them.
+local function clockBlock(block, subgroup, order, equals)
+    local rows = fontBlock(block, subgroup, order, CLOCK_SIZE_TIP)
+    for _, r in ipairs(rows) do r.shownWhen = { path = "hud.clock", equals = equals } end
+    append(rows)
+end
+clockBlock("elapsed", L["Elapsed clock"], 100, { "both", "elapsed" })
+clockBlock("left", L["Time left clock"], 200, { "both", "left" })
 append(fontBlock("figures", L["Live figures"], 300, nil, true))
 append(H.BarGroup({
     prefix = "appearance.bars.", page = PAGE, group = APPEARANCE, subgroup = L["Spell bars"], order = 400,
