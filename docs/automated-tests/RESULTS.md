@@ -32,24 +32,25 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261031-223212`](20261031-223212/) | `f5b4f6d` | clean | 0.1.0 | 0/0 | 165 | 1258/1/1259 | pass | 44245 | 5113 | 8.0 | 2.5 | 15 | 0 | **green** |
 | [`20261031-202021`](20261031-202021/) | `0d913d2` | clean | 0.1.0 | 0/0 | 156 | 1206/1/1207 | fail | 42513 | 4886 | 8.0 | 2.5 | 15 | 0 | **amber** |
 | [`20261023-225647`](20261023-225647/) | `7e86054` | clean | 0.1.0 → 0.1.0 | 0/0 | 79 | 428/1/429 | pass | 13953 | 1819 | 7.0 | 2.4 | 15 | 0 | **green** |
 | [`20261023-225205`](20261023-225205/) | `d817bdb` | clean | 0.1.0 → 0.1.0 | 0/0 | 79 | 428/1/429 | pass | 13913 | 1796 | 7.1 | 2.5 | 36 | 4 | **green** |
 
 ## Test suite
 
-**1207 cases** — 1206 passed, 0 failed, 1 skipped. The generated inventory
-[`20261031-202021/test-cases.md`](20261031-202021/test-cases.md) is the authority on which cases existed at this run;
+**1259 cases** — 1258 passed, 0 failed, 1 skipped. The generated inventory
+[`20261031-223212/test-cases.md`](20261031-223212/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Moved **429 → 1207** since the previous run.
+Moved **1207 → 1259** since the previous run.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
 the release gate it is NOT EVALUATED rather than passed (`automated-tests-§3`).
 
 ## Lint
 
-**0 warnings / 0 errors over 156 files** (`luacheck .`).
+**0 warnings / 0 errors over 165 files** (`luacheck .`).
 
 Read that figure with its scope attached: `.luacheckrc` excludes 6 path(s) from it — `libs/`, `tests/_kit/`, `docs/audits/`, `docs/reviews/`, `docs/revendor/`, `_dev/` —
 so nothing under them is in the count above. A `0/0` that never moves is partly a statement about
@@ -59,27 +60,27 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **9 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261031-202021/perf.json`](20261031-202021/perf.json).
+[`20261031-223212/perf.json`](20261031-223212/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `notes/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `raceEventCaptureOff` | 2000 | 0.00234 | 0.00 | 0.3 |
-| `raceEventCaptureOn` | 2000 | 0.00331 | 1.00 | 0.3 |
-| `hudTickCaptureOff` | 2000 | 0.02048 | 0.00 | 800.3 |
-| `hudTickCaptureOn` | 2000 | 0.02076 | 1.00 | 800.3 |
-| `hudLiveCaptureOff` | 2000 | 0.10162 | 0.00 | 7264.4 |
-| `hudLiveCaptureOn` | 2000 | 0.10045 | 1.00 | 7264.4 |
-| `combatEventCaptureOff` | 2000 | 0.11892 | 0.00 | 3376.5 |
-| `combatEventCaptureOn` | 2000 | 0.10826 | 1.00 | 3376.5 |
-| `raceInputStoodDown` | 2000 | 0.00018 | 0.00 | 0.0 |
+| `raceEventCaptureOff` | 2000 | 0.00169 | 0.00 | 0.3 |
+| `raceEventCaptureOn` | 2000 | 0.00193 | 1.00 | 0.3 |
+| `hudTickCaptureOff` | 2000 | 0.01525 | 0.00 | 800.3 |
+| `hudTickCaptureOn` | 2000 | 0.01622 | 1.00 | 800.3 |
+| `hudLiveCaptureOff` | 2000 | 0.06064 | 0.00 | 6112.4 |
+| `hudLiveCaptureOn` | 2000 | 0.06429 | 1.00 | 6112.4 |
+| `combatEventCaptureOff` | 2000 | 0.07561 | 0.00 | 2224.5 |
+| `combatEventCaptureOn` | 2000 | 0.07520 | 1.00 | 2224.5 |
+| `raceInputStoodDown` | 2000 | 0.00012 | 0.00 | 0.0 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261031-202021`](20261031-202021/) — **this run's measurement, not its diff.** Max CCN **15** across 4886
-functions, **0** of them warned on; 10 file(s) in the 1000–1500 band and 0 over the 1500 cap
+Current as of [`20261031-223212`](20261031-223212/) — **this run's measurement, not its diff.** Max CCN **15** across 5113
+functions, **0** of them warned on; 8 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
 Every row below is generated from this run's own `lizard` output. **The `Disposition` column is
@@ -98,16 +99,14 @@ None.
 
 | Band | File | LOC | Disposition |
 |---|---|---|---|
-| 1000–1500 (on notice) | `locales/enUS.lua` | 1149 | Accepted — flat string table, not logic |
-| 1000–1500 (on notice) | `modules/Hud.lua` | 1100 | Accepted — cohesive window shell; bodies and rows already split out |
-| 1000–1500 (on notice) | `modules/Hud_States.lua` | 1368 | Accepted — six sibling HUD bodies sharing layout helpers; split by body if it grows |
+| 1000–1500 (on notice) | `locales/enUS.lua` | 1167 | Accepted — flat string table, not logic |
+| 1000–1500 (on notice) | `modules/Hud.lua` | 1114 | Accepted — cohesive window shell; bodies and rows already split out |
+| 1000–1500 (on notice) | `modules/Hud_States.lua` | 1364 | Accepted — six sibling HUD bodies sharing layout helpers; split by body if it grows |
 | 1000–1500 (on notice) | `modules/Results_Detail.lua` | 1227 | Accepted — one cohesive pane built of small methods |
-| 1000–1500 (on notice) | `modules/Results_Runs.lua` | 1120 | Accepted — one tab: filter bar over its run list |
-| 1000–1500 (on notice) | `modules/Results_Table.lua` | 1188 | Accepted — cohesive pooled table plus its cell binders |
-| 1000–1500 (on notice) | `modules/Results_Timeline.lua` | 1449 | Split 2026-10-31 (FX-DR-SIZE): pure half moved to `modules/Results_TimelineData.lua`; 1162 lines, still on notice as one window of small helpers |
-| 1000–1500 (on notice) | `tests/test_hud.lua` | 1478 | Split 2026-10-31 (FX-DR-SIZE): `test_hud_layout` and `test_hud_window` peeled out; out of the band at the next run |
+| 1000–1500 (on notice) | `modules/Results_Runs.lua` | 1119 | Accepted — one tab: filter bar over its run list |
+| 1000–1500 (on notice) | `modules/Results_Table.lua` | 1195 | Accepted — cohesive pooled table plus its cell binders |
+| 1000–1500 (on notice) | `modules/Results_Timeline.lua` | 1162 | Split 2026-10-31 (FX-DR-SIZE): pure half moved to `modules/Results_TimelineData.lua`; 1162 lines, still on notice as one window of small helpers |
 | 1000–1500 (on notice) | `tests/test_insights.lua` | 1225 | Accepted — case count, not tangle |
-| 1000–1500 (on notice) | `tests/test_results.lua` | 1478 | Split 2026-10-31 (FX-DR-SIZE): `test_results_detail` and `test_results_window` peeled out; out of the band at the next run |
 
 `lizard` counts every `and`/`or` short-circuit as a decision, so in Lua a run of
 `t.k = rec.k or D.k` defaulting lines scores high with no visible branching at all: a large CCN
