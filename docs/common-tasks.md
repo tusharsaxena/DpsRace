@@ -35,7 +35,7 @@ catalog is grown from the same captures:
 - Give it a short label in each of the two places that draw flags: the HUD's result chips
   (`FLAG_CHIP` in `modules/Hud_States.lua`) and the detail's explanation line (`EXPLAIN` in
   `modules/Results_Detail.lua`). Add the `enUS` keys. A chip word is Sentence case, never
-  upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word. The late
+  upper-cased (spec §6, *Style*); `test_hud_window`'s capitals case fails on an ALL-CAPS word. The late
   casts' chip (`FLAG_CHIP.lateCasts`) reads the flag's `count`, the casts left after the ignore list
   (`modules/LateIgnore.lua`), never the run's raw list; any new reader of late casts goes through
   `Scoring.SplitLate` or the flag, so the ignore list applies to it.

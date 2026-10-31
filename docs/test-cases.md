@@ -289,7 +289,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (73)
+### test_hud.lua (29)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -313,6 +313,16 @@ Total.
 - hud: waiting hint appears after hintDelay and names only owned drop-combat spells
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
+- hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
+- hud: the cue stops when the race is canceled
+- hud: switching the cue off mid-race silences the marks still ahead
+- hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
+- hud: the running clock shows elapsed in green beside time left in red by default
+- hud: a single-clock mode shows one big clock in its own color
+- hud: the clock pair fits the minimum width; the stop body keeps its own STOP
+
+### test_hud_layout.lua (24)
+
 - hud: the live rows stop above the caption and CANCEL at every window height
 - hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
 - hud: the default window size shows every default live row under the chart and the pace bar
@@ -337,13 +347,9 @@ Total.
 - hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
-- hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
-- hud: the cue stops when the race is canceled
-- hud: switching the cue off mid-race silences the marks still ahead
-- hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
-- hud: the running clock shows elapsed in green beside time left in red by default
-- hud: a single-clock mode shows one big clock in its own color
-- hud: the clock pair fits the minimum width; the stop body keeps its own STOP
+
+### test_hud_window.lua (20)
+
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
 - hud: dragging is refused while locked and the position is stored when it ends
@@ -508,14 +514,10 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (50)
+### test_results.lua (18)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
-- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
-- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
-- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
-- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
@@ -532,6 +534,13 @@ Total.
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
+
+### test_results_detail.lua (18)
+
+- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
+- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
+- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: detail renders breakdown sorted with percentages
 - results: timing strip positions buzzer, grace, tail, late casts, combat end
 - results: the detail lists every spell of the run, not a capped top few
@@ -546,6 +555,9 @@ Total.
 - results: a spell list built without a tip hook takes no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
+
+### test_results_window.lua (14)
+
 - results: the Insights tab is built on first show, counts the runs and shows the empty state with none
 - results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)
 - results: list refreshes on RUN_SAVED
@@ -1525,7 +1537,9 @@ Total.
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 73 |
+| test_hud.lua | 29 |
+| test_hud_layout.lua | 24 |
+| test_hud_window.lua | 20 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 9 |
@@ -1534,7 +1548,9 @@ Total.
 | test_countdown.lua | 20 |
 | test_autoarm.lua | 30 |
 | test_layers.lua | 7 |
-| test_results.lua | 50 |
+| test_results.lua | 18 |
+| test_results_detail.lua | 18 |
+| test_results_window.lua | 14 |
 | test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
 | test_results_delta.lua | 4 |

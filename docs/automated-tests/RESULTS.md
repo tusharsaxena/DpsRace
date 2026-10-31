@@ -104,10 +104,10 @@ None.
 | 1000–1500 (on notice) | `modules/Results_Detail.lua` | 1227 | Accepted — one cohesive pane built of small methods |
 | 1000–1500 (on notice) | `modules/Results_Runs.lua` | 1120 | Accepted — one tab: filter bar over its run list |
 | 1000–1500 (on notice) | `modules/Results_Table.lua` | 1188 | Accepted — cohesive pooled table plus its cell binders |
-| 1000–1500 (on notice) | `modules/Results_Timeline.lua` | 1449 | Accepted — one pop-out window of small helpers; near the cap, so peel before adding more |
-| 1000–1500 (on notice) | `tests/test_hud.lua` | 1478 | Accepted — case count, not tangle; near the cap, so the next HUD cases start a new file |
+| 1000–1500 (on notice) | `modules/Results_Timeline.lua` | 1449 | Split 2026-10-31 (FX-DR-SIZE): pure half moved to `modules/Results_TimelineData.lua`; 1163 lines, still on notice as one window of small helpers |
+| 1000–1500 (on notice) | `tests/test_hud.lua` | 1478 | Split 2026-10-31 (FX-DR-SIZE): `test_hud_layout` and `test_hud_window` peeled out; out of the band at the next run |
 | 1000–1500 (on notice) | `tests/test_insights.lua` | 1225 | Accepted — case count, not tangle |
-| 1000–1500 (on notice) | `tests/test_results.lua` | 1478 | Accepted — case count, not tangle; near the cap, so the next Results cases start a new file |
+| 1000–1500 (on notice) | `tests/test_results.lua` | 1478 | Split 2026-10-31 (FX-DR-SIZE): `test_results_detail` and `test_results_window` peeled out; out of the band at the next run |
 
 `lizard` counts every `and`/`or` short-circuit as a decision, so in Lua a run of
 `t.k = rec.k or D.k` defaulting lines scores high with no visible branching at all: a large CCN

@@ -1,7 +1,7 @@
 -- tests/test_late_ignore_ui.lua — the late-cast ignore list's actions in the Results window (#8, I3):
 -- the run detail's Flags box (its dimmed ignored line, its right-click menu and the re-score after a
 -- pick), the run row's right-click submenu, and no menu on the sample history (D-7). The HUD result
--- card's right-click is in tests/test_hud.lua; the pure halves are in tests/test_late_ignore.lua.
+-- card's right-click is in tests/test_hud_layout.lua; the pure halves are in tests/test_late_ignore.lua.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse, assertNil =

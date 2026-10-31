@@ -171,6 +171,9 @@ modules\Results_Usage.lua
 # The ability timeline window (#14): reads NS.defaults (defaults\Profile.lua) and captures NS.Style and
 # NS.ResultsTable at FILE SCOPE; the detail and the shell reach it at CALL time.
 modules\Results_Timeline.lua
+# The timeline's pure half. LOAD-BEARING: takes NS.ResultsTimeline at FILE SCOPE, so it follows
+# modules\Results_Timeline.lua, which reaches it at CALL time.
+modules\Results_TimelineData.lua
 # The gear view window (#17). LOAD-BEARING: takes NS.ResultsTimeline.SKIN (the opaque modal skin) and
 # captures NS.Style and NS.ResultsTable at FILE SCOPE, so it follows modules\Results_Timeline.lua; the
 # detail and the shell reach it at CALL time.
