@@ -369,6 +369,33 @@ test("sample parity: a change to the sample history reaches the card, as RUNS_CH
     assertEqual(f.Race.State(), "idle")
 end)
 
+test("sample parity: a sim's card dismissed by New Race or Delete opens no Results window after it", function()
+    local function card()
+        local f = fixture("WARLOCK")
+        sim(f, "newbest")
+        until_(f, function() return current(f) == "result" end)
+        f.R.Hide()
+        return f
+    end
+    local f = card()
+    assertTrue(f.Hud.Act.newRace())
+    assertEqual(current(f), "idle")
+    f:advance(f.Sim.RESULT_HOLD + 1)
+    assertFalse(f.R.wanted == true, "the script's end opened over the idle body")
+    assertTrue(f.Preview.IsActive(), "New Race on the card keeps the preview")
+    assertEqual(f.Sim.Diagnose().ticking, false, "a script with nothing left kept ticking")
+
+    local g = card()
+    assertTrue(g.R.DeleteRun("sim-newbest"))
+    assertEqual(current(g), "idle")
+    local shown
+    local real = g.R.ShowRun
+    g.R.ShowRun = function(id) shown = id; return real(id) end
+    g:advance(g.Sim.RESULT_HOLD + 1)
+    assertEqual(shown, nil, "the script's end asked for a deleted run")
+    assertFalse(g.R.wanted == true)
+end)
+
 test("sample parity: a held state's history is the same moment's: the board, the row and the card agree", function()
     local f = fixture("WARLOCK")
     local Source = f.NS.ResultsSource

@@ -92,14 +92,15 @@ local function finish()
     NS.Preview.OpenResults(sample.run.id)
 end
 
-local RESOLVED = { [NS.Race.STATE.RESULT] = true, [NS.Race.STATE.IDLE] = true }
-
 --- One beat: the race moves on, the HUD hears its meter, and the card's hold runs out.
 local function beat()
     if not (NS.Preview.IsActive() and sample) then return cancelTicker() end
     local Race = NS.SampleRace
     if Race.Advance() then NS.Hud.MeterUpdated() end
-    if not RESOLVED[Race.State()] then return end
+    local state, STATE = Race.State(), NS.Race.STATE
+    -- The card was dismissed (New Race, Delete): the script is over, and nothing opens on the idle body.
+    if state == STATE.IDLE then return cancelTicker() end
+    if state ~= STATE.RESULT then return end
     resultAt = resultAt or GetTime()
     if GetTime() - resultAt >= Sim.RESULT_HOLD then finish() end
 end
