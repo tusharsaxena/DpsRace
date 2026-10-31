@@ -128,6 +128,13 @@ on at most 64 bytes (one note) over off. Every scenario has a byte ceiling and a
 The ceilings and their measured figures are in the file's header. Its runs are kept in
 [`automated-tests/`](automated-tests/README.md), not in `perf-analysis/`.
 
+The runner installs `tests/mock_widgets.lua` quiet, so a recorder setter that builds a table per call
+is not billed to the addon. The 2026-10-31 pass found that cost by measuring commit by commit: `hudLive`
+(7264) and `combatEvent` (3376) had stood over their ceilings since ef6aaf1 taught the mock's
+`SetPoint` and `ClearAllPoints` to record. Measured quiet, they read 6112 and 2225 bytes and `hudTick`
+800, and the ceilings came down to 6500, 2500 and 900. The change is test-side only: nothing the
+player runs moved.
+
 ## Complexity
 
 Measured by the runner's sighted `complexity` suite at release (automated-tests-§3). The release is

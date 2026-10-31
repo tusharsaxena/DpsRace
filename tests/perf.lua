@@ -28,7 +28,14 @@
 -- Re-measured 2026-10-25 with the damage chart and the pace bar (#2, #3): hudTick 800, the same as
 -- before them, since the running body's chart and pace views are cached per race (modules/Hud_Chart.lua
 -- LiveViews) and its stack compared field by field; combatEvent 3376, also unchanged by them. hudLive
--- 7264 and combatEvent 3376 already stood over their ceilings before that work: still the finding.
+-- 7264 and combatEvent 3376 already stood over their ceilings before that work.
+-- Resolved 2026-10-31: a measurement artifact. Measured commit by commit from 7e86054, both rose 720
+-- bytes at ef6aaf1, which added no per-read addon work: it taught tests/mock_widgets.lua's SetPoint and
+-- ClearAllPoints to record a fresh table per call. hudLive's other rise (+160, f3ef604) is the live-DPS
+-- rungs and is real. This runner now installs the recorder quiet, so its setters allocate nothing the
+-- client would not, and the figures are the addon's plus the scripted meter's: raceEvent 0.3, hudTick
+-- 800, hudLive 6112, combatEvent 2225, the stood-down input 0 (Lua 5.1.5, identical over repeat runs).
+-- The ceilings came DOWN to sit a little above those; hudTick's was still the 2026-10-23 headroom.
 
 local root = (arg and arg[0] and arg[0]:match("^(.*)/tests/perf%.lua$")) or "."
 package.path = root .. "/tests/?.lua;" .. package.path
@@ -44,9 +51,9 @@ local USAGE = "usage: lua tests/perf.lua [--out <path>] [--label <text>]\n"
 
 local BYTE_CEILING = {
     raceEventCaptureOff = 64, raceEventCaptureOn = 64,
-    hudTickCaptureOff = 1200, hudTickCaptureOn = 1200,
-    hudLiveCaptureOff = 7000, hudLiveCaptureOn = 7000,
-    combatEventCaptureOff = 3000, combatEventCaptureOn = 3000,
+    hudTickCaptureOff = 900, hudTickCaptureOn = 900,
+    hudLiveCaptureOff = 6500, hudLiveCaptureOn = 6500,
+    combatEventCaptureOff = 2500, combatEventCaptureOn = 2500,
     raceInputStoodDown = 0,
 }
 local NOTES_PER_ITER = {
@@ -111,7 +118,7 @@ local T = {
 local RaceClock = dofile(root .. "/tests/race_clock.lua")(T)
 local Widgets = dofile(root .. "/tests/mock_widgets.lua")(T)
 
-local f = RaceClock.new{ mutate = function(m) Widgets.install(m) end }
+local f = RaceClock.new{ mutate = function(m) Widgets.install(m, { quiet = true }) end }
 local NS, M = f.NS, f.M
 
 local failures = {}

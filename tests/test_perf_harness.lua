@@ -89,3 +89,19 @@ test("perf: suspend takes the perf hold and the addon is inert; resume restores 
     assertFalse(NS.IsStoodDown())
     assertTrue(#M.__registrations() > 0, "resume did not rebuild the registrations")
 end)
+
+test("perf: the widget recorder's quiet mode keeps nothing a suite's recorder keeps", function()
+    -- red under: dropping a setter from QUIET_SETTERS bills the recorder to tests/perf.lua again
+    local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+    local loud = T.load{ mutate = function(m) Widgets.install(m) end }.mocks.CreateFrame("Frame")
+    local quiet = T.load{ mutate = function(m) Widgets.install(m, { quiet = true }) end }.mocks.CreateFrame("Frame")
+    for _, f in ipairs({ loud, quiet }) do
+        assertTrue(f:ClearAllPoints() == f, "ClearAllPoints answers the frame")
+        assertTrue(f:SetPoint("CENTER") == f, "SetPoint answers the frame")
+        f:SetBackdropColor(1, 1, 1, 1)
+    end
+    assertEqual(#loud.__points, 1)
+    assertTrue(loud.__backdropColor ~= nil, "the default recorder stopped recording")
+    assertEqual(quiet.__points, nil)
+    assertEqual(quiet.__backdropColor, nil)
+end)

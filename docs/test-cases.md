@@ -1424,12 +1424,13 @@ Total.
 - parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing
 - parity: the hollow composers cost the library-absent load exactly the composed rows
 
-### test_perf_harness.lua (4)
+### test_perf_harness.lua (5)
 
 - perf: the descriptor declares the buckets, the SavedVariable and the one latch
 - perf: every declared bucket is reached by a real bracket
 - perf: outside an experiment the bracket records nothing
 - perf: suspend takes the perf hold and the addon is inert; resume restores it
+- perf: the widget recorder's quiet mode keeps nothing a suite's recorder keeps
 
 ### test_loadorder.lua (4)
 
@@ -1582,7 +1583,7 @@ Total.
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
 | test_surface_parity.lua | 17 |
-| test_perf_harness.lua | 4 |
+| test_perf_harness.lua | 5 |
 | test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 3 |
 | test_eol.lua | 2 |
@@ -1591,4 +1592,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1257** |
+| **Total** | **1258** |
