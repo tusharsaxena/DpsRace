@@ -357,7 +357,8 @@ local function newSep(f)
 end
 
 -- The score table (the owner's call, 2026-10-26): no box, its columns the spell table's (Compare.Cell),
--- and a faint rule under it, the window's divider gray, between its lines and the spell table's header.
+-- and a faint rule under it, the window's divider gray, between its lines and the spell rows. Its
+-- header is the one header row of both tables (DR-F03), so *Spell* heads the name column.
 local function buildScore(p, c, x)
     x.score = CreateFrame("Frame", nil, c)
     hover(p, x.score, "score")
@@ -366,6 +367,7 @@ local function buildScore(p, c, x)
     NS.Skin.Divider(x.rule)
     x.scoreSep = newSep(f)
     x.head = heads(f, FONT.HEADER, nil, HEADS)
+    x.head[1]:SetText(L["Spell"])
     x.head[2]:SetText(L["This run"])
     x.head[4]:SetText(L["Difference"])
     x.lines = {}
@@ -383,10 +385,6 @@ end
 
 local function buildSpells(_, c, x)
     x.spellHost = CreateFrame("Frame", nil, c)
-    x.spellHead = heads(x.spellHost, FONT.HEADER, nil, HEADS)
-    x.spellHead[1]:SetText(L["Spell"])
-    x.spellHead[2]:SetText(L["This run"])
-    x.spellHead[4]:SetText(L["Difference"])
     x.spellSep = newSep(x.spellHost)
     x.rows = NS.Pool.New()
 end
@@ -414,7 +412,6 @@ function Compare.Fill(p)
     NS.Style.Paint(x.toggle.label, on and C.text or C.dim)
     x.toggle:SetChecked(p:Comparing())
     x.head[3]:SetText(Compare.OtherLabel(kind))
-    x.spellHead[3]:SetText(Compare.OtherLabel(kind))
     local k = other and Compare.Kpis(p.run, other) or {}
     local values, diffs = { { k.damageA, k.damageB }, { k.dpsA, k.dpsB } }, Compare.ScoreRows(k)
     for i, line in ipairs(x.lines) do
@@ -459,7 +456,7 @@ function Compare.SeparatorX(width)
 end
 
 --- Column `j`'s text box across `width`: its left x, width and justify, the one geometry of both
---- tables (the score table's and the spell table's headers and every line under them), so their
+--- tables (the one header row and every line under it, score and spell alike), so their
 --- columns line up. The name column runs from the left edge to this run's; a spell row's name then
 --- steps past its icon. This run's figure stops PAD short of its right edge, the other's starts PAD
 --- into its column: each sits off the edge its bar grows from. The Difference splits in two (DR-06):
@@ -660,19 +657,18 @@ local function layoutSpells(p, y, cw)
     local rowH, pitch = NS.HudBreakdown.RowHeight(), NS.HudBreakdown.Pitch()
     local host = x.spellHost
     place(host, p.content, 0, y)
-    host:SetSize(cw, Compare.ROW_H + math.max(1, #data * pitch))
-    placeLine(x.spellHead, host, 0, cw)
-    placeSep(x.spellSep, host, Compare.SeparatorX(cw), Compare.ROW_H + #data * pitch)
+    host:SetSize(cw, math.max(1, #data * pitch))
+    placeSep(x.spellSep, host, Compare.SeparatorX(cw), #data * pitch)
     local maxPct = Compare.MaxPct(data)
     NS.Pool.ReleaseAll(x.rows, function(row) row.data = nil end)
     for i, d in ipairs(data) do
         local row = NS.Pool.Acquire(x.rows, function() return newRow(host) end)
         row.pane = p
         row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -Compare.ROW_H - (i - 1) * pitch)
+        row:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -(i - 1) * pitch)
         fillRow(row, d, i, cw, rowH, maxPct)
     end
-    return y - Compare.ROW_H - #data * pitch - 8
+    return y - #data * pitch - 8
 end
 
 --- While comparing: the score table and the compared breakdown at `y`; answers the y beneath.

@@ -260,7 +260,6 @@ test("compare: This run right, Best run left; each header at its column's x, wid
     d:SetComparing(true)
     local x = d.cmp
     assertEqual(x.head[3].__text, "Best run", "the compared column's name")
-    assertEqual(x.spellHead[3].__text, "Best run")
     local justify = { "LEFT", "RIGHT", "LEFT", "RIGHT", "RIGHT" }
     local function same(head, cell, j, what)
         assertEqual(head.__justifyH, justify[j], what .. " header " .. j .. "'s justify")
@@ -271,10 +270,10 @@ test("compare: This run right, Best run left; each header at its column's x, wid
     for j = 2, 3 do
         same(x.head[j], x.lines[1][j], j, "score")
         same(x.head[j], x.lines[2][j], j, "score")
-        same(x.spellHead[j], x.rows.active[1].texts[j], j, "spell")
+        same(x.head[j], x.rows.active[1].texts[j], j, "spell")
     end
     -- The one Difference header (DR-06): from the amount's left to the %'s right, right-aligned.
-    for _, case in ipairs({ { x.head, x.lines[1] }, { x.head, x.lines[2] }, { x.spellHead, x.rows.active[1].texts } }) do
+    for _, case in ipairs({ { x.head, x.lines[1] }, { x.head, x.lines[2] }, { x.head, x.rows.active[1].texts } }) do
         local head, amount, pct = case[1][4], case[2][4], case[2][5]
         assertEqual(head.__justifyH, "RIGHT")
         assertEqual(amount.__justifyH, "RIGHT", "the amount right-aligned")
@@ -282,8 +281,30 @@ test("compare: This run right, Best run left; each header at its column's x, wid
         assertEqual(head.__points[1][4], amount.__points[1][4], "the Difference header starts over the amount")
         assertEqual(head.__points[1][4] + head.__width, pct.__points[1][4] + pct.__width, "and ends over the %")
     end
-    local thisX, thisW = x.spellHead[2].__points[1][4], x.spellHead[2].__width
-    assertTrue(x.spellHead[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
+    local thisX, thisW = x.head[2].__points[1][4], x.head[2].__width
+    assertTrue(x.head[3].__points[1][4] > thisX + thisW, "the two runs' columns overlap")
+end)
+
+test("compare: one header row: Spell heads the first column, the first spell row hangs at the table's top", function()
+    -- red under: the second header row over the spell rows (the owner's 2026-10-31 batch, DR-F03).
+    for _, view in ipairs({ "expanded", "collapsed" }) do
+        local i = inst()
+        seed(i, { mkRun("best", 300), mkRun("low", 100) })
+        i.NS.db.profile.windows.results = { view = view }
+        i.R.ShowRun("low")
+        local d = detail(i)
+        d:SetComparing(true)
+        local x = d.cmp
+        assertNil(x.spellHead, view .. ": a second header row")
+        assertEqual(x.head[1].__text, "Spell", view .. ": the first column's header")
+        assertEqual(x.head[2].__text, "This run")
+        assertEqual(x.head[4].__text, "Difference")
+        assertEqual(x.head[1].__justifyH, "LEFT")
+        assertEqual(x.rows.active[1].__points[1][5], 0, view .. ": the first spell row's y in its table")
+        d:SetComparing(false)
+        assertTrue(d.w.list.parent:IsShown(), view .. ": the plain list keeps its own form")
+        assertFalse(x.score:IsShown(), view .. ": the header row goes with the compare")
+    end
 end)
 
 test("compare: the score table has no box, its columns are the spell table's, and a rule sits between them", function()
@@ -313,11 +334,10 @@ test("compare: the score table has no box, its columns are the spell table's, an
         end
         for j = 2, 4 do
             local cx, w, justify = Cmp.HeadCell(j, cw)
-            sameBox({ x.head[j], x.spellHead[j] }, cx, w, justify, j)
+            sameBox({ x.head[j] }, cx, w, justify, j)
         end
-        assertEqual(x.head[1].__points[1][4], x.spellHead[1].__points[1][4], view .. ": the name columns' x")
-        assertEqual(x.head[1].__width, x.spellHead[1].__width, view .. ": the name columns' width")
-        -- The rule: one pixel, across the table, under the DPS line and above the spell header.
+        assertEqual(x.head[1].__text, "Spell", view .. ": the first column's header")
+        -- The rule: one pixel, across the table, under the DPS line and above the spell rows.
         local rule = x.rule
         assertTrue(rule:IsShown(), view .. ": no rule between the tables")
         assertEqual(rule.__height, 1)
@@ -328,7 +348,7 @@ test("compare: the score table has no box, its columns are the spell table's, an
         local dpsBottom = x.lines[2][2].__points[1][5] - Cmp.ScoreLineH() / 2
         assertTrue(ruleY < dpsBottom, view .. ": the rule runs through the DPS line")
         local scoreY, hostY = x.score.__points[1][5], x.spellHost.__points[1][5]
-        assertTrue(hostY < scoreY + ruleY - 1, view .. ": the spell header sits on the rule")
+        assertTrue(hostY < scoreY + ruleY - 1, view .. ": the first spell row sits on the rule")
         assertTrue(x.lines[1].bar:IsShown(), view .. ": the score table's bars are gone")
     end
 end)
@@ -429,10 +449,9 @@ test("compare: the Difference column fits the detail at both views' minimum widt
         for n = 1, 2 do pair(x.lines[n], "score line " .. n) end
         for _, row in ipairs(x.rows.active) do pair(row.texts, "a spell") end
         fits(x.head[4], cw, "the score header")
-        fits(x.spellHead[4], cw, "the spell header")
         -- One shared header over both columns, right-aligned over the %.
         local cols = Cmp.Columns(cw)
-        for _, set in ipairs({ x.head, x.spellHead }) do
+        for _, set in ipairs({ x.head }) do
             assertEqual(set[4].__points[1][4], cols[3], view .. ": the Difference header starts over the amount")
             assertEqual(set[4].__width, cols.diff, view .. ": and spans both columns")
             assertEqual(set[4].__justifyH, "RIGHT")
@@ -659,8 +678,8 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         end
         for j = 2, 4 do
             local cx, w = Cmp.HeadCell(j, cw)
-            assertEqual(x.spellHead[j].__points[1][4], cx, case.view .. ": column " .. j .. "'s x")
-            assertEqual(x.spellHead[j].__width, w, case.view .. ": column " .. j .. "'s width")
+            assertEqual(x.head[j].__points[1][4], cx, case.view .. ": column " .. j .. "'s x")
+            assertEqual(x.head[j].__width, w, case.view .. ": column " .. j .. "'s width")
         end
         assertEqual(row.texts[5].__points[1][4] + row.texts[5].__width, cw, case.view .. ": Difference at the right edge")
         assertEqual(x.head[1].__width, cols.name, case.view .. ": the score table's name column")
@@ -671,7 +690,7 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
         assertEqual(Cmp.SEP_W, 1)
         assertTrue(Cmp.SEP_COLOR[4] >= 0.15 and Cmp.SEP_COLOR[4] <= 0.2, "the separator's alpha, dim")
         for _, t in ipairs({ { x.scoreSep, x.score, Cmp.ROW_H + 2 * Cmp.ScoreLineH() }, { x.spellSep, x.spellHost,
-                Cmp.ROW_H + #x.data * i.NS.HudBreakdown.Pitch() } }) do
+                #x.data * i.NS.HudBreakdown.Pitch() } }) do
             local sep, parent, h = t[1], t[2], t[3]
             assertTrue(sep:IsShown(), case.view .. ": no separator")
             assertEqual(sep.__points[1][2], parent)
@@ -681,8 +700,8 @@ test("compare: a 1200 px collapsed detail draws both tables across its width, a 
             assertEqual(sep.__vertex[1], Cmp.SEP_COLOR[1], case.view .. ": the separator's gray")
             assertEqual(sep.__vertex[4], Cmp.SEP_COLOR[4], case.view .. ": the separator's alpha")
         end
-        local thisRight = x.spellHead[2].__points[1][4] + x.spellHead[2].__width + Cmp.PAD
-        assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.spellHead[3].__points[1][4] - Cmp.PAD,
+        local thisRight = x.head[2].__points[1][4] + x.head[2].__width + Cmp.PAD
+        assertTrue(sx >= thisRight and sx + Cmp.SEP_W <= x.head[3].__points[1][4] - Cmp.PAD,
             case.view .. ": the separator sits between the runs' columns")
     end
 end)
