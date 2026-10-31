@@ -207,4 +207,7 @@ NS.RegisterTabbedPage({
     title           = L["HUD"],
     panelName       = "DpsRaceHudPanel",
     defaultsTooltip = L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."],
+    -- Race clock is on Race HUD and switches blocks on HUD Appearance, so a Defaults pressed there
+    -- has to redraw: no selector row was drawn to watch it.
+    redrawOnDefaults = true,
 })

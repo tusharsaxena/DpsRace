@@ -94,7 +94,11 @@ end
 --- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
 --- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
 --- the stub's no-op.
---- @param spec table { key, title, panelName, defaultsTooltip, afterGroup?, beforeGroup? }
+--- `redrawOnDefaults` is for a page with a row a selector on another tab switches: its Defaults can
+--- change what the tab on screen draws, and the library watches only the selectors a render drew
+--- (options-ui-§22). The redraw answers the page's own reset, as the global reset's does; it is no
+--- selector's `onChange`, so the switching itself stays the library's.
+--- @param spec table { key, title, panelName, defaultsTooltip, afterGroup?, beforeGroup?, redrawOnDefaults? }
 NS.pageCtx = NS.pageCtx or {}   -- each built page's ctx, by key, for a page that repaints off the bus
 function NS.RegisterTabbedPage(spec)
     NS.RegisterOptionsPage(spec.key, spec.title, function(mainCategory)
@@ -105,7 +109,10 @@ function NS.RegisterTabbedPage(spec)
             defaultsButton  = true,
             defaultsTooltip = spec.defaultsTooltip,
         })
-        ctx.panel.defaultsOnClick = function() H.RestoreDefaults(spec.key, ctx) end
+        ctx.panel.defaultsOnClick = function()
+            H.RestoreDefaults(spec.key, ctx)
+            if spec.redrawOnDefaults then H.RefreshPanel(ctx, true) end
+        end
         H.SetRenderer(ctx, function(c)
             H.ClearScroll(c)
             H.RenderTabbedSchema(c, spec.key, spec.afterGroup, nil, { beforeGroup = spec.beforeGroup })

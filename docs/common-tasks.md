@@ -99,7 +99,7 @@ catalog is grown from the same captures:
 ## Add a settings page
 
 - Create `settings/<Page>.lua`: register its rows, then call `NS.RegisterTabbedPage{ key, title,
-  panelName, defaultsTooltip, afterGroup?, beforeGroup? }` (`settings/OptionsSetup.lua`), which builds the panel,
+  panelName, defaultsTooltip, afterGroup?, beforeGroup?, redrawOnDefaults? }` (`settings/OptionsSetup.lua`), which builds the panel,
   its Defaults button and the tabbed render (options-ui-§13).
 - Add its key to `VALID_PAGES` in `settings/Schema.lua`, and its TOC line after `settings/General.lua`
   and before `settings/Profiles.lua` (the page order is the registration order).

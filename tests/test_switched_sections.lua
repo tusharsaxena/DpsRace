@@ -59,6 +59,18 @@ test("switched sections: Race clock draws only the clock blocks it picks, and a 
     assertTrue(drawn(inst, ctx, "Time left clock"))
 end)
 
+test("switched sections: the page's Defaults on HUD Appearance brings a hidden clock block back at once", function()
+    -- red under: a Defaults that only runs refreshers, so `hud.clock` returns to both with no render
+    -- (its selector row is on the other tab, so this render holds no watcher for it)
+    local inst, ctx = shownPage()
+    choose(inst, "left")
+    assertFalse(drawn(inst, ctx, "Elapsed clock"))
+    ctx.panel.defaultsOnClick()
+    assertEqual(inst.NS.GetSetting("hud.clock"), "both")
+    assertTrue(drawn(inst, ctx, "Elapsed clock"), "with no tab change")
+    assertTrue(drawn(inst, ctx, "Time left clock"))
+end)
+
 test("switched sections: a hidden clock block's rows stay in the schema, so a reset reaches them", function()
     -- red under: dropping the rows from the schema in place of `shownWhen`
     local inst = T.load()
