@@ -369,6 +369,48 @@ test("sample parity: a change to the sample history reaches the card, as RUNS_CH
     assertEqual(f.Race.State(), "idle")
 end)
 
+test("sample parity: a held state's history is the same moment's: the board, the row and the card agree", function()
+    local f = fixture("WARLOCK")
+    local Source = f.NS.ResultsSource
+    local function key() return f.NS.Bests.Key(Source.Get("sample-01")) end
+    assertTrue(f.Preview.Start({ mode = "test", state = "running" }))
+    assertEqual(Source.Get("sim-newbest").status, "running")
+    assertEqual(Source.Board()[key()].id, "sample-01", "nothing beats the best yet")
+
+    assertTrue(f.Preview.SetState("result"))
+    assertEqual(Source.Get("sim-newbest").status, "complete")
+    assertEqual(Source.Board()[key()].id, "sim-newbest", "the board kept the running moment's best")
+    assertEqual(f.NS.Bests.Board()[key()].id, "sim-newbest")
+    assertEqual(Source.Board().id, f.NS.Bests.Compute(Source.All()).id)
+    assertTrue(f.Hud.View().isNew == true, "the card's a new best, as the board says")
+
+    assertTrue(f.Preview.SetState("running"))
+    assertEqual(Source.Get("sim-newbest").status, "running")
+    assertEqual(Source.Board()[key()].id, "sample-01", "a run in progress holds no best")
+
+    assertTrue(f.Preview.SetState("armed"))
+    assertEqual(Source.Get("sim-newbest"), nil, "armed: not yet, as a sim's")
+    assertEqual(Source.Board()[key()].id, "sample-01")
+
+    assertTrue(f.Preview.SetState("result"))
+    assertEqual(Source.Board()[key()].id, "sim-newbest", "back on the card")
+end)
+
+test("sample parity: a state switch redraws an open Results window on the moment held", function()
+    local f = fixture("WARLOCK")
+    assertTrue(f.Preview.Start({ mode = "test", state = "running" }))
+    assertTrue(f.R.IsShown())
+    local drawn, real = nil, f.R.OnSourceChanged
+    f.R.OnSourceChanged = function(...)
+        local r = f.NS.ResultsSource.Get("sim-newbest")
+        drawn = r and r.status
+        return real(...)
+    end
+    assertTrue(f.Preview.SetState("result"))
+    assertEqual(drawn, "complete", "the window's last draw had the running row")
+    f.R.OnSourceChanged = real
+end)
+
 test("sample parity: the HUD's reads go through its throttle: live.hz bounds them", function()
     local f = fixture("WARLOCK")
     f.NS.db.profile.live.hz = 2

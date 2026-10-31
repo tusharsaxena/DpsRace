@@ -258,6 +258,9 @@ function SampleRace.Hold(s, key, t)
         held = 0
     end
     silent = false
+    -- The history is the moment's: the replay's own Put drew the run mid-way, and an armed race has
+    -- no run in it yet. One change, on the settled run, so the boards and an open window follow.
+    if key == "running" or key == "result" then touched() else NS.ResultsSource.Delete(run.id) end
 end
 
 -- ── the acts (Race's) ───────────────────────────────────────────────────────────────────────────
