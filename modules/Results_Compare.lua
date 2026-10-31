@@ -55,9 +55,12 @@ Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
 Compare.GAP = 6             -- between this run's column and the other's
 Compare.PAD = 4             -- a figure's inset from the edge its column's bar grows from
--- The difference bars (the owner's calls, 2026-10-26 and DR-F05): flat and see-through at BAR_ALPHA, so
--- the white figures read over them, in the two runs' hues (Compare.BarColor).
-Compare.BAR_ALPHA = 0.40
+-- The difference bars (the owner's calls, 2026-10-26 and DR-F05): flat and opaque, in the hues of the
+-- New best text (#61A4F8) and the headings (#F8CC00) darkened to the race bars' weight (their fill reads
+-- #2F2F4D on screen, luminance 50), so the white figures read over them (Compare.BarColor).
+Compare.BAR_ALPHA = 1
+Compare.BAR_BEST = { 32 / 255, 54 / 255, 82 / 255 }
+Compare.BAR_OTHER = { 64 / 255, 53 / 255, 0 }
 -- The Difference's %: the Results window's soft green and soft red (the 3:00 and 0:30 length hues),
 -- DATA hues (skinning rung 4: the higher and the lower run), the same under every skin.
 Compare.DIFF_UP = { 0.56, 0.80, 0.58 }     -- this run is higher
@@ -215,13 +218,11 @@ function Compare.BestSide(run, other, kind)
 end
 
 --- A bar's hue by the column it sits in: the best run's column blue, the other's gold, on every row
---- whichever run leads that row. The ability timeline's two run colors (Timeline.OTHER and THIS, DATA
---- hues), which load after this file, so they are read here at call time.
+--- whichever run leads that row.
 --- @param side string  the bar's column, "this" | "other"
 --- @param best string  Compare.BestSide's answer
 function Compare.BarColor(side, best)
-    local Timeline = NS.ResultsTimeline
-    return side == best and Timeline.OTHER or Timeline.THIS
+    return side == best and Compare.BAR_BEST or Compare.BAR_OTHER
 end
 
 --- Whether a run can take part in a compare: a stored record with a result (a lost run has none).

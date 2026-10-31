@@ -430,7 +430,7 @@ local function assertTint(i, bar, hue, what)
     assertEqual(got[1], hue[1], what .. ": red")
     assertEqual(got[2], hue[2], what .. ": green")
     assertEqual(got[3], hue[3], what .. ": blue")
-    assertEqual(got[4], i.Cmp.BAR_ALPHA, what .. ": the bars' see-through alpha")
+    assertEqual(got[4], i.Cmp.BAR_ALPHA, what .. ": the bars' alpha")
 end
 
 test("compare: Damage, DPS and the spells size their bars on one scale (DR-F05)", function()
@@ -453,8 +453,7 @@ end)
 
 test("compare: the run with the more total damage is blue on every row, the other gold (DR-F05)", function()
     local i = inst()
-    local TL = i.NS.ResultsTimeline
-    local gold, blue = TL.THIS, TL.OTHER
+    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
     -- The other run is best: this run's column gold, the other's blue, row by row whoever leads it.
     local d, byID = barPair(i, 80, 100)
     local x = d.cmp
@@ -467,7 +466,6 @@ test("compare: the run with the more total damage is blue on every row, the othe
     assertTint(i, byID[4].bar, blue, "the other's lone spell")
     -- This run is best: the same rows swap.
     i = inst()
-    TL = i.NS.ResultsTimeline
     d, byID = barPair(i, 100, 80)
     x = d.cmp
     assertEqual(i.Cmp.BestSide(d.run, x.other), "this")
@@ -482,15 +480,14 @@ test("compare: the run with the more total damage is blue on every row, the othe
     assertEqual(Cmp.BestSide(total(5), total(6)), "other")
     assertEqual(Cmp.BestSide(total(5), {}), "this", "a side with no damage")
     assertEqual(Cmp.BestSide({}, total(6)), "other")
-    assertEqual(Cmp.BarColor("this", "this"), TL.OTHER, "the best's side, the timeline's blue")
-    assertEqual(Cmp.BarColor("other", "this"), TL.THIS, "the other side, the timeline's gold")
-    assertEqual(Cmp.BarColor("other", "other"), TL.OTHER)
+    assertEqual(Cmp.BarColor("this", "this"), i.NS.ResultsCompare.BAR_BEST, "the best's side, the dark blue")
+    assertEqual(Cmp.BarColor("other", "this"), i.NS.ResultsCompare.BAR_OTHER, "the other side, the dark gold")
+    assertEqual(Cmp.BarColor("other", "other"), i.NS.ResultsCompare.BAR_BEST)
 end)
 
 test("compare: the column headed Best run is blue even when this run has more damage (DR-F05)", function()
     local i = inst()
-    local TL = i.NS.ResultsTimeline
-    local gold, blue = TL.THIS, TL.OTHER
+    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
     -- An incomplete run ended early with more damage than the complete best: the board's best is
     -- still the other run, so the kind answers, not the totals.
     local best = mkRun("best", 100)
@@ -526,9 +523,9 @@ test("compare: a picked run takes the same colors; the Difference keeps its gree
     local d = detail(i)
     d.pickID = "b"
     d:SetComparing(true)
-    local x, TL = d.cmp, i.NS.ResultsTimeline
+    local x = d.cmp
     assertEqual(x.kind, "picked")
-    assertTint(i, x.lines[1].bar, TL.OTHER, "the picked run has the more damage")
+    assertTint(i, x.lines[1].bar, i.NS.ResultsCompare.BAR_BEST, "the picked run has the more damage")
     local row = x.rows.active[1]
     -- Behind on a row: the amount in the table's red, the % in the muted red, whichever run is blue.
     assertEqual(row.texts[5].__text, "|cffdb8585-50.0%|r", "the muted red is unchanged")
