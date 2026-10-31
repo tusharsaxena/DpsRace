@@ -424,7 +424,10 @@ local function buildHeader(f)
     f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
     ui.controls = Style.NewStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
-    if close then placeControl(close, f, 0) end
+    if close then
+        placeControl(close, f, 0)
+        NS.HudStates.AddTip(close, NS.HudTips.close)
+    end
     ui.close = close
     ui.lock = Style.ControlButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
     ui.settings = Style.ControlButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
@@ -458,6 +461,9 @@ local function buildFooter(f)
     ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
     ui.footRight = NS.Style.Text(f, NS.Style.FONT.CAPTION, nil, "RIGHT")
     ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
+    local tips, States = NS.HudTips, NS.HudStates
+    ui.footLeftTip = States.TipZone(f, ui.footLeft, tips.footLeft)
+    ui.footRightTip = States.TipZone(f, ui.footRight, tips.footRight)
 end
 
 local onHide, resized

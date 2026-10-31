@@ -1156,6 +1156,19 @@ Total.
 - skin verb: refused while the addon is disabled, and no picker shows
 - skin verb: without LibKa0s the verb prints the library-absent line
 
+### test_hud_element_tips.lua (10)
+
+- hud tips: the idle body names every length, the target, Arm and Results
+- hud tips: the armed body names its clock, target and Cancel
+- hud tips: the running body names its clocks, figures, chart, pace bar, headings and captions
+- hud tips: a clock's tooltip goes with the clock when the mode changes
+- hud tips: the Stop! and waiting tiles say which reading they show
+- hud tips: the Stop! chips and the result's verdict chip say what they count
+- hud tips: the result card names its figures, chart, pace bar, heading and four buttons
+- hud tips: a heading's zone hides with its heading
+- hud tips: the title bar's controls and the footer's lines
+- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry
+
 ### test_glyphs.lua (1)
 
 - glyphs: display strings use only characters every shipped skin face draws
@@ -1493,6 +1506,7 @@ Total.
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
+| test_hud_element_tips.lua | 10 |
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
 | test_slash.lua | 37 |
@@ -1513,4 +1527,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1191** |
+| **Total** | **1201** |

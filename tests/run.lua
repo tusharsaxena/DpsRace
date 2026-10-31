@@ -148,6 +148,7 @@ local SUITES = {
     "test_skin_picker",
     "test_skin_outline",
     "test_skin_verb",
+    "test_hud_element_tips",
     "test_glyphs",
     "test_refactor_pins",
     "test_slash",

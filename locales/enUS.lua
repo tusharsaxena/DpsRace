@@ -1072,3 +1072,75 @@ L["Whether the first-run skin picker was closed on this profile."] =
     "Whether the first-run skin picker was closed on this profile."
 L["Reload your interface (/reload) to finish changing the skin."] =
     "Reload your interface (/reload) to finish changing the skin."
+
+-- The Race HUD tooltips (modules/Hud_Tips.lua, DR-F04)
+L["How long the next race runs. Pick a preset or Custom; the choice stays for your next race."] =
+    "How long the next race runs. Pick a preset or Custom; the choice stays for your next race."
+L["Race for this long. Your bests are kept per race length, so each length has its own."] =
+    "Race for this long. Your bests are kept per race length, so each length has its own."
+L["Set a race length of your own. Click, then type it in."] = "Set a race length of your own. Click, then type it in."
+L["Custom length"] = "Custom length"
+L["Type a length from 10 seconds to 15 minutes, such as 90, 1:30 or 3m, then press Enter. Escape backs out."] =
+    "Type a length from 10 seconds to 15 minutes, such as 90, 1:30 or 3m, then press Enter. Escape backs out."
+L["The training dummy you have targeted, its dummy type and its NPC ID. The type decides which board the run counts on."] =
+    "The training dummy you have targeted, its dummy type and its NPC ID. The type decides which board the run counts on."
+L["Get this race ready. The clock starts on your first hit. When you can't arm, the line under this button says why."] =
+    "Get this race ready. The clock starts on your first hit. When you can't arm, the line under this button says why."
+L["Open the Results window: your runs, your bests and Insights."] = "Open the Results window: your runs, your bests and Insights."
+L["The length of this race. It starts counting down when your first hit lands."] =
+    "The length of this race. It starts counting down when your first hit lands."
+L["First hit"] = "First hit"
+L["Nothing counts until your damage lands, so pre-cast and pre-pot as you would on a pull."] =
+    "Nothing counts until your damage lands, so pre-cast and pre-pot as you would on a pull."
+L["The race's clock. HUD > Race clock picks what shows here."] = "The race's clock. HUD > Race clock picks what shows here."
+L["How long this race has run."] = "How long this race has run."
+L["How long until the buzzer."] = "How long until the buzzer."
+L["Your damage so far this race, as the damage meter reports it."] =
+    "Your damage so far this race, as the damage meter reports it."
+L["Your damage per second so far this race, as the damage meter reports it."] =
+    "Your damage per second so far this race, as the damage meter reports it."
+L["How your damage built up over the race. Each column is one slice of time. The line is your best's pace where you have one, and icons mark your cooldowns: hover one for the spell."] =
+    "How your damage built up over the race. Each column is one slice of time. The line is your best's pace where you have one, and icons mark your cooldowns: hover one for the spell."
+L["Your damage against your best's average at this point in the race. The tick in the middle is on pace: green is ahead of it, red behind."] =
+    "Your damage against your best's average at this point in the race. The tick in the middle is on pace: green is ahead of it, red behind."
+L["This run's final damage against the best you had before it. The tick in the middle is level with that best: green is ahead of it, red behind."] =
+    "This run's final damage against the best you had before it. The tick in the middle is level with that best: green is ahead of it, red behind."
+L["Your spells in this race. Hover a row for the spell. With Spell rows shown at 0, the mouse wheel scrolls the list."] =
+    "Your spells in this race. Hover a row for the spell. With Spell rows shown at 0, the mouse wheel scrolls the list."
+L["This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. With Spell rows shown at 0, the mouse wheel scrolls the list."] =
+    "This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. With Spell rows shown at 0, the mouse wheel scrolls the list."
+L["Live order"] = "Live order"
+L["Spells stay in the damage meter's order while the race runs. Each one's share appears on the result."] =
+    "Spells stay in the damage meter's order while the race runs. Each one's share appears on the result."
+L["Spell rows"] = "Spell rows"
+L["How many spell rows are drawn. HUD > Spell rows shown sets it."] =
+    "How many spell rows are drawn. HUD > Spell rows shown sets it."
+L["The buzzer has gone: stop casting. Damage still landing counts, but a cast that starts after the grace flags the run."] =
+    "The buzzer has gone: stop casting. Damage still landing counts, but a cast that starts after the grace flags the run."
+L["How long after the buzzer your last damage landed, as far as the race has seen."] =
+    "How long after the buzzer your last damage landed, as far as the race has seen."
+L["Combat ended before the buzzer, this far into the race, so the run is incomplete."] =
+    "Combat ended before the buzzer, this far into the race, so the run is incomplete."
+L["How long you have stayed in combat since the buzzer. The result is read when combat ends."] =
+    "How long you have stayed in combat since the buzzer. The result is read when combat ends."
+L["Combat is over, so the result can be read."] = "Combat is over, so the result can be read."
+L["Result pending"] = "Result pending"
+L["The damage meter can only be read once combat ends, so the result waits for that. Stop Now takes it as soon as it can."] =
+    "The damage meter can only be read once combat ends, so the result waits for that. Stop Now takes it as soon as it can."
+L["Casts that started after the grace. The result flags them unless the spell is on the ignore list."] =
+    "Casts that started after the grace. The result flags them unless the spell is on the ignore list."
+L["How long after the buzzer a cast may start before it is flagged. Set it on the Race settings page."] =
+    "How long after the buzzer a cast may start before it is flagged. Set it on the Race settings page."
+L["This run's total damage."] = "This run's total damage."
+L["This run's damage per second."] = "This run's damage per second."
+L["This run beat your best on this board, by this much."] = "This run beat your best on this board, by this much."
+L["How far this run fell short of your best on this board."] = "How far this run fell short of your best on this board."
+L["Back to the Arm Race screen at this length. This run stays saved."] =
+    "Back to the Arm Race screen at this length. This run stays saved."
+L["Open this run in the Results window."] = "Open this run in the Results window."
+L["Pick a chat channel and post this run's result there."] = "Pick a chat channel and post this run's result there."
+L["Close"] = "Close"
+L["Close the race window. A race in progress keeps running; a result card is dismissed and its run stays saved."] = "Close the race window. A race in progress keeps running; a result card is dismissed and its run stays saved."
+L["The spec and character this race counts for."] = "The spec and character this race counts for."
+L["Your item level. During a race, how often the figures refresh; after it, whether the result is still pending."] =
+    "Your item level. During a race, how often the figures refresh; after it, whether the result is still pending."

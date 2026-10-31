@@ -136,6 +136,7 @@ modules\Hud_Breakdown.lua
 # NS.HudStates.MinContentHeight()); modules\Hud_States.lua and modules\Results_Detail.lua build it at
 # CALL time.
 modules\Hud_Chart.lua
+modules\Hud_Tips.lua
 modules\Hud_States.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT / RUNS_CHANGED /
 # SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its

@@ -514,6 +514,10 @@ function Strip:SetParts(head, plot)
     head, plot = head and true or false, plot and true or false
     self.title:SetShown(head)
     self.note:SetShown(head)
+    -- A body's hover zones over the two labels (Hud_States' chartTips): a label takes no mouse itself.
+    if self.headZones then
+        for _, zone in ipairs(self.headZones) do zone:SetShown(head) end
+    end
     self.plot:SetShown(plot)
     for _, fs in ipairs(self.axis) do fs:SetShown(plot) end
     self.shown = plot
