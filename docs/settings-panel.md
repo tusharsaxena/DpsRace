@@ -13,7 +13,7 @@ built on first show (options-ui-§1, §5).
 | General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
 | Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap) and the late-cast ignore list; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
-| History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Usage tab: the hidden items |
+| History | Days to keep (90 by default, 0 = never prune), the stored count, *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Run detail tab: the detail's spell bars and the compare's two bars; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
 
 The pages register in that order (the order the panel lists them): General first, Profiles last.
@@ -264,13 +264,25 @@ and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling 
 | *Elapsed clock* | `appearance.elapsed.` | the font block (*Font*, *Font size*, *Font color*, *Use class color*, *Font flags*, *Font shadow*); JetBrains Mono 26, green | the running body's elapsed clock. *Font size* is the pair's; a clock shown alone draws half again as large (its tooltip says so, through the composer's `tooltips`) |
 | *Time left clock* | `appearance.left.` | the font block; JetBrains Mono 26, red | the time-left clock, the same way |
 | *Live figures* | `appearance.figures.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
-| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`) | the spell rows' fill and height on the HUD (live and result) and in the Results window's breakdown |
+| *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`); the skin's texture (stored pick solid), 90%, the pace bar's blue (0.36, 0.37, 0.84) | the HUD's spell rows' fill (live and result), and the row height of the HUD and the Results window's breakdown alike. The detail's fill is History > Run detail's |
 | *Spell text* | `appearance.spellText.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
 | *Damage chart* | `appearance.chart.` | the bar block with *Use the skin's texture*; the skin's texture (stored pick solid), 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height (the columns' and the best-pace line's: the plot is one 13 px icon row taller, on top) and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
 | *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
-| *Pace bar* | `appearance.pace.` | the bar block with *Use the skin's texture*; the chart's old look (the skin's texture, stored pick solid, 90%, the same indigo) | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
+| *Spell bar background* | `appearance.bars.` | a *Background* set (below); the skin's track | the track behind the HUD's spell rows |
+| *Spell bar border* | `appearance.bars.` | a *Border* set (below); none | a border around each HUD spell row's bar |
+| *Pace bar* | `appearance.pace.` | the bar block with *Use the skin's texture*; the chart's old look (the skin's texture, stored pick solid, 90%, the same indigo): `BAR_BLUE` in `defaults/Profile.lua`, the one source of every blue bar's default | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
+
+| *Pace bar background* | `appearance.pace.` | a *Background* set; the skin's `dr.chart.grid` track | the empty part of the pace bar |
+| *Pace bar border* | `appearance.pace.` | a *Border* set; none | a border around the whole pace bar. Its green and red parts are meaning colors, no block's |
 
 Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
+
+**The Background and Border sets** (`NS.BarStyleRows`, `settings/OptionsSetup.lua`; a styled bar, `HudAppearance.Styled`): every bar on HUD Appearance, the Results table and the Run detail tab carries both, each under its own heading.
+
+- *Background*: the composed color pair, *Background color* (`bgColor`, with alpha) and *Use class color* (`useClassColorBg`), then one appended row in the addon's words, *Use the skin's background* (`bgFromSkin`), which draws the surface's skin track and leaves the swatch unread. On by default where a track shipped (the spell rows, `dr.list.track`; the pace bar, `dr.chart.grid`). Off over a swatch of no opacity on the Results table and the compare, which draw no track by default; there the companion draws `dr.list.track`.
+- *Border*: `H.BorderGroup` with `fromSkin = true`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`, on: the skin's `bar.borderStyle`, *None* under Ka0s Default). Thickness and color stay the player's (X4). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
+- Both span the bar's whole length, the row, the cell or the compare column, not the fill. The border is a frame with no fill and no mouse, made the first time a block draws one, so it sits over the text at its edges.
+- The texture and border pickers are the composer's `LSM30_*` rows, which LibKa0s v1.83.0 draws as the previewing `Ka0sMedia_*` types when SharedMediaWidgets is absent (options-ui-§23).
 
 ### History
 
@@ -288,22 +300,41 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 #### Tab: Results table
 
 The Runs list's Damage and DPS cells (the owner's call, 2026-10-24, after MultiMeters' bars): a
-fill over the row's own stripe (no track and no border, 2026-10-25), from 10% of the cell (the smallest figure among the runs the filters
+fill over the row's own stripe (no track and no border by default, 2026-10-25), from 10% of the cell (the smallest figure among the runs the filters
 pass on the same target type) to 100% (that type's largest), linear between them and full when the view holds one run or one figure,
-and the text over them. Every block is composed (options-ui-§16, §17), in the styled-tab order Fill,
-Font. Each class color is the row's character's: the row describes that run
+and the text over them. Every block is composed (options-ui-§16, §17): each bar's Fill, Background and
+Border, then the shared Font. Each class color is the row's character's: the row describes that run
 (`classColorSource = "unit"`), so *Use class color* paints a warlock's run purple whoever is logged in.
 Every row's reaction is `NS.Results.Refresh()`. Each block carries its *Use the skin's ...* companion,
 on by default, as HUD Appearance's do (D-16: the Results table counts as HUD style for the reset).
 
 | Subsection | Schema prefix | Rows | Default |
 |---|---|---|---|
-| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*) | the skin's texture (stored pick solid), 85%, the spell breakdown's indigo (0.29, 0.29, 0.45) |
+| *Damage bar* | `resultsTable.damageBar.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*) | the skin's texture (stored pick solid), 90%, the pace bar's blue (0.36, 0.37, 0.84) |
+| *Damage bar background*, *Damage bar border* | `resultsTable.damageBar.` | a *Background* and a *Border* set | none, each spanning the cell |
 | *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
+| *DPS bar background*, *DPS bar border* | `resultsTable.dpsBar.` | a *Background* and a *Border* set | none |
 | *Bar text* | `resultsTable.barText.` | the font block with *Use the skin's font* | the skin's face (stored pick Friz Quadrata) 10, white, shadowed; a dash keeps the column's muted gray |
 
-The Runs list's rows keep the table's alternating stripe; the bar cells draw no background of their
-own.
+The Runs list's rows keep the table's alternating stripe; by default the bar cells draw no background
+of their own.
+
+#### Tab: Run detail
+
+The Results detail's bars (the owner's call, 2026-10-31). Three styled bars, each a bar block with its
+*Background* and *Border* sets. Every row's reaction is `HudAppearance.Changed()`: a spell row keeps a
+stamped look. Row height and the spell text stay HUD Appearance's.
+
+| Subsection | Schema prefix | Class color | Default |
+|---|---|---|---|
+| *Spell bars*, *Spell bar background*, *Spell bar border* | `resultsDetail.spellBars.` | the player's | as HUD Appearance's *Spell bars*: the skin's texture, 90%, the pace bar's blue, the skin's track, no border |
+| *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | solid at 100%, (42, 70, 107) / 255, no track, no border |
+| *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | solid at 100%, (83, 69, 0) / 255, no track, no border |
+
+*Best run bar* is the blue column and *Other run bar* the gold one, decided by `Compare.BestSide` as
+before. A compare line draws both columns' tracks and borders whichever side its bar is on. *Use the
+skin's texture* is **off** on the two compare bars: Ka0s Default's texture averages 0.69 white and would
+draw them darker than the shade the owner asked for. The Difference's green and red are not these bars'.
 
 #### Tab: Usage
 

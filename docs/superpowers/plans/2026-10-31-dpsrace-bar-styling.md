@@ -10,6 +10,6 @@ fresh session resumes at the first open box. No merge, tag, version bump or push
 - [x] B2 Surfaces: spell rows by `where`, the pace bar, the table's cells, the compare's bars and tracks.
 - [x] B3 Settings: `NS.BarStyleRows`, HUD Appearance's new subsections, History's Results table rows and
   the Run detail tab, the locale.
-- [ ] B4 Migration v8.
-- [ ] B5 Docs: `settings-panel.md`, `schema.md`, `module-map.md`, smoke rows, `test-cases.md`, README badge.
+- [x] B4 Migration v8.
+- [x] B5 Docs: `settings-panel.md`, `schema.md`, `module-map.md`, smoke rows, `test-cases.md`, README badge.
 - [ ] B6 Final gate: suite, luacheck, complexity through the bounded runner; a clean tree.

@@ -1108,6 +1108,26 @@ Total.
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
+### test_bar_style.lua (17)
+
+- bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
+- bar style: the compare's defaults are the old hues, brighter, opaque and flat
+- bar style: the default look keeps the skin's two tracks and draws no border
+- bar style: the HUD's and the detail's spell rows are separate blocks, live
+- bar style: the detail's spell rows draw their block, track and border
+- bar style: the pace bar draws its block's track and border, keeping its green
+- bar style: the table's two bars are separate blocks; a track and a border span the cell
+- bar style: a compare column draws its block; the side rule did not move
+- bar style: a border follows the skin's bar.borderStyle while its companion is on
+- bar style: a border key LSM cannot answer draws no border
+- bar style: a skin switch moves a skin track and leaves a swatch
+- bar style: every styled bar's media rows are composed pickers, on the page that draws them
+- bar style: History holds the Run detail tab after Results table, Fill before Background and Border
+- bar style: a page's Defaults, a profile reset and a profile copy reach the new rows
+- bar style: v8 copies a stored spell-bar fill to the detail, and a bare profile stays bare
+- bar style: v8 holds a partly stripped swatch at the color the player saw
+- bar style: v8 runs once: a later pick on the detail's block is kept
+
 ### test_skin_fonts.lua (12)
 
 - skin fonts: every font block carries size, color, class color, flags and shadow
@@ -1507,6 +1527,7 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
+| test_bar_style.lua | 17 |
 | test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
@@ -1532,4 +1553,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1206** |
+| **Total** | **1223** |
