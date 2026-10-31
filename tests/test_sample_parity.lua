@@ -34,12 +34,12 @@ local function until_(f, pred)
     error("never reached")
 end
 
--- The complete runs a compare sets side by side: one class, one length.
+-- The complete runs a compare sets side by side: one board's (class, target type, length).
 local function comparable(runs)
     local out = {}
     for _, run in ipairs(runs) do
         if run.status == "complete" then
-            local key = run.char.class .. run.race.length
+            local key = run.char.class .. run.target.category .. run.race.length
             out[key] = out[key] or {}
             table.insert(out[key], run)
         end
