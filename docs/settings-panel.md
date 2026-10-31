@@ -282,7 +282,7 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 - *Background*: the composed color pair, *Background color* (`bgColor`, with alpha) and *Use class color* (`useClassColorBg`), then one appended row in the addon's words, *Use the skin's background* (`bgFromSkin`), which draws the surface's skin track and leaves the swatch unread. On by default where a track shipped (the spell rows, `dr.list.track`; the pace bar, `dr.chart.grid`). Off over a swatch of no opacity on the Results table and the compare, which draw no track by default; there the companion draws `dr.list.track`.
 - *Border*: `H.BorderGroup` with `fromSkin = true`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`, on: the skin's `bar.borderStyle`, *None* under Ka0s Default). Thickness and color stay the player's (X4). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
 - Both span the bar's whole length, the row, the cell or the compare column, not the fill. The border is a frame with no fill and no mouse, made the first time a block draws one, so it sits over the text at its edges.
-- The texture and border pickers are the composer's `LSM30_*` rows, which LibKa0s v1.83.0 draws as the previewing `Ka0sMedia_*` types when SharedMediaWidgets is absent (options-ui-§23).
+- The texture and border pickers are the composer's `Ka0sMedia_*` rows, the previewing pickers the skin paints (options-ui-§23). They read LibSharedMedia's lists.
 
 ### History
 

@@ -180,9 +180,6 @@ if not lib then
     return
 end
 
--- The LSM30 border widget's backdrop, patched once for every Ka0s addon (options-ui-§1).
-lib.__PatchLSM30Border()
-
 -- NS.Helpers IS the instance, decorated in place -- never a copy-across.
 NS.Helpers = lib:New(descriptor)
 local Helpers = NS.Helpers

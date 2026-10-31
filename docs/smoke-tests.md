@@ -772,3 +772,12 @@ The Insights charts now come from the library, and the History tab's stored coun
 | SM-DR-LK2 | Open the Insights tab with runs on two or more specs and characters; hover a card, a bar, a strip column, a legend chip and a list row; click a list row; switch skins with it open | Every section looks as it did, each hover states its value, the click opens the run, and the switch recolors the charts with no reload | A screenshot, and which section differs | |
 | SM-DR-LK3 | In Insights, find a bar label over 16 characters (a long character or spec name), and a legend chip over 13 | The cut label ends in three periods, not the ellipsis glyph, and they count inside the cap: 13 glyphs plus the periods on a bar, 10 on a chip. The hover shows it whole | A screenshot | |
 | SM-DR-LK4 | Set HUD > Race HUD > *Race clock* to *Time left*, open *HUD Appearance*; set it to *Time elapsed*, then *Elapsed and time left*, opening the tab each time; run a race on each setting. Then, with *Race clock* on *Time left* and *HUD Appearance* open, press the page's **Defaults** | Only the picked clock's font block shows, heading included, both for the pair, and each still styles its clock on the HUD. A reset of the page leaves the hidden block on its defaults. **Defaults** brings the *Elapsed clock* block back at once, with no tab change | A screenshot of the tab | |
+
+## 34. The 2026-11-01 build: one media picker
+
+LibKa0s v1.84.0 was re-cut: every media row now draws the `Ka0sMedia_*` picker, the one the skin paints, and AceGUI-3.0-SharedMediaWidgets is gone from the addon. Branch `feat/2026-10-31-findings-remediation`. With `/console scriptErrors 1` on, and a full client restart so the removed library is really gone.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-MD1 | HUD > HUD Appearance: open *Font* under *Elapsed clock*; pick a different face; put it back | The pull-out lists every registered font, each row in its own face, and the pick moves the clock on the HUD. The picker's colors follow the skin | The Lua error, or a screenshot | |
+| SM-DR-MD2 | HUD > HUD Appearance: under *Spell bar border* turn off *Use the skin's border*, open *Border style*, pick a border other than *None*; pick *None* again | The pull-out previews every border, the bars draw the picked border, and *None* takes it off | The Lua error, or a screenshot | |
