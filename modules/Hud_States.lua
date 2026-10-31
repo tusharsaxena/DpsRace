@@ -1180,15 +1180,25 @@ local function ignoredChip(run, menu, lines)
              tip = L["Late casts on the ignore list: they flag nothing."] }
 end
 
+-- The card's verdict against the best (Bests.Delta). A new best with no figure had nothing to beat: the
+-- first complete run on its board, or an earlier best of 0 DPS. A delta of 0 is a tie, not a shortfall.
+local function verdictChip(v)
+    if v.isNew then
+        if v.delta then
+            return { text = L["New best +%.1f%%"]:format(v.delta), color = C.green, tip = Tips.newBestChip }
+        end
+        return { text = L["New best"], color = C.green, tip = Tips.firstBestChip }
+    end
+    if not v.delta then return nil end
+    local tied = v.delta == 0
+    return { text = L["%+.1f%% vs best"]:format(v.delta), color = tied and C.dim or C.red,
+             tip = tied and Tips.tiedChip or Tips.behindChip }
+end
+
 --- The result card's chips: the best delta, the flags, the tail (spec §6.1).
 function States.ResultChips(v)
     local run, list = v.run, {}
-    if v.isNew then
-        list[1] = { text = v.delta and L["New best +%.1f%%"]:format(v.delta) or L["New best"], color = C.green,
-                    tip = Tips.newBestChip }
-    elseif v.delta then
-        list[1] = { text = L["%+.1f%% vs best"]:format(v.delta), color = C.red, tip = Tips.behindChip }
-    end
+    list[1] = verdictChip(v)
     local menu, lines = lateExtras(v)
     local flags = States.FlagChips(run)
     if not (flags[1] and flags[1].key == "lateCasts") then list[#list + 1] = ignoredChip(run, menu, lines) end

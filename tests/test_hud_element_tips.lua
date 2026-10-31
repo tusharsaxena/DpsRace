@@ -137,6 +137,28 @@ test("hud tips: the Stop! chips and the result's verdict chip say what they coun
     assertTrue(type(States.ResultChips({ run = run, delta = -3 })[1].tip) == "string", "the behind chip")
 end)
 
+test("hud tips: the verdict chip's words hold when there was no best to beat, and on a tie", function()
+    local i = inst()
+    local States, Tips = i.NS.HudStates, i.NS.HudTips
+    local run = { status = "ok", flags = {}, result = { damage = 1, dps = 1 } }
+    local beat = States.ResultChips({ run = run, isNew = true, delta = 4.2 })[1]
+    assertEqual(beat.text, "New best +4.2%")
+    assertEqual(beat.tip, Tips.newBestChip)
+    -- Bests.Delta's (nil, true): the first complete run on a board, or an earlier best of 0 DPS.
+    local first = States.ResultChips({ run = run, isNew = true })[1]
+    assertEqual(first.text, "New best")
+    assertTrue(type(Tips.firstBestChip) == "string", "the words of a best with nothing to beat")
+    assertEqual(first.tip, Tips.firstBestChip)
+    local behind = States.ResultChips({ run = run, delta = -3 })[1]
+    assertEqual(behind.tip, Tips.behindChip)
+    -- Delta 0 and not new: it matched the best, so it neither fell short nor reads as a loss.
+    local tied = States.ResultChips({ run = run, delta = 0 })[1]
+    assertEqual(tied.text, "+0.0% vs best")
+    assertTrue(type(Tips.tiedChip) == "string", "the words of a tie")
+    assertEqual(tied.tip, Tips.tiedChip)
+    assertTrue(tied.color ~= behind.color, "a tie is not drawn as falling short")
+end)
+
 test("hud tips: the result card names its figures, chart, pace bar, heading and four buttons", function()
     local i = inst()
     local w = body(i, "result").w

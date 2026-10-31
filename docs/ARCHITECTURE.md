@@ -488,7 +488,9 @@ labels) read Oxanium where the template drew Friz Quadrata (D-13). LibKa0s v1.82
 batch) retires Oxanium: Ka0s Default draws Prototype for body, titles and the HUD, and its window text
 is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06). LibKa0s v1.83.0 moves
 that default to HUD text only (the font pickers and skin faces batch, D-10): window text is plain until
-the player picks *All text*, a stored pick stays, and the degraded facade answers the same. The same
+the player picks *All text*, a stored pick stays, and the degraded facade answers the same. Nothing is
+migrated, and AceDB never stored a value equal to the old default, so an *All text* left from before
+v1.83.0 reads the new default. The same
 build gives Azeroth, Glass, High Contrast, Ember, WoW Midnight and WoW Default new faces, sized against
 Prototype.
 

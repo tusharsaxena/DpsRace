@@ -1134,7 +1134,10 @@ L["How long after the buzzer a cast may start before it is flagged. Set it on th
 L["This run's total damage."] = "This run's total damage."
 L["This run's damage per second."] = "This run's damage per second."
 L["This run beat your best on this board, by this much."] = "This run beat your best on this board, by this much."
+L["This run sets the best on this board: there was no earlier DPS to beat."] =
+    "This run sets the best on this board: there was no earlier DPS to beat."
 L["How far this run fell short of your best on this board."] = "How far this run fell short of your best on this board."
+L["This run matched your best on this board."] = "This run matched your best on this board."
 L["Back to the Arm Race screen at this length. This run stays saved."] =
     "Back to the Arm Race screen at this length. This run stays saved."
 L["Open this run in the Results window."] = "Open this run in the Results window."
