@@ -338,7 +338,7 @@ test("slash: sim plays the default scenario or the one named; an unknown one lis
     M.__resetPrinted()
     NS.Slash:OnSlash("sim sideways")
     local out = bare(M)
-    assertEqual(out[1], "Usage: /dr sim [newbest|behind|first|incomplete|died|flagged|shared]")
+    assertEqual(out[1], "Usage: /dr sim [newbest|behind|first|incomplete|died|flagged|shared|sticky]")
     assertEqual(#out, 1 + #NS.Sim.SCENARIOS, "one line a scenario")
     assertEqual(out[2], "  newbest: beats the best")
     assertEqual(NS.Preview.Diagnose().scenario, "died")

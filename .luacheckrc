@@ -127,7 +127,7 @@ files["modules/Results_Insights.lua"] = { read_globals = resultsGlobals }
 -- The Insights stats pass buckets runs by local day.
 files["modules/Results_InsightsData.lua"] = { read_globals = { "time", "date" } }
 -- The Insights charts' DpsRace host draws its hover on the client's tooltip.
-files["modules/Results_InsightsCharts.lua"] = { read_globals = { "GameTooltip" } }
+files["core/ChartsSetup.lua"] = { read_globals = { "GameTooltip" } }
 files["modules/Results_Tips.lua"] = { read_globals = resultsGlobals }
 -- The compare's separator: one physical pixel at any UI scale (PixelUtil's pixel-to-UI-unit factor).
 files["modules/Results_Compare.lua"] = { read_globals = { "PixelUtil" } }
@@ -156,6 +156,7 @@ files["modules/Results_Timeline.lua"] = {
 
 -- The sample history (B5) dates its runs back from now.
 files["modules/MockRuns.lua"] = { read_globals = { "time" } }
+files["modules/SampleRace.lua"] = { read_globals = { "time" } }
 
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.

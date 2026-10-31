@@ -208,8 +208,6 @@ end
 Style.GOLD = Style.Tok("text.accent")
 -- A title-bar control at rest: the close control's own gray (`icon.tint`).
 Style.REST = Style.Tok("icon.tint")
--- An idle tab's label (`tab.text`).
-Style.TAB_IDLE = Style.Tok("tab.text")
 
 -- The title bar, the tab strip and a control slot (LootHistory and BankLedger: titleBarH 30,
 -- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot).

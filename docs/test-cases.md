@@ -289,7 +289,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (73)
+### test_hud.lua (29)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -313,6 +313,16 @@ Total.
 - hud: waiting hint appears after hintDelay and names only owned drop-combat spells
 - hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
 - hud: the sticky-combat hint asks for the player's spells once per race
+- hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
+- hud: the cue stops when the race is canceled
+- hud: switching the cue off mid-race silences the marks still ahead
+- hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
+- hud: the running clock shows elapsed in green beside time left in red by default
+- hud: a single-clock mode shows one big clock in its own color
+- hud: the clock pair fits the minimum width; the stop body keeps its own STOP
+
+### test_hud_layout.lua (24)
+
 - hud: the live rows stop above the caption and CANCEL at every window height
 - hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
 - hud: the default window size shows every default live row under the chart and the pace bar
@@ -337,13 +347,9 @@ Total.
 - hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
-- hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
-- hud: the cue stops when the race is canceled
-- hud: switching the cue off mid-race silences the marks still ahead
-- hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
-- hud: the running clock shows elapsed in green beside time left in red by default
-- hud: a single-clock mode shows one big clock in its own color
-- hud: the clock pair fits the minimum width; the stop body keeps its own STOP
+
+### test_hud_window.lua (20)
+
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
 - hud: dragging is refused while locked and the position is stored when it ends
@@ -352,7 +358,7 @@ Total.
 - hud: showMode always shows it at login
 - hud: a race resumed after a /reload shows the HUD under onArm
 - hud: a result arriving while the window is closed opens it
-- hud: Render draws a given body only while test mode is on
+- hud: test mode's sample race draws through the race's own view, only while it is on
 - hud: the stand-down drops every registration, timer and the OnUpdate
 - hud: hidden with its parent is not closed by the player
 - hud: the library-absent load still draws the HUD without a grip or a close control
@@ -460,7 +466,7 @@ Total.
 - countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
 - countdown: a /reload before the window shows nothing until it opens
 - countdown: a /reload past the buzzer shows nothing
-- countdown: the sim demonstrates it in its running phase, and it stops with the sim
+- countdown: the sim runs the real marks in its running phase, cue included, and they stop with it
 - countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
@@ -508,14 +514,10 @@ Total.
 - layers: the detail pane sits one band over the list pane, never by creation order
 - layers: the countdown is FULLSCREEN, below every menu
 
-### test_results.lua (50)
+### test_results.lua (18)
 
 - results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note
 - results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
-- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
-- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
-- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
-- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
 - results: the Status column tags each run; the DPS column shows every run's DPS
 - results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
@@ -532,6 +534,13 @@ Total.
 - results: filters: character, spec, category, length, date range, hide flagged, include incomplete
 - results: sort by date desc default; by DPS; by ilvl
 - results: the list is pooled and scrolls through more runs than fit
+
+### test_results_detail.lua (18)
+
+- results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+- results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
+- results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
+- results: the note shows as written under a Note heading; the heading also shows while writing one
 - results: detail renders breakdown sorted with percentages
 - results: timing strip positions buzzer, grace, tail, late casts, combat end
 - results: the detail lists every spell of the run, not a capped top few
@@ -546,6 +555,9 @@ Total.
 - results: a spell list built without a tip hook takes no mouse
 - results: saving a note never prunes the store
 - results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
+
+### test_results_window.lua (14)
+
 - results: the Insights tab is built on first show, counts the runs and shows the empty state with none
 - results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)
 - results: list refreshes on RUN_SAVED
@@ -903,12 +915,10 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (59)
+### test_insights.lua (58)
 
-- insights charts: nothing above the host section reads NS or a client global but CreateFrame
-- insights charts: the header names the LootHistory source commit the port came from
-- insights charts: New wants a host pool, and fills the colors and fonts it is not given
-- insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis
+- insights charts: New fills the colors and fonts it is not given, and writes no host table
+- insights charts: truncate counts glyphs, not bytes, and ends in three periods inside the cap
 - insights charts: tipText states the value beside the full label
 - insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
 - insights charts: the ranked palette cycles, and a map keeps one color per key
@@ -961,9 +971,16 @@ Total.
 - insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
 - insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback
 - insights tab: a load with no library draws no dropdown, and the tab still works
+- insights tab: with no library the empty state says why there are no charts
 - insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
 - insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
 - insights tab: the wheel scrolls the content, clamped to it
+
+### test_switched_sections.lua (3)
+
+- switched sections: Race clock draws only the clock blocks it picks, and a hidden one comes back
+- switched sections: the page's Defaults on HUD Appearance brings a hidden clock block back at once
+- switched sections: a hidden clock block's rows stay in the schema, so a reset reaches them
 
 ### test_sizing.lua (13)
 
@@ -1036,7 +1053,7 @@ Total.
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
 - settings: Purge history… is refused while a race is armed
-- settings: History ends with Purge history…, after the stored count, under no heading of its own
+- settings: History opens with the stored count above its rows, and ends with Purge history… under no heading of its own
 - settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
 - settings: History repaints when the hidden items change from anywhere, and not for other settings
 - settings: Days to keep says it is account-wide, and its label carries no suffix
@@ -1107,6 +1124,27 @@ Total.
 - skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
+
+### test_bar_style.lua (18)
+
+- bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
+- bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
+- bar style: a compare column draws the skin's texture by default, in its own color
+- bar style: the default look keeps the skin's two tracks and draws no border
+- bar style: the HUD's and the detail's spell rows are separate blocks, live
+- bar style: the detail's spell rows draw their block, track and border
+- bar style: the pace bar draws its block's track and border, keeping its green
+- bar style: the table's two bars are separate blocks; a track and a border span the cell
+- bar style: a compare column draws its block; the side rule did not move
+- bar style: a border follows the skin's bar.borderStyle while its companion is on
+- bar style: a border key LSM cannot answer draws no border
+- bar style: a skin switch moves a skin track and leaves a swatch
+- bar style: every styled bar's media rows are composed pickers, on the page that draws them
+- bar style: History holds the Run detail tab after Results table, Fill before Background and Border
+- bar style: a page's Defaults, a profile reset and a profile copy reach the new rows
+- bar style: v8 copies a stored spell-bar fill to the detail, and a bare profile stays bare
+- bar style: v8 holds a partly stripped swatch at the color the player saw
+- bar style: v8 runs once: a later pick on the detail's block is kept
 
 ### test_skin_fonts.lua (12)
 
@@ -1290,7 +1328,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (13)
+### test_sim.lua (14)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -1302,9 +1340,45 @@ Total.
 - sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
 - sim: closing the HUD, Reset all settings and the stand-down end a running script
 - sim: switching to test mode stops the script; a sim restarts in place
-- sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim
-- sim: the sample result card's Delete is grayed and does nothing
+- sim: Stop Now reads as a real race's: in combat at the combat end, out of it at once; Cancel ends the sim
+- sim: the sample card's Delete asks, leaves the sample history and goes to the Arm screen
+- sim: the sample card's Details opens its run, and Share stays refused
 - sim: the result card draws the best's diagonal with a best before the run, and none on a first race
+
+### test_sample_parity.lua (32)
+
+- sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
+- sample parity: a sim's new best is not a flat factor of its history: its rows differ too
+- sample parity: a spell can sit on one side of a compare only, and the shares and order differ
+- sample parity: the plan is deterministic: the same id, the same fight
+- sample parity: every sample record has the shape a race leaves
+- sample parity: every spell that deals damage was cast, and every cast of damage shows in the spells
+- sample parity: a flagged run's late cast is in its own cast list, past the buzzer
+- sample parity: a raised grace judges the sample's late casts as it would a race's
+- sample parity: the player draws their own class's rotation; every class has one
+- sample parity: a made-up character carries its own trinket, bags and gear, not the player's
+- sample parity: loadout b changes a slot, never empties it
+- sample parity: the running figures are the meter's shape: nothing before the first hit, rows that move
+- sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer
+- sample parity: the run joins the sample history at its start and resolves in place
+- sample parity: a run that ended early shows Combat Ended, with no tail and no buzzer
+- sample parity: complete runs go out of combat before the read, and the hint waits for its delay
+- sample parity: the race's messages reach the buzzer, the chat lines and the toast, and no RUN_SAVED
+- sample parity: a sim neither ends itself on its own arm nor arms AutoArm's rule
+- sample parity: New Race on a sample's card leaves the player's length alone
+- sample parity: test mode's replay is silent: no race message, no chat line, no toast of its own
+- sample parity: the sample's charts leave NS.Slices with it
+- sample parity: the sim's buzzer makes the race's one last read, on the sample's path
+- sample parity: Details on a sample's card opens the preview's window, closed with the preview
+- sample parity: Share on a sample's card reaches nothing
+- sample parity: the sample card honors Show spell icons, and every setting while it is held
+- sample parity: a change to the sample history reaches the card, as RUNS_CHANGED does a real one
+- sample parity: a sim's card dismissed by New Race or Delete opens no Results window after it
+- sample parity: a held state's history is the same moment's: the board, the row and the card agree
+- sample parity: a state switch redraws an open Results window on the moment held
+- sample parity: the HUD's reads go through its throttle: live.hz bounds them
+- sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
+- sample parity: arming a real race from under a sim keeps that race's cast list
 
 ### test_launcher.lua (8)
 
@@ -1367,12 +1441,13 @@ Total.
 - parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing
 - parity: the hollow composers cost the library-absent load exactly the composed rows
 
-### test_perf_harness.lua (4)
+### test_perf_harness.lua (5)
 
 - perf: the descriptor declares the buckets, the SavedVariable and the one latch
 - perf: every declared bucket is reached by a real bracket
 - perf: outside an experiment the bracket records nothing
 - perf: suspend takes the perf hold and the addon is inert; resume restores it
+- perf: the widget recorder's quiet mode keeps nothing a suite's recorder keeps
 
 ### test_loadorder.lua (4)
 
@@ -1467,7 +1542,9 @@ Total.
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 73 |
+| test_hud.lua | 29 |
+| test_hud_layout.lua | 24 |
+| test_hud_window.lua | 20 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 9 |
@@ -1476,7 +1553,9 @@ Total.
 | test_countdown.lua | 20 |
 | test_autoarm.lua | 30 |
 | test_layers.lua | 7 |
-| test_results.lua | 50 |
+| test_results.lua | 18 |
+| test_results_detail.lua | 18 |
+| test_results_window.lua | 14 |
 | test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
 | test_results_delta.lua | 4 |
@@ -1498,7 +1577,8 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 59 |
+| test_insights.lua | 58 |
+| test_switched_sections.lua | 3 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
@@ -1507,6 +1587,7 @@ Total.
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
+| test_bar_style.lua | 18 |
 | test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
@@ -1518,12 +1599,13 @@ Total.
 | test_share.lua | 14 |
 | test_toast.lua | 19 |
 | test_preview.lua | 23 |
-| test_sim.lua | 13 |
+| test_sim.lua | 14 |
+| test_sample_parity.lua | 32 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
 | test_surface_parity.lua | 17 |
-| test_perf_harness.lua | 4 |
+| test_perf_harness.lua | 5 |
 | test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 3 |
 | test_eol.lua | 2 |
@@ -1532,4 +1614,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1206** |
+| **Total** | **1260** |

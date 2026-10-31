@@ -55,8 +55,6 @@ function CANON.talents(t)
     return table.concat({ tostring(t.specID), tostring(t.heroSpecID), tostring(t.name), tostring(t.importString) }, SEP)
 end
 
-Loadouts.Canonical = CANON
-
 local function copy(t)
     local out = {}
     for k, v in pairs(t) do out[k] = v end

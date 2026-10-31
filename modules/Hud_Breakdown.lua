@@ -28,12 +28,12 @@ NS.HudBreakdown = Breakdown
 local L = NS.L
 
 -- Compact rows, as LootHistory's list draws them (18px, GameFontHighlightSmall): modules/Style.lua.
--- That is the default; the height, the bar's fill and the text are the player's, HUD > HUD
+-- That is the default; the height, the bar's look and the text are the player's, HUD > HUD
 -- Appearance > Spell bars and Spell text (modules/Hud_Appearance.lua), read from config at call time.
+-- A list in the Results window draws the bars of History > Run detail instead (`where`, Breakdown.New).
 Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2
 local PCT_WIDTH = 44
-local TRACK_COLOR = "dr.list.track"   -- the skin's faint track behind a bar
 local FONT = NS.Style.FONT
 
 --- The configured row height, and the pitch from one row's top to the next (both config, never a
@@ -77,8 +77,7 @@ local function newRow(parent)
     local bar = CreateFrame("StatusBar", nil, row)
     local track = bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(bar)
-    NS.Style.Fill(track, TRACK_COLOR)
-    row.icon, row.bar = icon, bar
+    row.icon, row.bar, row.track = icon, bar, track
     -- The spell's name and amount are the player's Spell text block (HUD Appearance): plain labels the
     -- skin never paints. The share is a caption, the skin's.
     row.name = NS.Style.PlainText(bar, FONT.TEXT, "LEFT")
@@ -88,7 +87,7 @@ local function newRow(parent)
 end
 
 -- The row's configured look (HUD Appearance), applied once per Changed(): its height, the icon's size
--- (the row's, less a pixel each side), the bar's fill and the spell text. The share keeps its caption
+-- (the row's, less a pixel each side), the bar's fill, track and border, and the spell text. The share keeps its caption
 -- gray: it is a caption, not the spell's text. `where` is the list's (Breakdown.New).
 local function restyle(row, where)
     local A = NS.HudAppearance
@@ -98,9 +97,11 @@ local function restyle(row, where)
     row:SetHeight(h)
     row.iconSize = math.max(8, h - 2)
     row.icon:SetSize(row.iconSize, row.iconSize)
-    local fill = A.Bar()
+    local fill = A.Bar(where)
     row.bar:SetStatusBarTexture(fill.texture)
     row.bar:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
+    A.PaintTrack(row.track, fill.bg)
+    A.PaintEdge(row, row.bar, row.bar, fill.border)
     local text = A.Font("spellText", where)
     A.ApplyFont(row.name, text)
     A.ApplyFont(row.amount, text)
@@ -137,7 +138,7 @@ List.__index = List
 ---   and rank, or a live row's (possibly secret) ID alone (none: rows take no mouse)
 --- @param stripe function|nil  stripe(index): the alpha of the row's tint (none: no stripes)
 --- @param where string|nil  "window" for a list in the Results window: its spell text is window text
----   to the Font outline (D-06); nil: HUD text
+---   to the Font outline (D-06), and its bars are the Run detail tab's; nil: the HUD's
 --- @return table list
 function Breakdown.New(parent, tip, stripe, where)
     return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, stripe = stripe,

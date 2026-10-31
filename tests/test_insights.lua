@@ -1,20 +1,18 @@
--- tests/test_insights.lua — the Insights tab's drawing half (#12, modules/Results_InsightsCharts.lua),
--- the renderer half of the suite: the chart widgets ported from LootHistory's Insights tab, drawn
--- through a host config table (the colors, the font objects, the tooltip, the panel and the pool), so
--- the renderers read nothing of DpsRace's own (the owner's S-7 answer, for a later promotion into
--- LibKa0s). Pinned here: no NS read above the host section, the pure helpers (a UTF-8-safe truncate,
--- the hover text, the shrink-to-fit figure, the ranked palette), every renderer's geometry and colors,
--- every hover stating its value, the legend under the bars' track, pooled widgets reused over two
--- passes (the second pass builds nothing), the list rows' clicks, the stat card, and the DpsRace host.
+-- tests/test_insights.lua — the Insights tab's drawing half (#12), the renderer half of the suite:
+-- LibKa0s-Charts-1.0 (LibKa0s#66, promoted from this addon's port of LootHistory's Insights tab) as
+-- this addon draws through it, with a host config table (the colors, the font objects, the tooltip,
+-- the panel and the pool). The library's own suite owns the major; these cases stayed through the
+-- swap as the characterization of what this tab draws. Pinned here: the pure helpers (a UTF-8-safe
+-- truncate, the hover text, the shrink-to-fit figure, the ranked palette), every renderer's geometry
+-- and colors, every hover stating its value, the legend under the bars' track, pooled widgets reused
+-- over two passes (the second pass builds nothing), the list rows' clicks, the stat card, and the
+-- DpsRace host (core/ChartsSetup.lua).
 -- The tab half (modules/Results_Insights.lua: the filter bar, the cards, the sections) follows it.
 
 local T = _G.DPSRACE_TEST
-local test, assertEqual, assertTrue, assertFalse, assertNil, assertErrorMatches =
-    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil, T.assertErrorMatches
+local test, assertEqual, assertTrue, assertFalse, assertNil =
+    T.test, T.assertEqual, T.assertTrue, T.assertFalse, T.assertNil
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
-
-local SOURCE = T.root .. "/modules/Results_InsightsCharts.lua"
-local HOST_MARK = "-- ── the DpsRace host"
 
 --- A fresh instance with the widget recorder, a CreateFrame counter, and a host table that records
 --- every tooltip it is asked for.
@@ -38,9 +36,9 @@ local function inst()
                   panelTitle = "PanelTitleFont", caption = "CaptionFont", figure = "FigureFont" },
         palette = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } },
     }
-    i.Charts = i.NS.InsightsCharts
+    i.Charts = i.NS.Charts
     i.content = base("Frame")
-    i.ctx = i.Charts.New(i.content, i.host)
+    i.ctx = i.Charts:New(i.content, i.host)
     return i
 end
 
@@ -65,59 +63,30 @@ end
 
 -- ── the host seam ───────────────────────────────────────────────────────────────────────────────
 
-test("insights charts: nothing above the host section reads NS or a client global but CreateFrame", function()
-    local f = assert(io.open(SOURCE, "rb"))
-    local src = f:read("*a")
-    f:close()
-    local cut = src:find(HOST_MARK, 1, true)
-    assertTrue(cut ~= nil, "the host section's marker line")
-    local body = src:sub(1, cut - 1)
-    -- Drop the comments, then the one line that publishes the module.
-    body = body:gsub("%-%-[^\n]*", "")
-    body = body:gsub("NS%.InsightsCharts = Charts", "", 1)
-    assertNil(body:match("NS[%.%[:]"), "an NS read in the renderers")
-    for _, name in ipairs({ "GameTooltip", "RAID_CLASS_COLORS", "_G" }) do
-        assertNil(body:match("%f[%w_]" .. name .. "%f[^%w_]"), name .. " read in the renderers")
-    end
-end)
-
-test("insights charts: the header names the LootHistory source commit the port came from", function()
-    local f = assert(io.open(SOURCE, "rb"))
-    local head = f:read(2000)
-    f:close()
-    assertTrue(head:find("LootHistory", 1, true) ~= nil)
-    assertTrue(head:find("2319fd6", 1, true) ~= nil)
-    assertTrue(head:find("AnalyticsCharts.lua", 1, true) ~= nil)
-    assertTrue(head:find("AnalyticsFormat.lua", 1, true) ~= nil)
-end)
-
-test("insights charts: New wants a host pool, and fills the colors and fonts it is not given", function()
+test("insights charts: New fills the colors and fonts it is not given, and writes no host table", function()
     local i = inst()
-    assertErrorMatches(function() i.Charts.New(i.content, {}) end, "host.pool")
-    assertErrorMatches(function() i.Charts.New(i.content) end, "host.pool")
-    local ctx = i.Charts.New(i.content, { pool = i.NS.Pool })
+    local ctx = i.Charts:New(i.content, { pool = i.NS.Pool })
     for _, key in ipairs({ "body", "value", "heading", "track", "bar", "muted", "axis", "rule", "caption" }) do
         assertEqual(type(ctx.colors[key]), "table", "a default color for " .. key)
     end
     for _, key in ipairs({ "label", "axis", "heading", "divider", "panelTitle", "caption", "figure" }) do
         assertEqual(type(ctx.fonts[key]), "string", "a default font for " .. key)
     end
-    assertTrue(#ctx.palette >= 7)
-    -- The host's own table is never written.
+    assertEqual(#ctx:paletteColor(1), 3)
     assertNil(i.host.colors.neutral)
 end)
 
 -- ── the pure helpers ────────────────────────────────────────────────────────────────────────────
 
-test("insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis", function()
+test("insights charts: truncate counts glyphs, not bytes, and ends in three periods inside the cap", function()
     local C = inst().Charts
     assertEqual(C.truncate("Traxex", 16), "Traxex")
     local s, cut = C.truncate("Beast Mastery cleave", 8)
-    assertEqual(s, "Beast M\226\128\166")
+    assertEqual(s, "Beast...")
     assertTrue(cut)
     -- "Trâxex" is 6 glyphs in 7 bytes: it fits 6, and a cut never splits the â.
     assertEqual((C.truncate("Tr\195\162xex", 6)), "Tr\195\162xex")
-    assertEqual((C.truncate("Tr\195\162xex the hunter", 4)), "Tr\195\162\226\128\166")
+    assertEqual((C.truncate("Tr\195\162xex the hunter", 6)), "Tr\195\162...")
     assertEqual((C.truncate(nil, 4)), "")
 end)
 
@@ -151,7 +120,7 @@ test("insights charts: a palette getter is read at each draw, so a skin switch m
     local a, b = { { 1, 0, 0 } }, { { 0, 0, 1 }, { 0, 1, 0 } }
     local now = a
     i.host.palette = function() return now end
-    local ctx = i.Charts.New(i.content, i.host)
+    local ctx = i.Charts:New(i.content, i.host)
     assertEqual(ctx:paletteColor(1), a[1])
     now = b
     assertEqual(ctx:paletteColor(2), b[2], "the new palette, no rebuild")
@@ -621,7 +590,7 @@ test("insights charts: the panel comes from the host, a plain frame without one"
         made[#made + 1] = f
         return f
     end
-    local ctx = i.Charts.New(i.content, i.host)
+    local ctx = i.Charts:New(i.content, i.host)
     local p = ctx:listPanel(nil, "x")
     assertEqual(made[1], p)
     assertEqual(ctx:card(nil, "y").frame, made[2])
@@ -632,7 +601,7 @@ end)
 
 test("insights charts: the DpsRace host pools through NS.Pool and draws in the window's look", function()
     local i = inst()
-    local host = i.Charts.Host()
+    local host = i.NS.ChartsHost()
     local Style, Tbl = i.NS.Style, i.NS.ResultsTable
     assertEqual(host.pool, i.NS.Pool)
     assertEqual(host.fonts.label, Style.FONT.TEXT)
@@ -666,7 +635,7 @@ test("insights charts: the DpsRace host's tooltip is a gold title over bulleted 
     function tip.SetText(_, text, r, g, b) tip.lines[1], tip.title = text, { r, g, b } end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
     i.mocks.GameTooltip = tip
-    local ctx = i.Charts.New(i.content, i.Charts.Host())
+    local ctx = i.Charts:New(i.content, i.NS.ChartsHost())
     local pool = ctx:Pool("bars")
     ctx:renderBarSection(pool, ctx:sectionHeader(nil, "x"), SPECS, 0, 600, 8)
     hover(pool.active[2])
@@ -1178,6 +1147,15 @@ test("insights tab: a load with no library draws no dropdown, and the tab still 
     assertEqual(i.pane:Count(), 3)
     assertTrue(i.pane:SetFilter("spec", 63))
     assertEqual(i.pane:Count(), 1)
+    i.pane:Layout(902, 400)
+    assertNil(i.pane.ctx, "no chart context without the major")
+end)
+
+test("insights tab: with no library the empty state says why there are no charts", function()
+    local i = tab(nil, { libFiles = {} })
+    i.pane:Layout(902, 400)
+    assertTrue(i.pane.empty:GetText():find("charts are unavailable", 1, true) ~= nil)
+    assertTrue(i.pane.empty:IsShown())
 end)
 
 test("insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing", function()

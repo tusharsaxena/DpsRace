@@ -6,8 +6,8 @@ local _, NS = ...
 -- analysis", and the owner's feedback round, step V). Spec Comparison and Consistency sit under a
 -- strip of board tabs, one per target x length pair, since DPS compares only within a board.
 --
--- THREE FILES. modules/Results_InsightsData.lua is the pure half (the filters, the faceted options,
--- the stats pass); modules/Results_InsightsCharts.lua draws the widgets through a host table; this
+-- THREE HALVES. modules/Results_InsightsData.lua is the pure half (the filters, the faceted options,
+-- the stats pass); LibKa0s-Charts-1.0 draws the widgets through NS.ChartsHost() (core/ChartsSetup.lua); this
 -- file builds the tab, turns the stats into the renderers' rows and lays the sections out.
 --
 -- THE VIEW CONTRACT is the Runs tab's, so the shell (modules/Results.lua) treats both tabs alike:
@@ -350,7 +350,7 @@ local function layoutProgression(self, stats, y, w, pad)
         y, w, pad, (not raw) and 1 or nil)
     if #buckets == 0 then return y end
     return self.ctx:renderLegend(self.ctx:Pool("progressionLegend"), progressionLegend(list),
-        y + NS.InsightsCharts.K.SECTION_GAP, w, pad, pad)
+        y + NS.Charts.K.SECTION_GAP, w, pad, pad)
 end
 
 -- B, on the board tab shown: the specs side by side, by best DPS.
@@ -429,7 +429,7 @@ local function placeBoardTabs(self, tabs, y, w, pad)
     self.boardRule:SetPoint("TOPLEFT", self.content, "TOPLEFT", pad, y)
     self.boardRule:SetWidth(math.max(1, w - pad * 2))
     self.boardRule:Show()
-    return y - NS.InsightsCharts.K.BAR_GAP * 2
+    return y - NS.Charts.K.BAR_GAP * 2
 end
 
 -- B and C under the board tabs (plan step V-f): the tab picked while it stays present, else the most
@@ -482,7 +482,7 @@ local function layoutSplit(self, key, chars, keys, y, w, pad)
     y = self.ctx:renderStackedBarSection(self.ctx:Pool(key), self.headers[key], rows, y, w, pad)
     if #rows == 0 then return y end
     for _, k in ipairs(keys) do legend[#legend + 1] = { label = split.name(k), color = split.color(k) } end
-    return self.ctx:renderLegend(self.ctx:Pool(key .. "Legend"), legend, y + NS.InsightsCharts.K.SECTION_GAP, w, pad)
+    return self.ctx:renderLegend(self.ctx:Pool(key .. "Legend"), legend, y + NS.Charts.K.SECTION_GAP, w, pad)
 end
 
 -- E: each character's races split by target.
@@ -502,7 +502,7 @@ local function listSection(self, key, rows, y, w, pad)
     local panel = self.panels[key]
     if #rows == 0 then panel:Hide(); return y end
     local h = self.ctx:renderListPanel(self.ctx:Pool(key), panel, rows, y, w - pad * 2, pad, LIST_VALUE_W[key])
-    return y - h - NS.InsightsCharts.K.SECTION_GAP
+    return y - h - NS.Charts.K.SECTION_GAP
 end
 
 -- G's right-click: the ignore list's own menu (LateIgnore.Menu) over a run holding that one cast, so
@@ -535,7 +535,7 @@ end
 -- the right-click that stops ignoring one is never cut off.
 local function layoutLateCasts(self, stats, y, w, pad)
     local counted, ignored = stats.lateBySpell.counted, stats.lateBySpell.ignored
-    local max = NS.InsightsCharts.K.LIST_MAX
+    local max = NS.Charts.K.LIST_MAX
     local nIgnored = math.min(#ignored, math.max(max - #counted, math.floor(max / 2)))
     local rows = {}
     for n = 1, math.min(#counted, max - nIgnored) do rows[#rows + 1] = lateRow(counted[n], false) end
@@ -671,8 +671,13 @@ local function buildBody(view)
     view.scrollFrame:SetScrollChild(view.content)
     view.scrollFrame:EnableMouseWheel(true)
     view.scrollFrame:SetScript("OnMouseWheel", function(_, delta) view:Scroll(delta) end)
-    local ctx = NS.InsightsCharts.New(view.content, NS.InsightsCharts.Host())
-    view.ctx, view.cards, view.headers, view.panels, view.chrome = ctx, {}, {}, {}, {}
+    view.cards, view.headers, view.panels, view.chrome = {}, {}, {}, {}
+    view.empty = Tbl.Text(frame, Tbl.FONT.EMPTY, nil, "CENTER")
+    view.empty:SetText(NS.Charts and L["No runs match these filters."] or (NS.LIBKA0S_MISSING .. ", so the charts are unavailable."))
+    view.empty:Hide()
+    if not NS.Charts then return end   -- the library-absent load: the filters and the count, no charts
+    local ctx = NS.Charts:New(view.content, NS.ChartsHost())
+    view.ctx = ctx
     for _, def in ipairs(CARDS) do
         view.cards[def.key] = ctx:card(view.content, L[def.caption])
         view.chrome[#view.chrome + 1] = view.cards[def.key].frame
@@ -692,9 +697,6 @@ local function buildBody(view)
     NS.Skin.Divider(view.boardRule)
     view.boardRule:SetHeight(1)
     view.chrome[#view.chrome + 1] = view.boardRule
-    view.empty = Tbl.Text(frame, Tbl.FONT.EMPTY, nil, "CENTER")
-    view.empty:SetText(L["No runs match these filters."])
-    view.empty:Hide()
 end
 
 --- The Insights tab in `parent`.
@@ -837,7 +839,7 @@ end
 -- The cards on Insights.CardGrid's 4 columns from `y`; answers the cursor under them.
 function View:layoutCards(y, w)
     local colW = (w - PAD * 2 - CARD_GAP * (CARD_COLS - 1)) / CARD_COLS
-    local cardH = NS.InsightsCharts.K.CARD_H
+    local cardH = NS.Charts.K.CARD_H
     local cells, nRows = Insights.CardGrid(CARDS, CARD_COLS)
     for i, def in ipairs(CARDS) do
         local cell, card = cells[i], self.cards[def.key]
@@ -857,6 +859,10 @@ end
 --- Bind and place every section off the stats for `w`; answers the cursor under the last. With no
 --- run the empty state shows and everything else hides.
 function View:LayoutCharts(y, w, pad)
+    if not self.ctx then
+        self.empty:Show()
+        return y
+    end
     self.ctx:ReleaseAll()
     for _, region in ipairs(self.chrome) do region:Hide() end
     local stats = self.stats

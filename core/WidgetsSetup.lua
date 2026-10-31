@@ -35,12 +35,6 @@ function NS.MakeDropdown(parent, width)
     })
 end
 
---- Whether the dropdown seam can build anything at all.
---- @return boolean
-function NS.HasWidgets()
-    return W ~= nil
-end
-
 --- The strip's height, for a window laying its content out below it (the library publishes it).
 NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 

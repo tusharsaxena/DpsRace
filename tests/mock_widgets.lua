@@ -26,6 +26,12 @@
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
 -- the HUD makes none at all while it draws live values.
 --
+-- QUIET. `Widgets.install(M, { quiet = true })` is the perf runner's: the setters that build a fresh
+-- table per call only to remember their arguments (QUIET_SETTERS) answer self and keep nothing, so
+-- tests/perf.lua bills the addon's own allocation and not this recorder's, which the client has no
+-- equal of. The bisect that named it: ef6aaf1 taught SetPoint and ClearAllPoints to record, and
+-- hudLive and combatEvent each rose 720 bytes with no addon change.
+--
 -- THE FORMATTER is modeled as the client measured it (MultiMeters' mock): it abbreviates only through
 -- the breakpoints it was given, shown = n / (significandDivisor * fractionDivisor), truncated. It is a
 -- native seam, so it may reveal a secret; nothing else here does.
@@ -41,6 +47,11 @@ return function(T)
         [29722] = "Incinerate", [116858] = "Chaos Bolt", [348] = "Immolate", [17962] = "Conflagrate",
         [5384] = "Feign Death", [1856] = "Vanish", [58984] = "Shadowmeld", [66] = "Invisibility",
     }
+
+    local QUIET_SETTERS = { "SetTexCoord", "SetTextColor", "SetShadowOffset", "SetHitRectInsets",
+                            "SetStatusBarColor", "SetPoint", "ClearAllPoints", "SetVertexColor",
+                            "SetColorTexture", "SetBackdropColor", "SetBackdropBorderColor" }
+    local function answerSelf(self) return self end
 
     local function decimalsFor(fractionDivisor)
         local d, n = 0, fractionDivisor or 1
@@ -71,8 +82,9 @@ return function(T)
         return f
     end
 
-    --- Install on one mock build; answers the recorder.
-    function Widgets.install(M)
+    --- Install on one mock build; answers the recorder. `opts.quiet`: see QUIET above.
+    function Widgets.install(M, opts)
+        local quiet = opts and opts.quiet
         local W = { secretFrames = {}, geomReads = {}, sounds = {}, notices = {}, known = {}, objects = {},
                     animPlays = {}, missingTextures = {} }
 
@@ -163,6 +175,9 @@ return function(T)
                     if name == "GetPoint" then return "CENTER", nil, "CENTER", 0, 0 end
                     return 0
                 end)
+            end
+            if quiet then
+                for _, name in ipairs(QUIET_SETTERS) do rawset(o, name, answerSelf) end
             end
         end
 

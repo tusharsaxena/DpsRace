@@ -18,6 +18,15 @@ NS.Bests = Bests
 
 local cache = {}   -- [true|false] = board
 
+-- The runs a question with none given is about: the store, or while test mode or the sim is on the
+-- sample history (modules/Results_Source.lua), so a sample race is judged by the code a real one is.
+local function history(runs)
+    if runs then return runs end
+    local Source = NS.ResultsSource
+    if Source and Source.IsMock() then return Source.All() end
+    return NS.Recorder.All()
+end
+
 --- The board a run belongs on: "specID|category|length".
 --- @return string key
 function Bests.Key(run)
@@ -71,6 +80,8 @@ end
 --- prune protection; no window reads the clean-only board since the Bests tab became Insights, #12).
 --- @param opts table|nil  as Compute
 function Bests.Board(opts)
+    local Source = NS.ResultsSource
+    if Source and Source.IsMock() then return Source.Board(opts) end
     local cleanOnly = type(opts) == "table" and opts.cleanOnly == true
     local board = cache[cleanOnly]
     if not board then
@@ -102,12 +113,12 @@ end
 --- the HUD result card's pace bar sets the run beside (the previous best when the run just became
 --- the best). `run` itself need not count.
 --- @param run table
---- @param runs table|nil  defaults to every stored run
+--- @param runs table|nil  defaults to every stored run (the sample history while one is in place)
 --- @return table|nil prev
 function Bests.Before(run, runs)
     if type(run) ~= "table" then return nil end
     local key, prev = Bests.Key(run), nil
-    for _, other in ipairs(runs or NS.Recorder.All()) do
+    for _, other in ipairs(history(runs)) do
         if isEarlierRival(other, run, key) and (not prev or ranksAbove(other, prev)) then prev = other end
     end
     return prev

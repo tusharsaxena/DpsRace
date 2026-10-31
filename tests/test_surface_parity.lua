@@ -134,13 +134,12 @@ test("parity: the Core seam carries every member this addon reads, on both arms"
 end)
 
 test("parity: the Widgets seam answers on both arms, nil being a real answer", function()
-    -- members from: grep -rhoE "NS\.(MakeDropdown|MakeTestStrip|CloseMenu|HasWidgets)" core/ modules/
+    -- members from: grep -rhoE "NS\.(MakeDropdown|MakeTestStrip|CloseMenu)" core/ modules/
     bothArms("NS", function(NS) return NS end, {
-        MakeDropdown = "function", MakeTestStrip = "function", CloseMenu = "function", HasWidgets = "function",
+        MakeDropdown = "function", MakeTestStrip = "function", CloseMenu = "function",
     })
     local l, d = pair()
-    assertTrue(l.NS.HasWidgets(), "the live load has no Widgets library")
-    assertFalse(d.NS.HasWidgets())
+    assertTrue(l.NS.MakeDropdown(l.mocks.UIParent, 100) ~= nil, "the live load has no Widgets library")
     assertEqual(d.NS.MakeDropdown(d.mocks.UIParent, 100), nil, "the stub drew a dead dropdown")
     assertEqual(d.NS.MakeTestStrip(d.mocks.UIParent, "x"), nil)
     d.NS.CloseMenu()
@@ -164,8 +163,7 @@ end)
 
 test("parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing", function()
     local l, d = pair()
-    assertTrue(l.NS.HasToast(), "the live load has no Toast library")
-    assertFalse(d.NS.HasToast())
+    assertTrue(l.NS.BestToast.Instance() ~= l.NS.ToastStub, "the live load has no Toast library")
     assertTrue(d.NS.BestToast.Instance() == d.NS.ToastStub, "the degraded load holds the stub")
     T.assertSurfaceParity(l.NS.BestToast.Instance(), d.NS.ToastStub, "Toast instance")
     assertFalse(d.NS.BestToast.Test(), "the stub shows nothing")
@@ -183,11 +181,15 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- the damage chart's block of four with its height and column gap (each an `extra`, so it goes
     -- with the block), the chart background's color pair, and the pace bar's block of four; and the
     -- five "Use the skin's ..." companions (figures, spell text, spell bars, chart, pace; DR-03), each
-    -- the composer's own row, so it goes with its block.
-    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5
+    -- the composer's own row, so it goes with its block; and a Background and Border for the spell
+    -- bars and the pace bar (STYLE_ROWS each: a color pair with its skin row, a border of four with its).
+    local STYLE_ROWS = 3 + 5
+    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * STYLE_ROWS
     -- History > Results table: two bar blocks of four and a font block of six, each with its
     -- "Use the skin's ..." companion (DR-03, D-16).
-    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 3
+    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 3 + 2 * STYLE_ROWS
+    -- History > Run detail: three styled bars, each a bar block with its companion.
+    local RUN_DETAIL_ROWS = 3 * (4 + 1 + STYLE_ROWS)
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a
     -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
     -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;
@@ -196,7 +198,7 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- 28th; Race's Training dummies tab, #9, the 29th and 30th; General's Skin tab, the eight skin.*
     -- rows the library's tab draws, skinning-§3, the 31st to the 38th: skin.outline, LibKa0s v1.82.0).
     local PAGE_ROWS = 38
-    local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS
+    local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS + RUN_DETAIL_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")
     assertEqual(#l.NS.Schema - #d.NS.Schema, COMPOSED, "the gap is not the rows the hollow composers drop")

@@ -124,6 +124,20 @@ function Slices.Drawable(run)
     return rec
 end
 
+--- Put a ready-made record under `id`: a sample run's chart (modules/Results_Source.lua), which was
+--- never raced here and is drawn by the same path.
+--- @param id any  a run id
+--- @param rec table  { length, count, values, filled, next }
+function Slices.Seed(id, rec)
+    store[id] = rec
+end
+
+--- Drop one run's record (a sample run going away).
+--- @param id any  a run id
+function Slices.Forget(id)
+    if id ~= nil then store[id] = nil end
+end
+
 --- How many races this session hold a record (the diagnostics report).
 --- @return number
 function Slices.Held()

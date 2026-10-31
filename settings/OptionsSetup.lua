@@ -56,11 +56,49 @@ local descriptor = {
     debug         = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
 }
 
+--- The Background and Border subsections of a styled bar (options-ui-§16, HudAppearance.Styled), after
+--- its composed bar block: a color pair with *Use the skin's background* appended (the addon's own
+--- words, so not `composed`), and a border group with its skin companion. `spec.onChange` is every
+--- row's reaction.
+--- @param spec table  prefix, page, group, classColor, order (the Background's; the Border's is 100 on),
+---   defaults (the block), background and border (the two headings), onChange
+--- @return table rows
+function NS.BarStyleRows(spec)
+    local L, d, p = NS.L, spec.defaults, spec.prefix
+    local own = p .. "bgFromSkin"
+    local rows = NS.Helpers.ColorPair({
+        prefix = p, page = spec.page, group = spec.group, subgroup = spec.background, order = spec.order,
+        key = "bgColor", companionKey = "useClassColorBg", label = L["Background color"],
+        classColor = spec.classColor,
+        defaults = { bgColor = d.bgColor, useClassColorBg = d.useClassColorBg },
+        extra = { {
+            path = own, type = "bool", startsLine = true, label = L["Use the skin's background"],
+            default = d.bgFromSkin,
+            tooltip = L["Draw this bar's background in the skin's track color. The background swatch is not read while this is on."],
+        } },
+    })
+    for _, r in ipairs(NS.Helpers.BorderGroup({
+        prefix = p, page = spec.page, group = spec.group, subgroup = spec.border, order = spec.order + 100,
+        classColor = spec.classColor, defaults = d, fromSkin = true,
+    })) do
+        rows[#rows + 1] = r
+    end
+    for _, r in ipairs(rows) do
+        r.onChange = spec.onChange
+        r.composed = r.path ~= own or nil
+    end
+    return rows
+end
+
 --- One schema page (Race, History): its panel, its page-wide Defaults button, and every
 --- render through the tabbed renderer, a one-tab page included (options-ui-§13). Everything here is
 --- resolved at CALL time, so it serves the library-absent load too, where NS.RegisterOptionsPage is
 --- the stub's no-op.
---- @param spec table { key, title, panelName, defaultsTooltip, afterGroup? }
+--- `redrawOnDefaults` is for a page with a row a selector on another tab switches: its Defaults can
+--- change what the tab on screen draws, and the library watches only the selectors a render drew
+--- (options-ui-§22). The redraw answers the page's own reset, as the global reset's does; it is no
+--- selector's `onChange`, so the switching itself stays the library's.
+--- @param spec table { key, title, panelName, defaultsTooltip, afterGroup?, beforeGroup?, redrawOnDefaults? }
 NS.pageCtx = NS.pageCtx or {}   -- each built page's ctx, by key, for a page that repaints off the bus
 function NS.RegisterTabbedPage(spec)
     NS.RegisterOptionsPage(spec.key, spec.title, function(mainCategory)
@@ -71,10 +109,13 @@ function NS.RegisterTabbedPage(spec)
             defaultsButton  = true,
             defaultsTooltip = spec.defaultsTooltip,
         })
-        ctx.panel.defaultsOnClick = function() H.RestoreDefaults(spec.key, ctx) end
+        ctx.panel.defaultsOnClick = function()
+            H.RestoreDefaults(spec.key, ctx)
+            if spec.redrawOnDefaults then H.RefreshPanel(ctx, true) end
+        end
         H.SetRenderer(ctx, function(c)
             H.ClearScroll(c)
-            H.RenderTabbedSchema(c, spec.key, spec.afterGroup)
+            H.RenderTabbedSchema(c, spec.key, spec.afterGroup, nil, { beforeGroup = spec.beforeGroup })
         end)
         NS.pageCtx[spec.key] = ctx
         return Settings.RegisterCanvasLayoutSubcategory(mainCategory, ctx.panel, spec.title)
@@ -93,6 +134,7 @@ if not lib then
     Helpers.MasterControls = function() return {}, function() end end
     Helpers.ColorPair, Helpers.FontGroup = function() return {} end, function() return {} end
     Helpers.BorderGroup, Helpers.BarGroup = function() return {} end, function() return {} end
+    Helpers.PositionBlock  = function() return {}, function() end end
     Helpers.RestoreAllDefaults = function()
         NS.Bulk.Run("reset", "all", function(info)
             for _, row in ipairs(NS.Schema) do
@@ -137,9 +179,6 @@ if not lib then
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel
     return
 end
-
--- The LSM30 border widget's backdrop, patched once for every Ka0s addon (options-ui-§1).
-lib.__PatchLSM30Border()
 
 -- NS.Helpers IS the instance, decorated in place -- never a copy-across.
 NS.Helpers = lib:New(descriptor)

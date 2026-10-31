@@ -1,0 +1,1261 @@
+  PASS  skeleton: the addon registers with AceAddon under its folder name
+  PASS  skeleton: NS.Print is the tagged printer, reclaimed from AceConsole
+  PASS  skeleton: /dr and /dpsrace are both registered on the one dispatcher
+  PASS  skeleton: the DB defaults load (global.runs empty, global.schema 4, schemaVersion stamped)
+  PASS  skeleton: NS.MSG declares the six bus names, each Ka0s_DpsRace_<PascalCase>
+  PASS  skeleton: the produced interfaces exist
+  PASS  skeleton: every declared icon resolves to a shipped path
+  PASS  skeleton: every authored Lua file opens with the NS bootstrap and a path comment
+  PASS  secrets: IsSecret/PlainNumber over plain, nil and secret
+  PASS  secrets: the guards are LibKa0s-Compat's when the library loaded
+  PASS  secrets: the guards are routed through NS.Compat, the compat family's root
+  PASS  secrets: CanAccessTable asks the client's table detector through NS.Compat
+  PASS  secrets: the stub arm answers the same with the library absent
+  PASS  secrets: without the secrets system every value is plain
+  PASS  secrets: PlainTruth and PlainEquals never test a secret
+  PASS  secrets: SafeIterate stops at nil and at 512
+  PASS  secrets: SafeIterate never applies # or ipairs and passes secrets through untouched
+  PASS  secrets: SafeIterate refuses a table this context may not read
+  PASS  secrets: PlainString passes a plain string and refuses nil, a number and a secret
+  PASS  meter: the stat and session constants come from the client enum
+  PASS  meter: the constants fall back to 0 and 1 without the enum
+  PASS  meter: IsAvailable passes Blizzard's failure reason through
+  PASS  meter: IsAvailable answers false with a reason on a client without the API
+  PASS  meter: IsAvailable catches a raising client and reports the error
+  PASS  meter: ReadSession returns plain sorted spells after combat
+  PASS  meter: ReadSession reads by ID, for the player's GUID, on DamageDone
+  PASS  meter: ReadSession on a sealed session returns nil,"sealed"
+  PASS  meter: ReadSession of a session the client no longer holds returns nil,"missing"
+  PASS  meter: ReadSession catches a raising client and never throws
+  PASS  meter: ReadSession with no damage of the player's is a zero result, not an error
+  PASS  meter: live read never performs arithmetic on secrets
+  PASS  meter: the live read keeps Blizzard's order and reads the Current session
+  PASS  meter: the live read answers nil with no session, no API or a raising client
+  PASS  meter: live DPS is the source's own amountPerSecond when it carries one (rung a)
+  PASS  meter: with no source amountPerSecond, live DPS is the local row's, opaque (rung b)
+  PASS  meter: a local row whose flag is secret is no claim; the Dps meter type answers (rung c)
+  PASS  meter: a local row with no figure of its own falls through to the Dps meter type
+  PASS  meter: the Dps meter type's totalAmount is never shown as the rate (unprobed field)
+  PASS  meter: a rung that served is tried first on the next read; the chain still falls back
+  PASS  meter: with no rung answering, live DPS is nil and the rest of the read stands
+  PASS  meter: the rung that served is logged once per race, under the Meter tag
+  PASS  meter: SessionIDs and HasSession track the client's list by plain ID
+  PASS  meter: modules/Meter.lua is the only file that names C_DamageMeter
+  PASS  meter: core/Compat.lua is the only file that names the client's secret detectors
+  PASS  meter: core/Secrets.lua is the only caller of NS.Compat's secret guards
+  PASS  dummies: Lookup known and unknown npcID
+  PASS  dummies: the catalog holds exactly the measured rows
+  PASS  dummies: Lookup answers a copy, so a caller cannot edit the catalog
+  PASS  dummies: six categories in order, each with an enUS label
+  PASS  dummies: every cataloged category is one of the six
+  PASS  dummy list: Parse reads entries and hides, ascending, the last of an ID winning
+  PASS  dummy list: Normalize drops a custom entry for a built-in and a hide of a non-built-in
+  PASS  dummy list: the row refuses what does not parse and stores what it normalizes
+  PASS  dummy list: Add marks a creature, Lookup answers it, Remove takes it off
+  PASS  dummy list: a built-in is switched off and back on, never recategorized
+  PASS  dummy list: Reset clears the list; a profile switch reads the other profile's
+  PASS  dummy list: CategoryOf reads a stored target by its creature as the list is now
+  PASS  dummy list: a new snapshot of a listed creature is categorized and auto-arm sees it
+  PASS  dummy list: Infer reads a name word, then a boss classification or skull level, else single
+  PASS  dummy list: CategoryFor takes a typed word, else the row, and auto infers
+  PASS  dummy list: Read and Capture keep what the game says, by map, and count the captures
+  PASS  dummy list: a sealed field is left out of the read, and a player is no creature
+  PASS  dummy list: Resolve takes an ID or a captured or cataloged name
+  PASS  dummy list: a captured custom dummy answers its captured name
+  PASS  dummy list: a stored run moves boards when its creature is added, and back when removed
+  PASS  dummy list: switching a built-in off sends its runs to Other; a run with no creature ID keeps its own
+  PASS  targetdummy: add marks the target, captures it and says what it saved
+  PASS  targetdummy: add refuses a word that is no category, no target, and a player
+  PASS  targetdummy: on a built-in, add says so and captures; remove switches it off, add brings it back
+  PASS  targetdummy: remove takes a typed creature ID or name; show lists yours and the switched-off
+  PASS  targetdummy: capture saves without marking; an unknown word prints the usage
+  PASS  targetdummy: answers while the addon is disabled, as ignore does
+  PASS  dummy list: the idle HUD's unknown-target warning follows the list without a target change
+  PASS  recorder: SnapshotPlayer records who the player is (spec §7 char)
+  PASS  recorder: SnapshotPlayer tolerates a client without the spec and ilvl APIs
+  PASS  recorder: SnapshotPlayer reads the spec through the compat family on a C_SpecializationInfo client
+  PASS  recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes known dummies
+  PASS  recorder: SnapshotTarget parses npcID from a Creature GUID and categorizes unknown targets as other
+  PASS  recorder: SnapshotTarget on a player or with no target is other with no npcID
+  PASS  recorder: SnapshotTarget tolerates a secret GUID (records name, category other)
+  PASS  recorder: SnapshotTarget fills a sealed field from the prior snapshot
+  PASS  recorder: SnapshotWhere records the map, zone, subzone and instance type
+  PASS  recorder: NewRun copies grace and restartGap from the profile
+  PASS  recorder: NewRun uses the shipped defaults (grace 1.0, restart gap 6)
+  PASS  recorder: NewRun never reuses a stored id
+  PASS  recorder: Save stores by id, fires RUN_SAVED, and Get reads it back
+  PASS  recorder: Save refuses a run without an id
+  PASS  recorder: All orders by date desc and excludes armed
+  PASS  recorder: All breaks a date tie by id, so the order is stable
+  PASS  recorder: Pending returns running and stopping only
+  PASS  recorder: Pending holds only the logged-in character's runs
+  PASS  recorder: a run written by a later schema is left alone
+  PASS  recorder: Delete fires RUNS_CHANGED
+  PASS  recorder: DeleteAll empties the store and fires RUNS_CHANGED
+  PASS  recorder: the store is account-wide and survives a profile switch
+  PASS  timeline: tail from probe run 4 = 3.03
+  PASS  timeline: tail from probe run 6 = 8.49
+  PASS  timeline: restart detected after 10s quiet at gap 6
+  PASS  timeline: DoT ticks every 2s are not a restart
+  PASS  timeline: the quiet stretch starts at the buzzer when the last damage was before it
+  PASS  timeline: a gap of exactly the setting counts as a restart
+  PASS  timeline: no damage after the buzzer gives tail 0 and no restart
+  PASS  timeline: a gap that spans a resume is measured from the resume
+  PASS  timeline: an out-of-order or non-number update is handled
+  PASS  timeline: two timelines are independent
+  PASS  scoring: late cast boundaries
+  PASS  scoring: QUIET_BEFORE_READ is 2.5s
+  PASS  scoring: Dps complete = damage / length
+  PASS  scoring: Dps incomplete = damage / endedAt
+  PASS  scoring: Flags order and text
+  PASS  scoring: Flags names late-cast spells through an optional resolver
+  PASS  scoring: SplitLate keeps the recorded order and splits by the ignore set; a sealed cast always counts
+  PASS  scoring: Flags flags only the counted late casts and carries the count, the casts and the ignored
+  PASS  scoring: a clean complete run has no flags; lost stands alone at the end
+  PASS  bests: Key is specID|category|length
+  PASS  bests: incomplete and lost never count
+  PASS  bests: the highest result.dps holds the board; a tie keeps the earlier run
+  PASS  bests: cleanOnly excludes flagged
+  PASS  bests: two Dungeoneer npcIDs share one board
+  PASS  bests: spec, category and length each split the board
+  PASS  bests: deleting a best promotes the next run
+  PASS  bests: the cache is invalidated by RUN_SAVED and keeps cleanOnly apart
+  PASS  bests: a run flagged only by an ignored spell joins the clean board, and leaves it on Unignore
+  PASS  bests: Delta reports new best and percentage vs previous best
+  PASS  bests: Delta ignores later runs, other boards and runs that never count
+  PASS  bests: Delta defaults its run list to the store
+  PASS  bests: HoldingIDs names the holders of the all-runs and the clean-only boards
+  PASS  bests: prune days=0 removes nothing
+  PASS  bests: prune keeps best-holding runs
+  PASS  bests: prune never removes a running or stopping run, and stops at the holders
+  PASS  bests: prune runs on RUN_SAVED with the global history.keepDays setting
+  PASS  bests: prune never removes the run just saved, nor the race's own run
+  PASS  bests: a raced run that lands below the best survives the prune its own save fires
+  PASS  bests: prune runs at OnEnable
+  PASS  bests: no prune and no cache work while disabled
+  PASS  late ignore: the hearthstone table holds 59 positive IDs, once each, with 8690, Dalaran and Garrison, never 556
+  PASS  late ignore: the setting parses sorted and once each, refuses anything else, and joins back
+  PASS  late ignore: Normalize drops a variant while 8690 is listed and keeps it alone
+  PASS  late ignore: the default is the profile's, and 8690 stands for every hearthstone in Set only
+  PASS  late ignore: Ignore, Unignore and Reset write the whole list through the seam
+  PASS  late ignore: Resolve takes a number, a link, a hearthstone's name and a default the character does not know
+  PASS  late ignore: a variant's name resolves to that variant when it is listed on its own, else to 8690
+  PASS  late ignore: on a degraded load a number, a link and a hearthstone still resolve
+  PASS  late ignore: the known spells are every late cast's spell, newest run first, then the defaults
+  PASS  late ignore: the result card's chips count only the counted casts; all ignored, no chip
+  PASS  late ignore: the Results detail draws an ignored cast's tick gray and explains only the counted ones
+  PASS  late ignore: a list change redraws the HUD and drops the cached boards and the sample's
+  PASS  late ignore: a profile switch re-scores the flags by the other profile's list and drops the clean board
+  PASS  late ignore: the menu offers each counted spell once, the undo for each ignored one, nothing for a sealed cast
+  PASS  late ignore: the menu's entries ignore and count again through the list
+  PASS  late ignore: IgnoredText names the ignored casts in one line, nil with none
+  PASS  late ignore: the result card's late chip carries the menu and the dimmed lines; all ignored, a gray chip
+  PASS  late ignore: the detail's flags box keeps a dimmed ignored line, also when every cast is ignored
+  PASS  late ignore: every flags tooltip shows the dimmed ignored line (D-6a)
+  PASS  late ignore ui: the detail's Flags box dims the ignored line and its right-click ignores a spell
+  PASS  late ignore ui: the row menu holds an Ignore for late casts submenu only when the run has a late cast
+  PASS  late ignore ui: the sample history offers no ignore menu (D-7)
+  PASS  race: the state names are the interface's
+  PASS  race: arm refuses in combat and while a run is pending
+  PASS  race: arm refuses while a stored run is pending, even when idle
+  PASS  race: arm refuses when meter unavailable
+  PASS  race: arm refuses a length outside 10s-15:00 and arms a valid one
+  PASS  race: session created starts the clock and persists the run as running
+  PASS  race: the target is re-read at combat start
+  PASS  race: sessionID captured from first DamageDone update with non-zero id
+  PASS  race: a DamageDone update heard just before the session event is adopted at the start
+  PASS  race: a session event heard out of combat does not start the clock
+  PASS  race: a DamageDone update for a stray session heard out of combat is never adopted at the start
+  PASS  race: the target is re-read at the combat that starts the clock, not an earlier one
+  PASS  race: a session event with the regen edge on an earlier frame does not start the clock
+  PASS  race: a session made out of combat starts the clock on its first update in combat
+  PASS  race: an update on the regen edge's frame, heard before the edge, starts the clock
+  PASS  race: a pull that continues a session from before the arm is adopted, flagged and netted
+  PASS  race: a fresh session heard after a shared start replaces the shared one
+  PASS  race: an update in combat for another session never starts a stray combat's clock out of combat
+  PASS  race: a buzzer heard out of combat with the regen edge missed is still read
+  PASS  race: an empowered cast held across the buzzer is never late
+  PASS  race: buzzer at start+length moves to stopping and emits RACE_BUZZER
+  PASS  race: cast started 0.5s after buzzer is not late at grace 1.0
+  PASS  race: cast started 1.4s after buzzer is recorded as late with spellID
+  PASS  race: a late cast of an ignored spell is still stored raw; the list is read, never applied, at capture
+  PASS  race: cast that started before buzzer and succeeded after is not late
+  PASS  race: the grace in force is the run's own, not the profile's
+  PASS  race: an interrupted cast leaves nothing open; a later instant of the same spell is late
+  PASS  race: a cast matches its own success by castGUID, not by spell
+  PASS  race: secret spell IDs and castGUIDs are judged without ever being stored
+  PASS  race: auto-repeat successes after the buzzer are never late casts
+  PASS  race: a sealed meter type or session ID moves nothing and stores nothing
+  PASS  race: Watchers hands Race the castGUID and the interrupt
+  PASS  race: combat end before buzzer -> incomplete with endedAt
+  PASS  race: death -> incomplete, died flag
+  PASS  race: death after the buzzer flags died and the run stays complete
+  PASS  race: result read only after combat end AND 2.5s quiet
+  PASS  race: no read while combat holds, however quiet the meter is
+  PASS  race: read uses ReadSession(sessionID), never Current
+  PASS  race: tail and combat end are stored relative to the buzzer
+  PASS  race: restart after a 10s gap sets flags.restartedAt
+  PASS  race: updates for another session never move the timeline
+  PASS  race: meter reset while stopping -> lost
+  PASS  race: meter reset while running -> lost, and the buzzer never goes
+  PASS  race: meter reset while armed forgets the arm-time sessions and keeps the arm
+  PASS  race: a session the client no longer holds is lost at the read
+  PASS  race: a read that stays sealed is retried, then lost
+  PASS  race: a read that raises is lost, not a Lua error
+  PASS  race: a session ID never captured falls back to the newest session after arming
+  PASS  race: no new session at all is lost
+  PASS  race: cancel in armed/running stores nothing; cancel in stopping discards
+  PASS  race: cancel on a result dismisses it and keeps the run; race again arms
+  PASS  race: stop now acts only while stopping
+  PASS  race: stop now out of combat reads at once through the normal path, the quiet waived
+  PASS  race: stop now in combat reads nothing until the regen edge, then reads without the quiet
+  PASS  race: stop now on a still-sealed read retries on the poll, as any read does
+  PASS  race: stop now on a run that ended before the buzzer reads it as incomplete
+  PASS  race: inputs in the wrong state change nothing
+  PASS  race: the diagnostics state section names the race state, run, session and pending count
+  PASS  resume: running past buzzer becomes stopping+reloaded
+  PASS  resume: running before buzzer keeps running with remaining time
+  PASS  resume: stopping out of combat reads immediately
+  PASS  resume: stopping in combat waits for the regen edge
+  PASS  resume: an incomplete run waiting for its read stays incomplete
+  PASS  resume: session gone becomes lost
+  PASS  resume: an older unresolved run is settled as lost; the newest is carried on
+  PASS  resume: nothing stored leaves the race idle and touches nothing
+  PASS  resume: running before the buzzer with combat already over is incomplete and read at once
+  PASS  resume: a stand-down mid-run whose combat ends unseen never hangs in stopping
+  PASS  resume: a stopping run that ended before its buzzer is not flagged reloaded
+  PASS  resume: a run another character left pending is not resumed here
+  PASS  resume: a reload that outlasts the restart gap while DoTs tick is not a restart
+  PASS  resume: the tail and a restart heard before a /reload survive it
+  PASS  resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
+  PASS  resume: a run with no session ID never adopts a session from before its arm
+  PASS  format: Number abbreviates through the client's formatter, secret or plain
+  PASS  format: Number never does Lua arithmetic on a secret when no formatter exists
+  PASS  format: a formatter that renders the check value wrongly is not used
+  PASS  format: Clock is m:ss.t with tenths truncated; Length is m:ss
+  PASS  format: Pct and Seconds take plain numbers
+  PASS  format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
+  PASS  format: ArmRefusal maps every Race.Arm reason to its line
+  PASS  format: RunTime is the length and the tail, or the time in combat against the length
+  PASS  hud: switches body on RACE_STATE_CHANGED for all six states
+  PASS  hud: a run that ended before the buzzer waits for its read on the waiting body
+  PASS  hud: idle arm button disabled with reason in combat
+  PASS  hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line
+  PASS  hud: a custom length is parsed, range-checked and selected
+  PASS  hud: an unknown target is allowed and said so
+  PASS  hud: a changed Default race length takes effect over the remembered pick
+  PASS  hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own
+  PASS  hud: a target changed while the HUD is closed is never armed as the old one
+  PASS  hud: reopening the HUD offers the target of the moment, not the one cached at close
+  PASS  hud: running render raises nothing with secret values
+  PASS  hud: running body shows no percentage text
+  PASS  hud: live rows keep Blizzard's order and the configured count
+  PASS  hud: a live read with no DPS figure shows a dash
+  PASS  hud: the live DPS KPI shows a figure when the source carries no amountPerSecond (live client)
+  PASS  hud: layout never calls GetWidth/GetPoint on breakdown rows
+  PASS  hud: live reads stop when hud hidden or state leaves running
+  PASS  hud: the stop body shows the live tail, time in combat, late casts and the grace
+  PASS  hud: the stop body counts only the late casts the ignore list leaves (#8), and redraws when it changes
+  PASS  hud: waiting hint appears after hintDelay and names only owned drop-combat spells
+  PASS  hud: STOPPING redraws at a few Hz, and a steady stop body rebuilds nothing
+  PASS  hud: the sticky-combat hint asks for the player's spells once per race
+  PASS  hud: countdown cue plays at 10,5,3,2,1 and buzzer raises the raid warning only when enabled
+  PASS  hud: the cue stops when the race is canceled
+  PASS  hud: switching the cue off mid-race silences the marks still ahead
+  PASS  hud: a stand-down drops a window onArm opened, so the stand-up does not bring it back
+  PASS  hud: the running clock shows elapsed in green beside time left in red by default
+  PASS  hud: a single-clock mode shows one big clock in its own color
+  PASS  hud: the clock pair fits the minimum width; the stop body keeps its own STOP
+  PASS  hud: the live rows stop above the caption and CANCEL at every window height
+  PASS  hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
+  PASS  hud: the default window size shows every default live row under the chart and the pace bar
+  PASS  hud: the result card's rows stop above its buttons at every window height
+  PASS  hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
+  PASS  hud: the minimum height holds the idle body's whole stack
+  PASS  hud: the equal buttons' width is whole pixels from the body's width and the gap
+  PASS  hud: the result card's four buttons sit in one row, the same width each, at any width
+  PASS  hud: Cancel on the waiting body throws the attempt away
+  PASS  hud: the Stop! and waiting bodies carry Stop Now and Cancel, the same width, with tooltips
+  PASS  hud: Stop Now out of combat takes the result at once, without the quiet
+  PASS  hud: Stop Now in combat reads at the combat end and says so
+  PASS  hud: Delete on the result card asks first, deletes through the store and goes back to Arm Race
+  PASS  hud: a result card whose run is deleted in the Results window is dismissed
+  PASS  hud: a canceled card Delete leaves a later Results-window delete of that run an outside one
+  PASS  hud: the card's Delete accepted after the card has gone leaves no mark behind
+  PASS  hud: result body shows % and the best delta chip
+  PASS  hud: a first run is a new best; a slower one shows its deficit and its flags
+  PASS  hud: a late-cast chip's right-click ignores its spell, and the gray ignored chip's undoes it (#8)
+  PASS  hud: a lost result says it could not be read
+  PASS  hud: an incomplete run's chip names when combat ended, or that the player died
+  PASS  hud: New Race opens the Arm Race screen on the same length; Details and Share reach their modules
+  PASS  hud: Share is live on a result card, and grayed without a Share module
+  PASS  hud: closing a result card dismisses it and keeps the run
+  PASS  hud: the window is skinned, closable with Escape, resizable and clamped
+  PASS  hud: Lock frame, Master scale and Reset position act on the window
+  PASS  hud: dragging is refused while locked and the position is stored when it ends
+  PASS  hud: General visibility and the stand-down hide it at the source
+  PASS  hud: onArm shows it on arm and hides it when the race it opened for is canceled
+  PASS  hud: showMode always shows it at login
+  PASS  hud: a race resumed after a /reload shows the HUD under onArm
+  PASS  hud: a result arriving while the window is closed opens it
+  PASS  hud: test mode's sample race draws through the race's own view, only while it is on
+  PASS  hud: the stand-down drops every registration, timer and the OnUpdate
+  PASS  hud: hidden with its parent is not closed by the player
+  PASS  hud: the library-absent load still draws the HUD without a grip or a close control
+  PASS  hud: the diagnostics state section names the body, the event set and the countdown driver
+  PASS  hud: labels take the collection's font objects; the clocks and KPI figures stay large
+  PASS  hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)
+  PASS  hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
+  PASS  hud: the minimum size still holds every body after the compact restyle
+  PASS  hud: the running clocks, figures and spell rows take their HUD Appearance blocks
+  PASS  hud: a clock shown alone draws half again as large, in its block's color
+  PASS  hud: a bar's class color companion takes the player's class, the swatch's opacity kept
+  PASS  hud hint: the line estimate wraps whole words at the width
+  PASS  hud hint: at the minimum width the plain hint is three lines and 6 px above and below
+  PASS  hud hint: a named drop-combat ability takes the line it needs, and a wider body fewer
+  PASS  hud hint: the text is inset from the box's top, never pinned to a fixed bottom
+  PASS  hud hint: under the box only the foot row, on the body's bottom, clear of the box at the minimum height
+  PASS  hud hint: the box resizes when the hint's text changes, and not on every redraw
+  PASS  hud: a live spell row's hover shows the client's spell tooltip right of the HUD, its secret ID untouched
+  PASS  hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now
+  PASS  hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
+  PASS  hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
+  PASS  hud tiles: the caption row sits inside the tile at the old padding, the figure a row above it
+  PASS  hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46
+  PASS  hud tiles: under the taller pair the Stop! chips and note and the waiting hint move down by config
+  PASS  hud tiles: the right tile's caption says what its figure is in each state
+  PASS  hud tiles: every caption fits a tile at the 260 px minimum by the 6 px a character estimate
+  PASS  hud tiles: the waiting screen's tiles read the same as the Stop! screen's
+  PASS  hud tiles: the moved Stop! and waiting stacks still fit the minimum height above the foot row
+  PASS  hud tiles: the Stop! and waiting redraws read no geometry
+  PASS  chart: the bucket count is the length in whole seconds, at most 60
+  PASS  chart: a capture copies the handle into each bucket it is the first read at or after
+  PASS  chart: a shared session's buckets stay empty, and the store never inspects a value
+  PASS  chart: Drawable answers only a scored run with slices this session
+  PASS  chart: the pace is the best's damage spread evenly over its length
+  PASS  chart: the columns sit on whole-pixel edges, touching, the configured gap taken off all but the last
+  PASS  chart: the columns take the Column gap setting; the plot's background its Chart background swatch
+  PASS  chart: the pace bar has its own look; styling the chart's columns leaves it alone
+  PASS  chart: each column holds exactly the handle read at its boundary, and none fills early
+  PASS  chart: with no best the scale is the live total itself (B): no line, no diagonal, no pace bar
+  PASS  chart: with a best the scale is its damage x 1.15 (A), with its pace diagonal and the pace bar
+  PASS  chart: the tick reuses the live views and rebuilds the chart's only when what decides it changes
+  PASS  chart: hidden, with the pace bar, while the run is on a shared session
+  PASS  chart: Show damage chart and Show pace bar turn each off
+  PASS  chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last
+  PASS  chart: the chart steps aside at the minimum height; the rows keep their three
+  PASS  chart: the overlay sits one band over the plot's columns
+  PASS  chart: the result card draws the race's slices to its plain final damage, and none without them
+  PASS  chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15
+  PASS  chart: the result card draws the earlier best's diagonal, the columns on the shared max
+  PASS  chart: the earlier best deleted while the card is up drops its diagonal and the shared max
+  PASS  chart: with no earlier best the result card and the detail draw no diagonal
+  PASS  chart: the Results detail shows the chart for a run raced this session only
+  PASS  chart: the detail's title hover goes with its chart, so it never covers the section under it
+  PASS  chart: a lost run has no chart on the card or in the detail
+  PASS  chart: test mode's still running body draws the sample's chart against the sample history's best
+  PASS  chart: the sim draws the sample's chart live against a best, then on its result card
+  PASS  chart: the sim honors Show damage chart and Show pace bar
+  PASS  chart: the diagnostics state section counts the loadout store and the races holding a chart
+  PASS  chart: the plot is a fill with no edge (the owner's call, 2026-10-26)
+  PASS  pace: Pace bar range defaults to 1.5, drives PaceBounds either side of the pace and is clamped to 1.1-2.0
+  PASS  pace: the tick sits in the middle of the bar's width, in whole pixels
+  PASS  pace: the running bar's tick stays in the middle while its range follows Pace bar range
+  PASS  pace: the bar splits at the tick: behind fills to the pace with red to the tick, ahead fills green past it
+  PASS  pace: Bests.Before is the best on the run's board raced before it, whatever the run scored
+  PASS  pace: the result card sets the plain final damage against the best's pace at the buzzer
+  PASS  pace: a run that just became the best is set against the previous best
+  PASS  pace: no pace bar on the result card with no earlier best, and the rows move back up
+  PASS  pace: Show pace bar off, a shared session and a lost run hide the result card's bar
+  PASS  pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside
+  PASS  pace: the sim's result card shows the pace bar against the sample best, and honors the setting
+  PASS  pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown
+  PASS  pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
+  PASS  pace: the result card's stack starts under the chips it draws, as the running body's under its boxes
+  PASS  countdown: 10..1 show one per second in the last 10s, then go at the buzzer
+  PASS  countdown: its own frame, center of UIParent, above everything, never taking the mouse
+  PASS  countdown: each number pops in through an animation
+  PASS  countdown: the digits are Blizzard's BigGold set, cut by texcoord
+  PASS  countdown: without the digit art it falls back to a large outlined number
+  PASS  countdown: finalCountdown 3 starts at 3
+  PASS  countdown: switched off, no frame is ever built and only the cue marks sound
+  PASS  countdown: switching it off mid-countdown hides the number at once
+  PASS  countdown: works with the HUD window closed
+  PASS  countdown: one cue per second of the numbers, never two in a second
+  PASS  countdown: the cue off keeps the numbers and silences every second
+  PASS  countdown: a cancel at 5s left hides it and nothing more shows or sounds
+  PASS  countdown: combat ending before the buzzer hides it
+  PASS  countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
+  PASS  countdown: a /reload before the window shows nothing until it opens
+  PASS  countdown: a /reload past the buzzer shows nothing
+  PASS  countdown: the sim runs the real marks in its running phase, cue included, and they stop with it
+  PASS  countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none
+  PASS  countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
+  PASS  countdown: the diagnostics state section names what it shows and holds
+  PASS  autoarm: both rules are off by default and register nothing
+  PASS  autoarm: each rule registers only what it needs, and turning both off drops it all
+  PASS  autoshow: a dummy target opens the HUD, and leaving it closes it after the debounce
+  PASS  autoshow: a dummy's nameplate opens the HUD, with no target at all
+  PASS  autoshow: nameplates churning inside the debounce never close the window
+  PASS  autoshow: the hide's fire scans the nameplates again before it closes
+  PASS  autoshow: a secret GUID is no dummy
+  PASS  autoshow: the player's close keeps it closed for the rest of the dummy session
+  PASS  autoshow: a window the player opened is theirs, and never closed by leaving
+  PASS  autoshow: a race or its result holds the window; the idle edge lets it go
+  PASS  autoshow: a result card holds the window past the debounce
+  PASS  autoshow: a race going idle near the dummy keeps the window open
+  PASS  autoshow: a dummy near an arm's window takes it over, so the idle edge never closes it
+  PASS  autoshow: test mode's window stays test mode's, and its end is no close by the player
+  PASS  autoshow: General visibility still decides whether it draws
+  PASS  autoshow: turning the rule off closes the window it opened
+  PASS  autoarm: targeting a cataloged dummy out of combat arms at the HUD's length and opens it
+  PASS  autoarm: a target that is no cataloged dummy arms nothing
+  PASS  autoarm: Race.Arm's refusals hold, silently: in combat, pending, meter unavailable
+  PASS  autoarm: no arm over a result card, nor in test mode
+  PASS  autoarm: targeting anything else before the pull disarms; another dummy keeps it
+  PASS  autoarm: a started race is never disarmed by a target change
+  PASS  autoarm: a target change in combat before the clock starts never disarms the pull
+  PASS  autoarm: a race the player armed is never the rule's to disarm
+  PASS  autoarm: Cancel works as today, and the next target change to a dummy arms again
+  PASS  autoarm: works alongside auto-show; the disarm leaves the dummy's window open
+  PASS  autoarm: a profile switch re-reads both rows, with no /reload
+  PASS  autoarm: neither rule acts in an instance or a battleground
+  PASS  autoarm: entering an instance closes the dummy's window
+  PASS  autoarm: stood down, nothing is registered and nothing acts; the stand-up rebuilds
+  PASS  layers: one table names the addon's tiers by the standard's keys
+  PASS  layers: no strata string and no bare level number at a call site
+  PASS  layers: the Race HUD is MEDIUM, toplevel and clamped
+  PASS  layers: the Results window is HIGH, toplevel and clamped
+  PASS  layers: the ability timeline is DIALOG, one strata above the Results window, toplevel and clamped
+  PASS  layers: the detail pane sits one band over the list pane, never by creation order
+  PASS  layers: the countdown is FULLSCREEN, below every menu
+  PASS  results: runs list columns: date, class icon, spec icon, character, ilvl, target, time, damage, DPS, Delta, status, used, note
+  PASS  results: the Note column cuts a note to 10 characters with an ellipsis, tips the whole note and sorts A to Z, none last
+  PASS  results: every cell and header has a tooltip; it sits right of the window, or left when there is no room
+  PASS  results: the Status column tags each run; the DPS column shows every run's DPS
+  PASS  results: Status is Spec best, Flagged or Complete for a complete run, each with its icon; there is no Max tag
+  PASS  results: race lengths take muted ROYGBIV colors for the presets and a neutral one otherwise
+  PASS  results: the Time column takes the length color; the tail stays gray
+  PASS  results: Status tags are boxed in their hue with the icon inside
+  PASS  results: the HUD never draws a race length in the Results length colors
+  PASS  results: Damage and DPS carry bars from 10% (the smallest run the filters pass) to 100% (the largest)
+  PASS  results: the bars take History > Results table's look, over the rows' own stripe
+  PASS  results: the Damage and DPS bars run 10% to 100% within each group; ungrouped, the whole view is one
+  PASS  results: Delta is per group, recomputed when the grouping changes; ungrouped, the whole view is one
+  PASS  results: Only best keeps the runs holding their board's best
+  PASS  results: Delta is each run's distance from the max DPS among the runs the filters pass
+  PASS  results: filters: character, spec, category, length, date range, hide flagged, include incomplete
+  PASS  results: sort by date desc default; by DPS; by ilvl
+  PASS  results: the list is pooled and scrolls through more runs than fit
+  PASS  results: the detail's section headings are the larger SECTION font; Spell breakdown heads the compare and the list
+  PASS  results: every section heading has SECTION_GAP of clear space above it, the y-advances from config
+  PASS  results: the detail's header: 28 px class and spec icons, a larger name, no spec text; the spec icon names the spec
+  PASS  results: the note shows as written under a Note heading; the heading also shows while writing one
+  PASS  results: detail renders breakdown sorted with percentages
+  PASS  results: timing strip positions buzzer, grace, tail, late casts, combat end
+  PASS  results: the detail lists every spell of the run, not a capped top few
+  PASS  results: the detail's spell rows follow HUD Appearance's row height
+  PASS  results: detail flags name late-cast spells and the session matched by list
+  PASS  results: delete asks confirmation then fires RUNS_CHANGED
+  PASS  results: note limited to 200 chars
+  PASS  results: opening the note scrolls its box into view
+  PASS  results: every detail element has a tooltip; spells show the client's spell tooltip beside the window
+  PASS  results: the timing strip's marks draw above its two segments
+  PASS  results: the timing legend is two rows, the bars' colors over the lines', Restart among the lines
+  PASS  results: a spell list built without a tip hook takes no mouse
+  PASS  results: saving a note never prunes the store
+  PASS  results: Share is grayed without a Share module; a row's right-click menu notes, shares and deletes
+  PASS  results: the Insights tab is built on first show, counts the runs and shows the empty state with none
+  PASS  results: a profile saved before the rename loads clean and opens Insights (D-14, no migration)
+  PASS  results: list refreshes on RUN_SAVED
+  PASS  results: Runs opens on the current character in every spec; current character and spec are each a choice of its own
+  PASS  results: the window is skinned, closable with Escape, resizable and clamped
+  PASS  results: position, size and Master scale persist; Reset position restores them
+  PASS  results: collapsed, the detail replaces the list, with a back control
+  PASS  results: hidden with its parent is not closed by the player
+  PASS  results: the window is no Blizzard UI panel: no UIPanelWindows, no layout attributes, no ShowUIPanel, no hook
+  PASS  results: the stand-down hides it and the stand-up brings it back
+  PASS  results: the library-absent load still draws the window, with no dropdowns or close control
+  PASS  results: the diagnostics state section names the tab, the layout and the selection
+  PASS  results: a centered GameFontNormal title, Title Case tabs and headers, compact rows, small gray footers
+  PASS  results: the close control is the skin's own, never the title strip's gold (D-9)
+  PASS  results: every Runs column fits the narrowest list either view lays out
+  PASS  results: the Runs filter bar fits inside both views' minimum width
+  PASS  results: the Runs filter bar with no width, or only the room it needs, is the configured plan
+  PASS  results: the Runs filter bar ends on the window's right edge in both views, never under its widths
+  PASS  results: the Runs filter bar stretches with the window while the grip is dragged
+  PASS  results: Group by character, class & spec or target, with folding headers
+  PASS  results: Group by time, and by target type and time, shortest first
+  PASS  results: Save, Reset and Clear the Runs view, and a saved view is what the window opens on
+  PASS  results: hovering Save, Reset or Clear shows its tooltip without an error
+  PASS  results: Group by spec + target + time, one group per board, the spec in its class color
+  PASS  results: Group by Full: character, class, spec, target and time, in that order
+  PASS  results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run
+  PASS  results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green
+  PASS  results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
+  PASS  results: a run the Runs filters leave out falls back to its board among every stored run
+  PASS  results: the talent tree's panel open closes the window, and it comes back when the tree closes
+  PASS  results: the player opening or closing the window ends its wait for the tree
+  PASS  results: Escape with the talent tree up closes both, and the window stays closed
+  PASS  results: Escape with no talent tree closes the window for good
+  PASS  results: the close control with the talent tree up closes the window alone
+  PASS  badges: the Target cell is a boxed chip in its category color, the count inside
+  PASS  badges: the Time cell boxes the length in its color; the tail or the end of combat follows in gray
+  PASS  badges: Spec best and Max are the box alone; their board is in the tooltip
+  PASS  badges: a chip never runs past its column: a too-long word is cut to the box
+  PASS  badges: Target, Time and Status fit their widest chips (Tbl.BadgeWidth)
+  PASS  badges: the window minimums hold the wider columns, the Note column last and inside the list
+  PASS  badges: the detail's target line leads with the type and length chips, laid out from their widths
+  PASS  badges: drawing the chips reads no frame's size or position back
+  PASS  badges: group headers color their value as plain text: class, target type, length
+  PASS  badges: the HUD draws none of the Results chips
+  PASS  compare: CompareSpells matches by id, with each side's damage, share and the difference
+  PASS  compare: a spell on one side only has nil damage and share on the other
+  PASS  compare: rows sort by the run's damage, then the other's, then the id
+  PASS  compare: a zero or missing damage total leaves the shares nil; duplicated ids add up
+  PASS  compare: the figures and their % difference; none against a zero or missing figure
+  PASS  compare: the Difference is two cells, the amount, then the % in its muted green or red
+  PASS  compare: the default is the best on the run's board; for the best itself, the runner-up
+  PASS  compare: a picked run wins while it is stored and not the run itself
+  PASS  compare: the toggle sets the run beside the best: the score table and the compared breakdown
+  PASS  compare: This run right, Best run left; each header at its column's x, width and justify
+  PASS  compare: one header row: Spell heads the first column, the first spell row hangs at the table's top
+  PASS  compare: the score table has no box, its columns are the spell table's, and a rule sits between them
+  PASS  compare: one bar per row, on the higher run's side, its length the row's % difference on the one scale
+  PASS  compare: Damage, DPS and the spells size their bars on one scale (DR-F05)
+  PASS  compare: the run with the more total damage is blue on every row, the other gold (DR-F05)
+  PASS  compare: the column headed Best run is blue even when this run has more damage (DR-F05)
+  PASS  compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)
+  PASS  compare: the Difference column fits the detail at both views' minimum widths, with nothing clipped
+  PASS  compare: the % column holds a signed three-digit % with one decimal in every skin
+  PASS  compare: the best compares with the runner-up; a run alone on its board has the toggle disabled
+  PASS  compare: the row menu's pick, the different-board note and Clear Pick
+  PASS  compare: the toggle, Clear Pick, the note, the score table and each compared row have tooltips
+  PASS  compare: the collapsed view draws the compare in the list's place; no number is read off a frame
+  PASS  compare: the columns flex with the width: the name column a share of it up to its cap, the figures the rest
+  PASS  compare: a 1200 px collapsed detail draws both tables across its width, a separator between the runs
+  PASS  compare: the separator draws one physical pixel wide at any UI scale, not one UI unit
+  PASS  compare: Damage and DPS in the spell names' white, each after a game icon at the spell icons' size and x
+  PASS  compare: every spell row alternates the Results list's stripe, compared and plain
+  PASS  loadout: SnapshotLoadout reads every equipped link but the shirt and the tabard
+  PASS  loadout: SnapshotLoadout reads the talents: the saved loadout's name, the hero tree, the string
+  PASS  loadout: with no saved loadout the active config's name is used
+  PASS  loadout: a client without the APIs, or one that raises, yields absent fields, never an error
+  PASS  loadout: a secret value never reaches the snapshot
+  PASS  loadout: the hash is djb2 as eight hex digits, and pure
+  PASS  loadout: Store keeps each distinct set once; the run holds only the keys
+  PASS  loadout: two different sets with one hash are told apart; the same set finds its own key
+  PASS  loadout: Of resolves a run's keys; a run without one has neither
+  PASS  loadout: Delete, DeleteAll and Prune drop the loadouts no run refers to
+  PASS  loadout: a run of a later format keeps the sets it refers to
+  PASS  loadout: the format 2 migration leaves old runs as they were, without a loadout
+  PASS  loadout: a race keeps the combat-end loadout, not the arm-time one
+  PASS  loadout: a run with no combat-end snapshot falls back to the arm-time one
+  PASS  loadout: a second combat end in the read's wait replaces the loadout and drops the first
+  PASS  loadout: a run resumed after a /reload whose combat ended unheard still takes a loadout
+  PASS  loadout: the detail draws the gear grid in the character frame's order, and the talents line
+  PASS  loadout: an item's hover is the client's own tooltip; a modified click goes to the client
+  PASS  loadout: the Gear heading carries the run's item level as caption subtext on its line
+  PASS  loadout: a run stored before #6 says Not recorded, with nothing to view or copy
+  PASS  loadout: View is grayed with a reason once the client's serialization version moved; Copy still works
+  PASS  loadout: under the compare the changed slots are highlighted and a different loadout is marked
+  PASS  loadout: the pure parts: changed slots, the link data, the talents text
+  PASS  loadout: the copy window opens on the import string
+  PASS  loadout: the Spec cell's tooltip names the loadout and notes gear changed since the previous run
+  PASS  loadout: the share line takes the talents link only with Include talents link on
+  PASS  loadout: Include talents link sits under Sharing on the History tab, before Storage
+  PASS  stats: Snapshot reads the primary stat, stamina, armor and every rating with its percent
+  PASS  stats: crit is the highest of melee, ranged and each spell school's, as the character panel shows
+  PASS  stats: a secret value is stored as absent, never compared or kept
+  PASS  stats: a client without the APIs, or one that raises, yields absent fields; nothing readable is nil
+  PASS  stats: a new run carries the arm's stats; a run without any reads as none
+  PASS  stats: the format 4 migration raises the stamp and rewrites no run
+  PASS  stats: Groups lays out Primary, Secondary and Tertiary with each value's text
+  PASS  stats: a run without stats shows dashes in every row
+  PASS  stats: deltas against the compared run, signed, the percent deciding a rated row
+  PASS  casts: Encode writes centiseconds, a p before a pet cast, comma-joined
+  PASS  casts: Decode reads the stored string back, skipping what does not parse
+  PASS  casts: an important ability's base cooldown is 29 s or more
+  PASS  casts: Important and Of read a run's record; a run without one has none
+  PASS  casts: Group puts cooldowns first, longest first, then the rest by count
+  PASS  casts: nothing is heard before Begin or after Stop; other units are never heard
+  PASS  casts: times are on the race clock; a cast heard while armed is negative
+  PASS  casts: only the last 10 s before the clock starts are kept; the player's earlier casts are counted
+  PASS  casts: auto-repeat attacks, a castGUID heard twice and a sealed spell ID are filtered
+  PASS  casts: a channel counts once, whether its success comes before or after the channel start
+  PASS  usage: the arm snapshot reads the on-use slots, the bag consumables and the auras, never the enchants
+  PASS  usage: an unreadable bag stack makes the after counts unknown, never a false drop
+  PASS  usage: a client without the APIs snapshots nothing and raises nothing
+  PASS  usage: detection stacks casts, the bag drop and the arm's auras, in that order
+  PASS  usage: a cast item's count drop is not counted again; unknown after counts detect no drop
+  PASS  usage: a drop the casts before the pre-pull window explain is given back, never read as a use
+  PASS  usage: of two items with one use spell, a cast is the one whose count dropped
+  PASS  usage: the candidates are the on-use gear, then every bag consumable by item
+  PASS  usage: SetUsed keeps a detected entry, adds a manual one and announces RUNS_CHANGED
+  PASS  usage: SetUsed matches each tick to its own entry by slot, never one entry twice
+  PASS  usage: a tick with a slot answers only an entry in that slot
+  PASS  usage: an unticked food joins the candidates, once, and ticked again keeps its source; an old enchant goes
+  PASS  usage: the hidden items parse from their setting, sorted and once each, and refuse anything else
+  PASS  usage: Hide and Unhide write the whole list through the seam; Shown leaves out hidden items and enchants
+  PASS  usage: the known items are every item the stored runs list, newest run first, each once
+  PASS  usage: Watchers hears the casts from the arm, for the player and the pet
+  PASS  usage: a race stores its casts and usage at the result, and nothing secret
+  PASS  usage: a cast heard more than 10 s before the pull is not this race's, in the list or the usage
+  PASS  usage: a lost race stores its casts and usage too, and nothing secret
+  PASS  usage: a stand-down stops the cast list and drops it
+  PASS  usage: a canceled race keeps nothing; the next arm starts a fresh list
+  PASS  usage: a run resumed after a /reload keeps no casts and no usage
+  PASS  usage: the format 3 migration raises the stamp and rewrites no run
+  PASS  usage: the sample history and the sim's race carry casts and usage
+  PASS  usage: a player with no consumables gets the sample Healthstone, used with no cast
+  PASS  results usage: entries list the gear first, never an old enchant; a run stored before format 3 has none
+  PASS  results usage: each entry's detail says how many times and when, or why there is no time
+  PASS  results usage: names and icons come from the item data; food has its own
+  PASS  results usage: one row per candidate, then each detected entry no candidate stands for
+  PASS  results usage: the ticks follow the rows, and a change is any row ticked against what was stored
+  PASS  results usage: a save keeps the used entries the edit does not list, a hidden item's
+  PASS  results usage: an items cell draws what fits, or one fewer and +n
+  PASS  results usage: the Used column draws the icons gear first, then +n; a dash for nothing or no record
+  PASS  results usage: the Used tooltip names each entry with its icon and when, or says why there is none
+  PASS  results usage: the Used column sorts by how many entries, a run with no record last either way
+  PASS  results usage: a row's line is the name, then a dim dot and the detail; the name alone with none
+  PASS  results usage: the detail follows the name on its line, cut at the row's edge, in and out of the edit
+  PASS  results usage: the detail shows what was used, each with its icon and when, Edit and no Save
+  PASS  results usage: a run with nothing used says so in a dim line, and Edit still opens the list
+  PASS  results usage: Edit lists every candidate and the extras, used ones ticked; Edit again leaves unsaved
+  PASS  results usage: Save is live only while the ticks differ, writes them through SetUsed and leaves the edit
+  PASS  results usage: an unticked Well Fed stays listed in the edit and can be ticked again
+  PASS  results usage: a redraw of the same run keeps the edit and its ticks not saved yet, and the scroll
+  PASS  results usage: a run stored before format 3 says Not recorded, with no rows, no Edit and no Save
+  PASS  results usage: a sample run's edit changes it in memory only; the store never hears it
+  PASS  results usage: a row's hover is the item's own tooltip with its detail and source after it
+  PASS  results usage: a right-click in the edit offers Never show; the item leaves the edit, its ticks kept
+  PASS  results usage: a hidden item is never listed, in the section, the Used column or its tooltip; un-hidden it is back
+  PASS  results usage: a sample run hides the same items
+  PASS  sections: every section heading has an arrow left of its text, open and chevron-down by default
+  PASS  sections: the arrow and the heading's text each fold and open every section, the arrow's icon following
+  PASS  sections: a folded section's body is hidden, and the sections under it move up by its body's height
+  PASS  sections: the folded state is the profile's, read back by a rebuilt pane and by every run
+  PASS  sections: Reset position keeps the folded sections; a profile reset and Reset all settings clear them
+  PASS  sections: Add Note opens a folded Note; folding the Note while writing closes the box unsaved
+  PASS  sections: a heading the run does not draw hides its arrow
+  PASS  sections: a lost run after a drawn one hides Timing's heading hover, so it takes no click
+  PASS  sections: Flags is a section heading over the yellow box; each flag's main line, detail and meaning read apart
+  PASS  chart icons: a cast's x is INSET + t / length across the width less both insets
+  PASS  chart icons: a pre-pull cast clamps to 0:00, one after the buzzer to the end; no length, no icon
+  PASS  chart icons: an icon is centered on its cast's time, held inside the plot at either end
+  PASS  chart icons: an icon that would overlap the one before it on the top row takes the second
+  PASS  chart icons: the rows the plot holds follow its configured height, at least one
+  PASS  chart icons: the plot frame holds one icon row over the configured height, one more row in all
+  PASS  chart icons: the columns and the best's diagonal scale below the reserved row
+  PASS  chart icons: three casts in one second stack on three rows of the 80 px plot
+  PASS  chart icons: three casts in one second on the short plot: one icon and a +2 mark
+  PASS  chart icons: six casts in one second: four rows and a +2 on the 80 px plot, a +5 on the short one
+  PASS  chart icons: crowds an icon's width apart on the last row get a mark each, never overlapping
+  PASS  chart icons: only casts of an ability whose base cooldown is 29 s or more get one
+  PASS  chart icons: drawn live on the running HUD, the spell's icon along the top, no geometry read back
+  PASS  chart icons: two casts close together on the running HUD stagger onto the second row
+  PASS  chart icons: three casts in one second are all captured and all drawn on the 80 px running chart
+  PASS  chart icons: on the short plot the crowd's overflow is a +n mark whose tooltip lists each cast
+  PASS  chart icons: six casts in one second: nothing dropped on the 80 px plot or the short one
+  PASS  chart icons: the crowd's tooltip marks a pet's cast and takes nothing but a list
+  PASS  chart icons: a running HUD icon's tooltip names the spell and its time
+  PASS  chart icons: the live list is read again only when the race heard another cast
+  PASS  chart icons: Show cooldown icons off draws none on the running HUD; on again brings them back
+  PASS  chart icons: the setting's row reads Show cooldown icons and keeps its stored path
+  PASS  chart icons: the result card and the Results detail draw the run's from its record
+  PASS  chart icons: an icon's tooltip on the card and in the detail names the spell and when it was cast
+  PASS  chart icons: Show cooldown icons off hides them on the card and in the detail too
+  PASS  chart icons: a run recorded before casts were (format 2) draws its chart with none
+  PASS  chart icons: test mode draws the sample's, live up to its still moment and all on the card
+  PASS  chart icons: the sim's running chart keeps one cooldown list until another cast is heard
+  PASS  chart icons: test mode's chart follows Show cooldown icons while it is on screen
+  PASS  results timeline: one row per ability and caster across both runs, each run's times and counts
+  PASS  results timeline: cooldowns of 29 s or more first, the longest first; then by count, the player's before the pet's
+  PASS  results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane
+  PASS  results timeline: the detail's Timeline button is live for a run with casts and disabled without
+  PASS  results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts
+  PASS  results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run
+  PASS  results timeline: each lane's count sits just past the lane's right end, not out at the window's edge
+  PASS  results timeline: overlapping icons stack onto extra rows and the strip grows to fit them all
+  PASS  results timeline: the Casts strips show every cast of both runs as its icon on the lanes' time axis
+  PASS  results timeline: a strip grows with the casts stacked at one time; the lanes start under it
+  PASS  results timeline: an icon's tooltip is the client's spell tooltip, then its time and its run on bullets
+  PASS  results timeline: a strip with no casts shows a dim note in place of its icons
+  PASS  results timeline: its minimum width is 640, so the icons get room; no stored size, it opens at the Results window's
+  PASS  results timeline: it follows the detail: another run, a pick and Clear Pick redraw it
+  PASS  results timeline: with no run to compare with, or one with no casts, the blue lanes stay empty under a note
+  PASS  results timeline: a run with no casts or no run at all shows a message in place of the lanes
+  PASS  results timeline: Escape and its close control close it, as does the Results window closing
+  PASS  results timeline: it scrolls by a pair per notch; a move and a resize are never stored; Reset position puts it over the Results window
+  PASS  results timeline: it follows Master scale while open
+  PASS  results timeline: a stand-down hides it, and nothing opens it while stood down
+  PASS  timeline zoom: the Casts section is roomier: a wider row pitch than the icon, gaps around the strips
+  PASS  timeline zoom: a second time axis under the compared run's strip, the same labels as the pinned one
+  PASS  timeline zoom: the controls sit at the right end of the Casts heading line and step through the zooms
+  PASS  timeline zoom: zoomed in, the strips and the lanes widen together and the view pans across the axis
+  PASS  timeline zoom: a zoom keeps the view's middle; zoomed in, Shift+wheel pans and the wheel scrolls
+  PASS  timeline zoom: a redraw of the same runs keeps the zoom; another run or compare target goes back to 1x
+  PASS  timeline zoom: zoomed in, a drag of the grip keeps the view's left edge and re-pools nothing until the release
+  PASS  timeline modal: the timeline sits one strata above the Results window, the cover over its every level
+  PASS  timeline modal: opening it re-raises a shown StaticPopup (frame-layering-§4)
+  PASS  timeline modal: the cover dims the Results window and takes its mouse and wheel while the timeline is open
+  PASS  timeline modal: putting the cover up closes the window's menu and tooltip
+  PASS  timeline modal: the cover goes with the Results window, at stand-down and on a source switch
+  PASS  timeline modal: Escape closes the timeline before the Results window, in either close-stack order
+  PASS  timeline modal: the talent tree's panel open closes the timeline and sends the window aside
+  PASS  timeline modal: the timeline's skin is opaque, nothing of the Results window shows through
+  PASS  timeline view: the scrollbar shows only zoomed in, its thumb the view's share of the lanes' width
+  PASS  timeline view: a drag of the thumb or a click on the track scrolls Casts and By ability together
+  PASS  timeline view: This run and Best run sit on their strips' middles, however many rows each grew to
+  PASS  timeline view: nothing between the strips but a lane pair's gap, through a resize (UT-P17)
+  PASS  timeline view: it opens exactly over the Results window, expanded or collapsed, never stored
+  PASS  timeline view: over a Results window smaller than its minimums, it keeps its minimums
+  PASS  timeline scroll: the wheel scrolls up and down at any zoom; Shift+wheel left and right only zoomed in
+  PASS  timeline scroll: the zoom and arrow tooltips say how the wheel and the arrows scroll
+  PASS  timeline scroll: the arrows follow reset and come before the ?, chevrons from the catalog
+  PASS  timeline scroll: each arrow pans a quarter of the view, clamped to the axis
+  PASS  timeline scroll: the arrows are disabled and dimmed at 1x and each at its end of the axis
+  PASS  timeline scroll: the thumb dragged to the end snaps onto it, so the right arrow goes off
+  PASS  timeline scroll: zoomed in on a run with no casts, the arrows stay off
+  PASS  timeline scroll: the six heading-line controls and the zoom level read one size
+  PASS  timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them
+  PASS  timeline controls: against the screen's right edge the tooltips open left of the window instead
+  PASS  timeline controls: Ctrl+wheel up zooms in a step and down out a step, the buttons' steps
+  PASS  timeline controls: Ctrl wins over Shift; off the time area the zoom keeps the view's middle
+  PASS  timeline controls: Ctrl+wheel keeps the time under the cursor where it was, clamped to the axis
+  PASS  timeline controls: CursorAt is how far across the lanes the cursor is, nil off them
+  PASS  timeline controls: read left to right the line is the zoom level, -, +, reset, <, >, ?
+  PASS  timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets
+  PASS  timeline controls: the controls end on the lanes' right edge, the strips' too, through a resize
+  PASS  timeline controls: the strips sit a lane pair's gap apart, no line between, the labels on their strips
+  PASS  timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it
+  PASS  timeline controls: every corridor wears its run's dark, translucent color
+  PASS  timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
+  PASS  gear view: ParseLink reads the item, its enchant and its gems from the stored link
+  PASS  gear view: the cells follow the character panel, from the constants, the optional slots only when filled
+  PASS  gear view: SlotDiff tells an item change, the item level, the enchant and the gems apart
+  PASS  gear view: a slot's marks, a missing enchant or gem the compared run had, and its notes
+  PASS  gear view: CenterOver centers the view over the Results window from its anchor
+  PASS  gear view: a modal over the Results window: its strata, the cover, the opaque skin
+  PASS  gear view: Escape closes the view first and the Results window stays
+  PASS  gear view: it closes with the Results window
+  PASS  gear view: each slot's item, item level and marks; Shift-click and the tooltip go to the client
+  PASS  gear view: against the compared run, changed items tinted, item levels colored, enchant and gems edged
+  PASS  gear view: the stats column with deltas against the compared run, dashes for a run with none
+  PASS  gear view: the followed run deleted (the pane left empty) closes the view
+  PASS  gear view: a run without a compared run marks nothing and says so
+  PASS  insights: Runs.OptionLists has each list without its All head, and WithAll adds it
+  PASS  insights: Filter defaults wide, keeps lost runs out and maps Clean only to Hide flagged
+  PASS  insights: Options lists each facet's values among the runs every other filter passes, with counts
+  PASS  insights: a closed dropdown names its choices on the All head, and a pick by its name alone
+  PASS  insights: Normalize sets a 0-run selection to All, never the one just changed, in bar order
+  PASS  insights: Compute on no runs returns zero cards and empty sections
+  PASS  insights: Compute's cards over the owner-shaped fixture
+  PASS  insights: Compute's boards and progression are board-relative
+  PASS  insights: Compute's board tabs, one per target x length pair, in the catalog's order
+  PASS  insights: Compute's new bests beat an earlier best on their board, in date order
+  PASS  insights: Compute's counts by character, target, length and day, gap days included
+  PASS  insights: Compute buckets the damage tail, the 155 s outlier in 20+
+  PASS  insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
+  PASS  insights charts: nothing above the host section reads NS or a client global but CreateFrame
+  PASS  insights charts: the header names the LootHistory source commit the port came from
+  PASS  insights charts: New wants a host pool, and fills the colors and fonts it is not given
+  PASS  insights charts: truncate counts glyphs, not bytes, and ends in an ellipsis
+  PASS  insights charts: tipText states the value beside the full label
+  PASS  insights charts: fitFontSize shrinks only an overflowing figure, never under the floor
+  PASS  insights charts: the ranked palette cycles, and a map keeps one color per key
+  PASS  insights charts: a palette getter is read at each draw, so a skin switch moves it
+  PASS  insights charts: a bar section scales to its longest bar and colors label and fill alike
+  PASS  insights charts: every bar's hover states its value; a row's own tip lines win
+  PASS  insights charts: an empty section hides its header and leaves the cursor where it was
+  PASS  insights charts: a legend's chips start under the track, not the labels, and wrap
+  PASS  insights charts: a sublabel draws a second, muted line, and every row of its section grows
+  PASS  insights charts: RangeScale spans the lowest worst to the highest best, opening a point
+  PASS  insights charts: a range section draws worst to best with an average mark, on a scale it names
+  PASS  insights charts: a legend can start at a given edge (under a strip, not a bar track)
+  PASS  insights charts: a stacked bar shows one segment per share, each hover naming its value
+  PASS  insights charts: a strip draws one colored column per bucket, its hover above the column
+  PASS  insights charts: a strip's labels are level, hung under the axis line, in the band it reserves
+  PASS  insights charts: a strip takes a fixed top, and drops a label too close to another one shown
+  PASS  insights charts: StripLabels keeps the label of the day with more columns, not the earlier one
+  PASS  insights charts: StripLabels keeps the end labels inside the content on a dense strip
+  PASS  insights charts: a strip shifts an end label by its offset, from under its column
+  PASS  insights charts: StripSlots widens the columns up to a cap, and never below 2 px
+  PASS  insights charts: a list panel caps at ten rows, sized to them, each hover stating its value
+  PASS  insights charts: a list row's click is the row's own, and a reused row forgets the last one
+  PASS  insights charts: a second pass after ReleaseAll builds no frame; every pool comes back whole
+  PASS  insights charts: a divider rules both sides of its centered title in the host's colors
+  PASS  insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below
+  PASS  insights charts: the panel comes from the host, a plain frame without one
+  PASS  insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
+  PASS  insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
+  PASS  insights tab: built on its first show, its tab label gold while it shows
+  PASS  insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
+  PASS  insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
+  PASS  insights tab: a selection left with no runs falls back to All; the one just changed never
+  PASS  insights tab: the cards state the ten figures, each hover naming its value
+  PASS  insights tab: a card's figure is gold, and colored where it means something
+  PASS  insights tab: CardGrid packs four a row, and a short last row is shared out
+  PASS  insights tab: the cards fill even rows across the content, none half empty
+  PASS  insights tab: above 60 runs the progression is one column a day, the same day of two years apart
+  PASS  insights tab: DPS Progression carries a legend of its specs in their class colors
+  PASS  insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone
+  PASS  insights tab: a tab per target x length board, the most raced first, the pick kept while present
+  PASS  insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked
+  PASS  insights tab: Races By Character x Length stacks each character's races in the length colors
+  PASS  insights tab: one date format everywhere: the day, then the time where it matters
+  PASS  insights tab: Late Casts keeps room for the ignored spells when the counted ones pass ten
+  PASS  insights tab: Late Casts lists the counted spells, then the ignored ones dimmed and tagged
+  PASS  insights tab: a right-click on a Late Casts row opens the ignore list's menu, which redraws the tab
+  PASS  insights tab: a Recent New Bests row opens its run on the Runs tab; a right-click its row menu
+  PASS  insights tab: with no run the empty state shows, and every card and section hides
+  PASS  insights tab: Save, Clear and Reset keep the view at profile.views.insights
+  PASS  insights tab: test mode fills the tab from the sample history; Save refuses and nothing is stored
+  PASS  insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback
+  PASS  insights tab: a load with no library draws no dropdown, and the tab still works
+  PASS  insights tab: Resize re-plans the bar and the scroll frame and rebinds nothing
+  PASS  insights tab: the bar takes two rows in the collapsed window and one in the expanded, edge to edge
+  PASS  insights tab: the wheel scrolls the content, clamped to it
+  PASS  sizing: a size change the grip did not start redraws at once
+  PASS  sizing: while the grip is held, one cheap layout a frame; one redraw on release
+  PASS  sizing: changes inside one frame coalesce into one layout now and one next frame
+  PASS  sizing: a right press or a refused gate starts no drag
+  PASS  sizing: a hide while the grip is held ends the drag as a release would
+  PASS  results sizing: a 30-frame drag rebinds no row and redraws no detail until the release
+  PASS  results sizing: a drag keeps the view's minimum and shrinks the list without a rebind
+  PASS  results sizing: the Insights tab and the collapsed view's open detail resize without a redraw
+  PASS  results sizing: the first drag after opening moves every row's cells, none left behind
+  PASS  results sizing: a rebind inside a row the drag adds leaves no second row behind
+  PASS  timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
+  PASS  hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
+  PASS  hud sizing: locked, the grip starts no drag
+  PASS  tooltips: one line under the title stays plain; the title never takes a bullet
+  PASS  tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them
+  PASS  tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
+  PASS  tooltips: a shared button's { title, text, ... } follows the same rule
+  PASS  schema: the load-time shape check finds no error and every stored path resolves
+  PASS  schema: Master controls carries exactly the rows this addon has state for, in order
+  PASS  schema: the Enable row is labeled with the brand
+  PASS  schema: every row has a group, a label and a page
+  PASS  schema: a write goes through the seam, reacts, and announces SETTINGS_CHANGED once
+  PASS  schema: a profile change announces SETTINGS_CHANGED through the one sender
+  PASS  schema: an unknown path is refused and stores nothing
+  PASS  schema: the late-cast ignore list is one Race string row of spell IDs; junk is refused and stores nothing
+  PASS  schema: the Minimap row reads SHOWN and stores LibDBIcon's inverted `hide`
+  PASS  schema: Reset all settings is a profile reset and never touches the Minimap button
+  PASS  schema: Test mode is a session-only checkbox over the preview
+  PASS  schema: entering combat ends test mode, and says so once
+  PASS  schema: General visibility changes the registration set while enabled
+  PASS  schema: a migration runs once and stamps the stored version
+  PASS  schema: migration 4 keeps an old profile's expanded view and drops the timeline's place
+  PASS  panel: the category registers eagerly and every page body renders on first show
+  PASS  panel: the landing page is the library's, with the logo and one row per verb
+  PASS  schema: a new profile and Reset all settings open each window at its minimum width
+  PASS  settings: every schema row has default, enUS label and desc
+  PASS  settings: the stored paths, types, defaults and ranges are exactly the pinned set
+  PASS  settings: HUD Appearance's chart blocks: Damage chart (bar, height, column gap), Chart background, Pace bar
+  PASS  settings: every row sits on a page the panel draws, and every page has a group
+  PASS  settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90
+  PASS  settings: the scoring sliders say they apply to new runs
+  PASS  settings: the Race page's rows, ranges and defaults
+  PASS  settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
+  PASS  settings: a write out of range is refused and stores nothing
+  PASS  settings: changing grace does not alter saved runs
+  PASS  settings: a live breakdown change redraws the HUD
+  PASS  settings: the HUD's show mode is on the HUD page's Race HUD tab; `always` opens the HUD
+  PASS  settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
+  PASS  settings: the General, Race, HUD and History pages register and render quietly
+  PASS  settings: the pages register in the panel's order, General first and Profiles last
+  PASS  settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin
+  PASS  settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
+  PASS  settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order
+  PASS  settings: the sticky-combat hint's tooltip states its range
+  PASS  settings: the show mode's tooltip points at General visibility
+  PASS  settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD
+  PASS  settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
+  PASS  settings: History says how many runs are stored
+  PASS  settings: Purge history… asks first, then deletes through Recorder.DeleteAll
+  PASS  settings: Purge history… is refused while a race is armed
+  PASS  settings: History ends with Purge history…, after the stored count, under no heading of its own
+  PASS  settings: History's Usage tab draws the hidden items as the library's ID list, writing through Usage
+  PASS  settings: History repaints when the hidden items change from anywhere, and not for other settings
+  PASS  settings: Days to keep says it is account-wide, and its label carries no suffix
+  PASS  settings: lowering Days to keep never deletes on the spot
+  PASS  settings: the global reset confirms with options-ui-§12's one wording, verbatim
+  PASS  settings: Race draws the late-cast ignore list as the library's spell ID list, writing through LateIgnore
+  PASS  settings: Race's Reset list puts the six defaults back and touches no other Race setting
+  PASS  settings: Race's Defaults resets the ignore list too, and its tooltip says so
+  PASS  settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
+  PASS  settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
+  PASS  settings: Race repaints when your training dummies change from anywhere
+  PASS  skin seam: the owner is the folder name, and NS.Skin is its facade
+  PASS  skin seam: the owner is registered at file load, before the profile store exists
+  PASS  skin seam: the read answers Ka0s Default before the profile store exists
+  PASS  skin seam: Core's window edge is handed the owner
+  PASS  skin seam: the dropdown and the test strip factories are handed the owner
+  PASS  skin seam: every owner token is namespaced dr. and registered with the owner
+  PASS  skin seam: under Ka0s Default each owner token is today's pixel
+  PASS  skin seam: under another skin a wash is that skin's role color at the wash's alpha
+  PASS  skin seam: the eight skin keys default to Ka0s Default, the picker unseen
+  PASS  skin seam: every skin key is a skip-render schema row on the Skin tab
+  PASS  skin seam: the skin row's values are every registered skin, in the library's order
+  PASS  skin seam: /dr set refuses a skin that is not registered and applies one that is
+  PASS  skin seam: /dr set reaches an exception, and only its own half
+  PASS  skin seam: the Skin tab is the library's, after New-best toast and before Keybindings
+  PASS  skin seam: one tab pick is one effective SetChoice, one repaint and no reload
+  PASS  skin seam: the tab's Ignore fonts reaches the library and the profile, one repaint
+  PASS  skin seam: another addon's copy to every Ka0s addon repaints this one once
+  PASS  skin seam: login applies the stored skin, exceptions and overrides
+  PASS  skin seam: a profile switch applies the new profile's skin, panel built or not
+  PASS  skin seam: Reset all settings puts the skin back on Ka0s Default and applies it
+  PASS  skin seam: the degraded facade answers every name the live facade carries
+  PASS  skin seam: each host-copy skin token is the live library's Ka0s Default value
+  PASS  no color literal outside core/SkinSetup.lua and the named allow-list
+  PASS  every allow-list entry carries its reason
+  PASS  the gate is falsifiable: a planted literal of each shape is reported
+  PASS  skin: every owner token a source file names is registered
+  PASS  skin: every owner token resolves through the facade, its Ka0s Default value under Ka0s Default
+  PASS  skin: Ka0s Default draws each flat button's fill, edge and label as before, enabled and disabled
+  PASS  skin: the buttons are the skin's Button, their slots remapped by token name
+  PASS  skin: Ka0s Default draws the faint box, the callout and the badge as before
+  PASS  skin: the live colors are Ka0s Default's own values for the HUD and the Results list
+  PASS  skin: a switch moves every live color in place and re-tints what the host painted
+  PASS  skin: a data hue stays the same under every skin
+  PASS  skin: the escapes and the markup a token feeds keep the literals' bytes under Ka0s Default
+  PASS  skin: a skin switch redraws the sorted column's arrow in the new skin's icon.arrow
+  PASS  skin: the custom-length box draws the skin's input box under every skin, Ka0s Default included
+  PASS  skin: the Arm Race label is opaque once enabled, in every skin (D-25, image-55..57)
+  PASS  skin hud: the defaults list every companion, on, and the full-path list matches them
+  PASS  skin hud: the clocks keep their monospace face, with no companion (D-15)
+  PASS  skin hud: each companion is a bool row, default on, governing its picker
+  PASS  skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
+  PASS  skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
+  PASS  skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM
+  PASS  skin hud: the Results table's bar cells and their text follow the skin too (D-16)
+  PASS  skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
+  PASS  skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
+  PASS  skin hud: the reset runs once, and a player's later pick is kept
+  PASS  bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
+  PASS  bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
+  PASS  bar style: a compare column draws the skin's texture by default, in its own color
+  PASS  bar style: the default look keeps the skin's two tracks and draws no border
+  PASS  bar style: the HUD's and the detail's spell rows are separate blocks, live
+  PASS  bar style: the detail's spell rows draw their block, track and border
+  PASS  bar style: the pace bar draws its block's track and border, keeping its green
+  PASS  bar style: the table's two bars are separate blocks; a track and a border span the cell
+  PASS  bar style: a compare column draws its block; the side rule did not move
+  PASS  bar style: a border follows the skin's bar.borderStyle while its companion is on
+  PASS  bar style: a border key LSM cannot answer draws no border
+  PASS  bar style: a skin switch moves a skin track and leaves a swatch
+  PASS  bar style: every styled bar's media rows are composed pickers, on the page that draws them
+  PASS  bar style: History holds the Run detail tab after Results table, Fill before Background and Border
+  PASS  bar style: a page's Defaults, a profile reset and a profile copy reach the new rows
+  PASS  bar style: v8 copies a stored spell-bar fill to the detail, and a bare profile stays bare
+  PASS  bar style: v8 holds a partly stripped swatch at the color the player saw
+  PASS  bar style: v8 runs once: a later pick on the detail's block is kept
+  PASS  skin fonts: every font block carries size, color, class color, flags and shadow
+  PASS  skin fonts: every Font flags row leads with From skin and defaults to it
+  PASS  skin fonts: From skin follows the Font outline; a picked flag wins
+  PASS  skin fonts: the mono clocks are never outlined by the Font outline; a picked flag wins
+  PASS  skin fonts: while Ignore fonts is on, From skin draws the library's stock flags
+  PASS  skin fonts: the Results detail's breakdown list draws its spell rows as window text
+  PASS  skin fonts: the drawn FontString takes the resolved flags
+  PASS  skin fonts: without the library From skin draws the default outline, HUD text only
+  PASS  skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
+  PASS  skin fonts: the v7 step runs once, so a None picked afterwards is kept
+  PASS  skin fonts: a block on the skin's face draws the skin's HUD scale; its own face the stored size
+  PASS  skin fonts: the clocks keep their stored size in every skin
+  PASS  skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
+  PASS  skin picker: an unseen profile shows it; a seen one does not
+  PASS  skin picker: it shows once after login, on a two-second AceTimer the stand-down cancels
+  PASS  skin picker: in combat a start waits for PLAYER_REGEN_ENABLED, once
+  PASS  skin picker: the stand-down drops a held start and shows nothing while the addon is off
+  PASS  skin picker: a new profile and a reset profile show it again
+  PASS  skin picker: the harness login shows the library's window
+  PASS  skin picker: the player's close marks it seen; this addon's own hide does not
+  PASS  skin picker: a profile that has seen it takes a shown picker down, unmarked
+  PASS  skin picker: the eye turns test mode on, and with it on shows the Results window
+  PASS  skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
+  PASS  skin picker: degraded, no picker shows and the Profiles paint is a no-op
+  PASS  outline: a fresh profile stores HUD text only, the library's default, and applies it
+  PASS  outline: the schema row is a skip-render Skin tab row offering the library's modes, in order
+  PASS  outline: the write seam stores media.outline, and leaves it alone when it is nil
+  PASS  outline: another addon's copy reaches the store through WriteChoice
+  PASS  outline: the row's write applies the mode live, and only its own half
+  PASS  outline: /dr set refuses a mode the library does not know
+  PASS  outline: the stored mode is applied at login
+  PASS  outline: a profile switch applies the incoming profile's mode, and back
+  PASS  outline: Reset all settings puts the outline back on HUD text only and applies it
+  PASS  outline: without the library the apply seam answers false and the default still stores
+  PASS  skin verb: the row sits right after config, with the library's help words
+  PASS  skin verb: /dr skin shows the picker on a profile that has closed it
+  PASS  skin verb: NS.RunSkinVerb hands O.SkinVerb this addon's first-run spec
+  PASS  skin verb: in combat every call prints the library's gray line and shows nothing
+  PASS  skin verb: refused while the addon is disabled, and no picker shows
+  PASS  skin verb: without LibKa0s the verb prints the library-absent line
+  PASS  hud tips: the idle body names every length, the target, Arm and Results
+  PASS  hud tips: the armed body names its clock, target and Cancel
+  PASS  hud tips: the running body names its clocks, figures, chart, pace bar, headings and captions
+  PASS  hud tips: a clock's tooltip goes with the clock when the mode changes
+  PASS  hud tips: the Stop! and waiting tiles say which reading they show
+  PASS  hud tips: the Stop! chips and the result's verdict chip say what they count
+  PASS  hud tips: the verdict chip's words hold when there was no best to beat, and on a tie
+  PASS  hud tips: the result card names its figures, chart, pace bar, heading and four buttons
+  PASS  hud tips: a heading's zone hides with its heading
+  PASS  hud tips: the title bar's controls and the footer's lines
+  PASS  hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry
+  PASS  glyphs: display strings use only characters every shipped skin face draws
+  PASS  pins: without the skin library the v6 step sets each stored companion on in place
+  PASS  pins: Color with a class reads that class's color, else the swatch, the stored alpha held
+  PASS  pins: Resolve answers the lowest ID a name is captured under, and refuses an ID past MAX_ID
+  PASS  pins: the capture line names each part it has, in order, and leaves out what it has not
+  PASS  slash: bare /dr opens the settings panel
+  PASS  slash: `options` is the legacy spelling of `config`
+  PASS  slash: help lists every COMMANDS verb, in order
+  PASS  slash: the landing page's rows come from the same table
+  PASS  slash: disable and enable write the `enabled` row through the seam and echo it
+  PASS  slash: `debug on`/`off` flip the session flag; bare `debug` toggles only the window
+  PASS  slash: `perf` is the host's verb and prints the harness's lines
+  PASS  slash: the schema CLI reads and writes through the seam
+  PASS  slash: `resetall` asks first, through the one popup
+  PASS  slash: the stub's refusal format is byte-equal to the live library's
+  PASS  slash: library absent, /dr still answers, and enable/disable still land
+  PASS  slash: the stub's live-verb set is the library's LIVE_VERBS, no more and no less
+  PASS  slash: the stub carries no library string but the refusal format
+  PASS  slash: the feature verbs follow `version`, in the spec's order
+  PASS  slash: arm parses 90, 1:30, 3m and rejects 0 and 901
+  PASS  slash: a bare arm uses the last length, and an armed length becomes the last one
+  PASS  slash: arm prints the refusal line Race.Arm's reason maps to
+  PASS  slash: arm then cancel goes armed and back to idle, one line each
+  PASS  slash: target prints name, npcID and category
+  PASS  slash: an uncataloged target reads as Other
+  PASS  slash: hud show, hide and toggle; a bare hud toggles
+  PASS  slash: results opens the Results window; results insights opens Insights, and bests still does
+  PASS  slash: test turns test mode on and off through the Master controls row
+  PASS  slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
+  PASS  slash: sim plays the default scenario or the one named; an unknown one lists them all
+  PASS  slash: the sim help line lists every scenario Sim.Names() has
+  PASS  slash: lock and unlock write the Lock frame row through the seam and echo it
+  PASS  slash: /dr and /dpsrace both dispatch
+  PASS  slash: feature verbs answer the enable line while disabled
+  PASS  slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
+  PASS  slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone
+  PASS  slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored
+  PASS  slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off
+  PASS  slash: ignore defaults puts the six back, as reset race.lateIgnore does
+  PASS  slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
+  PASS  slash: ignore is a settings verb: it answers while disabled, on both arms
+  PASS  slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore and targetdummy
+  PASS  share: Share.Line matches the mockup format
+  PASS  share: the target type is named; an uncataloged target by its own name; incomplete is said
+  PASS  share: a lost run has no line, and the prompt says so
+  PASS  share: no chat escape survives into the line
+  PASS  share: Share refuses in combat
+  PASS  share: the prompt offers say, party, raid, guild and whisper; a channel you are not in is grayed
+  PASS  share: a send that finds the player in combat since the menu opened is refused
+  PASS  share: whisper asks for a name, then sends to it
+  PASS  share: the HUD's and the Results window's Share are live now Share exists
+  PASS  share: arming prints the armed line with the length and the target
+  PASS  share: a result prints the score line with the delta, the flags and the tail
+  PASS  share: the score line counts only the late casts the ignore list leaves (#8)
+  PASS  share: the race's own result is printed once, when it resolves
+  PASS  share: the chat sender and the number formatter are reached only through NS.Compat
+  PASS  toast: a complete run that beats the board's best toasts once, whatever the HUD shows
+  PASS  toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
+  PASS  toast: the payload names the spec and class, the board's chips, the DPS and the gain over the old best
+  PASS  toast: with no previous best to name, the DPS line is the DPS alone in the text color
+  PASS  toast: a flagged run may toast, its flags on the last line as the result card words them
+  PASS  toast: a new best whose late casts are all ignored shows no flags line and no ignored chip
+  PASS  toast: it closes after Toast duration, plays its sound only with Play a sound on
+  PASS  toast: test mode holds the sample race's toast, and its end takes it down
+  PASS  toast: Test toast queues a sample that runs its course, and a second click replaces it
+  PASS  toast: a real toast never moves; in test mode or as a sample it drags
+  PASS  toast: a drag stores the place in the profile in UIParent units; Reset position clears it
+  PASS  toast: a profile switch follows the new profile's switch: a toast up goes, test mode's comes back
+  PASS  toast: the stand-down takes the toast down and drops what waits; a result while down shows none
+  PASS  toast: 25% larger, its height the named constant, every size scaled by the same factor
+  PASS  toast: the trophy is as tall as the three rows, the rows evenly spaced and padded
+  PASS  toast: the class and spec icons sit beside the spec and class words
+  PASS  toast: a class or spec the client cannot draw leaves no icon
+  PASS  toast: a spec icon without a class icon sits one gap after New best:
+  PASS  toast: the rows' text draws at the scaled sizes
+  PASS  preview: test mode holds the running body still with live figures, chart, pace bar and spells
+  PASS  preview: the still running clock follows the Race clock setting
+  PASS  preview: a queued state opens on that body; SetState switches armed, running and result
+  PASS  preview: the test strip says so on the HUD while it is on, and only then
+  PASS  preview: with no Widgets library each window's title carries the marker
+  PASS  preview: test mode opens the Results window on the sample history, with its strip
+  PASS  preview: the detail's Delta box and New best badge read the sample history's Runs view
+  PASS  preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
+  PASS  preview: the sample detail draws its chart, compare and gear; the Insights tab counts the sample
+  PASS  preview: a note or a delete changes the sample in memory; Save view and Share refuse
+  PASS  preview: ending it gives the store back, the player's view and an open window kept open
+  PASS  preview: a Results window test mode opened closes with it
+  PASS  preview: a Results window the player closed and reopened stays open when test mode ends
+  PASS  preview: arming a real race ends test mode and gives the Results window the store
+  PASS  preview: a start in combat is refused with one line; combat ends it and says so
+  PASS  preview: a start during a real race is refused
+  PASS  preview: turning it off gives the HUD back, closing it if test mode opened it
+  PASS  preview: closing the HUD ends it; Reset all settings ends it
+  PASS  preview: the stand-down ends it silently and gives the store back
+  PASS  preview: over a real result card its controls never touch the real race
+  PASS  preview: a HUD test mode opened is handed to the race that ended it, and closes with it
+  PASS  preview: a stand-down drops the windows test mode opened
+  PASS  preview: every start and stop repaints an open panel's Test mode checkbox
+  PASS  sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
+  PASS  sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
+  PASS  sim: behind finishes under the best with a minus chip
+  PASS  sim: first races a board with no best: the chart on its own scale, no pace bar
+  PASS  sim: shared draws no chart and no pace bar, live or on the card
+  PASS  sim: flagged shows the late cast after the buzzer and on the card
+  PASS  sim: incomplete and died end before the buzzer and read out of combat
+  PASS  sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
+  PASS  sim: closing the HUD, Reset all settings and the stand-down end a running script
+  PASS  sim: switching to test mode stops the script; a sim restarts in place
+  PASS  sim: Stop Now reads as a real race's: in combat at the combat end, out of it at once; Cancel ends the sim
+  PASS  sim: the sample card's Delete asks, leaves the sample history and goes to the Arm screen
+  PASS  sim: the sample card's Details opens its run, and Share stays refused
+  PASS  sim: the result card draws the best's diagonal with a best before the run, and none on a first race
+  PASS  sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
+  PASS  sample parity: a sim's new best is not a flat factor of its history: its rows differ too
+  PASS  sample parity: a spell can sit on one side of a compare only, and the shares and order differ
+  PASS  sample parity: the plan is deterministic: the same id, the same fight
+  PASS  sample parity: every sample record has the shape a race leaves
+  PASS  sample parity: every spell that deals damage was cast, and every cast of damage shows in the spells
+  PASS  sample parity: a flagged run's late cast is in its own cast list, past the buzzer
+  PASS  sample parity: a raised grace judges the sample's late casts as it would a race's
+  PASS  sample parity: the player draws their own class's rotation; every class has one
+  PASS  sample parity: a made-up character carries its own trinket, bags and gear, not the player's
+  PASS  sample parity: loadout b changes a slot, never empties it
+  PASS  sample parity: the running figures are the meter's shape: nothing before the first hit, rows that move
+  PASS  sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer
+  PASS  sample parity: the run joins the sample history at its start and resolves in place
+  PASS  sample parity: a run that ended early shows Combat Ended, with no tail and no buzzer
+  PASS  sample parity: complete runs go out of combat before the read, and the hint waits for its delay
+  PASS  sample parity: the race's messages reach the buzzer, the chat lines and the toast, and no RUN_SAVED
+  PASS  sample parity: a sim neither ends itself on its own arm nor arms AutoArm's rule
+  PASS  sample parity: New Race on a sample's card leaves the player's length alone
+  PASS  sample parity: test mode's replay is silent: no race message, no chat line, no toast of its own
+  PASS  sample parity: the sample's charts leave NS.Slices with it
+  PASS  sample parity: the sim's buzzer makes the race's one last read, on the sample's path
+  PASS  sample parity: Details on a sample's card opens the preview's window, closed with the preview
+  PASS  sample parity: Share on a sample's card reaches nothing
+  PASS  sample parity: the sample card honors Show spell icons, and every setting while it is held
+  PASS  sample parity: a change to the sample history reaches the card, as RUNS_CHANGED does a real one
+  PASS  sample parity: a sim's card dismissed by New Race or Delete opens no Results window after it
+  PASS  sample parity: a held state's history is the same moment's: the board, the row and the card agree
+  PASS  sample parity: a state switch redraws an open Results window on the moment held
+  PASS  sample parity: the HUD's reads go through its throttle: live.hz bounds them
+  PASS  sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
+  PASS  sample parity: arming a real race from under a sim keeps that race's cast list
+  PASS  launcher: one object named for the folder, labeled with the brand, wearing the logo
+  PASS  launcher: left-click opens the settings panel
+  PASS  launcher: right-click lists Enabled, Locked, Test mode and Show window, in that order
+  PASS  launcher: each menu toggle runs the shared handler
+  PASS  launcher: the Minimap button row hides and shows the real button
+  PASS  bindings: both Show-window buttons exist, plain and hidden, with their labels
+  PASS  bindings: a key press runs the same toggle the menu does
+  PASS  bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
+  PASS  keybinds: NS.BINDINGS is Bindings.xml's order, Show window first, each with a tooltip
+  PASS  keybinds: Bindings.xml is the addon's own category, no header, no default, labeled
+  PASS  keybinds: the General page ends in the Keybindings tab, after Master controls
+  PASS  keybinds: the tab's rows are NS.BINDINGS in order, labeled as the client labels them
+  PASS  keybinds: a key bound in the tab is the client's key; one set on the client's page shows
+  PASS  keybinds: in combat the tab binds nothing
+  PASS  keybinds: the General Defaults tooltip says it leaves key bindings alone
+  PASS  Disabled 1: enabled, the addon registers something and shows something at all
+  PASS  Disabled 2+3: disabling through the write seam leaves NO registration behind
+  PASS  Disabled 2+3 (live): a module's bus receiver goes at stand-down and comes back
+  PASS  Disabled 2+3 (degraded): a module's bus receiver goes at stand-down and comes back
+  PASS  Disabled 4: no timer, ticker or OnUpdate is left armed, and none re-arms
+  PASS  Disabled 5: every display that was shown is hidden, refused at the source
+  PASS  Disabled 5 (countdown): the center numbers go at the stand-down and nothing re-arms them
+  PASS  Disabled 6: every event fired anyway writes nothing, prints nothing, shows nothing
+  PASS  Disabled 7: every verb answers while disabled; a feature verb answers one refusal line
+  PASS  Disabled 7 (degraded): the library-absent dispatcher gates a feature verb the same way
+  PASS  Disabled 8: launcher clicks and the key binding write nothing and show nothing
+  PASS  Disabled 9: re-enabling restores the set FROM CURRENT STATE, not a snapshot
+  PASS  Disabled 10: releasing ONE hold does not resurrect an addon the other holds down
+  PASS  Disabled: a profile switch re-reads the stored switch while disabled
+  PASS  Disabled (race): Watchers holds no registrations and Race does nothing while disabled
+  PASS  Disabled (race): an armed race is dropped by the stand-down and not resumed
+  PASS  Disabled (race): a disabled login resumes nothing until the addon is enabled
+  PASS  parity: the degraded load still initializes, enables and answers /dr
+  PASS  parity: the Options stub carries every public member of the live Helpers surface
+  PASS  parity: the degraded load keeps the late-cast ignore list: the Race page draws quietly and /dr ignore adds by ID
+  PASS  parity: the Bus stub carries the library surface, and its record the instance's
+  PASS  parity: the Schema stub carries the runtime surface this addon binds
+  PASS  parity: the Slash stub carries the live dispatcher's surface
+  PASS  parity: the Lifecycle stub carries the live latch's surface
+  PASS  parity: the Launcher stub carries the live launcher's surface
+  PASS  parity: the DebugLog stub carries every member this addon calls
+  PASS  parity: the Pool stub carries the array-shape members, on both arms
+  PASS  parity: the Perf stub carries every member this addon reads, on both arms
+  PASS  parity: the Core seam carries every member this addon reads, on both arms
+  PASS  parity: the Widgets seam answers on both arms, nil being a real answer
+  PASS  parity: the Media seam answers on both arms, nil being a real answer
+  PASS  parity: the Env seam answers the TOC's version on both arms
+  PASS  parity: the Toast stub carries a live toast instance's surface, and the degraded load toasts nothing
+  PASS  parity: the hollow composers cost the library-absent load exactly the composed rows
+  PASS  perf: the descriptor declares the buckets, the SavedVariable and the one latch
+  PASS  perf: every declared bucket is reached by a real bracket
+  PASS  perf: outside an experiment the bracket records nothing
+  PASS  perf: suspend takes the perf hold and the addon is inert; resume restores it
+  PASS  perf: the widget recorder's quiet mode keeps nothing a suite's recorder keeps
+  PASS  load order: the runner loaded exactly the TOC's files, in the TOC's order
+  PASS  load order: the hearthstones load before the ignore list, and the ignore list before its readers
+  PASS  load order: every derived path exists on disk
+  PASS  load order: no libs/ path leaked into the addon's own list
+  PASS  libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
+  PASS  tests/_kit is the test kit that shipped with that release
+  PASS  the automated-test runner is recorded executable (100755)
+  PASS  eol: every tracked file carries the terminator .gitattributes declares for it
+  PASS  eol: .gitattributes is line-endings-§5's canonical body for this repo kind
+  PASS  prose: no authored file carries a British spelling from localization-§5's published list
+  PASS  prose: the gate carries localization-§5's two lists whole, and nothing of its own
+  PASS  prose self-test: the carve-out suppresses the named generated folder, and only it
+  PASS  prose self-test: a path the carve-out does not name is not covered by one that looks like it
+  PASS  prose self-test: a carve-out that is not a set of path strings is a failure, not a silence
+  PASS  prose self-test: a TOC's file lines are read as paths, and its directives and comments are not
+  PASS  prose self-test: a .pkgmeta's ignore block is read, and the keys around it are not
+  PASS  prose self-test: an ignore entry covers a path exactly, by folder, and by wildcard
+  PASS  prose self-test: the carve-out admits a generated dump and refuses a file the TOC loads
+  PASS  prose self-test: a waiver-file exclusion meets the same two refusals as the carve-out
+  PASS  prose self-test: each list is refused on the matching rule its own scan uses
+  PASS  prose self-test: the scan and the refusals read the added exclusions through one reader
+  PASS  prose self-test: a narrowing is refused by what it suppresses, not by how it is written
+  PASS  prose self-test: the disclosure names what each entry suppressed, and says when it is bounded
+  PASS  prose self-test: a malformed waived is a failure, not a silence
+  PASS  layoutcap: every authored file over the 1500-line cap is named in the census
+  PASS  layoutcap: no census row outlives the breach it records
+  PASS  layoutcap: every over-cap census row carries one of layout-§1's three terminal states
+  PASS  layoutcap: the census and the exempt set agree about which paths were exempted
+  PASS  layoutcap: an empty census is written as a result rather than left standing empty
+  PASS  layoutcap self-test: the parser reads the census nested under the register, and stops there
+  PASS  layoutcap self-test: a census outside its register, or at the wrong level, is not read
+  PASS  layoutcap self-test: an over-cap file missing from the census is reported, and an exempt one is not
+  PASS  layoutcap self-test: a census row that outlives its breach is reported
+  PASS  layoutcap self-test: an over-cap row that names no terminal state is reported
+  PASS  layoutcap self-test: the census and the exempt set are held to naming the same paths
+  PASS  layoutcap self-test: a census that states nothing is told apart from one that states none
+  PASS  layoutcap self-test: the exempt set takes folders as well as paths
+  PASS  diagnostics contract: both forms run the report
+  PASS  diagnostics contract: the debug word is matched in any case
+  PASS  diagnostics contract: both markers carry the brand and the end counts the report
+  PASS  diagnostics contract: the report appends after what the console already holds
+  PASS  diagnostics contract: the report lands with logging off and turns it on for the session
+  SKIP  diagnostics contract: an addon that opts out lands the report and leaves logging off — this addon keeps the default (Kit.diagnostics.enablesLogging is not false), so its report turns logging on; the case above holds it
+  PASS  diagnostics contract: with logging already on, the report writes no second enable line
+  PASS  diagnostics contract: both forms run while the addon is disabled
+  PASS  diagnostics contract: no other name runs the report
+  PASS  lizard sighted: every hazard lizard loses a function over is neutralized
+  PASS  lizard sighted: fields, strings, comments and look-alike names come through unchanged
+  PASS  lizard sighted: a method definition is rewritten to its dot form with self
+  PASS  lizard sighted: no line is added or removed, CRLF included
+  PASS  lizard sighted: countFunctions counts the keyword, not strings, comments or longer names
+  PASS  lizard sighted: listedCounts reads the per-file table, once per file
+  PASS  lizard sighted: parity names every file whose counts differ, and only those
+  PASS  lizard sighted: lizard lists every function of a hazard fixture once it is sanitized
+
+1258 passed, 0 failed, 1 skipped, 1259 total

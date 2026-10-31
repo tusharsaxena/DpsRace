@@ -186,6 +186,9 @@ test("Disabled 6: every event fired anyway writes nothing, prints nothing, shows
     assertTrue(NS.SetByPath("enabled", false))
     M.__resetSvWrites()
     M.__resetPrinted()
+    -- The kit's frame survey is weak-keyed: collect first, so an unreferenced frame dropping out
+    -- mid-loop never reads as an event hiding one.
+    collectgarbage("collect")
     local shownBefore = #M.__shownFrames()
     for _, event in ipairs(events) do
         M.__fire(event)

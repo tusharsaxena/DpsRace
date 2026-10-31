@@ -24,6 +24,9 @@ in the spec, sections 1, 2 and 13
   flags are built, never frozen into the run, so an edit re-scores every stored run. It is edited
   on the Race page, with `/dr ignore`, or by a right-click on a late cast in the result card, the
   run detail, a Runs row's menu or Insights' *Late Casts*.
+- **Skins.** Every window, the settings panel and the HUD paint through `LibKa0s-Skin-1.0`: nine
+  skins (Ka0s Default plus eight), picked on General's *Skin* tab, with `/dr skin` or on the first-run
+  picker. Fonts and textures can be overridden per block, and data hues hold under every skin.
 - **A Race HUD** with one body per state, a **Results window** with history, run detail and an
   *Insights* tab, a one-line chat share, settings, a launcher, three key bindings, slash commands and a
   diagnostics report (spec §6). The Runs list names each run's status as a boxed badge (the tag
@@ -47,7 +50,7 @@ in the spec, sections 1, 2 and 13
   off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
   Results window; `/dr sim [scenario]` plays a whole sample race (arm, race, result, then Results)
-  through seven scenarios. Both draw in-memory samples and write nothing to SavedVariables.
+  through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
   the race (at most 60), each the live total the meter showed at its boundary, scaled to the board's
   best x 1.15 with its level and its average-pace diagonal, or with no best to the live total. A pace

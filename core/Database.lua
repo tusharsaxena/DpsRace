@@ -3,7 +3,41 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 7
+NS.SCHEMA_VERSION = 8
+
+-- The 7 -> 8 step's facts. The Results detail's spell rows split off `appearance.bars`, so these leaves
+-- of a stored block are copied to theirs; and the default fill the three blue blocks had before, for
+-- the channels AceDB stripped from a stored swatch.
+local SPLIT_LEAVES = { "barTexture", "barTextureFromSkin", "barAlpha", "barColor", "useClassColorBar" }
+local OLD_FILL = { r = 0.29, g = 0.29, b = 0.45 }
+
+-- A stored swatch's missing channels, from the fill it was changed from.
+local function pinChannels(block)
+    local c = type(block) == "table" and block.barColor
+    if type(c) ~= "table" then return end
+    for channel, v in pairs(OLD_FILL) do
+        if c[channel] == nil then c[channel] = v end
+    end
+end
+
+-- Copy a stored value: the swatch is a table, and the two blocks must not share it.
+local function copyLeaf(v)
+    if type(v) ~= "table" then return v end
+    local out = {}
+    for k, x in pairs(v) do out[k] = x end
+    return out
+end
+
+-- `appearance.bars`' stored fill onto the detail's block, where that holds nothing of its own.
+local function splitDetailBars(profile, bars)
+    local detail = type(profile.resultsDetail) == "table" and profile.resultsDetail or {}
+    local block = type(detail.spellBars) == "table" and detail.spellBars or {}
+    for _, leaf in ipairs(SPLIT_LEAVES) do
+        if bars[leaf] ~= nil and block[leaf] == nil then block[leaf] = copyLeaf(bars[leaf]) end
+    end
+    if next(block) == nil then return end
+    detail.spellBars, profile.resultsDetail = block, detail
+end
 
 -- The 5 -> 6 step's two halves. LibKa0s-Skin-1.0's ResetToSkin, or nil without the library (or a
 -- library too old to carry it).
@@ -119,6 +153,20 @@ local STEPS = {
         if moved > 0 and NS.Debug then
             NS.Debug("Set", "migrate v7: put %d font flag(s) on From skin", moved)
         end
+    end },
+    -- 7 -> 8: the bar styling run (the owner's call, 2026-10-31), per profile. The spell rows' look split
+    -- in two: a stored `appearance.bars` fill is copied to `resultsDetail.spellBars`, so the detail keeps
+    -- it. And the blue blocks' default moved: AceDB strips a leaf equal to its default, so a stored swatch
+    -- may hold only the channels the player moved, and would shift with the new default; its missing
+    -- channels are written from the old one. An untouched profile stores nothing and reads the new blue.
+    { to = 8, perProfile = true, run = function(_sv, profile)
+        if type(profile) ~= "table" then return end
+        local appearance = type(profile.appearance) == "table" and profile.appearance or {}
+        local results = type(profile.resultsTable) == "table" and profile.resultsTable or {}
+        pinChannels(appearance.bars)
+        pinChannels(results.damageBar)
+        pinChannels(results.dpsBar)
+        if type(appearance.bars) == "table" then splitDetailBars(profile, appearance.bars) end
     end },
 }
 NS.__migrationSteps = STEPS   -- test seam only

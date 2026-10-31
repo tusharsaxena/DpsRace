@@ -112,7 +112,7 @@ local STORED = {
     ["appearance.spellText.fontShadow"] = { "bool", true },
     ["appearance.spellText.fontFromSkin"] = { "bool", true },
     ["appearance.bars.barTexture"] = { "string", "Solid" },
-    ["appearance.bars.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["appearance.bars.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
@@ -133,12 +133,12 @@ local STORED = {
     ["appearance.pace.barTextureFromSkin"] = { "bool", true },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.damageBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.damageBar.barColor"] = { "color", "table" },
     ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.damageBar.barTextureFromSkin"] = { "bool", true },
     ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.dpsBar.barColor"] = { "color", "table" },
     ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.dpsBar.barTextureFromSkin"] = { "bool", true },
@@ -150,6 +150,36 @@ local STORED = {
     ["resultsTable.barText.fontShadow"] = { "bool", true },
     ["resultsTable.barText.fontFromSkin"] = { "bool", true },
 }
+
+-- Every styled bar's Background and Border (2026-10-31), and the three blocks that have a Fill of their
+-- own since then. `bg` is bgFromSkin's default.
+local function pinBar(prefix, bg)
+    STORED[prefix .. "bgColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBg"] = { "bool", false }
+    STORED[prefix .. "bgFromSkin"] = { "bool", bg }
+    STORED[prefix .. "borderStyle"] = { "string", "None" }
+    STORED[prefix .. "borderSize"] = { "number", 1, 0, 16, 1 }
+    STORED[prefix .. "borderColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBorder"] = { "bool", false }
+    STORED[prefix .. "borderStyleFromSkin"] = { "bool", true }
+end
+local function pinFill(prefix, alpha, fromSkin)
+    STORED[prefix .. "barTexture"] = { "string", "Solid" }
+    STORED[prefix .. "barAlpha"] = { "number", alpha, 0, 1, 0.05 }
+    STORED[prefix .. "barColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBar"] = { "bool", false }
+    STORED[prefix .. "barTextureFromSkin"] = { "bool", fromSkin }
+end
+pinBar("appearance.bars.", true)
+pinBar("appearance.pace.", true)
+pinBar("resultsTable.damageBar.", false)
+pinBar("resultsTable.dpsBar.", false)
+pinBar("resultsDetail.spellBars.", true)
+pinFill("resultsDetail.spellBars.", 0.9, true)
+pinBar("compare.best.", false)
+pinFill("compare.best.", 1, true)
+pinBar("compare.other.", false)
+pinFill("compare.other.", 1, true)
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
     local NS = T.NS
@@ -182,8 +212,9 @@ test("settings: HUD Appearance's chart blocks: Damage chart (bar, height, column
             last = r.subgroup
         end
     end
-    local tail = table.concat(subs, ",", #subs - 2)
-    assertEqual(tail, "Damage chart,Chart background,Pace bar", "the chart's blocks, last on the tab")
+    local tail = table.concat(subs, ",", #subs - 4)
+    assertEqual(tail, "Damage chart,Chart background,Pace bar,Pace bar background,Pace bar border",
+        "the chart's and the pace bar's blocks, last on the tab")
     local order = {}
     for _, r in ipairs(NS.SchemaForPage("hud")) do
         if r.subgroup == "Damage chart" or r.subgroup == "Chart background" or r.subgroup == "Pace bar" then
@@ -391,8 +422,8 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General holds M
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5,
-        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions")
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 5),
+        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions and two Background and Border sets")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -523,12 +554,12 @@ test("settings: Purge history… is refused while a race is armed", function()
     assertEqual(#NS.Recorder.All(), 1, "an accept left over from before the arm still deleted")
 end)
 
-test("settings: History ends with Purge history…, after the stored count, under no heading of its own", function()
+test("settings: History opens with the stored count above its rows, and ends with Purge history… under no heading of its own", function()
     local inst = T.load()
     local H, M = inst.NS.Helpers, inst.mocks
     local drawn = {}
     local realText, realSection, realPair = H.TextRow, H.Section, H.InlineButtonPair
-    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
+    H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = text return realText(ctx, text, ...) end
     H.Section = function(ctx, text, ...) drawn[#drawn + 1] = "section:" .. tostring(text) return realSection(ctx, text, ...) end
     local button
     H.InlineButtonPair = function(ctx, a, ...)
@@ -539,7 +570,9 @@ test("settings: History ends with Purge history…, after the stored count, unde
     M.__subcategories["History"]:__fire("OnShow")
     for _, d in ipairs(drawn) do assertTrue(d ~= "section:Danger zone", "the builder still draws Danger zone") end
     assertEqual(drawn[#drawn], "button", "Purge history… is not the tab's last act")
-    assertEqual(drawn[#drawn - 1], "text", "the stored count does not come just before the button")
+    assertTrue(tostring(drawn[1]):find("^Stored now") ~= nil, "the stored count does not open the tab")
+    assertEqual(drawn[2], "section:Sharing", "the tab's first block does not follow the count")
+    assertTrue(tostring(drawn[#drawn - 1]):find("^Stored now") == nil, "the count is still drawn after the rows")
     assertEqual(button.text, "Purge history\226\128\166")
     assertEqual(button.tooltip, "Deletes every stored run. Asks for confirmation. Personal bests go with them.")
 end)

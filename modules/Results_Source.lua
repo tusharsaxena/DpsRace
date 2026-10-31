@@ -8,11 +8,13 @@ local _, NS = ...
 -- note or delete a run. With no sample history in place each answer is the store's own (the same
 -- function, called at call time, so a suite's stub on NS.Bests or NS.Recorder still reaches the
 -- window). With one in place (Source.Use) the answers come from it, and a note or a delete changes it
--- in memory only.
+-- in memory only. A sample run's chart is a record in NS.Slices like a raced one's (seeded here, in
+-- memory), so the chart draws by one path; Bests reads this module too, so a sample race is judged
+-- against the sample history.
 --
 -- THE SAMPLE HISTORY is a plain table: `runs` (an array, any order), `loadouts` ({ gear = { [key] =
 -- set }, talents = { [key] = loadout } }, keyed as a stored run's `loadout` refers to them) and
--- `slices` ({ [run id] = { count, values, length, filled } }: plain numbers, a sample curve). It never
+-- `slices` ({ [run id] = { count, values, length, filled, next } }: plain numbers). It never
 -- reaches SavedVariables: nothing here writes NS.db, and the Results window's own writers (Save view,
 -- Share) refuse while it is shown (modules/Results.lua, modules/Results_Runs.lua).
 
@@ -38,6 +40,12 @@ local function changed(swapped)
     boards = {}
     local R = NS.Results
     if R and type(R.OnSourceChanged) == "function" then R.OnSourceChanged(swapped) end
+    -- The HUD's RUNS_CHANGED, which a sample never sends: a card over a deleted run goes.
+    if not swapped and NS.Hud then NS.Hud.SampleChanged() end
+end
+
+local function forgetCharts(dataset)
+    for id in pairs(dataset.slices) do NS.Slices.Forget(id) end
 end
 
 --- Whether the window reads the sample history now.
@@ -52,7 +60,9 @@ function Source.Use(dataset)
     dataset.runs = type(dataset.runs) == "table" and dataset.runs or {}
     dataset.loadouts = type(dataset.loadouts) == "table" and dataset.loadouts or {}
     dataset.slices = type(dataset.slices) == "table" and dataset.slices or {}
+    if mock then forgetCharts(mock) end
     mock = dataset
+    for id, rec in pairs(dataset.slices) do NS.Slices.Seed(id, rec) end
     debug("source: sample history (%d runs)", #dataset.runs)
     changed(true)
     return true
@@ -61,18 +71,26 @@ end
 --- Back to the store. Answers whether a sample history was in place.
 function Source.Restore()
     if not mock then return false end
+    forgetCharts(mock)
     mock = nil
     debug("source: the store")
     changed(true)
     return true
 end
 
---- Add `run` (and its chart record) to the sample history in place: the sim's run (modules/Sim.lua).
+--- Put `run` in the sample history in place, replacing a run of its id: a sample race's run joins it
+--- at its start, as a real one joins the store (modules/SampleRace.lua).
 --- @return boolean added
-function Source.Add(run, slices)
+function Source.Put(run)
     if not mock or type(run) ~= "table" then return false end
+    for i, other in ipairs(mock.runs) do
+        if other.id == run.id then
+            mock.runs[i] = run
+            changed(false)
+            return true
+        end
+    end
     mock.runs[#mock.runs + 1] = run
-    if type(slices) == "table" then mock.slices[run.id] = slices end
     changed(false)
     return true
 end
@@ -131,24 +149,9 @@ function Source.GearChanged(run)
     return NS.Loadouts.GearChanged(run, Source.All())
 end
 
--- A sample run's chart: its record scaled to its plain final damage, as HudChart.ResultView draws a
--- stored run's in-session slices (none for a lost run or a shared session), against the sample's best
--- before it (HudChart.WithBest: the diagonal and the shared max), with its cooldown icons.
-local function mockChart(run)
-    local rec = type(run) == "table" and mock.slices[run.id]
-    if type(rec) ~= "table" or run.status == "lost" then return nil end
-    if type(run.flags) == "table" and run.flags.sharedSession then return nil end
-    local damage = type(run.result) == "table" and run.result.damage
-    if type(damage) ~= "number" or damage <= 0 then return nil end
-    local view = { count = rec.count, values = rec.values, length = rec.length, max = damage, note = "",
-                   cooldowns = NS.HudChart.CooldownsOf(run) }
-    return NS.HudChart.WithBest(view, run, NS.Bests.Before(run, mock.runs))
-end
-
 --- The after-the-race chart's view for `run`, or nil (NS.HudChart.ResultView's).
 function Source.ChartView(run)
-    if not mock then return NS.HudChart.ResultView(run) end
-    return mockChart(run)
+    return NS.HudChart.ResultView(run)
 end
 
 --- Store a note (already clamped). The sample's note lives in memory.
@@ -175,6 +178,7 @@ function Source.Delete(id)
         if run.id == id then
             table.remove(mock.runs, i)
             mock.slices[id] = nil
+            NS.Slices.Forget(id)
             changed(false)
             return true
         end

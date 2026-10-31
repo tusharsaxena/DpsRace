@@ -577,17 +577,15 @@ end)
 
 test("chart icons: the sim's running chart keeps one cooldown list until another cast is heard", function()
     local f = hud()
-    local MR = f.NS.MockRuns
-    local s = MR.Race({ dps = 150000 }, MR.Dataset().runs)
-    local all = assert(f.NS.HudChart.CooldownsOf(s.run), "the sample run has no cooldowns")
-    assertTrue(#all >= 2 and all[2].t > all[1].t, "two casts at different times")
-    local t1, t2 = all[1].t, all[2].t
-    local a = MR.Figures(s, "running", t1).chart.cooldowns
-    local b = MR.Figures(s, "running", (t1 + t2) / 2).chart.cooldowns
-    assertTrue(rawequal(a, b), "the same list from tick to tick")
-    local c = MR.Figures(s, "running", t2).chart.cooldowns
-    assertFalse(rawequal(a, c), "a new list once another cast is heard")
-    assertTrue(#c > #a)
+    f.M.__context.classToken = "WARLOCK"      -- a pre-pull cooldown, then one just after the pull
+    assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    f:advance(f.NS.Sim.ARM_HOLD + 0.05)
+    local a = f.Hud.View().chart.cooldowns
+    assertTrue(#a > 0, "the opener's cooldowns")
+    assertTrue(rawequal(a, f.Hud.View().chart.cooldowns), "the same list from tick to tick")
+    local n = #a
+    while #f.Hud.View().chart.cooldowns == n do f:advance(0.5) end
+    assertFalse(rawequal(a, f.Hud.View().chart.cooldowns), "a new list once another cast is heard")
 end)
 
 test("chart icons: test mode's chart follows Show cooldown icons while it is on screen", function()
@@ -596,12 +594,10 @@ test("chart icons: test mode's chart follows Show cooldown icons while it is on 
     local chart = body(f).w.chart
     local n = #chart:Icons()
     assertTrue(n > 0, "the sample's cooldowns so far")
-    local pushed = f.Hud.View().chart
     assertTrue(f.NS.SetByPath("live.castDots", false))
     f.Hud.Refresh()
     assertEqual(#chart:Icons(), 0, "the sample's icons go with the setting")
     assertTrue(chart.shown, "the chart itself stays")
-    assertTrue(pushed.cooldowns ~= nil, "the preview's own chart is not changed")
     assertTrue(f.NS.SetByPath("live.castDots", true))
     f.Hud.Refresh()
     assertEqual(#chart:Icons(), n, "on again brings them back")

@@ -35,7 +35,7 @@ catalog is grown from the same captures:
 - Give it a short label in each of the two places that draw flags: the HUD's result chips
   (`FLAG_CHIP` in `modules/Hud_States.lua`) and the detail's explanation line (`EXPLAIN` in
   `modules/Results_Detail.lua`). Add the `enUS` keys. A chip word is Sentence case, never
-  upper-cased (spec §6, *Style*); `test_hud`'s capitals case fails on an ALL-CAPS word. The late
+  upper-cased (spec §6, *Style*); `test_hud_window`'s capitals case fails on an ALL-CAPS word. The late
   casts' chip (`FLAG_CHIP.lateCasts`) reads the flag's `count`, the casts left after the ignore list
   (`modules/LateIgnore.lua`), never the run's raw list; any new reader of late casts goes through
   `Scoring.SplitLate` or the flag, so the ignore list applies to it.
@@ -66,8 +66,9 @@ catalog is grown from the same captures:
   `modules/Hud_Tips.lua`, on a frame through `AddTip` or over a label through `TipZone`, never a live
   figure.
 - Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
-  stop and waiting split), give `modules/Sim.lua`'s script a step for it and `modules/MockRuns.lua`'s
-  `Figures` its figures (and `Preview.STATES` the body, if test mode should hold it still).
+  stop and waiting split). The sim and test mode reach it by themselves: they run the same views
+  through `modules/SampleRace.lua`, so never give a body figures of its own for them (add the body
+  to `Preview.STATES` if test mode should hold it still).
 - A live value may only reach a widget setter, `NS.Format.Number` or `C_Spell`, and may only be
   tested against `nil` (the taint notes in [ARCHITECTURE.md](ARCHITECTURE.md#taint-notes)).
   `test_hud`'s secret-render cases and its geometry-read recorder check it.
@@ -98,7 +99,7 @@ catalog is grown from the same captures:
 ## Add a settings page
 
 - Create `settings/<Page>.lua`: register its rows, then call `NS.RegisterTabbedPage{ key, title,
-  panelName, defaultsTooltip, afterGroup? }` (`settings/OptionsSetup.lua`), which builds the panel,
+  panelName, defaultsTooltip, afterGroup?, beforeGroup?, redrawOnDefaults? }` (`settings/OptionsSetup.lua`), which builds the panel,
   its Defaults button and the tabbed render (options-ui-§13).
 - Add its key to `VALID_PAGES` in `settings/Schema.lua`, and its TOC line after `settings/General.lua`
   and before `settings/Profiles.lua` (the page order is the registration order).

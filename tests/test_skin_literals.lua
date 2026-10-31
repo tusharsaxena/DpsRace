@@ -25,7 +25,7 @@
 -- what it excuses.
 --
 -- IT FAILS RATHER THAN PASSES WHEN IT CANNOT LOOK: no io.popen, no git, or an empty file list is a
--- failure, the bargain tests/test_doc_structure.lua strikes. The last case proves the gate is
+-- failure, the bargain LootHistory's tests/test_doc_structure.lua strikes. The last case proves the gate is
 -- falsifiable: a planted literal of each shape is reported.
 
 local T = _G.DPSRACE_TEST

@@ -216,7 +216,8 @@ end
 -- The race on the bus: a run leaving ARMED is no longer this rule's to cancel, and an idle race lets an
 -- auto-shown window go (or come back) as the dummies say. A profile switch, copy or reset re-reads both
 -- rows (their onChange does not run for it).
-local function onState(_, _, to)
+local function onState(run, _, to)
+    if type(run) == "table" and run.sample then return end   -- a sample race is no race of this rule's
     local S = NS.Race.STATE
     if to ~= S.ARMED then armedRun = nil end
     if to == S.IDLE then decideShow() end
