@@ -12,4 +12,4 @@ fresh session resumes at the first open box. No merge, tag, version bump or push
   the Run detail tab, the locale.
 - [x] B4 Migration v8.
 - [x] B5 Docs: `settings-panel.md`, `schema.md`, `module-map.md`, smoke rows, `test-cases.md`, README badge.
-- [ ] B6 Final gate: suite, luacheck, complexity through the bounded runner; a clean tree.
+- [x] B6 Final gate: suite, luacheck, complexity through the bounded runner; a clean tree.
