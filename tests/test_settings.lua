@@ -112,7 +112,7 @@ local STORED = {
     ["appearance.spellText.fontShadow"] = { "bool", true },
     ["appearance.spellText.fontFromSkin"] = { "bool", true },
     ["appearance.bars.barTexture"] = { "string", "Solid" },
-    ["appearance.bars.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["appearance.bars.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
@@ -133,12 +133,12 @@ local STORED = {
     ["appearance.pace.barTextureFromSkin"] = { "bool", true },
     -- History > Results table: composed blocks.
     ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.damageBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.damageBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.damageBar.barColor"] = { "color", "table" },
     ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.damageBar.barTextureFromSkin"] = { "bool", true },
     ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
-    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.85, 0, 1, 0.05 },
+    ["resultsTable.dpsBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.dpsBar.barColor"] = { "color", "table" },
     ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.dpsBar.barTextureFromSkin"] = { "bool", true },
@@ -150,6 +150,36 @@ local STORED = {
     ["resultsTable.barText.fontShadow"] = { "bool", true },
     ["resultsTable.barText.fontFromSkin"] = { "bool", true },
 }
+
+-- Every styled bar's Background and Border (2026-10-31), and the three blocks that have a Fill of their
+-- own since then. `bg` is bgFromSkin's default.
+local function pinBar(prefix, bg)
+    STORED[prefix .. "bgColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBg"] = { "bool", false }
+    STORED[prefix .. "bgFromSkin"] = { "bool", bg }
+    STORED[prefix .. "borderStyle"] = { "string", "None" }
+    STORED[prefix .. "borderSize"] = { "number", 1, 0, 16, 1 }
+    STORED[prefix .. "borderColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBorder"] = { "bool", false }
+    STORED[prefix .. "borderStyleFromSkin"] = { "bool", true }
+end
+local function pinFill(prefix, alpha, fromSkin)
+    STORED[prefix .. "barTexture"] = { "string", "Solid" }
+    STORED[prefix .. "barAlpha"] = { "number", alpha, 0, 1, 0.05 }
+    STORED[prefix .. "barColor"] = { "color", "table" }
+    STORED[prefix .. "useClassColorBar"] = { "bool", false }
+    STORED[prefix .. "barTextureFromSkin"] = { "bool", fromSkin }
+end
+pinBar("appearance.bars.", true)
+pinBar("appearance.pace.", true)
+pinBar("resultsTable.damageBar.", false)
+pinBar("resultsTable.dpsBar.", false)
+pinBar("resultsDetail.spellBars.", true)
+pinFill("resultsDetail.spellBars.", 0.9, true)
+pinBar("compare.best.", false)
+pinFill("compare.best.", 1, false)
+pinBar("compare.other.", false)
+pinFill("compare.other.", 1, false)
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
     local NS = T.NS
@@ -182,8 +212,9 @@ test("settings: HUD Appearance's chart blocks: Damage chart (bar, height, column
             last = r.subgroup
         end
     end
-    local tail = table.concat(subs, ",", #subs - 2)
-    assertEqual(tail, "Damage chart,Chart background,Pace bar", "the chart's blocks, last on the tab")
+    local tail = table.concat(subs, ",", #subs - 4)
+    assertEqual(tail, "Damage chart,Chart background,Pace bar,Pace bar background,Pace bar border",
+        "the chart's and the pace bar's blocks, last on the tab")
     local order = {}
     for _, r in ipairs(NS.SchemaForPage("hud")) do
         if r.subgroup == "Damage chart" or r.subgroup == "Chart background" or r.subgroup == "Pace bar" then
@@ -391,8 +422,8 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General holds M
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5,
-        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions")
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 5),
+        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions and two Background and Border sets")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.

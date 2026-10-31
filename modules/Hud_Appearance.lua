@@ -5,6 +5,13 @@ local _, NS = ...
 -- pace bar's fill. Each block is a composed group (options-ui-§16) stored under
 -- `appearance.<block>.`; this file turns a block into what a widget setter takes.
 --
+-- A STYLED BAR (Appearance.Styled, 2026-10-31) is a bar block with a background and a border: the
+-- spell rows, the pace bar, the Results table's cells and the compare's columns. Both span the bar's
+-- whole length, under and over the fill. The background is its swatch, or the surface's skin track
+-- while `bgFromSkin` is on (read here, so a skin switch moves it); the border is the composed border
+-- group, its style following the skin's bar.borderStyle while its companion is on. Thickness and
+-- color stay the player's (X4). A border that says None, or has no thickness, draws nothing.
+--
 -- MEDIA BY NAME. A face or a bar texture is stored by its LibSharedMedia name, so a profile travels
 -- between installs. It resolves at call time, and a name LSM does not know (a media addon removed)
 -- falls back to the shipped default's path, never to nothing: SetFont on a bad path draws no text.
@@ -46,6 +53,14 @@ local D = NS.defaults.profile.appearance
 local FALLBACK_FONT = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
 local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
 
+-- The surface's skin track behind `bgFromSkin`, by block prefix (default: the spell rows').
+local PACE_PREFIX = "appearance.pace."
+local TRACK_TOKEN, PACE_TRACK_TOKEN = "dr.list.track", "dr.chart.grid"
+
+-- The Results detail's spell rows' block, and the leaves a skin's flat edge is called.
+local DETAIL_PREFIX = "resultsDetail.spellBars."
+local FLAT_EDGE = { flat = true, Solid = true }
+
 Appearance.stamp = 0
 
 -- The composer's *From skin* value for Font flags (LibKa0s-Skin-1.0's FROM_SKIN).
@@ -53,7 +68,7 @@ local FROM_SKIN = "@skin"
 
 -- Each media leaf that can follow the skin: the skin token it follows. The companion is the leaf plus
 -- `FromSkin`, stored beside it (OptionsCompose's naming).
-local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
+local FOLLOWS = { font = "hud.font", barTexture = "bar.texture", borderStyle = "bar.borderStyle" }
 
 --- Every font block's Font flags, by full path: the v7 step's list (core/Database.lua).
 -- The clocks' blocks: the mono role, never outlined by the Font outline (D-06).
@@ -135,6 +150,7 @@ Appearance.Color = color
 --- @param p string  the block's prefix, with the dot
 --- @param leaf string
 --- @return string|nil, boolean
+--- `leaf` may also be "borderStyle" (the same seam, the skin's `bar.borderStyle`).
 function Appearance.MediaKey(p, leaf)
     local stored = setting(p .. leaf)
     local token, S = FOLLOWS[leaf], NS.Skin
@@ -202,10 +218,14 @@ function Appearance.ApplyFont(fs, font, scale, keepColor)
     if not keepColor then fs:SetTextColor(font.r, font.g, font.b, font.a) end
 end
 
---- The spell bars' fill: its texture path, color and opacity.
---- @return table { texture, r, g, b, a }
-function Appearance.Bar()
-    return Appearance.BarAt("appearance.bars.", D.bars)
+--- The spell bars' look: the HUD's, or the Results detail's with `where` "window" (Breakdown.New's).
+--- @param where string|nil
+--- @return table Appearance.Styled's
+function Appearance.Bar(where)
+    if where == "window" then
+        return Appearance.Styled(DETAIL_PREFIX, NS.defaults.profile.resultsDetail.spellBars)
+    end
+    return Appearance.Styled("appearance.bars.", D.bars)
 end
 
 --- A bar block stored at `p`, `def` its defaults; `class` as color's.
@@ -217,6 +237,75 @@ function Appearance.BarAt(p, def, class)
             or fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,
     }
+end
+
+-- The block's background, its class resolved as color's.
+local function background(p, class)
+    if setting(p .. "bgFromSkin") == true then
+        local token = p == PACE_PREFIX and PACE_TRACK_TOKEN or TRACK_TOKEN
+        local r, g, b, a = NS.Style.Rgba(token)
+        return { r = r, g = g, b = b, a = a }
+    end
+    local r, g, b, a = color(setting(p .. "bgColor"), setting(p .. "useClassColorBg") == true, class)
+    return { r = r, g = g, b = b, a = a }
+end
+
+-- The edge file a border key names, or nil for none. A key LSM cannot answer draws no border.
+local function edgeFile(key)
+    if key == nil or key == "None" then return nil end
+    if FLAT_EDGE[key] then return FALLBACK_BAR end
+    return fetch("border", key)
+end
+
+-- The block's border, or nil when it draws none.
+local function border(p, class)
+    local file = edgeFile((Appearance.MediaKey(p, "borderStyle")))
+    local size = tonumber(setting(p .. "borderSize")) or 0
+    if not file or size <= 0 then return nil end
+    local r, g, b, a = color(setting(p .. "borderColor"), setting(p .. "useClassColorBorder") == true, class)
+    return { file = file, size = size, r = r, g = g, b = b, a = a }
+end
+
+--- A styled bar block stored at `p`: BarAt's fill, plus `bg` and `border`; `class` as color's.
+--- @return table { texture, r, g, b, a, bg = { r, g, b, a }, border = { file, size, r, g, b, a } | nil }
+function Appearance.Styled(p, def, class)
+    local look = Appearance.BarAt(p, def, class)
+    look.bg, look.border = background(p, class), border(p, class)
+    return look
+end
+
+--- Paint a bar's track from a look's `bg`. Painted through its alpha, never hidden: the edge may be
+--- anchored to it, and a track of no opacity draws nothing.
+--- @param tex table  a Texture
+--- @param bg table  a look's `bg`
+function Appearance.PaintTrack(tex, bg)
+    tex:SetColorTexture(bg.r, bg.g, bg.b, bg.a)
+end
+
+--- Draw a look's `border` around `anchor`: a frame of `parent`'s kept on `holder.edge`, made the first
+--- time a border draws, with no fill and no mouse. Nil hides it. The backdrop is set only when it changes.
+--- @param holder table  what keeps the frame
+--- @param parent table  a frame
+--- @param anchor table  the frame or region it covers
+--- @param look table|nil  a look's `border`
+function Appearance.PaintEdge(holder, parent, anchor, look)
+    local edge = holder.edge
+    if not look then
+        if edge then edge:Hide() end
+        return
+    end
+    if not edge then
+        edge = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+        edge:SetAllPoints(anchor)
+        holder.edge = edge
+    end
+    local key = look.file .. "@" .. look.size
+    if edge.edgeKey ~= key then
+        edge.edgeKey = key
+        if edge.SetBackdrop then edge:SetBackdrop({ edgeFile = look.file, edgeSize = look.size }) end
+    end
+    if edge.SetBackdropBorderColor then edge:SetBackdropBorderColor(look.r, look.g, look.b, look.a) end
+    edge:Show()
 end
 
 --- The damage chart's columns (HUD Appearance > Damage chart).
@@ -236,9 +325,9 @@ end
 
 --- The pace bar's fill (HUD Appearance > Pace bar), its own block since 2026-10-25: styling the
 --- chart's columns no longer restyles it.
---- @return table { texture, r, g, b, a }
+--- @return table Appearance.Styled's
 function Appearance.Pace()
-    return Appearance.BarAt("appearance.pace.", D.pace)
+    return Appearance.Styled(PACE_PREFIX, D.pace)
 end
 
 --- The spell rows' height in pixels (the breakdown's pitch adds its gap).

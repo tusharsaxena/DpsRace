@@ -495,15 +495,15 @@ test("results: the bars take History > Results table's look, over the rows' own 
     i.R.Show()
     local cells = visible(runsPane(i))[1].cells
     local D = i.NS.defaults.profile.resultsTable
-    local indigo = i.NS.defaults.profile.appearance.bars.barColor
-    assertEqual(D.damageBar.barColor.r, indigo.r, "the breakdown's indigo fill")
-    assertEqual(D.dpsBar.barColor.b, indigo.b, "the same fill on both bars")
-    assertEqual(D.damageBar.barAlpha, 0.85)
-    assertEqual(cells.damage.bar.__vertex[1], 0.29, "the indigo fill")
-    assertEqual(cells.dps.bar.__vertex[3], 0.45)
-    assertEqual(cells.dps.bar.__vertex[4], 0.85, "at the breakdown's opacity")
-    assertEqual(cells.damage.track, nil, "no track behind the bar")
-    assertEqual(cells.damage.edges, nil, "and no border")
+    local blue = i.NS.defaults.profile.appearance.pace.barColor
+    assertEqual(D.damageBar.barColor.r, blue.r, "the pace bar's blue")
+    assertEqual(D.dpsBar.barColor.b, blue.b, "the same fill on both bars")
+    assertEqual(D.damageBar.barAlpha, 0.9)
+    assertEqual(cells.damage.bar.__vertex[1], 0.36, "the blue fill")
+    assertEqual(cells.dps.bar.__vertex[3], 0.84)
+    assertEqual(cells.dps.bar.__vertex[4], 0.9, "at the pace bar's opacity")
+    assertEqual(cells.damage.track.__colorTex[4], 0, "no track behind the bar")
+    assertEqual(cells.damage.edge, nil, "and no border")
     assertEqual(cells.damage.fs.__color[1], 1, "the text stays white")
     assertEqual(cells.damage.fs.__justifyH, "LEFT", "left-aligned")
     assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))

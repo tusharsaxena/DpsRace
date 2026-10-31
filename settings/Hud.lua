@@ -103,9 +103,10 @@ NS.RegisterSchemaRows({
 -- The HUD's look (the owner's call, 2026-10-24): its own tab after Race HUD, one subsection per styled
 -- part, each a COMPOSED group (options-ui-§16: the canonical rows, the canonical words, never a
 -- hand-written copy). The two clocks are two font blocks, because each has its own color; the spell
--- rows are a bar block with the row height appended after it, and a font block for their text. The
--- bars and the text style the Results window's breakdown too. Every row's reaction is the one
--- restyle (modules/Hud_Appearance.lua), read at CALL time.
+-- rows are a bar block with the row height appended after it, a font block for their text, and their
+-- Background and Border (NS.BarStyleRows); the pace bar ends the tab the same way. The text and the
+-- row height style the Results window's breakdown too; its bars are History > Run detail's since
+-- 2026-10-31. Every row's reaction is the one restyle (modules/Hud_Appearance.lua), read at CALL time.
 --
 -- FOLLOWING THE SKIN (skinning-§6, DR-03): every block but the two clocks takes the composer's
 -- `fromSkin = true`, which appends its "Use the skin's font" / "Use the skin's texture" companion on a
@@ -145,10 +146,17 @@ append(H.BarGroup({
     } },
 }))
 append(fontBlock("spellText", L["Spell text"], 500, nil, true))
+local function barExtras(block, background, border, order)
+    return NS.BarStyleRows({
+        prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, classColor = PLAYER_CLASS,
+        defaults = AD[block], order = order, background = background, border = border, onChange = restyle,
+    })
+end
+append(barExtras("bars", L["Spell bar background"], L["Spell bar border"], 600))
 -- The damage chart's columns (#2): a bar block with the plot's height and the column gap after it
 -- (a bar spacing, appended after the mandated four, options-ui-§16).
 append(H.BarGroup({
-    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Damage chart"], order = 600,
+    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Damage chart"], order = 800,
     classColor = PLAYER_CLASS, defaults = AD.chart, fromSkin = true,
     extra = { {
         path = "appearance.chart.height", type = "number", min = 40, max = 160, step = 2,
@@ -163,7 +171,7 @@ append(H.BarGroup({
 -- The chart plot's background: a backdrop with no fill texture, so a swatch and its class-color
 -- companion and nothing else (options-ui-§16, §17), under a heading of its own.
 append(H.ColorPair({
-    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Chart background"], order = 700,
+    prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Chart background"], order = 900,
     key = "bgColor", companionKey = "useClassColorBg", label = L["Background color"],
     classColor = PLAYER_CLASS,
     defaults = { bgColor = AD.chart.bgColor, useClassColorBg = AD.chart.useClassColorBg },
@@ -171,16 +179,18 @@ append(H.ColorPair({
 -- The pace bar (#3), its own bar block since 2026-10-25: styling the chart's columns no longer
 -- restyles it.
 append(H.BarGroup({
-    prefix = "appearance.pace.", page = PAGE, group = APPEARANCE, subgroup = L["Pace bar"], order = 800,
+    prefix = "appearance.pace.", page = PAGE, group = APPEARANCE, subgroup = L["Pace bar"], order = 1000,
     classColor = PLAYER_CLASS, defaults = AD.pace, fromSkin = true,
 }))
+append(barExtras("pace", L["Pace bar background"], L["Pace bar border"], 1100))
 -- The appended rows, in the addon's own words; every other row is the library's.
 local OWN_WORDS = { ["appearance.bars.rowHeight"] = true, ["appearance.chart.height"] = true,
                     ["appearance.chart.columnGap"] = true }
 for _, r in ipairs(appearanceRows) do
     r.onChange = restyle
-    -- The library's words, not this addon's (options-ui-§21), except the appended rows.
-    if not OWN_WORDS[r.path] then r.composed = true end
+    -- The library's words, not this addon's (options-ui-§21), except the appended rows (the *Use the
+    -- skin's background* rows too: NS.BarStyleRows leaves those unmarked).
+    if not OWN_WORDS[r.path] and not r.path:find("bgFromSkin", 1, true) then r.composed = true end
 end
 NS.RegisterSchemaRows(appearanceRows)
 

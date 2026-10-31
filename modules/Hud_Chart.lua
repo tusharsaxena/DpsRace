@@ -85,7 +85,6 @@ Chart.RESERVE = Chart.ICON + Chart.ICON_GAP   -- the plot's headroom on top: one
 -- The plot is a fill with no edge (the owner's call, 2026-10-26: the faint gray border is gone).
 Chart.PLOT_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8x8" }
 -- The skin's colors (core/SkinSetup.lua's owner tokens and the race's meaning hues).
-local PACE_TRACK = "dr.chart.grid"     -- the pace bar's empty part
 local DIAGONAL = "dr.chart.diag"       -- best's pace
 local TICK = "dr.pace.tick"            -- on pace
 local AHEAD = "dr.ahead"               -- the KPI's green: past the tick
@@ -798,6 +797,23 @@ local function anchorShortfall(p)
     p.shortfall:SetPoint("BOTTOMRIGHT", p.behind, "BOTTOMRIGHT", 0, 0)
 end
 
+-- The bar's configured look (HUD Appearance > Pace bar and its Background and Border): the behind
+-- half's fill, the track under both halves, the edge around them. The ahead half's green is a meaning
+-- color: only its texture is the block's.
+local function restylePace(p)
+    local A = NS.HudAppearance
+    if not A then return end
+    p.stamp = A.stamp
+    local look = A.Pace()
+    p.behind:SetStatusBarTexture(look.texture)
+    p.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
+    p.ahead:SetStatusBarTexture(look.texture)
+    p.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))
+    anchorShortfall(p)
+    A.PaintTrack(p.track, look.bg)
+    A.PaintEdge(p, p.bar, p.bar, look.border)
+end
+
 local function halfBar(parent)
     local b = CreateFrame("StatusBar", nil, parent)
     b:SetMinMaxValues(0, 1)
@@ -814,7 +830,7 @@ function Chart.NewPace(parent)
     p.bar = CreateFrame("Frame", nil, parent)
     local track = p.bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(p.bar)
-    Style.Fill(track, PACE_TRACK)
+    p.track = track
     p.behind = halfBar(p.bar)
     p.ahead = halfBar(p.bar)
     p.ahead:SetStatusBarTexture(WHITE)
@@ -832,6 +848,7 @@ function Chart.NewPace(parent)
     p.tick:SetWidth(2)
     p.tick:SetPoint("TOP", p.bar, "TOP", 0, 2)
     p.tick:SetPoint("BOTTOM", p.bar, "BOTTOM", 0, -2)
+    restylePace(p)
     return p
 end
 
@@ -872,15 +889,7 @@ end
 function Pace:SetRange(lo, hi)
     self:PlaceTick()
     local A = NS.HudAppearance
-    if A and self.stamp ~= A.stamp then
-        self.stamp = A.stamp
-        local look = A.Pace()
-        self.behind:SetStatusBarTexture(look.texture)
-        self.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
-        self.ahead:SetStatusBarTexture(look.texture)
-        self.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))
-        anchorShortfall(self)
-    end
+    if A and self.stamp ~= A.stamp then restylePace(self) end
     local mid = (lo + hi) / 2
     self.behind:SetMinMaxValues(lo, mid)
     self.ahead:SetMinMaxValues(mid, hi)

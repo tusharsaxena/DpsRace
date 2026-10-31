@@ -144,6 +144,7 @@ local SUITES = {
     "test_skin_literals",
     "test_skin",
     "test_skin_hud",
+    "test_bar_style",
     "test_skin_fonts",
     "test_skin_picker",
     "test_skin_outline",

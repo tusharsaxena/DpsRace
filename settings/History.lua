@@ -1,7 +1,8 @@
 local _, NS = ...
 -- settings/History.lua — the History page (spec §6.3): Include talents link (the share line's, #6),
 -- Days to keep (0 = never prune), how many runs are stored, and Purge history… last (asks first;
--- options-ui-§21's History family); the Results table's bars; and the Usage tab's hidden items (P9).
+-- options-ui-§21's History family); the Results table's bars; the Run detail's bars; and the Usage
+-- tab's hidden items (P9).
 
 local L = NS.L
 local PAGE = "history"
@@ -80,28 +81,62 @@ NS.RegisterSchemaRows({
 
 -- ── Results table ── the Runs list's Damage and DPS bars (the owner's call, 2026-10-24, after
 -- MultiMeters' bars): each a composed bar block and their text a font block (options-ui-§16, §17), in
--- the styled-tab order Fill, Font. The cells draw no background of their own (2026-10-25). Each class
--- color is the row's character's: the row describes that run (classColorSource "unit"). Each block's
+-- the styled-tab order Fill, Background, Border, then the shared Font. By default the cells draw no
+-- background and no border of their own (2026-10-25). Each class color is the row's character's: the row describes that run (classColorSource "unit"). Each block's
 -- face or texture follows the skin through the composer's companion, default on (DR-03, D-16).
 local RESULTS_TABLE = L["Results table"]
 local RD = NS.defaults.profile.resultsTable
 local ROW_CLASS = { source = "unit" }
 local function redraw() NS.Results.Refresh() end
+local function restyle() NS.HudAppearance.Changed() end
 local tableRows = {}
 local function append(rows) for _, r in ipairs(rows) do tableRows[#tableRows + 1] = r end end
 local Hp = NS.Helpers
 append(Hp.BarGroup({ prefix = "resultsTable.damageBar.", page = PAGE, group = RESULTS_TABLE,
     subgroup = L["Damage bar"], order = 100, classColor = ROW_CLASS, defaults = RD.damageBar, fromSkin = true }))
 append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["DPS bar"], order = 200, classColor = ROW_CLASS, defaults = RD.dpsBar, fromSkin = true }))
+    subgroup = L["DPS bar"], order = 400, classColor = ROW_CLASS, defaults = RD.dpsBar, fromSkin = true }))
 append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
-    subgroup = L["Bar text"], order = 300, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true,
+    subgroup = L["Bar text"], order = 700, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true,
     flagsFromSkin = true }))
 for _, r in ipairs(tableRows) do
     r.onChange = redraw
     r.composed = true
 end
 NS.RegisterSchemaRows(tableRows)
+
+local function extras(prefix, group, class, defaults, order, background, border, onChange)
+    NS.RegisterSchemaRows(NS.BarStyleRows({ prefix = prefix, page = PAGE, group = group, classColor = class,
+        defaults = defaults, order = order, background = background, border = border, onChange = onChange }))
+end
+extras("resultsTable.damageBar.", RESULTS_TABLE, ROW_CLASS, RD.damageBar, 200,
+    L["Damage bar background"], L["Damage bar border"], redraw)
+extras("resultsTable.dpsBar.", RESULTS_TABLE, ROW_CLASS, RD.dpsBar, 500,
+    L["DPS bar background"], L["DPS bar border"], redraw)
+
+-- ── Run detail ── the Results detail's bars (the owner's call, 2026-10-31): its spell rows, split off
+-- the HUD's, and the compare's two columns. A styled bar each, composed, its reaction the one restyle:
+-- a spell row keeps a stamped look (modules/Hud_Breakdown.lua). The spell rows' class is the player's,
+-- as it was on the HUD's block; a compare column's is its run's character's. Row height and the spell
+-- text stay HUD Appearance's.
+local RUN_DETAIL = L["Run detail"]
+local function detailBlock(prefix, class, defaults, order, fill, background, border)
+    local rows = Hp.BarGroup({ prefix = prefix, page = PAGE, group = RUN_DETAIL, subgroup = fill, order = order,
+        classColor = class, defaults = defaults, fromSkin = true })
+    for _, r in ipairs(rows) do
+        r.onChange = restyle
+        r.composed = true
+    end
+    NS.RegisterSchemaRows(rows)
+    extras(prefix, RUN_DETAIL, class, defaults, order + 100, background, border, restyle)
+end
+local PLAYER_CLASS = { source = "player" }
+detailBlock("resultsDetail.spellBars.", PLAYER_CLASS, NS.defaults.profile.resultsDetail.spellBars, 100,
+    L["Spell bars"], L["Spell bar background"], L["Spell bar border"])
+detailBlock("compare.best.", ROW_CLASS, NS.defaults.profile.compare.best, 400,
+    L["Best run bar"], L["Best run bar background"], L["Best run bar border"])
+detailBlock("compare.other.", ROW_CLASS, NS.defaults.profile.compare.other, 700,
+    L["Other run bar"], L["Other run bar background"], L["Other run bar border"])
 
 -- ── Usage ── the hidden items (P9, modules/Usage.lua): item IDs the Results window's Usage never
 -- lists, in the section, the Used column or its tooltip, on any run. One plain string of IDs written
@@ -156,7 +191,7 @@ NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["History"],
     panelName       = "DpsRaceHistoryPanel",
-    defaultsTooltip = L["Restore Days to keep, the Results table's look and the hidden items to their addon defaults. Stored runs are not touched."],
+    defaultsTooltip = L["Restore Days to keep, the Results table's and the Run detail's look and the hidden items to their addon defaults. Stored runs are not touched."],
     afterGroup      = { [GROUP] = afterHistory, [USAGE] = afterUsage },
 })
 

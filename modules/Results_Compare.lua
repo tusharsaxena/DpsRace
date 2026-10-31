@@ -55,12 +55,9 @@ Compare.BAR_H = 22          -- the toggle's line
 Compare.CLEAR_W = 78        -- the Clear Pick button
 Compare.GAP = 6             -- between this run's column and the other's
 Compare.PAD = 4             -- a figure's inset from the edge its column's bar grows from
--- The difference bars (the owner's calls, 2026-10-26 and DR-F05): flat and opaque, in the hues of the
--- New best text (#61A4F8) and the headings (#F8CC00) darkened to the race bars' weight (their fill reads
--- #2F2F4D on screen, luminance 50), so the white figures read over them (Compare.BarColor).
-Compare.BAR_ALPHA = 1
-Compare.BAR_BEST = { 32 / 255, 54 / 255, 82 / 255 }
-Compare.BAR_OTHER = { 64 / 255, 53 / 255, 0 }
+-- The difference bars (the owner's calls, 2026-10-26 and DR-F05): their look is the player's, the
+-- blocks `compare.best` and `compare.other` (History > Run detail, defaults/Profile.lua). Compare.BarBlock
+-- names which a column draws.
 -- The Difference's %: the Results window's soft green and soft red (the 3:00 and 0:30 length hues),
 -- DATA hues (skinning rung 4: the higher and the lower run), the same under every skin.
 Compare.DIFF_UP = { 0.56, 0.80, 0.58 }     -- this run is higher
@@ -217,12 +214,25 @@ function Compare.BestSide(run, other, kind)
     return b > a and "other" or "this"
 end
 
---- A bar's hue by the column it sits in: the best run's column blue, the other's gold, on every row
+--- A bar's block by the column it sits in: the best run's column blue, the other's gold, on every row
 --- whichever run leads that row.
 --- @param side string  the bar's column, "this" | "other"
 --- @param best string  Compare.BestSide's answer
-function Compare.BarColor(side, best)
-    return side == best and Compare.BAR_BEST or Compare.BAR_OTHER
+--- @return string  "best" | "other", a block of `compare.`
+function Compare.BarBlock(side, best)
+    return side == best and "best" or "other"
+end
+
+--- The look of column `side`: its block, resolved. A class color is that column's run's character's.
+--- @param class string|nil  the run's class token
+--- @return table HudAppearance.Styled's
+function Compare.Look(side, best, class)
+    local block = Compare.BarBlock(side, best)
+    return NS.HudAppearance.Styled("compare." .. block .. ".", NS.defaults.profile.compare[block], class or false)
+end
+
+local function classOf(run)
+    return type(run) == "table" and type(run.char) == "table" and run.char.class or nil
 end
 
 --- Whether a run can take part in a compare: a stored record with a result (a lost run has none).
@@ -377,10 +387,11 @@ local function heads(f, font, colors, n)
     return out
 end
 
--- A difference bar under a line's figures (below the text).
+-- A difference bar under a line's figures (below the text), over a track in each run's column.
 local function newBar(f)
     local bar = f:CreateTexture(nil, "BORDER")
     bar:Hide()
+    bar.tracks = { this = f:CreateTexture(nil, "BORDER", nil, -1), other = f:CreateTexture(nil, "BORDER", nil, -1) }
     return bar
 end
 
@@ -452,7 +463,9 @@ function Compare.Fill(p)
     local values, diffs = { { k.damageA, k.damageB }, { k.dpsA, k.dpsB } }, Compare.ScoreRows(k)
     -- One comparison, one scale and one best, whichever the row (DR-F05).
     x.diffs = diffs
-    x.bars = { maxPct = Compare.BarScale(diffs, x.data), best = Compare.BestSide(p.run, other, kind) }
+    local best = Compare.BestSide(p.run, other, kind)
+    x.bars = { maxPct = Compare.BarScale(diffs, x.data), best = best, looks = {
+        this = Compare.Look("this", best, classOf(p.run)), other = Compare.Look("other", best, classOf(other)) } }
     for i, line in ipairs(x.lines) do
         local v, d = values[i], diffs[i]
         line[2]:SetText(figure(v[1]))
@@ -563,16 +576,30 @@ end
 
 -- A line's difference bar, at `y` from `point` of `parent`, the one rule of every row: `row`'s { pct,
 -- delta } on `scale` (Compare.Fill's x.bars). In this run's column it grows left from the column's
--- right edge, in the other's right from its left edge, in its column's hue; hidden when the runs are
--- equal.
+-- right edge, in the other's right from its left edge, in its column's look; hidden when the runs are
+-- equal. Each column's track and border stay, in that column's look, the line's height and the
+-- column's width.
+local function placeTrack(tex, parent, point, x, y, w, h, look)
+    tex:ClearAllPoints()
+    tex:SetPoint(point, parent, point, x, y)
+    tex:SetWidth(w)
+    tex:SetHeight(h)
+    NS.HudAppearance.PaintTrack(tex, look.bg)
+    NS.HudAppearance.PaintEdge(tex, parent, tex, look.border)
+end
+
 local function placeBar(bar, parent, point, y, h, cols, row, scale)
     local vw = cols.value
+    placeTrack(bar.tracks.this, parent, point, cols[1], y, vw, h, scale.looks.this)
+    placeTrack(bar.tracks.other, parent, point, cols[2], y, vw, h, scale.looks.other)
     local diff, maxDiff = Compare.Scaled(row.pct, row.delta, scale.maxPct)
     local side, len = Compare.Bar(diff, maxDiff, vw)
     bar.side = side
     bar:SetShown(side ~= nil)
     if not side then return end
-    NS.Style.Fill(bar, Compare.BarColor(side, scale.best), Compare.BAR_ALPHA)
+    local look = scale.looks[side]
+    bar:SetTexture(look.texture)
+    bar:SetVertexColor(look.r, look.g, look.b, look.a)
     bar:ClearAllPoints()
     bar:SetPoint(point, parent, point, side == "this" and cols[1] + vw - len or cols[2], y)
     bar:SetWidth(len)

@@ -425,12 +425,12 @@ local function barPair(i, this, other)
     return d, byID
 end
 
-local function assertTint(i, bar, hue, what)
-    local got = bar.__colorTex
-    assertEqual(got[1], hue[1], what .. ": red")
-    assertEqual(got[2], hue[2], what .. ": green")
-    assertEqual(got[3], hue[3], what .. ": blue")
-    assertEqual(got[4], i.Cmp.BAR_ALPHA, what .. ": the bars' alpha")
+local function assertTint(_, bar, block, what)
+    local got = bar.__vertex
+    assertEqual(got[1], block.barColor.r, what .. ": red")
+    assertEqual(got[2], block.barColor.g, what .. ": green")
+    assertEqual(got[3], block.barColor.b, what .. ": blue")
+    assertEqual(got[4], block.barAlpha, what .. ": the bars' alpha")
 end
 
 test("compare: Damage, DPS and the spells size their bars on one scale (DR-F05)", function()
@@ -453,7 +453,7 @@ end)
 
 test("compare: the run with the more total damage is blue on every row, the other gold (DR-F05)", function()
     local i = inst()
-    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
+    local gold, blue = i.NS.defaults.profile.compare.other, i.NS.defaults.profile.compare.best
     -- The other run is best: this run's column gold, the other's blue, row by row whoever leads it.
     local d, byID = barPair(i, 80, 100)
     local x = d.cmp
@@ -480,14 +480,14 @@ test("compare: the run with the more total damage is blue on every row, the othe
     assertEqual(Cmp.BestSide(total(5), total(6)), "other")
     assertEqual(Cmp.BestSide(total(5), {}), "this", "a side with no damage")
     assertEqual(Cmp.BestSide({}, total(6)), "other")
-    assertEqual(Cmp.BarColor("this", "this"), i.NS.ResultsCompare.BAR_BEST, "the best's side, the dark blue")
-    assertEqual(Cmp.BarColor("other", "this"), i.NS.ResultsCompare.BAR_OTHER, "the other side, the dark gold")
-    assertEqual(Cmp.BarColor("other", "other"), i.NS.ResultsCompare.BAR_BEST)
+    assertEqual(Cmp.BarBlock("this", "this"), "best", "the best's side, the blue")
+    assertEqual(Cmp.BarBlock("other", "this"), "other", "the other side, the gold")
+    assertEqual(Cmp.BarBlock("other", "other"), "best")
 end)
 
 test("compare: the column headed Best run is blue even when this run has more damage (DR-F05)", function()
     local i = inst()
-    local gold, blue = i.NS.ResultsCompare.BAR_OTHER, i.NS.ResultsCompare.BAR_BEST
+    local gold, blue = i.NS.defaults.profile.compare.other, i.NS.defaults.profile.compare.best
     -- An incomplete run ended early with more damage than the complete best: the board's best is
     -- still the other run, so the kind answers, not the totals.
     local best = mkRun("best", 100)
@@ -509,7 +509,8 @@ test("compare: the column headed Best run is blue even when this run has more da
     assertEqual(Cmp.BestSide(total(5), total(6), "runnerUp"), "this", "this run holds the board")
     assertEqual(Cmp.BestSide(total(5), total(6), "picked"), "other", "a pick: the totals")
     assertEqual(Cmp.BestSide(total(6), total(5), "picked"), "this")
-    assertEqual(Cmp.BarColor(x.bars.best, x.bars.best), blue, "the best's column")
+    assertEqual(Cmp.BarBlock(x.bars.best, x.bars.best), "best", "the best's column")
+    assertEqual(x.bars.looks[x.bars.best].r, blue.barColor.r, "in the blue")
 end)
 
 test("compare: a picked run takes the same colors; the Difference keeps its green and red (DR-F05)", function()
@@ -525,7 +526,7 @@ test("compare: a picked run takes the same colors; the Difference keeps its gree
     d:SetComparing(true)
     local x = d.cmp
     assertEqual(x.kind, "picked")
-    assertTint(i, x.lines[1].bar, i.NS.ResultsCompare.BAR_BEST, "the picked run has the more damage")
+    assertTint(i, x.lines[1].bar, i.NS.defaults.profile.compare.best, "the picked run has the more damage")
     local row = x.rows.active[1]
     -- Behind on a row: the amount in the table's red, the % in the muted red, whichever run is blue.
     assertEqual(row.texts[5].__text, "|cffdb8585-50.0%|r", "the muted red is unchanged")

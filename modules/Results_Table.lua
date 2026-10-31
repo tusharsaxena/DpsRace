@@ -292,11 +292,12 @@ local Cells = {}
 
 -- A text cell; a column with `bar` also draws a fill under its text, as long as its value's place
 -- between the smallest and the largest in the list (Table:SetData, Tbl.BarShare), over the row's own
--- stripe (no track and no border: the owner's call, 2026-10-25). Its look is the column's
--- `barStyle(run)`: { texture, r, g, b, a, font = a resolved font }.
+-- stripe. Its look is the column's `barStyle(run)`: HudAppearance.Styled's, plus `font` = a resolved
+-- font. The track and the border span the cell; by default neither draws (the owner's call, 2026-10-25).
 function Cells.text(row, col)
     local cell = { fs = Tbl.Text(row, FONT.TEXT, C.text, col.justify) }
     if col.bar then
+        cell.track = row:CreateTexture(nil, "BORDER", nil, 1)
         cell.bar = row:CreateTexture(nil, "BORDER", nil, 2)
         cell.bar:SetTexture(WHITE)
     end
@@ -439,6 +440,8 @@ local function bindBar(cell, col, run)
     if style then
         cell.bar:SetTexture(style.texture or WHITE)
         cell.bar:SetVertexColor(style.r, style.g, style.b, style.a)
+        NS.HudAppearance.PaintTrack(cell.track, style.bg)
+        NS.HudAppearance.PaintEdge(cell, cell.track:GetParent(), cell.track, style.border)
         -- A dash (no figure) keeps the column's muted color; a figure takes the bar text's.
         if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
     end
@@ -611,6 +614,10 @@ local function placeCell(row, cell, col, x, w)
             cell.bar:ClearAllPoints()
             cell.bar:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
             cell.bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
+            cell.track:ClearAllPoints()
+            cell.track:SetPoint("TOPLEFT", row, "TOPLEFT", x - 2, -1)
+            cell.track:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", x - 2, 1)
+            cell.track:SetWidth(cell.barW)
         end
     end
 end

@@ -590,8 +590,8 @@ function Runs.DeltaBox(run, ctx)
     return L["%+.1f%%"]:format((ctx.top / second - 1) * 100), C.green, true
 end
 
---- The look of one bar column's cell for `run` (History > Results table): its fill and its text,
---- every class color the run's character's.
+--- The look of one bar column's cell for `run` (History > Results table): its fill, track, border
+--- and text, every class color the run's character's.
 --- @param block string  "damageBar" | "dpsBar"
 --- @return table|nil  Results_Table's barStyle shape; nil without the appearance module
 function Runs.BarStyle(block, run)
@@ -600,7 +600,7 @@ function Runs.BarStyle(block, run)
     local D = NS.defaults.profile.resultsTable
     local class = run.char and run.char.class or false
     local p = "resultsTable."
-    local fill = A.BarAt(p .. block .. ".", D[block], class)
+    local fill = A.Styled(p .. block .. ".", D[block], class)
     fill.font = A.FontAt(p .. "barText.", D.barText, class, "window")   -- window text (D-06)
     return fill
 end

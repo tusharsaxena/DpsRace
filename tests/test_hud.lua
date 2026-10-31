@@ -1418,7 +1418,7 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     -- The spell bars follow the skin (DR-03, X5): Ka0s Default's own bar texture.
     assertEqual(tostring(row.bar.__barTexture):lower(), "interface\\addons\\dpsrace\\libs\\libka0s\\media\\textures\\ka0s-default",
         "the skin's bar.texture")
-    assertEqual(row.bar.__barColor[4], 0.85)
+    assertEqual(row.bar.__barColor[4], 0.9)
     assertEqual(row.name.__font.size, 10)
 
     -- From here the HUD only restyles and draws live values: it measures nothing.
@@ -1436,7 +1436,7 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     row = w.list.rows[1]
     assertEqual(row.__height, 24)
     assertEqual(row.bar.__barColor[1], 0.1)
-    assertEqual(row.bar.__barColor[4], 0.85, "the bar opacity is its own row")
+    assertEqual(row.bar.__barColor[4], 0.9, "the bar opacity is its own row")
     -- The stack moved down for the taller clock: the KPIs at 26 + 32, the rows under them.
     local p = w.damage.frame.__points[1]
     assertEqual(p[5], -58)
@@ -1473,6 +1473,6 @@ test("hud: a bar's class color companion takes the player's class, the swatch's 
     local _, class = f.M.UnitClass("player")
     local cr = assert(f.M.RAID_CLASS_COLORS[class], "the mock player has a class color")
     assertEqual(fill.r, cr.r)
-    assertEqual(fill.a, 0.85)
+    assertEqual(fill.a, 0.9)
     assertEqual(body(f).w.list.rows[1].bar.__barColor[1], cr.r)
 end)

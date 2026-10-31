@@ -2,6 +2,61 @@ local _, NS = ...
 -- defaults/Profile.lua — the AceDB defaults tree: the only place a default is hardcoded
 -- (savedvariables-§2). Every schema row's `default` reads from here.
 
+-- THE BAR BLUE (the owner's call, 2026-10-31): the pace bar's fill, the one source of the spell rows'
+-- and the Results table's defaults too. Every block takes its own copy, so a block is the player's
+-- to change alone (test_bar_style.lua pins that they start equal).
+local BAR_BLUE = { r = 0.36, g = 0.37, b = 0.84, a = 1 }
+local BAR_BLUE_ALPHA = 0.9
+
+local function barBlue()
+    return { r = BAR_BLUE.r, g = BAR_BLUE.g, b = BAR_BLUE.b, a = BAR_BLUE.a }
+end
+
+-- A styled bar's fill in the blue, following the skin's texture.
+local function blueFill()
+    return { barTexture = "Solid", barAlpha = BAR_BLUE_ALPHA, barColor = barBlue(), useClassColorBar = false,
+             barTextureFromSkin = true }
+end
+
+-- `block` with its Background and Border leaves: the swatch and its two companions, and the border's
+-- four rows with its skin companion, on by default (skinning-§6; Ka0s Default's bar.borderStyle is None).
+-- `bgFromSkin` draws the block's skin track while on (HudAppearance.TRACK); a surface that draws no
+-- track by default leaves it off, over a swatch of no opacity.
+local function styled(block, bgColor, bgFromSkin)
+    block.bgColor, block.useClassColorBg, block.bgFromSkin = bgColor, false, bgFromSkin
+    block.borderStyle, block.borderSize, block.borderColor = "None", 1, { r = 0, g = 0, b = 0, a = 1 }
+    block.useClassColorBorder, block.borderStyleFromSkin = false, true
+    return block
+end
+
+-- The track a surface drew before it had a swatch, as the swatch that waits under the companion.
+local function spellTrack() return { r = 1, g = 1, b = 1, a = 0.04 } end
+local function paceTrack() return { r = 1, g = 1, b = 1, a = 0.08 } end
+local function noTrack() return { r = 0, g = 0, b = 0, a = 0 } end
+
+local function spellBars()
+    return styled(blueFill(), spellTrack(), true)
+end
+
+local function tableBar()
+    return styled(blueFill(), noTrack(), false)
+end
+
+-- A compare bar: flat and opaque, in the New best text's and the headings' hue at about the race bars'
+-- weight, so the white figures read over it. Its texture does not follow the skin by default: Ka0s
+-- Default's bar averages 0.69 white, which would draw it darker than these values say.
+local function compareBar(r, g, b)
+    return styled({ barTexture = "Solid", barAlpha = 1, barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
+                    useClassColorBar = false, barTextureFromSkin = false }, noTrack(), false)
+end
+
+local hudSpellBars = spellBars()
+hudSpellBars.rowHeight = 18
+
+local chartBlock = blueFill()
+chartBlock.height, chartBlock.columnGap = 80, 0
+chartBlock.bgColor, chartBlock.useClassColorBg = { r = 0, g = 0, b = 0, a = 0.35 }, false
+
 NS.defaults = {
     profile = {
         -- Master controls (settings/General.lua). The debug flag is NOT here: it is session-only
@@ -73,7 +128,8 @@ NS.defaults = {
         -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
         -- the clocks in the debug console's monospace face, the figures and the spell rows in Blizzard's
-        -- GameFontNormalHuge and GameFontHighlightSmall, the bars flat in the window's indigo.
+        -- GameFontNormalHuge and GameFontHighlightSmall, the bars flat in the window's indigo. The spell
+        -- rows and the pace bar take BAR_BLUE since 2026-10-31.
         --
         -- FOLLOWING THE SKIN (skinning-§6, DR-03). Each face and texture but the two clocks' has the
         -- composer's "Use the skin's ..." companion beside it (`fontFromSkin`, `barTextureFromSkin`),
@@ -95,37 +151,38 @@ NS.defaults = {
             -- The running body's Damage and DPS live figures.
             figures = { font = "Friz Quadrata TT", fontSize = 20, fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
                         useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
-            -- The spell rows: the HUD's live and result lists and the Results window's breakdown.
-            bars = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                     useClassColorBar = false, rowHeight = 18, barTextureFromSkin = true },
+            -- The HUD's spell rows, live and result; `rowHeight` is the Results window's breakdown's too.
+            bars = hudSpellBars,
             spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
             -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
             -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
             -- smooth area), and the plot's background swatch (its composed class-color companion
             -- beside it, options-ui-§17).
-            chart = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
-                      useClassColorBar = false, height = 80, columnGap = 0,
-                      bgColor = { r = 0, g = 0, b = 0, a = 0.35 }, useClassColorBg = false,
-                      barTextureFromSkin = true },
-            -- The pace bar's fill, its own block since 2026-10-25: the chart's look when it was split off.
-            pace = { barTexture = "Solid", barAlpha = 0.9, barColor = { r = 0.36, g = 0.37, b = 0.84, a = 1 },
-                     useClassColorBar = false, barTextureFromSkin = true },
+            chart = chartBlock,
+            -- The pace bar's fill, its own block since 2026-10-25, and its track and border. Its green
+            -- and red parts are meaning colors, not this block's.
+            pace = styled(blueFill(), paceTrack(), true),
         },
         -- The Results window's Runs list (History > Results table, settings/History.lua): the Damage
         -- and DPS cells' bars and their text, over the rows' own stripe. Composed groups (options-ui-§16);
         -- each class color is the run's own character's (the row describes that character). The fill is
-        -- the spell breakdown's (appearance.bars): its indigo on both bars. The three blocks are HUD style
+        -- BAR_BLUE on both bars, and no track and no border by default. The three blocks are HUD style
         -- for the one-time reset (D-16): each face and texture has its "Use the skin's ..." companion,
         -- default on, as the HUD's blocks have.
         resultsTable = {
-            damageBar = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                          useClassColorBar = false, barTextureFromSkin = true },
-            dpsBar    = { barTexture = "Solid", barAlpha = 0.85, barColor = { r = 0.29, g = 0.29, b = 0.45, a = 1 },
-                          useClassColorBar = false, barTextureFromSkin = true },
+            damageBar = tableBar(),
+            dpsBar    = tableBar(),
             barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
                           useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
         },
+        -- The Results detail's spell rows (History > Run detail, settings/History.lua), split off
+        -- appearance.bars on 2026-10-31 (the v8 step carries a stored fill over).
+        resultsDetail = { spellBars = spellBars() },
+        -- The compare's difference bars (History > Run detail): the best run's column, today's blue, and
+        -- the other run's, today's gold, each 1.3 times the byte values they shipped with (32, 54, 82
+        -- and 64, 53, 0), the hue kept (the owner's call, 2026-10-31).
+        compare = { best = compareBar(42, 70, 107), other = compareBar(83, 69, 0) },
         -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
         -- Its row is History > History > Sharing (settings/History.lua).
