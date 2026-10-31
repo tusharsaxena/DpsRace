@@ -21,7 +21,7 @@ to LibKa0s and comes back with the next re-vendor, and `test_vendor_sync` catche
 
 | Suite | Command | Gates the commit? | Gates the release (tag)? |
 |---|---|---|---|
-| `lint` | `luacheck .` | yes | yes |
+| `lint` | `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` | yes | yes |
 | `tests` | `lua tests/run.lua` | yes | yes |
 | `perf` | `lua tests/perf.lua` | no, recorded only | yes |
 | `complexity` | the runner's sighted `lizard` pass | no, recorded only | yes, with zero functions above CCN 15 |

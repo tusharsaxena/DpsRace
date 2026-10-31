@@ -196,3 +196,7 @@ and the smoke row that measures it where one exists.
 - **The timeline's corridor colors are not a setting** (UT-P16, the owner's call, 2026-10-28). They
   live in `ResultsTimeline.CORRIDOR` and a `/run` change to it lasts the session (`Repaint()` shows it
   on an open window); a `/reload` goes back to the defaults.
+- **New font files need a full client restart.** The client registers a font file only at start, so a
+  build that adds a skin face draws it after the game is restarted; a `/reload` is not enough (the
+  owner's finding on the 2026-10-31 font pickers run, and why section 28 of the smoke tests starts on a
+  fresh client).
