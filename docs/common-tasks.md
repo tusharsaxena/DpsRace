@@ -62,7 +62,9 @@ catalog is grown from the same captures:
   hands it. If its fixed stack is taller than idle's, `MinContentHeight` must include it, and the HUD's
   minimum height follows. Draw every label through `NS.Style.Text` in the font object for its role
   (`modules/Style.lua`, spec §6 *Style*) and every button through `NS.HudStates.Button`; only a race
-  clock keeps a face and size of its own.
+  clock keeps a face and size of its own. Give each main element a tooltip: its fixed words in
+  `modules/Hud_Tips.lua`, on a frame through `AddTip` or over a label through `TipZone`, never a live
+  figure.
 - Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
   stop and waiting split), give `modules/Sim.lua`'s script a step for it and `modules/MockRuns.lua`'s
   `Figures` its figures (and `Preview.STATES` the body, if test mode should hold it still).

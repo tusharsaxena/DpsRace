@@ -72,7 +72,7 @@ sudo apt-get install -y python3-pil     # Pillow from apt avoids the PEP 668 pip
 python3 -c "import PIL; print(PIL.__version__)"
 ```
 
-The icons, the monospace face and the bar textures come inside the vendored LibKa0s payload;
+The icons, the fonts and the bar textures come inside the vendored LibKa0s payload;
 regenerating them is that repo's job and its toolchain.
 
 ## Am I set up correctly?

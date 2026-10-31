@@ -102,8 +102,8 @@ and that HUD style options follow the skin unless the player sets them.
 | Skin | `skin.skin` | the library's choice grid (`skipRender`) | One of the registered skins (`NS.SKIN_OPTIONS`); a pick repaints every window, the HUD, the toast and the library's tool windows at once, with no reload |
 | Ignore settings panel | `skin.ignorePanel` | checkbox (`skipRender`) | On: this addon's settings pages keep the game's look; its windows still wear the skin |
 | Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override. The HUD Appearance and Results table blocks draw their own *Font* even with *Use the skin's font* on |
-| Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
-| Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
+| Font | `skin.font` | the library's `Ka0sMedia_Font` picker, each row in its own face (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
+| Texture | `skin.texture` | the library's `Ka0sMedia_Statusbar` picker, each row showing its texture (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
 | Font outline | `skin.outline` | the library's dropdown under *Reset font* / *Reset texture* (`skipRender`) | `hud` (the default since LibKa0s v1.83.0, D-10), `all` or `off`: where the skin outlines this addon's text (LibKa0s v1.82.0, D-06). *HUD text only* keeps the outline on the HUD and the toast and drops it from window text; *Off* drops it everywhere. Grayed while *Ignore fonts* is on. A font block whose *Font flags* is *From skin* follows it |
 | (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
 
@@ -119,9 +119,10 @@ profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the s
 after every profile event, never while the addon stands down, and in combat held for one
 `PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
 mode on as `/dr test` does, or shows the Results window when it is already on), a gear (opens this
-tab), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
-skins is loaded). A pick only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
-the close control and Escape put the old skin back. Apply, the gear, the close and Escape set
+tab), the Skin tab's own rows (LibKa0s v1.83.0, LK-A3: *Font*, *Texture* and *Font outline*, then the
+Scope's two checkboxes), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
+skins is loaded). A pick or a row's change only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
+the close control and Escape put back what the window opened with. Apply, the gear, the close and Escape set
 `skin.pickerSeen`; `NS.HideSkinPicker` (the stand-down, and first on every profile event) takes it
 down without setting it.
 
