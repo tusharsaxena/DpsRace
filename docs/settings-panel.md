@@ -92,7 +92,7 @@ takes its rows' group's place in the strip: after New-best toast, before Keybind
 none of it. Its body, top to bottom: **Skin source** (*Ka0s skins*, or *EllesmereUI*, disabled with
 the failing gate conditions listed while EllesmereUI cannot skin this addon), **Look** (the nine Ka0s
 skins, three to a line, each with its swatches), **Font and texture** (a *Font* and a *Texture*
-dropdown, *Skin's own (<its face>)* in a new profile), the Scope (*Ignore settings panel*, on in a new profile, and
+dropdown, *Skin's default (<its face>)* in a new profile), the Scope (*Ignore settings panel*, on in a new profile, and
 *Ignore fonts*), **Copy to every Ka0s addon…**, and the note that skins change every visual element
 and that HUD style options follow the skin unless the player sets them.
 
@@ -104,7 +104,7 @@ and that HUD style options follow the skin unless the player sets them.
 | Ignore fonts | `skin.ignoreFonts` | checkbox (`skipRender`) | On: every string keeps its own face and size; the skin still colors it. Wins over a font override. The HUD Appearance and Results table blocks draw their own *Font* even with *Use the skin's font* on |
 | Font | `skin.font` | LSM font dropdown (`skipRender`) | A face over the skin's body, title and HUD face; `""` is the skin's own |
 | Texture | `skin.texture` | LSM status bar dropdown (`skipRender`) | A texture over the skin's bar texture for every bar that follows the skin; `""` is the skin's own |
-| Font outline | `skin.outline` | the library's dropdown under *Reset font* / *Reset texture* (`skipRender`) | `all` (the default), `hud` or `off`: where the skin outlines this addon's text (LibKa0s v1.82.0, D-06). *HUD text only* keeps the outline on the HUD and the toast and drops it from window text; *Off* drops it everywhere. Grayed while *Ignore fonts* is on. A font block whose *Font flags* is *From skin* follows it |
+| Font outline | `skin.outline` | the library's dropdown under *Reset font* / *Reset texture* (`skipRender`) | `hud` (the default since LibKa0s v1.83.0, D-10), `all` or `off`: where the skin outlines this addon's text (LibKa0s v1.82.0, D-06). *HUD text only* keeps the outline on the HUD and the toast and drops it from window text; *Off* drops it everywhere. Grayed while *Ignore fonts* is on. A font block whose *Font flags* is *From skin* follows it |
 | (none) | `skin.pickerSeen` | drawn by nothing (`skipRender`) | The first-run skin picker's memory, below |
 
 Each row's `onChange` applies only its own half (`core/SkinSetup.lua` says why), so a pick on the tab
@@ -244,10 +244,10 @@ companion, on by default, and grays the block's own *Font* or *Bar texture* pick
 On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.MediaKey`, through
 `NS.Skin.Resolve`), except that while the Skin tab's *Ignore fonts* is on a font block draws its own
 *Font* (the texture still follows; the grayed picker previews that stored face); off, the stored pick,
-which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.82.0): Ka0s Default
-Prototype, Obsidian Expressway, Azeroth Vollkorn Bold, Glass Nunito SemiBold, High Contrast
-Atkinson Bold, Ember Bitter Bold, WoW Midnight Philosopher Bold, WoW Forever Fira Sans SemiBold, WoW
-Default Friz Quadrata. Only the face and the
+which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.83.0): Ka0s Default
+Prototype, Obsidian Expressway, Azeroth Open Sans Semibold, Glass Avant Garde, High Contrast
+Doris PP, Ember Emblem, WoW Midnight Segoe UI Semibold, WoW Forever Fira Sans SemiBold, WoW
+Default Ka0s Friz Quadrata TT. Only the face and the
 texture follow: sizes, flags, shadows and every color stay the player's (X4), with two readings the
 library makes without rewriting them. Every block's *Font flags* (the clocks' too) leads with
 *From skin*, the default (LibKa0s v1.82.0, D-07), which draws the Skin tab's *Font outline*: outlined

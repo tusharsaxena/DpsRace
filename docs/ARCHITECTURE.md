@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.82.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.83.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -486,7 +486,11 @@ the skin's input box (the stock look is retired, R-2), and the strings the libra
 the skin's face (the dropdown menu's rows, the test strip's line, the debug console's and perf panel's
 labels) read Oxanium where the template drew Friz Quadrata (D-13). LibKa0s v1.82.0 (the skin fonts
 batch) retires Oxanium: Ka0s Default draws Prototype for body, titles and the HUD, and its window text
-is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06).
+is outlined by default (the Skin tab's *Font outline*, `skin.outline`, D-06). LibKa0s v1.83.0 moves
+that default to HUD text only (the font pickers and skin faces batch, D-10): window text is plain until
+the player picks *All text*, a stored pick stays, and the degraded facade answers the same. The same
+build gives Azeroth, Glass, High Contrast, Ember, WoW Midnight and WoW Default new faces, sized against
+Prototype.
 
 ## Taint Notes
 

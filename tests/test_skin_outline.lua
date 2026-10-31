@@ -1,6 +1,6 @@
 -- tests/test_skin_outline.lua — the font outline (LibKa0s v1.82.0, Skin minor 9; DR-01 of
 -- Ka0sAddonsCommonTasks docs/2026-10-30-SKIN_FONTS_AND_FEEDBACK, ruling D-06): stored as skin.outline
--- ("all", the default, "hud", "off"), written only through the skin write seam (NS.WriteSkinChoice's
+-- ("hud", the default since v1.83.0, "all", "off"), written only through the skin write seam (NS.WriteSkinChoice's
 -- `media.outline`), and applied with Skin:SetOutline at load, on every profile event and on the row's
 -- own write. LibKa0sSkinTester's tests/test_skin_outline.lua is the reference this follows.
 --
@@ -20,22 +20,22 @@ local function rowOf(NS, path)
     for _, r in ipairs(NS.Schema) do if r.path == path then return r end end
 end
 
-test("outline: a fresh profile stores All text, the library's default, and applies it", function()
+test("outline: a fresh profile stores HUD text only, the library's default, and applies it", function()
     local NS, _, Skin = setup()
-    assertEqual(NS.db.profile.skin.outline, "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
     assertEqual(NS.db.profile.skin.outline, Skin.OUTLINE_DEFAULT)
-    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(Skin:GetOutline(OWNER), "hud")
 end)
 
 test("outline: the schema row is a skip-render Skin tab row offering the library's modes, in order", function()
     -- red under: a row the page draws on top of the library's own dropdown, or values that drift
-    -- from Skin.OUTLINE_MODES (/dr set would accept a mode the library reads as "all").
+    -- from Skin.OUTLINE_MODES (/dr set would accept a mode the library reads as its default).
     local NS, _, Skin = setup()
     local row = rowOf(NS, "skin.outline")
     assertTrue(row ~= nil, "a skin.outline row")
     assertTrue(row.skipRender == true, "the Skin tab draws it")
     assertEqual(row.group, "Appearance")
-    assertEqual(row.default, "all")
+    assertEqual(row.default, "hud")
     local got = {}
     for _, opt in ipairs(row.values) do got[#got + 1] = opt.value end
     assertEqual(table.concat(got, ","), table.concat(Skin.OUTLINE_MODES, ","))
@@ -75,8 +75,8 @@ end)
 test("outline: /dr set refuses a mode the library does not know", function()
     local NS, _, Skin = setup()
     NS.Slash:OnSlash("set skin.outline thick")
-    assertEqual(NS.db.profile.skin.outline, "all")
-    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
+    assertEqual(Skin:GetOutline(OWNER), "hud")
 end)
 
 test("outline: the stored mode is applied at login", function()
@@ -90,23 +90,23 @@ end)
 
 test("outline: a profile switch applies the incoming profile's mode, and back", function()
     local NS, _, Skin = setup()
-    NS.Slash:OnSlash("set skin.outline hud")
+    NS.Slash:OnSlash("set skin.outline all")
     NS.db:SetProfile("OutlineProbe")
-    assertEqual(Skin:GetOutline(OWNER), "all", "the new profile keeps the default")
+    assertEqual(Skin:GetOutline(OWNER), "hud", "the new profile keeps the default")
     NS.db:SetProfile("Default")
-    assertEqual(Skin:GetOutline(OWNER), "hud", "Default's is back")
+    assertEqual(Skin:GetOutline(OWNER), "all", "Default's is back")
 end)
 
-test("outline: Reset all settings puts the outline back on All text and applies it", function()
+test("outline: Reset all settings puts the outline back on HUD text only and applies it", function()
     local NS, _, Skin = setup()
     NS.Slash:OnSlash("set skin.outline off")
     NS.Helpers.RestoreAllDefaults()
-    assertEqual(NS.db.profile.skin.outline, "all")
-    assertEqual(Skin:GetOutline(OWNER), "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
+    assertEqual(Skin:GetOutline(OWNER), "hud")
 end)
 
 test("outline: without the library the apply seam answers false and the default still stores", function()
     local NS = T.load({ libFiles = {} }).NS
     assertEqual(NS.ApplySkinOutline("off"), false)
-    assertEqual(NS.db.profile.skin.outline, "all")
+    assertEqual(NS.db.profile.skin.outline, "hud")
 end)

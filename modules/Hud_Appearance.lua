@@ -155,14 +155,15 @@ function Appearance.Font(block, where)
 end
 
 -- The flags the block at `p` draws: a picked flag as picked; From skin (or nothing stored) none on a
--- mono clock, else the Font outline through S.FontFlags as `where`'s text; OUTLINE without it.
+-- mono clock, else the Font outline through S.FontFlags as `where`'s text; without it the default
+-- outline, HUD text only (D-10).
 local function fontFlags(p, S, where)
     local flags = setting(p .. "fontFlags")
     local picked = type(flags) == "string" and flags ~= FROM_SKIN
     if picked then return flags end
     if MONO[p] then return "" end
     if S and type(S.FontFlags) == "function" then return S.FontFlags(flags, where) end
-    return "OUTLINE"
+    return where == "window" and "" or "OUTLINE"
 end
 
 --- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's;

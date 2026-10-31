@@ -86,6 +86,7 @@ test("skin fonts: From skin follows the Font outline; a picked flag wins", funct
     -- and spell rows outlined (D-06).
     local NS = T.load().NS
     local A = NS.HudAppearance
+    assertTrue(NS.SetByPath("skin.outline", "all"))
     for _, f in ipairs(flagsOf(NS, HUD_BLOCKS)) do assertEqual(f, "OUTLINE", "all text: HUD outlined") end
     assertEqual(fontOf(NS, WINDOW_BAR).flags, "OUTLINE", "all text: the Results bar text outlined")
     assertEqual(A.Font("spellText", "window").flags, "OUTLINE", "all text: the detail's spell rows outlined")
@@ -153,9 +154,11 @@ test("skin fonts: the drawn FontString takes the resolved flags", function()
     assertEqual(got, "OUTLINE")
 end)
 
-test("skin fonts: without the library From skin draws the outline", function()
+test("skin fonts: without the library From skin draws the default outline, HUD text only", function()
+    -- red under: the facade answering OUTLINE for window text, the old All text default (D-10).
     local NS = T.load({ libFiles = {} }).NS
     assertEqual(NS.HudAppearance.Font("figures").flags, "OUTLINE")
+    assertEqual(NS.HudAppearance.Font("spellText", "window").flags, "")
     assertEqual(NS.HudAppearance.Font("figures").size, NS.defaults.profile.appearance.figures.fontSize)
 end)
 

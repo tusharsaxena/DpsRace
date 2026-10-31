@@ -1112,7 +1112,7 @@ Total.
 - skin fonts: while Ignore fonts is on, From skin draws the library's stock flags
 - skin fonts: the Results detail's breakdown list draws its spell rows as window text
 - skin fonts: the drawn FontString takes the resolved flags
-- skin fonts: without the library From skin draws the outline
+- skin fonts: without the library From skin draws the default outline, HUD text only
 - skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
 - skin fonts: the v7 step runs once, so a None picked afterwards is kept
 - skin fonts: a block on the skin's face draws the skin's HUD scale; its own face the stored size
@@ -1135,7 +1135,7 @@ Total.
 
 ### test_skin_outline.lua (10)
 
-- outline: a fresh profile stores All text, the library's default, and applies it
+- outline: a fresh profile stores HUD text only, the library's default, and applies it
 - outline: the schema row is a skip-render Skin tab row offering the library's modes, in order
 - outline: the write seam stores media.outline, and leaves it alone when it is nil
 - outline: another addon's copy reaches the store through WriteChoice
@@ -1143,7 +1143,7 @@ Total.
 - outline: /dr set refuses a mode the library does not know
 - outline: the stored mode is applied at login
 - outline: a profile switch applies the incoming profile's mode, and back
-- outline: Reset all settings puts the outline back on All text and applies it
+- outline: Reset all settings puts the outline back on HUD text only and applies it
 - outline: without the library the apply seam answers false and the default still stores
 
 ### test_skin_verb.lua (6)
