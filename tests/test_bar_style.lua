@@ -284,8 +284,8 @@ test("bar style: every styled bar's media rows are composed pickers, on the page
     for prefix, page in pairs({ ["appearance.bars."] = "hud", ["appearance.pace."] = "hud",
         ["resultsTable.damageBar."] = "history", ["resultsTable.dpsBar."] = "history",
         ["resultsDetail.spellBars."] = "history", ["compare.best."] = "history", ["compare.other."] = "history" }) do
-        assertEqual(row(prefix .. "barTexture").dialogControl, "LSM30_Statusbar", prefix)
-        assertEqual(row(prefix .. "borderStyle").dialogControl, "LSM30_Border", prefix)
+        assertEqual(row(prefix .. "barTexture").dialogControl, "Ka0sMedia_Statusbar", prefix)
+        assertEqual(row(prefix .. "borderStyle").dialogControl, "Ka0sMedia_Border", prefix)
         assertEqual(row(prefix .. "borderStyle").page, page, prefix)
         assertEqual(row(prefix .. "bgColor").composed, true, prefix)
         assertEqual(row(prefix .. "bgFromSkin").composed, nil, prefix .. ": the addon's own words")
