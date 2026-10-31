@@ -66,8 +66,9 @@ catalog is grown from the same captures:
   `modules/Hud_Tips.lua`, on a frame through `AddTip` or over a label through `TipZone`, never a live
   figure.
 - Map the race state (or the STOPPING phase) to the body in `modules/Hud.lua` (`BODY_OF`, or the
-  stop and waiting split), give `modules/Sim.lua`'s script a step for it and `modules/MockRuns.lua`'s
-  `Figures` its figures (and `Preview.STATES` the body, if test mode should hold it still).
+  stop and waiting split). The sim and test mode reach it by themselves: they run the same views
+  through `modules/SampleRace.lua`, so never give a body figures of its own for them (add the body
+  to `Preview.STATES` if test mode should hold it still).
 - A live value may only reach a widget setter, `NS.Format.Number` or `C_Spell`, and may only be
   tested against `nil` (the taint notes in [ARCHITECTURE.md](ARCHITECTURE.md#taint-notes)).
   `test_hud`'s secret-render cases and its geometry-read recorder check it.

@@ -34,8 +34,9 @@ setup file per module, each a descriptor plus a degradation stub (anti-pattern #
   the live damage chart and pace bar in `modules/Hud_Chart.lua`), the Results window
   (`modules/Results*.lua`, its run detail comparing two runs and showing the loadout and what the
   run used, with the ability timeline as its pop-out window), the chat share (`modules/Share.lua`), and test mode and the sim
-  (`modules/Preview.lua`, `modules/Sim.lua`, drawing `modules/MockRuns.lua`'s in-memory sample data;
-  the Results window reads it through its source seam, `modules/Results_Source.lua`). None of them
+  (`modules/Preview.lua`, `modules/Sim.lua`, with `modules/SampleRace.lua` standing where the race
+  stands and `modules/MockRuns.lua`'s in-memory sample data; the Results window reads it through its
+  source seam, `modules/Results_Source.lua`). None of them
   decides anything from a meter value.
 - **The shell** configures and reaches. The settings pages, the slash verbs, the launcher and three
   key bindings, the stand-down latch, the perf harness and the diagnostics report.
@@ -166,7 +167,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the eleven `*Setup.lua` descriptors (`SkinSetup.lua` the skin seam), the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded; `Dummies.lua`, the training-dummy catalog (`Lookup` answers it with the profile's own list, `CategoryOf` a stored run's category now); `Hearthstones.lua`, every hearthstone variant's spell ID (#8) |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_InsightsData`, `Results_InsightsCharts` and `Results_Insights` (the Insights tab: its stats pass, its chart widgets and the tab), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRuns` (the sample data), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and script) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` (the ability timeline window), `Results_Gear` (the gear view window), `Results_InsightsData`, `Results_InsightsCharts` and `Results_Insights` (the Insights tab: its stats pass, its chart widgets and the tab), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -245,7 +246,7 @@ in `settings/Slash.lua`, in its declared order:
 | `results [insights]` | Open the Results window, on the Insights tab when asked (`bests`, the tab's old name, still opens it) |
 | `target` | Print the target's name, creature ID and category (the catalog with your own training dummies) |
 | `test [armed\|running\|result]` | Static sample data in the HUD and the Results window: a bare `test` turns test mode on or off (the Master controls' *Test mode* row); a word holds that HUD body still |
-| `sim [scenario]` | Play a whole sample race, then open the Results window on it; `newbest` (the default), `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; an unknown word lists them |
+| `sim [scenario]` | Play a whole sample race, then open the Results window on it; `newbest` (the default), `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; an unknown word lists them |
 | `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
 | `ignore [show\|add\|remove\|defaults] <spell>` | The late-cast ignore list (#8): a bare `ignore` or `show` lists it, `add` and `remove` take a spell ID, a shift-clicked link or a name, `defaults` puts the six defaults back |
 | `targetdummy [show\|add\|remove\|capture\|defaults] [category or creature ID]` | Your training dummies (#9): a bare `targetdummy` or `show` lists your own and the switched-off built-ins; `add [category]` marks the target (a typed category wins, else *Category for new dummies*), saves what the game says about it and prints it, and switches a switched-off built-in back on; `remove [creature ID or name]` (the target when none is typed) takes a custom dummy off or switches a built-in off; `capture` saves the target's details without marking it; `defaults` clears the list |
@@ -356,9 +357,10 @@ register nothing: Watchers feeds the cast list, and Usage reads the client only 
 record path after combat.
 
 `modules/Preview.lua` (test mode and the sim) registers no game event either; combat ends it through
-`NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays its script
-(`modules/Sim.lua`) it holds one `C_Timer` ticker at 10 Hz, canceled when the script opens the Results
-window, when the sim ends or switches and at the stand-down. `modules/Share.lua`
+`NS:OnCombatChanged`. Test mode's views are still and hold no timer. While a sim plays (`modules/Sim.lua`)
+it holds one `C_Timer` ticker at 20 Hz, canceled when it opens the Results window, when the sim ends or
+switches and at the stand-down; the HUD's live read and bucket timers and the countdown's marks run for
+its sample race as for a real one, and go with it. A sample race registers no client meter event. `modules/Share.lua`
 and `settings/History.lua` hold only their bus receivers, and so does `modules/BestToast.lua` (#5):
 its toast's countdown is the shell's `C_Timer.NewTimer` (LibKa0s-Toast-1.0), one at a time, paused
 under the pointer (with a 0.2 s check after the pointer leaves onto the close mark) and canceled when

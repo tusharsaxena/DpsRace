@@ -555,30 +555,44 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   preview already on they switch it in place (`Preview.Start` again, or `Preview.SetState` for a still
   body). A start is refused with one line in combat and while a real race is armed, running or waiting
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
-- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 16 runs on the
+- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 17 runs on the
   player and two made-up characters, every Status, target type and preset length, notes, loadouts
-  from the player's own `Recorder.SnapshotLoadout()`, sample chart records, and sample casts and
-  usage (`MockRuns.Usage`: a class's cast pattern, and usage detected by `Usage.Build` from the
-  player's own snapshot; one run raced before format 3 has neither)) and routes the
-  Results window to it (`ResultsSource.Use`). Every Results file reads through that seam, so the
-  window draws the sample as it draws the store: the Runs view opens on every character and spec,
+  from the player's own `Recorder.SnapshotLoadout()` and the made-up characters' own, chart records,
+  and casts and usage detected by `Usage.Build`; one run raced before format 3 has none of them) and
+  routes the Results window to it (`ResultsSource.Use`). Each run starts from `Recorder.NewRun` and is
+  a fight of its own: `MockRuns.Plan` plays the class's rotation (`modules/MockRotations.lua`, one row
+  per spell) with a generator seeded from the run's id, into a cast list and a list of damage hits,
+  and `run.spells`, `run.casts`, the chart's buckets and the live figures are all read from that plan.
+  So each run has its own spell mix, a compare's rows differ in size and sign (a share table times the
+  total made every row the same percent, and so every bar full), and the same id always plans the
+  same fight. A sample chart is seeded into `NS.Slices`, so `HudChart.ResultView` draws it. Every
+  Results file reads through that seam, so the window draws the sample as it draws the store: the Runs view opens on every character and spec,
   the Insights tab, the detail's compare, chart (with its cooldown icons), gear, talents and usage, and
   the ability timeline. A note, a usage edit or a delete changes the sample in memory; Share, *Save* and *Reset* refuse. Nothing is written to `NS.db`.
-- **test** (`Preview.Mode() == "test"`): static. The HUD holds one body still, drawn by
-  `NS.Hud.Render(state, run, figures)` (the HUD's own bodies): running by default, 18 s into a sample
-  0:30 race beating the history's best on its board (`Sim.Sample("newbest")`: the clock, live figures,
-  the chart against the best's pace, the pace bar and the spells), or armed or the result card. No
-  timer runs. The Results window opens on the sample.
+- **The sample race** (`modules/SampleRace.lua`): stands where `NS.Race` stands while either mode is on.
+  It answers Race's queries, so `Hud.raceView` builds every body by the one path (the delta, the chart,
+  the pace bar and the stop phases are worked out, not pushed), and it sends `RACE_STATE_CHANGED`,
+  `RACE_BUZZER` and `RACE_RESULT`, so the buzzer, the countdown and its cue, the chat lines and the
+  toast are the real receivers'. `AutoArm` and Preview's end-on-arm skip a message whose run is
+  `run.sample`. The HUD's own throttle and bucket capture run on `SampleRace.ReadLive`; the plan's
+  casts go through `NS.Casts`; the run joins the sample history at its start and resolves in place;
+  `Bests` reads the source while a sample history is in place, so a delta is judged against it. Two
+  things never happen: `RUN_SAVED` (its receiver prunes the real store) and any move of `NS.Race`
+  itself (one race, and a preview may start over a real result card).
+- **test** (`Preview.Mode() == "test"`): static. The sample race is replayed silently to one moment
+  and frozen there (`SampleRace.Hold`): running by default, 18 s into a 0:30 race beating the history's
+  best on its board (`Sim.Sample("newbest")`), or armed or the result card. No timer runs, and a held
+  body reads every setting as a live one does. The Results window opens on the sample.
 - **sim** (`Preview.Mode() == "sim"`, `modules/Sim.lua`): the scenario's sample race (`newbest`,
-  `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`; its DPS set against the history's best
-  on its board) plays Armed 3 s → Running 30 s → Stop! 3 s → Waiting 4 s → Result 4 s (a run that ends
-  before its buzzer goes Running → Waiting out of combat → Result), then joins the sample history
-  (`ResultsSource.Add`, with its chart record unless shared) and the Results window opens on it while
-  the HUD keeps the card. One `C_Timer` ticker at 10 Hz advances it and stops at the Results step. The
-  running body and the card draw the chart and the pace bar against that best (scale B and no pace bar
-  for `first`, neither for `shared`), the center countdown shows silently in its last seconds, and the
-  card's delta is `Bests.Delta` against the sample history. *Stop Now* on its Stop! or waiting body
-  jumps the script to the result card (`Sim.SkipToResult`); *Cancel* ends the sim.
+  `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; its DPS set against the
+  history's best on its board) arms for 3 s, runs 30 s, and then follows its plan as a race would:
+  the HUD shows Stop! until the tail has been quiet 2.5 s, Waiting after that, and the read comes
+  once combat is over and quiet (a run that ends before its buzzer goes Running → Waiting out of combat
+  → Result). `sticky` holds combat past `race.hintDelay`, the only way the hint shows in a sim. One
+  `C_Timer` ticker at 20 Hz moves it on, and the Results window opens on the run 4 s after the card
+  while the HUD keeps it. *Stop Now* is `Race.StopNow`'s rule: in combat it grays and reads at the combat
+  end; out of combat it reads at once. *Cancel* ends the sim. New Race, Details and Delete on the
+  sample card work as on a real card, in memory; New Race never touches the remembered length.
 - **The marker**: while either is on, `Hud.Refresh` lays the library's test-mode strip (*Test mode:
   sample numbers. Combat or Arm ends it*: what it shows and what ends it, standalone-windows) under the title bar and moves the content down by its height; with no
   Widgets library the title reads *DPS Race · Test* instead, never both. The Results window lays its
@@ -591,5 +605,4 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   Runs view restored); each window the preview opened is closed again, except the HUD for a race.
   Closing the HUD (its X or Escape) and the sample bodies'
   Cancel ends it too, through `Hud.Act`, and never reaches `Race.Cancel`: a start is
-  allowed over a real result card, which the preview covers and leaves as it was; the sample card's
-  New Race, Details and Delete are drawn disabled. The stand-down ends it silently (`Preview.Suspend`).
+  allowed over a real result card, which the preview covers and leaves as it was. The stand-down ends it silently (`Preview.Suspend`).

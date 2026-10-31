@@ -352,7 +352,7 @@ Total.
 - hud: showMode always shows it at login
 - hud: a race resumed after a /reload shows the HUD under onArm
 - hud: a result arriving while the window is closed opens it
-- hud: Render draws a given body only while test mode is on
+- hud: test mode's sample race draws through the race's own view, only while it is on
 - hud: the stand-down drops every registration, timer and the OnUpdate
 - hud: hidden with its parent is not closed by the player
 - hud: the library-absent load still draws the HUD without a grip or a close control
@@ -460,7 +460,7 @@ Total.
 - countdown: a /reload with 4s left resumes at 4 and counts 3, 2, 1
 - countdown: a /reload before the window shows nothing until it opens
 - countdown: a /reload past the buzzer shows nothing
-- countdown: the sim demonstrates it in its running phase, and it stops with the sim
+- countdown: the sim runs the real marks in its running phase, cue included, and they stop with it
 - countdown: the sim race's buzzer clears it, the setting holds in the sim, and still test mode shows none
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
@@ -1310,7 +1310,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (13)
+### test_sim.lua (14)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -1322,9 +1322,36 @@ Total.
 - sim: the end conditions: combat, arming a real race, the switch; refused in combat and in a race
 - sim: closing the HUD, Reset all settings and the stand-down end a running script
 - sim: switching to test mode stops the script; a sim restarts in place
-- sim: Stop Now on the Stop! or waiting body jumps the script to the result; Cancel ends the sim
-- sim: the sample result card's Delete is grayed and does nothing
+- sim: Stop Now reads as a real race's: in combat at the combat end, out of it at once; Cancel ends the sim
+- sim: the sample card's Delete asks, leaves the sample history and goes to the Arm screen
+- sim: the sample card's Details opens its run, and Share stays refused
 - sim: the result card draws the best's diagonal with a best before the run, and none on a first race
+
+### test_sample_parity.lua (23)
+
+- sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
+- sample parity: a sim's new best is not a flat factor of its history: its rows differ too
+- sample parity: a spell can sit on one side of a compare only, and the shares and order differ
+- sample parity: the plan is deterministic: the same id, the same fight
+- sample parity: every sample record has the shape a race leaves
+- sample parity: every spell that deals damage was cast, and every cast of damage shows in the spells
+- sample parity: a flagged run's late cast is in its own cast list, past the buzzer
+- sample parity: a raised grace judges the sample's late casts as it would a race's
+- sample parity: the player draws their own class's rotation; every class has one
+- sample parity: a made-up character carries its own trinket, bags and gear, not the player's
+- sample parity: loadout b changes a slot, never empties it
+- sample parity: the running figures are the meter's shape: nothing before the first hit, rows that move
+- sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer
+- sample parity: the run joins the sample history at its start and resolves in place
+- sample parity: a run that ended early shows Combat Ended, with no tail and no buzzer
+- sample parity: complete runs go out of combat before the read, and the hint waits for its delay
+- sample parity: the race's messages reach the buzzer, the chat lines and the toast, and no RUN_SAVED
+- sample parity: a sim neither ends itself on its own arm nor arms AutoArm's rule
+- sample parity: the sample card honors Show spell icons, and every setting while it is held
+- sample parity: a change to the sample history reaches the card, as RUNS_CHANGED does a real one
+- sample parity: the HUD's reads go through its throttle: live.hz bounds them
+- sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
+- sample parity: arming a real race from under a sim keeps that race's cast list
 
 ### test_launcher.lua (8)
 
@@ -1539,7 +1566,8 @@ Total.
 | test_share.lua | 14 |
 | test_toast.lua | 19 |
 | test_preview.lua | 23 |
-| test_sim.lua | 13 |
+| test_sim.lua | 14 |
+| test_sample_parity.lua | 23 |
 | test_launcher.lua | 8 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -1553,4 +1581,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1223** |
+| **Total** | **1247** |
