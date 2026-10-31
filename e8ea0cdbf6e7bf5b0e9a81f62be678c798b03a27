@@ -1,0 +1,5 @@
+Independent review of the DR-F01..F04 work (branch feat/2026-10-31-font-pickers-skin-faces): three low findings, all verified real, none rejected.
+1. modules/Hud_States.lua verdict chip: Tips.newBestChip false with no earlier best (Bests.Delta nil,true), Tips.behindChip false on a tie. FIXED in DR-F02 with firstBestChip, tiedChip (gray) and a test.
+2. docs/smoke-tests.md SM-DR-UT40 named the header DR-F03 removed. FIXED (row reworded to match FP5).
+3. docs/smoke-tests.md SM-DR-FP3 overpromised: AceDB strips a value equal to the old default, so an old All text was never stored. FIXED in the row and ARCHITECTURE; code unchanged, D-10 migrates nothing.
+Gate at this head: 1202 passed, 0 failed, 1 skipped; luacheck 0/0; touched files under 1500 lines; touched files have no function above CCN 15 on the sighted shadow. Smoke not run.
