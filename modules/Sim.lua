@@ -183,6 +183,13 @@ end
 
 --- The stepper's session, or nil with no LibKa0s-Sim-1.0.
 Sim.session = newSession()
+-- The stepper's own Stop (reason "stop") ends the preview as well: the ticker and the race are Sim's, not
+-- the session's. Sim.Cancel's stopSession runs quiet and a Restart's reason is "restart", so neither re-enters.
+if Sim.session then
+    Sim.session:OnStop(function(_, reason)
+        if not quiet and reason == "stop" and NS.Preview.IsActive() then NS.Preview.Stop() end
+    end)
+end
 NS.SimSession = Sim.session
 
 local function stopSession(reason)
