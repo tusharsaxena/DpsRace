@@ -270,17 +270,16 @@ end
 local fontOpts = {}   -- refilled per call, every field: S.HudFont keeps nothing of it
 
 --- Draw `fs` in a resolved font block, through S.HudFont: a 12.0.7 client draws only a font object's
---- shadow. `scale` multiplies its size (a clock shown alone); `keepColor` leaves the FontString's color
---- as its caller set it.
+--- shadow. `scale` multiplies its size (a clock shown alone). The text color comes after S.HudFont, as
+--- the Options doc's section 3 asks: a caller that wants another color sets it after this.
 --- @param fs table  a FontString
 --- @param font table  Appearance.Font's
 --- @param scale number|nil
---- @param keepColor boolean|nil
-function Appearance.ApplyFont(fs, font, scale, keepColor)
+function Appearance.ApplyFont(fs, font, scale)
     fontOpts.face, fontOpts.size, fontOpts.flags = font.path, math.floor(font.size * (scale or 1) + 0.5), font.flags
     fontOpts.shadow, fontOpts.shadowFromSkin = font.shadow, font.shadowFromSkin
     NS.Skin.HudFont(fs, fontOpts)
-    if not keepColor then fs:SetTextColor(font.r, font.g, font.b, font.a) end
+    fs:SetTextColor(font.r, font.g, font.b, font.a)
 end
 
 --- The spell bars' look: the HUD's, or the Results detail's with `where` "window" (Breakdown.New's).

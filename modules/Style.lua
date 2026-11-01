@@ -283,6 +283,20 @@ function Style.Paint(fs, color, font, force)
     tint(fs, token)
 end
 
+--- The color Style.Paint would give `fs`, alpha included, and nothing else: for a label that takes
+--- its face and shadow from S.HudFont, which a forced Paint would put back on the role's face. Paint's
+--- stamp is not consulted, because the color it remembers is not the one on the string.
+--- @param fs table
+--- @param color table|string
+function Style.Recolor(fs, color)
+    local c = color
+    if type(c) ~= "table" or c.token then
+        local role = Style.Role(fontOf[fs], c)
+        c = Style.Tok(ROLE_TOKEN[role] or role)
+    end
+    fs:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+end
+
 local SkinLib = LibStub and LibStub("LibKa0s-Skin-1.0", true)
 
 --- Color `fs` with a DATA hue `c` ({ r, g, b }, no token: a class color, a race length's or a

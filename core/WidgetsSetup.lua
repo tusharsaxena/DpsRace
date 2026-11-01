@@ -41,8 +41,9 @@ end
 -- written against MenuUtil's own description (CreateTitle, CreateButton, and on a button SetEnabled and
 -- a nested CreateButton), recorded here, then drawn one level at a time. That menu has no flyout, title
 -- row or disabled row, so a submenu replaces the rows it drops from, a title is a row in the heading
--- color that does nothing, and a disabled row is one in the disabled color that does nothing. Without
--- the library the same `fill` goes to the client's menu.
+-- color that does nothing, and a disabled row is one in the disabled color that does nothing: the
+-- library hides the menu before it reports any row's click, so those two open their own level again.
+-- Without the library the same `fill` goes to the client's menu.
 
 local contextDropdown
 
@@ -100,7 +101,7 @@ local function showLevel(dd, level)
     dd:SetValue(nil, "")
     dd.onSelect = function(i)
         local item = level.items[i]
-        if not item or item.title or item.enabled == false then return end
+        if not item or item.title or item.enabled == false then return showLevel(dd, level) end
         if #item.items > 0 then return showLevel(dd, item) end
         if item.onClick then item.onClick() end
     end

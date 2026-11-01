@@ -432,7 +432,9 @@ end
 -- The bar's width: the cell's, times the run's share (Tbl.BarShare) between its group's smallest and
 -- largest value (Table:measure). Plain numbers off stored runs, and the cell's width is the column
 -- layout's, never a measured one.
-local function bindBar(cell, col, run)
+-- `color` is Bind.text's, the column's own: a dash takes it again after the bar text's font, because a
+-- font object lands over a color (Options doc, Moving to, section 3) and Paint's stamp would skip it.
+local function bindBar(cell, col, run, color)
     local range = col.barRanges and col.barRanges[col.groupOf and col.groupOf(run) or true] or {}
     local share = Tbl.BarShare(col.bar(run), range.min, range.max)
     local on = share > 0
@@ -443,7 +445,10 @@ local function bindBar(cell, col, run)
         NS.HudAppearance.PaintTrack(cell.track, style.bg)
         NS.HudAppearance.PaintEdge(cell, cell.track:GetParent(), cell.track, style.border)
         -- A dash (no figure) keeps the column's muted color; a figure takes the bar text's.
-        if style.font and NS.HudAppearance then NS.HudAppearance.ApplyFont(cell.fs, style.font, nil, not on) end
+        if style.font and NS.HudAppearance then
+            NS.HudAppearance.ApplyFont(cell.fs, style.font)
+            if not on then Style.Recolor(cell.fs, color or C.text) end
+        end
     end
     cell.bar:SetShown(on)
     if on then cell.bar:SetWidth(math.max(1, math.floor((cell.barW or 0) * share + 0.5))) end
@@ -453,7 +458,7 @@ function Bind.text(cell, col, run)
     local s, color = col.text(run)
     cell.fs:SetText(s or "")
     paint(cell.fs, color)
-    if cell.bar then bindBar(cell, col, run) end
+    if cell.bar then bindBar(cell, col, run, color) end
 end
 
 Tbl.ICON_GAP = 2            -- between two icons of an items cell

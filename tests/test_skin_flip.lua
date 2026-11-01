@@ -192,6 +192,23 @@ test("skin flip: Ignore fonts stands a followed shadow down to the stored one", 
     assertEqual(rgb(fs.drawn.r, fs.drawn.g, fs.drawn.b), rgb(r, g, b), "the skin still colors it")
 end)
 
+test("skin flip: a block with its own shadow takes the skin's offset, and Ignore fonts the stored one", function()
+    local inst = T.load()
+    local NS, A = inst.NS, inst.NS.HudAppearance
+    switch(inst, "contrast")
+    assertEqual(NS.Skin.Token("hud.shadowX"), 2, "the one shipped skin with its own offset")
+    local fs = spyString()
+    A.ApplyFont(fs, A.Font("figures"))
+    assertEqual(fs.drawn.x, 2, "the skin's offset, not the 1, -1 of a stored shadow")
+    assertEqual(fs.drawn.y, -2)
+    assertTrue(NS.SetByPath("skin.ignoreFonts", true))
+    assertTrue(NS.SetByPath("appearance.figures.fontShadow", true))
+    A.ApplyFont(fs, A.Font("figures"))
+    assertEqual(fs.drawn.x, 1, "the stored shadow, not the skin's")
+    assertEqual(fs.drawn.y, -1)
+    assertEqual(rgb(fs.drawn.sr, fs.drawn.sg, fs.drawn.sb), rgb(0, 0, 0), "in the client's black")
+end)
+
 test("skin flip: a class color comes before every companion", function()
     local inst = T.load({ mutate = function(m) m.RAID_CLASS_COLORS = { WARLOCK = { r = 0.53, g = 0.53, b = 0.93 } } end })
     local NS, A = inst.NS, inst.NS.HudAppearance
@@ -280,13 +297,6 @@ end)
 
 -- ── the step ────────────────────────────────────────────────────────────────────────────────────
 
-local function deepCopy(v)
-    if type(v) ~= "table" then return v end
-    local o = {}
-    for k, x in pairs(v) do o[k] = deepCopy(x) end
-    return o
-end
-
 local function encode(v)
     if type(v) ~= "table" then return tostring(v) end
     local keys = {}
@@ -363,6 +373,35 @@ test("skin flip: the step moves a stored partial profile onto the skin and rewri
     assertEqual(p.skin.fullSkinReset, true, "the record")
 end)
 
+test("skin flip: the list names every companion on by default, and the three flags keys", function()
+    local listed = {}
+    for _, path in ipairs(T.NS.HudAppearance.FULL_SKIN_KEYS) do
+        assertTrue(not listed[path], path .. " is listed twice")
+        listed[path] = true
+    end
+    local seen = 0
+    local function walk(t, prefix)
+        for k, v in pairs(t) do
+            local path = prefix .. tostring(k)
+            if type(v) == "table" then
+                walk(v, path .. ".")
+            elseif tostring(k):match("FromSkin$") and v == true then
+                assertTrue(listed[path], path .. " is on by default and the step does not name it")
+                seen = seen + 1
+            end
+        end
+    end
+    walk(T.NS.defaults.profile, "")
+    local flags, rest = {}, 0
+    for path in pairs(listed) do
+        if path:match("%.fontFlags$") then flags[#flags + 1] = path else rest = rest + 1 end
+    end
+    assertEqual(rest, seen, "the list names nothing else")
+    table.sort(flags)
+    assertEqual(table.concat(flags, " "), "appearance.figures.fontFlags appearance.spellText.fontFlags "
+        .. "resultsTable.barText.fontFlags")
+end)
+
 test("skin flip: the list names no size, class color, ignore, bar fill or clock color", function()
     for _, path in ipairs(T.NS.HudAppearance.FULL_SKIN_KEYS) do
         for _, bad in ipairs({ "fontSize", "useClassColor", "ignore", "barColor", "fontColor$", "font$" }) do
@@ -375,6 +414,19 @@ test("skin flip: a sub-table the profile never stored is skipped and stays absen
     local bare = {}
     migrated({ Bare = bare })
     assertEqual(encode(bare), "{skin={fullSkinReset=true}}", "the record is the one table the step creates")
+end)
+
+test("skin flip: a current profile born after the stamp reached 9 takes the step at the next init", function()
+    local p, other = {}, {}
+    local i = T.load({ init = false })
+    _G.DpsRaceDB = { global = { schemaVersion = i.NS.SCHEMA_VERSION, schema = 4 },
+                     profiles = { Default = p, Other = other } }
+    i.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    i.NS:InitDB()
+    i.NS:RunMigrations()
+    assertEqual(i.NS.db:GetCurrentProfile(), "Default")
+    assertEqual(p.skin.fullSkinReset, true, "no ladder step ran, so this is the init's own call")
+    assertEqual(encode(other), "{}", "a profile nobody is on waits for its event")
 end)
 
 test("skin flip: a second run writes nothing, on a profile event too", function()
@@ -415,7 +467,7 @@ end)
 
 test("skin flip: with the library absent the step makes the same writes and its own record", function()
     local p = partial()
-    migrated({ P = p }, {})
+    local i = migrated({ P = p }, {})
     local a = p.appearance
     assertEqual(a.figures.fontColorFromSkin, true)
     assertEqual(a.bars.bgFromSkin, true)
@@ -423,9 +475,11 @@ test("skin flip: with the library absent the step makes the same writes and its 
     assertEqual(a.figures.fontColor.r, 0.1, "the color kept")
     assertEqual(a.elapsed.fontFlags, "OUTLINE")
     assertEqual(p.skin.fullSkinReset, true)
+    -- Its own gate: a companion turned off afterwards stays off, the step answering that it did not run.
+    a.figures.fontColorFromSkin = false
+    assertEqual(i.NS.FollowSkinOnce(p), false)
+    assertEqual(a.figures.fontColorFromSkin, false, "the record holds the no-library arm too")
     local bare = {}
     migrated({ Bare = bare }, {})
     assertEqual(encode(bare), "{skin={fullSkinReset=true}}", "no table but the record's")
-    local again = deepCopy(p)
-    assertEqual(encode(again), encode(p))
 end)

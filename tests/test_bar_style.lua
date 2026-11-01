@@ -62,6 +62,52 @@ local function eachBlue(profile, fn)
     fn(profile.resultsTable.dpsBar, "the DPS bar")
 end
 
+-- ── a dash in a bar cell ─────────────────────────────────────────────────────────────────────────
+
+--- A one-column bar list the way the Runs list builds one.
+local function barCell(i, runs)
+    local NS, A = i.NS, i.A
+    local D = NS.defaults.profile.resultsTable
+    local muted = NS.Style.Tok("text.muted")
+    local col = { key = "v", label = "V", width = 60,
+        bar = function(run) return run.v end,
+        text = function(run) if run.v then return "12" end return "-", muted end,
+        barStyle = function()
+            local look = A.Styled("resultsTable.damageBar.", D.damageBar, false)
+            look.font = A.FontAt("resultsTable.barText.", D.barText, false, "window")
+            return look
+        end }
+    local t = NS.ResultsTable.New(i.mocks.CreateFrame("Frame"), { col }, {})
+    t:Resize(600, 300)
+    t:SetData(runs)
+    return t, muted
+end
+
+test("bar style: a dash takes its muted color back after the bar text's font, on a pooled row too", function()
+    local i = inst()
+    local NS = i.NS
+    assertTrue(NS.SetByPath("resultsTable.barText.fontColorFromSkin", false))
+    assertTrue(NS.SetByPath("resultsTable.barText.fontColor", { r = 0.9, g = 0.1, b = 0.1, a = 0.5 }))
+    local t, muted = barCell(i, { { id = "a", v = 5, date = 1 } })
+    local fs = t.shown[1].cells[1].fs
+    local log, real = {}, NS.Skin.HudFont
+    NS.Skin.HudFont = function(...)
+        log[#log + 1] = "font"
+        return real(...)
+    end
+    rawset(fs, "SetTextColor", function(_, r, g, b, a)
+        log[#log + 1] = { r, g, b, a }
+    end)
+    t:SetData({ { id = "b", date = 2 } })
+    assertTrue(rawequal(t.shown[1].cells[1].fs, fs), "the same string, showing a figure before")
+    local fontAt
+    for n, entry in ipairs(log) do if entry == "font" then fontAt = n end end
+    assertTrue(fontAt ~= nil and fontAt < #log, "the color is the last write: a font object lands over one")
+    local last = log[#log]
+    assertEqual(last[1], muted[1]); assertEqual(last[2], muted[2]); assertEqual(last[3], muted[3])
+    assertEqual(last[4], muted[4] or 1, "the bar text's alpha does not stay behind")
+end)
+
 -- ── the defaults ────────────────────────────────────────────────────────────────────────────────
 
 test("bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy", function()
