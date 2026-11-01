@@ -17,6 +17,8 @@ local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
 local FOLLOWING = {
+    ["appearance.elapsed.fontFromSkin"] = "font",
+    ["appearance.left.fontFromSkin"] = "font",
     ["appearance.figures.fontFromSkin"] = "font",
     ["appearance.spellText.fontFromSkin"] = "font",
     ["appearance.bars.barTextureFromSkin"] = "barTexture",
@@ -63,12 +65,11 @@ test("skin hud: the defaults list every companion, on, and the full-path list ma
     assertEqual(seen, n)
 end)
 
-test("skin hud: the clocks keep their monospace face, with no companion (D-15)", function()
+test("skin hud: the clocks take the skin's font like the other blocks, with no color companion (SF-DR-1)", function()
     local NS = T.NS
     for _, block in ipairs({ "elapsed", "left" }) do
-        assertEqual(NS.defaults.profile.appearance[block].fontFromSkin, nil, block .. " default")
-        assertEqual(rowAt(NS, "appearance." .. block .. ".fontFromSkin"), nil, block .. " row")
-        assertEqual(rowAt(NS, "appearance." .. block .. ".font").disabledIf, nil, block .. " picker free")
+        assertEqual(NS.defaults.profile.appearance[block].fontFromSkin, true, block .. " default")
+        assertEqual(rowAt(NS, "appearance." .. block .. ".fontColorFromSkin"), nil, block .. " color row")
     end
 end)
 
@@ -158,8 +159,11 @@ test("skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Defaul
     assertEqual(A.Bar().texture, bar)
     assertEqual(A.Chart().texture, bar)
     assertEqual(A.Pace().texture, bar)
-    -- The clocks stay on their own face.
+    -- The clocks follow it too (SF-DR-1), and off they draw their stored mono pick.
+    assertEqual(A.Font("elapsed").path, face)
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFromSkin", false))
     assertEqual(A.Font("elapsed").path, LSM:Fetch("font", "JetBrains Mono") or NS.Constants.FONT_MONO)
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFromSkin", true))
     -- Off, the stored pick: the Ka0s pick by default (LibKa0s v1.85.0), then a player's.
     assertTrue(NS.SetByPath("appearance.bars.barTextureFromSkin", false))
     assertEqual(A.Bar().texture, bar)

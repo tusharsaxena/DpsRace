@@ -258,8 +258,8 @@ live and waits. The clocks' colors mean something and have only the shadow's. Ba
 under *All text* and *HUD text only*, none under *Off*, outlined while *Ignore fonts* is on; a flag the
 player picks wins. And a block drawing the skin's face draws its *Font size* at the skin's HUD scale
 (D-09: Obsidian 13 for Ka0s Default's 12, Glass 11), so its text is as wide in every skin; its own face
-and *Ignore fonts* draw the size as set. The two clocks have no
-companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Prototype
+and *Ignore fonts* draw the size as set. The two clocks take the font
+companion too (SF-DR-1, reversing D-15), and so no longer keep their monospace face under a skin. Under Ka0s Default a following block draws Prototype
 and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
 
 | Subsection | Schema prefix | Rows | Styles |

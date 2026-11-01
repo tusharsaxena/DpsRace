@@ -186,7 +186,7 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- LibKa0s v1.85.0 adds each border's *Use the skin's color*, and the font blocks' color and shadow
     -- companions and the chart background's, all `extra` rows: each goes with its block.
     local STYLE_ROWS = 3 + 6
-    local TEXT_COMPANIONS = 1 + 1 + 2 + 2
+    local TEXT_COMPANIONS = 1 + 1 + 2 + 2 + 2   -- the clocks' font companions (SF-DR-1), 2 of them
     local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * STYLE_ROWS + TEXT_COMPANIONS + 1
     -- History > Results table: two bar blocks of four and a font block of six, each with its
     -- "Use the skin's ..." companion (DR-03, D-16).

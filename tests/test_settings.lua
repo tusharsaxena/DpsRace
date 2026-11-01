@@ -128,6 +128,8 @@ local STORED = {
     ["appearance.chart.useClassColorBg"] = { "bool", false },
     ["appearance.chart.bgFromSkin"] = { "bool", true },
     ["appearance.elapsed.fontShadowFromSkin"] = { "bool", true },
+    ["appearance.elapsed.fontFromSkin"] = { "bool", true },
+    ["appearance.left.fontFromSkin"] = { "bool", true },
     ["appearance.left.fontShadowFromSkin"] = { "bool", true },
     ["appearance.figures.fontColorFromSkin"] = { "bool", true },
     ["appearance.figures.fontShadowFromSkin"] = { "bool", true },
@@ -433,7 +435,7 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General holds M
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1,
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1 + 2,
         "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions, two Background and Border sets, the text blocks' color and shadow companions and the chart background's")
 end)
 

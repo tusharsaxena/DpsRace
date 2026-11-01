@@ -385,9 +385,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     f.meter.SetSecret(true)
     pump(f, 0.5)
     local w = body(f).w
-    -- The defaults are the shipped look: the monospace clocks at 26, green and red.
+    -- The defaults are the shipped look: the clocks at 26, green and red.
     assertEqual(w.elapsed.__font.size, 26)
-    assertEqual(w.elapsed.__font.path, f.NS.Constants.FONT_MONO)
+    assertEqual(w.elapsed.__font.path, f.NS.HudAppearance.Font("elapsed").path)   -- the skin's face (SF-DR-1)
     assertEqual(w.elapsed.__color[1], 0.36)
     assertEqual(w.left.__color[1], 1.0)
     assertEqual(w.damage.value.__font.size, 20)

@@ -439,8 +439,7 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   background and border colors and thickness follow too, each through a companion after any class color, with
   three owner tokens keeping this addon's pixels under Ka0s Default (`dr.figures.text`, `dr.hud.shadow`,
   `dr.chart.bg`), and text draws through `S.HudFont`, the only shadow a 12.0.7 client draws. Sizes stay the player's,
-  the bar fills the owner's call (A9). The two race clocks have no face or color companion and keep their
-  monospace face (D-15). Migration 8 -> 9 is the one step onto the skin (schema.md). Migration 5 -> 6 turns every stored
+  the bar fills the owner's call (A9). The two race clocks have a face companion (SF-DR-1, reversing D-15) and no color one. Migration 8 -> 9 is the one step onto the skin (schema.md). Migration 5 -> 6 turns every stored
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
   LibKa0s v1.82.0 reads two of the player's values through the skin without rewriting them: a
   *Font flags* of *From skin* (`"@skin"`, every block's default, the clocks' too; D-07) draws the Skin

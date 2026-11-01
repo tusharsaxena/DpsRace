@@ -235,9 +235,11 @@ test("skin fonts: a block on the skin's face draws the skin's HUD scale; its own
     assertEqual(NS.HudAppearance.Font("figures").size, 12, "Ignore fonts: the stored size")
 end)
 
-test("skin fonts: the clocks keep their stored size in every skin", function()
+test("skin fonts: the clocks keep their stored size in every skin once they stop following its font", function()
     local NS = T.load().NS
     NS.ApplySkinChoice("ka0s", "obsidian")
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFromSkin", false))
+    assertTrue(NS.SetByPath("appearance.left.fontFromSkin", false))
     assertEqual(NS.HudAppearance.Font("elapsed").size, NS.defaults.profile.appearance.elapsed.fontSize)
     assertEqual(NS.HudAppearance.Font("left").size, NS.defaults.profile.appearance.left.fontSize)
 end)

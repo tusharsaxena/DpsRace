@@ -98,8 +98,10 @@ local OWN_SHADOW = { ["appearance.figures."] = "dr.hud.shadow", ["appearance.spe
                      ["resultsTable.barText."] = "dr.hud.shadow" }
 
 --- Every stored companion, by full path: the v6 reset's list (core/Database.lua). The clocks
---- (`appearance.elapsed`, `appearance.left`) are absent by design (D-15).
+--- (`appearance.elapsed`, `appearance.left`) carry only the font's companion (SF-DR-1), no color's.
 Appearance.FROM_SKIN_KEYS = {
+    "appearance.elapsed.fontFromSkin",
+    "appearance.left.fontFromSkin",
     "appearance.figures.fontFromSkin",
     "appearance.spellText.fontFromSkin",
     "appearance.bars.barTextureFromSkin",
@@ -116,7 +118,8 @@ Appearance.FROM_SKIN_KEYS = {
 -- `skin.ignore*` pair. Not the clocks' flags (their reader never asks the skin), the bar fills or the
 -- Results table's and the compare's `bgFromSkin` (the owner's calls, cause A9).
 local function fullSkinKeys()
-    local keys = { "appearance.elapsed.fontShadowFromSkin", "appearance.left.fontShadowFromSkin" }
+    local keys = { "appearance.elapsed.fontShadowFromSkin", "appearance.left.fontShadowFromSkin",
+                   "appearance.elapsed.fontFromSkin", "appearance.left.fontFromSkin" }
     local function add(p, ...)
         for _, leaf in ipairs({ ... }) do keys[#keys + 1] = p .. leaf end
     end

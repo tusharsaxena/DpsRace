@@ -148,8 +148,8 @@ NS.defaults = {
         -- texture have the composer's. Text colors, shadows, backgrounds and border colors have a
         -- companion of their own (LibKa0s v1.85.0, the owner's rulings of 2026-11-01), on by default,
         -- and the v9 step moves existing profiles. Sizes stay the player's, and the bar fills (cause A9).
-        -- The clocks keep their monospace face with no companion (D-15): their layout assumes a fixed
-        -- advance. Their colors mean something, so only their shadow follows.
+        -- The clocks take the skin's font too (SF-DR-1, the owner's call, reversing D-15). Their colors
+        -- mean something, so only their shadow follows besides.
         -- FONT FLAGS (LibKa0s v1.82.0, D-07): every block's `fontFlags` defaults to "@skin", the
         -- composer's *From skin*, which draws the Skin tab's Font outline (skin.outline) through
         -- S.FontFlags; a flag the player picks wins. "" (None) was the default before the v7 step.
@@ -158,10 +158,10 @@ NS.defaults = {
             -- as large (modules/Hud_States.lua).
             elapsed = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 0.36, g = 0.86, b = 0.46, a = 1 },
                         useClassColorFont = false, fontFlags = "@skin", fontShadow = false,
-                        fontShadowFromSkin = true },
+                        fontShadowFromSkin = true, fontFromSkin = true },
             left    = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 1.0, g = 0.32, b = 0.32, a = 1 },
                         useClassColorFont = false, fontFlags = "@skin", fontShadow = false,
-                        fontShadowFromSkin = true },
+                        fontShadowFromSkin = true, fontFromSkin = true },
             -- The running body's Damage and DPS live figures.
             figures = followText({ font = "Ka0s Prototype", fontSize = 20,
                         fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },

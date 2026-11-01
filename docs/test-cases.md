@@ -1110,7 +1110,7 @@ Total.
 ### test_skin_hud.lua (10)
 
 - skin hud: the defaults list every companion, on, and the full-path list matches them
-- skin hud: the clocks keep their monospace face, with no companion (D-15)
+- skin hud: the clocks take the skin's font like the other blocks, with no color companion (SF-DR-1)
 - skin hud: each companion is a bool row, default on, governing its picker
 - skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
 - skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)

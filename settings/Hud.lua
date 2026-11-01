@@ -108,11 +108,11 @@ NS.RegisterSchemaRows({
 -- row height style the Results window's breakdown too; its bars are History > Run detail's since
 -- 2026-10-31. Every row's reaction is the one restyle (modules/Hud_Appearance.lua), read at CALL time.
 --
--- FOLLOWING THE SKIN (skinning-§6, DR-03): every block but the two clocks takes the composer's
+-- FOLLOWING THE SKIN (skinning-§6, DR-03): every block takes the composer's
 -- `fromSkin = true`, which appends its "Use the skin's font" / "Use the skin's texture" companion on a
 -- line of its own, default on (defaults/Profile.lua, X3). While it is on the picker is disabled and
--- shows the skin's value; the stored pick waits for the player to turn it off. The clocks keep their
--- monospace face with no companion (D-15). Text colors, shadows and the chart's background take a
+-- shows the skin's value; the stored pick waits for the player to turn it off. The clocks follow the skin's
+-- font too (SF-DR-1, reversing D-15). Text colors, shadows and the chart's background take a
 -- companion of their own, appended in the addon's words (NS.TextSkinRows, LibKa0s v1.85.0); the clocks'
 -- colors mean something, so they have only the shadow's, and the bar fills stay the owner's. Every font block,
 -- the clocks too, takes `flagsFromSkin` (LibKa0s v1.82.0, D-07): its Font flags row leads with
@@ -122,12 +122,12 @@ local AD = NS.defaults.profile.appearance
 local function restyle() NS.HudAppearance.Changed() end
 local PLAYER_CLASS = { source = "player" }
 
-local function fontBlock(block, subgroup, order, tooltips, fromSkin)
+local function fontBlock(block, subgroup, order, tooltips, fromSkin, withColor)
     return H.FontGroup({
         prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, subgroup = subgroup,
         order = order, classColor = PLAYER_CLASS, defaults = AD[block], tooltips = tooltips,
         fromSkin = fromSkin, flagsFromSkin = true,
-        extra = NS.TextSkinRows("appearance." .. block .. ".", AD[block], fromSkin == true),
+        extra = NS.TextSkinRows("appearance." .. block .. ".", AD[block], withColor == true),
     })
 end
 
@@ -139,13 +139,13 @@ end
 -- A clock block draws only while Race clock picks it (options-ui-§22): it styles nothing else, the
 -- armed and stop screens keep their own. The rows stay in the schema, so a reset still reaches them.
 local function clockBlock(block, subgroup, order, equals)
-    local rows = fontBlock(block, subgroup, order, CLOCK_SIZE_TIP)
+    local rows = fontBlock(block, subgroup, order, CLOCK_SIZE_TIP, true)
     for _, r in ipairs(rows) do r.shownWhen = { path = "hud.clock", equals = equals } end
     append(rows)
 end
 clockBlock("elapsed", L["Elapsed clock"], 100, { "both", "elapsed" })
 clockBlock("left", L["Time left clock"], 200, { "both", "left" })
-append(fontBlock("figures", L["Live figures"], 300, nil, true))
+append(fontBlock("figures", L["Live figures"], 300, nil, true, true))
 append(H.BarGroup({
     prefix = "appearance.bars.", page = PAGE, group = APPEARANCE, subgroup = L["Spell bars"], order = 400,
     classColor = PLAYER_CLASS, defaults = AD.bars, fromSkin = true,
@@ -155,7 +155,7 @@ append(H.BarGroup({
         tooltip = L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."],
     } },
 }))
-append(fontBlock("spellText", L["Spell text"], 500, nil, true))
+append(fontBlock("spellText", L["Spell text"], 500, nil, true, true))
 local function barExtras(block, background, border, order)
     return NS.BarStyleRows({
         prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, classColor = PLAYER_CLASS,
