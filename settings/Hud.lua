@@ -112,7 +112,9 @@ NS.RegisterSchemaRows({
 -- `fromSkin = true`, which appends its "Use the skin's font" / "Use the skin's texture" companion on a
 -- line of its own, default on (defaults/Profile.lua, X3). While it is on the picker is disabled and
 -- shows the skin's value; the stored pick waits for the player to turn it off. The clocks keep their
--- monospace face with no companion (D-15). Colors never follow the skin (X4). Every font block,
+-- monospace face with no companion (D-15). Text colors, shadows and the chart's background take a
+-- companion of their own, appended in the addon's words (NS.TextSkinRows, LibKa0s v1.85.0); the clocks'
+-- colors mean something, so they have only the shadow's, and the bar fills stay the owner's. Every font block,
 -- the clocks too, takes `flagsFromSkin` (LibKa0s v1.82.0, D-07): its Font flags row leads with
 -- *From skin*, the default, which draws the Skin tab's Font outline.
 local APPEARANCE = L["HUD Appearance"]
@@ -125,6 +127,7 @@ local function fontBlock(block, subgroup, order, tooltips, fromSkin)
         prefix = "appearance." .. block .. ".", page = PAGE, group = APPEARANCE, subgroup = subgroup,
         order = order, classColor = PLAYER_CLASS, defaults = AD[block], tooltips = tooltips,
         fromSkin = fromSkin, flagsFromSkin = true,
+        extra = NS.TextSkinRows("appearance." .. block .. ".", AD[block], fromSkin == true),
     })
 end
 
@@ -175,13 +178,18 @@ append(H.BarGroup({
         tooltip = L["The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."],
     } },
 }))
--- The chart plot's background: a backdrop with no fill texture, so a swatch and its class-color
--- companion and nothing else (options-ui-§16, §17), under a heading of its own.
+-- The chart plot's background: a backdrop with no fill texture, so a swatch, its class-color companion
+-- and the skin's (options-ui-§16, §17), under a heading of its own.
 append(H.ColorPair({
     prefix = "appearance.chart.", page = PAGE, group = APPEARANCE, subgroup = L["Chart background"], order = 900,
     key = "bgColor", companionKey = "useClassColorBg", label = L["Background color"],
     classColor = PLAYER_CLASS,
     defaults = { bgColor = AD.chart.bgColor, useClassColorBg = AD.chart.useClassColorBg },
+    extra = { {
+        path = "appearance.chart.bgFromSkin", type = "bool", startsLine = true, label = L["Use the skin's background"],
+        default = AD.chart.bgFromSkin,
+        tooltip = L["Draw the chart's background in the skin's color. The background swatch is not read while this is on, and Use class color comes first."],
+    } },
 }))
 -- The pace bar (#3), its own bar block since 2026-10-25: styling the chart's columns no longer
 -- restyles it.
@@ -197,7 +205,7 @@ for _, r in ipairs(appearanceRows) do
     r.onChange = restyle
     -- The library's words, not this addon's (options-ui-§21), except the appended rows (the *Use the
     -- skin's background* rows too: NS.BarStyleRows leaves those unmarked).
-    if not OWN_WORDS[r.path] and not r.path:find("bgFromSkin", 1, true) then r.composed = true end
+    if not OWN_WORDS[r.path] and not NS.OWN_SKIN_ROW(r.path) then r.composed = true end
 end
 NS.RegisterSchemaRows(appearanceRows)
 

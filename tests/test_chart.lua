@@ -197,6 +197,7 @@ test("chart: the columns take the Column gap setting; the plot's background its 
     rawset(chart.plot, "SetBackdropColor", function(_, r, g, b, a) bg = { r, g, b, a } end)
     assertTrue(f.NS.SetByPath("appearance.chart.columnGap", 2))
     assertTrue(f.NS.SetByPath("appearance.chart.bgColor", { r = 0.1, g = 0.2, b = 0.3, a = 0.5 }))
+    assertTrue(f.NS.SetByPath("appearance.chart.bgFromSkin", false))
     tick(f)
     assertEqual(chart.colX[2] - (chart.colX[1] + chart.colW[1]), 2, "the gap drawn")
     assertTrue(bg ~= nil, "the plot restyled on the change")

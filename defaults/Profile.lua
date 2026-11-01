@@ -12,20 +12,22 @@ local function barBlue()
     return { r = BAR_BLUE.r, g = BAR_BLUE.g, b = BAR_BLUE.b, a = BAR_BLUE.a }
 end
 
--- A styled bar's fill in the blue, following the skin's texture.
+-- A styled bar's fill in the blue, following the skin's texture. The pick waiting under the companion
+-- is Ka0s Default's own (LibKa0s v1.85.0).
 local function blueFill()
-    return { barTexture = "Solid", barAlpha = BAR_BLUE_ALPHA, barColor = barBlue(), useClassColorBar = false,
+    return { barTexture = "Ka0s Default", barAlpha = BAR_BLUE_ALPHA, barColor = barBlue(), useClassColorBar = false,
              barTextureFromSkin = true }
 end
 
 -- `block` with its Background and Border leaves: the swatch and its two companions, and the border's
--- four rows with its skin companion, on by default (skinning-§6; Ka0s Default's bar.borderStyle is None).
+-- four rows with its skin companions, on by default (skinning-§6; Ka0s Default's bar.borderStyle is None;
+-- `borderStyleFromSkin` governs the style and thickness, `borderColorFromSkin` the color).
 -- `bgFromSkin` draws the block's skin track while on (HudAppearance.TRACK); a surface that draws no
 -- track by default leaves it off, over a swatch of no opacity.
 local function styled(block, bgColor, bgFromSkin)
     block.bgColor, block.useClassColorBg, block.bgFromSkin = bgColor, false, bgFromSkin
     block.borderStyle, block.borderSize, block.borderColor = "None", 1, { r = 0, g = 0, b = 0, a = 1 }
-    block.useClassColorBorder, block.borderStyleFromSkin = false, true
+    block.useClassColorBorder, block.borderStyleFromSkin, block.borderColorFromSkin = false, true, true
     return block
 end
 
@@ -46,7 +48,7 @@ end
 -- so the white figures read over it. Its texture follows the skin, as every bar's does (the owner's
 -- call, 2026-10-31): a skin's texture may draw it a little off these values, and that is accepted.
 local function compareBar(r, g, b)
-    return styled({ barTexture = "Solid", barAlpha = 1, barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
+    return styled({ barTexture = "Ka0s Default", barAlpha = 1, barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
                     useClassColorBar = false, barTextureFromSkin = true }, noTrack(), false)
 end
 
@@ -55,7 +57,14 @@ hudSpellBars.rowHeight = 18
 
 local chartBlock = blueFill()
 chartBlock.height, chartBlock.columnGap = 80, 0
-chartBlock.bgColor, chartBlock.useClassColorBg = { r = 0, g = 0, b = 0, a = 0.35 }, false
+chartBlock.bgColor, chartBlock.useClassColorBg, chartBlock.bgFromSkin = { r = 0, g = 0, b = 0, a = 0.35 }, false, true
+
+-- A text block's companions, on by default (LibKa0s v1.85.0, FS-DR-FLIP): its color's and its shadow's.
+-- `fontColor` and `fontShadow` wait under them for the player to turn one off.
+local function followText(block)
+    block.fontColorFromSkin, block.fontShadowFromSkin = true, true
+    return block
+end
 
 NS.defaults = {
     profile = {
@@ -136,8 +145,11 @@ NS.defaults = {
         -- default ON (X3) so a new or reset profile follows the skin the way an adopted one does after
         -- the v6 reset (core/Database.lua): the skin's `hud.font` and `bar.texture`, the stored pick
         -- kept for when the player turns it off (modules/Hud_Appearance.lua). Only the face and the
-        -- texture follow (X4): sizes, flags, shadows and colors stay the player's. The clocks keep
-        -- their monospace face and have no companion (D-15): their layout assumes a fixed advance.
+        -- texture have the composer's. Text colors, shadows, backgrounds and border colors have a
+        -- companion of their own (LibKa0s v1.85.0, the owner's rulings of 2026-11-01), on by default,
+        -- and the v9 step moves existing profiles. Sizes stay the player's, and the bar fills (cause A9).
+        -- The clocks keep their monospace face with no companion (D-15): their layout assumes a fixed
+        -- advance. Their colors mean something, so only their shadow follows.
         -- FONT FLAGS (LibKa0s v1.82.0, D-07): every block's `fontFlags` defaults to "@skin", the
         -- composer's *From skin*, which draws the Skin tab's Font outline (skin.outline) through
         -- S.FontFlags; a flag the player picks wins. "" (None) was the default before the v7 step.
@@ -145,16 +157,19 @@ NS.defaults = {
             -- The running clock pair. `fontSize` is the pair's; a clock shown alone draws half again
             -- as large (modules/Hud_States.lua).
             elapsed = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 0.36, g = 0.86, b = 0.46, a = 1 },
-                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false,
+                        fontShadowFromSkin = true },
             left    = { font = "JetBrains Mono", fontSize = 26, fontColor = { r = 1.0, g = 0.32, b = 0.32, a = 1 },
-                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = false,
+                        fontShadowFromSkin = true },
             -- The running body's Damage and DPS live figures.
-            figures = { font = "Friz Quadrata TT", fontSize = 20, fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
-                        useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
+            figures = followText({ font = "Ka0s Prototype", fontSize = 20,
+                        fontColor = { r = 0.93, g = 0.93, b = 0.95, a = 1 },
+                        useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true }),
             -- The HUD's spell rows, live and result; `rowHeight` is the Results window's breakdown's too.
             bars = hudSpellBars,
-            spellText = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
+            spellText = followText({ font = "Ka0s Prototype", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
+                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true }),
             -- The damage chart (modules/Hud_Chart.lua): its columns' fill (the mockup's brighter
             -- indigo), the plot's height in pixels, the gap between two columns in pixels (0: one
             -- smooth area), and the plot's background swatch (its composed class-color companion
@@ -173,8 +188,8 @@ NS.defaults = {
         resultsTable = {
             damageBar = tableBar(),
             dpsBar    = tableBar(),
-            barText   = { font = "Friz Quadrata TT", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
-                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true },
+            barText   = followText({ font = "Ka0s Prototype", fontSize = 10, fontColor = { r = 1, g = 1, b = 1, a = 1 },
+                          useClassColorFont = false, fontFlags = "@skin", fontShadow = true, fontFromSkin = true }),
         },
         -- The Results detail's spell rows (History > Run detail, settings/History.lua), split off
         -- appearance.bars on 2026-10-31 (the v8 step carries a stored fill over).
@@ -198,8 +213,11 @@ NS.defaults = {
         -- and texture overrides, an LSM key each, "" for the skin's own; the Font outline, "hud" text only,
         -- "all" text or "off" (LibKa0s v1.82.0, Skin minor 9, ruling D-06; the default since v1.83.0); and `pickerSeen`,
         -- false on every profile, old and new (owner ruling O3), so the first-run skin picker shows once.
+        -- `fullSkinReset`: this profile has been through the one step onto the skin (NS.FollowSkinOnce,
+        -- core/Database.lua). The step's record, so no row carries it and no Defaults walks it: a page
+        -- reset putting it back would run the step again over companions the player turned off.
         skin = { source = "ka0s", skin = "ka0s", ignorePanel = true, ignoreFonts = false,
-                 font = "", texture = "", outline = "hud", pickerSeen = false },
+                 font = "", texture = "", outline = "hud", pickerSeen = false, fullSkinReset = false },
         -- Window geometry (standalone-windows): each window's size; its position is written when
         -- moved. The Results window follows Master scale like the HUD. A new profile (and /dr resetall)
         -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and

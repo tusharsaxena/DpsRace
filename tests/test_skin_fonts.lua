@@ -149,7 +149,8 @@ test("skin fonts: the drawn FontString takes the resolved flags", function()
     local NS = T.load().NS
     local A = NS.HudAppearance
     local got
-    local fs = { SetFont = function(_, _, _, flags) got = flags return true end, SetTextColor = function() end }
+    local fs = { SetFont = function(_, _, _, flags) got = flags return true end, SetTextColor = function() end,
+                 SetShadowColor = function() end, SetShadowOffset = function() end }
     A.ApplyFont(fs, A.Font("figures"))
     assertEqual(got, "OUTLINE")
 end)
@@ -166,6 +167,10 @@ end)
 
 local function migrated(profiles)
     local inst = T.load({ init = false })
+    for _, p in pairs(profiles) do   -- the one step onto the skin has its own suite (test_skin_flip)
+        p.skin = p.skin or {}
+        p.skin.fullSkinReset = true
+    end
     _G.DpsRaceDB = { global = { schemaVersion = 6, schema = 4 }, profiles = profiles }
     inst.mocks._G.DpsRaceDB = _G.DpsRaceDB
     inst.NS:InitDB()
@@ -191,6 +196,7 @@ test("skin fonts: the v7 step moves a stored old-default flag onto From skin, an
     assertEqual(old.appearance.spellText.fontFlags, "OUTLINE", "the player's own flag is kept")
     assertEqual(old.appearance.left.fontFlags, nil, "an absent flag stays absent: its default is From skin")
     assertEqual(old.appearance.left.fontSize, 30, "the rest untouched")
+    bare.skin = nil
     assertEqual(next(bare), nil, "an empty profile untouched")
 end)
 

@@ -181,6 +181,7 @@ test("schema: migration 4 keeps an old profile's expanded view and drops the tim
     assertEqual(old.windows.timeline, nil, "the timeline's unread place dropped")
     assertEqual(kept.windows.results.view, "collapsed", "a stored view kept")
     assertEqual(fresh.windows.results, nil, "a profile that never stored the Results window keeps the default")
+    bare.skin = nil   -- the one step onto the skin's record (test_skin_flip)
     assertEqual(next(bare), nil, "an empty profile untouched")
     -- Idempotent: a second pass changes nothing.
     old.windows.results.view = "collapsed"

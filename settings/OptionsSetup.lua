@@ -56,10 +56,38 @@ local descriptor = {
     debug         = function(tag, fmt, ...) NS.Debug(tag, fmt, ...) end,
 }
 
+--- A font block's companions, as FontGroup's `extra` (LibKa0s v1.85.0, FS-DR-FLIP): *Use the skin's
+--- color* with `color`, and always *Use the skin's shadow*. A swatch stays live under its companion
+--- (options-ui-§17): no `disabledIf`. The addon's own words, so not `composed` (NS.OWN_SKIN_ROW).
+--- @param prefix string  the block's path, with the dot
+--- @param d table  the block's defaults
+--- @param withColor boolean
+--- @return table rows
+function NS.TextSkinRows(prefix, d, withColor)
+    local L = NS.L
+    local rows = {}
+    if withColor then
+        rows[1] = { path = prefix .. "fontColorFromSkin", type = "bool", startsLine = true,
+            label = L["Use the skin's color"], default = d.fontColorFromSkin,
+            tooltip = L["Draw this text in the skin's HUD text color. The Font color swatch is not read while this is on, and Use class color comes first."] }
+    end
+    rows[#rows + 1] = { path = prefix .. "fontShadowFromSkin", type = "bool", startsLine = not withColor or nil,
+        label = L["Use the skin's shadow"], default = d.fontShadowFromSkin,
+        tooltip = L["Draw this text with the skin's shadow. Font shadow is not read while this is on."] }
+    return rows
+end
+
+--- The rows in the addon's words beside a composed block, by the end of their path. Every other row
+--- of a composed block carries the library's words.
+function NS.OWN_SKIN_ROW(path)
+    return path:find("bgFromSkin", 1, true) ~= nil or path:find("fontColorFromSkin", 1, true) ~= nil
+        or path:find("fontShadowFromSkin", 1, true) ~= nil or path:find("borderColorFromSkin", 1, true) ~= nil
+end
+
 --- The Background and Border subsections of a styled bar (options-ui-§16, HudAppearance.Styled), after
 --- its composed bar block: a color pair with *Use the skin's background* appended (the addon's own
---- words, so not `composed`), and a border group with its skin companion. `spec.onChange` is every
---- row's reaction.
+--- words, so not `composed`), and a border group on the skin's bar family, whose companion governs the
+--- thickness too, with *Use the skin's color* appended. `spec.onChange` is every row's reaction.
 --- @param spec table  prefix, page, group, classColor, order (the Background's; the Border's is 100 on),
 ---   defaults (the block), background and border (the two headings), onChange
 --- @return table rows
@@ -79,13 +107,18 @@ function NS.BarStyleRows(spec)
     })
     for _, r in ipairs(NS.Helpers.BorderGroup({
         prefix = p, page = spec.page, group = spec.group, subgroup = spec.border, order = spec.order + 100,
-        classColor = spec.classColor, defaults = d, fromSkin = true,
+        classColor = spec.classColor, defaults = d, fromSkin = "bar",
+        extra = { {
+            path = p .. "borderColorFromSkin", type = "bool", startsLine = true, label = L["Use the skin's color"],
+            default = d.borderColorFromSkin,
+            tooltip = L["Draw this bar's border in the skin's border color. The border color swatch is not read while this is on, and Use class color comes first."],
+        } },
     })) do
         rows[#rows + 1] = r
     end
     for _, r in ipairs(rows) do
         r.onChange = spec.onChange
-        r.composed = r.path ~= own or nil
+        r.composed = not NS.OWN_SKIN_ROW(r.path) or nil
     end
     return rows
 end

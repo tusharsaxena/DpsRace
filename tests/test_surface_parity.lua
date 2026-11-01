@@ -183,11 +183,14 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- five "Use the skin's ..." companions (figures, spell text, spell bars, chart, pace; DR-03), each
     -- the composer's own row, so it goes with its block; and a Background and Border for the spell
     -- bars and the pace bar (STYLE_ROWS each: a color pair with its skin row, a border of four with its).
-    local STYLE_ROWS = 3 + 5
-    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * STYLE_ROWS
+    -- LibKa0s v1.85.0 adds each border's *Use the skin's color*, and the font blocks' color and shadow
+    -- companions and the chart background's, all `extra` rows: each goes with its block.
+    local STYLE_ROWS = 3 + 6
+    local TEXT_COMPANIONS = 1 + 1 + 2 + 2
+    local APPEARANCE_ROWS = 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * STYLE_ROWS + TEXT_COMPANIONS + 1
     -- History > Results table: two bar blocks of four and a font block of six, each with its
     -- "Use the skin's ..." companion (DR-03, D-16).
-    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 3 + 2 * STYLE_ROWS
+    local RESULTS_TABLE_ROWS = 2 * 4 + 6 + 3 + 2 * STYLE_ROWS + 2
     -- History > Run detail: three styled bars, each a bar block with its companion.
     local RUN_DETAIL_ROWS = 3 * (4 + 1 + STYLE_ROWS)
     -- The rows the pages declare by hand (HUD's Race HUD tab, Race, History): a

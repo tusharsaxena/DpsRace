@@ -100,7 +100,7 @@ test("bar style: the compare's defaults are the old hues, brighter and opaque, o
         assertEqual(math.floor(c.g * 255 + 0.5), g, what)
         assertEqual(math.floor(c.b * 255 + 0.5), b, what)
         assertEqual(block.barAlpha, 1, what)
-        assertEqual(block.barTexture, "Solid", what)
+        assertEqual(block.barTexture, "Ka0s Default", what)
         assertEqual(block.barTextureFromSkin, true, what .. ": the owner's call: it follows the skin")
     end
     check(C.best, 42, 70, 107, "best")
@@ -167,6 +167,7 @@ test("bar style: the detail's spell rows draw their block, track and border", fu
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderStyle", "Solid"))
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderSize", 2))
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderColor", { r = 0, g = 0, b = 1, a = 1 }))
+    assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderColorFromSkin", false))
     row = i.R.__ui().detail.w.list.rows[1]
     assertEqual(row.bar.__barColor[1], 1, "live, no reload")
     assertEqual(row.track.__colorTex[2], 1)
@@ -327,6 +328,10 @@ end)
 
 local function migrated(profiles)
     local i = T.load({ init = false })
+    for _, p in pairs(profiles) do   -- the one step onto the skin has its own suite (test_skin_flip)
+        p.skin = p.skin or {}
+        p.skin.fullSkinReset = true
+    end
     _G.DpsRaceDB = { global = { schemaVersion = 7, schema = 4 }, profiles = profiles }
     i.mocks._G.DpsRaceDB = _G.DpsRaceDB
     i.NS:InitDB()
@@ -350,6 +355,7 @@ test("bar style: v8 copies a stored spell-bar fill to the detail, and a bare pro
     assertTrue(d.barColor ~= color, "the two blocks share no table")
     assertEqual(d.rowHeight, nil, "the row height stays the HUD's block's")
     assertEqual(custom.appearance.bars.barAlpha, 0.5, "the HUD's block keeps its own")
+    bare.skin = nil
     assertEqual(next(bare), nil, "an untouched profile reads the new defaults")
     assertEqual(other.resultsDetail, nil)
 end)

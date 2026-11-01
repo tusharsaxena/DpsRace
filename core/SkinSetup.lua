@@ -216,6 +216,12 @@ NS.SKIN_TOKENS = {
     -- The HUD's and the Results window's body text and its dim gray; the flat boxes' faint edge.
     ["dr.text"]       = { default = { 0.93, 0.93, 0.95, 1 }, follow = "text.body" },
     ["dr.dim"]        = { default = { 0.62, 0.62, 0.68, 1 }, follow = "text.muted" },
+    -- The HUD's own values where they differ from the skin's (FS-DR-FLIP, LibKa0s v1.85.0): the live
+    -- figures' gray over hud.text's white, the shadow the text blocks store over Ka0s Default's none,
+    -- and the chart plot's dark wash over chart.track.
+    ["dr.figures.text"] = { default = { 0.93, 0.93, 0.95, 1 }, follow = "hud.text" },
+    ["dr.hud.shadow"]   = { default = { 0, 0, 0, 1 }, follow = "hud.shadow" },
+    ["dr.chart.bg"]     = { default = { 0, 0, 0, 0.35 }, follow = "chart.track" },
     ["dr.box.border"] = { default = { 1, 1, 1, 0.10 }, follow = "list.boxEdge" },
     -- The Results list (and the spell rows that share it): the stripe, the hover and selection
     -- washes, and the scroll thumb (D-5's values, kept).

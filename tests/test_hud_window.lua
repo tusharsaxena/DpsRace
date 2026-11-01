@@ -404,6 +404,7 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertTrue(f.NS.SetByPath("appearance.elapsed.fontSize", 32))
     assertTrue(f.NS.SetByPath("appearance.elapsed.fontFlags", "OUTLINE"))
     assertTrue(f.NS.SetByPath("appearance.figures.fontShadow", false))
+    assertTrue(f.NS.SetByPath("appearance.figures.fontShadowFromSkin", false))
     assertTrue(f.NS.SetByPath("appearance.bars.rowHeight", 24))
     assertTrue(f.NS.SetByPath("appearance.bars.barColor", { r = 0.1, g = 0.2, b = 0.3, a = 1 }))
     pump(f, 0.5)

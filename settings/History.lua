@@ -98,10 +98,10 @@ append(Hp.BarGroup({ prefix = "resultsTable.dpsBar.", page = PAGE, group = RESUL
     subgroup = L["DPS bar"], order = 400, classColor = ROW_CLASS, defaults = RD.dpsBar, fromSkin = true }))
 append(Hp.FontGroup({ prefix = "resultsTable.barText.", page = PAGE, group = RESULTS_TABLE,
     subgroup = L["Bar text"], order = 700, classColor = ROW_CLASS, defaults = RD.barText, fromSkin = true,
-    flagsFromSkin = true }))
+    flagsFromSkin = true, extra = NS.TextSkinRows("resultsTable.barText.", RD.barText, true) }))
 for _, r in ipairs(tableRows) do
     r.onChange = redraw
-    r.composed = true
+    r.composed = not NS.OWN_SKIN_ROW(r.path) or nil
 end
 NS.RegisterSchemaRows(tableRows)
 
