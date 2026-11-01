@@ -356,6 +356,26 @@ test("skin seam: the degraded facade answers every name the live facade carries"
     assertEqual(degraded.ApplySkinChoice(), false, "nothing to apply without the library")
 end)
 
+test("skin seam: the degraded HudFont draws the face, a picked flag and no shadow", function()
+    -- Moving to, section 7: the one facade member that must draw. A no-op leaves a HUD string no face.
+    local S = T.load({ libFiles = {} }).NS.Skin
+    local drawn = {}
+    local fs = {
+        SetFont = function(_, face, size, flags) drawn.face, drawn.size, drawn.flags = face, size, flags end,
+        SetShadowColor = function(_, _, _, _, a) drawn.shadowA = a end,
+        SetShadowOffset = function(_, x, y) drawn.x, drawn.y = x, y end,
+    }
+    S.HudFont(fs, { face = "F.ttf", size = 14, flags = "THICKOUTLINE", shadow = false })
+    assertEqual(drawn.face, "F.ttf")
+    assertEqual(drawn.size, 14)
+    assertEqual(drawn.flags, "THICKOUTLINE", "a picked flag draws as stored")
+    assertEqual(drawn.x, 0, "the off arm clears the shadow")
+    S.HudFont(fs, { face = "F.ttf", flags = "@skin", shadow = true })
+    assertEqual(drawn.flags, "OUTLINE", "the sentinel never reaches SetFont")
+    assertEqual(drawn.size, 12, "no size is Ka0s Default's HUD size")
+    assertEqual(drawn.x, 1, "the stored shadow is still written on the string")
+end)
+
 test("skin seam: each host-copy skin token is the live library's Ka0s Default value", function()
     -- A copy that drifts from the library goes red here, so a degraded install draws Ka0s Default.
     local degraded = T.load({ libFiles = {} }).NS

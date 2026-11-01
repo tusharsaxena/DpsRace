@@ -145,7 +145,7 @@ if not lib then
     end
     for _, name in ipairs({
         "CreatePanel", "EnsureDefaultsButton", "EnsureScroll", "ClearScroll", "Section", "AddSpacer",
-        "TextRow", "BuildLandingPage", "AttachTooltip", "InlineButtonPair", "RenderField", "RenderRows",
+        "TextRow", "LabelFont", "BuildLandingPage", "AttachTooltip", "InlineButtonPair", "RenderField", "RenderRows",
         "RenderSchema", "RenderGrid", "SessionCheckbox", "SetRenderer", "RefreshAllPanels",
         "RefreshScalars", "RefreshPanel", "RestoreDefaults", "PatchAlwaysShowScrollbar",
         "RegisterOptionsPage", "CreateOptionsPanel", "OpenOptionsPanel", "SetChromeHeight", "TabStrip",

@@ -506,7 +506,8 @@ if not Skin then
         "GetAccentColor", "GetPanelColor", "GetFont",
         "TitleBar", "Divider", "Footer", "Card", "Slider", "NavItem", "Drawer", "ListRow", "MenuFrame",
         "Tooltip", "Strip", "Cover", "Text", "ChartStyle", "BarStyle", "IconBorder", "GlowColor",
-        "BarTexture", "FontFlags", "HudFontSize",
+        "BarTexture", "FontFlags", "HudFontSize", "Mark", "MarkText", "HudTextColor", "HudLabelColor",
+        "BarFillColor", "HudShadow", "BarGloss", "HudFont",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -538,6 +539,20 @@ if not Skin then
     S.HudFontSize = function(size)
         local n = tonumber(size)
         return (n and n > 0) and n or 12
+    end
+
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 14): S.HudFont is the one facade member that must draw, or
+    -- a HUD string has no face. No skin to read, so a stored shadow draws no shadow on a 12.0.7 client,
+    -- which keeps only a font object's: accepted (Options doc, Moving to, section 7).
+    S.HudFont = function(fs, opts)
+        opts = type(opts) == "table" and opts or {}
+        local face = opts.face
+        if type(face) ~= "string" or face == "" then face = STANDARD_TEXT_FONT end
+        if type(face) ~= "string" then return nil end
+        fs:SetFont(face, S.HudFontSize(opts.size), S.FontFlags(opts.flags))
+        local on = opts.shadow and true or false
+        fs:SetShadowColor(0, 0, 0, on and 1 or 0)
+        fs:SetShadowOffset(on and 1 or 0, on and -1 or 0)
     end
 
     NS.Skin = S
