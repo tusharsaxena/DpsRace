@@ -200,3 +200,9 @@ and the smoke row that measures it where one exists.
   build that adds a skin face draws it after the game is restarted; a `/reload` is not enough (the
   owner's finding on the 2026-10-31 font pickers run, and why section 28 of the smoke tests starts on a
   fresh client).
+- **The toast's default sound is still the game's alert, not an applause** (SF-DR-7, 2026-11-02). The
+  owner asked for an applause as the default. No Blizzard `SOUNDKIT` name or sound file ID for an applause
+  could be verified from this repo or its tooling, and a vendored recording of unknown license is out, so
+  nothing was invented: *Default* plays the alert it always did. Once a Blizzard applause ID is
+  confirmed in the client (`/run PlaySound(<id>)`), `BestToast.SoundFile` can return it for *Default*;
+  until then a LibSharedMedia applause pack, picked in *Toast sound*, does the job.
