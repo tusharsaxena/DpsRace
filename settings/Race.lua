@@ -2,13 +2,16 @@ local _, NS = ...
 -- settings/Race.lua — the Race page (spec §6.3), its first tab along the race's timeline: the default race
 -- length, auto-arm on a training dummy (#16), the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, and
 -- the scoring rules a new run freezes into its own record (grace, restart gap), and the late-cast
--- ignore list (#8), read when a run's flags are. A second tab, Training dummies (#9), holds your own
--- dummies, read when a run's category is.
+-- ignore list (#8), read when a run's flags are, now its own tab (SF-DR-5). The New-best toast tab
+-- (#5) moved here from General (SF-DR-6); Training dummies (#9) holds your own dummies, read when a
+-- run's category is.
 
 local L = NS.L
+local H = NS.Helpers
 local D = NS.defaults.profile.race
 local PAGE = "race"
 local RACE, SCORING, DUMMIES = L["Race"], L["Scoring rules"], L["Training dummies"]
+local LATE = L["Late-cast ignore list"]      -- its own tab (SF-DR-5)
 
 -- The race lengths the HUD offers (modules/Hud_States.lua), as a numeric dropdown: "3:00" for 180.
 local function lengthValues()
@@ -81,12 +84,44 @@ NS.RegisterSchemaRows({
     -- frozen into a run. One plain string of spell IDs written WHOLE through the seam (the Usage tab's
     -- hidden items' shape, settings/History.lua), so the CLI's get/set/reset and the page's Defaults
     -- reach it like any row. The row carries skipRender: the tab draws it as the library's ID list.
-    { path = NS.LateIgnore.PATH, page = PAGE, group = RACE, subgroup = L["Late-cast ignore list"], type = "string",
+    { path = NS.LateIgnore.PATH, page = PAGE, group = LATE, subgroup = L["Late-cast ignore list"], type = "string",
       label = L["Late-cast ignore list"], default = D.lateIgnore, skipRender = true,
       validate = function(v) return NS.LateIgnore.Parse(v) ~= nil end,
       normalize = function(v) return NS.LateIgnore.Normalize(v) end,
       tooltip = L["Spell IDs, comma-separated, whose casts after the grace never flag a run. Applies to every stored run: a run keeps its casts, so taking a spell off the list flags them again. Unlike the grace, nothing is frozen into a run. 8690 stands for every hearthstone."] },
 
+})
+
+-- ── New-best toast ── (#5, modules/BestToast.lua; moved here from General, SF-DR-6, the paths unchanged) the alert for a race that sets a new best: on or
+-- off first, its sound and which one on the second, then how long it stays and its scale; *Test toast*
+-- after the rows. Duration and sound are read as each toast shows, so they need no reaction; the scale
+-- re-anchors a shown toast. Its place is test mode's (drag it there), stored outside the seam.
+local TOAST = L["New-best toast"]
+local TD = NS.defaults.profile.toast
+NS.RegisterSchemaRows({
+    { path = "toast.enabled", page = PAGE, group = TOAST, subgroup = TOAST, type = "bool",
+      label = L["Show a toast for a new best"], default = TD.enabled,
+      tooltip = L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."],
+      onChange = function() NS.BestToast.Sync() end },
+    { path = "toast.sound", page = PAGE, group = TOAST, subgroup = TOAST, type = "bool",
+      label = L["Play a sound"], default = TD.sound, startsLine = true,
+      tooltip = L["Play an alert sound as the toast appears."] },
+    -- Which sound: Play a sound stays the switch, so this row is live with it off. Free of `validate`:
+    -- a key a media pack dropped still reads, and plays Default (BestToast.SoundFile).
+    { path = "toast.soundKey", page = PAGE, group = TOAST, subgroup = TOAST, type = "string",
+      label = L["Toast sound"], default = TD.soundKey, dialogControl = "Ka0sMedia_Sound",
+      values = function() return NS.BestToast.SoundValues() end,
+      tooltip = L["The sound the toast plays. Default is the game's alert; every other entry comes from LibSharedMedia. Play a sound turns it on and off."] },
+    { path = "toast.duration", page = PAGE, group = TOAST, subgroup = TOAST, type = "number",
+      min = 3, max = 30, step = 1, label = L["Toast duration (seconds)"], default = TD.duration, startsLine = true,
+      tooltip = L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] },
+    { path = "toast.scale", page = PAGE, group = TOAST, subgroup = TOAST, type = "number",
+      min = 0.5, max = 2.0, step = 0.05, label = L["Toast scale"], default = TD.scale,
+      tooltip = L["The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."],
+      onChange = function() NS.BestToast.Refresh() end },
+})
+
+NS.RegisterSchemaRows({
     -- ── Training dummies ── (#9, modules/DummyList.lua) its own tab: the category a new dummy gets,
     -- then the list itself, one plain string written WHOLE through the seam (the ignore list's shape),
     -- read when a run's category is, never frozen into a run. The list row carries skipRender: the tab
@@ -117,7 +152,7 @@ local function ignoreEntries()
 end
 
 local function afterRace(ctx)
-    local H, LI = NS.Helpers, NS.LateIgnore
+    local LI = NS.LateIgnore
     H.TextRow(ctx, L["Spells whose casts after the grace never flag a run, on every stored run. Taking one off flags its casts again. A right-click on a late-cast flag, on the HUD's result or in a run's detail, adds or removes its spell too."])
     H.IdList(ctx, {
         kind        = SPELL_KIND,
@@ -178,7 +213,7 @@ local function addTarget()
 end
 
 local function afterDummies(ctx)
-    local H, DL = NS.Helpers, NS.DummyList
+    local DL = NS.DummyList
     H.TextRow(ctx, L["Creatures a race counts as training dummies, on top of the built-in ones: auto-arm, the HUD and the target type of every stored run follow this list. Target a dummy and click Add your target, or type /dr targetdummy add; either saves what the game says about it."])
     H.InlineButtonPair(ctx, {
         text    = L["Add your target"],
@@ -212,12 +247,21 @@ local function afterDummies(ctx)
     })
 end
 
+-- After the toast's rows: a sample toast, run as a real one is (one-shot, options-ui-§21's *Test <thing>*).
+local function afterToast(ctx)
+    H.InlineButtonPair(ctx, {
+        text    = L["Test toast"],
+        tooltip = L["Show a sample new-best toast with the duration, sound and scale above. Drag it to place it while it shows; Reset position (General > Master controls) puts it back."],
+        onClick = function() NS.BestToast.Test() end,
+    })
+end
+
 NS.RegisterTabbedPage({
     key             = PAGE,
     title           = L["Race"],
     panelName       = "DpsRaceRacePanel",
-    defaultsTooltip = L["Restore every Race setting on this profile to its addon default, the late-cast ignore list and your training dummies among them."],
-    afterGroup      = { [RACE] = afterRace, [DUMMIES] = afterDummies },
+    defaultsTooltip = L["Restore every Race setting on this profile to its addon default, the late-cast ignore list, the new-best toast and your training dummies among them."],
+    afterGroup      = { [LATE] = afterRace, [TOAST] = afterToast, [DUMMIES] = afterDummies },
 })
 
 -- The lists repaint when they change from anywhere (the HUD's right-click, `/dr ignore`,

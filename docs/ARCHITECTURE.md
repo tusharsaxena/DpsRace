@@ -96,7 +96,7 @@ The same pass added the new-best toast (#5, `modules/BestToast.lua`, on LibKa0s-
 complete run that beats an earlier best on its board (`Bests.Delta` names a gain; a board's first run
 does not toast) shows a toast near the top of the screen with the spec, the board, the time, the DPS
 and the gain over the old best, whether or not the HUD is open; the shell queues, times, pauses under
-the pointer and closes it. Its rows are General > *New-best toast* (`toast.*`), test mode shows a
+the pointer and closes it. Its rows are Race > *New-best toast* (`toast.*`), test mode shows a
 sample to drag into place (`profile.toast.point`), and *Test toast* plays one through. Since DR-04
 (2026-10-30, the owner's Addendum 03) the toast is 25% larger, every size in it scaled by
 `BestToast.SCALE` (its faces through `Style.ScaledText`, its chips through `Tbl.Chip(parent, scale)`),

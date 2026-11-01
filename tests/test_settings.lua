@@ -429,11 +429,11 @@ local function tabsOf(NS, page)
     return table.concat(out, "|")
 end
 
-test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin", function()
+test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, then Skin", function()
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
-    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
+    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|Appearance",
         "Keybindings is a host tab, not a schema one")
     assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1 + 2,
         "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions, two Background and Border sets, the text blocks' color and shadow companions and the chart background's")
@@ -467,12 +467,25 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
     }, "\n"))
 end)
 
-test("settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order", function()
+test("settings: Race is four tabs, the timeline, the late-cast ignore list, the new-best toast, then Training dummies", function()
     local NS = T.NS
+    assertEqual(tabsOf(NS, "race"), "Race|Late-cast ignore list|New-best toast|Training dummies")
     for _, r in ipairs(NS.SchemaForPage("race")) do
-        local want = (r.path == "race.dummies" or r.path == "race.dummyCategory") and "Training dummies" or "Race"
+        local want = "Race"
+        if r.path == "race.dummies" or r.path == "race.dummyCategory" then want = "Training dummies"
+        elseif r.path == "race.lateIgnore" then want = "Late-cast ignore list"
+        elseif r.path:sub(1, 6) == "toast." then want = "New-best toast" end
         assertEqual(r.group, want, r.path .. " tab")
     end
+    assertEqual(tabRows(NS, "race", "Late-cast ignore list"),
+        "race.lateIgnore|Late-cast ignore list|Late-cast ignore list|false")
+    assertEqual(tabRows(NS, "race", "New-best toast"), table.concat({
+        "toast.enabled|New-best toast|Show a toast for a new best|false",
+        "toast.sound|New-best toast|Play a sound|true",
+        "toast.soundKey|New-best toast|Toast sound|false",
+        "toast.duration|New-best toast|Toast duration (seconds)|true",
+        "toast.scale|New-best toast|Toast scale|false",
+    }, "\n"))
     assertEqual(tabRows(NS, "race", "Training dummies"), table.concat({
         "race.dummyCategory|New dummies|Category for new dummies|false",
         "race.dummies|Your training dummies|Training dummies|false",
@@ -487,7 +500,6 @@ test("settings: Race is two tabs, the race's timeline then Training dummies, in 
         "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
         "race.grace|Scoring rules|Late-cast grace (seconds)|false",
         "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
-        "race.lateIgnore|Late-cast ignore list|Late-cast ignore list|false",
     }, "\n"))
 end)
 
@@ -502,10 +514,10 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD", function()
+test("settings: General's Defaults names Master controls and the skin, and not the keys or the HUD", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
-    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls, the "
-        .. "new-best toast and the skin. "
+    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls "
+        .. "and the skin. "
         .. T.NS.Helpers.KEYBINDS_UNCHANGED)
     assertTrue(tip:find("live breakdown", 1, true) == nil and tip:find("HUD Appearance", 1, true) == nil, tip)
 end)
@@ -673,7 +685,7 @@ local IGNORE_DEFAULT = "66,1856,5384,8690,58984,110959"
 local function drawRace(inst)
     local NS, M = inst.NS, inst.mocks
     local H = NS.Helpers
-    local drawn, spec, button = {}, nil, nil
+    local drawn, spec, button
     local realList, realText, realPair = H.IdList, H.TextRow, H.InlineButtonPair
     H.IdList = function(ctx, s, ...) spec = s drawn[#drawn + 1] = "list" return realList(ctx, s, ...) end
     H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
@@ -681,6 +693,10 @@ local function drawRace(inst)
     local panel = M.__subcategories["Race"]
     panel:Show()
     panel:__fire("OnShow")
+    drawn, spec, button = {}, nil, nil
+    local ctx = assert(NS.pageCtx.race, "the Race page drew no ctx")
+    ctx.activeTab = "Late-cast ignore list"     -- its own tab (SF-DR-5)
+    H.RefreshPanel(ctx, true)
     H.IdList, H.TextRow, H.InlineButtonPair = realList, realText, realPair
     return spec, button, drawn
 end
@@ -740,6 +756,17 @@ test("settings: Race's Defaults resets the ignore list too, and its tooltip says
     assertEqual(NS.db.profile.race.lateIgnore, IGNORE_DEFAULT)
     local tip = M.__subcategories["Race"].defaultsTooltip
     assertTrue(tip:find("late-cast ignore list", 1, true) ~= nil, tip)
+    assertTrue(tip:find("new-best toast", 1, true) ~= nil, tip)
+end)
+
+test("settings: Race's Defaults brings the toast back, and General's no longer holds it (SF-DR-6)", function()
+    local inst = T.load()
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("toast.scale", 1.5))
+    NS.Helpers.RestoreDefaults("general")
+    assertEqual(NS.db.profile.toast.scale, 1.5, "General leaves the toast alone")
+    NS.Helpers.RestoreDefaults("race")
+    assertEqual(NS.db.profile.toast.scale, 1.0)
 end)
 
 test("settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others", function()

@@ -17,7 +17,7 @@ local _, NS = ...
 -- position* clears it).
 --
 -- TEST MODE shows the sample race's toast (modules/Preview.lua: the same sample the HUD holds), sticky,
--- for placing it; the end of test mode takes it down. *Test toast* (General > New-best toast) queues a
+-- for placing it; the end of test mode takes it down. *Test toast* (Race > New-best toast) queues a
 -- sample toast that runs its course as a real one does.
 --
 -- PLAIN VALUES ONLY. The payload is text made from the stored run (every number on it went through

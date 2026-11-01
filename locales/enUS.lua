@@ -524,7 +524,7 @@ L["Deleted %d runs."] = "Deleted %d runs."
 -- Share and the race's chat lines (modules/Share.lua, mockup screen 12)
 L["DPS Race %s"] = "DPS Race %s"
 L["%s DPS"] = "%s DPS"
--- The new-best toast (#5, modules/BestToast.lua; General > New-best toast).
+-- The new-best toast (#5, modules/BestToast.lua; Race > New-best toast).
 L["New best:"] = "New best:"
 L["%s DPS, %s better than previous best (%s)"] = "%s DPS, %s better than previous best (%s)"
 L["New-best toast"] = "New-best toast"

@@ -197,7 +197,7 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- degraded load keeps every one of them (History's Include talents link, #6, the 18th; HUD's
     -- Pace bar range, the 19th; Show cooldown dots, #14, the 20th; History's Hidden items, P9, the 21st;
     -- HUD's Show near a training dummy and Race's Arm on a training dummy, #16, the 22nd and 23rd;
-    -- General's New-best toast tab, #5, the 24th to the 27th; Race's Late-cast ignore list, #8, the
+    -- The New-best toast tab (now on Race, SF-DR-6), #5, the 24th to the 27th; Race's Late-cast ignore list, #8, the
     -- 28th; Race's Training dummies tab, #9, the 29th and 30th; General's Skin tab, the eight skin.*
     -- rows the library's tab draws, skinning-§3, the 31st to the 38th: skin.outline, LibKa0s v1.82.0).
     -- General's Toast sound, the 39th.
