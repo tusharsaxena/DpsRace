@@ -69,7 +69,7 @@ local STORED = {
     ["share.talentsLink"]    = { "bool",   false },
     ["toast.enabled"]        = { "bool",   true },
     ["toast.sound"]          = { "bool",   true },
-    ["toast.duration"]       = { "number", 8,       3,    30,    1 },
+    ["toast.duration"]       = { "number", 10,      3,    30,    1 },
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
     -- General > Skin (skinning-§2/§3, core/SkinSetup.lua): skip-render rows the library's tab draws.
     ["skin.source"]          = { "string", "ka0s" },
