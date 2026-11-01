@@ -411,12 +411,16 @@ end
 -- The board tabs from the cursor, wrapping at the content's edge, and a rule under them.
 local function placeBoardTabs(self, tabs, y, w, pad)
     local pool, x = self.ctx:Pool("boardTabs"), pad
-    for _, t in ipairs(tabs) do
+    local all = { key = NS.InsightsData.OVERALL, overall = true, n = #self.filtered }
+    local list = { all }
+    for _, t in ipairs(tabs) do list[#list + 1] = t end
+    for _, t in ipairs(list) do
         if x > pad and x + BOARD_TAB_W > w - pad then x, y = pad, y - BOARD_TAB_H end
         local b = self.ctx:acquire(pool, makeBoardTab)
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, y)
-        local on, name = t.key == self.boardKey, L["%s \194\183 %s"]:format(NS.Dummies.Label(t.category),
+        local on = t.key == self.boardKey
+        local name = t.overall and L["Overall"] or L["%s \194\183 %s"]:format(NS.Dummies.Label(t.category),
             Format.Length(t.length))
         b.label:SetText(name)
         NS.Style.Paint(b.label, on and "tab.onText" or "tab.text")
@@ -437,10 +441,16 @@ end
 local function layoutBoards(self, stats, y, w, pad)
     local tabs = stats.boardTabs
     if #tabs == 0 then return y end
-    local board = findBoard(tabs, self.boardKey) or findBoard(tabs, stats.boardTop)
-    self.boardKey = board.key
+    local board = findBoard(tabs, self.boardKey)
+    if self.boardKey ~= NS.InsightsData.OVERALL then
+        board = board or findBoard(tabs, stats.boardTop)
+        self.boardKey = board.key
+    end
     y = self.ctx:placeHeader(self.headers.boards, y, pad)
     y = placeBoardTabs(self, tabs, y, w, pad)
+    -- Everything under the tabs reads the tab picked (SF-DR-3); Overall reads every board (SF-DR-4).
+    self.scoped = NS.InsightsData.Compute(NS.InsightsData.Scope(self.filtered, self.boardKey))
+    if not board then return y end      -- Overall: DPS compares only within a board
     y = layoutSpecs(self, board, y, w, pad)
     return layoutConsistency(self, board, y, w, pad)
 end
@@ -871,8 +881,12 @@ function View:LayoutCharts(y, w, pad)
         return y
     end
     self.empty:Hide()
+    self.scoped = nil
     y = self:layoutCards(y, w)
-    for _, section in ipairs(SECTIONS) do y = section(self, stats, y, w, pad) end
+    for _, section in ipairs(SECTIONS) do
+        y = section(self, stats, y, w, pad)
+        if section == layoutBoards then stats = self.scoped or stats end
+    end
     return y
 end
 

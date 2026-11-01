@@ -997,6 +997,7 @@ L["Races Per Day"] = "Races Per Day"
 L["Damage Tail After The Buzzer"] = "Damage Tail After The Buzzer"
 L["Late Casts"] = "Late Casts"
 L["Recent New Bests"] = "Recent New Bests"
+L["Overall"] = "Overall"
 L["Save these filters as this profile's default view of Insights."] =
     "Save these filters as this profile's default view of Insights."
 L["Delete the saved view and go back to the stock one: every character, spec, target, length and date."] =
