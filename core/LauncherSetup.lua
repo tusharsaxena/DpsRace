@@ -93,6 +93,7 @@ NS.Launcher = Launcher:New({
     -- toggle below calls the same handler its verb or key calls -- never a copy -- and the library
     -- grays every entry but Enabled while the addon is disabled.
     openSettings   = function() NS.OpenOptionsPanel() end,
+    openSkinPicker = function() if NS.RunSkinVerb then NS.RunSkinVerb() end end,
     isEnabled      = function() return not NS.IsDisabled() end,
     setEnabled     = function(on) NS.RunVerb(on and "enable" or "disable") end,
     isLocked       = function() return NS.GetSetting("locked") == true end,

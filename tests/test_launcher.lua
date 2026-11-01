@@ -35,12 +35,12 @@ test("launcher: left-click opens the settings panel", function()
     assertEqual(opened, 1)
 end)
 
-test("launcher: right-click lists Enabled, Locked, Test mode and Show window, in that order", function()
+test("launcher: right-click lists Enabled, Locked, Test mode, Show window and Open skin selector, in that order", function()
     local inst = T.load()
     local menu = openMenu(inst)
     local labels = {}
     for i, e in ipairs(menu.entries) do labels[i] = e.text end
-    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Show window")
+    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Show window|Open skin selector")
     assertEqual(menu.titles[1], "Ka0s DPS Race")
 end)
 
