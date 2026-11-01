@@ -1066,7 +1066,7 @@ Total.
 - settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
 - settings: Race repaints when your training dummies change from anywhere
 
-### test_skinsetup.lua (22)
+### test_skinsetup.lua (23)
 
 - skin seam: the owner is the folder name, and NS.Skin is its facade
 - skin seam: the owner is registered at file load, before the profile store exists
@@ -1089,6 +1089,7 @@ Total.
 - skin seam: a profile switch applies the new profile's skin, panel built or not
 - skin seam: Reset all settings puts the skin back on Ka0s Default and applies it
 - skin seam: the degraded facade answers every name the live facade carries
+- skin seam: the degraded HudFont draws the face, a picked flag and no shadow
 - skin seam: each host-copy skin token is the live library's Ka0s Default value
 
 ### test_skin_literals.lua (3)
@@ -1121,9 +1122,40 @@ Total.
 - skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
 - skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM
 - skin hud: the Results table's bar cells and their text follow the skin too (D-16)
-- skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
+- skin hud: a skin switch restyles the blocks and moves the face and the color; the swatch is kept
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
+
+### test_skin_flip.lua (17)
+
+- skin flip: every new companion is a row in the addon's words, on in both places
+- skin flip: a swatch stays live under its companion, and the border governs its thickness
+- skin flip: the picks' defaults are the Ka0s picks, the clocks' mono face and the fills kept
+- skin flip: Ka0s Default draws the addon's own pixels
+- skin flip: a switch moves each text's drawn color and shadow; the clocks' color stays
+- skin flip: companions off draw the stored value under every skin
+- skin flip: Ignore fonts stands a followed shadow down to the stored one
+- skin flip: a class color comes before every companion
+- skin flip: a border draws the skin's color and thickness while on, the stored ones off
+- skin flip: a switch repaints the running HUD's strings and plot past their stamps
+- skin flip: the step moves a stored partial profile onto the skin and rewrites nothing else
+- skin flip: the list names no size, class color, ignore, bar fill or clock color
+- skin flip: a sub-table the profile never stored is skipped and stays absent
+- skin flip: a second run writes nothing, on a profile event too
+- skin flip: a companion turned off afterwards stays off through every Defaults path
+- skin flip: a new profile and a reset profile run it against defaults, seen by nobody
+- skin flip: with the library absent the step makes the same writes and its own record
+
+### test_skin_menus.lua (8)
+
+- skin menus: a row's right-click opens the Ka0s menu, not the client's
+- skin menus: a button runs, a title and a disabled row do nothing
+- skin menus: a submenu replaces the rows it drops from
+- skin menus: without the library the same fill reaches the client's menu
+- skin menus: the Back button's mark wears btn.icon and follows a switch
+- skin menus: the Runs list's scroll bar has the skin's track
+- skin menus: a spell icon wears the skin's icon border
+- skin menus: the title bar and the scroll bar read their size off the skin
 
 ### test_bar_style.lua (18)
 
@@ -1280,7 +1312,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (19)
+### test_toast.lua (27)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
@@ -1289,6 +1321,14 @@ Total.
 - toast: a flagged run may toast, its flags on the last line as the result card words them
 - toast: a new best whose late casts are all ignored shows no flags line and no ignored chip
 - toast: it closes after Toast duration, plays its sound only with Play a sound on
+- toast sound: Default plays today's alert and no file
+- toast sound: another key plays that file alone, resolved as the toast shows
+- toast sound: a key LibSharedMedia does not know falls back to Default
+- toast sound: with no LibSharedMedia a picked key falls back to Default
+- toast sound: Play a sound stays the switch, and the row works with it off
+- toast sound: Test toast plays the picked sound
+- toast sound: the list leads with Default, then every LibSharedMedia sound, after any pick
+- toast sound: a page's Defaults brings it back
 - toast: test mode holds the sample race's toast, and its end takes it down
 - toast: Test toast queues a sample that runs its course, and a second click replaces it
 - toast: a real toast never moves; in test mode or as a sample it drags
@@ -1583,10 +1623,12 @@ Total.
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
-| test_skinsetup.lua | 22 |
+| test_skinsetup.lua | 23 |
 | test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
+| test_skin_flip.lua | 17 |
+| test_skin_menus.lua | 8 |
 | test_bar_style.lua | 18 |
 | test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
@@ -1597,7 +1639,7 @@ Total.
 | test_refactor_pins.lua | 4 |
 | test_slash.lua | 37 |
 | test_share.lua | 14 |
-| test_toast.lua | 19 |
+| test_toast.lua | 27 |
 | test_preview.lua | 23 |
 | test_sim.lua | 14 |
 | test_sample_parity.lua | 32 |
@@ -1614,4 +1656,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1260** |
+| **Total** | **1294** |

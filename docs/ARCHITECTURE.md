@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.84.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.85.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -435,8 +435,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   skin's `hud.font` or `bar.texture` through `HudAppearance.MediaKey` while it is on, unless the Skin
   tab's *Ignore fonts* is on, which makes a face block draw its stored *Font* (the library answers no
   `hud.font` then, LibKa0s v1.81.0, R-1; the textures still follow). Each skin names its own HUD face
-  (v1.81.0, R-4). Only the face and the texture follow (X4): sizes, flags, shadows and colors stay the player's. The two race clocks
-  have no companion and keep their monospace face (D-15). Migration 5 -> 6 turns every stored
+  (v1.81.0, R-4). Since LibKa0s v1.85.0 (the owner's rulings of 2026-11-01, reversing X4) text colors, shadows, the chart's
+  background and border colors and thickness follow too, each through a companion after any class color, with
+  three owner tokens keeping this addon's pixels under Ka0s Default (`dr.figures.text`, `dr.hud.shadow`,
+  `dr.chart.bg`), and text draws through `S.HudFont`, the only shadow a 12.0.7 client draws. Sizes stay the player's,
+  the bar fills the owner's call (A9). The two race clocks have no face or color companion and keep their
+  monospace face (D-15). Migration 8 -> 9 is the one step onto the skin (schema.md). Migration 5 -> 6 turns every stored
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
   LibKa0s v1.82.0 reads two of the player's values through the skin without rewriting them: a
   *Font flags* of *From skin* (`"@skin"`, every block's default, the clocks' too; D-07) draws the Skin
@@ -698,12 +702,12 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: one test file,
 `tests/test_insights.lua` at 1225 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1195 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1162 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll` and `_controls`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1227
+seven addon files, `modules/Results_Table.lua` at 1198 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1164 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll` and `_controls`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1227
 (the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1364 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
 `modules/Results_Runs.lua` at 1119 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
 `modules/Hud.lua` at 1114 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
-`locales/enUS.lua` at 1167 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`locales/enUS.lua` at 1175 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
 2026-10-28 passes their own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`, then `LateIgnore`, then `Results_InsightsData`,
