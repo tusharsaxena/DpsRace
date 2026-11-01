@@ -35,6 +35,106 @@ function NS.MakeDropdown(parent, width)
     })
 end
 
+-- ── the context menus (cause A2) ─────────────────────────────────────────────────────────────────
+-- A row's right-click wears the skin through the shared Ka0s menu, the one the filter dropdowns drop.
+-- The library has no context menu, so this drives one hidden dropdown at the cursor: a `fill(root)` is
+-- written against MenuUtil's own description (CreateTitle, CreateButton, and on a button SetEnabled and
+-- a nested CreateButton), recorded here, then drawn one level at a time. That menu has no flyout, title
+-- row or disabled row, so a submenu replaces the rows it drops from, a title is a row in the heading
+-- color that does nothing, and a disabled row is one in the disabled color that does nothing. Without
+-- the library the same `fill` goes to the client's menu.
+
+local contextDropdown
+
+local function contextHost()
+    if contextDropdown == nil then
+        contextDropdown = NS.MakeDropdown(UIParent, 1) or false
+        if contextDropdown then
+            contextDropdown:SetHeight(1)
+            contextDropdown:SetAlpha(0)
+            contextDropdown:EnableMouse(false)
+        end
+    end
+    return contextDropdown
+end
+
+--- A level of a description: the recorder a `fill` writes to, and each button's own nested level.
+local function newLevel()
+    local level = { items = {} }
+    function level:CreateTitle(text)
+        self.items[#self.items + 1] = { label = text, title = true }
+        return {}
+    end
+    function level:CreateButton(text, onClick)
+        local sub = newLevel()
+        sub.label, sub.onClick, sub.enabled = text, onClick, true
+        function sub.SetEnabled(_, on) sub.enabled = on and true or false end
+        self.items[#self.items + 1] = sub
+        return sub
+    end
+    return level
+end
+
+local function rowColor(token)
+    local r, g, b = NS.Skin.Color(token)
+    return { r or 1, g or 1, b or 1 }
+end
+
+--- One dropdown option for each of `level`'s rows: its index, its label, a submenu's mark and the
+--- color a title or a disabled row takes.
+local function rowOptions(level)
+    local options = {}
+    for i, item in ipairs(level.items) do
+        local label = item.label
+        if not item.title and #item.items > 0 then
+            label = label .. " " .. NS.Skin.MarkText(NS.Icon("chevron-right"), 0)
+        end
+        local color = (item.title and rowColor("text.heading")) or (item.enabled == false and rowColor("text.disabled"))
+        options[i] = { value = i, label = label, color = color or nil }
+    end
+    return options
+end
+
+local function showLevel(dd, level)
+    dd:SetOptions(rowOptions(level))
+    dd:SetValue(nil, "")
+    dd.onSelect = function(i)
+        local item = level.items[i]
+        if not item or item.title or item.enabled == false then return end
+        if #item.items > 0 then return showLevel(dd, item) end
+        if item.onClick then item.onClick() end
+    end
+    dd:GetScript("OnClick")(dd)
+end
+
+--- True when a context menu can open: the Ka0s menu, or the client's without the library.
+function NS.CanOpenMenu()
+    if W and not NS.__clientMenus then return true end
+    return MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil
+end
+
+--- A context menu at the cursor: `fill(root)` adds its rows as it would to a MenuUtil description.
+--- @param owner table  the client menu's owner region
+--- @param fill function
+function NS.OpenMenu(owner, fill)
+    local dd = not NS.__clientMenus and contextHost()
+    if not dd then
+        MenuUtil.CreateContextMenu(owner, function(_, root) fill(root) end)
+        return
+    end
+    NS.CloseMenu()   -- an open one would toggle shut, not reopen here
+    local level = newLevel()
+    fill(level)
+    local scale = UIParent:GetEffectiveScale()
+    local x, y = GetCursorPosition()
+    dd:ClearAllPoints()
+    dd:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+    showLevel(dd, level)
+end
+
+--- The hidden dropdown behind the Ka0s context menu, for a suite to read its rows.
+function NS.__contextDropdown() return contextDropdown end
+
 --- The strip's height, for a window laying its content out below it (the library publishes it).
 NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 

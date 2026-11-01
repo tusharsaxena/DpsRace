@@ -27,7 +27,7 @@ local FONT = Style.FONT
 Tbl.ROW_H = 18
 Tbl.HEADER_H = 20
 Tbl.PAD = 6                 -- the gap between two cells, and the row's inner margin
-Tbl.SCROLLBAR_W = 8
+Tbl.SCROLLBAR_W = NS.Skin.Token("scroll.width") or 8
 Tbl.ICON = 16
 Tbl.WHEEL_ROWS = 3          -- rows one notch of the mouse wheel moves
 
@@ -748,6 +748,9 @@ local function buildScrollbar(t)
     bar:SetPoint("BOTTOMRIGHT", t.frame, "BOTTOMRIGHT", -2, 2)
     bar:SetValueStep(1)
     if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(true) end
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints(bar)
+    Style.Fill(bar.track, "dr.scroll.track")
     local thumb = bar:CreateTexture(nil, "OVERLAY")
     Style.Fill(thumb, "dr.scroll.thumb")
     thumb:SetSize(Tbl.SCROLLBAR_W - 2, 28)

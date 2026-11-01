@@ -80,6 +80,9 @@ local function loadInstance(opts)
     local NS = {}
     Loader.loadAll(opts.libFiles or LIB_FILES, NS, mocks)
     Loader.loadAll(rooted(ADDON_FILES), NS, mocks)
+    -- The menus' CONTENT is read off the mock's MenuUtil recorder; NS.OpenMenu takes the same fill to
+    -- either menu, and tests/test_skin_menus.lua holds the Ka0s one (opts.kaosMenus).
+    NS.__clientMenus = not opts.kaosMenus
     if opts.init ~= false then
         local AceAddon = mocks.LibStub("AceAddon-3.0")
         AceAddon:InitializeAddon(NS)                 -- OnInitialize: DB, migrations, latch, panel
@@ -155,6 +158,7 @@ local SUITES = {
     "test_skin",
     "test_skin_hud",
     "test_skin_flip",
+    "test_skin_menus",
     "test_bar_style",
     "test_skin_fonts",
     "test_skin_picker",

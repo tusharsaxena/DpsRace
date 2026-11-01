@@ -315,13 +315,13 @@ function LateIgnore.FillMenu(root, run)
     return #entries
 end
 
---- Open the run's late-cast menu on `owner`, titled *Late casts*. Nothing opens with no MenuUtil (a
---- client or a harness without it) or nothing to offer.
+--- Open the run's late-cast menu on `owner`, titled *Late casts*. Nothing opens with no menu (a client
+--- or a harness without one) or nothing to offer.
 --- @return boolean opened
 function LateIgnore.Menu(run, owner)
-    if not (owner and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    if not (owner and NS.CanOpenMenu()) then return false end
     if not LateIgnore.Offers(run) then return false end
-    MenuUtil.CreateContextMenu(owner, function(_, root)
+    NS.OpenMenu(owner, function(root)
         root:CreateTitle(NS.L["Late casts"])
         LateIgnore.FillMenu(root, run)
     end)

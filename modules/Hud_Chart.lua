@@ -694,6 +694,7 @@ local function newIcon(over)
     f.tex = f:CreateTexture(nil, "OVERLAY")
     f.tex:SetAllPoints(f)
     f.tex:SetTexCoord(ICON_CROP[1], ICON_CROP[2], ICON_CROP[3], ICON_CROP[4])
+    NS.Skin.IconBorder(f, { fromSkin = true })
     f:SetScript("OnEnter", iconEnter)
     f:SetScript("OnLeave", iconLeave)
     return f

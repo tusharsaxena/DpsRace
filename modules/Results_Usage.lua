@@ -309,9 +309,9 @@ end
 --- @return boolean opened
 function ResultsUsage.RowMenu(p, row)
     local data = row and row.data
-    if not (p.usage.editing and data and data.itemID and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    if not (p.usage.editing and data and data.itemID and NS.CanOpenMenu()) then return false end
     local itemID, name = data.itemID, ResultsUsage.Name(data)
-    MenuUtil.CreateContextMenu(row, function(_, root)
+    NS.OpenMenu(row, function(root)
         root:CreateButton(L["Never show %s"]:format(name), function() NS.Usage.Hide(itemID) end)
     end)
     return true

@@ -766,8 +766,8 @@ end
 --- @param owner table  the row
 --- @return boolean opened
 function Results.RowMenu(r, owner)
-    if not (r and MenuUtil and MenuUtil.CreateContextMenu) then return false end
-    MenuUtil.CreateContextMenu(owner or UIParent, function(_, root)
+    if not (r and NS.CanOpenMenu()) then return false end
+    NS.OpenMenu(owner or UIParent, function(root)
         root:CreateTitle(NS.ResultsTable.Date(r.date, "%d %b %H:%M"))
         local hasNote = type(r.note) == "string" and r.note ~= ""
         root:CreateButton(hasNote and L["Edit Note"] or L["Add Note"], function() Results.EditNote(r.id) end)
@@ -778,8 +778,7 @@ function Results.RowMenu(r, owner)
         if not Source.IsMock() and NS.LateIgnore.Offers(r) then
             NS.LateIgnore.FillMenu(root:CreateButton(L["Ignore for late casts"]), r)
         end
-        -- A destructive item in the skin's `sem.danger` (ff5555 in Ka0s Default): the menu is the
-        -- client's own (skinning-§7), only the line written on it is the skin's.
+        -- A destructive item in the skin's `sem.danger` (ff5555 in Ka0s Default).
         root:CreateButton((NS.SkinEscape("sem.danger") or "") .. L["Delete"] .. "|r",
             function() Results.ConfirmDelete(r.id) end)
     end)

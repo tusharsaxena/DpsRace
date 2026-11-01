@@ -210,8 +210,10 @@ Style.GOLD = Style.Tok("text.accent")
 Style.REST = Style.Tok("icon.tint")
 
 -- The title bar, the tab strip and a control slot (LootHistory and BankLedger: titleBarH 30,
--- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot).
-Style.TITLE_BAR_H = 30
+-- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot). The bar's height is the
+-- skin's `title.height`, read once: geometry every layout in the windows is built on, and the same in
+-- every skin (SkinDefs), with 30 for a degraded load.
+Style.TITLE_BAR_H = NS.Skin.Token("title.height") or 30
 Style.TAB_STRIP_H = 26
 Style.TAB_W, Style.TAB_PITCH = 90, 94
 Style.CONTROL = 18
@@ -474,6 +476,19 @@ function Style.AddToStrip(strip, b)
     end)
     paintControl(b, Style.REST)
     return b
+end
+
+--- The skin's icon border around a spell icon's texture `tex`, on a frame of its own, since a border
+--- needs a frame (S.IconBorder, cause A1). Recorded, so a skin change reaches it. A caller hiding the
+--- icon hides this with it.
+--- @param parent table  a frame
+--- @param tex table  the icon's Texture
+--- @return table frame
+function Style.IconEdge(parent, tex)
+    local edge = CreateFrame("Frame", nil, parent)
+    edge:SetAllPoints(tex)
+    NS.Skin.IconBorder(edge, { fromSkin = true })
+    return edge
 end
 
 --- A title-bar control drawn from the shared catalog, a plain character beneath it when the catalog
