@@ -540,7 +540,7 @@ on and `/dr debug on`.
 
 | ID | Do | Pass when | If it fails, report |
 |---|---|---|---|
-| SM-DR-TA17 | Open General | Four tabs: *Master controls*, *New-best toast*, *Skin*, *Keybindings*. *New-best toast* has a heading of its name over *Show a toast for a new best* (ticked) \| *Play a sound* (ticked), then *Toast duration (seconds)* at 8 \| *Toast scale* at 1, and a *Test toast* button under them; each row's tooltip reads as a sentence. Hover the page's *Defaults*: it names Master controls, the new-best toast and the skin | A screenshot of the tab |
+| SM-DR-TA17 | Open General | Four tabs: *Master controls*, *New-best toast*, *Skin*, *Keybindings*. *New-best toast* has a heading of its name over *Show a toast for a new best* (ticked), then *Play a sound* (ticked) \| *Toast sound* (*Default*), then *Toast duration (seconds)* at 10 \| *Toast scale* at 1, and a *Test toast* button under them; each row's tooltip reads as a sentence. Hover the page's *Defaults*: it names Master controls, the new-best toast and the skin | A screenshot of the tab |
 | SM-DR-TA18 | Race a new board's first run (say 0:30 on a cleave dummy), then race it again and beat it; for the second, close the HUD while you wait for the result | The first run's result card says *New best* and no toast shows. The second shows a toast near the top middle of the screen, whether the HUD is open or not: a trophy in the result card's *New best* blue, *New best:* in that blue then *<your spec> <your class>* in your class color; a second row of two boxed badges, the dummy type and *0:30*, colored as the Results list's Target and Time chips; a third row *<DPS> DPS, +x.x% better than previous best (<old DPS>)* in green, matching the result card's gain, with the window skin and a gray X like the addon's other windows. An alert sound plays. The result card still shows its *New best +x.x%* chip | A screenshot of the toast and the card |
 | SM-DR-TA19 | Race a run that does not beat the best; let one drop combat before the buzzer (incomplete); and reset the meter mid-race (lost) | None of the three shows a toast | Which one toasted |
 | SM-DR-TA20 | Set *Toast duration (seconds)* to 3; press *Test toast*, keep the pointer off it and count; press it again, hover it for ten seconds, then move off; press it again and click its X; press it again and right-click it anywhere | The first closes by itself after about 3 s. Hovered it stays as long as the pointer is on it (over the X too) and closes about 3 s after you move off. The X and a right-click each close it at once. Pressing *Test toast* twice in a row shows one toast, not two | Which step misbehaved |
@@ -781,3 +781,14 @@ LibKa0s v1.84.0 was re-cut: every media row now draws the `Ka0sMedia_*` picker, 
 |---|---|---|---|---|
 | SM-DR-MD1 | HUD > HUD Appearance: open *Font* under *Elapsed clock*; pick a different face; put it back | The pull-out lists every registered font, each row in its own face, and the pick moves the clock on the HUD. The picker's colors follow the skin | The Lua error, or a screenshot | |
 | SM-DR-MD2 | HUD > HUD Appearance: under *Spell bar border* turn off *Use the skin's border*, open *Border style*, pick a border other than *None*; pick *None* again | The pull-out previews every border, the bars draw the picked border, and *None* takes it off | The Lua error, or a screenshot | |
+
+## 35. The 2026-11-01 build: full skinning (LibKa0s v1.85.0)
+
+Branch `feat/2026-11-01-full-skinning`. With `/console scriptErrors 1` on, and a full client restart, since icon files were added. Not run: every row below is owed.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-FS1 | General > *New-best toast*: leave *Toast sound* on *Default* and press *Test toast* | The alert you have always heard plays | What played | |
+| SM-DR-FS2 | Open *Toast sound*; press a row's play button; pick a sound other than *Default*; press *Test toast*; open the list again | The list leads with *Default*, then every LibSharedMedia sound; the row's button plays it; the toast plays the picked sound and not the alert; *Default* is still first after the pick | The list, a screenshot | |
+| SM-DR-FS3 | With that pick, untick *Play a sound*, change *Toast sound*, and press *Test toast*; tick it again and press *Test toast* | The row stays live while unticked; the toast is silent, then plays the latest pick | Which step misbehaved | |
+| SM-DR-FS4 | Pick a sound, disable the media addon that registered it, `/reload`, press *Test toast* | The row still reads the key, and the alert plays | What played, a Lua error if any | |

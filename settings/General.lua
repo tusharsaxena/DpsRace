@@ -113,8 +113,8 @@ end
 NS.RegisterSchemaRows(masterRows)
 
 -- ── New-best toast ── (#5, modules/BestToast.lua) the alert for a race that sets a new best: on or
--- off and its sound on the first line, then how long it stays and its scale; *Test toast* after the
--- rows. Duration and sound are read as each toast shows, so they need no reaction; the scale
+-- off first, its sound and which one on the second, then how long it stays and its scale; *Test toast*
+-- after the rows. Duration and sound are read as each toast shows, so they need no reaction; the scale
 -- re-anchors a shown toast. Its place is test mode's (drag it there), stored outside the seam.
 local TOAST = L["New-best toast"]
 local TD = D.toast
@@ -124,8 +124,14 @@ NS.RegisterSchemaRows({
       tooltip = L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."],
       onChange = function() NS.BestToast.Sync() end },
     { path = "toast.sound", page = PAGE, group = TOAST, subgroup = TOAST, type = "bool",
-      label = L["Play a sound"], default = TD.sound,
+      label = L["Play a sound"], default = TD.sound, startsLine = true,
       tooltip = L["Play an alert sound as the toast appears."] },
+    -- Which sound: Play a sound stays the switch, so this row is live with it off. Free of `validate`:
+    -- a key a media pack dropped still reads, and plays Default (BestToast.SoundFile).
+    { path = "toast.soundKey", page = PAGE, group = TOAST, subgroup = TOAST, type = "string",
+      label = L["Toast sound"], default = TD.soundKey, dialogControl = "Ka0sMedia_Sound",
+      values = function() return NS.BestToast.SoundValues() end,
+      tooltip = L["The sound the toast plays. Default is the game's alert; every other entry comes from LibSharedMedia. Play a sound turns it on and off."] },
     { path = "toast.duration", page = PAGE, group = TOAST, subgroup = TOAST, type = "number",
       min = 3, max = 30, step = 1, label = L["Toast duration (seconds)"], default = TD.duration, startsLine = true,
       tooltip = L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] },

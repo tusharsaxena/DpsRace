@@ -200,7 +200,8 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- General's New-best toast tab, #5, the 24th to the 27th; Race's Late-cast ignore list, #8, the
     -- 28th; Race's Training dummies tab, #9, the 29th and 30th; General's Skin tab, the eight skin.*
     -- rows the library's tab draws, skinning-§3, the 31st to the 38th: skin.outline, LibKa0s v1.82.0).
-    local PAGE_ROWS = 38
+    -- General's Toast sound, the 39th.
+    local PAGE_ROWS = 39
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS + RUN_DETAIL_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

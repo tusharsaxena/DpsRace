@@ -203,10 +203,11 @@ NS.defaults = {
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
         -- The new-best toast (#5, modules/BestToast.lua; General > New-best toast, settings/General.lua):
-        -- on, 10 s on screen, with its sound, at scale 1. `point`
+        -- on, 10 s on screen, with its sound, at scale 1. `soundKey`: the sound it plays, a
+        -- LibSharedMedia key or "Default", today's alert. `point`
         -- (no default): where test mode's drag put it, { point, relativePoint, x, y } in UIParent's
         -- units, written by the shell's drag stop; absent, the shell's own place under the top.
-        toast = { enabled = true, duration = 10, sound = true, scale = 1.0 },
+        toast = { enabled = true, duration = 10, sound = true, soundKey = "Default", scale = 1.0 },
         -- The skin this addon wears (skinning-§2: per addon, per profile; core/SkinSetup.lua), on
         -- General > Skin (settings/General.lua): the source and the skin, Ka0s Default by default; the
         -- Scope's two exceptions (the settings panel left the client's, the fonts skinned); the font

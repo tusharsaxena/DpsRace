@@ -532,6 +532,9 @@ L["Show a toast for a new best"] = "Show a toast for a new best"
 L["When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."] =
     "When a race sets a new personal best on its board (spec, dummy and length), a toast near the top of the screen says by how much, whether or not the HUD is open. A board's first run has nothing to beat and shows none. Test mode shows a sample you can drag into place."
 L["Play a sound"] = "Play a sound"
+L["Toast sound"] = "Toast sound"
+L["Default"] = "Default"
+L["The sound the toast plays. Default is the game's alert; every other entry comes from LibSharedMedia. Play a sound turns it on and off."] = "The sound the toast plays. Default is the game's alert; every other entry comes from LibSharedMedia. Play a sound turns it on and off."
 L["Play an alert sound as the toast appears."] = "Play an alert sound as the toast appears."
 L["Toast duration (seconds)"] = "Toast duration (seconds)"
 L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] =

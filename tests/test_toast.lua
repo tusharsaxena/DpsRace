@@ -165,6 +165,109 @@ test("toast: it closes after Toast duration, plays its sound only with Play a so
     assertEqual(played, 1, "silent with Play a sound off")
 end)
 
+-- ── the sound ───────────────────────────────────────────────────────────────────────────────────
+
+--- A fixture recording both sound paths, with "Ping" registered in LibSharedMedia.
+local function soundFixture()
+    local f = fixture()
+    f.kits, f.files = {}, {}
+    f.M.SOUNDKIT = { UI_EPICLOOT_TOAST = 12345 }
+    f.M.PlaySound = function(id) f.kits[#f.kits + 1] = id end
+    f.M.PlaySoundFile = function(file) f.files[#f.files + 1] = file end
+    f.M.LibStub("LibSharedMedia-3.0"):Register("sound", "Ping", "Interface\\Ping.ogg")
+    return f
+end
+
+test("toast sound: Default plays today's alert and no file", function()
+    local f = soundFixture()
+    assertEqual(f.NS.GetSetting("toast.soundKey"), "Default")
+    run(f, "old", 100, 100000)
+    result(f, run(f, "a", 200, 110000))
+    assertEqual(#f.kits, 1)
+    assertEqual(f.kits[1], 12345, "the alert it always played")
+    assertEqual(#f.files, 0)
+end)
+
+test("toast sound: another key plays that file alone, resolved as the toast shows", function()
+    local f = soundFixture()
+    assertTrue(f.NS.SetByPath("toast.soundKey", "Ping"))
+    run(f, "old", 100, 100000)
+    result(f, run(f, "a", 200, 110000))
+    assertEqual(#f.files, 1)
+    assertEqual(f.files[1], "Interface\\Ping.ogg")
+    assertEqual(#f.kits, 0, "the file instead of the alert")
+end)
+
+test("toast sound: a key LibSharedMedia does not know falls back to Default", function()
+    local f = soundFixture()
+    f.NS.db.profile.toast.soundKey = "Gone Pack Sound"
+    assertEqual(f.BT.SoundFile(), nil)
+    run(f, "old", 100, 100000)
+    result(f, run(f, "a", 200, 110000))
+    assertEqual(f.kits[1], 12345)
+    assertEqual(#f.files, 0)
+end)
+
+test("toast sound: with no LibSharedMedia a picked key falls back to Default", function()
+    local f = soundFixture()
+    f.NS.db.profile.toast.soundKey = "Ping"
+    local real = f.M.LibStub
+    f.M.LibStub = function(name, silent)
+        if name == "LibSharedMedia-3.0" then return nil end
+        return real(name, silent)
+    end
+    assertEqual(f.BT.SoundFile(), nil)
+    run(f, "old", 100, 100000)
+    result(f, run(f, "a", 200, 110000))
+    f.M.LibStub = real
+    assertEqual(f.kits[1], 12345)
+    assertEqual(#f.files, 0)
+end)
+
+test("toast sound: Play a sound stays the switch, and the row works with it off", function()
+    local f = soundFixture()
+    local row = f.NS.FindSchemaRow("toast.soundKey")
+    assertEqual(row.disabledIf, nil, "never grayed by Play a sound")
+    assertEqual(row.dialogControl, "Ka0sMedia_Sound")
+    assertEqual(row.label, "Toast sound")
+    assertTrue(f.NS.SetByPath("toast.sound", false))
+    assertTrue(f.NS.SetByPath("toast.soundKey", "Ping"), "the row takes a pick with the switch off")
+    run(f, "old", 100, 100000)
+    result(f, run(f, "a", 200, 110000))
+    assertEqual(#f.files + #f.kits, 0, "silent")
+end)
+
+test("toast sound: Test toast plays the picked sound", function()
+    local f = soundFixture()
+    assertTrue(f.NS.SetByPath("toast.soundKey", "Ping"))
+    f.BT.Test()
+    assertEqual(f.files[1], "Interface\\Ping.ogg")
+end)
+
+test("toast sound: the list leads with Default, then every LibSharedMedia sound, after any pick", function()
+    local f = soundFixture()
+    local LSM = f.M.LibStub("LibSharedMedia-3.0")
+    local function values() return f.NS.FindSchemaRow("toast.soundKey").values() end
+    local list = values()
+    assertEqual(list[1].value, "Default")
+    assertEqual(list[1].text, "Default")
+    local seen = {}
+    for i, item in ipairs(list) do
+        seen[item.value] = true
+        if i > 2 then assertTrue(item.value:upper() >= list[i - 1].value:upper(), "sorted") end
+    end
+    for key in pairs(LSM:HashTable("sound")) do assertTrue(seen[key], key .. " is offered") end
+    assertTrue(f.NS.SetByPath("toast.soundKey", "Ping"))
+    assertEqual(values()[1].value, "Default", "the row hands the picker its own list: Default stays")
+end)
+
+test("toast sound: a page's Defaults brings it back", function()
+    local f = soundFixture()
+    assertTrue(f.NS.SetByPath("toast.soundKey", "Ping"))
+    assertTrue(f.NS.ApplyDefault(f.NS.FindSchemaRow("toast.soundKey")))
+    assertEqual(f.NS.GetSetting("toast.soundKey"), "Default")
+end)
+
 -- ── test mode, Test toast, the place ────────────────────────────────────────────────────────────
 
 test("toast: test mode holds the sample race's toast, and its end takes it down", function()
