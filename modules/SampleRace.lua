@@ -237,6 +237,31 @@ function SampleRace.Advance()
     return pulse
 end
 
+--- The stepper's jump (SF-DR-8): bring the race clock forward to second `t` (never back), then let
+--- the script catch up. The race keeps its own rules: Stop! and the quiet before the read still run.
+--- @return boolean moved
+function SampleRace.Skip(t)
+    if not run or held then return false end
+    if clock() < t then origin = GetTime() - t end
+    SampleRace.Advance()
+    return true
+end
+
+--- The stepper's last jump: forward in half-seconds until the race has read its result.
+--- @return boolean reached
+function SampleRace.SkipToResult()
+    if not run or held then return false end
+    for _ = 1, 400 do
+        if state == STATE.RESULT or state == STATE.IDLE then break end
+        origin = origin - 0.5
+        SampleRace.Advance()
+    end
+    return state == STATE.RESULT
+end
+
+--- The race-clock second the sample's buzzer (or early end) falls on, or nil with no sample race.
+function SampleRace.StopAt() return sample and sample.stopAt or nil end
+
 --- Replay `s` silently to race-clock second `t` and stay there (test mode). `key` "armed" holds the
 --- arm, "running" the moment `t` (its buckets captured as the live reads would have), "result" the card.
 function SampleRace.Hold(s, key, t)

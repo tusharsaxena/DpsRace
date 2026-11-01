@@ -1110,5 +1110,8 @@ function Hud.Diagnose()
              height = (ui and ui.height) or select(2, storedSize()) }
 end
 
+--- The HUD's window, or nil before it is first built (the stepper docks beside it, SF-DR-8).
+function Hud.Frame() return ui and ui.frame or nil end
+
 --- The built window and its bodies, for the suites (nil until first shown).
 function Hud.__ui() return ui end

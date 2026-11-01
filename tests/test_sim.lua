@@ -310,3 +310,56 @@ test("sim: the result card draws the best's diagonal with a best before the run,
     end
 end)
 
+
+-- ── the stepper beside the race window (SF-DR-8) ────────────────────────────────────────────────
+
+local function stepper(f) return assert(f.NS.SimSession, "no LibKa0s-Sim-1.0 session") end
+
+local function labels(f)
+    local out = {}
+    for i, st in ipairs(stepper(f):Steps()) do out[i] = st.kind end
+    return table.concat(out, ",")
+end
+
+test("sim stepper: a sim starts a session whose panel docks beside the race window", function()
+    local f = fixture()
+    assertEqual(#f.NS.SimSeam:Unwrapped(), 0, "every Compat member is wrapped or pure")
+    sim(f, "newbest")
+    local s = stepper(f)
+    assertTrue(s:IsActive())
+    assertEqual(labels(f), "armed,start,buzzer,result,results")
+    assertTrue(s:IsPanelShown(), "the stepper window shows with the sim")
+    assertEqual(s:Status().scenario, "newbest")
+    f.Preview.Stop()
+    assertFalse(s:IsActive(), "turning the sim off ends the session")
+    assertFalse(s:IsPanelShown())
+end)
+
+test("sim stepper: each step moves the sample race to its moment, the last opens the Results window", function()
+    local f = fixture()
+    sim(f, "newbest")
+    local s = stepper(f)
+    assertEqual(f.NS.SampleRace.State(), "armed")
+    assertTrue(s:Step())    -- armed: nothing to do
+    assertEqual(f.NS.SampleRace.State(), "armed")
+    assertTrue(s:Step())    -- the race starts
+    assertEqual(f.NS.SampleRace.State(), "running")
+    assertTrue(s:Step())    -- the buzzer
+    assertEqual(f.NS.SampleRace.State(), "stopping")
+    assertTrue(s:Step())    -- the result card
+    assertEqual(f.NS.SampleRace.State(), "result")
+    assertFalse(f.R.IsShown())
+    assertTrue(s:Step())    -- the Results window
+    assertTrue(f.R.IsShown())
+    assertEqual(f.R.Selected(), "sim-newbest")
+end)
+
+test("sim stepper: an early end has no buzzer step, and switching scenarios restarts the session", function()
+    local f = fixture()
+    sim(f, "died")
+    assertEqual(labels(f), "armed,start,buzzer,result,results")
+    assertEqual(stepper(f):Steps()[3].label, "Combat ends")
+    sim(f, "behind")
+    assertEqual(stepper(f):Status().scenario, "behind")
+    assertEqual(stepper(f):Steps()[3].label, "Buzzer")
+end)

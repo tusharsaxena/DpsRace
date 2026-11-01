@@ -38,7 +38,7 @@ Sim.STICKY_EXTRA = 3
 -- How often the clock moves the sample race on (the HUD's own tick, modules/Hud.lua).
 Sim.TICK = 0.05
 
-local ticker, sample, scenario, resultAt, finished
+local ticker, sample, scenario, resultAt, finished, history, quiet
 
 local function find(key)
     for _, s in ipairs(Sim.SCENARIOS) do
@@ -106,21 +106,116 @@ local function beat()
 end
 Sim.Beat = beat
 
---- Play scenario `key` (the default when it names none) against `dataset`'s history. The preview
---- shell has already checked it may start.
-function Sim.Begin(key, dataset)
+-- Put the sample race at its arm and start the clock: Begin's job, and the stepper's when its Restart
+-- asks for a fresh session.
+local function launch(key)
     cancelTicker()
     local s = find(key) or find(Sim.DEFAULT)
     scenario = s.key
-    sample, resultAt, finished = Sim.Sample(s.key, dataset), nil, false
+    sample, resultAt, finished = Sim.Sample(s.key, history), nil, false
     NS.SampleRace.Start(sample, Sim.ARM_HOLD)
     ticker = C_Timer.NewTicker(Sim.TICK, beat)
+end
+
+-- ── the stepper (SF-DR-8) ───────────────────────────────────────────────────────────────────────
+-- LibKa0s-Sim-1.0's step window beside the race window. The race still plays on its own clock; a
+-- click on a step jumps the clock to that moment (SampleRace.Skip), so the stepper skips the waits
+-- and never changes what the race does. The session fakes no client answer (core/SimSetup.lua).
+
+local STEP_MOMENTS = {
+    armed = function() end,
+    start = function() NS.SampleRace.Skip(0) end,
+    buzzer = function() NS.SampleRace.Skip(NS.SampleRace.StopAt() or 0) end,
+    result = function() NS.SampleRace.SkipToResult() end,
+    results = function() if not finished then Sim.Finish() end end,
+}
+
+local function timeline(_, opts)
+    local s = find(opts.scenario) or find(Sim.DEFAULT)
+    local stopLabel = s.endAt and L["Combat ends"] or L["Buzzer"]
+    return {
+        { kind = "armed", label = L["Armed"] },
+        { kind = "start", label = L["Race starts"] },
+        { kind = "buzzer", label = stopLabel },
+        { kind = "result", label = L["Result card"] },
+        { kind = "results", label = L["Results window"] },
+    }
+end
+
+local function playStep(step)
+    STEP_MOMENTS[step.kind]()
+    NS.Hud.MeterUpdated()
+    return step.label
+end
+
+local function newSession()
+    local lib = NS.SimLib
+    if not (lib and lib.New) then return nil end
+    local names, defs = {}, {}
+    for i, s in ipairs(Sim.SCENARIOS) do
+        names[i] = s.key
+        defs[s.key] = { label = s.key, timeline = timeline }
+    end
+    return lib:New({
+        name = "DpsRace",
+        seam = NS.SimSeam,
+        slash = NS.SLASH .. " sim",
+        deliver = function() return 0 end,
+        isStoodDown = function() return NS.IsStoodDown() end,
+        scenarios = { names = names, defs = defs },
+        -- The sample race is the world; a fresh session (the panel's Restart) plays it again.
+        prepare = function(_, _, opts, ready)
+            if history then launch(opts.scenario) end
+            ready()
+        end,
+        play = playStep,
+        refusal = function(opts)
+            if not (opts.fromHost or history) then return L["Start the simulation with /dr sim [scenario]."] end
+        end,
+        stepDelay = 1,
+        print = function(line) if not quiet then NS.Print(line) end end,
+        panel = {
+            title = function() return L["DPS Race - Simulation"] end,
+            anchorTo = function() return NS.Hud.Frame() end,
+        },
+    })
+end
+
+--- The stepper's session, or nil with no LibKa0s-Sim-1.0.
+Sim.session = newSession()
+NS.SimSession = Sim.session
+
+local function stopSession(reason)
+    local session = Sim.session
+    if not session then return end
+    quiet = true
+    if session:IsActive() then session:Stop(reason) end
+    session:HidePanel()
+    quiet = false
+end
+
+--- Play scenario `key` (the default when it names none) against `data`'s history. The preview
+--- shell has already checked it may start.
+function Sim.Begin(key, data)
+    stopSession("switch")
+    history = data
+    local session = Sim.session
+    if not session then return launch(key) end
+    local s = find(key) or find(Sim.DEFAULT)
+    if not session:Start({ scenario = s.key, fromHost = true }) then launch(s.key) end
+    session:ShowPanel()
+end
+
+--- The script's end for the stepper's last step: the Results window on the sim's run.
+function Sim.Finish()
+    if sample then finish() end
 end
 
 --- Stop the script where it is (the preview's stop and switch).
 function Sim.Cancel()
     cancelTicker()
-    sample, scenario, resultAt, finished = nil, nil, nil, false
+    stopSession("stop")
+    sample, scenario, resultAt, finished, history = nil, nil, nil, false, nil
 end
 
 --- What the sim is doing, for the diagnostics report and the suites.
