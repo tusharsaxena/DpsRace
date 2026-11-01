@@ -327,9 +327,9 @@ test("late ignore: the menu's entries ignore and count again through the list", 
     assertFalse(NS.LateIgnore.IsIgnored(TOY))
     menu:Click("Stop ignoring Feign Death")
     assertFalse(NS.LateIgnore.IsIgnored(FEIGN))
-    -- With no MenuUtil there is no menu, and no error.
-    M.MenuUtil = nil
-    assertFalse(NS.LateIgnore.Menu(r, {}))
+    -- With neither the library nor MenuUtil there is no menu, and no error.
+    local bare = T.load({ libFiles = {}, mutate = function(m) m.MenuUtil = nil end })
+    assertFalse(bare.NS.LateIgnore.Menu(r, {}))
 end)
 
 test("late ignore: IgnoredText names the ignored casts in one line, nil with none", function()

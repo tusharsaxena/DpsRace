@@ -147,8 +147,10 @@ catalog is grown from the same captures:
   library role token. A library token the degraded facade must answer goes into `NS.SKIN_FALLBACK`.
 - What the library does not record (markup built into a string, a pooled row) repaints from a
   `Style.OnLooks` handler. A data hue (class, quality, category) stays a hue (`Style.Hue`).
-- `test_skin_literals` fails on a literal; `test_skin` fails on a token a file names but nobody
-  registered. Add a smoke row to section 27 of [smoke-tests.md](smoke-tests.md).
+- `test_skin_values` fails on a typed color or texture; `test_skin` fails on a token a file names but
+  nobody registered. A new painted surface gets an entry in `tests/skin_surfaces.lua`, which
+  `test_skin_switch` holds to the probe skin. Add a smoke row to section 27 of
+  [smoke-tests.md](smoke-tests.md).
 
 ## Add a locale string
 

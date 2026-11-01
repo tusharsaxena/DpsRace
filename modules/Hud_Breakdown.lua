@@ -101,6 +101,7 @@ local function restyle(row, where)
     local fill = A.Bar(where)
     row.bar:SetStatusBarTexture(fill.texture)
     row.bar:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
+    NS.Skin.BarGloss(row.bar, fill.fromSkin)
     A.PaintTrack(row.track, fill.bg)
     A.PaintEdge(row, row.bar, row.bar, fill.border)
     local text = A.Font("spellText", where)
@@ -151,11 +152,10 @@ end
 local function paintStripe(list, row, i)
     if not row.stripe then
         row.stripe = row:CreateTexture(nil, "BACKGROUND")
-        row.stripe:SetTexture("Interface\\Buttons\\WHITE8x8")
         row.stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
         row.stripe:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -Breakdown.ROW_GAP)
     end
-    NS.Style.Vertex(row.stripe, "dr.list.stripe", list.stripe(i))
+    NS.Style.Fill(row.stripe, "dr.list.stripe", list.stripe(i))
 end
 
 -- A row's hover, wired once per pooled row of a list with a `tip` hook.

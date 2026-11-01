@@ -11,7 +11,7 @@ local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
 local function near(a, b) return math.abs(a - b) < 1e-6 end
 
 local function kaos()
-    return T.load({ kaosMenus = true, mutate = function(m)
+    return T.load({ realMenus = true, mutate = function(m)
         installPaint(m)
         m.GetCursorPosition = function() return 400, 300 end
         rawset(m.UIParent, "GetEffectiveScale", function() return 1 end)
@@ -34,11 +34,13 @@ local function sharedMenu(i)
     error("the shared menu was never built")
 end
 
---- A click on the menu's row `n`, as the client delivers it: through the row's own OnClick.
+--- A click on the menu's row `n`, as the client delivers it: through the row's own OnClick, which an
+--- inert row does not have.
 local function clickRow(i, n)
     local menu = sharedMenu(i)
     assertTrue(menu:IsShown(), "a click needs the menu open")
-    menu.buttons[n]:GetScript("OnClick")(menu.buttons[n])
+    local onClick = menu.buttons[n]:GetScript("OnClick")
+    if onClick then onClick(menu.buttons[n]) end
     return menu
 end
 
@@ -52,30 +54,36 @@ local function withRun()
     return i, r
 end
 
-local function labels(dd)
+--- The rows W.ContextMenu was last handed, titles and buttons in order, as the record holds them.
+local function labels(i)
     local out = {}
-    for _, o in ipairs(dd._options) do out[#out + 1] = o.label end
+    for _, e in ipairs(i.mocks.__lastMenu.entries) do out[#out + 1] = e.text end
     return out
 end
 
-local function rowIndex(dd, text)
-    for i, o in ipairs(dd._options) do
-        if o.label:find(text, 1, true) then return i end
-    end
-    error("no row: " .. text)
-end
-
-test("skin menus: a row's right-click opens the Ka0s menu, not the client's", function()
+test("skin menus: a row's right-click opens the Ka0s menu, skinned for this addon", function()
     local i, r = withRun()
-    local before = #i.mocks.__menus
+    local seen
+    local W = i.mocks.LibStub("LibKa0s-Widgets-1.0")
+    local open = W.ContextMenu
+    W.ContextMenu = function(anchor, rows, opts)
+        seen = opts
+        return open(anchor, rows, opts)
+    end
     assertTrue(i.NS.Results.RowMenu(r, i.mocks.UIParent))
-    assertEqual(#i.mocks.__menus, before, "the client's menu stays shut")
-    local dd = i.NS.__contextDropdown()
-    assertTrue(dd ~= nil and dd.__owner == "DpsRace", "the dropdown wears this addon's skin")
-    local rows = table.concat(labels(dd), "|")
+    assertTrue(sharedMenu(i):IsShown())
+    assertEqual(seen.owner, "DpsRace", "the menu wears this addon's skin")
+    assertTrue(seen.cursor, "at the pointer")
+    local rows = table.concat(labels(i), "|")
     assertTrue(rows:find("Add Note", 1, true) ~= nil, rows)
     assertTrue(rows:find("Compare With This Run", 1, true) ~= nil, rows)
     assertTrue(rows:find("Delete", 1, true) ~= nil, rows)
+end)
+
+test("skin menus: the context menu holds no test seam", function()
+    local i = kaos()
+    assertEqual(i.NS.__clientMenus, nil)
+    assertEqual(i.NS.__contextDropdown, nil)
 end)
 
 test("skin menus: a button runs, a title and a disabled row do nothing", function()
@@ -86,15 +94,9 @@ test("skin menus: a button runs, a title and a disabled row do nothing", functio
         root:CreateButton("Run", function() ran = ran + 1 end)
         root:CreateButton("Off", function() ran = ran + 10 end):SetEnabled(false)
     end)
-    local dd = i.NS.__contextDropdown()
-    local heading = dd._options[1].color
-    local tr, tg, tb = i.NS.Skin.Color("text.heading")
-    assertTrue(near(heading[1], tr) and near(heading[2], tg) and near(heading[3], tb), "a title's color")
-    assertEqual(dd._options[2].color, nil, "a plain row keeps the menu's")
-    assertTrue(dd._options[3].color ~= nil, "a disabled row's")
+    assertEqual(i.mocks.__lastMenu.titles[1], "Heading")
     local menu = clickRow(i, 1)
     assertTrue(menu:IsShown(), "a title leaves the menu open")
-    assertEqual(#dd._options, 3)
     clickRow(i, 3)
     assertTrue(menu:IsShown(), "so does a disabled row")
     assertEqual(ran, 0)
@@ -110,12 +112,11 @@ test("skin menus: a disabled row in a submenu stays on that submenu", function()
         sub:CreateButton("Party", function() end):SetEnabled(false)
         sub:CreateButton("Raid", function() end)
     end)
-    local dd = i.NS.__contextDropdown()
     clickRow(i, 1)
-    assertEqual(labels(dd)[1], "Party")
+    assertEqual(labels(i)[1], "Party")
     local menu = clickRow(i, 1)
     assertTrue(menu:IsShown())
-    assertEqual(table.concat(labels(dd), "|"), "Party|Raid")
+    assertEqual(table.concat(labels(i), "|"), "Party|Raid")
 end)
 
 test("skin menus: a second right-click reopens the menu on the new rows", function()
@@ -127,8 +128,8 @@ test("skin menus: a second right-click reopens the menu on the new rows", functi
         root:CreateButton("Second", function() end)
         root:CreateButton("Third", function() end)
     end)
-    assertTrue(menu:IsShown(), "an open one would toggle shut")
-    assertEqual(table.concat(labels(i.NS.__contextDropdown()), "|"), "Second|Third")
+    assertTrue(menu:IsShown(), "cursor: a second call moves it, it never toggles shut")
+    assertEqual(table.concat(labels(i), "|"), "Second|Third")
     assertTrue(menu.buttons[2]:IsShown(), "drawn with the second fill's rows")
 end)
 
@@ -139,20 +140,21 @@ test("skin menus: a submenu replaces the rows it drops from", function()
         local sub = root:CreateButton("Share")
         sub:CreateButton("Party", function() picked = "party" end)
     end)
-    local dd = i.NS.__contextDropdown()
-    assertEqual(#dd._options, 1)
-    assertTrue(dd._options[1].label:find("Share", 1, true) == 1)
-    assertTrue(dd._options[1].label:find("|T", 1, true) ~= nil, "a mark says it opens")
-    dd.onSelect(1)
+    local row = labels(i)[1]
+    assertEqual(#labels(i), 1)
+    assertTrue(row:find("Share", 1, true) == 1)
+    assertTrue(row:find("|T", 1, true) ~= nil, "a mark says it opens")
+    local menu = clickRow(i, 1)
+    assertTrue(menu:IsShown(), "the submenu stands in the menu's place")
     assertEqual(picked, nil)
-    assertEqual(labels(dd)[1], "Party", "the channel row")
-    dd.onSelect(rowIndex(dd, "Party"))
+    assertEqual(labels(i)[1], "Party", "the channel row")
+    clickRow(i, 1)
     assertEqual(picked, "party")
+    assertFalse(menu:IsShown())
 end)
 
 test("skin menus: without the library the same fill reaches the client's menu", function()
     local i = T.load({ libFiles = {} })
-    i.NS.__clientMenus = false
     i.NS.OpenMenu(i.mocks.UIParent, function(root) root:CreateButton("Run", function() end) end)
     assertTrue(i.mocks.__lastMenu:Find("Run") ~= nil)
 end)

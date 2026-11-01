@@ -1092,12 +1092,6 @@ Total.
 - skin seam: the degraded HudFont draws the face, a picked flag and no shadow
 - skin seam: each host-copy skin token is the live library's Ka0s Default value
 
-### test_skin_literals.lua (3)
-
-- no color literal outside core/SkinSetup.lua and the named allow-list
-- every allow-list entry carries its reason
-- the gate is falsifiable: a planted literal of each shape is reported
-
 ### test_skin.lua (12)
 
 - skin: every owner token a source file names is registered
@@ -1126,7 +1120,7 @@ Total.
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
-### test_skin_flip.lua (17)
+### test_skin_flip.lua (24)
 
 - skin flip: every new companion is a row in the addon's words, on in both places
 - skin flip: a swatch stays live under its companion, and the border governs its thickness
@@ -1135,30 +1129,43 @@ Total.
 - skin flip: a switch moves each text's drawn color and shadow; the clocks' color stays
 - skin flip: companions off draw the stored value under every skin
 - skin flip: Ignore fonts stands a followed shadow down to the stored one
+- skin flip: a block with its own shadow takes the skin's offset, and Ignore fonts the stored one
 - skin flip: a class color comes before every companion
 - skin flip: a border draws the skin's color and thickness while on, the stored ones off
+- skin flip: with no library a stored background draws, its companion on
+- skin flip: every skin but Ka0s Default reads its own bar.bg on a followed track
+- skin flip: a gloss draws under a glossy skin, never over a player's texture
+- skin flip: the real S.BarBorder draws a shipped skin's style over a stored None
 - skin flip: a switch repaints the running HUD's strings and plot past their stamps
 - skin flip: the step moves a stored partial profile onto the skin and rewrites nothing else
+- skin flip: the list names every companion on by default, and the three flags keys
 - skin flip: the list names no size, class color, ignore, bar fill or clock color
 - skin flip: a sub-table the profile never stored is skipped and stays absent
+- skin flip: a current profile born after the stamp reached 9 takes the step at the next init
 - skin flip: a second run writes nothing, on a profile event too
 - skin flip: a companion turned off afterwards stays off through every Defaults path
 - skin flip: a new profile and a reset profile run it against defaults, seen by nobody
 - skin flip: with the library absent the step makes the same writes and its own record
 
-### test_skin_menus.lua (8)
+### test_skin_menus.lua (13)
 
-- skin menus: a row's right-click opens the Ka0s menu, not the client's
+- skin menus: a row's right-click opens the Ka0s menu, skinned for this addon
+- skin menus: the context menu holds no test seam
 - skin menus: a button runs, a title and a disabled row do nothing
+- skin menus: a disabled row in a submenu stays on that submenu
+- skin menus: a second right-click reopens the menu on the new rows
 - skin menus: a submenu replaces the rows it drops from
 - skin menus: without the library the same fill reaches the client's menu
 - skin menus: the Back button's mark wears btn.icon and follows a switch
 - skin menus: the Runs list's scroll bar has the skin's track
 - skin menus: a spell icon wears the skin's icon border
+- skin menus: a spell row of the breakdown is edged, and the edge goes with its icon
+- skin menus: the chart's, the compare's and the timeline's icons are edged
 - skin menus: the title bar and the scroll bar read their size off the skin
 
-### test_bar_style.lua (18)
+### test_bar_style.lua (19)
 
+- bar style: a dash takes its muted color back after the bar text's font, on a pooled row too
 - bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
 - bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
 - bar style: a compare column draws the skin's texture by default, in its own color
@@ -1168,7 +1175,7 @@ Total.
 - bar style: the pace bar draws its block's track and border, keeping its green
 - bar style: the table's two bars are separate blocks; a track and a border span the cell
 - bar style: a compare column draws its block; the side rule did not move
-- bar style: a border follows the skin's bar.borderStyle while its companion is on
+- bar style: a real style in a skin wins while its companion is on, a skin's None defers
 - bar style: a border key LSM cannot answer draws no border
 - bar style: a skin switch moves a skin track and leaves a swatch
 - bar style: every styled bar's media rows are composed pickers, on the page that draws them
@@ -1502,6 +1509,60 @@ Total.
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
 
+### test_skin_values.lua (3)
+
+- skin values: every host row carries its file, substring, why and cause id
+- skin values: no typed value outside the kit's categories and the host's rows
+- skin values: the check is falsifiable, a planted value of each shape is reported
+
+### test_skin_switch.lua (45)
+
+- skin switch: the check is falsifiable, a surface that redraws a literal is reported
+- skin switch: the HUD's window shell changes
+- skin switch: the HUD's window shell changes with the Scope ignored
+- skin switch: the live figures' text changes
+- skin switch: the spells section's heading changes
+- skin switch: the spells section's heading changes with the Scope ignored
+- skin switch: the pace bar's track changes
+- skin switch: the pace bar's behind half changes
+- skin switch: the pace bar's on-pace tick changes
+- skin switch: the pace bar's on-pace tick changes with the Scope ignored
+- skin switch: the damage chart's plot changes
+- skin switch: the Cancel button changes
+- skin switch: the Cancel button changes with the Scope ignored
+- skin switch: the Results window's shell changes
+- skin switch: the Results window's shell changes with the Scope ignored
+- skin switch: the Results footer changes
+- skin switch: the Results footer changes with the Scope ignored
+- skin switch: the run detail's Back mark changes
+- skin switch: the run detail's Back mark changes with the Scope ignored
+- skin switch: the run detail's Delete button changes
+- skin switch: the run detail's Delete button changes with the Scope ignored
+- skin switch: the run detail's flags box changes
+- skin switch: the run detail's flags box changes with the Scope ignored
+- skin switch: the timing strip's segment changes
+- skin switch: the timing strip's segment changes with the Scope ignored
+- skin switch: a Results tab's underline changes
+- skin switch: a Results tab's underline changes with the Scope ignored
+- skin switch: a spell row's track changes
+- skin switch: a spell row's stripe changes
+- skin switch: a spell row's stripe changes with the Scope ignored
+- skin switch: a spell row's bar changes
+- skin switch: a spell row's name changes
+- skin switch: a spell row's border changes
+- skin switch: a spell icon's edge changes
+- skin switch: a spell icon's edge changes with the Scope ignored
+- skin switch: the dim cover changes
+- skin switch: the dim cover changes with the Scope ignored
+- skin switch: the ability timeline's shell changes
+- skin switch: the ability timeline's shell changes with the Scope ignored
+- skin switch: the gear view's shell changes
+- skin switch: the gear view's shell changes with the Scope ignored
+- skin switch: a filter dropdown changes
+- skin switch: a filter dropdown changes with the Scope ignored
+- skin switch: the test-mode strip changes
+- skin switch: the test-mode strip changes with the Scope ignored
+
 ### test_eol.lua (2)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
@@ -1624,12 +1685,11 @@ Total.
 | test_schema.lua | 18 |
 | test_settings.lua | 37 |
 | test_skinsetup.lua | 23 |
-| test_skin_literals.lua | 3 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
-| test_skin_flip.lua | 17 |
-| test_skin_menus.lua | 8 |
-| test_bar_style.lua | 18 |
+| test_skin_flip.lua | 24 |
+| test_skin_menus.lua | 13 |
+| test_bar_style.lua | 19 |
 | test_skin_fonts.lua | 12 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
@@ -1650,10 +1710,12 @@ Total.
 | test_perf_harness.lua | 5 |
 | test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 3 |
+| test_skin_values.lua | 3 |
+| test_skin_switch.lua | 45 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1294** |
+| **Total** | **1352** |

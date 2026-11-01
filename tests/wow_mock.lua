@@ -153,6 +153,22 @@ local function build()
             return menu
         end,
     }
+    -- W.ContextMenu's rows as the same record, for tests/run.lua's recorder: titles apart, each other
+    -- row an entry whose click is the row's own.
+    function M.__recordContextMenu(owner, rows)
+        local description
+        M.MenuUtil.CreateContextMenu(owner, function(_, desc) description = desc end)
+        local menu = M.__lastMenu
+        for _, row in ipairs(rows) do
+            if row.title then
+                description:CreateTitle(row.label)
+            else
+                description:CreateButton(row.label, function() return row.onClick and row.onClick(row.value, row) end)
+                    :SetEnabled(not row.disabled)
+            end
+        end
+        return menu
+    end
     M.MenuResponse = { Close = 1, Refresh = 2, Open = 3 }
 
     -- The run record's metadata snapshots (modules/Recorder.lua, T3): who, against what, where. The

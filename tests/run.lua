@@ -65,6 +65,20 @@ local function settleSkinLogin(mocks)
     if retry and retry.__fire then retry:__fire("OnEvent", "PLAYER_LOGIN") end
 end
 
+--- W.ContextMenu's rows, written to the mock's menu record (__menus, __lastMenu) as MenuUtil's are, so
+--- a suite reads a row menu the way it reads the launcher's; a submenu is the record its row's click
+--- opens. `real` opens the library's menu as well: the shared menu needs the kit's paint mock, which
+--- tests/test_skin_menus.lua installs.
+local function recordContextMenus(mocks, real)
+    local W = mocks.LibStub("LibKa0s-Widgets-1.0", true)
+    if not (W and W.ContextMenu) then return end
+    local open = W.ContextMenu
+    W.ContextMenu = function(anchor, rows, menuOpts)
+        mocks.__recordContextMenu(anchor, rows)
+        if real then return open(anchor, rows, menuOpts) end
+    end
+end
+
 --- One isolated instance: a fresh mock, a fresh NS, the client's lifecycle.
 ---   opts.libFiles  the LibKa0s files to load ({} = the library-absent load)
 ---   opts.mutate    function(mocks) run before anything loads
@@ -80,9 +94,7 @@ local function loadInstance(opts)
     local NS = {}
     Loader.loadAll(opts.libFiles or LIB_FILES, NS, mocks)
     Loader.loadAll(rooted(ADDON_FILES), NS, mocks)
-    -- The menus' CONTENT is read off the mock's MenuUtil recorder; NS.OpenMenu takes the same fill to
-    -- either menu, and tests/test_skin_menus.lua holds the Ka0s one (opts.kaosMenus).
-    NS.__clientMenus = not opts.kaosMenus
+    recordContextMenus(mocks, opts.realMenus)
     if opts.init ~= false then
         local AceAddon = mocks.LibStub("AceAddon-3.0")
         AceAddon:InitializeAddon(NS)                 -- OnInitialize: DB, migrations, latch, panel
@@ -154,7 +166,6 @@ local SUITES = {
     "test_schema",
     "test_settings",
     "test_skinsetup",
-    "test_skin_literals",
     "test_skin",
     "test_skin_hud",
     "test_skin_flip",
@@ -180,6 +191,8 @@ local SUITES = {
     "test_perf_harness",
     "test_loadorder",
     "test_vendor_sync",
+    { name = "test_skin_values", dir = "tests/_kit/" },
+    { name = "test_skin_switch", dir = "tests/_kit/" },
     { name = "test_eol", dir = "tests/_kit/" },
     { name = "test_prose", dir = "tests/_kit/" },
     { name = "test_layout_cap", dir = "tests/_kit/" },
@@ -222,5 +235,21 @@ _G.DPSRACE_TEST = Kit.expose{
     reveal           = Kit.reveal,
     installSecretValue = Kit.installSecretValue,
 }
+
+-- The typed-value gate (skinning-§1): what no kit category takes, each with its cause.
+Kit.skinValues = {
+    root = root,
+    rows = {
+        { file = "modules/Countdown.lua", substring = "Countdown.TEXTURE =",
+          why = "the client's own big countdown digits, shipped as art, not a color or a chrome texture", cause = "A6" },
+        { file = "modules/Countdown.lua", substring = "Countdown.GLOW =",
+          why = "the digits' own glow sheet, cut by the same texcoords", cause = "A6" },
+        { file = "modules/Results_Timeline.lua", substring = "local DISC =",
+          why = "a white disc shape tinted through Style.Vertex, the legend's swatch: a shape, not skin data", cause = "L10" },
+    },
+}
+
+-- The skin-switch test's painted surfaces (skinning-§1).
+Kit.skinSwitch = dofile(root .. "/tests/skin_surfaces.lua")(_G.DPSRACE_TEST)
 
 Kit.run{ dir = root .. "/tests/", suites = SUITES }

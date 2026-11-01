@@ -96,7 +96,7 @@ test("skin flip: a swatch stays live under its companion, and the border governs
     assertEqual(NS.FindSchemaRow("appearance.figures.fontColor").disabledIf, nil, "options-ui-§17")
     for _, p in ipairs(STYLED) do
         assertEqual(NS.FindSchemaRow(p .. "borderColor").disabledIf, nil, p)
-        assertEqual(NS.FindSchemaRow(p .. "borderSize").disabledIf, p .. "borderStyleFromSkin", p .. ": bar family")
+        assertEqual(type(NS.FindSchemaRow(p .. "borderSize").disabledIf), "function", p .. ": a skin's None defers")
     end
 end)
 
@@ -246,15 +246,86 @@ test("skin flip: a border draws the skin's color and thickness while on, the sto
     assertTrue(NS.SetByPath(p .. "borderColorFromSkin", false))
     look = A.Bar("window").border
     assertEqual(rgb(look.r, look.g, look.b), rgb(0.9, 0.1, 0.1), "the swatch")
-    -- A skin that names a border: its thickness governs with the style's companion on.
+    -- A skin's None defers, with the companion on: the stored style at the stored thickness.
     assertTrue(NS.SetByPath(p .. "borderStyleFromSkin", true))
-    local real = NS.Skin.Resolve
-    NS.Skin.Resolve = function(kind, value, fromSkin)
-        if kind == "bar.borderStyle" then return "Solid" end
-        if kind == "bar.borderSize" and fromSkin then return 3 end
-        return real(kind, value, fromSkin)
+    assertEqual(A.Bar("window").border.size, 4, "Ka0s Default's None leaves the player's")
+    -- A skin that names a border: its thickness governs with the style's companion on.
+    local real = NS.Skin.BarBorder
+    NS.Skin.BarBorder = function(style, show, size, fromSkin)
+        if fromSkin then return "Solid", true, 3 end
+        return real(style, show, size, fromSkin)
     end
     assertEqual(A.Bar("window").border.size, 3, "the skin's bar.borderSize")
+end)
+
+test("skin flip: with no library a stored background draws, its companion on", function()
+    -- A degraded S.Color answers an owner default, so a follow read asks S.IsEnabled first (Moving to,
+    -- section 3). red under: the skin's track drawn over the player's color.
+    local inst = T.load({ libFiles = {} })
+    local NS, A = inst.NS, inst.NS.HudAppearance
+    NS.GetSetting("appearance.bars.bgColor").r = 0.61
+    NS.GetSetting("appearance.chart.bgColor").r = 0.62
+    assertEqual(NS.GetSetting("appearance.bars.bgFromSkin"), true)
+    assertEqual(A.Bar().bg.r, 0.61, "the spell bars' swatch")
+    assertEqual(A.ChartBackground().r, 0.62, "the plot's swatch")
+    assertEqual(A.Bar().border, nil, "S.BarBorder's stub answers the stored None")
+end)
+
+test("skin flip: every skin but Ka0s Default reads its own bar.bg on a followed track", function()
+    local inst = T.load()
+    local A = inst.NS.HudAppearance
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    local home = Skin:ResolveSkin("ka0s")["bar.bg"]
+    assertEqual(rgb(A.Bar().bg.r, A.Bar().bg.g, A.Bar().bg.b), rgb(1, 1, 1), "Ka0s Default keeps its wash")
+    for _, def in ipairs(Skin:Skins()) do
+        local bg = Skin:ResolveSkin(def.key)["bar.bg"]
+        if def.key ~= "ka0s" and rgb(bg[1], bg[2], bg[3]) ~= rgb(home[1], home[2], home[3]) then
+            switch(inst, def.key)
+            local b = A.Bar().bg
+            assertEqual(rgb(b.r, b.g, b.b), rgb(bg[1], bg[2], bg[3]), def.key)
+            b = A.Pace().bg
+            assertEqual(rgb(b.r, b.g, b.b), rgb(bg[1], bg[2], bg[3]), def.key .. " pace")
+            return
+        end
+    end
+    error("no shipped skin moves bar.bg")
+end)
+
+test("skin flip: a gloss draws under a glossy skin, never over a player's texture", function()
+    -- Moving to, section 6. mock_paint's StatusBars are the only ones S.BarGloss draws on.
+    local installPaint = dofile(T.root .. "/tests/_kit/mock_paint.lua")
+    local inst = T.load({ mutate = function(m) installPaint(m) end })
+    local NS = inst.NS
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    local key
+    for _, def in ipairs(Skin:Skins()) do
+        if Skin:ResolveSkin(def.key)["bar.gloss"] == true then key = def.key; break end
+    end
+    assertTrue(key ~= nil, "a shipped skin has a gloss")
+    local bar = inst.mocks.CreateFrame("StatusBar")
+    bar:SetStatusBarTexture("x")
+    switch(inst, key)
+    local rec = function() return Skin.painted[bar] end
+    NS.Skin.BarGloss(bar, true)
+    local gloss = assert(rec().regions.gloss, "drawn under the skin's texture")
+    assertTrue(gloss:IsShown())
+    NS.Skin.BarGloss(bar, false)
+    assertFalse(gloss:IsShown(), "a player's own texture stays plain")
+end)
+
+test("skin flip: the real S.BarBorder draws a shipped skin's style over a stored None", function()
+    local inst = T.load()
+    local A = inst.NS.HudAppearance
+    local Skin = inst.mocks.LibStub("LibKa0s-Skin-1.0")
+    local key, tokens
+    for _, def in ipairs(Skin:Skins()) do
+        local t = Skin:ResolveSkin(def.key)
+        if t["bar.borderStyle"] == "Solid" then key, tokens = def.key, t; break end
+    end
+    assertTrue(key ~= nil, "a shipped skin states a Solid bar border")
+    assertEqual(A.Bar().border, nil, "Ka0s Default's None over the stored None")
+    switch(inst, key)
+    assertEqual(A.Bar().border.size, tokens["bar.borderSize"], "a real style wins")
 end)
 
 --- A running HUD with the recorder's widgets.

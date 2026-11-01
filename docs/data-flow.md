@@ -522,7 +522,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 
 - **Share**: the HUD's result card and the Results detail call `Share.Prompt(run)`; a Results row's
   right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
-  the client's chat lockdown, one line refuses. Otherwise a context menu (`NS.OpenMenu`: the shared Ka0s menu, the client's `MenuUtil` without the library) offers Say, Party,
+  the client's chat lockdown, one line refuses. Otherwise a context menu (`NS.OpenMenu`: `W.ContextMenu` at the cursor, the client's `MenuUtil` without the library) offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
   sends `Share.Line(run)` (*DPS Race 3:00 · Cleave · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
   DPS Race)*) through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`); Whisper asks for a name first

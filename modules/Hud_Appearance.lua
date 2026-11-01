@@ -9,7 +9,8 @@ local _, NS = ...
 -- spell rows, the pace bar, the Results table's cells and the compare's columns. Both span the bar's
 -- whole length, under and over the fill. The background is its swatch, or the surface's skin track
 -- while `bgFromSkin` is on (read here, so a skin switch moves it); the border is the composed border
--- group, its style and thickness following the skin's bar.borderStyle and bar.borderSize while its
+-- group, its style and thickness drawn through S.BarBorder (a skin's None defers to the stored two,
+-- a skin's real style wins) while its
 -- companion is on, its color bar.border while `borderColorFromSkin` is. A class color comes before
 -- both. A border that says None, or has no thickness, draws nothing.
 --
@@ -60,7 +61,7 @@ local FALLBACK_BAR = "Interface\\Buttons\\WHITE8x8"
 
 -- The surface's skin track behind `bgFromSkin`, by block prefix (default: the spell rows').
 local PACE_PREFIX = "appearance.pace."
-local TRACK_TOKEN, PACE_TRACK_TOKEN = "dr.list.track", "dr.chart.grid"
+local TRACK_TOKEN, PACE_TRACK_TOKEN = "dr.list.track", "dr.pace.track"
 
 -- The Results detail's spell rows' block, and the leaves a skin's flat edge is called.
 local DETAIL_PREFIX = "resultsDetail.spellBars."
@@ -73,7 +74,7 @@ local FROM_SKIN = "@skin"
 
 -- Each media leaf that can follow the skin: the skin token it follows. The companion is the leaf plus
 -- `FromSkin`, stored beside it (OptionsCompose's naming).
-local FOLLOWS = { font = "hud.font", barTexture = "bar.texture", borderStyle = "bar.borderStyle" }
+local FOLLOWS = { font = "hud.font", barTexture = "bar.texture" }
 
 --- Every font block's Font flags, by full path: the v7 step's list (core/Database.lua).
 -- The clocks' blocks: the mono role, never outlined by the Font outline (D-06).
@@ -91,10 +92,10 @@ Appearance.FONT_FLAGS_KEYS = {
 local OWN_TEXT = { ["appearance.figures."] = "dr.figures.text" }
 
 -- The blocks whose stored default is a shadow, where Ka0s Default's hud.shadow is none. Theirs is
--- dr.hud.shadow at the skin's offset, so Ka0s Default keeps its pixels; S.HudFont reads no owner token,
--- so each hands it as a stored shadow with the companion off. The clocks store none, and read the skin's.
-local OWN_SHADOW = { ["appearance.figures."] = true, ["appearance.spellText."] = true,
-                     ["resultsTable.barText."] = true }
+-- dr.hud.shadow at the skin's offset (S.HudFont's shadowToken), so Ka0s Default keeps its pixels. The
+-- clocks store none, and read the skin's.
+local OWN_SHADOW = { ["appearance.figures."] = "dr.hud.shadow", ["appearance.spellText."] = "dr.hud.shadow",
+                     ["resultsTable.barText."] = "dr.hud.shadow" }
 
 --- Every stored companion, by full path: the v6 reset's list (core/Database.lua). The clocks
 --- (`appearance.elapsed`, `appearance.left`) are absent by design (D-15).
@@ -188,7 +189,6 @@ Appearance.Color = color
 --- @param p string  the block's prefix, with the dot
 --- @param leaf string
 --- @return string|nil, boolean
---- `leaf` may also be "borderStyle" (the same seam, the skin's `bar.borderStyle`).
 function Appearance.MediaKey(p, leaf)
     local stored = setting(p .. leaf)
     local token, S = FOLLOWS[leaf], NS.Skin
@@ -230,22 +230,6 @@ local function skinText(p, S)
     return r, g, b, a
 end
 
-local ownShadow = {}   -- refilled per read: S.HudFont keeps nothing of it
-
--- What S.HudFont is handed for the block at `p`: the stored shadow and its companion, or for a block
--- with a shadow of its own, that shadow as a stored one. HudShadow's nil (Ignore fonts, or no library)
--- leaves the player's.
-local function shadowOf(p, S)
-    local stored, follow = setting(p .. "fontShadow") == true, setting(p .. "fontShadowFromSkin") == true
-    if not (follow and OWN_SHADOW[p] and S) then return stored, follow end
-    if S.HudShadow() == nil then return stored, false end
-    local r, g, b, a = S.Color("dr.hud.shadow")
-    if r == nil then return false, false end
-    ownShadow[1], ownShadow[2] = S.Token("hud.shadowX"), S.Token("hud.shadowY")
-    ownShadow[3], ownShadow[4], ownShadow[5], ownShadow[6] = r, g, b, a
-    return ownShadow, false
-end
-
 --- A font block stored at `p` (its prefix, with the dot), `def` its defaults; `class` as color's;
 --- `where` as Font's.
 function Appearance.FontAt(p, def, class, where)
@@ -257,12 +241,13 @@ function Appearance.FontAt(p, def, class, where)
     if r == nil then r, g, b, a = color(setting(p .. "fontColor"), setting(p .. "useClassColorFont") == true, class) end
     local size = tonumber(setting(p .. "fontSize")) or def.fontSize
     if S and type(S.HudFontSize) == "function" then size = S.HudFontSize(size, fromSkin) end
-    local shadow, shadowFromSkin = shadowOf(p, S)
     return {
         path = path or FALLBACK_FONT,
         size = size,
         flags = fontFlags(p, S, where),
-        shadow = shadow, shadowFromSkin = shadowFromSkin,
+        shadow = setting(p .. "fontShadow") == true,
+        shadowFromSkin = setting(p .. "fontShadowFromSkin") == true,
+        shadowToken = OWN_SHADOW[p],
         r = r, g = g, b = b, a = a,
     }
 end
@@ -277,7 +262,7 @@ local fontOpts = {}   -- refilled per call, every field: S.HudFont keeps nothing
 --- @param scale number|nil
 function Appearance.ApplyFont(fs, font, scale)
     fontOpts.face, fontOpts.size, fontOpts.flags = font.path, math.floor(font.size * (scale or 1) + 0.5), font.flags
-    fontOpts.shadow, fontOpts.shadowFromSkin = font.shadow, font.shadowFromSkin
+    fontOpts.shadow, fontOpts.shadowFromSkin, fontOpts.shadowToken = font.shadow, font.shadowFromSkin, font.shadowToken
     NS.Skin.HudFont(fs, fontOpts)
     fs:SetTextColor(font.r, font.g, font.b, font.a)
 end
@@ -300,12 +285,19 @@ function Appearance.BarAt(p, def, class)
         texture = fetch("statusbar", Appearance.MediaKey(p, "barTexture"))
             or fetch("statusbar", setting(p .. "barTexture")) or FALLBACK_BAR,
         r = r, g = g, b = b, a = alpha,
+        fromSkin = setting(p .. "barTextureFromSkin") == true,
     }
+end
+
+-- True when a stored `FromSkin` companion may read the skin. With the library absent the degraded
+-- S.Color still answers an owner default, which would draw over the player's stored color.
+local function skinReads(path)
+    return setting(path) == true and NS.Skin.IsEnabled()
 end
 
 -- The block's background, its class resolved as color's, a class color before the skin's track.
 local function background(p, class)
-    if setting(p .. "bgFromSkin") == true and setting(p .. "useClassColorBg") ~= true then
+    if skinReads(p .. "bgFromSkin") and setting(p .. "useClassColorBg") ~= true then
         local token = p == PACE_PREFIX and PACE_TRACK_TOKEN or TRACK_TOKEN
         local r, g, b, a = NS.Style.Rgba(token)
         return { r = r, g = g, b = b, a = a }
@@ -323,11 +315,12 @@ end
 
 -- The block's border, or nil when it draws none.
 local function border(p, class)
-    local file = edgeFile((Appearance.MediaKey(p, "borderStyle")))
     local S = NS.Skin
-    local stored = setting(p .. "borderSize")
-    local size = tonumber(S.Resolve("bar.borderSize", stored, setting(p .. "borderStyleFromSkin") == true))
-        or tonumber(stored) or 0
+    -- This addon has no Show border row, so its stored Show is always on: a stored style draws.
+    local style, _, size = S.BarBorder(setting(p .. "borderStyle"), true, setting(p .. "borderSize"),
+        setting(p .. "borderStyleFromSkin") == true)
+    local file = edgeFile(style)
+    size = tonumber(size) or 0
     if not file or size <= 0 then return nil end
     local useClass = setting(p .. "useClassColorBorder") == true
     local r, g, b, a
@@ -390,7 +383,7 @@ end
 --- @return table { r, g, b, a }
 function Appearance.ChartBackground()
     local useClass = setting("appearance.chart.useClassColorBg") == true
-    if setting("appearance.chart.bgFromSkin") == true and not useClass then
+    if skinReads("appearance.chart.bgFromSkin") and not useClass then
         local r, g, b, a = NS.Style.Rgba("dr.chart.bg")
         return { r = r, g = g, b = b, a = a }
     end

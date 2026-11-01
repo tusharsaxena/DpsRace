@@ -175,7 +175,7 @@ test("bar style: the default look keeps the skin's two tracks and draws no borde
     local r, g, b, a = Style.Rgba("dr.list.track")
     assertEqual(spell.bg.r, r); assertEqual(spell.bg.g, g); assertEqual(spell.bg.b, b); assertEqual(spell.bg.a, a)
     assertEqual(A.Bar("window").bg.a, a, "the detail's the same token")
-    assertEqual(pace.bg.a, select(4, Style.Rgba("dr.chart.grid")), "the pace bar's own track")
+    assertEqual(pace.bg.a, select(4, Style.Rgba("dr.pace.track")), "the pace bar's own track")
     assertEqual(spell.border, nil, "Ka0s Default's bar.borderStyle is None")
     assertEqual(pace.border, nil)
     assertEqual(A.Bar("window").border, nil)
@@ -227,7 +227,7 @@ end)
 test("bar style: the pace bar draws its block's track and border, keeping its green", function()
     local i = inst()
     local pace = i.NS.HudChart.NewPace(i.mocks.CreateFrame("Frame"))
-    assertEqual(pace.track.__colorTex[4], select(4, i.NS.Style.Rgba("dr.chart.grid")), "painted when built")
+    assertEqual(pace.track.__colorTex[4], select(4, i.NS.Style.Rgba("dr.pace.track")), "painted when built")
     assertEqual(pace.behind.__barColor[3], 0.84)
     assertTrue(i.NS.SetByPath("appearance.pace.bgFromSkin", false))
     assertTrue(i.NS.SetByPath("appearance.pace.bgColor", { r = 1, g = 0, b = 0, a = 0.5 }))
@@ -285,19 +285,23 @@ test("bar style: a compare column draws its block; the side rule did not move", 
     assertEqual(track.edge, nil, "and none in the best's")
 end)
 
-test("bar style: a border follows the skin's bar.borderStyle while its companion is on", function()
+test("bar style: a real style in a skin wins while its companion is on, a skin's None defers", function()
     local i = inst()
     local NS, A = i.NS, i.A
-    local real = NS.Skin.Resolve
-    NS.Skin.Resolve = function(token, v, on)
-        if token == "bar.borderStyle" then return "flat" end
-        return real(token, v, on)
+    local real = NS.Skin.BarBorder
+    NS.Skin.BarBorder = function(style, show, size, fromSkin)
+        if fromSkin then return "flat", true, 2 end
+        return real(style, show, size, fromSkin)
     end
-    assertTrue(A.Bar().border ~= nil, "the skin's border, thickness and color the player's")
-    assertEqual(A.Bar().border.size, 1)
+    assertEqual(A.Bar().border.size, 2, "the skin's style and thickness")
     assertTrue(NS.SetByPath("appearance.bars.borderStyleFromSkin", false))
     assertEqual(A.Bar().border, nil, "off, the stored None")
-    NS.Skin.Resolve = real
+    NS.Skin.BarBorder = real
+    assertTrue(NS.SetByPath("appearance.bars.borderStyleFromSkin", true))
+    assertEqual(A.Bar().border, nil, "a skin's None over a stored None draws none")
+    assertTrue(NS.SetByPath("appearance.bars.borderStyle", "Solid"))
+    assertTrue(NS.SetByPath("appearance.bars.borderSize", 3))
+    assertEqual(A.Bar().border.size, 3, "a skin's None defers to the stored style and thickness")
 end)
 
 test("bar style: a border key LSM cannot answer draws no border", function()

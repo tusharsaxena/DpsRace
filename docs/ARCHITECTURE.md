@@ -473,13 +473,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   and its menu and the test strip (`core/WidgetsSetup.lua`), the copy window, the debug console, the
   perf panel and the new-best toast each carry this addon's folder as their skin owner;
   `tests/test_skinsetup.lua` pins the ones this addon hands over.
-- **The color gate.** `tests/test_skin_literals.lua` (anti-pattern #107) fails on a numeric literal in
-  a color position of `SetTextColor`, `SetColorTexture`, `SetVertexColor`, `SetBackdropColor`,
-  `SetBackdropBorderColor`, `AddLine` and `AddDoubleLine`, and on any `|cff` escape in code, in every
-  tracked file under `core/`, `modules/` and `settings/` outside `core/SkinSetup.lua` and its
-  allow-list: the chat prefix and the slash suite's disabled line (chat output, X7), the talent export
-  hyperlink (the client's own link gold) and `Style.HueEscape` (the escape builder for a data hue). An
-  allow-list entry that matches nothing also fails.
+- **The typed-value gate and the switch test.** The kit's `test_skin_values` (kit revision 50,
+  anti-pattern #107) fails on a typed color or texture no kit category takes, in every tracked source
+  file; `tests/run.lua`'s `Kit.skinValues.rows` names the three left, each with its cause: the
+  countdown's two digit sheets (A6) and the timeline legend's disc (L10). A row that matches nothing
+  fails. The kit's `test_skin_switch` flips a probe skin over the surfaces `tests/skin_surfaces.lua`
+  declares, and fails on one that draws the same.
 
 **What stays as it is** (skinning's rungs 3 and 4): the data hues (class, spec, category, length and
 quality colors, the meaning colors of a gain or a late cast, which `Style.Hue` keeps on the body face

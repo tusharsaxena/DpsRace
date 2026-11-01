@@ -217,8 +217,8 @@ NS.SKIN_TOKENS = {
     ["dr.text"]       = { default = { 0.93, 0.93, 0.95, 1 }, follow = "text.body" },
     ["dr.dim"]        = { default = { 0.62, 0.62, 0.68, 1 }, follow = "text.muted" },
     -- The HUD's own values where they differ from the skin's (FS-DR-FLIP, LibKa0s v1.85.0): the live
-    -- figures' gray over hud.text's white, the shadow the text blocks store over Ka0s Default's none,
-    -- and the chart plot's dark wash over chart.track.
+    -- figures' gray over hud.text's white, the shadow the text blocks store over Ka0s Default's none
+    -- (S.HudFont's shadowToken), and the chart plot's dark wash over chart.track.
     ["dr.figures.text"] = { default = { 0.93, 0.93, 0.95, 1 }, follow = "hud.text" },
     ["dr.hud.shadow"]   = { default = { 0, 0, 0, 1 }, follow = "hud.shadow" },
     ["dr.chart.bg"]     = { default = { 0, 0, 0, 0.35 }, follow = "chart.track" },
@@ -229,7 +229,10 @@ NS.SKIN_TOKENS = {
     ["dr.list.hover"]   = { default = { 1, 1, 1, 0.04 }, follow = "list.hover" },
     ["dr.list.sel"]     = { default = rgba(GOLD, 0.10), follow = "list.sel" },
     ["dr.scroll.thumb"] = { default = { 1, 1, 1, 0.25 }, follow = "scroll.thumb" },
-    ["dr.list.track"]   = { default = { 1, 1, 1, 0.04 }, follow = "chart.track" },
+    -- A bar's track, the spell rows' and the pace bar's: Ka0s Default keeps this addon's two washes, and
+    -- every other skin draws its own bar.bg (the owner's ruling of 2026-11-01).
+    ["dr.list.track"]   = { default = { 1, 1, 1, 0.04 }, follow = "bar.bg" },
+    ["dr.pace.track"]   = { default = { 1, 1, 1, 0.08 }, follow = "bar.bg" },
     -- The run detail: its pane's dim wash, and the timing strip's two segments and their edge.
     ["dr.pane.bg"]       = { default = { 0, 0, 0, 0.15 }, follow = "panel.bg" },
     -- The dim cover over the Results window while the ability timeline is open (D-8's .45, kept).
@@ -513,7 +516,7 @@ if not Skin then
         "TitleBar", "Divider", "Footer", "Card", "Slider", "NavItem", "Drawer", "ListRow", "MenuFrame",
         "Tooltip", "Strip", "Cover", "Text", "ChartStyle", "BarStyle", "IconBorder", "GlowColor",
         "BarTexture", "FontFlags", "HudFontSize", "Mark", "MarkText", "HudTextColor", "HudLabelColor",
-        "BarFillColor", "HudShadow", "BarGloss", "HudFont",
+        "BarFillColor", "HudShadow", "BarGloss", "HudFont", "HoverArt",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -546,6 +549,9 @@ if not Skin then
         local n = tonumber(size)
         return (n and n > 0) and n or 12
     end
+
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 16): with no skin, a bar border is the stored three.
+    S.BarBorder = function(style, show, size) return style, show, size end
 
     -- LibKa0s v1.85.0 (SkinPaintExtras minor 14): S.HudFont is the one facade member that must draw, or
     -- a HUD string has no face. No skin to read, so a stored shadow draws no shadow on a 12.0.7 client,

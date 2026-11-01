@@ -569,6 +569,7 @@ local function restyle(col)
     local fill = A.Chart()
     col:SetStatusBarTexture(fill.texture)
     col:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
+    NS.Skin.BarGloss(col, fill.fromSkin)
 end
 
 -- A column: a vertical StatusBar and nothing else (no track of its own: the plot's backdrop is the
@@ -810,6 +811,8 @@ local function restylePace(p)
     p.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
     p.ahead:SetStatusBarTexture(look.texture)
     p.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))
+    NS.Skin.BarGloss(p.behind, look.fromSkin)
+    NS.Skin.BarGloss(p.ahead, look.fromSkin)
     anchorShortfall(p)
     A.PaintTrack(p.track, look.bg)
     A.PaintEdge(p, p.bar, p.bar, look.border)

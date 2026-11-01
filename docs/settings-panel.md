@@ -275,7 +275,7 @@ and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling 
 | *Spell bar border* | `appearance.bars.` | a *Border* set (below); none | a border around each HUD spell row's bar |
 | *Pace bar* | `appearance.pace.` | the bar block with *Use the skin's texture*; the chart's old look (the skin's texture, stored pick solid, 90%, the same indigo): `BAR_BLUE` in `defaults/Profile.lua`, the one source of every blue bar's default | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
-| *Pace bar background* | `appearance.pace.` | a *Background* set; the skin's `dr.chart.grid` track | the empty part of the pace bar |
+| *Pace bar background* | `appearance.pace.` | a *Background* set; the skin's `dr.pace.track` track, which follows `bar.bg` | the empty part of the pace bar |
 | *Pace bar border* | `appearance.pace.` | a *Border* set; none | a border around the whole pace bar. Its green and red parts are meaning colors, no block's |
 
 Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
@@ -283,7 +283,7 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 **The Background and Border sets** (`NS.BarStyleRows`, `settings/OptionsSetup.lua`; a styled bar, `HudAppearance.Styled`): every bar on HUD Appearance, the Results table and the Run detail tab carries both, each under its own heading.
 
 - *Background*: the composed color pair, *Background color* (`bgColor`, with alpha) and *Use class color* (`useClassColorBg`), then one appended row in the addon's words, *Use the skin's background* (`bgFromSkin`), which draws the surface's skin track and leaves the swatch unread. On by default where a track shipped (the spell rows, `dr.list.track`; the pace bar, `dr.chart.grid`). Off over a swatch of no opacity on the Results table and the compare, which draw no track by default; there the companion draws `dr.list.track`.
-- *Border*: `H.BorderGroup` with `fromSkin = "bar"`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`, on: the skin's `bar.borderStyle`, *None* under Ka0s Default, and `bar.borderSize`, so it grays the thickness too), then one appended row in the addon's words, *Use the skin's color* (`borderColorFromSkin`, on: `bar.border`). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
+- *Border*: `H.BorderGroup` with `fromSkin = "bar"`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`; on, `S.BarBorder` draws a skin's real `bar.borderStyle` at its `bar.borderSize` and grays both rows, and a skin's *None*, Ka0s Default's among them, leaves both live and draws the stored style and thickness), then one appended row in the addon's words, *Use the skin's color* (`borderColorFromSkin`, on: `bar.border`). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
 - Both span the bar's whole length, the row, the cell or the compare column, not the fill. The border is a frame with no fill and no mouse, made the first time a block draws one, so it sits over the text at its edges.
 - The texture and border pickers are the composer's `Ka0sMedia_*` rows, the previewing pickers the skin paints (options-ui-§23). They read LibSharedMedia's lists.
 
