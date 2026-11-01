@@ -178,13 +178,52 @@ the rules don't change between the two. Only the HUD copy does.
 A small table in `defaults/Dummies.lua`, keyed by creature ID. Entries are added from a measurement
 (a probe run or `/dpsrace target`), never guessed.
 
-| Creature ID | Name | Category | Default count | Measured |
-|---|---|---|---|---|
-| 243167 | Dungeoneer's Training Dummy | Dungeoneer (hits back) | 1 | 2026-10-23, Silvermoon |
-| 243168 | Dungeoneer's Training Dummy | Dungeoneer (hits back) | 1 | 2026-10-23, Silvermoon |
-| 243208 | Cleave Training Dummy | Cleave | 1 until the group is counted in-game (O7) | 2026-10-23, Silvermoon |
-| 243205 | Reinforced Golem | Boss-level (level −1) | 1 | 2026-10-23, Silvermoon |
-| 243211 | PvP Training Dummy | PvP | 1 | MultiMeters, 2026-09-26 |
+| Creature ID | Name | Category | Measured |
+|---|---|---|---|
+| 31146 | Raider's Training Dummy | Boss-level | 2026-11-01, City of Ironforge, Orgrimmar, Shrine of Seven Stars, Stormwind City, The Exodar, Thunder Bluff |
+| 65310 | Turnip Punching Bag | Boss-level | 2026-11-01, Silvermoon City |
+| 67127 | Training Dummy | Single target | 2026-11-01, Shrine of Seven Stars |
+| 114832 | PvP Training Dummy | PvP | 2026-11-01, Stormwind City |
+| 126781 | Training Dummy | Single target | 2026-11-01, Tiragarde Sound |
+| 131983 | Raider's Training Dummy | Boss-level | 2026-11-01, Tiragarde Sound |
+| 131989 | Training Dummy | Single target | 2026-11-01, Tiragarde Sound |
+| 131992 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Tiragarde Sound |
+| 144078 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Zuldazar |
+| 144081 | Training Dummy | Single target | 2026-11-01, Zuldazar |
+| 144082 | Training Dummy | Single target | 2026-11-01, Zuldazar |
+| 144085 | Training Dummy | Single target | 2026-11-01, Zuldazar |
+| 144086 | Raider's Training Dummy | Boss-level | 2026-11-01, Zuldazar |
+| 153285 | Training Dummy | Single target | 2026-11-01, City of Ironforge, Orgrimmar, The Exodar, Thunder Bluff |
+| 153292 | Training Dummy | Single target | 2026-11-01, Stormwind City |
+| 189617 | Boulderfist | Boss-level | 2026-11-01, Valdrakken |
+| 189632 | Animated Duelist | Boss-level | 2026-11-01, Valdrakken |
+| 194643 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Valdrakken |
+| 194644 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Valdrakken |
+| 194648 | Training Dummy | Single target | 2026-11-01, Valdrakken |
+| 194649 | Normal Tank Dummy | Single target | 2026-11-01, Valdrakken |
+| 196394 | Tuskarr Training Dummy | Boss-level | 2026-11-01, Silvermoon City |
+| 197833 | PvP Training Dummy | PvP | 2026-11-01, Valdrakken |
+| 198594 | Cleave Training Dummy | Cleave | 2026-11-01, Valdrakken |
+| 199057 | Black Dragon's Challenge Dummy | Boss-level | 2026-11-01, Silvermoon City |
+| 216458 | Sparring Dummy | Single target | 2026-11-01, Bel'ameth |
+| 219250 | PvP Training Dummy | PvP | 2026-11-01, Dornogal |
+| 225976 | Normal Tank Dummy | Single target | 2026-11-01, Dornogal |
+| 225977 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Dornogal |
+| 225978 | Crystalmaw | Boss-level | 2026-11-01, Dornogal |
+| 225982 | Cleave Training Dummy | Cleave | 2026-11-01, Dornogal |
+| 225983 | Dungeoneer's Training Dummy | Dungeoneer | 2026-11-01, Dornogal |
+| 225984 | Training Dummy | Single target | 2026-11-01, Dornogal |
+| 225985 | Kelpfist | Boss-level | 2026-11-01, Dornogal |
+| 243166 | Normal Tank Dummy | Single target | 2026-11-01, Silvermoon City |
+| 243167 | Dungeoneer's Training Dummy | Dungeoneer | 2026-10-23, Silvermoon |
+| 243168 | Dungeoneer's Training Dummy | Dungeoneer | 2026-10-23, Silvermoon |
+| 243205 | Reinforced Golem | Boss-level | 2026-10-23, Silvermoon |
+| 243206 | Heavyweight Golem | Boss-level | 2026-11-01, Silvermoon City |
+| 243207 | Training Dummy | Single target | 2026-11-01, Silvermoon City |
+| 243208 | Cleave Training Dummy | Cleave | 2026-10-23, Silvermoon |
+| 243211 | PvP Training Dummy | PvP | MultiMeters, 2026-09-26 |
+
+The target-count column went with DpsRace#15. The 2026-11-01 rows are the owner's city-hub captures, with the categories the owner gave them.
 
 Categories: **Single target**, **Cleave**, **Dungeoneer**, **Boss-level**, **PvP**, **Other**.
 Personal bests are grouped by category, not by creature ID, so the two Dungeoneer IDs count as one board.

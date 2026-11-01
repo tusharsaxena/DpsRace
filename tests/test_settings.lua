@@ -781,7 +781,7 @@ test("settings: Race's Training dummies tab: the blurb, Add your target, your li
     local NS, M = inst.NS, inst.mocks
     local got = drawDummies(inst)
     -- The list draws its empty line through TextRow too.
-    assertEqual(table.concat(got.drawn, ","), "text,button,list,text,text,box,box,box,box,box,button")
+    assertEqual(table.concat(got.drawn, ","), "text,button,list,text,text," .. string.rep("box,", 42) .. "button")
     local list = got.list
     assertEqual(list.label, "Add a creature")
     assertEqual(list.removeStyle, "icon")
@@ -795,12 +795,14 @@ test("settings: Race's Training dummies tab: the blurb, Add your target, your li
     list.onRemove(99999)
     assertEqual(NS.db.profile.race.dummies, "")
     -- One checkbox per built-in, ascending; clearing one switches it off.
-    assertEqual(got.boxes[3].label, "Reinforced Golem (243205) \194\183 Boss-level")
-    assertTrue(got.boxes[3].get())
-    got.boxes[3].set(false)
+    local box
+    for _, b in ipairs(got.boxes) do if b.label:find("(243205)", 1, true) then box = b end end
+    assertEqual(box.label, "Reinforced Golem (243205) \194\183 Boss-level")
+    assertTrue(box.get())
+    box.set(false)
     assertEqual(NS.db.profile.race.dummies, "-243205")
-    assertFalse(got.boxes[3].get())
-    got.boxes[3].set(true)
+    assertFalse(box.get())
+    box.set(true)
     assertEqual(NS.db.profile.race.dummies, "")
     -- Add your target: the target, captured, with the row's category.
     assertEqual(got.buttons[1].text, "Add your target")
