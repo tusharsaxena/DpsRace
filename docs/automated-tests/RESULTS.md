@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261102-004408`](20261102-004408/) | `0ce8a0a` | clean | 0.1.0 | 0/0 | 168 | 1352/1/1353 | pass | 45006 | 5251 | 7.9 | 2.5 | 15 | 0 | **green** |
 | [`20261101-202803`](20261101-202803/) | `6ba5c64` | clean | 0.1.0 | 0/0 | 168 | 1352/1/1353 | pass | 44995 | 5251 | 7.9 | 2.5 | 15 | 0 | **green** |
 | [`20261101-202640`](20261101-202640/) | `64bba5f` | clean | 0.1.0 | 0/0 | 168 | 1351/1/1353 | pass | 44995 | 5251 | 7.9 | 2.5 | 15 | 0 | **red** |
 | [`20261101-202232`](20261101-202232/) | `5bfa6e5` | clean | 0.1.0 | 0/0 | 168 | 1352/1/1353 | fail | 44989 | 5251 | 7.9 | 2.5 | 15 | 0 | **amber** |
@@ -46,10 +47,10 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 ## Test suite
 
 **1353 cases** — 1352 passed, 0 failed, 1 skipped. The generated inventory
-[`20261101-202803/test-cases.md`](20261101-202803/test-cases.md) is the authority on which cases existed at this run;
+[`20261102-004408/test-cases.md`](20261102-004408/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-The count has been **flat at 1353 across the last 3 runs**. A suite that stopped growing while
+The count has been **flat at 1353 across the last 4 runs**. A suite that stopped growing while
 the addon did is a coverage gap, and it is the one thing the table above cannot show.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
@@ -67,26 +68,26 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **9 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261101-202803/perf.json`](20261101-202803/perf.json).
+[`20261102-004408/perf.json`](20261102-004408/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `notes/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `raceEventCaptureOff` | 2000 | 0.00175 | 0.00 | 0.3 |
-| `raceEventCaptureOn` | 2000 | 0.00200 | 1.00 | 0.3 |
-| `hudTickCaptureOff` | 2000 | 0.01803 | 0.00 | 800.3 |
-| `hudTickCaptureOn` | 2000 | 0.01665 | 1.00 | 800.3 |
-| `hudLiveCaptureOff` | 2000 | 0.07047 | 0.00 | 6112.4 |
-| `hudLiveCaptureOn` | 2000 | 0.06410 | 1.00 | 6112.4 |
-| `combatEventCaptureOff` | 2000 | 0.07743 | 0.00 | 2222.3 |
-| `combatEventCaptureOn` | 2000 | 0.08009 | 1.00 | 2224.5 |
-| `raceInputStoodDown` | 2000 | 0.00015 | 0.00 | 0.0 |
+| `raceEventCaptureOff` | 2000 | 0.00216 | 0.00 | 0.3 |
+| `raceEventCaptureOn` | 2000 | 0.00214 | 1.00 | 0.3 |
+| `hudTickCaptureOff` | 2000 | 0.02173 | 0.00 | 800.3 |
+| `hudTickCaptureOn` | 2000 | 0.02132 | 1.00 | 800.3 |
+| `hudLiveCaptureOff` | 2000 | 0.09707 | 0.00 | 6112.4 |
+| `hudLiveCaptureOn` | 2000 | 0.09369 | 1.00 | 6112.4 |
+| `combatEventCaptureOff` | 2000 | 0.10697 | 0.00 | 2223.4 |
+| `combatEventCaptureOn` | 2000 | 0.10653 | 1.00 | 2224.5 |
+| `raceInputStoodDown` | 2000 | 0.00021 | 0.00 | 0.0 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261101-202803`](20261101-202803/) — **this run's measurement, not its diff.** Max CCN **15** across 5251
+Current as of [`20261102-004408`](20261102-004408/) — **this run's measurement, not its diff.** Max CCN **15** across 5251
 functions, **0** of them warned on; 8 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
