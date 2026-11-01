@@ -111,7 +111,10 @@ NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 --- @return table|nil
 function NS.MakeTestStrip(parent, text)
     if not W then return nil end
-    return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName })
+    -- onEnd (LibKa0s Widgets minor 21, SF-F1): the strip's right-click menu ends the preview, the test
+    -- mode and the sim alike (Preview.Stop stops the sim's script and its stepper too).
+    local function endMode() if NS.Preview and NS.Preview.IsActive() then NS.Preview.Stop() end end
+    return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName, onEnd = endMode })
 end
 
 -- The one copy window, its frame built on the first ShowCopy (the library's lazy handle), over the

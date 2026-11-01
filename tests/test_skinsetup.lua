@@ -147,6 +147,22 @@ test("skin seam: the dropdown and the test strip factories are handed the owner"
     assertEqual(seen.strip, OWNER, "MakeTestStrip")
 end)
 
+test("test strip: the factory hands the library an onEnd that turns the preview off (SF-F1)", function()
+    -- red under: dropping `onEnd` from core/WidgetsSetup.lua's MakeTestStrip (the strip takes no mouse).
+    local NS, M = setup()
+    local W = M.LibStub("LibKa0s-Widgets-1.0")
+    local seen, real = {}, W.TestStrip
+    W.TestStrip = function(_, opts) seen.opts = opts end
+    local ok, err = pcall(function() NS.MakeTestStrip(M.CreateFrame("Frame"), "probe") end)
+    W.TestStrip = real
+    if not ok then error(err, 0) end
+    assertEqual(type(seen.opts.onEnd), "function", "onEnd is passed")
+    NS.Preview.Start()
+    assertTrue(NS.Preview.IsActive())
+    seen.opts.onEnd()
+    assertTrue(not NS.Preview.IsActive(), "the strip's End test turns the preview off")
+end)
+
 -- ── the owner tokens ─────────────────────────────────────────────────────────────────────────────
 
 test("skin seam: every owner token is namespaced dr. and registered with the owner", function()
