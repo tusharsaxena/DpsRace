@@ -36,6 +36,11 @@
 -- client would not, and the figures are the addon's plus the scripted meter's: raceEvent 0.3, hudTick
 -- 800, hudLive 6112, combatEvent 2225, the stood-down input 0 (Lua 5.1.5, identical over repeat runs).
 -- The ceilings came DOWN to sit a little above those; hudTick's was still the 2026-10-23 headroom.
+-- 2026-11-01, FS-DR-GATE: combatEvent's off half read 1241 against its on half's 2224 on one tree,
+-- with no change on the path. One iteration of the 2000 dropped 1918 KB: a large table rehashed with
+-- the collector stopped, and which half it lands in moves with anything that shifts the run's
+-- allocations. `measure` now sums each iteration's growth and skips a step of REHASH_KB or more either
+-- way, far past anything one call of these paths allocates. The other figures are unchanged.
 
 local root = (arg and arg[0] and arg[0]:match("^(.*)/tests/perf%.lua$")) or "."
 package.path = root .. "/tests/?.lua;" .. package.path
@@ -141,6 +146,8 @@ local function loop(n, fn)
     for _ = 1, n do fn() end
 end
 
+local REHASH_KB = 64
+
 --- Run `fn` n times after a warm-up of the same length, the collector stopped inside the loop.
 --- `prime` runs the same stopped-collector loop once first and keeps nothing: a table that only
 --- grows while the collector is stopped (the kit's secret-wrapper registry, a timeline's stamps)
@@ -155,15 +162,20 @@ local function measure(name, n, fn, prime)
     notes = 0
     collectgarbage("collect"); collectgarbage("collect")
     collectgarbage("stop")
-    local before = collectgarbage("count")
+    local grown, last = 0, collectgarbage("count")
     local t0 = os.clock()
-    loop(n, fn)
+    for _ = 1, n do
+        fn()
+        local now = collectgarbage("count")
+        local step = now - last
+        if step > 0 and step < REHASH_KB then grown = grown + step end
+        last = now
+    end
     local t1 = os.clock()
-    local after = collectgarbage("count")
     collectgarbage("restart")
     results[#results + 1] = {
         name = name, iterations = n, totalMs = (t1 - t0) * 1000, msPerIter = (t1 - t0) * 1000 / n,
-        notesPerIter = notes / n, bytesPerIter = math.max(0, (after - before) * 1024 / n),
+        notesPerIter = notes / n, bytesPerIter = grown * 1024 / n,
     }
 end
 
