@@ -23,7 +23,10 @@ end
 
 local function ui(f) return assert(f.Hud.__ui(), "the HUD window was never built") end
 local function current(f) return ui(f).current end
-local function sim(f, key) assertTrue(f.Preview.Start({ mode = "sim", scenario = key })) end
+local function sim(f, key)
+    assertTrue(f.Preview.Start({ mode = "sim", scenario = key }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)   -- SG-DR-1: the stepper parks the arm
+end
 
 local function until_(f, pred)
     for _ = 1, 800 do

@@ -24,8 +24,9 @@ local function bare(M)
     return out
 end
 
-local function sim(f, scenario)
+local function sim(f, scenario, parked)
     assertTrue(f.Preview.Start({ mode = "sim", scenario = scenario }))
+    if not parked then f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD) end   -- SG-DR-1: the stepper parks the arm
 end
 
 -- Play the script to its end, a tenth at a time: the bodies seen, in order.
@@ -380,4 +381,19 @@ test("sim stepper: an early end has no buzzer step, and switching scenarios rest
     sim(f, "behind")
     assertEqual(stepper(f):Status().scenario, "behind")
     assertEqual(stepper(f):Steps()[3].label, "Buzzer")
+end)
+
+
+-- ── SG-DR-1: the sim waits for the stepper, and its pace is the setting ───────────────────
+
+test("sim stepper: the race holds armed until a step is played, then counts down (SG-DR-1)", function()
+    local f = fixture()
+    sim(f, "newbest", true)
+    f:advance(f.NS.Sim.ARM_HOLD + 30)
+    assertEqual(f.NS.SampleRace.State(), "armed", "nothing starts by itself")
+    assertTrue(stepper(f):Step(), "the armed step")
+    f:advance(f.NS.Sim.ARM_HOLD - 1)
+    assertEqual(f.NS.SampleRace.State(), "armed")
+    f:advance(2)
+    assertEqual(f.NS.SampleRace.State(), "running", "the armed step starts the arm's countdown")
 end)

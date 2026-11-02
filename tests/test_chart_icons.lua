@@ -579,6 +579,7 @@ test("chart icons: the sim's running chart keeps one cooldown list until another
     local f = hud()
     f.M.__context.classToken = "WARLOCK"      -- a pre-pull cooldown, then one just after the pull
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(f.NS.Sim.ARM_HOLD + 0.05)
     local a = f.Hud.View().chart.cooldowns
     assertTrue(#a > 0, "the opener's cooldowns")

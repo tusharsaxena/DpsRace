@@ -292,6 +292,7 @@ test("pace: the sim's result card shows the pace bar against the sample best, an
     local f = hud()
     local P = f.NS.Sim
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(3.2)
     P.Beat()
     f:advance(41)

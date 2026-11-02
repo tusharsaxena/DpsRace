@@ -28,6 +28,7 @@ local STATE = NS.Race.STATE
 local state = STATE.IDLE
 local run, sample, plan
 local origin          -- GetTime() of the race clock's zero
+local parked          -- armed and waiting for the stepper's first step: the clock does not move (SG-DR-1)
 local held            -- the frozen race-clock moment (test mode), or nil
 local silent          -- replaying: no messages
 local hit, cast       -- the plan's next hit and next cast
@@ -221,17 +222,27 @@ local function load(s, lead)
 end
 
 --- Arm sample `s`; the clock starts `lead` seconds from now (the sim's Armed body), on Advance.
-function SampleRace.Start(s, lead)
+function SampleRace.Start(s, lead, park)
     load(s, lead)
+    parked = park == true
     state = STATE.IDLE
     setState(STATE.ARMED)
+end
+
+--- Release a parked arm: its clock's zero is `lead` seconds from now (the stepper's Armed step, SG-DR-1).
+--- A race that is not parked is left alone.
+function SampleRace.Unpark(lead)
+    if parked then
+        parked = false
+        origin = GetTime() + (lead or 0)
+    end
 end
 
 --- One step of the sim's clock. Answers true when damage landed since the last step (the meter's
 --- update: the HUD reads through its throttle).
 --- @return boolean updated
 function SampleRace.Advance()
-    if not run then return false end
+    if not run or parked then return false end
     pulse = false
     advance(clock())
     return pulse
@@ -242,6 +253,7 @@ end
 --- @return boolean moved
 function SampleRace.Skip(t)
     if not run or held then return false end
+    SampleRace.Unpark(0)
     if clock() < t then origin = GetTime() - t end
     SampleRace.Advance()
     return true
@@ -251,6 +263,7 @@ end
 --- @return boolean reached
 function SampleRace.SkipToResult()
     if not run or held then return false end
+    SampleRace.Unpark(0)
     for _ = 1, 400 do
         if state == STATE.RESULT or state == STATE.IDLE then break end
         origin = origin - 0.5
@@ -319,6 +332,6 @@ function SampleRace.Clear()
         -- A real arm ended the preview: the cast list is that race's now.
         if NS.Race.State() ~= STATE.ARMED then NS.Casts.Reset() end
     end
-    run, sample, plan, held, silent = nil, nil, nil, nil, nil
+    run, sample, plan, held, silent, parked = nil, nil, nil, nil, nil, nil
     state = STATE.IDLE
 end

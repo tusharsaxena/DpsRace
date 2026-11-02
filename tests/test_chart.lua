@@ -565,6 +565,7 @@ test("chart: the sim draws the sample's chart live against a best, then on its r
     local f = hud()
     local Sim = f.NS.Sim
     assertTrue(f.NS.Preview.Start({ mode = "sim", scenario = "newbest" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(3.2)
     Sim.Beat()
     f:advance(10)
@@ -584,6 +585,7 @@ test("chart: the sim honors Show damage chart and Show pace bar", function()
     local f = hud()
     local P = f.NS.Sim
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(3.2)
     P.Beat()
     f:advance(10)

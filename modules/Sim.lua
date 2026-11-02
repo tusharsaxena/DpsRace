@@ -113,7 +113,8 @@ local function launch(key)
     local s = find(key) or find(Sim.DEFAULT)
     scenario = s.key
     sample, resultAt, finished = Sim.Sample(s.key, history), nil, false
-    NS.SampleRace.Start(sample, Sim.ARM_HOLD)
+    -- With the stepper open the arm is parked until its first step (SG-DR-1); without it the old hold.
+    NS.SampleRace.Start(sample, Sim.ARM_HOLD, Sim.session ~= nil)
     ticker = C_Timer.NewTicker(Sim.TICK, beat)
 end
 
@@ -123,7 +124,7 @@ end
 -- and never changes what the race does. The session fakes no client answer (core/SimSetup.lua).
 
 local STEP_MOMENTS = {
-    armed = function() end,
+    armed = function() NS.SampleRace.Unpark(Sim.ARM_HOLD) end,
     start = function() NS.SampleRace.Skip(0) end,
     buzzer = function() NS.SampleRace.Skip(NS.SampleRace.StopAt() or 0) end,
     result = function() NS.SampleRace.SkipToResult() end,
