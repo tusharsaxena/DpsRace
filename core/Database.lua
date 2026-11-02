@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 10
+NS.SCHEMA_VERSION = 11
 
 -- The 7 -> 8 step's facts. The Results detail's spell rows split off `appearance.bars`, so these leaves
 -- of a stored block are copied to theirs; and the default fill the three blue blocks had before, for
@@ -215,8 +215,34 @@ local STEPS = {
             end
         end
     end },
+    -- 10 -> 11 (R3-FRIZ): LibKa0s v1.85.0 deleted Ka0s Friz Quadrata TT (R3-L7) and WoW Default draws
+    -- Ka0s Ubuntu in its place (R3-L6). Every stored string naming the deleted face, at any depth (a
+    -- HUD block's or a Results row's font, the skin override), moves to its successor. Blizzard's own
+    -- "Friz Quadrata TT" is another key and stays.
+    { to = 11, perProfile = true, run = function(_sv, profile)
+        local moved = type(profile) == "table" and NS.RetireFonts(profile) or 0
+        if moved > 0 and NS.Debug then
+            NS.Debug("Set", "migrate v11: moved %d Ka0s Friz Quadrata TT pick(s) to Ka0s Ubuntu", moved)
+        end
+    end },
 }
 NS.__migrationSteps = STEPS   -- test seam only
+
+-- The shipped faces LibKa0s retired, each to its successor (R3-FRIZ; LibKa0s R3-L7).
+local RETIRED_FONTS = { ["Ka0s Friz Quadrata TT"] = "Ka0s Ubuntu" }
+
+--- Moves every string naming a retired face, at any depth of `t`, to its successor. Answers how many moved.
+function NS.RetireFonts(t)
+    local n = 0
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            n = n + NS.RetireFonts(v)
+        elseif RETIRED_FONTS[v] then
+            t[k], n = RETIRED_FONTS[v], n + 1
+        end
+    end
+    return n
+end
 
 --- A profile switch, copy or reset replaces the whole profile wholesale: the stored `enabled` can
 --- flip, the visibility rule can change, so re-take the hold and re-decide (slash-commands-§7: these

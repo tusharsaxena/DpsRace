@@ -243,3 +243,24 @@ test("skin fonts: the clocks keep their stored size in every skin once they stop
     assertEqual(NS.HudAppearance.Font("elapsed").size, NS.defaults.profile.appearance.elapsed.fontSize)
     assertEqual(NS.HudAppearance.Font("left").size, NS.defaults.profile.appearance.left.fontSize)
 end)
+
+-- R3-FRIZ: LibKa0s v1.85.0 deleted Ka0s Friz Quadrata TT (R3-L7); v11 moves a stored pick of it to Ka0s
+-- Ubuntu in every stored profile, at any depth. red under: no v11 step, one that reaches only the
+-- active profile or only the top level, or one that rewrites Blizzard's own "Friz Quadrata TT".
+test("skin fonts: v11 moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept", function()
+    local FRIZ = "Ka0s Friz Quadrata TT"
+    local a = { skin = { fullSkinReset = true, font = FRIZ },
+                appearance = { figures = { font = FRIZ }, elapsed = { font = "Friz Quadrata TT" } } }
+    local b = { skin = { fullSkinReset = true }, resultsTable = { barText = { font = FRIZ } } }
+    local i = T.load({ init = false })
+    _G.DpsRaceDB = { global = { schemaVersion = 10, schema = 4 }, profiles = { Default = a, Raid = b } }
+    i.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    i.NS:InitDB()
+    i.NS:RunMigrations()
+    assertEqual(a.appearance.figures.font, "Ka0s Ubuntu", "a HUD block's face")
+    assertEqual(a.skin.font, "Ka0s Ubuntu", "the skin override")
+    assertEqual(b.resultsTable.barText.font, "Ka0s Ubuntu", "another profile's Results face")
+    assertEqual(a.appearance.elapsed.font, "Friz Quadrata TT", "Blizzard's own Friz stays")
+    assertEqual(_G.DpsRaceDB.global.schemaVersion, 11)
+    assertEqual(i.NS.RetireFonts(a), 0, "a second pass moves nothing")
+end)
