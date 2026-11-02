@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 9
+NS.SCHEMA_VERSION = 10
 
 -- The 7 -> 8 step's facts. The Results detail's spell rows split off `appearance.bars`, so these leaves
 -- of a stored block are copied to theirs; and the default fill the three blue blocks had before, for
@@ -202,6 +202,19 @@ local STEPS = {
     -- 8 -> 9: the one step onto the skin (NS.FollowSkinOnce), for every stored profile; the current
     -- one meets it again at each init and profile event, where its record holds it.
     { to = 9, perProfile = true, run = function(_sv, profile) NS.FollowSkinOnce(profile) end },
+    -- 9 -> 10 (SG-DR-2): the clocks joined the step's list (SF-DR-1) after a profile had already been
+    -- through it, so its record held the step off and the clock blocks kept their stored mono pick with
+    -- both companions off, whichever skin was worn. Turn the stored-and-off face and shadow companions
+    -- on, once. The pick itself stays: it is what the clock draws with the companion off.
+    { to = 10, perProfile = true, run = function(_sv, profile)
+        for _, block in ipairs({ "elapsed", "left" }) do
+            local b = type(profile.appearance) == "table" and profile.appearance[block]
+            if type(b) == "table" then
+                if b.fontFromSkin == false then b.fontFromSkin = true end
+                if b.fontShadowFromSkin == false then b.fontShadowFromSkin = true end
+            end
+        end
+    end },
 }
 NS.__migrationSteps = STEPS   -- test seam only
 

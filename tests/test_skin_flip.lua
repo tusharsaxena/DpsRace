@@ -554,3 +554,25 @@ test("skin flip: with the library absent the step makes the same writes and its 
     migrated({ Bare = bare }, {})
     assertEqual(encode(bare), "{skin={fullSkinReset=true}}", "no table but the record's")
 end)
+
+test("skin flip: a profile already through the step meets the clocks' companions at the next one (SG-DR-2)", function()
+    -- The owner's profile: the skin step ran before the clocks joined its list, so the record is set
+    -- and the clock blocks still hold a stored mono pick with both companions off.
+    local p = { skin = { fullSkinReset = true },
+                appearance = { elapsed = { font = "JetBrains Mono", fontFromSkin = false, fontShadowFromSkin = false },
+                               left = { font = "Arial Narrow", fontFromSkin = false } } }
+    local i = T.load({ init = false })
+    _G.DpsRaceDB = { global = { schemaVersion = 9, schema = 4 }, profiles = { Default = p } }
+    i.mocks._G.DpsRaceDB = _G.DpsRaceDB
+    i.NS:InitDB()
+    i.NS:RunMigrations()
+    assertEqual(p.appearance.elapsed.fontFromSkin, true, "the face companion on")
+    assertEqual(p.appearance.elapsed.fontShadowFromSkin, true, "the shadow companion on")
+    assertEqual(p.appearance.left.fontFromSkin, true)
+    assertEqual(p.appearance.elapsed.font, "JetBrains Mono", "the stored pick kept")
+    assertEqual(p.appearance.left.font, "Arial Narrow", "a pick of the player's kept")
+    local A = i.NS.HudAppearance
+    local face = i.mocks.LibStub("LibSharedMedia-3.0"):Fetch("font", i.NS.Skin.Token("hud.font"))
+    assertEqual(A.Font("elapsed").path, face, "the clock draws the skin's face")
+    assertEqual(A.Font("left").path, face)
+end)
