@@ -32,6 +32,7 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 | Run | Commit | Tree | Version | Lint w/e | Files | Tests | Perf | NLOC | Funcs | Avg NLOC | Avg CCN | Max CCN | CCN warn | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [`20261103-030550`](20261103-030550/) | `525bf53` | clean | 0.1.0 | 0/0 | 172 | 1379/1/1380 | pass | 45944 | 5371 | 7.9 | 2.5 | 15 | 0 | **green** |
 | [`20261102-122831`](20261102-122831/) | `4fd28e0` | clean | 0.1.0 | 0/0 | 170 | 1366/1/1367 | pass | 45474 | 5318 | 7.9 | 2.5 | 15 | 0 | **green** |
 | [`20261102-025003`](20261102-025003/) | `712a6ab` | clean | 0.1.0 | 0/0 | 169 | 1358/1/1359 | pass | 45275 | 5290 | 7.9 | 2.5 | 15 | 0 | **green** |
 | [`20261102-004408`](20261102-004408/) | `0ce8a0a` | clean | 0.1.0 | 0/0 | 168 | 1352/1/1353 | pass | 45006 | 5251 | 7.9 | 2.5 | 15 | 0 | **green** |
@@ -48,18 +49,18 @@ archaeology, for the same reason a skip is never a pass (`automated-tests-§4`).
 
 ## Test suite
 
-**1367 cases** — 1366 passed, 0 failed, 1 skipped. The generated inventory
-[`20261102-122831/test-cases.md`](20261102-122831/test-cases.md) is the authority on which cases existed at this run;
+**1380 cases** — 1379 passed, 0 failed, 1 skipped. The generated inventory
+[`20261103-030550/test-cases.md`](20261103-030550/test-cases.md) is the authority on which cases existed at this run;
 `docs/test-cases.md` is that same list at HEAD.
 
-Moved **1359 → 1367** since the previous run.
+Moved **1367 → 1380** since the previous run.
 
 **1 case(s) reported a `skip`.** A skip is counted in the total and never in `passed`, and at
 the release gate it is NOT EVALUATED rather than passed (`automated-tests-§3`).
 
 ## Lint
 
-**0 warnings / 0 errors over 170 files** (`luacheck .`).
+**0 warnings / 0 errors over 172 files** (`luacheck .`).
 
 Read that figure with its scope attached: `.luacheckrc` excludes 6 path(s) from it — `libs/`, `tests/_kit/`, `docs/audits/`, `docs/reviews/`, `docs/revendor/`, `_dev/` —
 so nothing under them is in the count above. A `0/0` that never moves is partly a statement about
@@ -69,26 +70,26 @@ to whoever thinks to open `.luacheckrc`.
 ## Perf
 
 **9 scenarios** from `tests/perf.lua`; the measurements are in
-[`20261102-122831/perf.json`](20261102-122831/perf.json).
+[`20261103-030550/perf.json`](20261103-030550/perf.json).
 
 | `scenario` | `iters` | `ms/iter` | `notes/iter` | `bytes/iter` |
 |---|---|---|---|---|
-| `raceEventCaptureOff` | 2000 | 0.00198 | 0.00 | 0.3 |
-| `raceEventCaptureOn` | 2000 | 0.00212 | 1.00 | 0.3 |
-| `hudTickCaptureOff` | 2000 | 0.01603 | 0.00 | 800.3 |
-| `hudTickCaptureOn` | 2000 | 0.01550 | 1.00 | 800.3 |
-| `hudLiveCaptureOff` | 2000 | 0.06263 | 0.00 | 6112.4 |
-| `hudLiveCaptureOn` | 2000 | 0.06140 | 1.00 | 6112.4 |
-| `combatEventCaptureOff` | 2000 | 0.07667 | 0.00 | 2223.4 |
-| `combatEventCaptureOn` | 2000 | 0.07351 | 1.00 | 2224.5 |
-| `raceInputStoodDown` | 2000 | 0.00019 | 0.00 | 0.0 |
+| `raceEventCaptureOff` | 2000 | 0.00167 | 0.00 | 0.3 |
+| `raceEventCaptureOn` | 2000 | 0.00195 | 1.00 | 0.3 |
+| `hudTickCaptureOff` | 2000 | 0.01609 | 0.00 | 800.3 |
+| `hudTickCaptureOn` | 2000 | 0.01596 | 1.00 | 800.3 |
+| `hudLiveCaptureOff` | 2000 | 0.06520 | 0.00 | 6112.4 |
+| `hudLiveCaptureOn` | 2000 | 0.06186 | 1.00 | 6112.4 |
+| `combatEventCaptureOff` | 2000 | 0.07682 | 0.00 | 2222.3 |
+| `combatEventCaptureOn` | 2000 | 0.07810 | 1.00 | 2224.5 |
+| `raceInputStoodDown` | 2000 | 0.00015 | 0.00 | 0.0 |
 
 `perf` never fails a run and never blocks a commit — it is recorded, read and compared, not
 thresholded (`performance-§9`). It does gate the **tag** (`automated-tests-§3`).
 
 ## Complexity watch list
 
-Current as of [`20261102-122831`](20261102-122831/) — **this run's measurement, not its diff.** Max CCN **15** across 5318
+Current as of [`20261103-030550`](20261103-030550/) — **this run's measurement, not its diff.** Max CCN **15** across 5371
 functions, **0** of them warned on; 8 file(s) in the 1000–1500 band and 0 over the 1500 cap
 (`layout-§1`).
 
@@ -108,9 +109,9 @@ None.
 
 | Band | File | LOC | Disposition |
 |---|---|---|---|
-| 1000–1500 (on notice) | `locales/enUS.lua` | 1189 | Accepted — flat string table, not logic |
-| 1000–1500 (on notice) | `modules/Hud.lua` | 1117 | Accepted — cohesive window shell; bodies and rows already split out |
-| 1000–1500 (on notice) | `modules/Hud_States.lua` | 1364 | Accepted — six sibling HUD bodies sharing layout helpers; split by body if it grows |
+| 1000–1500 (on notice) | `locales/enUS.lua` | 1198 | Accepted — flat string table, not logic |
+| 1000–1500 (on notice) | `modules/Hud.lua` | 1133 | Accepted — cohesive window shell; bodies and rows already split out |
+| 1000–1500 (on notice) | `modules/Hud_States.lua` | 1382 | Accepted — six sibling HUD bodies sharing layout helpers; split by body if it grows |
 | 1000–1500 (on notice) | `modules/Results_Detail.lua` | 1227 | Accepted — one cohesive pane built of small methods |
 | 1000–1500 (on notice) | `modules/Results_Runs.lua` | 1119 | Accepted — one tab: filter bar over its run list |
 | 1000–1500 (on notice) | `modules/Results_Table.lua` | 1203 | Accepted — cohesive pooled table plus its cell binders |
