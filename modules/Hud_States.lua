@@ -89,13 +89,20 @@ local STOP_NOTE_Y = STOP_CHIPS_Y + 28
 local WAITING_HINT_Y = WAITING_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
 States.STOP_CHIPS_Y, States.STOP_NOTE_Y, States.WAITING_HINT_Y = STOP_CHIPS_Y, STOP_NOTE_Y, WAITING_HINT_Y
 -- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
--- warning line (two lines at the minimum width), then Arm and the refusal line under it.
+-- warning line (two lines at the minimum width), the Your best section (R3-DR-4, modules/Hud_Best.lua:
+-- its caption and card, in the room Arm had, which the minimum height already held), then Arm and the
+-- refusal line under it.
 local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
 local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + 8
 local IDLE_CARD_Y = IDLE_TARGET_Y + 14
 local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 6
-local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_WARN_Y + 28, 24, 14
+-- The section: its 14 px caption, its 38 px card (two lines), and 6 px above Arm.
+local BEST_CAPTION_H, BEST_CARD_H = 14, 38
+local IDLE_BEST_Y, BEST_H = IDLE_WARN_Y + 28, BEST_CAPTION_H + BEST_CARD_H + 6
+local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_BEST_Y + BEST_H, 24, 14
 States.IDLE_ARM_Y, States.ARM_HEIGHT = IDLE_ARM_Y, ARM_HEIGHT
+States.IDLE_BEST_Y, States.BEST_H = IDLE_BEST_Y, BEST_H
+States.BEST_CAPTION_H, States.BEST_CARD_H = BEST_CAPTION_H, BEST_CARD_H
 -- The running body's rows sit between the KPIs and the caption over Cancel.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
@@ -547,6 +554,7 @@ function Builders.idle(parent)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
+    w.best = NS.HudBest.Build(f, -IDLE_BEST_Y)
     w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT, FONT.TITLE)
     w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
     w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
@@ -587,6 +595,8 @@ function Builders.idle(parent)
         self.w.custom:SetShown(v.editing ~= true)
         setTarget(self.w.card, v.target)
         self.w.warn:SetText(v.warning or "")
+        NS.HudBest.Update(self.w.best, v.best)
+        self.w.arm.label:SetText(NS.HudBest.ArmLabel(v.best))
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
     end

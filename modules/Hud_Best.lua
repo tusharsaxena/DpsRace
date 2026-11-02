@@ -1,0 +1,166 @@
+local _, NS = ...
+-- modules/Hud_Best.lua — the idle body's Your best card (R3-DR-4, the owner's ask of 2026-11-03,
+-- Ka0sAddonsCommonTasks docs/2026-11-02-SMOKE_ROUND3/R3_ADDENDUM_DPSRACE.md, image 101): the best on
+-- the board the next race would count on, shown as the mark to beat between the Target card and Arm
+-- Race (modules/Hud_States.lua places it at States.IDLE_BEST_Y and sizes it, States.BEST_H).
+--
+-- THE BOARD is spec | target category | length (Bests.Key): the player's spec read now, the target
+-- the idle body shows and the length it would arm. Its best is the cached bests board's
+-- (Bests.Board, the sample history's in test mode or a sim), the same run the live chart's pace and
+-- the result delta read. Nothing new is stored.
+--
+-- LIVE. modules/Hud.lua builds the view on every idle redraw: a length or Custom pick, a target
+-- change, PLAYER_SPECIALIZATION_CHANGED and RUNS_CHANGED each redraw the idle body.
+--
+-- STORED NUMBERS ONLY. Every figure here is a stored run's, plain since NS.Secrets took it in, so its
+-- width may be measured and its tooltip may name it, in or out of combat.
+
+local Best = {}
+NS.HudBest = Best
+
+local L = NS.L
+local Style = NS.Style
+local FONT = Style.FONT
+
+-- The DPS figure: the HUD's figures block (HUD Appearance > Live figures) at this share of its size,
+-- so two lines fit the card.
+local FIGURE_SCALE = 0.8
+local DOT = " \194\183 "
+local TOP_SPELLS = 3
+
+local function dpsOf(run) return run.result and run.result.dps end
+local function damageOf(run) return run.result and run.result.damage end
+
+--- The view the idle body draws: { state = "noTarget" | "empty" | "best", run, spec, category, length }.
+--- @param target table|nil  the idle body's target (Recorder.SnapshotTarget)
+--- @param length number  the length Arm Race would arm
+--- @return table
+function Best.View(target, length)
+    local v = { length = length }
+    if type(target) ~= "table" or (target.name == nil and target.npcID == nil) then
+        v.state = "noTarget"
+        return v
+    end
+    local specID, spec = NS.Recorder.CurrentSpec()
+    v.spec, v.category = spec, NS.Dummies.CategoryOf(target)
+    local key = NS.Bests.Key({ char = { specID = specID }, target = target, race = { length = length } })
+    v.run = NS.Bests.Board()[key]
+    v.state = v.run and "best" or "empty"
+    return v
+end
+
+--- Arm Race's label: "Arm Race · beat <DPS>" while the board has a best.
+--- @param v table|nil  Best.View's
+--- @return string
+function Best.ArmLabel(v)
+    local run = v and v.run
+    if not run or type(dpsOf(run)) ~= "number" then return L["Arm Race"] end
+    return L["Arm Race \194\183 beat %s"]:format(NS.Format.Number(dpsOf(run)))
+end
+
+local function captionText(v)
+    if v.state == "noTarget" then return L["Your best"] end
+    local parts = { L["Your best"] }
+    if v.spec then parts[#parts + 1] = v.spec end
+    parts[#parts + 1] = NS.Dummies.Label(v.category)
+    parts[#parts + 1] = NS.Format.Length(v.length)
+    return table.concat(parts, DOT)
+end
+
+--- Line two: date · ilvl · top spell.
+local function lineText(run)
+    local Tbl = NS.ResultsTable
+    local parts = { Tbl.Date(run.date, "%d %b") }
+    local char = run.char or {}
+    if type(char.ilvl) == "number" then parts[#parts + 1] = L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) end
+    local top = type(run.spells) == "table" and run.spells[1]
+    if top then parts[#parts + 1] = NS.HudBreakdown.SpellName(top.id) end
+    return table.concat(parts, DOT)
+end
+
+--- The hover: the whole run, as fixed lines of its stored figures.
+local function tipOf(run)
+    local Tbl, Format = NS.ResultsTable, NS.Format
+    local tip = { L["Your best"],
+        Tbl.Date(run.date, "%d %b %Y %H:%M"),
+        L["Length: %s"]:format(Format.Length(run.race and run.race.length)),
+        L["Damage: %s"]:format(Format.Number(damageOf(run))),
+        L["DPS: %s"]:format(Format.Number(dpsOf(run))),
+    }
+    for i = 1, math.min(TOP_SPELLS, type(run.spells) == "table" and #run.spells or 0) do
+        local s = run.spells[i]
+        tip[#tip + 1] = ("%d. %s  %s"):format(i, NS.HudBreakdown.SpellName(s.id), Format.Number(s.dmg))
+    end
+    tip[#tip + 1] = L["Click to open this run in Results."]
+    return tip
+end
+
+local function open(card)
+    local run = card.run
+    local Act = NS.Hud and NS.Hud.Act
+    if run and Act and Act.openBest then Act.openBest(run) end
+end
+
+--- Build the section into `parent` at `y` (negative, from its top): its caption, then the card.
+--- @param parent table  the idle body's frame
+--- @param y number
+--- @return table b  { caption, card, dps, damage, line, empty }
+function Best.Build(parent, y)
+    local States = NS.HudStates
+    local dim = States.COLORS.dim
+    local CAPTION_H, CARD_H = States.BEST_CAPTION_H, States.BEST_CARD_H   -- the stack's, Hud_States'
+    local b = {}
+    b.caption = Style.Text(parent, FONT.HEADER)
+    b.caption:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+    b.caption:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
+    local card = States.Panel(parent, nil, "card")
+    card:SetHeight(CARD_H)
+    card:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y - CAPTION_H)
+    card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y - CAPTION_H)
+    b.card = card
+    b.dps = Style.PlainText(card, FONT.FIGURE)
+    b.dps:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -4)
+    b.damage = Style.Text(card, FONT.TEXT, dim, "RIGHT")
+    b.damage:SetPoint("TOPRIGHT", card, "TOPRIGHT", -8, -7)
+    b.line = Style.Text(card, FONT.CAPTION, dim)
+    b.line:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 8, 5)
+    b.line:SetPoint("BOTTOMRIGHT", card, "BOTTOMRIGHT", -8, 5)
+    b.empty = Style.Text(card, FONT.TEXT, dim)
+    b.empty:SetPoint("LEFT", card, "LEFT", 8, 0)
+    b.empty:SetPoint("RIGHT", card, "RIGHT", -8, 0)
+    States.AddTip(card, nil)
+    card:SetScript("OnMouseUp", open)
+    return b
+end
+
+-- The figure in the HUD's figures face, again after each HUD Appearance change (its stamp).
+local function styleFigure(b)
+    local A = NS.HudAppearance
+    if not A or b.styled == A.stamp then return end
+    b.styled = A.stamp
+    A.ApplyFont(b.dps, A.Font("figures"), FIGURE_SCALE)
+end
+
+--- Draw `v` (Best.View's) on the section.
+--- @param b table  Best.Build's
+--- @param v table|nil
+function Best.Update(b, v)
+    if not b then return end
+    v = v or { state = "noTarget" }
+    b.caption:SetText(captionText(v))
+    local run = v.state == "best" and v.run or nil
+    b.card.run, b.card.tip = run, run and tipOf(run) or nil
+    b.dps:SetShown(run ~= nil)
+    b.damage:SetShown(run ~= nil)
+    b.line:SetShown(run ~= nil)
+    b.empty:SetShown(run == nil)
+    if not run then
+        b.empty:SetText(v.state == "noTarget" and L["Target a dummy to see your best."]
+            or L["No race yet: this one sets the mark."])
+        return
+    end
+    styleFigure(b)
+    b.dps:SetText(NS.Format.Number(dpsOf(run)))
+    b.damage:SetText(NS.Format.Number(damageOf(run)))
+    b.line:SetText(lineText(run))
+end

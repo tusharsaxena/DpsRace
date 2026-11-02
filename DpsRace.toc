@@ -143,6 +143,9 @@ modules\Hud_Breakdown.lua
 modules\Hud_Chart.lua
 modules\Hud_Tips.lua
 modules\Hud_States.lua
+# The idle body's Your best card (R3-DR-4): reads NS.Style at FILE SCOPE; Hud_States builds it and
+# Hud.lua reads its view at CALL time.
+modules\Hud_Best.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT / RUNS_CHANGED /
 # SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its
 # default size, and calls

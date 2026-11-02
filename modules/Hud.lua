@@ -62,7 +62,9 @@ Hud.DROP_COMBAT = {
 Hud.FRAME_NAME = "DpsRaceHud"
 
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
-local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
+-- PLAYER_SPECIALIZATION_CHANGED: the idle body's Your best board is the spec's (R3-DR-4).
+local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
+                      "PLAYER_SPECIALIZATION_CHANGED" }
 local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
 
 local ui                       -- the built window
@@ -274,6 +276,7 @@ local function idleView(v)
     v.editing = pick.editing
     v.blocker, v.detail = armBlocker()
     v.warning = targetWarning(target)
+    v.best = NS.HudBest.View(target, v.length)
 end
 
 local function resultView(v)
@@ -942,6 +945,12 @@ local backToIdle -- defined with the acts below
 local function runsChanged(race, get)
     local accepted = deleting
     deleting = nil
+    -- The idle body's Your best card reads the board a change may have moved (R3-DR-4). The bus
+    -- keeps no order between its receivers, so the board is dropped here too, not only in Bests'.
+    if race.State() == S().IDLE and windowShown() then
+        NS.Bests.Invalidate()
+        return Hud.Refresh()
+    end
     if race.State() ~= S().RESULT then return end
     local run = race.Current()
     if not run then return end
@@ -1058,6 +1067,13 @@ function Act.results() return NS.ToggleResults() end
 function Act.details()
     local run = raceNow().Current()
     if previewOn() then return run and NS.Preview.OpenResults(run.id) end
+    openRun(run)
+end
+
+--- The idle body's Your best card: its run in the Results window (the sample's in test mode).
+function Act.openBest(run)
+    if type(run) ~= "table" then return end
+    if previewOn() then return NS.Preview.OpenResults(run.id) end
     openRun(run)
 end
 

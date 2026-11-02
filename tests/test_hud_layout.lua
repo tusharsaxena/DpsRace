@@ -192,11 +192,13 @@ end)
 
 test("hud: the minimum height holds the idle body's whole stack", function()
     local f = hud()
-    -- Arm Race at 162 and 24 tall, its refusal line (4 + 14), then 4 and the 20px links.
+    -- Your best at 162 (R3-DR-4: 14 + 38 + 6), Arm Race under it at 220 and 24 tall, its refusal line
+    -- (4 + 14), then 4 and the 20px links: the running body's minimum held it, so it stays 354.
     local States = f.NS.HudStates
-    assertEqual(States.IDLE_ARM_Y, 162)
+    assertEqual(States.IDLE_BEST_Y, 162)
+    assertEqual(States.IDLE_ARM_Y, 220)
     assertEqual(States.ARM_HEIGHT, 24)
-    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 162 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
+    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 220 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
     assertEqual(f.Hud.MIN_HEIGHT, 354, "the minimum height, re-derived for the headings (Round C)")
     assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
     f.NS.db.profile.windows.hud.height = 200

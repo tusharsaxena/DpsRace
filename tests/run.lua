@@ -127,6 +127,7 @@ local SUITES = {
     "test_hud",
     "test_hud_layout",
     "test_hud_window",
+    "test_hud_best",
     "test_hud_hint",
     "test_hud_tips",
     "test_hud_tiles",
