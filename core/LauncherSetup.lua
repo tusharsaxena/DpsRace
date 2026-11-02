@@ -102,6 +102,10 @@ NS.Launcher = Launcher:New({
     toggleTestMode = function() NS.ToggleTestMode() end,
     isWindowShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
     toggleWindow   = function() NS.ToggleHud() end,
+    isSimMode = function() return NS.Preview ~= nil and NS.Preview.Mode() == "sim" end,
+    toggleSim = function()
+        if NS.Preview ~= nil and NS.Preview.Mode() == "sim" then NS.ToggleTestMode() else NS.StartSim() end
+    end,
     version        = function() return NS.Version() end,
     print          = function(line) NS.Print(line) end,
     debug          = function(tag, message) NS.Debug(tag, "%s", message) end,

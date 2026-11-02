@@ -319,7 +319,7 @@ test("Disabled 8: launcher clicks and the key binding write nothing and show not
     obj.OnClick(M.UIParent, "RightButton")
     local menu = assert(M.__lastMenu, "right-click opened no menu")
     for _, entry in ipairs(menu.entries) do
-        local live = entry.text == "Enabled"
+        local live = entry.text == "Enabled" or entry.text == "Open settings"
         assertEqual(entry.enabled, live, entry.text .. (live and " must stay live" or " must be grayed"))
     end
     assertEqual(#M.__svWrites(), 0, "a launcher click wrote SavedVariables")

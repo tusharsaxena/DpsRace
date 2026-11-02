@@ -207,6 +207,7 @@ if not lib then
     -- The reserved `/dr skin` verb (LibKa0s v1.82.0, OptionsSkinPicker minor 3, ruling D-16): no picker
     -- without the library, so it answers nil, "absent" and NS.RunSkinVerb prints the library-absent line.
     Helpers.SkinVerb       = function() return nil, "absent" end
+    Helpers.SkinNotice = function() return nil, "unavailable" end
     NS.RegisterOptionsPage = function() end
     NS.CreateOptionsPanel  = function() NS.Print(MISSING) end
     NS.OpenOptionsPanel    = NS.CreateOptionsPanel

@@ -40,7 +40,7 @@ test("launcher: right-click lists Enabled, Locked, Test mode, Show window and Op
     local menu = openMenu(inst)
     local labels = {}
     for i, e in ipairs(menu.entries) do labels[i] = e.text end
-    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Show window|Open skin selector")
+    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Sim mode|Show window|Open settings|Open skin selector")
     assertEqual(menu.titles[1], "Ka0s DPS Race")
 end)
 
