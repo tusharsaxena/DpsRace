@@ -121,6 +121,16 @@ NS.RegisterSchemaRows({
       onChange = function() NS.BestToast.Refresh() end },
 })
 
+-- The simulator's pace (SG-SIM): the Race tab's last subgroup. The validator is modules/Sim.lua's, which
+-- loads before this file; the stepper reads the stored value at each step, so a change lands on the next.
+NS.RegisterSchemaRows({
+    { path = "sim.stepDelay", page = PAGE, group = RACE, subgroup = L["Simulator"], type = "number",
+      min = NS.Sim.STEP_DELAY_MIN, max = NS.Sim.STEP_DELAY_MAX, step = NS.Sim.STEP_DELAY_STEP,
+      label = L["Simulation step delay (seconds)"], default = NS.defaults.profile.sim.stepDelay,
+      validate = function(v) return NS.Sim.ValidStepDelay(v) end,
+      tooltip = L["Paces /dr sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."] },
+})
+
 NS.RegisterSchemaRows({
     -- ── Training dummies ── (#9, modules/DummyList.lua) its own tab: the category a new dummy gets,
     -- then the list itself, one plain string written WHOLE through the seam (the ignore list's shape),

@@ -540,6 +540,9 @@ L["Toast duration (seconds)"] = "Toast duration (seconds)"
 L["How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."] =
     "How long the toast stays before it closes by itself. It waits while the pointer is over it, and closes at once on its X or a right-click. 3 to 30."
 L["Toast scale"] = "Toast scale"
+L["Simulator"] = "Simulator"
+L["Simulation step delay (seconds)"] = "Simulation step delay (seconds)"
+L["Paces /dr sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."] = "Paces /dr sim: how many seconds the simulator waits between steps as it plays. A change takes effect from the next step."
 L["The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."] =
     "The toast's size. It grows and shrinks about the place you dragged it to. 0.5 to 2.0."
 L["Test toast"] = "Test toast"

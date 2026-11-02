@@ -78,6 +78,7 @@ case act after the rows.
 | Toast sound | `toast.soundKey` | `Ka0sMedia_Sound` picker | *Default* by default, today's alert; below it every LibSharedMedia sound, read as the list is drawn, each with a play button. Beside *Play a sound*, which stays the switch: the row works with it off. An unknown key plays Default |
 | Toast duration (seconds) | `toast.duration` | slider, 3-30, step 1 | 10 by default (the shell's `DURATION`): seconds on screen, paused while the pointer is over it; starts its own line |
 | Toast scale | `toast.scale` | slider, 0.5-2.0, step 0.05 | 1 by default; the toast grows and shrinks about its stored place (`BestToast.Refresh`). Not multiplied by Master scale |
+| Simulation step delay (seconds) | `sim.stepDelay` | slider, 0.5-10, step 0.5 | 1 by default; the Race tab's *Simulator* heading. Paces `/dr sim` between steps; read at each step (`Sim.StepDelay`) |
 | Test toast | — | button, after the rows | A sample toast (*Test <thing>*, options-ui-§21), run as a real one is: its duration, sound and scale; movable while it shows. A second click replaces it (`BestToast.Test`) |
 
 The place is not a row: test mode shows a sample toast held still, and a drag stores it in

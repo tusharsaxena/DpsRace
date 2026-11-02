@@ -38,7 +38,26 @@ Sim.STICKY_EXTRA = 3
 -- How often the clock moves the sample race on (the HUD's own tick, modules/Hud.lua).
 Sim.TICK = 0.05
 
+-- The pace of a playing stepper (SG-SIM): the seconds between two steps, the `sim.stepDelay` setting.
+-- The range and the validator are the row's (settings/Race.lua).
+Sim.STEP_DELAY = NS.defaults.profile.sim.stepDelay
+Sim.STEP_DELAY_MIN, Sim.STEP_DELAY_MAX, Sim.STEP_DELAY_STEP = 0.5, 10, 0.5
+
 local ticker, sample, scenario, resultAt, finished, history, quiet
+
+--- Whether `v` is a pace the setting takes.
+function Sim.ValidStepDelay(v)
+    if type(v) ~= "number" or v ~= v or v < Sim.STEP_DELAY_MIN or v > Sim.STEP_DELAY_MAX then return false end
+    local n = v / Sim.STEP_DELAY_STEP
+    return n == math.floor(n)
+end
+
+--- The seconds between two steps now: the stored setting, read at each step, else the default.
+function Sim.StepDelay()
+    local v = NS.GetSetting and NS.GetSetting("sim.stepDelay")
+    if Sim.ValidStepDelay(v) then return v end
+    return Sim.STEP_DELAY
+end
 
 local function find(key)
     for _, s in ipairs(Sim.SCENARIOS) do
@@ -173,7 +192,7 @@ local function newSession()
         refusal = function(opts)
             if not (opts.fromHost or history) then return L["Start the simulation with /dr sim [scenario]."] end
         end,
-        stepDelay = 1,
+        stepDelay = function() return Sim.StepDelay() end,
         print = function(line) if not quiet then NS.Print(line) end end,
         panel = {
             title = function() return L["DPS Race - Simulation"] end,

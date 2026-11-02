@@ -72,6 +72,7 @@ local STORED = {
     ["toast.soundKey"]       = { "string", "Default" },
     ["toast.duration"]       = { "number", 10,      3,    30,    1 },
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
+    ["sim.stepDelay"]        = { "number", 1,       0.5,  10,    0.5 },
     -- General > Skin (skinning-§2/§3, core/SkinSetup.lua): skip-render rows the library's tab draws.
     ["skin.source"]          = { "string", "ka0s" },
     ["skin.skin"]            = { "string", "ka0s" },
@@ -500,6 +501,7 @@ test("settings: Race is four tabs, the timeline, the late-cast ignore list, the 
         "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
         "race.grace|Scoring rules|Late-cast grace (seconds)|false",
         "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
+        "sim.stepDelay|Simulator|Simulation step delay (seconds)|false",
     }, "\n"))
 end)
 

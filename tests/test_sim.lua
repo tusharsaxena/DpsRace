@@ -384,7 +384,7 @@ test("sim stepper: an early end has no buzzer step, and switching scenarios rest
 end)
 
 
--- ── SG-DR-1: the sim waits for the stepper, and its pace is the setting ───────────────────
+-- ── SG-DR-1, SG-SIM: the sim waits for the stepper, and its pace is the setting ───────────────────
 
 test("sim stepper: the race holds armed until a step is played, then counts down (SG-DR-1)", function()
     local f = fixture()
@@ -396,4 +396,19 @@ test("sim stepper: the race holds armed until a step is played, then counts down
     assertEqual(f.NS.SampleRace.State(), "armed")
     f:advance(2)
     assertEqual(f.NS.SampleRace.State(), "running", "the armed step starts the arm's countdown")
+end)
+
+test("sim stepper: Run waits the sim.stepDelay setting between steps (SG-SIM)", function()
+    local f = fixture()
+    f.NS.SetByPath("sim.stepDelay", 4)
+    sim(f, "newbest")
+    local s = stepper(f)
+    assertTrue(s:Run())
+    f:advance(0.5)
+    local first = s:Status().pos
+    assertTrue(first >= 1, "the first step plays at once")
+    f:advance(3)
+    assertEqual(s:Status().pos, first, "no step inside the setting's 4 s")
+    f:advance(1.5)
+    assertEqual(s:Status().pos, first + 1, "the next step after it")
 end)

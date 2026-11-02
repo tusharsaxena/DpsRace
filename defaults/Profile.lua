@@ -208,6 +208,9 @@ NS.defaults = {
         -- (no default): where test mode's drag put it, { point, relativePoint, x, y } in UIParent's
         -- units, written by the shell's drag stop; absent, the shell's own place under the top.
         toast = { enabled = true, duration = 10, sound = true, soundKey = "Default", scale = 1.0 },
+        -- The simulator's pace (SG-SIM; Race > Race > Simulator): the seconds `/dr sim` waits between
+        -- two steps while the stepper plays. 0.5 to 10 in halves, as every Ka0s simulator's.
+        sim = { stepDelay = 1 },
         -- The skin this addon wears (skinning-§2: per addon, per profile; core/SkinSetup.lua), on
         -- General > Skin (settings/General.lua): the source and the skin, Ka0s Default by default; the
         -- Scope's two exceptions (the settings panel left the client's, the fonts skinned); the font
