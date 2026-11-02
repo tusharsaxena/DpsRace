@@ -95,7 +95,8 @@ NS.defaults = {
             -- classification, else single | cleave | dungeoneer | boss | pvp.
             dummyCategory = "auto",
             -- The Race HUD's own (modules/Hud.lua); their rows are on the Race page too.
-            defaultLength = 120,   -- s; the idle body's length until the player picks one (§4.1)
+            defaultLength = 60,    -- s; the idle body's length until the player picks one (§4.1); 1:00 for a
+                                   -- new profile (the owner's call, 2026-11-03; 2:00 before)
             countdownCue  = true,  -- the sound at 10, 5, 3, 2, 1 s left, and each center number (§4.3)
             centerCountdown = true, -- the center-screen numbers in the last seconds (modules/Countdown.lua)
             finalCountdown  = 10,   -- s left when the numbers start, 3-10

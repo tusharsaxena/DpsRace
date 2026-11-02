@@ -56,7 +56,7 @@ local STORED = {
     ["live.paceBar"]         = { "bool",   true },
     ["live.castDots"]        = { "bool",   true },
     ["live.paceRange"]       = { "number", 1.5,     1.1,  2.0,   0.05 },
-    ["race.defaultLength"]   = { "number", 120 },
+    ["race.defaultLength"]   = { "number", 60 },
     ["race.autoArm"]         = { "bool",   false },
     ["race.countdownCue"]    = { "bool",   true },
     ["race.centerCountdown"] = { "bool",   true },
@@ -290,7 +290,7 @@ end)
 test("settings: the Race page's rows, ranges and defaults", function()
     local NS = T.NS
     local length = row(NS, "race.defaultLength")
-    assertEqual(length.default, 120, "2:00 for a new profile (the owner's call, 2026-10-26)")
+    assertEqual(length.default, 60, "1:00 for a new profile (the owner's call, 2026-11-03, R3-DR-2; 2:00 before)")
     local offered = {}
     for _, v in ipairs(length.values) do offered[#offered + 1] = v.value end
     assertEqual(table.concat(offered, ","), "30,60,120,180,300")
