@@ -332,8 +332,8 @@ stamped look. Row height and the spell text stay HUD Appearance's.
 | Subsection | Schema prefix | Class color | Default |
 |---|---|---|---|
 | *Spell bars*, *Spell bar background*, *Spell bar border* | `resultsDetail.spellBars.` | the player's | as HUD Appearance's *Spell bars*: the skin's texture, 90%, the pace bar's blue, the skin's track, no border |
-| *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | the skin's texture (stored pick solid) at 100%, (42, 70, 107) / 255, no track, no border |
-| *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | the skin's texture (stored pick solid) at 100%, (83, 69, 0) / 255, no track, no border |
+| *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (84, 140, 214) / 255 (R3-DR-5), no track, no border |
+| *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (174, 145, 0) / 255 (R3-DR-5), no track, no border |
 
 *Best run bar* is the blue column and *Other run bar* the gold one, decided by `Compare.BestSide` as
 before. A compare line draws both columns' tracks and borders whichever side its bar is on. *Use the

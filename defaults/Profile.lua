@@ -44,11 +44,13 @@ local function tableBar()
     return styled(blueFill(), noTrack(), false)
 end
 
--- A compare bar: opaque, in the New best text's and the headings' hue at about the race bars' weight,
--- so the white figures read over it. Its texture follows the skin, as every bar's does (the owner's
--- call, 2026-10-31): a skin's texture may draw it a little off these values, and that is accepted.
+-- A compare bar: in the New best text's and the headings' hue, as bright as the Runs list's bars and at
+-- their opacity (BAR_BLUE_ALPHA), so the white figures read over it at 3:1 or better. Its texture
+-- follows the skin, as every bar's does (the owner's call, 2026-10-31): a skin's texture may draw it a
+-- little off these values, and that is accepted.
 local function compareBar(r, g, b)
-    return styled({ barTexture = "Ka0s Default", barAlpha = 1, barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
+    return styled({ barTexture = "Ka0s Default", barAlpha = BAR_BLUE_ALPHA,
+                    barColor = { r = r / 255, g = g / 255, b = b / 255, a = 1 },
                     useClassColorBar = false, barTextureFromSkin = true }, noTrack(), false)
 end
 
@@ -195,10 +197,12 @@ NS.defaults = {
         -- The Results detail's spell rows (History > Run detail, settings/History.lua), split off
         -- appearance.bars on 2026-10-31 (the v8 step carries a stored fill over).
         resultsDetail = { spellBars = spellBars() },
-        -- The compare's difference bars (History > Run detail): the best run's column, today's blue, and
-        -- the other run's, today's gold, each 1.3 times the byte values they shipped with (32, 54, 82
-        -- and 64, 53, 0), the hue kept (the owner's call, 2026-10-31).
-        compare = { best = compareBar(42, 70, 107), other = compareBar(83, 69, 0) },
+        -- The compare's difference bars (History > Run detail): the best run's column blue and the other
+        -- run's gold, in the hues they shipped with (32, 54, 82 and 64, 53, 0). As bright as the Runs
+        -- list's bars (the owner's call, 2026-11-03, R3-DR-5; 1.3 times the shipped bytes from
+        -- 2026-10-31): the blue at BAR_BLUE's brightest channel, 0.84, and the gold as far as white
+        -- figures keep 3:1 over it, both brighter than BAR_BLUE.
+        compare = { best = compareBar(84, 140, 214), other = compareBar(174, 145, 0) },
         -- Share (modules/Share.lua): `talentsLink` appends the run's talentbuild link to the shared
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
         -- Its row is History > History > Sharing (settings/History.lua).

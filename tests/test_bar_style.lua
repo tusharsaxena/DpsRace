@@ -138,22 +138,39 @@ local function hue(r, g, b)
     return 60 * (4 + (r - g) / d)
 end
 
-test("bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture", function()
-    local C = T.NS.defaults.profile.compare
+-- WCAG's relative luminance of an sRGB color (0-1 channels), and white text's contrast over it.
+local function luminance(c)
+    local function lin(v) return v <= 0.04045 and v / 12.92 or ((v + 0.055) / 1.055) ^ 2.4 end
+    return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+end
+local function whiteContrast(c) return 1.05 / (luminance(c) + 0.05) end
+
+test("bar style: the compare's bars are as bright as the Runs list's, in their own hues (R3-DR-5)", function()
+    -- red under the dim fills of 2026-10-31 (42, 70, 107 and 83, 69, 0 at full opacity): the owner
+    -- found them far too dim beside the Runs list's bars (Ka0sAddonsCommonTasks SMOKE_ROUND3 img 103,
+    -- 104). Each now takes the Runs list's opacity and brightness, its own hue kept.
+    local D = T.NS.defaults.profile
+    local C, runs = D.compare, D.resultsTable.damageBar
     local function check(block, r, g, b, what)
         local c = block.barColor
         assertEqual(math.floor(c.r * 255 + 0.5), r, what)
         assertEqual(math.floor(c.g * 255 + 0.5), g, what)
         assertEqual(math.floor(c.b * 255 + 0.5), b, what)
-        assertEqual(block.barAlpha, 1, what)
+        assertEqual(block.barAlpha, runs.barAlpha, what .. ": the Runs list's opacity")
         assertEqual(block.barTexture, "Ka0s Default", what)
         assertEqual(block.barTextureFromSkin, true, what .. ": the owner's call: it follows the skin")
+        -- At least the Runs list bar's luminance, and white bar text still at 3:1 or better.
+        assertTrue(luminance(c) >= luminance(runs.barColor), what .. ": as bright as the Runs list's bar")
+        assertTrue(whiteContrast(c) >= 3, what .. ": the white figures read over it")
     end
-    check(C.best, 42, 70, 107, "best")
-    check(C.other, 83, 69, 0, "other")
-    assertTrue(math.abs(hue(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b) - hue(32, 54, 82)) < 1)
-    assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1)
-    assertTrue(C.best.barColor.b > 82 / 255 and C.other.barColor.r > 64 / 255, "brighter than they shipped")
+    -- The blue at the Runs list bar's brightest channel (0.84); the gold as far as white text allows.
+    check(C.best, 84, 140, 214, "best")
+    check(C.other, 174, 145, 0, "other")
+    local br = runs.barColor
+    assertTrue(math.abs(math.max(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b)
+        - math.max(br.r, br.g, br.b)) < 1 / 255, "the blue's brightness is the Runs list bar's")
+    assertTrue(math.abs(hue(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b) - hue(32, 54, 82)) < 1, "blue hue")
+    assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1, "gold hue")
 end)
 
 test("bar style: a compare column draws the skin's texture by default, in its own color", function()
@@ -260,6 +277,24 @@ test("bar style: the table's two bars are separate blocks; a track and a border 
     assertEqual(NS.ResultsRuns.BarStyle("dpsBar", NS.db.global.runs.a).border, nil)
 end)
 
+test("bar style: every skin draws the compare's bars in their bright fills (R3-DR-5)", function()
+    -- red under a skin that recolored or dimmed them: the fill is the block's in every skin, only the
+    -- texture is the skin's, as the Runs list's bars are.
+    local i = inst()
+    local NS = i.NS
+    local Skin = i.mocks.LibStub("LibKa0s-Skin-1.0")
+    local C = NS.defaults.profile.compare
+    for _, def in ipairs(Skin:Skins()) do
+        NS.ApplySkinChoice("ka0s", def.key)
+        i.mocks.__fireTimers()
+        local _, x = compared(i)
+        local v = x.lines[1].bar.__vertex
+        assertEqual(("%.3f %.3f %.3f %.2f"):format(v[1], v[2], v[3], v[4]),
+            ("%.3f %.3f %.3f %.2f"):format(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b, C.best.barAlpha),
+            def.key .. ": the best's column draws its bright blue")
+    end
+end)
+
 test("bar style: a compare column draws its block; the side rule did not move", function()
     local i = inst()
     local _, x = compared(i)
@@ -269,7 +304,7 @@ test("bar style: a compare column draws its block; the side rule did not move", 
     assertEqual(x.bars.looks.other.r, C.best.barColor.r, "the best's column, the best's block")
     assertEqual(x.bars.looks.this.r, C.other.barColor.r)
     assertEqual(x.lines[1].bar.__vertex[3], C.best.barColor.b)
-    assertEqual(x.lines[1].bar.__vertex[4], 1)
+    assertEqual(x.lines[1].bar.__vertex[4], C.best.barAlpha, "the block's opacity, the Runs list's (R3-DR-5)")
     local track = x.lines[1].bar.tracks.other
     assertEqual(track.__colorTex[4], 0, "no track by default")
     assertTrue(NS.SetByPath("compare.best.barColor", { r = 0.5, g = 0.25, b = 0.75, a = 1 }))
@@ -362,15 +397,15 @@ test("bar style: a page's Defaults, a profile reset and a profile copy reach the
     assertTrue(NS.SetByPath("compare.other.barAlpha", 0.3))
     assertTrue(NS.SetByPath("compare.best.borderSize", 4))
     assertTrue(NS.ApplyDefault(NS.FindSchemaRow("compare.other.barAlpha")))
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "Defaults")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "Defaults")
     assertTrue(NS.SetByPath("compare.other.barAlpha", 0.3))
     NS.db:SetProfile("Copy")
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "a new profile reads the default")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "a new profile reads the default")
     NS.db:CopyProfile("Default")
     assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.3, "a copy carries the value")
     assertEqual(NS.GetSetting("compare.best.borderSize"), 4)
     NS.db:ResetProfile()
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "a reset clears it")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "a reset clears it")
     assertEqual(NS.GetSetting("compare.best.borderSize"), 1)
 end)
 

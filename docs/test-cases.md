@@ -1181,17 +1181,18 @@ Total.
 - skin menus: the chart's, the compare's and the timeline's icons are edged
 - skin menus: the title bar and the scroll bar read their size off the skin
 
-### test_bar_style.lua (19)
+### test_bar_style.lua (20)
 
 - bar style: a dash takes its muted color back after the bar text's font, on a pooled row too
 - bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
-- bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
+- bar style: the compare's bars are as bright as the Runs list's, in their own hues (R3-DR-5)
 - bar style: a compare column draws the skin's texture by default, in its own color
 - bar style: the default look keeps the skin's two tracks and draws no border
 - bar style: the HUD's and the detail's spell rows are separate blocks, live
 - bar style: the detail's spell rows draw their block, track and border
 - bar style: the pace bar draws its block's track and border, keeping its green
 - bar style: the table's two bars are separate blocks; a track and a border span the cell
+- bar style: every skin draws the compare's bars in their bright fills (R3-DR-5)
 - bar style: a compare column draws its block; the side rule did not move
 - bar style: a real style in a skin wins while its companion is on, a skin's None defers
 - bar style: a border key LSM cannot answer draws no border
@@ -1722,7 +1723,7 @@ Total.
 | test_skin_hud.lua | 10 |
 | test_skin_flip.lua | 25 |
 | test_skin_menus.lua | 13 |
-| test_bar_style.lua | 19 |
+| test_bar_style.lua | 20 |
 | test_skin_fonts.lua | 13 |
 | test_skin_picker.lua | 12 |
 | test_skin_outline.lua | 10 |
@@ -1752,4 +1753,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1378** |
+| **Total** | **1379** |
