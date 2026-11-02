@@ -44,7 +44,7 @@ in the spec, sections 1, 2 and 13
   off, never recategorized. The list is a per-profile setting read when a run's category is, so an
   edit recategorizes every stored run. Each add saves what the game says about the creature
   (`global.dummies.captures`), and the catalog grows from those captures, never from guesses.
-- **Auto-show and auto-arm near a training dummy** (#16), both off by default. *Show near a
+- **Auto-show and auto-arm near a training dummy** (#16): auto-show on by default (R3-DR-3), auto-arm off. *Show near a
   training dummy* opens the HUD while a known dummy is the target or has a nameplate up; *Arm
   on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
   off the dummies before the pull. Neither acts in an instance.

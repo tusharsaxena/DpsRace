@@ -80,7 +80,8 @@ to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores 
 IDs and castGUIDs pass through `NS.Secrets` (the probe measured both plain in combat), and the usage
 snapshot is read out of combat.
 The 2026-10-28 pass ([`superpowers/plans/2026-10-28-toast-autoarm-gearview.md`](superpowers/plans/2026-10-28-toast-autoarm-gearview.md))
-added the race near a training dummy (#16, `modules/AutoArm.lua`), both opt-in: *Show near a training
+added the race near a training dummy (#16, `modules/AutoArm.lua`), both opt-in then; auto-show is on by default since
+2026-11-03 (R3-DR-3) and auto-arm stays opt-in: *Show near a training
 dummy* (`hud.autoShow`) opens the HUD while a known dummy (the catalog or `race.dummies`) is the target or has a nameplate up, and
 closes it a debounce after none is, never over a race or a result and never against the player's own
 close in the same dummy session; *Arm on a training dummy* (`race.autoArm`) arms a race through

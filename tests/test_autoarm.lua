@@ -1,5 +1,5 @@
--- tests/test_autoarm.lua — auto-show and auto-arm near a training dummy (#16, modules/AutoArm.lua): both
--- off by default; the HUD opened by a dummy target or nameplate and closed again only after the
+-- tests/test_autoarm.lua — auto-show and auto-arm near a training dummy (#16, modules/AutoArm.lua):
+-- auto-show on by default (R3-DR-3, 2026-11-03), auto-arm off; the HUD opened by a dummy target or nameplate and closed again only after the
 -- debounce, never over a race or a result, never against the player's close in the same session;
 -- the race armed on targeting a cataloged dummy through Race.Arm's refusals, canceled by a target
 -- change before the pull and never after it; nothing in an instance or while stood down.
@@ -15,12 +15,14 @@ local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training 
 local GOLEM = { guid = "Creature-0-1-2-3-243205-0001", name = "Reinforced Golem" }
 local BOAR = { guid = "Creature-0-1-2-3-99999-0001", name = "Angry Boar" }
 
---- A race fixture with the two rules set as asked (both off when not named).
+--- A race fixture with the two rules set as asked (both off when not named; `defaults` leaves the
+--- profile's own defaults alone).
 local function fixture(opts)
     opts = opts or {}
     local f = RaceClock.new()
     f.Hud, f.AutoArm = f.NS.Hud, f.NS.AutoArm
-    if opts.show then assertTrue(f.NS.SetByPath("hud.autoShow", true)) end
+    if opts.defaults then return f end
+    f.NS.SetByPath("hud.autoShow", opts.show == true)
     if opts.arm then assertTrue(f.NS.SetByPath("race.autoArm", true)) end
     return f
 end
@@ -50,12 +52,24 @@ end
 
 -- ── off by default ──────────────────────────────────────────────────────────────────────────────
 
-test("autoarm: both rules are off by default and register nothing", function()
+test("autoarm: a new profile shows the HUD near a dummy and never arms by itself (R3-DR-3)", function()
+    -- red under the opt-in auto-show (TA-D1, 2026-10-28): the owner's call of 2026-11-03 turns it on
+    -- for every profile that never set it; auto-arm stays opt-in.
+    local f = fixture{ defaults = true }
+    assertTrue(f.NS.GetSetting("hud.autoShow"))
+    assertFalse(f.NS.GetSetting("race.autoArm"))
+    assertEqual(f.NS.defaults.profile.hud.autoShow, true)
+    assertEqual(f.NS.defaults.profile.race.autoArm, false)
+    assertEqual(f.AutoArm.Diagnose().events, "plates")
+    target(f, CLEAVE)
+    assertTrue(f.Hud.IsShown(), "the HUD opens on a dummy target")
+    assertEqual(f.Race.State(), "idle", "nothing armed")
+end)
+
+test("autoarm: both rules off register nothing", function()
     local f = fixture()
     assertFalse(f.NS.GetSetting("hud.autoShow"))
     assertFalse(f.NS.GetSetting("race.autoArm"))
-    assertEqual(f.NS.defaults.profile.hud.autoShow, false)
-    assertEqual(f.NS.defaults.profile.race.autoArm, false)
     assertEqual(f.AutoArm.Diagnose().events, "none")
     assertFalse(eventsHeld(f).NAME_PLATE_UNIT_ADDED == true)
     target(f, CLEAVE)
@@ -396,7 +410,9 @@ test("autoarm: a profile switch re-reads both rows, with no /reload", function()
     assertTrue(f.Hud.IsShown(), "auto-show after the switch")
     assertEqual(f.Race.State(), "armed", "auto-arm after the switch")
     f.NS.db:ResetProfile()
-    assertEqual(f.AutoArm.Diagnose().events, "none", "a reset to the defaults left them registered")
+    -- A reset keeps the default auto-show's plates (R3-DR-3) and drops auto-arm.
+    assertEqual(f.AutoArm.Diagnose().events, "plates", "a reset to the defaults")
+    assertFalse(f.NS.GetSetting("race.autoArm"), "a reset left auto-arm on")
 end)
 
 -- ── stand-down ──────────────────────────────────────────────────────────────────────────────────

@@ -351,7 +351,7 @@ race.
   `Hud.Hide(true)`, which is not the player's close and does not move `Hud.Closes()`). Only an addon-opened window closes by itself
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
-- **Near a training dummy** (#16, `modules/AutoArm.lua`, both rows off by default): registered on its
+- **Near a training dummy** (#16, `modules/AutoArm.lua`; auto-show on by default since R3-DR-3, auto-arm off): registered on its
   own AceEvent target only while a row is on and the addon stands up. *Auto-show* (`hud.autoShow`):
   `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of known dummies'
   plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up through

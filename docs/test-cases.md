@@ -289,7 +289,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (29)
+### test_hud.lua (30)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -297,6 +297,7 @@ Total.
 - hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line
 - hud: a custom length is parsed, range-checked and selected
 - hud: an unknown target is allowed and said so
+- hud: a new profile's idle body races 1:00 (R3-DR-2)
 - hud: a changed Default race length takes effect over the remembered pick
 - hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own
 - hud: a target changed while the HUD is closed is never armed as the old one
@@ -348,7 +349,7 @@ Total.
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 
-### test_hud_window.lua (20)
+### test_hud_window.lua (21)
 
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
@@ -368,6 +369,7 @@ Total.
 - hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
 - hud: the minimum size still holds every body after the compact restyle
 - hud: the running clocks, figures and spell rows take their HUD Appearance blocks
+- hud: the clocks, figures and spell rows draw every skin's HUD face, a switch restyles them (R3-DR-1)
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
@@ -471,9 +473,10 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
-### test_autoarm.lua (30)
+### test_autoarm.lua (31)
 
-- autoarm: both rules are off by default and register nothing
+- autoarm: a new profile shows the HUD near a dummy and never arms by itself (R3-DR-3)
+- autoarm: both rules off register nothing
 - autoarm: each rule registers only what it needs, and turning both off drops it all
 - autoshow: a dummy target opens the HUD, and leaving it closes it after the debounce
 - autoshow: a dummy's nameplate opens the HUD, with no target at all
@@ -1663,16 +1666,16 @@ Total.
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 29 |
+| test_hud.lua | 30 |
 | test_hud_layout.lua | 24 |
-| test_hud_window.lua | 20 |
+| test_hud_window.lua | 21 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 9 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
-| test_autoarm.lua | 30 |
+| test_autoarm.lua | 31 |
 | test_layers.lua | 7 |
 | test_results.lua | 18 |
 | test_results_detail.lua | 18 |
@@ -1739,4 +1742,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1369** |
+| **Total** | **1372** |

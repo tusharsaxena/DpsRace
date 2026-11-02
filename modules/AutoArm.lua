@@ -1,8 +1,8 @@
 local _, NS = ...
 -- modules/AutoArm.lua — the race near a training dummy (#16): Auto-show (`hud.autoShow`) opens the HUD
 -- by itself while a cataloged dummy (defaults/Dummies.lua) is the target or has a nameplate up, and
--- Auto-arm (`race.autoArm`) arms a race by itself when the player targets one out of combat. Both are
--- off by default and independent of each other.
+-- Auto-arm (`race.autoArm`) arms a race by itself when the player targets one out of combat. Auto-show
+-- is on by default (R3-DR-3), auto-arm off, and each is independent of the other.
 --
 -- AUTO-SHOW. A DUMMY SESSION runs from the first cataloged dummy seen (the target, or a nameplate:
 -- NAME_PLATE_UNIT_ADDED) until none has been seen for HIDE_DELAY seconds: the hide is a C_Timer

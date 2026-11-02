@@ -130,10 +130,10 @@ NS.defaults = {
         },
         -- The HUD's show mode (spec §6.3): "onArm" | "always"; and what its running clock shows (spec
         -- §6.1): "both" (elapsed in green beside time left in red) | "left" | "elapsed". `autoShow`
-        -- (#16, modules/AutoArm.lua): the HUD opens by itself near a cataloged training dummy, opt-in
-        -- (the owner's call, 2026-10-28). All three rows are on the HUD page's Race HUD tab
-        -- (settings/Hud.lua).
-        hud = { showMode = "onArm", clock = "both", autoShow = false },
+        -- (#16, modules/AutoArm.lua): the HUD opens by itself near a cataloged training dummy, on by
+        -- default (the owner's call, 2026-11-03; opt-in from 2026-10-28). Auto-arm stays opt-in. All
+        -- three rows are on the HUD page's Race HUD tab (settings/Hud.lua).
+        hud = { showMode = "onArm", clock = "both", autoShow = true },
         -- The HUD's look (the owner's call, 2026-10-24; HUD > HUD Appearance, settings/Hud.lua,
         -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
