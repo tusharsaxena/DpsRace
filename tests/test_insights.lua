@@ -898,6 +898,7 @@ end)
 test("insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone", function()
     local i = tab()
     local pane, H = i.pane, i.pane.headers
+    pane:SelectBoard("cleave|180")   -- the tab opens on Overall (SG-DR-3)
     assertTrue(H.progression:IsShown())
     assertTrue(H.boards:IsShown())
     assertTrue(H.specs:IsShown())
@@ -917,7 +918,7 @@ test("insights tab: a section with nothing to show hides; Top Spells and Races B
     assertFalse(pane.panels.bests:IsShown(), "one run sets no new best")
 end)
 
-test("insights tab: a tab per target x length board, the most raced first, the pick kept while present", function()
+test("insights tab: a tab per target x length board, Overall first, the pick kept while present", function()
     local i = tab()
     local pane = i.pane
     local tabs = active(pane, "boardTabs")
@@ -925,10 +926,13 @@ test("insights tab: a tab per target x length board, the most raced first, the p
     assertEqual(tabs[1].label.__text, "Overall")
     assertEqual(tabs[2].label.__text, "Cleave \194\183 3:00", "the catalog's order: cleave before boss")
     assertEqual(tabs[3].label.__text, "Boss-level \194\183 1:00")
-    assertEqual(pane.boardKey, "cleave|180", "the most raced board")
-    assertTrue(tabs[2].underline:IsShown())
-    assertFalse(tabs[3].underline:IsShown())
+    assertEqual(pane.boardKey, "all", "the tab opens on Overall (SG-DR-3)")
+    assertTrue(tabs[1].underline:IsShown())
+    assertFalse(tabs[2].underline:IsShown())
+    tabs[2]:GetScript("OnClick")(tabs[2])
+    assertEqual(pane.boardKey, "cleave|180")
     assertEqual(active(pane, "specs")[1].label.__text, "Destruction")
+    tabs = active(pane, "boardTabs")
     assertEqual(tabs[3]._tip[2], "1 run")
     tabs[3]:GetScript("OnClick")(tabs[3])
     assertEqual(pane.boardKey, "boss|60")
@@ -936,12 +940,24 @@ test("insights tab: a tab per target x length board, the most raced first, the p
     assertEqual(#specs, 1)
     assertEqual(specs[1].label.__text, "Fire")
     assertTrue(active(pane, "boardTabs")[3].underline:IsShown(), "the pick redrawn")
-    -- Kept through a redraw that leaves it present; the most raced again once it is gone.
+    -- Kept through a redraw that leaves it present; Overall once it is gone, and the pick back when it returns.
     pane:SetFilter("date", "30d")
     assertEqual(pane.boardKey, "boss|60")
     pane:SetFilter("cleanOnly", true)
-    assertEqual(pane.boardKey, "cleave|180", "the boss run is flagged")
+    assertEqual(pane.boardKey, "all", "the boss run is flagged")
     assertEqual(#active(pane, "boardTabs"), 2, "Overall and the one board left")
+    pane:SetFilter("cleanOnly", false)
+    assertEqual(pane.boardKey, "boss|60", "the last pick returns with its board")
+end)
+
+test("insights tab: a new tab in the same session opens on the last board picked, nothing saved (SG-DR-3)", function()
+    local i = tab()
+    i.pane:SelectBoard("boss|60")
+    local again = i.NS.ResultsInsights.Build(i.ui.body, {})
+    again:Refresh()
+    again:Layout(600, 400)
+    assertEqual(again.boardKey, "boss|60", "the session remembers")
+    assertEqual(i.NS.db.profile.views, nil, "no SavedVariable for it")
 end)
 
 -- SF-DR-3 / SF-DR-4: everything under the tab strip reads the tab picked; Overall reads every board.
@@ -954,7 +970,8 @@ end
 test("insights tab: the sections under the tabs read the tab picked, Overall reads every board", function()
     local i = tab()
     local pane = i.pane
-    assertEqual(pane.boardKey, "cleave|180")
+    assertEqual(pane.boardKey, "all")
+    pane:SelectBoard("cleave|180")
     -- Cleave 3:00 holds the two Destruction runs; the Fire boss run is out of its scope.
     assertEqual(#active(pane, "chars"), 1)
     assertEqual(barValues(pane, "chars")[1], "2")
@@ -990,6 +1007,7 @@ test("insights tab: Consistency on a board tab is a worst-to-best range per spec
     end
     local i = tab(runs)
     local pane = i.pane
+    pane:SelectBoard(pane.stats.boardTop)   -- the tab opens on Overall (SG-DR-3)
     assertTrue(pane.headers.consistency:IsShown())
     assertEqual(pane.headers.consistency.__text, "Consistency")
     local rows = active(pane, "consistency")
@@ -1142,6 +1160,7 @@ test("insights tab: test mode fills the tab from the sample history; Save refuse
     local pane = i.pane
     assertTrue(pane:Count() > 0, "no sample run on the tab")
     assertFalse(pane.empty:IsShown())
+    pane:SelectBoard(pane.stats.boardTop)   -- the tab opens on Overall (SG-DR-3)
     assertTrue(pane.headers.specs:IsShown(), "the board tab's specs drew from the samples")
     pane:SelectBoard("all")
     local late = pane.stats.lateBySpell

@@ -958,7 +958,7 @@ Total.
 - insights tab: above 60 runs the progression is one column a day, the same day of two years apart
 - insights tab: DPS Progression carries a legend of its specs in their class colors
 - insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone
-- insights tab: a tab per target x length board, the most raced first, the pick kept while present
+- insights tab: a tab per target x length board, Overall first, the pick kept while present
 - insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked
 - insights tab: Races By Character x Length stacks each character's races in the length colors
 - insights tab: one date format everywhere: the day, then the time where it matters

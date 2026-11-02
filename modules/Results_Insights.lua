@@ -436,16 +436,14 @@ local function placeBoardTabs(self, tabs, y, w, pad)
     return y - NS.Charts.K.BAR_GAP * 2
 end
 
--- B and C under the board tabs (plan step V-f): the tab picked while it stays present, else the most
--- raced board's. Nothing with no complete run.
+-- B and C under the board tabs (plan step V-f): the tab last picked this session while it stays
+-- present, else Overall (SG-DR-3). Nothing with no complete run.
 local function layoutBoards(self, stats, y, w, pad)
     local tabs = stats.boardTabs
     if #tabs == 0 then return y end
-    local board = findBoard(tabs, self.boardKey)
-    if self.boardKey ~= NS.InsightsData.OVERALL then
-        board = board or findBoard(tabs, stats.boardTop)
-        self.boardKey = board.key
-    end
+    local want = Insights.lastBoard or NS.InsightsData.OVERALL
+    local board = findBoard(tabs, want)
+    self.boardKey = board and want or NS.InsightsData.OVERALL
     y = self.ctx:placeHeader(self.headers.boards, y, pad)
     y = placeBoardTabs(self, tabs, y, w, pad)
     -- Everything under the tabs reads the tab picked (SF-DR-3); Overall reads every board (SF-DR-4).
@@ -971,9 +969,10 @@ function View:SetFilter(key, value)
 end
 
 --- Show the board tab `key` (a target x length pair: "cleave|120"): kept while the filters leave it
---- present, never saved with the view.
+--- present, and for the session (Insights.lastBoard, here and in the next tab built); never saved.
 function View:SelectBoard(key)
     self.boardKey = key
+    Insights.lastBoard = key
     if self.width then self:draw() end
 end
 

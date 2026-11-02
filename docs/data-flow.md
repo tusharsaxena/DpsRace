@@ -497,9 +497,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   Spells, was removed in the owner's feedback round), each drawn by a renderer of
   `LibKa0s-Charts-1.0`. B (Spec Comparison) and C (Consistency, a worst-to-best
   range per spec with its average marked) draw one board: the tab picked from `stats.boardTabs`, one
-  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. The most raced pair
-  (`stats.boardTop`) opens first, and `View.boardKey` keeps a pick while the filters leave it
-  present; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
+  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. Overall opens
+  first (SG-DR-3), and `View.boardKey` follows the board last picked this session
+  (`Insights.lastBoard`) while the filters leave it present, else Overall; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
   the number of choices under it, a pick by its name alone), and the open list keeps the run counts.
   Every date is the Runs tab's *26 Oct*, the year added when it is not this year's and the time in a
   run's hover. Every figure that mixes boards is a
