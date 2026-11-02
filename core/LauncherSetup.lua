@@ -98,7 +98,7 @@ NS.Launcher = Launcher:New({
     setEnabled     = function(on) NS.RunVerb(on and "enable" or "disable") end,
     isLocked       = function() return NS.GetSetting("locked") == true end,
     toggleLock     = function() NS.ToggleLock() end,
-    isTestMode     = function() return NS.Preview ~= nil and NS.Preview.IsActive() == true end,
+    isTestMode     = function() return NS.Preview ~= nil and NS.Preview.Mode() == "test" end,
     toggleTestMode = function() NS.ToggleTestMode() end,
     isWindowShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
     toggleWindow   = function() NS.ToggleHud() end,

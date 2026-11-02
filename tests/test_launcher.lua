@@ -58,6 +58,17 @@ test("launcher: each menu toggle runs the shared handler", function()
     assertTrue(NS.IsDisabled())
 end)
 
+test("launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)", function()
+    -- red under: isTestMode read Preview.IsActive(), true in both modes, and the Test row stopped the sim.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.StartSim()
+    assertEqual(NS.Preview.Mode(), "sim")
+    local menu = openMenu(inst)
+    assertTrue(menu:Find("Sim mode").isSelected(), "Sim mode is not ticked")
+    assertTrue(not menu:Find("Test mode").isSelected(), "Test mode ticked during a sim")
+end)
+
 test("launcher: the Minimap button row hides and shows the real button", function()
     local inst = T.load()
     local icon = inst.mocks.LibStub("LibDBIcon-1.0")
