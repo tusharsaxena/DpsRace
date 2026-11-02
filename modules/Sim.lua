@@ -143,7 +143,8 @@ end
 -- and never changes what the race does. The session fakes no client answer (core/SimSetup.lua).
 
 local STEP_MOMENTS = {
-    armed = function() NS.SampleRace.Unpark(Sim.ARM_HOLD) end,
+    -- The countdown is one step delay, so "Race starts" lights as the clock passes zero (SG-SIM).
+    armed = function() NS.SampleRace.Unpark(Sim.StepDelay()) end,
     start = function() NS.SampleRace.Skip(0) end,
     buzzer = function() NS.SampleRace.Skip(NS.SampleRace.StopAt() or 0) end,
     result = function() NS.SampleRace.SkipToResult() end,
