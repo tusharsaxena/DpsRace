@@ -125,10 +125,14 @@ return function(T)
                 return true
             end)
             -- What SetFont was last told, as the client answers it (the skin's S.Font reads the size
-            -- a string already has, to keep it); nothing before a SetFont.
+            -- a string already has, to keep it). With no SetFont of its own, a font object made by
+            -- CreateFont answers, as the client draws it (a suite's CreateFont fake); else nothing.
+            -- The string's own font comes first: in the client it beats any font object (R3-DR-1).
             rawset(o, "GetFont", function(self)
                 local f = self.__font
                 if f then return f.path, f.size, f.flags end
+                local obj = self.__fontObject
+                if type(obj) == "table" and type(obj.GetFont) == "function" then return obj:GetFont() end
                 return nil
             end)
             rawset(o, "SetFrameStrata", function(self, strata) self.__strata = strata; return self end)

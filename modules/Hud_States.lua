@@ -150,12 +150,20 @@ Style.OnLooks(function()
     for fs, size in pairs(bigTexts) do fs:SetFont(face, size, "") end
 end)
 
--- `styled`: a clock a HUD Appearance block restyles (the running body's), whose face is the
--- player's from its first draw and never the skin's.
+-- `styled`: a clock a HUD Appearance block restyles (the running body's). It is made from a font
+-- object and given no SetFont of its own: the client lets a string's own font beat any font object,
+-- so a SetFont here kept the mono face at 26 under every skin S.HudFont later handed it (R3-DR-1,
+-- Ka0sAddonsCommonTasks docs/2026-11-02-SMOKE_ROUND3). Its face comes only from styleRunning's
+-- Appearance.ApplyFont, which the body's Update runs before the clocks' first SetText.
 local function bigText(parent, size, color, styled)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(monoFace(), size, "")
-    if not styled then bigTexts[fs] = size end
+    local fs
+    if styled then
+        fs = parent:CreateFontString(nil, "OVERLAY", Style.FONT.TEXT)
+    else
+        fs = parent:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(monoFace(), size, "")
+        bigTexts[fs] = size
+    end
     fs:SetTextColor(Style.Rgb(color))
     fs:SetJustifyH("CENTER")
     return fs
