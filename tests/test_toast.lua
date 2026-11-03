@@ -434,7 +434,10 @@ test("toast: the class and spec icons sit beside the spec and class words", func
     result(f, run(f, "new", 200, 110000))
     local w = f.toast:Frame().dpsRace
     assertTrue(w.class:IsShown(), "the class icon")
-    assertEqual(table.concat(w.class.__texCoord, ","), table.concat(f.M.CLASS_ICON_TCOORDS.WARLOCK, ","))
+    -- WARLOCK's cell of the sheet, cropped by Style.ICON_CROP of the cell inside it (R5-ICON).
+    local c, z = f.M.CLASS_ICON_TCOORDS.WARLOCK, f.NS.Style.ICON_CROP
+    local dw, dh = (c[2] - c[1]) * z, (c[4] - c[3]) * z
+    assertEqual(table.concat(w.class.__texCoord, ","), table.concat({ c[1] + dw, c[2] - dw, c[3] + dh, c[4] - dh }, ","))
     assertTrue(w.spec:IsShown(), "the spec icon")
     assertEqual(w.spec.__texture, 136186)
     assertEqual(w.class.__width, BT.CLASS_ICON)

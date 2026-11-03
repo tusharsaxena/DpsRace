@@ -425,6 +425,7 @@ local function buildScore(p, c, x)
         line[1]:SetText(def[1])
         line.icon = f:CreateTexture(nil, "ARTWORK")
         line.icon:SetTexture(def[2])
+        NS.Style.EdgeIcon(line.icon)   -- cropped and outlined, as the spell rows' icons are (R5-ICON)
         line.bar = newBar(f)
         x.lines[i] = line
     end

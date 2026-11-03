@@ -110,15 +110,19 @@ function Tbl.ClassName(class)
     return class and tostring(class) or L["Unknown class"]
 end
 
---- Draw `class`'s icon on `tex` from the character-creation atlas; hidden when it is unknown.
+--- Draw `class`'s icon on `tex` from the character-creation atlas; hidden when it is unknown. The
+--- cell is cropped by Style.ICON_CROP of ITS OWN size, inside its coords, so no native edge shows
+--- inside the icon's edge (R5-ICON; MultiMeters' Row_NameCell does the same).
 function Tbl.SetClassIcon(tex, class)
     local coords = type(CLASS_ICON_TCOORDS) == "table" and type(class) == "string" and CLASS_ICON_TCOORDS[class]
     if type(coords) ~= "table" then
         tex:Hide()
         return false
     end
+    local z = Style.ICON_CROP
+    local w, h = (coords[2] - coords[1]) * z, (coords[4] - coords[3]) * z
     tex:SetTexture(CLASS_ATLAS)
-    tex:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+    tex:SetTexCoord(coords[1] + w, coords[2] - w, coords[3] + h, coords[4] - h)
     tex:Show()
     return true
 end
@@ -304,17 +308,20 @@ function Cells.text(row, col)
     return cell
 end
 
--- The class and spec icons, each with a hover naming it.
+-- The class and spec icons, each with a hover naming it, cropped and outlined (R5-ICON).
 function Cells.icons(row)
     local cell = { class = row:CreateTexture(nil, "ARTWORK"), spec = row:CreateTexture(nil, "ARTWORK") }
     cell.class:SetSize(Tbl.ICON, Tbl.ICON)
     cell.spec:SetSize(Tbl.ICON, Tbl.ICON)
+    Style.EdgeClassIcon(cell.class)
+    Style.EdgeIcon(cell.spec)
     return cell
 end
 
 -- A row of small icons (the Runs list's Used column, #13): as many as the column's configured width
 -- holds (Tbl.IconsFit), each its own part (cell.icon1, ...) so a group header's showCells hides it,
--- then "+n" for the rest, or a dash when there is nothing.
+-- then "+n" for the rest, or a dash when there is nothing. Each icon is cropped and outlined (R5-ICON,
+-- image 51); its edge shows and hides with it.
 function Cells.items(row, col)
     local cell = { more = Tbl.Text(row, FONT.TEXT, C.dim), dash = Tbl.Text(row, FONT.TEXT, C.dim) }
     cell.dash:SetText("\226\128\148")
@@ -322,6 +329,7 @@ function Cells.items(row, col)
     for i = 1, cell.slots do
         local icon = row:CreateTexture(nil, "ARTWORK")
         icon:SetSize(Tbl.ICON, Tbl.ICON)
+        Style.EdgeIcon(icon)
         cell["icon" .. i] = icon
     end
     return cell

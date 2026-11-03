@@ -161,6 +161,7 @@ local SUITES = {
     "test_results_gear",
     "test_header_rule",
     "test_header_band",
+    "test_icon_rule",
     "test_icon_crop",
     "test_hud_icon_edge",
     "test_insights_data",

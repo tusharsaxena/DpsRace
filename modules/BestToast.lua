@@ -197,6 +197,9 @@ local function makeRows(frame)
     w.spec = frame:CreateTexture(nil, "ARTWORK")
     w.spec:SetSize(B.CLASS_ICON, B.CLASS_ICON)
     w.spec:SetPoint("LEFT", w.class, "RIGHT", 2, 0)
+    -- Both cropped and edged in the HUD's icon.border: a toast floats over the game world (R5-ICON).
+    Style.EdgeClassIcon(w.class, true)
+    Style.EdgeIcon(w.spec, true)
     w.who = Style.ScaledText(frame, Style.FONT.TITLE, SCALE)
     w.who:SetHeight(B.TITLE_H)
     if w.who.SetJustifyV then w.who:SetJustifyV("MIDDLE") end

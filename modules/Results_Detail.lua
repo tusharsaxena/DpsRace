@@ -469,6 +469,8 @@ local function buildHeader(p, c)
     w.class:SetSize(ICON, ICON)
     w.spec = c:CreateTexture(nil, "ARTWORK")
     w.spec:SetSize(ICON, ICON)
+    NS.Style.EdgeClassIcon(w.class)   -- both cropped and outlined (R5-ICON)
+    NS.Style.EdgeIcon(w.spec)
     w.name = Tbl.Text(c, FONT.NAME, C.text)
     w.meta = { Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim), Tbl.Text(c, FONT.TEXT, C.dim) }
     -- The target line's chips (Detail.Meta): the target type, then the race length.

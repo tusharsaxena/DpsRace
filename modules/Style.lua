@@ -523,6 +523,31 @@ function Style.CropIcon(tex)
     return tex
 end
 
+--- A standalone Blizzard icon, cropped (Style.CropIcon) and edged 1 px through S.IconBorder's
+--- Texture form, which hangs the edge on a holder of its own over the icon and shows and hides it
+--- with the icon: a window's `icon.outline`, or with `hud` (a toast) the HUD's `icon.border`. The
+--- icon rule (R5-ICON, LibKa0s docs/api/README.md "Icon art: the rule"). The library's 0.07 zoom
+--- only tightens, so the 0.08 crop stands through every replay.
+--- @param tex table  the icon's Texture
+--- @param hud boolean|nil  true for an icon on a toast; nil: a window's
+--- @return table tex
+function Style.EdgeIcon(tex, hud)
+    Style.CropIcon(tex)
+    NS.Skin.IconBorder(tex, { fromSkin = true, hud = hud == true })
+    return tex
+end
+
+--- A class icon's edge: one cell of the character-creation sheet, cropped inside its cell by
+--- ResultsTable.SetClassIcon, so the edge leaves its coords alone (zoom = false: the library's zoom
+--- clamps in whole-texture space, which would cut 28% off a cell on the sheet's edge).
+--- @param tex table  the class icon's Texture
+--- @param hud boolean|nil  true for an icon on a toast
+--- @return table tex
+function Style.EdgeClassIcon(tex, hud)
+    NS.Skin.IconBorder(tex, { fromSkin = true, zoom = false, hud = hud == true })
+    return tex
+end
+
 -- ── the header on the title band (R5-DR1) ────────────────────────────────────────────────────
 -- Every window's header stands on the title band's own frame: LibKa0s's S.Band, which Shell lays at
 -- its own inset (`win.borderSize` in from a flat edge, else 1) and `title.height`, and lays again on
