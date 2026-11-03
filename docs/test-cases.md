@@ -373,11 +373,13 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_hud_best.lua (7)
+### test_hud_best.lua (9)
 
 - hud best: the board's best sits between Target and Arm Race, and Arm Race names it
 - hud best: with no race on the board, the card says this one sets the mark
 - hud best: with no target, it asks for a dummy
+- hud best: the card's second line shows the consumables the run used, not its top ability
+- hud best: with no consumables used, or none recorded, the line ends at the ilvl
 - hud best: it swaps at once on a length, Custom, a new target, a spec change and a board change
 - hud best: the hover names the whole run, the click opens it in Results
 - hud best: every launcher block sits the same gap apart, with more above Arm Race (R4-DR2)
@@ -1682,7 +1684,7 @@ Total.
 | test_hud.lua | 30 |
 | test_hud_layout.lua | 24 |
 | test_hud_window.lua | 21 |
-| test_hud_best.lua | 7 |
+| test_hud_best.lua | 9 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
 | test_hud_tiles.lua | 10 |
@@ -1756,4 +1758,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1382** |
+| **Total** | **1384** |

@@ -6,7 +6,8 @@
 -- What this pins:
 --   - the section's label reads just "Your best" (R4-DR3); the hover names the board,
 --     "<spec> · <category> · <length>";
---   - the card: the best's DPS (large), its damage on the right, then date · ilvl · top spell;
+--   - the card: the best's DPS (large), its damage on the right, then date · ilvl · the consumables
+--     the run used, as 12 px icons with xN past one (R4-DR4; nothing after the ilvl when none);
 --   - Arm Race reads "Arm Race · beat <DPS>" while a best exists, else "Arm Race";
 --   - the empty states: "No race yet: this one sets the mark." and, with no target, "Target a dummy
 --     to see your best.";
@@ -59,6 +60,7 @@ local function stored(f, length, dps, opts)
     run.result = { damage = dps * length, dps = dps }
     run.date = opts.date or 1762128000
     run.char.ilvl = 316.4
+    run.usage = opts.usage
     run.spells = opts.spells or {
         { id = 116858, dmg = dps * length * 0.5, dps = dps * 0.5 },
         { id = 29722, dmg = dps * length * 0.3, dps = dps * 0.3 },
@@ -88,7 +90,7 @@ test("hud best: the board's best sits between Target and Arm Race, and Arm Race 
     local line = b.line.__text
     assertTrue(line:find(f.NS.ResultsTable.Date(best.date, "%d %b"), 1, true) == 1, "the date first: " .. line)
     assertTrue(line:find("ilvl 316.4", 1, true) ~= nil, "the item level: " .. line)
-    assertTrue(line:find("Chaos Bolt", 1, true) ~= nil, "the top spell: " .. line)
+    assertTrue(line:find("Chaos Bolt", 1, true) == nil, "no top spell on the card (R4-DR4): " .. line)
     assertFalse(b.empty:IsShown(), "no empty line over a best")
     assertEqual(w.arm.label.__text, "Arm Race" .. DOT .. "beat " .. fmt(f, 153900))
 end)
@@ -115,6 +117,62 @@ test("hud best: with no target, it asks for a dummy", function()
     assertTrue(b.empty:IsShown())
     assertEqual(b.empty.__text, "Target a dummy to see your best.")
     assertEqual(idle(f).arm.label.__text, "Arm Race")
+end)
+
+-- ── consumables (R4-DR4) ──────────────────────────────────────────────────────────────────────────
+
+local POTION, RUNE, TRINKET = 212265, 224572, 219314
+local ITEMS = { [POTION] = "Tempered Potion", [RUNE] = "Crystallized Augment Rune", [TRINKET] = "Ovinax's Mercurial Egg" }
+
+--- Item names and icons the way the client answers them (the icon a number from the item ID).
+local function items(f)
+    f.M.C_Item.GetItemNameByID = function(id) return ITEMS[id] end
+    f.M.C_Item.GetItemIconByID = function(id) return type(id) == "number" and 5000000 + id or 134400 end
+end
+
+local function usage(used) return { v = 1, used = used, candidates = {}, edited = false } end
+
+test("hud best: the card's second line shows the consumables the run used, not its top ability", function()
+    local f = hud()
+    items(f)
+    target(f, CLEAVE)
+    local best = stored(f, 60, 153900, { usage = usage({
+        { itemID = TRINKET, kind = "gear", slot = 13, n = 1, src = "cast" },
+        { itemID = POTION, kind = "potion", n = 2, times = { 1, 40 }, src = "cast" },
+        { kind = "food", n = 1, src = "buff" },
+        { itemID = RUNE, kind = "other", n = 1, src = "buff" },
+    }) })
+    f.Hud.Show()
+    local b = idle(f).best
+    local line = b.line.__text
+    local head = f.NS.ResultsTable.Date(best.date, "%d %b") .. DOT .. "ilvl 316.4" .. DOT
+    assertEqual(line:sub(1, #head), head, "date and ilvl first: " .. line)
+    assertTrue(line:find("|T" .. (5000000 + POTION) .. ":12:12|tx2", 1, true) ~= nil, "the potion, x2: " .. line)
+    assertTrue(line:find("|TInterface\\Icons\\Spell_Misc_Food:12:12|t", 1, true) ~= nil, "Well Fed: " .. line)
+    assertTrue(line:find("|T" .. (5000000 + RUNE) .. ":12:12|t", 1, true) ~= nil, "every kind, the rune too: " .. line)
+    assertTrue(line:find("x1", 1, true) == nil, "no x1 for a single use: " .. line)
+    assertTrue(line:find(tostring(5000000 + TRINKET), 1, true) == nil, "gear is not a consumable: " .. line)
+    assertTrue(line:find("Chaos Bolt", 1, true) == nil, "no top ability: " .. line)
+    -- The hover keeps the top 3 spells and names each consumable.
+    b.card:__fire("OnEnter")
+    local all = table.concat(f.tip.lines, "\n")
+    for _, want in ipairs({ "Chaos Bolt", "Incinerate", "Immolate", "Tempered Potion x2", "Well Fed",
+                            "Crystallized Augment Rune" }) do
+        assertTrue(all:find(want, 1, true) ~= nil, "the tooltip names " .. want .. ":\n" .. all)
+    end
+    assertTrue(all:find(ITEMS[TRINKET], 1, true) == nil, "no gear in the hover's consumables")
+end)
+
+test("hud best: with no consumables used, or none recorded, the line ends at the ilvl", function()
+    for _, u in ipairs({ usage({}), usage({ { itemID = TRINKET, kind = "gear", slot = 13, n = 1, src = "cast" } }), false }) do
+        local f = hud()
+        items(f)
+        target(f, CLEAVE)
+        local best = stored(f, 60, 153900, { usage = u or nil })
+        f.Hud.Show()
+        local b = idle(f).best
+        assertEqual(b.line.__text, f.NS.ResultsTable.Date(best.date, "%d %b") .. DOT .. "ilvl 316.4")
+    end
 end)
 
 -- ── live ────────────────────────────────────────────────────────────────────────────────────────

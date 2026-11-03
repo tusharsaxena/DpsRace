@@ -69,14 +69,35 @@ local function boardText(v)
     return table.concat(parts, DOT)
 end
 
---- Line two: date · ilvl · top spell.
+--- The consumables the run used (R4-DR4): every kind the usage record carries but on-use gear
+--- (potions, flasks, food, augment runes, Healthstones), in the Used column's order with hidden
+--- items left out (ResultsUsage.Entries). Empty when none were used or none were recorded.
+local function consumables(run)
+    local RU, out = NS.ResultsUsage, {}
+    for _, e in ipairs(RU and RU.Entries(run) or {}) do
+        if e.kind ~= "gear" then out[#out + 1] = e end
+    end
+    return out
+end
+
+--- "x2" past a single use, else "".
+local function times(e)
+    local n = tonumber(e.n) or 1
+    return n > 1 and ("x" .. n) or ""
+end
+
+--- Line two: date · ilvl · the consumables' icons (12 px, at the caption line's size), each with
+--- xN past one use; nothing after the ilvl when none were used.
 local function lineText(run)
     local Tbl = NS.ResultsTable
     local parts = { Tbl.Date(run.date, "%d %b") }
     local char = run.char or {}
     if type(char.ilvl) == "number" then parts[#parts + 1] = L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) end
-    local top = type(run.spells) == "table" and run.spells[1]
-    if top then parts[#parts + 1] = NS.HudBreakdown.SpellName(top.id) end
+    local icons = {}
+    for _, e in ipairs(consumables(run)) do
+        icons[#icons + 1] = "|T" .. tostring(NS.ResultsUsage.Icon(e)) .. ":12:12|t" .. times(e)
+    end
+    if #icons > 0 then parts[#parts + 1] = table.concat(icons, " ") end
     return table.concat(parts, DOT)
 end
 
@@ -93,6 +114,11 @@ local function tipOf(run, v)
     for i = 1, math.min(TOP_SPELLS, type(run.spells) == "table" and #run.spells or 0) do
         local s = run.spells[i]
         tip[#tip + 1] = ("%d. %s  %s"):format(i, NS.HudBreakdown.SpellName(s.id), Format.Number(s.dmg))
+    end
+    -- The consumables the card's icons stand for, by name.
+    for _, e in ipairs(consumables(run)) do
+        local n = times(e)
+        tip[#tip + 1] = NS.ResultsUsage.InlineIcon(e) .. " " .. NS.ResultsUsage.Name(e) .. (n ~= "" and (" " .. n) or "")
     end
     tip[#tip + 1] = L["Click to open this run in Results."]
     return tip
