@@ -50,15 +50,6 @@ function Best.View(target, length)
     return v
 end
 
---- Arm Race's label: "Arm Race · beat <DPS>" while the board has a best.
---- @param v table|nil  Best.View's
---- @return string
-function Best.ArmLabel(v)
-    local run = v and v.run
-    if not run or type(dpsOf(run)) ~= "number" then return L["Arm Race"] end
-    return L["Arm Race \194\183 beat %s"]:format(NS.Format.Number(dpsOf(run)))
-end
-
 --- The board the best is on, for the hover: spec · target category · length (the label itself reads
 --- just "Your best", R4-DR3).
 local function boardText(v)

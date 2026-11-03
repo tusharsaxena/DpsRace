@@ -8,7 +8,7 @@
 --     "<spec> · <category> · <length>";
 --   - the card: the best's DPS (large), its damage on the right, then date · ilvl · the consumables
 --     the run used, as 12 px icons with xN past one (R4-DR4; nothing after the ilvl when none);
---   - Arm Race reads "Arm Race · beat <DPS>" while a best exists, else "Arm Race";
+--   - Arm Race reads just "Arm Race", a best or none (R4-DR5); the best's DPS is the card's figure;
 --   - the empty states: "No race yet: this one sets the mark." and, with no target, "Target a dummy
 --     to see your best.";
 --   - it swaps at once on a length, Custom, a new target, a spec change and a board change;
@@ -75,7 +75,7 @@ local function fmt(f, n) return f.NS.Format.Number(n) end
 
 -- ── the card ────────────────────────────────────────────────────────────────────────────────────
 
-test("hud best: the board's best sits between Target and Arm Race, and Arm Race names it", function()
+test("hud best: the board's best sits between Target and Arm Race, and Arm Race reads just Arm Race", function()
     -- red under: no Your best card (the idle body of image 101: presets, Target, Arm Race).
     local f = hud()
     target(f, CLEAVE)
@@ -92,7 +92,9 @@ test("hud best: the board's best sits between Target and Arm Race, and Arm Race 
     assertTrue(line:find("ilvl 316.4", 1, true) ~= nil, "the item level: " .. line)
     assertTrue(line:find("Chaos Bolt", 1, true) == nil, "no top spell on the card (R4-DR4): " .. line)
     assertFalse(b.empty:IsShown(), "no empty line over a best")
-    assertEqual(w.arm.label.__text, "Arm Race" .. DOT .. "beat " .. fmt(f, 153900))
+    assertEqual(w.arm.label.__text, "Arm Race", "no beat <DPS> on the button (R4-DR5)")
+    assertEqual(f.NS.HudBest.ArmLabel, nil, "the beat label is gone")
+    assertEqual(rawget(f.NS.L, "Arm Race \194\183 beat %s"), nil, "and its locale key")
 end)
 
 test("hud best: with no race on the board, the card says this one sets the mark", function()

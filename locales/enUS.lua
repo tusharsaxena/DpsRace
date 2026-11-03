@@ -110,7 +110,6 @@ L["Target"] = "Target"
 L["Arm Race"] = "Arm Race"
 -- The idle body's Your best card (R3-DR-4, modules/Hud_Best.lua).
 L["Your best"] = "Your best"
-L["Arm Race \194\183 beat %s"] = "Arm Race \194\183 beat %s"
 L["Target a dummy to see your best."] = "Target a dummy to see your best."
 L["No race yet: this one sets the mark."] = "No race yet: this one sets the mark."
 L["Length: %s"] = "Length: %s"

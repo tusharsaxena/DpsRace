@@ -375,7 +375,7 @@ Total.
 
 ### test_hud_best.lua (9)
 
-- hud best: the board's best sits between Target and Arm Race, and Arm Race names it
+- hud best: the board's best sits between Target and Arm Race, and Arm Race reads just Arm Race
 - hud best: with no race on the board, the card says this one sets the mark
 - hud best: with no target, it asks for a dummy
 - hud best: the card's second line shows the consumables the run used, not its top ability

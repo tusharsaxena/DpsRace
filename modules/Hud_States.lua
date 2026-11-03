@@ -622,7 +622,6 @@ function Builders.idle(parent)
             self.w.arm:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 0, -armY)
         end
         NS.HudBest.Update(self.w.best, v.best)
-        self.w.arm.label:SetText(NS.HudBest.ArmLabel(v.best))
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
     end
