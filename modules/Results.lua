@@ -49,7 +49,7 @@ Results.TABS = { "runs", "insights" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
 local Style = NS.Style
-local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
+local TAB_H, FOOTER_H = Style.TAB_STRIP_H, 20
 -- The footer's hint; on the Runs tab the run count goes before it.
 local HINT = L["Click a row for details \194\183 right-click for options"]
 
@@ -348,11 +348,13 @@ function Results.ToggleView()
     return Results.SetView(Results.View() == "expanded" and "collapsed" or "expanded")
 end
 
--- The body stands under the tab strip, which stands under the title band (Shell's inset, so 1 px
--- lower under a 2 px edge), and over the footer rule.
+-- The body stands under the tab strip, which stands under the title band, and over the footer rule:
+-- its size is the band's own geometry (Shell's inset and `title.height`, or EllesmereUI's 25 px bar
+-- flush at the top), so the panes fill the body in every source (R5-DR1's review: from TITLE_BAR_H the
+-- panes came out 6 px short under EllesmereUI and left an empty strip at the body's foot).
 local function bodySize()
-    local inset = Style.BandInset()
-    return ui.width - 1 - inset, ui.height - inset - HEADER_H - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
+    local inset, bandH = Style.BandGeometry()
+    return ui.width - 1 - inset, ui.height - inset - bandH - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
 end
 
 local function layoutRuns(pane, width, height)

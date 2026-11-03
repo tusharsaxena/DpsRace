@@ -38,6 +38,9 @@ local addonName, NS = ...
 --   NS.QualityColor(q)      an item quality's r, g, b: the skin's q.* token where it sets one (a
 --                           legibility override), else the client's ITEM_QUALITY_COLORS; nil for none
 --                           (LootHistory's).
+--   NS.SkinBandGeometry()   where S.Band lays the title band now, its inset and height (the library's
+--                           rule; EllesmereUI's flush 25 px bar while it paints the Shell). Live only:
+--                           with no library Style.BandGeometry answers the host holder's.
 --   NS.SkinPaintAceTree(c)  `Skin:PaintAceTree` with the owner bound: an AceGUI tree this addon
 --                           acquired past the Options proxy (the Profiles page), painted for its skin.
 --   NS.MaybeShowSkinPicker() the first-run skin picker (owner ruling O3): `O.SkinPicker` while the
@@ -636,6 +639,27 @@ Skin:RegisterOwner(addonName, {
     -- console under the Skin tag (resolved at call time: core/DebugLogSetup.lua loads below).
     log    = function(line) if NS.Debug then NS.Debug("Skin", "%s", line) end end,
 })
+
+-- EllesmereUI's shell bar, flush with the window's top, while it paints this owner's Shell: the
+-- library's EUI_BAR_H (SkinPaintExtras.lua, bandGeometry), measured by Premade Groups Filter Extension.
+local EUI_BAR_H = 25
+
+--- Where S.Band lays this owner's title band now, as the library works it out (SkinPaintExtras.lua's
+--- bandGeometry): flush and EUI_BAR_H high while EllesmereUI paints the Shell and has not been
+--- refused, else `win.borderSize` in from a flat edge (1 from any other) and `title.height` high.
+--- The library exposes no reader of its own; LibKa0s's suite holds the rule this mirrors.
+--- @return number inset, number height
+function NS.SkinBandGeometry()
+    local route = Skin.__euiRoute
+    local refused = type(Skin.euiRefused) == "table" and Skin.euiRefused[addonName]
+    if type(route) == "function" and route(addonName, "Shell") and not refused then
+        return 0, EUI_BAR_H
+    end
+    local style = Skin:Token(addonName, "win.borderStyle") or "flat"
+    local inset = style == "flat" and Skin:Token(addonName, "win.borderSize") or 1
+    local height = Skin:Token(addonName, "title.height")
+    return type(inset) == "number" and inset or 1, type(height) == "number" and height or 30
+end
 
 -- The one line a reload request earns on the path that has no popup of its own (a profile change
 -- leaving an EllesmereUI that painted this session). The Skin tab raises the library's popup for its

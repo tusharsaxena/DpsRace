@@ -576,13 +576,14 @@ local function bandOf(f)
     return f.drBand, false
 end
 
---- Shell's inset for the band, read now: `win.borderSize` in from a flat edge, else 1 (S.Band's
---- rule), for a layout that sizes what stands under the band.
---- @return number
-function Style.BandInset()
-    local style = NS.Skin.Token("win.borderStyle") or "flat"
-    local size = style == "flat" and NS.Skin.Token("win.borderSize") or 1
-    return type(size) == "number" and size or 1
+--- Where the title band stands now, for a layout that sizes what hangs from its foot: its inset
+--- from the frame's top and its height. The library's rule (NS.SkinBandGeometry, S.Band's own: flush
+--- and 25 high while EllesmereUI paints the Shell), else the degraded holder's, 1 in and TITLE_BAR_H
+--- high. Worked out, never read back off the frame (the window makes no geometry read as it lays out).
+--- @return number inset, number height
+function Style.BandGeometry()
+    if NS.Skin.Band and NS.SkinBandGeometry then return NS.SkinBandGeometry() end
+    return 1, Style.TITLE_BAR_H
 end
 
 --- The window's title band frame (S.Band, or the degraded holder), for what stands under it.

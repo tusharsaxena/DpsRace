@@ -930,6 +930,11 @@ Total.
 - header band: the Results tab strip and its rule stand under the band, in every skin
 - header band: with no library each window's header stands where Shell would lay the band
 
+### test_results_body.lua (2)
+
+- results body: the panes fill the body under the band, in every skin
+- results body: the panes fill the body under EllesmereUI's 25 px bar
+
 ### test_icon_rule.lua (8)
 
 - icon rule: the Runs list's Used column crops each icon and edges it in the window outline
@@ -1771,6 +1776,7 @@ Total.
 | test_results_gear.lua | 13 |
 | test_header_rule.lua | 3 |
 | test_header_band.lua | 5 |
+| test_results_body.lua | 2 |
 | test_icon_rule.lua | 8 |
 | test_icon_crop.lua | 4 |
 | test_hud_icon_edge.lua | 6 |
@@ -1816,4 +1822,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1422** |
+| **Total** | **1424** |
