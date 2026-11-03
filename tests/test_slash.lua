@@ -326,22 +326,42 @@ test("slash: test armed|running|result holds that HUD body still, on or switched
     assertFalse(NS.Preview.IsActive())
 end)
 
-test("slash: sim plays the default scenario or the one named; an unknown one lists them all", function()
+test("slash: a bare sim opens the idle panel and starts nothing (R5-DR2)", function()
+    -- red under: /dr sim started the default scenario at once, so the panel opened mid-run.
+    local inst = T.load()
+    local NS = inst.NS
+    local s = NS.Sim.session
+    NS.Slash:OnSlash("sim")
+    assertFalse(NS.Preview.IsActive(), "the preview turned on before Start")
+    assertFalse(s:IsActive(), "a session started before Start")
+    assertTrue(s:IsPanelShown(), "the idle panel")
+    assertEqual(s:PanelRows()[1].state, "ready", "Start waits for its press")
+end)
+
+test("slash: sim <scenario> and sim start <scenario> start at once; the panel's verbs work (R5-DR2)", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks
-    NS.Slash:OnSlash("sim")
-    assertEqual(NS.Preview.Mode(), "sim")
-    assertEqual(NS.Preview.Diagnose().scenario, "newbest", "the default")
-    assertTrue(NS.GetSetting("state.testMode"), "the Master controls' row follows")
+    local s = NS.Sim.session
     NS.Slash:OnSlash("sim died")
-    assertEqual(NS.Preview.Diagnose().scenario, "died", "switched in place")
+    assertEqual(NS.Preview.Mode(), "sim")
+    assertEqual(NS.Preview.Diagnose().scenario, "died")
+    assertTrue(NS.GetSetting("state.testMode"), "the Master controls' row follows")
+    assertTrue(s:IsActive())
+    NS.Slash:OnSlash("sim behind")
+    assertEqual(NS.Preview.Diagnose().scenario, "behind", "a bare scenario switches in place")
+    NS.Slash:OnSlash("sim step")
+    assertTrue(s:Status().pos >= 1, "the step verb the panel prints acts")
+    NS.Slash:OnSlash("sim stop")
+    assertFalse(s:IsActive())
+    assertFalse(NS.Preview.IsActive(), "the stop verb ends the sim")
+    NS.Slash:OnSlash("sim start first")
+    assertEqual(NS.Preview.Diagnose().scenario, "first", "the start verb the panel prints acts")
     M.__resetPrinted()
     NS.Slash:OnSlash("sim sideways")
-    local out = bare(M)
-    assertEqual(out[1], "Usage: /dr sim [newbest|behind|first|incomplete|died|flagged|shared|sticky]")
-    assertEqual(#out, 1 + #NS.Sim.SCENARIOS, "one line a scenario")
-    assertEqual(out[2], "  newbest: beats the best")
-    assertEqual(NS.Preview.Diagnose().scenario, "died")
+    local out = table.concat(bare(M), "\n")
+    assertTrue(out:find("/dr sim start", 1, true) ~= nil, "the library's usage: " .. out)
+    assertTrue(out:find("  newbest: beats the best", 1, true) ~= nil, "a line a scenario: " .. out)
+    assertEqual(NS.Preview.Diagnose().scenario, "first", "an unknown word changes nothing")
     NS.Slash:OnSlash("test")
     assertFalse(NS.Preview.IsActive(), "the switch ends a sim too")
 end)
@@ -353,7 +373,8 @@ test("slash: the sim help line lists every scenario Sim.Names() has", function()
     for _, entry in ipairs(NS.COMMANDS) do
         if entry[1] == "sim" then desc = entry[2] end
     end
-    assertEqual(desc, "Play a whole sample race: /dr sim [" .. table.concat(NS.Sim.Names(), "|") .. "]")
+    assertEqual(desc, "Simulator: /dr sim opens the steps; /dr sim [" .. table.concat(NS.Sim.Names(), "|")
+        .. "] starts one")
     for _, name in ipairs(NS.Sim.Names()) do
         assertTrue(desc:find(name, 1, true) ~= nil, name)
     end

@@ -264,14 +264,14 @@ end)
 test("sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer", function()
     local f = fixture("WARLOCK")
     sim(f, "newbest")
-    until_(f, function() return f.NS.SampleRace.Elapsed() and f.NS.SampleRace.Elapsed() >= 20 end)
+    until_(f, function() return f.NS.SampleRace.Elapsed() and f.NS.SampleRace.Elapsed() >= 10 end)
     local rec = f.NS.Slices.Get("sim-newbest")
     local mid = {}
-    for i = 1, 15 do mid[i] = rec.values[i] end
+    for i = 1, 8 do mid[i] = rec.values[i] end
     until_(f, function() return current(f) == "result" end)
     local after = f.NS.HudChart.ResultView(f.NS.SampleRace.Current())
-    for i = 1, 15 do assertEqual(after.values[i], mid[i], "bucket " .. i) end
-    assertTrue(after.values[30] < f.NS.SampleRace.Current().result.damage, "the tail still counts after the buzzer")
+    for i = 1, 8 do assertEqual(after.values[i], mid[i], "bucket " .. i) end
+    assertTrue(after.values[#after.values] < f.NS.SampleRace.Current().result.damage, "the tail still counts after the buzzer")
 end)
 
 test("sample parity: the run joins the sample history at its start and resolves in place", function()
@@ -295,7 +295,7 @@ test("sample parity: a run that ended early shows Combat Ended, with no tail and
     local v = f.Hud.View()
     assertTrue(v.endedEarly, "the waiting body's early end")
     assertEqual(v.sinceBuzzer, nil)
-    assertEqual(v.endedAt, 18)
+    assertEqual(v.endedAt, 9)
     assertFalse(v.inCombat)
     assertEqual(ui(f).body.waiting.w.tail.label.__text, "Combat Ended")
 end)

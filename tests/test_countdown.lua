@@ -252,7 +252,7 @@ test("countdown: the sim runs the real marks in its running phase, cue included,
     local f = fixture()
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
-    local P = f.NS.MockRuns
+    local P = f.NS.Sim                          -- the sim's own 0:15 race (R5-DR2)
     local runFrom = 3                          -- the sim's armed phase
     f:advance(runFrom + P.LENGTH - 10.5)       -- 10.5s left in the sample race
     assertNil(f.C.Shown())
@@ -270,7 +270,7 @@ test("countdown: the sim race's buzzer clears it, the setting holds in the sim, 
     local f = fixture()
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
     f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
-    local P = f.NS.MockRuns
+    local P = f.NS.Sim                          -- the sim's own 0:15 race (R5-DR2)
     f:advance(3 + P.LENGTH - 2)
     assertEqual(f.C.Shown(), 2)
     f:advance(2.5)

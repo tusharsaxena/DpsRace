@@ -102,9 +102,14 @@ NS.Launcher = Launcher:New({
     toggleTestMode = function() NS.ToggleTestMode() end,
     isWindowShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
     toggleWindow   = function() NS.ToggleHud() end,
-    isSimMode = function() return NS.Preview ~= nil and NS.Preview.Mode() == "sim" end,
+    -- MultiMeters' rule (R5-DR2): stop a running sim, otherwise the bare verb (the idle step panel).
+    isSimMode = function() return NS.IsSimMode() end,
     toggleSim = function()
-        if NS.Preview ~= nil and NS.Preview.Mode() == "sim" then NS.ToggleTestMode() else NS.StartSim() end
+        if not (NS.Sim and NS.Sim.session) then
+            if NS.IsSimMode() then NS.ToggleTestMode() else NS.StartSim() end
+            return
+        end
+        NS.RunSimVerb(NS.IsSimMode() and "stop" or "")
     end,
     version        = function() return NS.Version() end,
     print          = function(line) NS.Print(line) end,

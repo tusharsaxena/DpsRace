@@ -21,8 +21,8 @@ NS.MockRuns = MockRuns
 
 local L = NS.L
 
--- The HUD's sample race: its length, and the tail and combat end (seconds after its buzzer) a scenario
--- that names none takes.
+-- Test mode's sample race: its length, and the tail and combat end (seconds after its buzzer) a scenario
+-- that names none takes. The sim races a board of its own length (Dataset's `length`, modules/Sim.lua).
 MockRuns.LENGTH = 30
 MockRuns.TAIL = 3.1
 MockRuns.COMBAT_END = 4.2
@@ -548,16 +548,21 @@ local function snapFor(who, snap)
     return { gear = alt.gear, bags = copy(alt.bags), auras = {} }
 end
 
---- The sample run history for the Results window: { runs, loadouts, slices }, built fresh.
+--- The sample run history for the Results window: { runs, loadouts, slices, length }, built fresh.
+--- `opts.length` is the board the sample race runs on (default LENGTH): the history's LENGTH rows are
+--- raced on it instead, so the sim's 0:15 race (R5-DR2) has its bests, its runner-up and its toast.
+--- @param opts table|nil  { length? }
 --- @return table dataset
-function MockRuns.Dataset()
+function MockRuns.Dataset(opts)
     local me, now = MockRuns.Player(), time()
     local sets, snap, stats = loadouts(), NS.Usage.Snapshot(), NS.Stats.Snapshot()
-    local data = { runs = {}, loadouts = sets, slices = {} }
+    local length = type(opts) == "table" and tonumber(opts.length) or MockRuns.LENGTH
+    local data = { runs = {}, loadouts = sets, slices = {}, length = length }
     for i, h in ipairs(HISTORY) do
         local char = charFor(h.who, me)
         local run, plan = MockRuns.Run({
-            id = ("sample-%02d"):format(i), char = char, category = h.cat, length = h.len, dps = h.dps,
+            id = ("sample-%02d"):format(i), char = char, category = h.cat,
+            length = h.len == MockRuns.LENGTH and length or h.len, dps = h.dps,
             date = now - h.ago * HOUR, status = h.status, endAt = h.endAt, tail = h.tail, combatEnd = h.combatEnd,
             late = h.late, died = h.died, restartedAt = h.restartedAt, shared = h.shared,
             note = h.note and L[h.note] or nil, snap = snapFor(h.who, snap), old = h.old, noMajor = h.noMajor,
@@ -575,20 +580,22 @@ end
 
 --- A sample race for the HUD against `runs` (the sample history): the finished run and the plan
 --- modules/SampleRace.lua plays it from, the best before it on its board, and its delta.
---- @param spec table  { id, category?, dps, status?, endAt?, tail?, combatEnd?, late?, died?, shared? }
+--- @param spec table  { id, category?, length? (default LENGTH), dps, status?, endAt?, tail?, combatEnd?,
+---   late?, died?, shared? }
 --- @param runs table  the history it is raced against
 --- @param sets table|nil  the history's loadouts, for the run's own loadout ref
 --- @return table sample  { run, plan, best, delta, isNew, dps, stopAt, shared, combatAt }
 function MockRuns.Race(spec, runs, sets)
     local char = MockRuns.Player()
+    local length = spec.length or MockRuns.LENGTH
     local run, plan = MockRuns.Run({
         id = spec.id or "preview", char = char, category = spec.category or "single",
-        length = MockRuns.LENGTH, dps = spec.dps, status = spec.status, endAt = spec.endAt, tail = spec.tail,
+        length = length, dps = spec.dps, status = spec.status, endAt = spec.endAt, tail = spec.tail,
         combatEnd = spec.combatEnd, late = spec.late, died = spec.died, shared = spec.shared,
     })
     run.loadout = refFor("a", sets or loadouts())
-    local sample = { run = run, plan = plan, dps = spec.dps, stopAt = spec.endAt or MockRuns.LENGTH, shared = spec.shared,
-                     early = spec.endAt ~= nil, combatAt = spec.endAt or (MockRuns.LENGTH + run.result.combatEnd) }
+    local sample = { run = run, plan = plan, dps = spec.dps, stopAt = spec.endAt or length, shared = spec.shared,
+                     early = spec.endAt ~= nil, combatAt = spec.endAt or (length + run.result.combatEnd) }
     local best = NS.Bests.Before(run, runs)
     sample.best = (best and not spec.shared) and best or nil
     sample.delta, sample.isNew = NS.Bests.Delta(run, runs)
@@ -596,8 +603,10 @@ function MockRuns.Race(spec, runs, sets)
 end
 
 --- The best before a board's best: what a scenario's DPS is set against (nil with no run there).
+--- `length` is the board's (default LENGTH).
 --- @return table|nil
-function MockRuns.BoardBest(runs, category)
-    local probe = { char = MockRuns.Player(), target = { category = category }, race = { length = MockRuns.LENGTH } }
+function MockRuns.BoardBest(runs, category, length)
+    local probe = { char = MockRuns.Player(), target = { category = category },
+                    race = { length = length or MockRuns.LENGTH } }
     return NS.Bests.Compute(runs)[NS.Bests.Key(probe)]
 end

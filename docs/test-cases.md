@@ -916,6 +916,47 @@ Total.
 - gear view: the followed run deleted (the pane left empty) closes the view
 - gear view: a run without a compared run marks nothing and says so
 
+### test_header_rule.lua (3)
+
+- header rule: the race HUD draws no line under its title band, and keeps its footer rule
+- header rule: the Results window draws no line under its title band, and keeps the tab rule
+- header rule: the ability timeline and the gear view draw no line under their title band
+
+### test_header_band.lua (5)
+
+- header band: each window wears Shell's top band, shown, over its backdrop's fill
+- header band: every header child is centered on the band, in every skin
+- header band: the HUD's title is LEFT in every skin; the other titles follow title.align
+- header band: the Results tab strip and its rule stand under the band, in every skin
+- header band: with no library each window's header stands where Shell would lay the band
+
+### test_icon_rule.lua (8)
+
+- icon rule: the Runs list's Used column crops each icon and edges it in the window outline
+- icon rule: the Runs list's class and spec icons are cropped and outlined
+- icon rule: a class cell on the sheet's edge keeps its crop inside the cell
+- icon rule: the run detail's class and spec icons are cropped and outlined
+- icon rule: the run detail's Usage list crops each icon and edges it in the window outline
+- icon rule: the compare's Damage and DPS line icons are cropped and outlined
+- icon rule: a tooltip line's inline icon is cropped 5:59 of 64
+- icon rule: the new-best toast's class and spec icons are cropped and edged in the HUD's border
+
+### test_icon_crop.lua (4)
+
+- icon crop: Style.CropIcon crops 0.08 per side, the chart's and the timeline's crop
+- icon crop: the run detail's gear cells crop each item's art inside the quality edge
+- icon crop: the gear view crops each item's art and each enchant and gem mark
+- icon crop: the HUD's Your best card crops each consumable icon in its markup
+
+### test_hud_icon_edge.lua (6)
+
+- hud icon edge: under Ka0s Default the HUD's black and the window's gray differ
+- hud icon edge: a race HUD spell row's icon edge is icon.border, never icon.outline
+- hud icon edge: the HUD chart's cooldown icon edge is icon.border, never icon.outline
+- hud icon edge: the Results detail's spell rows and chart icons keep the window outline
+- hud icon edge: Style.IconEdge keeps the window outline unless told it is on the HUD
+- hud icon edge: a skin switch and back keeps the HUD edge on icon.border
+
 ### test_insights_data.lua (13)
 
 - insights: Runs.OptionLists has each list without its All head, and WithAll adds it
@@ -1087,7 +1128,7 @@ Total.
 - settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
 - settings: Race repaints when your training dummies change from anywhere
 
-### test_skinsetup.lua (24)
+### test_skinsetup.lua (25)
 
 - skin seam: the owner is the folder name, and NS.Skin is its facade
 - skin seam: the owner is registered at file load, before the profile store exists
@@ -1113,6 +1154,7 @@ Total.
 - skin seam: the degraded facade answers every name the live facade carries
 - skin seam: the degraded HudFont draws the face, a picked flag and no shadow
 - skin seam: each host-copy skin token is the live library's Ka0s Default value
+- skin seam: the host copy carries icon.outline beside icon.border (R4-L3)
 
 ### test_skin.lua (12)
 
@@ -1287,7 +1329,7 @@ Total.
 - pins: Resolve answers the lowest ID a name is captured under, and refuses an ID past MAX_ID
 - pins: the capture line names each part it has, in order, and leaves out what it has not
 
-### test_slash.lua (37)
+### test_slash.lua (38)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -1313,7 +1355,8 @@ Total.
 - slash: results opens the Results window; results insights opens Insights, and bests still does
 - slash: test turns test mode on and off through the Master controls row
 - slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
-- slash: sim plays the default scenario or the one named; an unknown one lists them all
+- slash: a bare sim opens the idle panel and starts nothing (R5-DR2)
+- slash: sim <scenario> and sim start <scenario> start at once; the panel's verbs work (R5-DR2)
 - slash: the sim help line lists every scenario Sim.Names() has
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
@@ -1400,7 +1443,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (26)
+### test_sim.lua (31)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -1418,16 +1461,21 @@ Total.
 - sim: the result card draws the best's diagonal with a best before the run, and none on a first race
 - sim stepper: a sim starts a session whose panel docks beside the race window
 - sim stepper: the panel's Stop ends the preview, the ticker and the sample race (SF-DR-8)
+- sim panel: a bare RunVerb opens the idle panel, nothing started; Start plays the run (R5-DR2)
+- sim panel: Start from test mode switches to the sim in place (R5-DR2)
+- sim panel: Start is refused in combat and during a real race, with Preview's line (R5-DR2)
 - sim stepper: a restart does not end the preview (SF-DR-8)
 - sim stepper: each step moves the sample race to its moment, the last opens the Results window
 - sim stepper: an early end has no buzzer step, and switching scenarios restarts the session
 - sim stepper: the race holds armed until a step is played, then counts down (SG-DR-1)
 - sim stepper: the Armed countdown is the step delay, so Race starts lights as it ends (SG-SIM)
 - sim stepper: Run waits the sim.stepDelay setting between steps (SG-SIM)
-- sim racing: the race step plays the race to its own buzzer in about 10 s, never before 9.5 (R4-DR6)
-- sim racing: every chart bucket fills, the casts keep the plan's times, the countdown runs (R4-DR6)
-- sim racing: after the buzzer the race runs at real speed, and the gate opens (R4-DR6)
-- sim racing: Run plays the whole script, the racing step about 10 s of it (R4-DR6)
+- sim race: an imaginary 15 s race on a 0:15 board, its history beside it (R5-DR2)
+- sim race: Racing plays at real speed to the buzzer, one countdown number a second (R5-DR2)
+- sim race: the casts keep the plan's times (R5-DR2)
+- sim race: the gate holds the buzzer, then the read, then the card's hold (R5-DR2)
+- sim race: sticky's wait says combat holds on (R5-DR2)
+- sim race: Start plays the whole script in real time, the card held 4 s (R5-DR2)
 
 ### test_sample_parity.lua (32)
 
@@ -1464,13 +1512,14 @@ Total.
 - sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
 - sample parity: arming a real race from under a sim keeps that race's cast list
 
-### test_launcher.lua (9)
+### test_launcher.lua (10)
 
 - launcher: one object named for the folder, labeled with the brand, wearing the logo
 - launcher: left-click opens the settings panel
 - launcher: right-click lists Enabled, Locked, Test mode, Show window and Open skin selector, in that order
 - launcher: each menu toggle runs the shared handler
 - launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)
+- launcher: Sim mode opens the idle panel, ticks after Start and stops it, as MultiMeters' (R5-DR2)
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
@@ -1720,6 +1769,11 @@ Total.
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
+| test_header_rule.lua | 3 |
+| test_header_band.lua | 5 |
+| test_icon_rule.lua | 8 |
+| test_icon_crop.lua | 4 |
+| test_hud_icon_edge.lua | 6 |
 | test_insights_data.lua | 13 |
 | test_insights.lua | 61 |
 | test_switched_sections.lua | 3 |
@@ -1727,7 +1781,7 @@ Total.
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
 | test_settings.lua | 38 |
-| test_skinsetup.lua | 24 |
+| test_skinsetup.lua | 25 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
 | test_skin_flip.lua | 25 |
@@ -1740,13 +1794,13 @@ Total.
 | test_hud_element_tips.lua | 11 |
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
-| test_slash.lua | 37 |
+| test_slash.lua | 38 |
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
 | test_preview.lua | 23 |
-| test_sim.lua | 26 |
+| test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
-| test_launcher.lua | 9 |
+| test_launcher.lua | 10 |
 | test_launcher_skin_entry.lua | 1 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -1762,4 +1816,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1388** |
+| **Total** | **1422** |

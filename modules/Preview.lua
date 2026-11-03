@@ -7,9 +7,10 @@ local _, NS = ...
 --         by default: its clock, live figures, chart, pace bar and spells) and the Results window
 --         opens on a made-up run history (modules/MockRuns.lua) so the Runs list, the Insights tab and
 --         the detail (compare, chart, gear and talents) can be seen without a real history.
---   sim   `/dr sim [scenario]`: a whole sample race played through the HUD's bodies (armed, running,
+--   sim   `/dr sim`'s Start: a whole sample race played through the HUD's bodies (armed, running,
 --         Stop!, waiting, the result card), then the Results window on the sim's run beside the same
---         history (modules/Sim.lua holds the scenarios and the script).
+--         history, raced on the sim's 0:15 board (modules/Sim.lua holds the scenarios and the script;
+--         with the library its step session starts first, and its prepare comes back here).
 --
 -- Both run the race's own path with made-up input: a sample race (modules/SampleRace.lua) stands where
 -- NS.Race stands, so the HUD builds its views as for a real race and every receiver of the race's
@@ -133,24 +134,39 @@ local function refuse(line)
     return false
 end
 
-local function stopSim()
-    if NS.Sim then NS.Sim.Cancel() end
+-- `keepSession`: the sim's step session is the one starting this preview (its prepare), so it stays.
+local function stopSim(keepSession)
+    if NS.Sim then NS.Sim.Cancel(keepSession) end
     NS.SampleRace.Clear()
     if NS.Countdown then NS.Countdown.Refresh() end
 end
 
+--- The line refusing a start now, or nil: in combat, and during a real race (spec §6.5). The sim's
+--- step session reads it as its refusal (modules/Sim.lua).
+--- @return string|nil
+function Preview.Refusal()
+    if UnitAffectingCombat("player") then return L["Test mode is not available in combat."] end
+    if raceOn() then return L["Test mode is not available during a race."] end
+    return nil
+end
+
 --- Turn the preview on, or switch an active one to the queued mode in place. Refused (one line) in
 --- combat and during a real race; silent while stood down, where the caller's own hold-aware refusal
---- has already spoken.
---- @param opts table|nil  as Queue; nil takes the queued start, else test mode's default
+--- has already spoken. A sim start with the library goes through the sim's step session (Sim.Open,
+--- playing at once with `arm`), whose prepare calls back here with `session` set.
+--- @param opts table|nil  as Queue (plus `arm`, `session` for a sim); nil takes the queued start, else
+---   test mode's default
 --- @return boolean started
 function Preview.Start(opts)
     opts = opts or queued or { mode = "test" }
     queued = nil
     if NS.IsStoodDown() then return false end
-    if UnitAffectingCombat("player") then return refuse(L["Test mode is not available in combat."]) end
-    if raceOn() then return refuse(L["Test mode is not available during a race."]) end
-    stopSim()
+    if opts.mode == "sim" and not opts.session and NS.Sim and NS.Sim.session then
+        return NS.Sim.Open(opts.scenario, opts.arm)
+    end
+    local line = Preview.Refusal()
+    if line then return refuse(line) end
+    stopSim(opts.session)
     local was = Preview.active
     Preview.active, mode = true, opts.mode == "sim" and "sim" or "test"
     if not was then
@@ -160,11 +176,11 @@ function Preview.Start(opts)
         opened = not NS.Hud.wanted
         if opened then NS.Hud.AutoShow() end
     end
-    dataset = NS.MockRuns.Dataset()
+    dataset = mode == "sim" and NS.Sim.Dataset() or NS.MockRuns.Dataset()
     NS.ResultsSource.Use(dataset)
     if mode == "sim" then
         NS.BestToast.EndPreview()
-        NS.Sim.Begin(opts.scenario, dataset)
+        NS.Sim.Enter(opts.scenario, dataset)
     else
         startTest(opts.state)
     end

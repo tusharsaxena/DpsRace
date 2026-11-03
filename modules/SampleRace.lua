@@ -20,10 +20,9 @@ local _, NS = ...
 -- a real race, and the read waits for the same quiet after combat. Sim moves it on the clock with
 -- Advance; test mode replays it silently to a moment with Hold and leaves it there, frozen.
 --
--- THE CLOCK runs at `rate` race seconds a wall second: 1 everywhere but the stepper's Racing step
--- (R4-DR6), which Paces it so the rest of the race plays in about ten seconds. The buzzer (or the
--- early end) puts it back to 1, so Stop!, the tail, late casts and the quiet before the read keep
--- their real lengths. Casts are stamped on a zero fixed when the race starts, whatever the pace.
+-- THE CLOCK runs at real speed (R5-DR2: the owner's call, a race in real time), so the countdown, Stop!,
+-- the tail, late casts and the quiet before the read keep their real lengths. Only the stepper's jumps
+-- (Skip, SkipToResult) move it on. Casts are stamped on a zero fixed when the race starts.
 
 local SampleRace = {}
 NS.SampleRace = SampleRace
@@ -33,7 +32,6 @@ local STATE = NS.Race.STATE
 local state = STATE.IDLE
 local run, sample, plan
 local anchor, wallAt  -- the race clock read `anchor` at GetTime() `wallAt`
-local rate = 1        -- race seconds a wall second (1 but in the Racing step)
 local zero            -- the GetTime() casts are stamped from, fixed when the race starts
 local parked          -- armed and waiting for the stepper's first step: the clock does not move (SG-DR-1)
 local held            -- the frozen race-clock moment (test mode), or nil
@@ -72,21 +70,16 @@ end
 
 local function clock()
     if held then return held end
-    return anchor + (GetTime() - wallAt) * rate
+    return anchor + (GetTime() - wallAt)
 end
 
--- Read second `t` now, at pace `r` (the current one when nil) from here on.
-local function setClock(t, r)
-    anchor, wallAt, rate = t, GetTime(), r or rate
+-- Read second `t` now.
+local function setClock(t)
+    anchor, wallAt = t, GetTime()
 end
 
 -- The GetTime() the clock reads zero at, at real speed: a cast's stamp before the race starts.
 local function origin() return wallAt - anchor end
-
--- Back to real speed from this moment (the buzzer, the early end, a jump).
-local function realSpeed()
-    if rate ~= 1 and not held then setClock(clock(), 1) end
-end
 
 local function racing() return state == STATE.RUNNING or state == STATE.STOPPING end
 
@@ -162,14 +155,12 @@ local function stop()
 end
 
 local function buzz()
-    realSpeed()
     buzzed = true
     stop()
     send(NS.MSG.RACE_BUZZER, run)
 end
 
 local function endEarly()
-    realSpeed()
     run.result = { endedAt = round2(sample.stopAt) }
     run.flags.died = sample.run.flags.died
     inCombat, quietFrom = false, sample.stopAt
@@ -238,7 +229,7 @@ end
 local function load(s, lead)
     SampleRace.Clear()
     sample, plan, run = s, s.plan, shell(s.run)
-    setClock(-lead, 1)
+    setClock(-lead)
     zero = nil
     hit, cast, lastHit, inCombat, quietFrom, stopNow, buzzed, pulse = 1, 1, nil, false, nil, nil, nil, nil
     NS.Casts.Begin(plan.cooldowns)
@@ -274,12 +265,10 @@ end
 
 --- The stepper's jump (SF-DR-8): bring the race clock forward to second `t` (never back), then let
 --- the script catch up. The race keeps its own rules: Stop! and the quiet before the read still run.
---- A jump ends a pace: the clock runs at real speed from it.
 --- @return boolean moved
 function SampleRace.Skip(t)
     if not run or held then return false end
     SampleRace.Unpark(0)
-    realSpeed()
     if clock() < t then setClock(t) end
     SampleRace.Advance()
     return true
@@ -290,7 +279,6 @@ end
 function SampleRace.SkipToResult()
     if not run or held then return false end
     SampleRace.Unpark(0)
-    realSpeed()
     for _ = 1, 400 do
         if state == STATE.RESULT or state == STATE.IDLE then break end
         anchor = anchor + 0.5
@@ -298,19 +286,6 @@ function SampleRace.SkipToResult()
     end
     return state == STATE.RESULT
 end
-
---- The stepper's Racing step (R4-DR6): from now the race clock runs `r` race seconds a wall second,
---- until the buzzer or the early end (or a jump) puts it back to 1. A held or parked race, or a pace
---- that is not a positive number, is left alone.
---- @return boolean paced
-function SampleRace.Pace(r)
-    if not run or held or parked or type(r) ~= "number" or r ~= r or r <= 0 then return false end
-    setClock(clock(), r)
-    return true
-end
-
---- Race seconds a wall second now: 1 but while the Racing step paces the race.
-function SampleRace.Rate() return rate end
 
 --- The race-clock second the sample's buzzer (or early end) falls on, or nil with no sample race.
 function SampleRace.StopAt() return sample and sample.stopAt or nil end
@@ -373,6 +348,6 @@ function SampleRace.Clear()
         if NS.Race.State() ~= STATE.ARMED then NS.Casts.Reset() end
     end
     run, sample, plan, held, silent, parked = nil, nil, nil, nil, nil, nil
-    rate, zero = 1, nil
+    zero = nil
     state = STATE.IDLE
 end

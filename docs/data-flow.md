@@ -550,12 +550,17 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 
 - **On**: the Master controls' *Test mode* row (`state.testMode`), `/dr test` and the launcher's *Test
   mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. `/dr test <armed|running|result>`
-  and `/dr sim [scenario]` queue their start (`Preview.Queue`) and turn the same row on through the
-  seam (`NS.StartSim` for the sim, both in `core/DpsRace.lua`), so the checkbox follows; with the
-  preview already on they switch it in place (`Preview.Start` again, or `Preview.SetState` for a still
-  body). A start is refused with one line in combat and while a real race is armed, running or waiting
+  queues its start (`Preview.Queue`) and turns the same row on through the seam (`core/DpsRace.lua`),
+  so the checkbox follows; with the preview already on it switches it in place (`Preview.Start`
+  again, or `Preview.SetState` for a still body). `/dr sim` (`NS.RunSimVerb`) is the library's sim
+  grammar (R5-DR2): a bare line opens the step panel idle and starts nothing; its *Start*, `/dr sim
+  start <scenario>` or a bare scenario word (`NS.StartSim`, `Sim.Open`) start the step session, whose
+  prepare calls `Preview.Start({ mode = "sim", session = true })`, switching test mode in place
+  without touching the session it is building; the checkbox reads `Preview.IsActive()`, so it
+  follows. A start is refused with one line in combat and while a real race is armed, running or waiting
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
-- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 17 runs on the
+- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`, the sim's
+  `Sim.Dataset()` racing its 0:30 rows on the sim's 0:15 board: 17 runs on the
   player and two made-up characters, every Status, target type and preset length, notes, loadouts
   from the player's own `Recorder.SnapshotLoadout()` and the made-up characters' own, chart records,
   and casts and usage detected by `Usage.Build`; one run raced before format 3 has none of them) and

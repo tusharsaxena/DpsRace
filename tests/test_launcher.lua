@@ -69,6 +69,22 @@ test("launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)", f
     assertTrue(not menu:Find("Test mode").isSelected(), "Test mode ticked during a sim")
 end)
 
+test("launcher: Sim mode opens the idle panel, ticks after Start and stops it, as MultiMeters' (R5-DR2)", function()
+    -- red under: the row started the default scenario at once, the panel mid-run.
+    local inst = T.load()
+    local NS = inst.NS
+    local s = NS.Sim.session
+    openMenu(inst):Click("Sim mode")
+    assertTrue(s:IsPanelShown(), "the idle panel")
+    assertFalse(s:IsActive())
+    assertTrue(not openMenu(inst):Find("Sim mode").isSelected(), "ticked on an idle panel")
+    assertTrue(s:RunVerb("start newbest"))
+    assertTrue(openMenu(inst):Find("Sim mode").isSelected(), "not ticked after Start")
+    openMenu(inst):Click("Sim mode")
+    assertFalse(s:IsActive(), "the row stops a running sim")
+    assertFalse(NS.Preview.IsActive())
+end)
+
 test("launcher: the Minimap button row hides and shows the real button", function()
     local inst = T.load()
     local icon = inst.mocks.LibStub("LibDBIcon-1.0")

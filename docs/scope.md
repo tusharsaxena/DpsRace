@@ -49,8 +49,9 @@ in the spec, sections 1, 2 and 13
   on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
   off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
-  Results window; `/dr sim [scenario]` plays a whole sample race (arm, race, result, then Results)
-  through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
+  Results window; `/dr sim` opens the sim's step panel (a scenario dropdown and *Start*), and its
+  *Start* or `/dr sim <scenario>` plays a whole 0:15 sample race in real time (arm, race, result, then
+  Results) through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
   the race (at most 60), each the live total the meter showed at its boundary, scaled to the board's
   best x 1.15 with its level and its average-pace diagonal, or with no best to the live total. A pace
@@ -98,7 +99,7 @@ in the spec, sections 1, 2 and 13
 | Cut damage off exactly at the buzzer | Values captured in combat stay secret after it, so the score is the session total and the tail is shown instead (spec §2). |
 | Show percentages or sort the live breakdown | Both are arithmetic on secret values (spec §6.1). Percentages appear on the result. |
 | Count targets | The meter merges identical dummies into one row and no nameplate signal counts the dummies hit, so there is no count at all, typed or measured; it returns only if the client can measure it (DpsRace#15). |
-| Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the usage line and an unknown word list the scenarios instead (B5.2). |
+| Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the panel's dropdown and an unknown word (the sim usage, then a line per scenario) list the scenarios instead (B5.2). |
 | Use target health as a start signal | Other players hitting a shared dummy fire it before your first hit (spec §2). |
 | "Time to deal X damage", or a goal bar | A threshold crossing is a comparison on a secret value, and the meter keeps no timeline. Dropped 2026-10-23. |
 | PvP burst races (duels, events, leaderboards) | Parked until the duel probe runs ([issue #1](https://github.com/tusharsaxena/DpsRace/issues/1)). |

@@ -180,8 +180,9 @@ function NS.ToggleTestMode(word)
     return startQueued({ mode = "test", state = word })
 end
 
---- `/dr sim [scenario]`: play a whole sample race (the default scenario with none); an active preview
---- switches to it in place.
+--- Play a whole sample race at once (the default scenario with none); an active preview switches to it
+--- in place. With the library's step session it starts there and plays (the panel's Start); without
+--- it, the old path through the Test mode row.
 --- @param word string|nil
 function NS.StartSim(word)
     if refused() then return false end
@@ -191,7 +192,31 @@ function NS.StartSim(word)
         for _, s in ipairs(NS.Sim.SCENARIOS) do NS.Print(L["  %s: %s"]:format(s.key, L[s.desc])) end
         return false
     end
+    if NS.Sim.session then return NS.Sim.Open(word, true) end
     return startQueued({ mode = "sim", scenario = word })
+end
+
+--- `/dr sim [line]` (R5-DR2): the library's sim grammar, as `/mm sim`'s. A bare line prints the status
+--- and the usage and opens the step panel idle (the scenario dropdown and Start); `start <scenario>`,
+--- `step`, `run`, `pause`, `resume`, `restart`, `stop`, `status` and `panel` are the panel's own verbs.
+--- A bare scenario word (`/dr sim died`) starts it at once, switching a live sim in place. With no
+--- library session, the old path: StartSim.
+--- @param line string|nil
+function NS.RunSimVerb(line)
+    if refused() then return false end
+    line = tostring(line or "")
+    local word = line:match("^%s*(%S*)"):lower()
+    local session = NS.Sim.session
+    if not session then return NS.StartSim(word) end
+    if NS.Sim.IsScenario(word) then return NS.StartSim(word) end
+    return (session:RunVerb(line)) == true
+end
+
+--- Whether the sim plays (the launcher's Sim mode row): its step session is live, else the preview's mode.
+function NS.IsSimMode()
+    local session = NS.Sim and NS.Sim.session
+    if session then return session:IsActive() == true end
+    return NS.Preview ~= nil and NS.Preview.Mode() == "sim"
 end
 
 --- Test mode's combat end, said once (preview-mode).
