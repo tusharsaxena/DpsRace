@@ -552,7 +552,8 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. `/dr test <armed|running|result>`
   queues its start (`Preview.Queue`) and turns the same row on through the seam (`core/DpsRace.lua`),
   so the checkbox follows; with the preview already on it switches it in place (`Preview.Start`
-  again, or `Preview.SetState` for a still body). `/dr sim` (`NS.RunSimVerb`) is the library's sim
+  again, or `Preview.SetState` for a still body). `/dr sim` (`NS.RunSimVerb`; the Master controls' *Sim mode* row and the launcher's
+  *Sim mode* entry run the same act through `NS.ToggleSim`, R6-SIM) is the library's sim
   grammar (R5-DR2): a bare line opens the step panel idle and starts nothing; its *Start*, `/dr sim
   start <scenario>` or a bare scenario word (`NS.StartSim`, `Sim.Open`) start the step session, whose
   prepare calls `Preview.Start({ mode = "sim", session = true })`, switching test mode in place

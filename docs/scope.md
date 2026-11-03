@@ -49,7 +49,8 @@ in the spec, sections 1, 2 and 13
   on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
   off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
-  Results window; `/dr sim` opens the sim's step panel (a scenario dropdown and *Start*), and its
+  Results window; `/dr sim` (or the Master controls' *Sim mode* box, or the launcher's *Sim mode*
+  entry) opens the sim's step panel (a scenario dropdown and *Start*), and its
   *Start* or `/dr sim <scenario>` plays a whole 0:15 sample race in real time (arm, race, result, then
   Results) through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
