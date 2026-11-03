@@ -202,22 +202,21 @@ local function disc(parent, color, size, layer)
 end
 
 local function buildChrome(f)
-    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
-    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
+    -- The title and the close on the title band, the title by the skin's `title.align` (Style.Header,
+    -- R5-DR1): the Shell paints it (title.text, the title face).
+    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")
     f.title:SetText(L["Ability timeline"])
     -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
     ui.controls = Style.NewStrip()
     ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
-    if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28, -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() f:StartMoving() end)
     -- Moved for as long as it is open: nothing stored, the next open goes over the Results window.
     drag:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
     ui.drag = drag
+    Style.Header(f, { title = f.title, drag = drag, right = { ui.close }, n = 1 })
 end
 
 -- The legend bar: a gold disc and this run's label, a blue one and the compared run's, then the hint;

@@ -125,7 +125,8 @@ test("preview: with no Widgets library each window's title carries the marker", 
     local u = assert(NS.Hud.__ui())
     assertEqual(u.strip, nil)
     assertEqual(NS.Hud.TitleText(), "DPS Race \194\183 Test", "the marker in Title Case, not a shout")
-    -- The longer title sits left and stops at the drag strip, clear of the title-bar controls.
+    -- The title sits left in every state (R5-DR1, item 3a) and stops at the drag strip, clear of the
+    -- title-bar controls.
     local pts = u.frame.title.__points
     assertEqual(#pts, 2, "the title is bounded on both sides")
     assertEqual(pts[1][1], "LEFT")
@@ -139,8 +140,9 @@ test("preview: with no Widgets library each window's title carries the marker", 
     assertEqual(NS.Hud.TitleText(), "DPS Race")
     NS.Hud.Show()
     pts = u.frame.title.__points
-    assertEqual(#pts, 1, "back to one point")
-    assertEqual(pts[1][1], "CENTER", "the plain title is centered again")
+    assertEqual(#pts, 2, "the plain title keeps both points")
+    assertEqual(pts[1][1], "LEFT", "the plain title stays left (item 3a)")
+    assertEqual(u.frame.title.__justifyH, "LEFT")
     NS.Results.Show()
     assertEqual(r.frame.title.__text, "DPS Race \226\128\148 Results")
 end)

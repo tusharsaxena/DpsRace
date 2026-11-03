@@ -393,7 +393,12 @@ fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1)
 view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
 showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
 there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
-strip and the timeline's legend line stay (`test_header_rule`). The StaticPopups, the debug console,
+strip and the timeline's legend line stay (`test_header_rule`). Each window's header stands on the
+library's title band (`S.Band`, which Shell lays at its own inset and `title.height`, and LibKa0s
+R5-L2 draws above a backdrop's fill): `Style.Header` hands the title, the controls and the drag strip
+to `S.Header`, so each is centered on the band's middle in every skin, the HUD's title LEFT in every
+skin and the others by `title.align`; the Results tab strip stands under the band (R5-DR1,
+`test_header_band`). With no library a host holder stands where the band would. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.

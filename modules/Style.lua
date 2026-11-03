@@ -523,6 +523,95 @@ function Style.CropIcon(tex)
     return tex
 end
 
+-- ── the header on the title band (R5-DR1) ────────────────────────────────────────────────────
+-- Every window's header stands on the title band's own frame: LibKa0s's S.Band, which Shell lays at
+-- its own inset (`win.borderSize` in from a flat edge, else 1) and `title.height`, and lays again on
+-- a skin switch. S.Header anchors the title and the controls LEFT, CENTER or RIGHT to it at y 0, so
+-- each sits on the band's vertical middle in every skin (feedback item 5 of Ka0sAddonsCommonTasks
+-- docs/2026-11-03-SMOKE_ROUND5: -HEADER_H/2 off the frame's top was 1 px high of a band inset 1).
+-- Recorded, so a switch places them again. The drag strip covers the band left of the controls.
+-- With no library (a degraded load: S.Band answers nil, S.Header draws nothing) a host holder
+-- stands where Shell would lay the band, and the same anchors are set once by hand.
+
+local CONTROL_PAD = 6   -- the outermost control's gap to the band's right edge (S.Header's pad)
+
+--- The window's title band: the library's, else the host's holder. Answers it and whether it is
+--- the library's.
+local function bandOf(f)
+    local band = NS.Skin.Band and NS.Skin.Band(f)
+    if band then return band, true end
+    if not f.drBand then
+        local b = CreateFrame("Frame", nil, f)
+        b:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+        b:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
+        b:SetHeight(Style.TITLE_BAR_H)
+        b:EnableMouse(false)
+        f.drBand = b
+    end
+    return f.drBand, false
+end
+
+--- Shell's inset for the band, read now: `win.borderSize` in from a flat edge, else 1 (S.Band's
+--- rule), for a layout that sizes what stands under the band.
+--- @return number
+function Style.BandInset()
+    local style = NS.Skin.Token("win.borderStyle") or "flat"
+    local size = style == "flat" and NS.Skin.Token("win.borderSize") or 1
+    return type(size) == "number" and size or 1
+end
+
+--- The window's title band frame (S.Band, or the degraded holder), for what stands under it.
+--- @param f table  the window
+--- @return table band
+function Style.Band(f)
+    return (bandOf(f))
+end
+
+--- The header of `f` on its band. `spec.right` lists the title-bar controls outermost first, `spec.n`
+--- of them (an entry may be nil: a slot kept for a control that could not be made); each is RIGHT on
+--- the band, CONTROL_PAD in, one CONTROL_PITCH apart. `spec.title` is anchored by `spec.align`, else
+--- the skin's `title.align` (CENTER with no library). `spec.drag` takes the band's rect up to the
+--- controls.
+--- @param f table  the window
+--- @param spec table  { title = fs, align = "LEFT"|nil, right = { ... }, n = number, drag = frame }
+function Style.Header(f, spec)
+    local band, fromLib = bandOf(f)
+    local n = spec.n or #(spec.right or {})
+    local right = {}
+    for i = 1, n do
+        local b = spec.right[i]
+        local x = CONTROL_PAD + (i - 1) * Style.CONTROL_PITCH
+        if b then
+            right[#right + 1] = { frame = b, width = Style.CONTROL, x = x }
+            if not fromLib then
+                b:ClearAllPoints()
+                b:SetPoint("RIGHT", band, "RIGHT", -x, 0)
+            end
+        end
+    end
+    local reach = n > 0 and (CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH + Style.CONTROL + 2) or 0
+    local drag = spec.drag
+    if drag then
+        drag:ClearAllPoints()
+        drag:SetPoint("TOPLEFT", band, "TOPLEFT", 0, 0)
+        drag:SetPoint("BOTTOMRIGHT", band, "BOTTOMRIGHT", -reach, 0)
+    end
+    if fromLib then
+        NS.Skin.Header(f, { title = spec.title, align = spec.align, right = right })
+        return
+    end
+    local fs, align = spec.title, spec.align or "CENTER"
+    if not fs then return end
+    fs:ClearAllPoints()
+    if align == "LEFT" then
+        fs:SetPoint("LEFT", band, "LEFT", 8, 0)
+        if drag then fs:SetPoint("RIGHT", drag, "RIGHT", -4, 0) end
+    else
+        fs:SetPoint("CENTER", band, "CENTER", 0, 0)
+    end
+    fs:SetJustifyH(align)
+end
+
 --- A title-bar control drawn from the shared catalog, a plain character beneath it when the catalog
 --- cannot answer (standalone-windows), with its tooltip. Its tint is the strip's (AddToStrip).
 --- @param parent table

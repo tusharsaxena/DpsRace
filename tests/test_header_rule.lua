@@ -62,14 +62,15 @@ local function headerRules(frame, height)
     return hits
 end
 
---- Every texture of `frame` anchored to it at `y`, any point (the rules that stay).
-local function rulesAt(frame, y)
+--- Every texture of `frame` anchored to `rel` (the frame itself unless named) at `y`, any point (the
+--- rules that stay).
+local function rulesAt(frame, y, rel)
     local hits = 0
     for _, r in ipairs({ frame:GetRegions() }) do
         if r:GetObjectType() == "Texture" then
             for n = 1, r:GetNumPoints() do
-                local _, rel, _, _, py = r:GetPoint(n)
-                if rel == frame and py == y then
+                local _, to, _, _, py = r:GetPoint(n)
+                if to == (rel or frame) and py == y then
                     hits = hits + 1
                     break
                 end
@@ -99,7 +100,8 @@ test("header rule: the Results window draws no line under its title band, and ke
     local H = NS.Style.TITLE_BAR_H
     assertTrue(f.divider == nil, "no frame.divider for ApplySkin to tint")
     assertEqual(headerRules(f, H), 0, "no texture at the title band's foot")
-    assertEqual(rulesAt(f, -H - NS.Style.TAB_STRIP_H), 1, "the rule under the tabs stays")
+    -- The tab strip stands under the title band since R5-DR1, and its rule with it.
+    assertEqual(rulesAt(f, -NS.Style.TAB_STRIP_H, NS.Style.Band(f)), 1, "the rule under the tabs stays")
 end)
 
 test("header rule: the ability timeline and the gear view draw no line under their title band", function()
