@@ -10,7 +10,7 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, sim mode, the two resets; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
 | Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap); the Late-cast ignore list tab; the New-best toast tab (moved from General, SF-DR-6): the toast on or off, its sound, duration and scale, *Test toast*; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | The stored count, Days to keep (90 by default, 0 = never prune), *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Run detail tab: the detail's spell bars and the compare's two bars; the Usage tab: the hidden items |
