@@ -142,8 +142,9 @@ end
 
 -- ── the stepper (SF-DR-8) ───────────────────────────────────────────────────────────────────────
 -- LibKa0s-Sim-1.0's step window beside the race window. The race still plays on its own clock and by
--- its own plan. Armed, Race starts, Result card and Results window jump the clock to their moment
--- (SampleRace.Skip), skipping the waits. Racing (R4-DR6) does not jump: it paces the clock so the
+-- its own plan. Armed releases the parked arm, its zero a step delay ahead; Race starts and Result card
+-- jump the clock to their moment (SampleRace.Skip, SkipToResult), skipping the waits; Results window
+-- opens the run. Racing (R4-DR6) does not jump: it paces the clock so the
 -- rest of the race, every hit and cast in order, plays in Sim.RACE_STEP_SECONDS of wall time and
 -- reaches its own buzzer, and the gate (Sim.Gate) holds the next step until it does, as MultiMeters'
 -- fight steps hold theirs. Buzzer is then a marker. The session fakes no client answer
