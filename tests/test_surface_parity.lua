@@ -176,7 +176,7 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- red under: make a composer in settings/OptionsSetup.lua's stub emit rows, or add a row a page
     -- declares outside a composer (options-ui-§1: pin both counts and the delta)
     local l, d = pair()
-    local MASTER_CONTROLS_ROWS = 7     -- enabled, visibility, scale, locked, console, minimap, test mode
+    local MASTER_CONTROLS_ROWS = 8     -- enabled, visibility, scale, locked, console, minimap, test mode, sim mode (R6-SIM)
     -- HUD > HUD Appearance: four font blocks of six, the spell bars' block of four and its row height,
     -- the damage chart's block of four with its height and column gap (each an `extra`, so it goes
     -- with the block), the chart background's color pair, and the pace bar's block of four; and the

@@ -103,14 +103,9 @@ NS.Launcher = Launcher:New({
     isWindowShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
     toggleWindow   = function() NS.ToggleHud() end,
     -- MultiMeters' rule (R5-DR2): stop a running sim, otherwise the bare verb (the idle step panel).
+    -- The ONE pair General > Master controls' Sim mode box carries too (R6-SIM, core/DpsRace.lua).
     isSimMode = function() return NS.IsSimMode() end,
-    toggleSim = function()
-        if not (NS.Sim and NS.Sim.session) then
-            if NS.IsSimMode() then NS.ToggleTestMode() else NS.StartSim() end
-            return
-        end
-        NS.RunSimVerb(NS.IsSimMode() and "stop" or "")
-    end,
+    toggleSim = function() return NS.ToggleSim() end,
     version        = function() return NS.Version() end,
     print          = function(line) NS.Print(line) end,
     debug          = function(tag, message) NS.Debug(tag, "%s", message) end,

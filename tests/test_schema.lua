@@ -16,7 +16,7 @@ test("schema: Master controls carries exactly the rows this addon has state for,
         if row.group == NS.Helpers.MASTER_GROUP then paths[#paths + 1] = row.path end
     end
     assertEqual(table.concat(paths, ","),
-        "enabled,visibility,scale,locked,state.debugConsole,global.minimap.shown,state.testMode")
+        "enabled,visibility,scale,locked,state.debugConsole,global.minimap.shown,state.testMode,state.sim")
     assertEqual(NS.Helpers.MASTER_GROUP, "Master controls")
 end)
 

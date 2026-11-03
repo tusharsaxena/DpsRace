@@ -207,6 +207,7 @@ local SUITES = {
     "test_sim",
     "test_sample_parity",
     "test_launcher",
+    "test_sim_checkbox",
     "test_launcher_skin_entry",
     "test_keybinds",
     "test_disabled",

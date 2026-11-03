@@ -288,6 +288,14 @@ if Sim.session then
         keepPanel = false
     end)
 end
+-- Every start and stop (the slash verb, the panel, the launcher, its own end) repaints an open
+-- settings page, so Master controls' Sim mode box shows the live sim (R6-SIM, LibKa0s R6-SIM-L).
+if Sim.session then
+    Sim.session:AddListener(function()
+        local H = NS.Helpers
+        if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
+    end)
+end
 NS.SimSession = Sim.session
 
 local function stopSession(reason)

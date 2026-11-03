@@ -219,6 +219,18 @@ function NS.IsSimMode()
     return NS.Preview ~= nil and NS.Preview.Mode() == "sim"
 end
 
+--- The Sim mode toggle (MultiMeters' rule, R5-DR2): stop a running sim, otherwise the bare `/dr sim`
+--- (the idle step panel), so it picks no scenario. With no library session, the old path: Test mode
+--- off, or StartSim. The launcher's Sim mode entry and General > Master controls' Sim mode box both
+--- call it, with NS.IsSimMode as their read (R6-SIM), so the two and the verb are one act.
+function NS.ToggleSim()
+    if not (NS.Sim and NS.Sim.session) then
+        if NS.IsSimMode() then return NS.ToggleTestMode() end
+        return NS.StartSim()
+    end
+    return NS.RunSimVerb(NS.IsSimMode() and "stop" or "")
+end
+
 --- Test mode's combat end, said once (preview-mode).
 function NS.SayTestModeEnded()
     NS.Print(L["Test mode ended: you entered combat."])

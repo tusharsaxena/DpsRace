@@ -45,6 +45,7 @@ local STORED = {
     ["state.debugConsole"]   = { "bool",   nil },
     ["global.minimap.shown"] = { "bool",   true },
     ["state.testMode"]       = { "bool",   false },
+    ["state.sim"]            = { "bool",   false },   -- R6-SIM: the session Sim mode box, stores nothing
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
     ["hud.autoShow"]         = { "bool",   true },

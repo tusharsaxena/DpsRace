@@ -53,6 +53,10 @@ local masterRows, masterTail = H.MasterControls({
     debugConsolePath = DEBUG_CONSOLE_PATH,
     minimapPath      = NS.MINIMAP_PATH,
     testModePath     = TEST_MODE_PATH,
+    -- Sim mode beside Test mode (R6-SIM, LibKa0s compose minor 19): the launcher's own pair, so the
+    -- box, the launcher's Sim mode entry and `/dr sim` are one act. The row's get / set are its own.
+    isSimMode        = function() return NS.IsSimMode() end,
+    toggleSim        = function() return NS.ToggleSim() end,
     defaults         = {
         enabled    = D.enabled,
         visibility = D.visibility,

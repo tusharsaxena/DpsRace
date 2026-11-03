@@ -1547,6 +1547,15 @@ Total.
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
 
+### test_sim_checkbox.lua (6)
+
+- sim checkbox: Master controls carries a session-only Sim mode row right after Test mode
+- sim checkbox: the launcher's pair is the one NS pair, so the box and the launcher read alike
+- sim checkbox: ticking does what /dr sim does, unticking stops the sim
+- sim checkbox: a tick in combat starts nothing and leaves the box unticked
+- sim checkbox: Reset all settings stops a running sim and starts none on an idle one
+- sim checkbox: a sim started or ended elsewhere repaints an open page with the live state
+
 ### test_launcher_skin_entry.lua (1)
 
 - launcher descriptor passes openSkinPicker, which runs the skin verb
@@ -1825,6 +1834,7 @@ Total.
 | test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
 | test_launcher.lua | 10 |
+| test_sim_checkbox.lua | 6 |
 | test_launcher_skin_entry.lua | 1 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -1840,4 +1850,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1438** |
+| **Total** | **1444** |
