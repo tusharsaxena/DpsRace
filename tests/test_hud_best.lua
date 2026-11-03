@@ -4,7 +4,8 @@
 -- the live chart's pace reads, set between the Target card and Arm Race.
 --
 -- What this pins:
---   - the section names the board, "Your best · <spec> · <category> · <length>";
+--   - the section's label reads just "Your best" (R4-DR3); the hover names the board,
+--     "<spec> · <category> · <length>";
 --   - the card: the best's DPS (large), its damage on the right, then date · ilvl · top spell;
 --   - Arm Race reads "Arm Race · beat <DPS>" while a best exists, else "Arm Race";
 --   - the empty states: "No race yet: this one sets the mark." and, with no target, "Target a dummy
@@ -80,8 +81,7 @@ test("hud best: the board's best sits between Target and Arm Race, and Arm Race 
     f.Hud.Show()
     local w = idle(f)
     local b = assert(w.best, "no Your best section on the idle body")
-    local spec = f.M.__context.spec
-    assertEqual(b.caption.__text, "Your best" .. DOT .. spec .. DOT .. "Cleave" .. DOT .. "1:00")
+    assertEqual(b.caption.__text, "Your best", "the label alone (R4-DR3)")
     assertTrue(b.card:IsShown(), "the card shows")
     assertEqual(b.dps.__text, fmt(f, 153900), "the best's DPS")
     assertEqual(b.damage.__text, fmt(f, 153900 * 60), "its damage on the right")
@@ -99,7 +99,7 @@ test("hud best: with no race on the board, the card says this one sets the mark"
     stored(f, 30, 99000)                     -- another length's best is not this board's
     f.Hud.Show()
     local b = idle(f).best
-    assertEqual(b.caption.__text, "Your best" .. DOT .. f.M.__context.spec .. DOT .. "Cleave" .. DOT .. "1:00")
+    assertEqual(b.caption.__text, "Your best", "the label alone (R4-DR3)")
     assertTrue(b.empty:IsShown())
     assertEqual(b.empty.__text, "No race yet: this one sets the mark.")
     assertFalse(b.dps:IsShown(), "no figure without a best")
@@ -130,7 +130,8 @@ test("hud best: it swaps at once on a length, Custom, a new target, a spec chang
     assertEqual(b.dps.__text, fmt(f, 153900))
     f.Hud.Act.pickLength(30)
     assertEqual(b.dps.__text, fmt(f, 120000), "a length button")
-    assertTrue(b.caption.__text:find("0:30", 1, true) ~= nil)
+    assertEqual(b.caption.__text, "Your best")
+    assertTrue(table.concat(b.card.tip, "\n"):find("0:30", 1, true) ~= nil, "the hover names the length")
     assertTrue(f.Hud.Act.customLength("1:30"))
     assertEqual(b.dps.__text, fmt(f, 110000), "Custom")
     f.Hud.Act.pickLength(60)
@@ -142,7 +143,7 @@ test("hud best: it swaps at once on a length, Custom, a new target, a spec chang
     f.M.__context.spec, f.M.__context.specID = "Affliction", 265
     f.M.__fire("PLAYER_SPECIALIZATION_CHANGED", "player")
     assertTrue(b.empty:IsShown(), "a spec change")
-    assertTrue(b.caption.__text:find("Affliction", 1, true) ~= nil)
+    assertEqual(b.caption.__text, "Your best")
     f.M.__context.spec, f.M.__context.specID = spec, specID
     f.M.__fire("PLAYER_SPECIALIZATION_CHANGED", "player")
     assertEqual(b.dps.__text, fmt(f, 153900))
@@ -163,6 +164,8 @@ test("hud best: the hover names the whole run, the click opens it in Results", f
     assertEqual(f.tip.owner, b.card)
     local all = table.concat(f.tip.lines, "\n")
     assertEqual(f.tip.lines[1], "Your best")
+    local board = f.M.__context.spec .. DOT .. "Cleave" .. DOT .. "1:00"
+    assertTrue(f.tip.lines[2]:find(board, 1, true) ~= nil, "the board under the title (R4-DR3): " .. f.tip.lines[2])
     for _, want in ipairs({ f.NS.ResultsTable.Date(best.date, "%d %b %Y %H:%M"), "1:00", fmt(f, 153900 * 60),
                             fmt(f, 153900), "Chaos Bolt", "Incinerate", "Immolate" }) do
         assertTrue(all:find(want, 1, true) ~= nil, "the tooltip names " .. want .. ":\n" .. all)

@@ -59,9 +59,10 @@ function Best.ArmLabel(v)
     return L["Arm Race \194\183 beat %s"]:format(NS.Format.Number(dpsOf(run)))
 end
 
-local function captionText(v)
-    if v.state == "noTarget" then return L["Your best"] end
-    local parts = { L["Your best"] }
+--- The board the best is on, for the hover: spec · target category · length (the label itself reads
+--- just "Your best", R4-DR3).
+local function boardText(v)
+    local parts = {}
     if v.spec then parts[#parts + 1] = v.spec end
     parts[#parts + 1] = NS.Dummies.Label(v.category)
     parts[#parts + 1] = NS.Format.Length(v.length)
@@ -79,10 +80,11 @@ local function lineText(run)
     return table.concat(parts, DOT)
 end
 
---- The hover: the whole run, as fixed lines of its stored figures.
-local function tipOf(run)
+--- The hover: the board, then the whole run, as fixed lines of its stored figures.
+local function tipOf(run, v)
     local Tbl, Format = NS.ResultsTable, NS.Format
     local tip = { L["Your best"],
+        boardText(v),
         Tbl.Date(run.date, "%d %b %Y %H:%M"),
         L["Length: %s"]:format(Format.Length(run.race and run.race.length)),
         L["Damage: %s"]:format(Format.Number(damageOf(run))),
@@ -160,9 +162,9 @@ end
 function Best.Update(b, v)
     if not b then return end
     v = v or { state = "noTarget" }
-    b.caption:SetText(captionText(v))
+    b.caption:SetText(L["Your best"])
     local run = v.state == "best" and v.run or nil
-    b.card.run, b.card.tip = run, run and tipOf(run) or nil
+    b.card.run, b.card.tip = run, run and tipOf(run, v) or nil
     b.dps:SetShown(run ~= nil)
     b.damage:SetShown(run ~= nil)
     b.line:SetShown(run ~= nil)
