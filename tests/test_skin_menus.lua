@@ -183,19 +183,23 @@ test("skin menus: the Runs list's scroll bar has the skin's track", function()
     assertTrue(near(c[1], tr) and near(c[2], tg) and near(c[3], tb) and near(c[4], ta), "dr.scroll.track")
 end)
 
-test("skin menus: a spell icon wears the skin's icon border", function()
+test("skin menus: a spell icon wears the skin's icon border, and the library zooms that icon", function()
+    -- red under: a bare edge frame with no .icon, so the library's 0.07 zoom never reached the spell
+    -- icon and Blizzard's own edge showed inside the 1 px outline (image 103; R3-FIX).
     local calls = {}
     local i = kaos()
     local real = i.NS.Skin.IconBorder
     i.NS.Skin.IconBorder = function(frame, opts)
-        calls[#calls + 1] = { frame = frame, fromSkin = opts and opts.fromSkin }
+        calls[#calls + 1] = { frame = frame, fromSkin = opts and opts.fromSkin, icon = opts and opts.icon }
         return real(frame, opts)
     end
     local parent = i.mocks.CreateFrame("Frame")
-    local edge = i.NS.Style.IconEdge(parent, parent:CreateTexture())
+    local tex = parent:CreateTexture()
+    local edge = i.NS.Style.IconEdge(parent, tex)
     assertEqual(#calls, 1)
     assertEqual(calls[1].frame, edge)
     assertEqual(calls[1].fromSkin, true)
+    assertEqual(calls[1].icon, tex, "the icon is named, so the zoom reaches it")
 end)
 
 -- ── the icon surfaces (cause A1) ─────────────────────────────────────────────────────────────────

@@ -494,14 +494,15 @@ end
 
 --- The skin's icon border around a spell icon's texture `tex`, on a frame of its own, since a border
 --- needs a frame (S.IconBorder, cause A1). Recorded, so a skin change reaches it. A caller hiding the
---- icon hides this with it.
+--- icon hides this with it. The icon is named (`opts.icon`), so the library's zoom crops its art's own
+--- edge inside the 1 px outline: the bare edge frame has no `.icon` for it to find (R3-FIX, image 103).
 --- @param parent table  a frame
 --- @param tex table  the icon's Texture
 --- @return table frame
 function Style.IconEdge(parent, tex)
     local edge = CreateFrame("Frame", nil, parent)
     edge:SetAllPoints(tex)
-    NS.Skin.IconBorder(edge, { fromSkin = true })
+    NS.Skin.IconBorder(edge, { fromSkin = true, icon = tex })
     return edge
 end
 
