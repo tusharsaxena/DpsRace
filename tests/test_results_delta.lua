@@ -152,6 +152,58 @@ test("results: the detail's Delta box: a best's lead, a non-best's Delta cell, a
     assertEqual(w.badgeText.__color[1], C.blue[1])
 end)
 
+--- The point on `region` anchored at `point`.
+local function pointAt(region, point)
+    for _, p in ipairs(region.__points or {}) do
+        if p[1] == point then return p end
+    end
+end
+
+test("results: the detail's figure boxes are centered, and Delta + New best sit as a centered pair under the three (R4-DR1)", function()
+    local i = inst()
+    seed(i, {
+        mkRun("top", { result = { damage = 1, dps = 150000 } }),
+        mkRun("slow", { result = { damage = 1, dps = 120000 }, date = NOW - 2 * HOUR }),
+    })
+    i.R.Show()
+    runsPane(i):SetFilter("group", "target")
+    i.R.ShowRun("top")
+    local w, D = ui(i).detail.w, i.NS.ResultsDetail
+    for _, k in ipairs({ w.damage, w.dps, w.meterDps, w.deltaBox }) do
+        for _, part in ipairs({ "label", "value" }) do
+            local fs = k[part]
+            local edge = part == "label" and "TOP" or "BOTTOM"
+            assertEqual(fs.__justifyH, "CENTER", part .. " centered")
+            local l, r = pointAt(fs, edge .. "LEFT"), pointAt(fs, edge .. "RIGHT")
+            assertTrue(l ~= nil and r ~= nil, part .. " spans its box")
+            assertEqual(l[4], 8)
+            assertEqual(r[4], -8)
+        end
+    end
+    local third = w.damage.frame.__width
+    local spanMid = (2 * (third + D.KPI_GAP) + third) / 2
+    local x = function(region) return pointAt(region, "TOPLEFT")[4] end
+    assertEqual(x(w.damage.frame), 0)
+    -- The pair: the Delta box, then the badge one Delta box wide beside it, centered under the three.
+    assertTrue(w.badge:IsShown())
+    assertEqual(w.badge.__width, third, "the badge is one box wide")
+    assertEqual(x(w.badge), x(w.deltaBox.frame) + third + D.KPI_GAP)
+    local pairMid = x(w.deltaBox.frame) + (2 * third + D.KPI_GAP) / 2
+    assertTrue(math.abs(pairMid - spanMid) <= 1, "the pair centered: " .. pairMid .. " vs " .. spanMid)
+    -- The trophy and the words centered in the badge as one: the words right of center by half the trophy.
+    local tc = pointAt(w.badgeText, "CENTER")
+    assertEqual(tc[2], w.badge)
+    assertEqual(tc[4], (20 + 6) / 2)
+    local ir = pointAt(w.badgeIcon, "RIGHT")
+    assertEqual(ir[2], w.badgeText)
+    assertEqual(ir[3], "LEFT")
+    -- No badge: the Delta box alone, centered under the three.
+    i.R.ShowRun("slow")
+    assertFalse(w.badge:IsShown())
+    local mid = x(w.deltaBox.frame) + third / 2
+    assertTrue(math.abs(mid - spanMid) <= 1, "the Delta box centered alone: " .. mid .. " vs " .. spanMid)
+end)
+
 test("results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green", function()
     local i = inst()
     local Runs = i.NS.ResultsRuns

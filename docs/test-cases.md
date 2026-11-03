@@ -397,10 +397,11 @@ Total.
 - hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now
 - hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
 
-### test_hud_tiles.lua (9)
+### test_hud_tiles.lua (10)
 
 - hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
 - hud tiles: the caption row sits inside the tile at the old padding, the figure a row above it
+- hud tiles: the running, Stop!, waiting and result figure boxes are centered (R4-DR1)
 - hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46
 - hud tiles: under the taller pair the Stop! chips and note and the waiting hint move down by config
 - hud tiles: the right tile's caption says what its figure is in each state
@@ -602,9 +603,10 @@ Total.
 - results: Group by spec + target + time, one group per board, the spec in its class color
 - results: Group by Full: character, class, spec, target and time, in that order
 
-### test_results_delta.lua (4)
+### test_results_delta.lua (5)
 
 - results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run
+- results: the detail's figure boxes are centered, and Delta + New best sit as a centered pair under the three (R4-DR1)
 - results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green
 - results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
 - results: a run the Runs filters leave out falls back to its board among every stored run
@@ -1176,7 +1178,7 @@ Total.
 - skin menus: without the library the same fill reaches the client's menu
 - skin menus: the Back button's mark wears btn.icon and follows a switch
 - skin menus: the Runs list's scroll bar has the skin's track
-- skin menus: a spell icon wears the skin's icon border
+- skin menus: a spell icon wears the skin's icon border, and the library zooms that icon
 - skin menus: a spell row of the breakdown is edged, and the edge goes with its icon
 - skin menus: the chart's, the compare's and the timeline's icons are edged
 - skin menus: the title bar and the scroll bar read their size off the skin
@@ -1682,7 +1684,7 @@ Total.
 | test_hud_best.lua | 6 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
-| test_hud_tiles.lua | 9 |
+| test_hud_tiles.lua | 10 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
@@ -1693,7 +1695,7 @@ Total.
 | test_results_window.lua | 14 |
 | test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
-| test_results_delta.lua | 4 |
+| test_results_delta.lua | 5 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 10 |
 | test_compare.lua | 28 |
@@ -1753,4 +1755,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1379** |
+| **Total** | **1381** |

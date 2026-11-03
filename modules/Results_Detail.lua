@@ -444,10 +444,14 @@ local function kpi(parent, label, color)
     local f = Tbl.Panel(parent, nil, "card")
     f:SetHeight(KPI_H)
     -- LootHistory's Insights card: a GameFontNormalHuge figure over a GameFontDisableSmall caption.
-    local k = { frame = f, label = Tbl.Text(f, FONT.CAPTION), value = Tbl.Text(f, FONT.FIGURE, color or C.text) }
+    -- Both lines span the box inside its 8 px padding, centered in it (R4-DR1).
+    local k = { frame = f, label = Tbl.Text(f, FONT.CAPTION, nil, "CENTER"),
+                value = Tbl.Text(f, FONT.FIGURE, color or C.text, "CENTER") }
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
+    k.label:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
     k.label:SetText(label)
     k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
+    k.value:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 5)
     return k
 end
 
@@ -476,11 +480,13 @@ local function buildHeader(p, c)
     w.badge:SetHeight(KPI_H)
     w.badgeIcon = w.badge:CreateTexture(nil, "ARTWORK")
     w.badgeIcon:SetSize(BADGE_ICON, BADGE_ICON)
-    w.badgeIcon:SetPoint("LEFT", w.badge, "LEFT", 0, 0)
     w.badgeIcon:SetTexture(NS.Icon("ph:trophy"))
     NS.Style.Vertex(w.badgeIcon, C.blue, 1)
+    -- The trophy and the words centered in the badge as one, with nothing measured: the words' center
+    -- sits right of the badge's by half the trophy and its gap, the trophy against the words' left.
     w.badgeText = Tbl.Text(w.badge, FONT.SECTION, C.blue)
-    w.badgeText:SetPoint("LEFT", w.badgeIcon, "RIGHT", 6, 0)
+    w.badgeText:SetPoint("CENTER", w.badge, "CENTER", (BADGE_ICON + 6) / 2, 0)
+    w.badgeIcon:SetPoint("RIGHT", w.badgeText, "LEFT", -6, 0)
     w.badgeText:SetText(L["New best"])
     w.badge:Hide()
     w.spellsTitle = Tbl.Text(c, FONT.SECTION)
@@ -704,6 +710,7 @@ function Pane:fillDelta(run)
     w.deltaBox.value:SetText(text)
     NS.Style.Paint(w.deltaBox.value, color)
     w.badge:SetShown(top)
+    self:placeDeltaRow()
 end
 
 --- Redraw the Delta box and the badge for the run shown: the Runs view's filters or grouping changed
@@ -921,15 +928,29 @@ function Pane:layoutHeader(y, cw)
         k.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", (i - 1) * (third + KPI_GAP), y)
         k.frame:SetWidth(third)
     end
-    -- The Delta box under the first figure, one box's size; the badge where the second box sits, as tall.
+    -- The Delta box and the New best badge under the three, one box's size each, as tall.
     y = y - KPI_H - KPI_GAP
+    self.deltaRow = { y = y, third = third }
+    self:placeDeltaRow()
+    return y - KPI_H - 4
+end
+
+--- The Delta row centered under the three figures (R4-DR1): the Delta box and the badge as a pair, or
+--- the Delta box alone when the run has no badge. fillDelta calls it too, so a redraw that shows or
+--- hides the badge (RefreshDelta) re-centers the row without a full layout.
+function Pane:placeDeltaRow()
+    local row, w = self.deltaRow, self.w
+    if not row then return end
+    local third = row.third
+    local span = 3 * third + 2 * KPI_GAP
+    local pair = w.badge:IsShown() and (2 * third + KPI_GAP) or third
+    local x = math.floor((span - pair) / 2)
     w.deltaBox.frame:ClearAllPoints()
-    w.deltaBox.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, y)
+    w.deltaBox.frame:SetPoint("TOPLEFT", self.content, "TOPLEFT", x, row.y)
     w.deltaBox.frame:SetWidth(third)
     w.badge:ClearAllPoints()
-    w.badge:SetPoint("TOPLEFT", self.content, "TOPLEFT", third + KPI_GAP, y)
-    w.badge:SetWidth(math.max(1, cw - third - KPI_GAP))
-    return y - KPI_H - 4
+    w.badge:SetPoint("TOPLEFT", self.content, "TOPLEFT", x + third + KPI_GAP, row.y)
+    w.badge:SetWidth(math.max(1, third))
 end
 
 -- The breakdown's heading, over the compare's toggle and the spell list (the plain or the compared).

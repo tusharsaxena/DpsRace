@@ -290,16 +290,21 @@ local function kpi(parent, label, valueColor, captioned)
     local f = panel(parent, nil, "card")
     f:SetHeight(captioned and KPI_CAPTIONED_HEIGHT or KPI_HEIGHT)
     local k = { frame = f }
-    k.label = Style.Text(f, FONT.CAPTION)
+    -- Every line spans the box inside its 8 px padding and is centered in it (R4-DR1): justify, never
+    -- a measure, so the running body's secret figures stay safe.
+    k.label = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
+    k.label:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
     k.label:SetText(label)
     -- A figure the Live figures block styles (`valueColor` false: the running body's) is a plain
     -- label the skin never paints; every other is the skin's.
-    if valueColor == false then k.value = Style.PlainText(f, FONT.FIGURE)
-    else k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text) end
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD + (captioned and KPI_CAPTION_H or 0))
+    if valueColor == false then k.value = Style.PlainText(f, FONT.FIGURE, "CENTER")
+    else k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text, "CENTER") end
+    local valueY = KPI_PAD + (captioned and KPI_CAPTION_H or 0)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, valueY)
+    k.value:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, valueY)
     if captioned then
-        k.caption = Style.Text(f, FONT.CAPTION)
+        k.caption = Style.Text(f, FONT.CAPTION, nil, "CENTER")
         k.caption:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD)
         k.caption:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, KPI_PAD)
     end
