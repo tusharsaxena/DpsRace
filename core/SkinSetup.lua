@@ -102,6 +102,8 @@ NS.SKIN_FALLBACK = {
     ["icon.tint"]        = { 0.7, 0.7, 0.72, 1 },
     ["icon.arrow"]       = { 1, 0.82, 0, 1 },
     ["icon.border"]      = { 0, 0, 0, 1 },
+    -- A window icon's outline (LibKa0s R4-L3); icon.border above stays the HUD icon edge.
+    ["icon.outline"]     = { 0x4d / 255, 0x4d / 255, 0x57 / 255, 1 },
     ["tab.text"]         = { 0.7, 0.7, 0.72, 1 },
     ["tab.onText"]       = { 1, 0.82, 0, 1 },
     ["tab.onLine"]       = { 1, 0.82, 0, 1 },

@@ -409,3 +409,18 @@ test("skin seam: each host-copy skin token is the live library's Ka0s Default va
     end
     assertTrue(n > 0, "the host copy is empty")
 end)
+
+test("skin seam: the host copy carries icon.outline beside icon.border (R4-L3)", function()
+    -- LibKa0s R4-L3 split a window icon's outline (icon.outline, #4D4D57 under Ka0s Default) from the
+    -- HUD icon edge (icon.border, black). The host copy mirrors both, so a degraded install answers
+    -- the outline as Ka0s Default draws it; the drift case above holds the value.
+    local degraded = T.load({ libFiles = {} }).NS
+    local c = degraded.SKIN_FALLBACK["icon.outline"]
+    assertTrue(type(c) == "table", "icon.outline is in the host copy")
+    for i, want in ipairs({ 0x4d / 255, 0x4d / 255, 0x57 / 255, 1 }) do
+        assertTrue(near(c[i], want), ("icon.outline[%d]"):format(i))
+    end
+    local edge = degraded.SKIN_FALLBACK["icon.border"]
+    assertTrue(edge[1] == 0 and edge[2] == 0 and edge[3] == 0 and edge[4] == 1, "icon.border stays black")
+    assertEqual(degraded.Skin.Color("icon.outline"), c[1])
+end)
