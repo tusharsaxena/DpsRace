@@ -477,13 +477,16 @@ end
 
 --- A chart built into `parent`: its heading, plot and time labels, placed by Place(). `titleFont`
 --- (a Style.FONT value) sets the title's font and `headH` its line's height; both default to the
---- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share.
+--- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share. `where`
+--- is "window" for the Results detail's chart, whose cooldown icons keep the window outline; nil: the
+--- HUD's, whose icons keep the HUD's black edge (R4-HUD), as Breakdown.New's `where`.
 --- @param parent table
 --- @param titleFont string|nil
 --- @param headH number|nil
+--- @param where string|nil
 --- @return table chart
-function Chart.New(parent, titleFont, headH)
-    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H,
+function Chart.New(parent, titleFont, headH, where)
+    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H, where = where,
                              iconPool = NS.Pool.New(), icons = {}, markPool = NS.Pool.New(), marks = {} },
                            Strip)
     s.title = Style.Text(parent, titleFont or FONT.SECTION)
@@ -688,14 +691,15 @@ local function markEnter(mark)
 end
 
 -- An icon: a plain frame on the overlay (it takes the mouse for its tooltip) holding the spell's art.
-local function newIcon(over)
+-- `hud`: the HUD chart's, edged in the HUD's black (R4-HUD); the Results detail's keeps the outline.
+local function newIcon(over, hud)
     local f = CreateFrame("Frame", nil, over)
     f:SetSize(Chart.ICON, Chart.ICON)
     f:EnableMouse(true)
     f.tex = f:CreateTexture(nil, "OVERLAY")
     f.tex:SetAllPoints(f)
     f.tex:SetTexCoord(ICON_CROP[1], ICON_CROP[2], ICON_CROP[3], ICON_CROP[4])
-    NS.Skin.IconBorder(f, { fromSkin = true })
+    NS.Skin.IconBorder(f, { fromSkin = true, hud = hud })
     f:SetScript("OnEnter", iconEnter)
     f:SetScript("OnLeave", iconLeave)
     return f
@@ -728,7 +732,7 @@ end
 
 -- One icon for `cast` centered at (x, y) from the plot's top left.
 function Strip:placeIcon(cast, x, y, row)
-    local f = NS.Pool.Acquire(self.iconPool, function() return newIcon(self.over) end)
+    local f = NS.Pool.Acquire(self.iconPool, function() return newIcon(self.over, self.where ~= "window") end)
     f.cast = cast
     f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
     f:ClearAllPoints()

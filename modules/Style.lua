@@ -496,13 +496,16 @@ end
 --- needs a frame (S.IconBorder, cause A1). Recorded, so a skin change reaches it. A caller hiding the
 --- icon hides this with it. The icon is named (`opts.icon`), so the library's zoom crops its art's own
 --- edge inside the 1 px outline: the bare edge frame has no `.icon` for it to find (R3-FIX, image 103).
+--- With `hud` the edge is the HUD's `icon.border` (black under Ka0s Default), never a window icon's
+--- `icon.outline` (gray): LibKa0s's `opts.hud` (R4-HUD, the owner's scope answer in R4_SIGNOFF.md).
 --- @param parent table  a frame
 --- @param tex table  the icon's Texture
+--- @param hud boolean|nil  true for an icon on the race HUD; nil: a window's
 --- @return table frame
-function Style.IconEdge(parent, tex)
+function Style.IconEdge(parent, tex, hud)
     local edge = CreateFrame("Frame", nil, parent)
     edge:SetAllPoints(tex)
-    NS.Skin.IconBorder(edge, { fromSkin = true, icon = tex })
+    NS.Skin.IconBorder(edge, { fromSkin = true, icon = tex, hud = hud == true })
     return edge
 end
 

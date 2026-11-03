@@ -70,7 +70,9 @@ function Breakdown.SpellIcon(id)
     return nil
 end
 
-local function newRow(parent)
+-- `hud`: the row is on the race HUD, so its icon keeps the HUD's black edge (R4-HUD); a Results
+-- window list's keeps the window outline.
+local function newRow(parent, hud)
     local row = CreateFrame("Frame", nil, parent)
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetPoint("LEFT", row, "LEFT", 0, 0)
@@ -78,7 +80,7 @@ local function newRow(parent)
     local track = bar:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints(bar)
     row.icon, row.bar, row.track = icon, bar, track
-    row.iconEdge = NS.Style.IconEdge(row, icon)
+    row.iconEdge = NS.Style.IconEdge(row, icon, hud)
     -- The spell's name and amount are the player's Spell text block (HUD Appearance): plain labels the
     -- skin never paints. The share is a caption, the skin's.
     row.name = NS.Style.PlainText(bar, FONT.TEXT, "LEFT")
@@ -190,7 +192,7 @@ end
 
 function List:acquire(i, icons, pct)
     local parent = self.parent
-    local row = NS.Pool.Acquire(self.pool, function() return newRow(parent) end)
+    local row = NS.Pool.Acquire(self.pool, function() return newRow(parent, self.where ~= "window") end)
     restyle(row, self.where)
     local y = -(i - 1) * Breakdown.Pitch()
     row:ClearAllPoints()
