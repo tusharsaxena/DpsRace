@@ -2,7 +2,8 @@ local _, NS = ...
 -- modules/Hud_Best.lua — the idle body's Your best card (R3-DR-4, the owner's ask of 2026-11-03,
 -- Ka0sAddonsCommonTasks docs/2026-11-02-SMOKE_ROUND3/R3_ADDENDUM_DPSRACE.md, image 101): the best on
 -- the board the next race would count on, shown as the mark to beat between the Target card and Arm
--- Race (modules/Hud_States.lua places it at States.IDLE_BEST_Y and sizes it, States.BEST_H).
+-- Race (modules/Hud_States.lua places it, States.IDLE_BEST_Y_PLAIN or, under the amber warning,
+-- States.IDLE_BEST_Y_WARNED, through Best.Place, and sizes it, States.BEST_H).
 --
 -- THE BOARD is spec | target category | length (Bests.Key): the player's spec read now, the target
 -- the idle body shows and the length it would arm. Its best is the cached bests board's
@@ -101,6 +102,21 @@ local function open(card)
     if run and Act and Act.openBest then Act.openBest(run) end
 end
 
+--- Put the section at `y` (negative, from `parent`'s top): its caption, the card under it, both
+--- spanning the body. The idle body moves it as the amber warning comes and goes (R4-DR2).
+--- @param b table  Best.Build's
+--- @param parent table  the idle body's frame
+--- @param y number
+function Best.Place(b, parent, y)
+    local CAPTION_H = NS.HudStates.BEST_CAPTION_H
+    b.caption:ClearAllPoints()
+    b.caption:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+    b.caption:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
+    b.card:ClearAllPoints()
+    b.card:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y - CAPTION_H)
+    b.card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y - CAPTION_H)
+end
+
 --- Build the section into `parent` at `y` (negative, from its top): its caption, then the card.
 --- @param parent table  the idle body's frame
 --- @param y number
@@ -108,16 +124,13 @@ end
 function Best.Build(parent, y)
     local States = NS.HudStates
     local dim = States.COLORS.dim
-    local CAPTION_H, CARD_H = States.BEST_CAPTION_H, States.BEST_CARD_H   -- the stack's, Hud_States'
+    local CARD_H = States.BEST_CARD_H   -- the stack's, Hud_States'
     local b = {}
     b.caption = Style.Text(parent, FONT.HEADER)
-    b.caption:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-    b.caption:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y)
     local card = States.Panel(parent, nil, "card")
     card:SetHeight(CARD_H)
-    card:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y - CAPTION_H)
-    card:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, y - CAPTION_H)
     b.card = card
+    Best.Place(b, parent, y)
     b.dps = Style.PlainText(card, FONT.FIGURE)
     b.dps:SetPoint("TOPLEFT", card, "TOPLEFT", 8, -4)
     b.damage = Style.Text(card, FONT.TEXT, dim, "RIGHT")

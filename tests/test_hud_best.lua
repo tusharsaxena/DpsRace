@@ -179,13 +179,51 @@ end)
 
 -- ── layout ──────────────────────────────────────────────────────────────────────────────────────
 
+--- The y of `region`'s anchor at `point`.
+local function yAt(region, point)
+    for _, p in ipairs(region.__points or {}) do
+        if p[1] == point then return p[5] end
+    end
+end
+
+test("hud best: every launcher block sits the same gap apart, with more above Arm Race (R4-DR2)", function()
+    local f = hud()
+    local S = f.States
+    target(f, CLEAVE)
+    f.Hud.Show()
+    local w = idle(f)
+    -- Race Length's block ends with its second row of presets (14 + 20 + 6 + 20 = 60).
+    local presetsEnd = 14 + 20 + 6 + 20
+    local targetEnd = -yAt(w.card.frame, "TOPLEFT") + 46
+    assertEqual(-yAt(w.targetCap, "TOPLEFT") - presetsEnd, S.BLOCK_GAP, "Race Length to Target")
+    assertEqual(-yAt(w.best.caption, "TOPLEFT") - targetEnd, S.BLOCK_GAP, "Target to Your best")
+    assertEqual(-yAt(w.best.caption, "TOPLEFT"), S.IDLE_BEST_Y_PLAIN)
+    assertEqual(-yAt(w.best.card, "TOPLEFT"), S.IDLE_BEST_Y_PLAIN + S.BEST_CAPTION_H, "the card under its caption")
+    local bestEnd = -yAt(w.best.card, "TOPLEFT") + S.BEST_CARD_H
+    assertEqual(-yAt(w.arm, "TOPLEFT"), bestEnd + S.ARM_GAP, "the extra room above Arm Race")
+    assertEqual(-yAt(w.arm, "TOPRIGHT"), S.IDLE_ARM_Y_PLAIN)
+    -- No target: the amber warning shows under the Target card, and Your best and Arm Race step down.
+    target(f, nil)
+    assertTrue(w.warn.__text ~= "", "the warning shows")
+    assertEqual(-yAt(w.best.caption, "TOPLEFT"), S.IDLE_BEST_Y_WARNED)
+    assertEqual(-yAt(w.best.card, "TOPLEFT"), S.IDLE_BEST_Y_WARNED + S.BEST_CAPTION_H)
+    assertEqual(-yAt(w.arm, "TOPLEFT"), S.IDLE_ARM_Y)
+    -- A cataloged dummy again: the block moves back up.
+    target(f, CLEAVE)
+    assertEqual(w.warn.__text, "")
+    assertEqual(-yAt(w.best.caption, "TOPLEFT"), S.IDLE_BEST_Y_PLAIN)
+    assertEqual(-yAt(w.arm, "TOPLEFT"), S.IDLE_ARM_Y_PLAIN)
+end)
+
 test("hud best: nothing above it moves, it fits the width, and the minimum size holds", function()
     local f = hud()
     local S = f.States
-    -- The stack down to the warning line is unchanged; the section takes the room under it, where
-    -- Arm Race was (162), and Arm Race follows it.
-    assertEqual(S.IDLE_BEST_Y, 162)
-    assertEqual(S.IDLE_ARM_Y, S.IDLE_BEST_Y + S.BEST_H)
+    -- The blocks (a caption and its boxes) sit BLOCK_GAP apart, Arm Race ARM_GAP under the last
+    -- (R4-DR2); under the amber warning Arm Race keeps its old place, so the minimum height holds.
+    assertEqual(S.BEST_H, S.BEST_CAPTION_H + S.BEST_CARD_H, "the block: its caption and its card")
+    assertEqual(S.IDLE_ARM_Y_PLAIN, S.IDLE_BEST_Y_PLAIN + S.BEST_H + S.ARM_GAP)
+    assertTrue(S.ARM_GAP > S.BLOCK_GAP, "a little extra above Arm Race")
+    assertTrue(S.IDLE_ARM_Y >= S.IDLE_BEST_Y_WARNED + S.BEST_H + S.BLOCK_GAP, "under the warning too")
     assertEqual(f.Hud.MIN_HEIGHT, 354, "the HUD's minimum height is unchanged")
     target(f, CLEAVE)
     stored(f, 60, 153900)

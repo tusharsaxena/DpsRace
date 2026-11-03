@@ -88,20 +88,29 @@ local STOP_CHIPS_Y = STOP_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
 local STOP_NOTE_Y = STOP_CHIPS_Y + 28
 local WAITING_HINT_Y = WAITING_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
 States.STOP_CHIPS_Y, States.STOP_NOTE_Y, States.WAITING_HINT_Y = STOP_CHIPS_Y, STOP_NOTE_Y, WAITING_HINT_Y
--- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
--- warning line (two lines at the minimum width), the Your best section (R3-DR-4, modules/Hud_Best.lua:
--- its caption and card, in the room Arm had, which the minimum height already held), then Arm and the
--- refusal line under it.
+-- The idle body's stack, top down, in blocks (a caption and its boxes, R4-DR2) BLOCK_GAP apart: Race
+-- Length (its caption, two rows of presets), Target (its caption and card, and the amber warning line
+-- under it when one shows, two lines at the minimum width), Your best (R3-DR-4, modules/Hud_Best.lua:
+-- its caption and card), then ARM_GAP, a little more, above Arm and the refusal line under it.
 local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
-local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + 8
+local BLOCK_GAP, ARM_GAP = 8, 14
+local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + BLOCK_GAP
 local IDLE_CARD_Y = IDLE_TARGET_Y + 14
-local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 6
--- The section: its 14 px caption, its 38 px card (two lines), and 6 px above Arm.
+local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 4
+-- The section: its 14 px caption and its 38 px card (two lines). With no warning it sits a block gap
+-- under the Target card; under a warning, under the warning's two-line room. Arm Race follows it,
+-- ARM_GAP down, and under a warning no deeper than IDLE_ARM_Y, where the minimum height holds it.
 local BEST_CAPTION_H, BEST_CARD_H = 14, 38
-local IDLE_BEST_Y, BEST_H = IDLE_WARN_Y + 28, BEST_CAPTION_H + BEST_CARD_H + 6
-local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_BEST_Y + BEST_H, 24, 14
+local BEST_H = BEST_CAPTION_H + BEST_CARD_H
+local IDLE_BEST_Y_PLAIN = IDLE_CARD_Y + 46 + BLOCK_GAP
+local IDLE_BEST_Y_WARNED = IDLE_WARN_Y + 28
+local IDLE_ARM_Y_PLAIN = IDLE_BEST_Y_PLAIN + BEST_H + ARM_GAP
+local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = 220, 24, 14
+local IDLE_ARM_Y_WARNED = math.min(IDLE_ARM_Y, IDLE_BEST_Y_WARNED + BEST_H + ARM_GAP)
 States.IDLE_ARM_Y, States.ARM_HEIGHT = IDLE_ARM_Y, ARM_HEIGHT
-States.IDLE_BEST_Y, States.BEST_H = IDLE_BEST_Y, BEST_H
+States.BLOCK_GAP, States.ARM_GAP, States.BEST_H = BLOCK_GAP, ARM_GAP, BEST_H
+States.IDLE_BEST_Y_PLAIN, States.IDLE_BEST_Y_WARNED = IDLE_BEST_Y_PLAIN, IDLE_BEST_Y_WARNED
+States.IDLE_ARM_Y_PLAIN = IDLE_ARM_Y_PLAIN
 States.BEST_CAPTION_H, States.BEST_CARD_H = BEST_CAPTION_H, BEST_CARD_H
 -- The running body's rows sit between the KPIs and the caption over Cancel.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
@@ -559,10 +568,11 @@ function Builders.idle(parent)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
-    w.best = NS.HudBest.Build(f, -IDLE_BEST_Y)
+    w.best = NS.HudBest.Build(f, -IDLE_BEST_Y_PLAIN)
     w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT, FONT.TITLE)
-    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
-    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
+    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y_PLAIN)
+    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y_PLAIN)
+    body.warned = false
     w.arm.tip = Tips.arm
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
@@ -600,6 +610,17 @@ function Builders.idle(parent)
         self.w.custom:SetShown(v.editing ~= true)
         setTarget(self.w.card, v.target)
         self.w.warn:SetText(v.warning or "")
+        -- The Your best block and Arm Race step down under a warning and back up without one; moved
+        -- only when that changes.
+        local warned = v.warning ~= nil
+        if warned ~= self.warned then
+            self.warned = warned
+            local armY = warned and IDLE_ARM_Y_WARNED or IDLE_ARM_Y_PLAIN
+            NS.HudBest.Place(self.w.best, self.frame, -(warned and IDLE_BEST_Y_WARNED or IDLE_BEST_Y_PLAIN))
+            self.w.arm:ClearAllPoints()
+            self.w.arm:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -armY)
+            self.w.arm:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 0, -armY)
+        end
         NS.HudBest.Update(self.w.best, v.best)
         self.w.arm.label:SetText(NS.HudBest.ArmLabel(v.best))
         setEnabled(self.w.arm, v.blocker == nil)

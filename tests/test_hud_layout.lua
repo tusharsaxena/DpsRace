@@ -192,11 +192,14 @@ end)
 
 test("hud: the minimum height holds the idle body's whole stack", function()
     local f = hud()
-    -- Your best at 162 (R3-DR-4: 14 + 38 + 6), Arm Race under it at 220 and 24 tall, its refusal line
-    -- (4 + 14), then 4 and the 20px links: the running body's minimum held it, so it stays 354.
+    -- Your best at 136 with no warning, 160 under the amber warning (R4-DR2: 14 + 38, the blocks 8
+    -- apart, 14 above Arm Race); Arm Race at its deepest at 220 and 24 tall, its refusal line (4 + 14),
+    -- then 4 and the 20px links: the running body's minimum held it, so it stays 354.
     local States = f.NS.HudStates
-    assertEqual(States.IDLE_BEST_Y, 162)
-    assertEqual(States.IDLE_ARM_Y, 220)
+    assertEqual(States.IDLE_BEST_Y_PLAIN, 136)
+    assertEqual(States.IDLE_BEST_Y_WARNED, 160)
+    assertEqual(States.IDLE_ARM_Y_PLAIN, 202)
+    assertEqual(States.IDLE_ARM_Y, 220, "Arm Race at its deepest, under the warning")
     assertEqual(States.ARM_HEIGHT, 24)
     assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 220 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
     assertEqual(f.Hud.MIN_HEIGHT, 354, "the minimum height, re-derived for the headings (Round C)")
