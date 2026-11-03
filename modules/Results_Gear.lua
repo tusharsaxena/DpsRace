@@ -270,11 +270,7 @@ local function buildChrome(f)
     f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["Gear view"])
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line, { token = "dr.modal.divider" })
-    line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
     ui.controls = Style.NewStrip()
     ui.close = NS.MakeCloseButton(f, function() Gear.Hide() end)   -- the skin's own hover (D-9)
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end

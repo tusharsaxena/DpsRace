@@ -400,7 +400,7 @@ local function placeControl(b, f, slot)
     b:SetPoint("RIGHT", f, "TOPRIGHT", -6 - slot * NS.Style.CONTROL_PITCH, -HEADER_H / 2)
 end
 
--- The title bar: the title centered (the skin's Shell paints it and the divider), and the four
+-- The title bar: the title centered (the skin's Shell paints it), and the four
 -- controls on the right: the close control is the skin's own (S.CloseButton through Core, its hover
 -- `close.hot`), the other three turn the accent under the pointer (one shared strip, modules/Style.lua).
 local function buildHeader(f)
@@ -408,10 +408,7 @@ local function buildHeader(f)
     f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race"])
-    f.divider = f:CreateTexture(nil, "ARTWORK")
-    f.divider:SetHeight(1)
-    f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    -- No line under the title band (R4-SEP): every Ka0s window reads like the Skin Tester's showroom.
     ui.controls = Style.NewStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
     if close then

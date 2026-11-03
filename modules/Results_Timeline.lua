@@ -172,6 +172,8 @@ local HEADER_H = Style.TITLE_BAR_H
 -- The skin's Shell made opaque (DR-G1, LibKa0s-Skin-1.0's slot remap): the skin's window fill at
 -- alpha 1, its inner rule and divider blended over that fill to alpha 1 (core/SkinSetup.lua's
 -- dr.modal.* owner tokens), so they read as on the other windows and nothing behind shows through.
+-- The divider slot colors only a frame.divider, which neither modal makes (R4-SEP: no line under a
+-- title band); the remap stays, as tests/test_results_timeline_modal.lua pins it.
 Timeline.SHELL = { tokens = { bg = "dr.modal.bg", inner = "dr.modal.inner", divider = "dr.modal.divider" } }
 
 local ui        -- the built window
@@ -203,11 +205,7 @@ local function buildChrome(f)
     f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["Ability timeline"])
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line, { token = "dr.modal.divider" })
-    line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
     ui.controls = Style.NewStrip()
     ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
     if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end

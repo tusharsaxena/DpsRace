@@ -184,15 +184,12 @@ local function tabButton(name, label, i)
 end
 
 local function buildChrome(f)
-    -- The title centered in the title bar, as LootHistory's is: the skin's Shell paints it and the
-    -- divider (`title.text`, the title face; `divider`).
+    -- The title centered in the title bar, as LootHistory's is: the skin's Shell paints it
+    -- (`title.text`, the title face). No line under the title band (R4-SEP), as the Skin Tester's
+    -- showroom has none; the rule under the tab strip stays.
     f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
     f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race \226\128\148 Results"])
-    f.divider = f:CreateTexture(nil, "ARTWORK")
-    f.divider:SetHeight(1)
-    f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
     -- The close control is the skin's (Core's, its hover `close.hot`); the view toggle beside it
     -- turns the accent under the pointer, as the HUD's controls do (modules/Style.lua).
     ui.controls = Style.NewStrip()

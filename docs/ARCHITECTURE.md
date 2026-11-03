@@ -390,7 +390,10 @@ it does nothing). Escape closes the timeline first: the close stack hides both, 
 `OnHide` shows it again while the cover is up; the cover goes a frame later. The timeline wears the
 skin's `Shell` made opaque (`ResultsTimeline.SHELL`, the `dr.modal.*` owner tokens: each skin's window
 fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1), and so does the gear
-view (the same table). The StaticPopups, the debug console,
+view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
+showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
+there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
+strip and the timeline's legend line stay (`test_header_rule`). The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.
