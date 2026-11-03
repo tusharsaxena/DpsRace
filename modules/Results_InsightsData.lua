@@ -559,6 +559,22 @@ local function newAcc()
     }
 end
 
+--- The board key (category|length) a run sits on: the board tabs' key (SF-DR-3).
+function InsightsData.ScopeKey(run)
+    return NS.Dummies.CategoryOf(run.target) .. "|" .. tostring(run.race and run.race.length)
+end
+
+--- The runs the board tab `key` reads: those on that board, or every run for the Overall tab
+--- (`InsightsData.OVERALL`, or nil). SF-DR-3, SF-DR-4.
+function InsightsData.Scope(runs, key)
+    if key == nil or key == InsightsData.OVERALL then return runs end
+    local out = {}
+    for _, run in ipairs(runs or {}) do
+        if type(run) == "table" and InsightsData.ScopeKey(run) == key then out[#out + 1] = run end
+    end
+    return out
+end
+
 --- Everything the cards and the sections show, in one pass over `runs` (already filtered:
 --- InsightsData.Filter).
 --- @return table stats  { totals (the cards: runs, timeRaced, best { run, dps, key }, avgPct, avgDps
@@ -570,6 +586,8 @@ end
 ---   { rows, categories }), byCharLength (F: { rows, lengths }), lateBySpell (G: { counted, ignored },
 ---   each { id, unknown?, count }), byDay (I: { day, n }), tail (J: { lo, hi?, n }), newBests (K:
 ---   { run, dps, key, prev, prevDps, gain } in date order) }
+InsightsData.OVERALL = "all"
+
 function InsightsData.Compute(runs)
     local flagged, acc = flaggedMemo(), newAcc()
     for _, run in ipairs(runs or {}) do

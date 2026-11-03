@@ -35,12 +35,12 @@ test("launcher: left-click opens the settings panel", function()
     assertEqual(opened, 1)
 end)
 
-test("launcher: right-click lists Enabled, Locked, Test mode and Show window, in that order", function()
+test("launcher: right-click lists Enabled, Locked, Test mode, Show window and Open skin selector, in that order", function()
     local inst = T.load()
     local menu = openMenu(inst)
     local labels = {}
     for i, e in ipairs(menu.entries) do labels[i] = e.text end
-    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Show window")
+    assertEqual(table.concat(labels, "|"), "Enabled|Locked|Test mode|Sim mode|Show window|Open settings|Open skin selector")
     assertEqual(menu.titles[1], "Ka0s DPS Race")
 end)
 
@@ -56,6 +56,33 @@ test("launcher: each menu toggle runs the shared handler", function()
     openMenu(inst):Click("Enabled")
     assertEqual(NS.db.profile.enabled, false)
     assertTrue(NS.IsDisabled())
+end)
+
+test("launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)", function()
+    -- red under: isTestMode read Preview.IsActive(), true in both modes, and the Test row stopped the sim.
+    local inst = T.load()
+    local NS = inst.NS
+    NS.StartSim()
+    assertEqual(NS.Preview.Mode(), "sim")
+    local menu = openMenu(inst)
+    assertTrue(menu:Find("Sim mode").isSelected(), "Sim mode is not ticked")
+    assertTrue(not menu:Find("Test mode").isSelected(), "Test mode ticked during a sim")
+end)
+
+test("launcher: Sim mode opens the idle panel, ticks after Start and stops it, as MultiMeters' (R5-DR2)", function()
+    -- red under: the row started the default scenario at once, the panel mid-run.
+    local inst = T.load()
+    local NS = inst.NS
+    local s = NS.Sim.session
+    openMenu(inst):Click("Sim mode")
+    assertTrue(s:IsPanelShown(), "the idle panel")
+    assertFalse(s:IsActive())
+    assertTrue(not openMenu(inst):Find("Sim mode").isSelected(), "ticked on an idle panel")
+    assertTrue(s:RunVerb("start newbest"))
+    assertTrue(openMenu(inst):Find("Sim mode").isSelected(), "not ticked after Start")
+    openMenu(inst):Click("Sim mode")
+    assertFalse(s:IsActive(), "the row stops a running sim")
+    assertFalse(NS.Preview.IsActive())
 end)
 
 test("launcher: the Minimap button row hides and shows the real button", function()

@@ -61,7 +61,7 @@ NS.COMMANDS = {
     { "test",        L["Sample data in the HUD and the Results window: /dr test [armed|running|result]"],
                                                                    feature(function(rest) doTest(rest) end) },
     -- The scenario list comes from modules/Sim.lua (loaded before settings/), so the help line follows it.
-    { "sim",         L["Play a whole sample race: /dr sim [%s]"]:format(table.concat(NS.Sim.Names(), "|")),
+    { "sim",         L["Simulator: /dr sim opens the steps; /dr sim [%s] starts one"]:format(table.concat(NS.Sim.Names(), "|")),
                                                                    feature(function(rest) doSim(rest) end) },
     { "lock",        L["Lock the race HUD in place"],
                                                                    feature(function() doLock(true) end) },
@@ -289,9 +289,10 @@ function doTest(rest)
     NS.ToggleTestMode(tostring(rest or ""):match("^%s*(%S*)"):lower())
 end
 
---- `sim [scenario]`: a whole sample race; with no scenario, the default one.
+--- `sim [verb|scenario]`: the library's sim grammar (core/DpsRace.lua NS.RunSimVerb): a bare `sim` opens
+--- the idle step panel, a scenario starts it at once.
 function doSim(rest)
-    NS.StartSim(tostring(rest or ""):match("^%s*(%S*)"):lower())
+    NS.RunSimVerb(rest)
 end
 
 --- `results [insights]` (and the silent "bests" alias: core/DpsRace.lua NS.ShowResults).

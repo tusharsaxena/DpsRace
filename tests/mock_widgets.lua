@@ -21,6 +21,7 @@
 --   __shadow / __barTexture / __barColor / __height   a font string's shadow offset, a status bar's
 --                  fill texture and color, a frame's last SetHeight
 --   __width        a region's last SetWidth (SetSize sets __width and __height both)
+--   __wrap         a font string's last SetWordWrap
 --   W.animPlays           every AnimationGroup:Play(), as { owner, t }; W.missingTextures[path] makes
 --                         SetTexture answer false for that path (a texture the client cannot load)
 -- A geometry read on a frame that holds a secret raises in the client (spec §6.1); the suites assert
@@ -125,10 +126,14 @@ return function(T)
                 return true
             end)
             -- What SetFont was last told, as the client answers it (the skin's S.Font reads the size
-            -- a string already has, to keep it); nothing before a SetFont.
+            -- a string already has, to keep it). With no SetFont of its own, a font object made by
+            -- CreateFont answers, as the client draws it (a suite's CreateFont fake); else nothing.
+            -- The string's own font comes first: in the client it beats any font object (R3-DR-1).
             rawset(o, "GetFont", function(self)
                 local f = self.__font
                 if f then return f.path, f.size, f.flags end
+                local obj = self.__fontObject
+                if type(obj) == "table" and type(obj.GetFont) == "function" then return obj:GetFont() end
                 return nil
             end)
             rawset(o, "SetFrameStrata", function(self, strata) self.__strata = strata; return self end)
@@ -159,6 +164,7 @@ return function(T)
             end)
             rawset(o, "ClearAllPoints", function(self) self.__points = {}; return self end)
             rawset(o, "SetJustifyH", function(self, j) self.__justifyH = j; return self end)
+            rawset(o, "SetWordWrap", function(self, on) self.__wrap = on and true or false; return self end)
             rawset(o, "SetVertexColor", function(self, r, g, b, a) self.__vertex = { r, g, b, a }; return self end)
             rawset(o, "SetColorTexture", function(self, r, g, b, a) self.__colorTex = { r, g, b, a }; return self end)
             rawset(o, "SetBackdropColor", function(self, r, g, b, a) self.__backdropColor = { r, g, b, a }; return self end)

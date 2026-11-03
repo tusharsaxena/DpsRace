@@ -149,7 +149,8 @@ test("results usage: names and icons come from the item data; food has its own",
     local used = usage().used
     assertEqual(U.Name(used[1]), "Test Trinket")
     assertEqual(U.Icon(used[1]), 5000000 + TRINKET)
-    assertEqual(U.InlineIcon(used[1]), "|T" .. (5000000 + TRINKET) .. ":14:14|t", "a tooltip line's icon")
+    assertEqual(U.InlineIcon(used[1]), "|T" .. (5000000 + TRINKET) .. ":14:14:0:0:64:64:5:59:5:59|t",
+        "a tooltip line's icon, cropped 5:59 of 64 (R5-ICON)")
     assertEqual(U.Name(used[5]), "Well Fed")
     assertEqual(U.Icon(used[5]), U.FOOD_ICON)
     assertEqual(U.Name({ itemID = 4242, kind = "other" }), "Item 4242", "an item the client has not cached")
@@ -260,14 +261,14 @@ test("results usage: the Used tooltip names each entry with its icon and when, o
     local pane = runsPane(i)
     local n = colIndex(pane, "used")
     local lines = pane.list:TipLines(i.NS.Recorder.Get("a"), n)
-    local function icon(id) return "|T" .. (5000000 + id) .. ":14:14|t " end
+    local function icon(id) return "|T" .. (5000000 + id) .. ":14:14:0:0:64:64:5:59:5:59|t " end
     assertEqual(lines[1], "6 items used")
     assertEqual(lines[2], icon(TRINKET) .. "Test Trinket: x2 at 0:09, 1:12")
     assertEqual(lines[3], icon(TRINKET2) .. "Other Trinket: time unknown", "the gear first")
     assertEqual(lines[4], icon(POTION) .. "Potion of Testing: at -0:02")
     assertEqual(lines[5], icon(STONE) .. "Healthstone: time unknown")
     assertEqual(lines[6], icon(FLASK) .. "Flask of Testing: active at the start")
-    assertEqual(lines[7], "|T" .. i.NS.ResultsUsage.FOOD_ICON .. ":14:14|t Well Fed: active at the start")
+    assertEqual(lines[7], "|T" .. i.NS.ResultsUsage.FOOD_ICON .. ":14:14:0:0:64:64:5:59:5:59|t Well Fed: active at the start")
     assertEqual(#lines, 8, "every entry is listed, then the hint")
     assertEqual(type(lines[8]), "table", "the hint comes last")
     assertEqual(pane.list:TipLines(i.NS.Recorder.Get("old"), n)[1], "Not recorded")

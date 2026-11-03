@@ -77,6 +77,49 @@ test("hud tiles: the caption row sits inside the tile at the old padding, the fi
     end
 end)
 
+--- Every line of a figure box spans the box inside its 8 px padding and is centered in it (R4-DR1,
+--- the owner's 2026-11-03 smoke: the blocks read centered, not pinned to the left edge).
+local function assertCentered(k, what)
+    for _, part in ipairs({ "label", "value", "caption" }) do
+        local fs = k[part]
+        if fs then
+            assertEqual(fs.__justifyH, "CENTER", what .. " " .. part .. " centered")
+            local edge = part == "label" and "TOP" or "BOTTOM"
+            local l, r = pointAt(fs, edge .. "LEFT"), pointAt(fs, edge .. "RIGHT")
+            assertTrue(l ~= nil and r ~= nil, what .. " " .. part .. " spans the box")
+            assertEqual(l[2], k.frame)
+            assertEqual(r[2], k.frame)
+            assertEqual(l[4], 8, what .. " " .. part .. " left padding")
+            assertEqual(r[4], -8, what .. " " .. part .. " right padding")
+            assertEqual(l[5], r[5], what .. " " .. part .. " level")
+        end
+    end
+end
+
+test("hud tiles: the running, Stop!, waiting and result figure boxes are centered (R4-DR1)", function()
+    local f = racing()
+    local run = ui(f).body.running
+    assertCentered(run.w.damage, "running damage")
+    assertCentered(run.w.dps, "running dps")
+    local _, b = stopBody()
+    assertCentered(b.w.tail, "stop tail")
+    assertCentered(b.w.combat, "stop combat")
+    local _, wb = waitingBody()
+    assertCentered(wb.w.tail, "waiting tail")
+    assertCentered(wb.w.combat, "waiting combat")
+    local rf = racing()
+    rf:to(130)
+    rf:advance(1)
+    rf:update(25)
+    rf:combatEnd()
+    rf:advance(3)
+    rf.NS.Hud.Tick()
+    assertEqual(ui(rf).current, "result")
+    local rb = ui(rf).body.result
+    assertCentered(rb.w.damage, "result damage")
+    assertCentered(rb.w.dps, "result dps")
+end)
+
 test("hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46", function()
     local f, b = stopBody()
     local S = f.NS.HudStates

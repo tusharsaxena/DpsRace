@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 8
+NS.SCHEMA_VERSION = 11
 
 -- The 7 -> 8 step's facts. The Results detail's spell rows split off `appearance.bars`, so these leaves
 -- of a stored block are copied to theirs; and the default fill the three blue blocks had before, for
@@ -71,6 +71,37 @@ local function staleFromSkinKeys(profile, setDirect)
         end
     end
     return keys
+end
+
+-- The no-library arm of NS.FollowSkinOnce: the write ResetToSkin makes for each listed key, through
+-- stored tables only.
+local function followByHand(profile, keys)
+    for _, path in ipairs(keys) do
+        local t, leaf = storedBlock(profile, path)
+        if t then t[leaf] = leaf:match("FromSkin$") and true or "@skin" end
+    end
+end
+
+--- The one step onto the skin (FS-DR-FLIP, the owner's rulings of 2026-11-01): existing profiles follow
+--- the skin, colors and shadows included. Per profile, recorded per profile in `skin.fullSkinReset`,
+--- because the account-wide stamp cannot say which profiles have been through it and following the
+--- skin leaves no shape to read: the v9 step, every init (NS:RunMigrations) and every profile event,
+--- so a companion turned off afterwards stays off, and a reset profile runs it against defaults that
+--- change nothing a player sees. It names companions and the From skin flags
+--- (HudAppearance.FULL_SKIN_KEYS), never a stored color or pick. The gate is the library's,
+--- Skin.FollowOnce; the record's table is the one table it may create. Answers true when it ran.
+function NS.FollowSkinOnce(profile)
+    if type(profile) ~= "table" then return false end
+    local keys = NS.HudAppearance.FULL_SKIN_KEYS
+    local Skin = LibStub and LibStub("LibKa0s-Skin-1.0", true)
+    if Skin and type(Skin.FollowOnce) == "function" and type(Skin.ResetToSkin) == "function" then
+        return Skin.FollowOnce(profile, keys)
+    end
+    if type(profile.skin) == "table" and profile.skin.fullSkinReset == true then return false end
+    followByHand(profile, keys)
+    if type(profile.skin) ~= "table" then profile.skin = {} end
+    profile.skin.fullSkinReset = true
+    return true
 end
 
 -- Each step is idempotent against a fresh default profile. A profile-scoped step sets
@@ -168,8 +199,50 @@ local STEPS = {
         pinChannels(results.dpsBar)
         if type(appearance.bars) == "table" then splitDetailBars(profile, appearance.bars) end
     end },
+    -- 8 -> 9: the one step onto the skin (NS.FollowSkinOnce), for every stored profile; the current
+    -- one meets it again at each init and profile event, where its record holds it.
+    { to = 9, perProfile = true, run = function(_sv, profile) NS.FollowSkinOnce(profile) end },
+    -- 9 -> 10 (SG-DR-2): the clocks joined the step's list (SF-DR-1) after a profile had already been
+    -- through it, so its record held the step off and the clock blocks kept their stored mono pick with
+    -- both companions off, whichever skin was worn. Turn the stored-and-off face and shadow companions
+    -- on, once. The pick itself stays: it is what the clock draws with the companion off.
+    { to = 10, perProfile = true, run = function(_sv, profile)
+        for _, block in ipairs({ "elapsed", "left" }) do
+            local b = type(profile.appearance) == "table" and profile.appearance[block]
+            if type(b) == "table" then
+                if b.fontFromSkin == false then b.fontFromSkin = true end
+                if b.fontShadowFromSkin == false then b.fontShadowFromSkin = true end
+            end
+        end
+    end },
+    -- 10 -> 11 (R3-FRIZ): LibKa0s v1.85.0 deleted Ka0s Friz Quadrata TT (R3-L7) and WoW Default draws
+    -- Ka0s Ubuntu in its place (R3-L6). Every stored string naming the deleted face, at any depth (a
+    -- HUD block's or a Results row's font, the skin override), moves to its successor. Blizzard's own
+    -- "Friz Quadrata TT" is another key and stays.
+    { to = 11, perProfile = true, run = function(_sv, profile)
+        local moved = type(profile) == "table" and NS.RetireFonts(profile) or 0
+        if moved > 0 and NS.Debug then
+            NS.Debug("Set", "migrate v11: moved %d Ka0s Friz Quadrata TT pick(s) to Ka0s Ubuntu", moved)
+        end
+    end },
 }
 NS.__migrationSteps = STEPS   -- test seam only
+
+-- The shipped faces LibKa0s retired, each to its successor (R3-FRIZ; LibKa0s R3-L7).
+local RETIRED_FONTS = { ["Ka0s Friz Quadrata TT"] = "Ka0s Ubuntu" }
+
+--- Moves every string naming a retired face, at any depth of `t`, to its successor. Answers how many moved.
+function NS.RetireFonts(t)
+    local n = 0
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            n = n + NS.RetireFonts(v)
+        elseif RETIRED_FONTS[v] then
+            t[k], n = RETIRED_FONTS[v], n + 1
+        end
+    end
+    return n
+end
 
 --- A profile switch, copy or reset replaces the whole profile wholesale: the stored `enabled` can
 --- flip, the visibility rule can change, so re-take the hold and re-decide (slash-commands-§7: these
@@ -179,6 +252,8 @@ function NS.OnProfileChanged(event, _db, key)
     -- The first-run skin picker goes down first, unmarked (core/SkinSetup.lua), so a preview it had
     -- pending is put back before the new profile's skin is applied below.
     if NS.HideSkinPicker then NS.HideSkinPicker() end
+    -- A new, copied or reset profile takes the one step onto the skin before it draws.
+    if NS.db then NS.FollowSkinOnce(NS.db.profile) end
     -- FIRST, before anything redraws: the new profile's skin (core/SkinSetup.lua). Skin:SetChoice
     -- repaints every recorded frame of this owner and fires OnLooksChanged whether or not a window
     -- was ever built, so the skin cannot depend on one.
@@ -217,4 +292,5 @@ function NS:RunMigrations()
             g.schemaVersion = step.to
         end
     end
+    NS.FollowSkinOnce(db.profile)
 end

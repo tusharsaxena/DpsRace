@@ -319,7 +319,7 @@ test("Disabled 8: launcher clicks and the key binding write nothing and show not
     obj.OnClick(M.UIParent, "RightButton")
     local menu = assert(M.__lastMenu, "right-click opened no menu")
     for _, entry in ipairs(menu.entries) do
-        local live = entry.text == "Enabled"
+        local live = entry.text == "Enabled" or entry.text == "Open settings"
         assertEqual(entry.enabled, live, entry.text .. (live and " must stay live" or " must be grayed"))
     end
     assertEqual(#M.__svWrites(), 0, "a launcher click wrote SavedVariables")
@@ -365,7 +365,9 @@ test("Disabled 9: re-enabling restores the set FROM CURRENT STATE, not a snapsho
     assertEqual(#regKeys(inst), 0, "a write while disabled registered something")
     assertTrue(NS.SetByPath("enabled", true))
     local events = eventNames(inst)
-    assertEqual(table.concat(events, ","), "PLAYER_REGEN_DISABLED,PLAYER_REGEN_ENABLED")
+    -- The combat edges for *In combat*, and the default auto-show's (R3-DR-3) nameplates and target.
+    assertEqual(table.concat(events, ","), "NAME_PLATE_UNIT_ADDED,NAME_PLATE_UNIT_REMOVED,PLAYER_ENTERING_WORLD,"
+        .. "PLAYER_REGEN_DISABLED,PLAYER_REGEN_ENABLED,PLAYER_TARGET_CHANGED")
 end)
 
 test("Disabled 10: releasing ONE hold does not resurrect an addon the other holds down", function()

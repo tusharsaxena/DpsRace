@@ -315,7 +315,7 @@ test("targetdummy: remove takes a typed creature ID or name; show lists yours an
     NS.Slash:OnSlash("targetdummy")
     assertTrue(has(M, "Your training dummies:"), said(M))
     assertTrue(has(M, "Creature 99999 \194\183 Single target"), said(M))
-    assertTrue(has(M, "Built-in training dummies: 5, 1 switched off."), said(M))
+    assertTrue(has(M, "Built-in training dummies: 42, 1 switched off."), said(M))
     assertTrue(has(M, "Reinforced Golem (243205) (off)"), said(M))
     NS.Slash:OnSlash("targetdummy remove 99999")
     assertTrue(has(M, "Creature 99999 is no longer a training dummy."), said(M))

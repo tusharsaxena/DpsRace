@@ -44,13 +44,15 @@ in the spec, sections 1, 2 and 13
   off, never recategorized. The list is a per-profile setting read when a run's category is, so an
   edit recategorizes every stored run. Each add saves what the game says about the creature
   (`global.dummies.captures`), and the catalog grows from those captures, never from guesses.
-- **Auto-show and auto-arm near a training dummy** (#16), both off by default. *Show near a
+- **Auto-show and auto-arm near a training dummy** (#16): auto-show on by default (R3-DR-3), auto-arm off. *Show near a
   training dummy* opens the HUD while a known dummy is the target or has a nameplate up; *Arm
   on a training dummy* arms a race on targeting one out of combat and cancels it if the target moves
   off the dummies before the pull. Neither acts in an instance.
 - **Test mode and the sim** (spec §6.5, B5). `/dr test` shows static sample data in the HUD and the
-  Results window; `/dr sim [scenario]` plays a whole sample race (arm, race, result, then Results)
-  through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
+  Results window; `/dr sim` (or the Master controls' *Sim mode* box, or the launcher's *Sim mode*
+  entry) opens the sim's step panel (a scenario dropdown and *Start*), and its
+  *Start* or `/dr sim <scenario>` plays a whole 0:15 sample race in real time (arm, race, result, then
+  Results) through eight scenarios. Both draw in-memory samples and write nothing to SavedVariables.
 - **A live damage chart and a pace bar** (#2, #3). The running HUD draws one column per bucket of
   the race (at most 60), each the live total the meter showed at its boundary, scaled to the board's
   best x 1.15 with its level and its average-pace diagonal, or with no best to the live total. A pace
@@ -74,7 +76,7 @@ in the spec, sections 1, 2 and 13
 - **The new-best toast** (#5). A complete run that beats an earlier best on its board shows a toast
   near the top of the screen, whether or not the HUD is open: the spec and board, the time, the DPS
   and the gain over the old best, and the run's flags. A board's first run does not toast. It runs on
-  LibKa0s-Toast-1.0 (one at a time, timed, paused under the pointer); General > *New-best toast* turns
+  LibKa0s-Toast-1.0 (one at a time, timed, paused under the pointer); Race > *New-best toast* turns
   it off and sets its duration, sound and scale, and test mode places it.
 - **Resilience to `/reload`.** A run is stored from its first hit, and a reload at any point resumes
   it, reads it later, or settles it as lost (spec §4.5).
@@ -98,7 +100,7 @@ in the spec, sections 1, 2 and 13
 | Cut damage off exactly at the buzzer | Values captured in combat stay secret after it, so the score is the session total and the tail is shown instead (spec §2). |
 | Show percentages or sort the live breakdown | Both are arithmetic on secret values (spec §6.1). Percentages appear on the result. |
 | Count targets | The meter merges identical dummies into one row and no nameplate signal counts the dummies hit, so there is no count at all, typed or measured; it returns only if the client can measure it (DpsRace#15). |
-| Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the usage line and an unknown word list the scenarios instead (B5.2). |
+| Tab completion of `/dr sim`'s scenarios | The chat box completes no addon's slash words and `LibKa0s-Slash-1.0` offers none; the help line, the panel's dropdown and an unknown word (the sim usage, then a line per scenario) list the scenarios instead (B5.2). |
 | Use target health as a start signal | Other players hitting a shared dummy fire it before your first hit (spec §2). |
 | "Time to deal X damage", or a goal bar | A threshold crossing is a comparison on a secret value, and the meter keeps no timeline. Dropped 2026-10-23. |
 | PvP burst races (duels, events, leaderboards) | Parked until the duel probe runs ([issue #1](https://github.com/tusharsaxena/DpsRace/issues/1)). |

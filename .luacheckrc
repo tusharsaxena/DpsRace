@@ -66,7 +66,9 @@ files["modules/Stats.lua"] = {
 files["modules/Race.lua"] = { read_globals = { "time", "C_Spell" } }
 -- The late-cast ignore list (#8): a typed spell's name and icon, the hearthstones' names, and the
 -- late-cast right-click menu.
-files["modules/LateIgnore.lua"] = { read_globals = { "C_Spell", "MenuUtil" } }
+files["modules/LateIgnore.lua"] = { read_globals = { "C_Spell" } }
+-- The context menus: the client's menu without the library, and the cursor they open at.
+files["core/WidgetsSetup.lua"] = { read_globals = { "MenuUtil", "GetCursorPosition" } }
 files["modules/DummyList.lua"] = {
     read_globals = { "time", "UnitExists", "UnitFactionGroup", "UnitIsPVP", "C_Map", "UnitHealthMax",
                      "UnitCreatureType", "UnitReaction", "GetBuildInfo" },
@@ -115,7 +117,7 @@ files["modules/Hud.lua"] = {
 -- tooltips. The filter's date range reads the clock (time, date) in modules/Results_Runs.lua.
 local resultsGlobals = {
     "time", "date", "GameTooltip", "RAID_CLASS_COLORS", "LOCALIZED_CLASS_NAMES_MALE", "CLASS_ICON_TCOORDS",
-    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent", "MenuUtil",
+    "GetSpecializationInfoByID", "GetCursorPosition", "UIParent",
 }
 -- The window's shell also reads whether Blizzard's talent frame is up (IsShown only): the tree's
 -- panel open closes the window through UISpecialFrames, and the window comes back under it.
@@ -146,7 +148,7 @@ files["modules/Results_Gear.lua"] = {
 
 -- What a run used (#13): the item names and icons, the client's item tooltip, and an item row's
 -- right-click menu in the edit (Never show, P9).
-files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item", "MenuUtil" } }
+files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item" } }
 
 -- The ability timeline (#14): Shift+mouse wheel pans its zoomed time axis (P12); Ctrl+mouse wheel zooms
 -- about the cursor and the `?` control draws its own tooltip (P16).
@@ -161,7 +163,7 @@ files["modules/SampleRace.lua"] = { read_globals = { "time" } }
 -- Share: which channels the player is in, the chat lockdown (C_ChatInfo; the send itself is
 -- NS.Compat's), the whisper popup's player-target name, and the channel menu.
 files["modules/Share.lua"] = {
-    read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "UnitIsPlayer", "MenuUtil" },
+    read_globals = { "IsInGroup", "IsInRaid", "IsInGuild", "C_ChatInfo", "UnitIsPlayer" },
 }
 
 -- The published slash surface (`Sl:OnSlash`, `PrintHelp`, `LandingRows`, `DisabledLine`, `Register`)

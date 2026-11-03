@@ -169,6 +169,19 @@ test("hud: an unknown target is allowed and said so", function()
     assertEqual(body(f).w.card.name.__text, "No target")
 end)
 
+test("hud: a new profile's idle body races 1:00 (R3-DR-2)", function()
+    -- red under the 2:00 default (2026-10-26): the owner's call of 2026-11-03 is 1:00 for a new profile.
+    local f = hud()
+    f.Hud.Show()
+    assertEqual(f.NS.db.profile.race.lastLength, nil, "nothing picked yet")
+    assertEqual(f.Hud.View().length, 60)
+    local selected
+    for _, b in ipairs(body(f).w.presets) do if b.selected then selected = b.length end end
+    assertEqual(selected, 60, "the 1:00 preset selected")
+    assertTrue(f.NS.ToggleArm())
+    assertEqual(f.Race.Current().race.length, 60)
+end)
+
 test("hud: a changed Default race length takes effect over the remembered pick", function()
     local f = hud()
     f.Hud.Show()
@@ -187,10 +200,10 @@ end)
 test("hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own", function()
     local f = hud()
     local D = f.NS.defaults.profile
-    D.race.defaultLength, D.live.hz, D.live.rows = 60, 6, 5
+    D.race.defaultLength, D.live.hz, D.live.rows = 180, 6, 5
     f.NS.GetSetting = function() return nil end      -- a degraded load: the store cannot answer
     local v = f.Hud.View()
-    assertEqual(v.length, 60, "a second default for race.defaultLength")
+    assertEqual(v.length, 180, "a second default for race.defaultLength")
     assertEqual(v.hz, 6, "a second default for live.hz")
     assertEqual(v.rows, 5, "a second default for live.rows")
 end)

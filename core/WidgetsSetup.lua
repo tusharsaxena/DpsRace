@@ -35,6 +35,72 @@ function NS.MakeDropdown(parent, width)
     })
 end
 
+-- ── the context menus (cause A2) ─────────────────────────────────────────────────────────────────
+-- A row's right-click wears the skin through W.ContextMenu (Widgets minor 21), the shared Ka0s menu
+-- opened at the cursor. A `fill(root)` is written against MenuUtil's own description (CreateTitle,
+-- CreateButton, and on a button SetEnabled and a nested CreateButton), recorded here, then drawn one
+-- level at a time: that menu has no flyout, so a submenu's row opens its own rows in the menu's place.
+-- Without the library the same `fill` goes to the client's menu.
+
+--- A level of a description: the recorder a `fill` writes to, and each button's own nested level.
+local function newLevel()
+    local level = { items = {} }
+    function level:CreateTitle(text)
+        self.items[#self.items + 1] = { label = text, title = true }
+        return {}
+    end
+    function level:CreateButton(text, onClick)
+        local sub = newLevel()
+        sub.label, sub.onClick, sub.enabled = text, onClick, true
+        function sub.SetEnabled(_, on) sub.enabled = on and true or false end
+        self.items[#self.items + 1] = sub
+        return sub
+    end
+    return level
+end
+
+local showLevel
+
+--- One W.ContextMenu row: a title, or a button with its click, a submenu's mark and its disabled state.
+local function menuRow(owner, item)
+    if item.title then return { label = item.label, title = true } end
+    local isSubmenu = #item.items > 0
+    local label = item.label
+    if isSubmenu then label = label .. " " .. NS.Skin.MarkText(NS.Icon("chevron-right"), 0) end
+    return {
+        label = label,
+        disabled = item.enabled == false or nil,
+        onClick = isSubmenu and function() showLevel(owner, item) end or item.onClick,
+    }
+end
+
+--- Open `level` at the cursor. The library hides the menu before a row's click, so a submenu's row
+--- may open the next level from its own callback.
+showLevel = function(owner, level)
+    local rows = {}
+    for i, item in ipairs(level.items) do rows[i] = menuRow(owner, item) end
+    W.ContextMenu(owner, rows, { owner = addonName, cursor = true })
+end
+
+--- True when a context menu can open: the Ka0s menu, or the client's without the library.
+function NS.CanOpenMenu()
+    if W then return true end
+    return MenuUtil ~= nil and MenuUtil.CreateContextMenu ~= nil
+end
+
+--- A context menu at the cursor: `fill(root)` adds its rows as it would to a MenuUtil description.
+--- @param owner table  the client menu's owner region
+--- @param fill function
+function NS.OpenMenu(owner, fill)
+    if not W then
+        MenuUtil.CreateContextMenu(owner, function(_, root) fill(root) end)
+        return
+    end
+    local level = newLevel()
+    fill(level)
+    showLevel(owner, level)
+end
+
 --- The strip's height, for a window laying its content out below it (the library publishes it).
 NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 
@@ -45,7 +111,10 @@ NS.TEST_STRIP_HEIGHT = (W and W.TEST_STRIP and W.TEST_STRIP.HEIGHT) or 18
 --- @return table|nil
 function NS.MakeTestStrip(parent, text)
     if not W then return nil end
-    return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName })
+    -- onEnd (LibKa0s Widgets minor 21, SF-F1): the strip's right-click menu ends the preview, the test
+    -- mode and the sim alike (Preview.Stop stops the sim's script and its stepper too).
+    local function endMode() if NS.Preview and NS.Preview.IsActive() then NS.Preview.Stop() end end
+    return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName, onEnd = endMode })
 end
 
 -- The one copy window, its frame built on the first ShowCopy (the library's lazy handle), over the

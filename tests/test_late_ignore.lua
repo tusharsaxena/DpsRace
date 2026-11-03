@@ -272,6 +272,8 @@ test("late ignore: a profile switch re-scores the flags by the other profile's l
     assertFalse(NS.ResultsRuns.IsFlagged(f))
     assertEqual(NS.Bests.Board({ cleanOnly = true })["253|boss|30"].id, "f")
     NS.db:SetProfile("Other")
+    -- A new profile shows the first-run skin picker, in test mode (R6-PV): the player closes it.
+    NS.Helpers.HideSkinPicker()
     assertTrue(NS.SetByPath(NS.LateIgnore.PATH, ""))
     assertTrue(NS.ResultsRuns.IsFlagged(f), "the other profile ignores nothing")
     NS.db:SetProfile("Default")
@@ -327,9 +329,9 @@ test("late ignore: the menu's entries ignore and count again through the list", 
     assertFalse(NS.LateIgnore.IsIgnored(TOY))
     menu:Click("Stop ignoring Feign Death")
     assertFalse(NS.LateIgnore.IsIgnored(FEIGN))
-    -- With no MenuUtil there is no menu, and no error.
-    M.MenuUtil = nil
-    assertFalse(NS.LateIgnore.Menu(r, {}))
+    -- With neither the library nor MenuUtil there is no menu, and no error.
+    local bare = T.load({ libFiles = {}, mutate = function(m) m.MenuUtil = nil end })
+    assertFalse(bare.NS.LateIgnore.Menu(r, {}))
 end)
 
 test("late ignore: IgnoredText names the ignored casts in one line, nil with none", function()

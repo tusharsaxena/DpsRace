@@ -23,7 +23,10 @@ end
 
 local function ui(f) return assert(f.Hud.__ui(), "the HUD window was never built") end
 local function current(f) return ui(f).current end
-local function sim(f, key) assertTrue(f.Preview.Start({ mode = "sim", scenario = key })) end
+local function sim(f, key)
+    assertTrue(f.Preview.Start({ mode = "sim", scenario = key }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)   -- SG-DR-1: the stepper parks the arm
+end
 
 local function until_(f, pred)
     for _ = 1, 800 do
@@ -261,14 +264,14 @@ end)
 test("sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer", function()
     local f = fixture("WARLOCK")
     sim(f, "newbest")
-    until_(f, function() return f.NS.SampleRace.Elapsed() and f.NS.SampleRace.Elapsed() >= 20 end)
+    until_(f, function() return f.NS.SampleRace.Elapsed() and f.NS.SampleRace.Elapsed() >= 10 end)
     local rec = f.NS.Slices.Get("sim-newbest")
     local mid = {}
-    for i = 1, 15 do mid[i] = rec.values[i] end
+    for i = 1, 8 do mid[i] = rec.values[i] end
     until_(f, function() return current(f) == "result" end)
     local after = f.NS.HudChart.ResultView(f.NS.SampleRace.Current())
-    for i = 1, 15 do assertEqual(after.values[i], mid[i], "bucket " .. i) end
-    assertTrue(after.values[30] < f.NS.SampleRace.Current().result.damage, "the tail still counts after the buzzer")
+    for i = 1, 8 do assertEqual(after.values[i], mid[i], "bucket " .. i) end
+    assertTrue(after.values[#after.values] < f.NS.SampleRace.Current().result.damage, "the tail still counts after the buzzer")
 end)
 
 test("sample parity: the run joins the sample history at its start and resolves in place", function()
@@ -292,7 +295,7 @@ test("sample parity: a run that ended early shows Combat Ended, with no tail and
     local v = f.Hud.View()
     assertTrue(v.endedEarly, "the waiting body's early end")
     assertEqual(v.sinceBuzzer, nil)
-    assertEqual(v.endedAt, 18)
+    assertEqual(v.endedAt, 9)
     assertFalse(v.inCombat)
     assertEqual(ui(f).body.waiting.w.tail.label.__text, "Combat Ended")
 end)

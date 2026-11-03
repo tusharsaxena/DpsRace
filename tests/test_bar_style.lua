@@ -62,6 +62,52 @@ local function eachBlue(profile, fn)
     fn(profile.resultsTable.dpsBar, "the DPS bar")
 end
 
+-- ── a dash in a bar cell ─────────────────────────────────────────────────────────────────────────
+
+--- A one-column bar list the way the Runs list builds one.
+local function barCell(i, runs)
+    local NS, A = i.NS, i.A
+    local D = NS.defaults.profile.resultsTable
+    local muted = NS.Style.Tok("text.muted")
+    local col = { key = "v", label = "V", width = 60,
+        bar = function(run) return run.v end,
+        text = function(run) if run.v then return "12" end return "-", muted end,
+        barStyle = function()
+            local look = A.Styled("resultsTable.damageBar.", D.damageBar, false)
+            look.font = A.FontAt("resultsTable.barText.", D.barText, false, "window")
+            return look
+        end }
+    local t = NS.ResultsTable.New(i.mocks.CreateFrame("Frame"), { col }, {})
+    t:Resize(600, 300)
+    t:SetData(runs)
+    return t, muted
+end
+
+test("bar style: a dash takes its muted color back after the bar text's font, on a pooled row too", function()
+    local i = inst()
+    local NS = i.NS
+    assertTrue(NS.SetByPath("resultsTable.barText.fontColorFromSkin", false))
+    assertTrue(NS.SetByPath("resultsTable.barText.fontColor", { r = 0.9, g = 0.1, b = 0.1, a = 0.5 }))
+    local t, muted = barCell(i, { { id = "a", v = 5, date = 1 } })
+    local fs = t.shown[1].cells[1].fs
+    local log, real = {}, NS.Skin.HudFont
+    NS.Skin.HudFont = function(...)
+        log[#log + 1] = "font"
+        return real(...)
+    end
+    rawset(fs, "SetTextColor", function(_, r, g, b, a)
+        log[#log + 1] = { r, g, b, a }
+    end)
+    t:SetData({ { id = "b", date = 2 } })
+    assertTrue(rawequal(t.shown[1].cells[1].fs, fs), "the same string, showing a figure before")
+    local fontAt
+    for n, entry in ipairs(log) do if entry == "font" then fontAt = n end end
+    assertTrue(fontAt ~= nil and fontAt < #log, "the color is the last write: a font object lands over one")
+    local last = log[#log]
+    assertEqual(last[1], muted[1]); assertEqual(last[2], muted[2]); assertEqual(last[3], muted[3])
+    assertEqual(last[4], muted[4] or 1, "the bar text's alpha does not stay behind")
+end)
+
 -- ── the defaults ────────────────────────────────────────────────────────────────────────────────
 
 test("bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy", function()
@@ -92,22 +138,39 @@ local function hue(r, g, b)
     return 60 * (4 + (r - g) / d)
 end
 
-test("bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture", function()
-    local C = T.NS.defaults.profile.compare
+-- WCAG's relative luminance of an sRGB color (0-1 channels), and white text's contrast over it.
+local function luminance(c)
+    local function lin(v) return v <= 0.04045 and v / 12.92 or ((v + 0.055) / 1.055) ^ 2.4 end
+    return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+end
+local function whiteContrast(c) return 1.05 / (luminance(c) + 0.05) end
+
+test("bar style: the compare's bars are as bright as the Runs list's, in their own hues (R3-DR-5)", function()
+    -- red under the dim fills of 2026-10-31 (42, 70, 107 and 83, 69, 0 at full opacity): the owner
+    -- found them far too dim beside the Runs list's bars (Ka0sAddonsCommonTasks SMOKE_ROUND3 img 103,
+    -- 104). Each now takes the Runs list's opacity and brightness, its own hue kept.
+    local D = T.NS.defaults.profile
+    local C, runs = D.compare, D.resultsTable.damageBar
     local function check(block, r, g, b, what)
         local c = block.barColor
         assertEqual(math.floor(c.r * 255 + 0.5), r, what)
         assertEqual(math.floor(c.g * 255 + 0.5), g, what)
         assertEqual(math.floor(c.b * 255 + 0.5), b, what)
-        assertEqual(block.barAlpha, 1, what)
-        assertEqual(block.barTexture, "Solid", what)
+        assertEqual(block.barAlpha, runs.barAlpha, what .. ": the Runs list's opacity")
+        assertEqual(block.barTexture, "Ka0s Default", what)
         assertEqual(block.barTextureFromSkin, true, what .. ": the owner's call: it follows the skin")
+        -- At least the Runs list bar's luminance, and white bar text still at 3:1 or better.
+        assertTrue(luminance(c) >= luminance(runs.barColor), what .. ": as bright as the Runs list's bar")
+        assertTrue(whiteContrast(c) >= 3, what .. ": the white figures read over it")
     end
-    check(C.best, 42, 70, 107, "best")
-    check(C.other, 83, 69, 0, "other")
-    assertTrue(math.abs(hue(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b) - hue(32, 54, 82)) < 1)
-    assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1)
-    assertTrue(C.best.barColor.b > 82 / 255 and C.other.barColor.r > 64 / 255, "brighter than they shipped")
+    -- The blue at the Runs list bar's brightest channel (0.84); the gold as far as white text allows.
+    check(C.best, 84, 140, 214, "best")
+    check(C.other, 174, 145, 0, "other")
+    local br = runs.barColor
+    assertTrue(math.abs(math.max(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b)
+        - math.max(br.r, br.g, br.b)) < 1 / 255, "the blue's brightness is the Runs list bar's")
+    assertTrue(math.abs(hue(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b) - hue(32, 54, 82)) < 1, "blue hue")
+    assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1, "gold hue")
 end)
 
 test("bar style: a compare column draws the skin's texture by default, in its own color", function()
@@ -129,7 +192,7 @@ test("bar style: the default look keeps the skin's two tracks and draws no borde
     local r, g, b, a = Style.Rgba("dr.list.track")
     assertEqual(spell.bg.r, r); assertEqual(spell.bg.g, g); assertEqual(spell.bg.b, b); assertEqual(spell.bg.a, a)
     assertEqual(A.Bar("window").bg.a, a, "the detail's the same token")
-    assertEqual(pace.bg.a, select(4, Style.Rgba("dr.chart.grid")), "the pace bar's own track")
+    assertEqual(pace.bg.a, select(4, Style.Rgba("dr.pace.track")), "the pace bar's own track")
     assertEqual(spell.border, nil, "Ka0s Default's bar.borderStyle is None")
     assertEqual(pace.border, nil)
     assertEqual(A.Bar("window").border, nil)
@@ -167,6 +230,7 @@ test("bar style: the detail's spell rows draw their block, track and border", fu
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderStyle", "Solid"))
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderSize", 2))
     assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderColor", { r = 0, g = 0, b = 1, a = 1 }))
+    assertTrue(i.NS.SetByPath("resultsDetail.spellBars.borderColorFromSkin", false))
     row = i.R.__ui().detail.w.list.rows[1]
     assertEqual(row.bar.__barColor[1], 1, "live, no reload")
     assertEqual(row.track.__colorTex[2], 1)
@@ -180,7 +244,7 @@ end)
 test("bar style: the pace bar draws its block's track and border, keeping its green", function()
     local i = inst()
     local pace = i.NS.HudChart.NewPace(i.mocks.CreateFrame("Frame"))
-    assertEqual(pace.track.__colorTex[4], select(4, i.NS.Style.Rgba("dr.chart.grid")), "painted when built")
+    assertEqual(pace.track.__colorTex[4], select(4, i.NS.Style.Rgba("dr.pace.track")), "painted when built")
     assertEqual(pace.behind.__barColor[3], 0.84)
     assertTrue(i.NS.SetByPath("appearance.pace.bgFromSkin", false))
     assertTrue(i.NS.SetByPath("appearance.pace.bgColor", { r = 1, g = 0, b = 0, a = 0.5 }))
@@ -213,6 +277,24 @@ test("bar style: the table's two bars are separate blocks; a track and a border 
     assertEqual(NS.ResultsRuns.BarStyle("dpsBar", NS.db.global.runs.a).border, nil)
 end)
 
+test("bar style: every skin draws the compare's bars in their bright fills (R3-DR-5)", function()
+    -- red under a skin that recolored or dimmed them: the fill is the block's in every skin, only the
+    -- texture is the skin's, as the Runs list's bars are.
+    local i = inst()
+    local NS = i.NS
+    local Skin = i.mocks.LibStub("LibKa0s-Skin-1.0")
+    local C = NS.defaults.profile.compare
+    for _, def in ipairs(Skin:Skins()) do
+        NS.ApplySkinChoice("ka0s", def.key)
+        i.mocks.__fireTimers()
+        local _, x = compared(i)
+        local v = x.lines[1].bar.__vertex
+        assertEqual(("%.3f %.3f %.3f %.2f"):format(v[1], v[2], v[3], v[4]),
+            ("%.3f %.3f %.3f %.2f"):format(C.best.barColor.r, C.best.barColor.g, C.best.barColor.b, C.best.barAlpha),
+            def.key .. ": the best's column draws its bright blue")
+    end
+end)
+
 test("bar style: a compare column draws its block; the side rule did not move", function()
     local i = inst()
     local _, x = compared(i)
@@ -222,7 +304,7 @@ test("bar style: a compare column draws its block; the side rule did not move", 
     assertEqual(x.bars.looks.other.r, C.best.barColor.r, "the best's column, the best's block")
     assertEqual(x.bars.looks.this.r, C.other.barColor.r)
     assertEqual(x.lines[1].bar.__vertex[3], C.best.barColor.b)
-    assertEqual(x.lines[1].bar.__vertex[4], 1)
+    assertEqual(x.lines[1].bar.__vertex[4], C.best.barAlpha, "the block's opacity, the Runs list's (R3-DR-5)")
     local track = x.lines[1].bar.tracks.other
     assertEqual(track.__colorTex[4], 0, "no track by default")
     assertTrue(NS.SetByPath("compare.best.barColor", { r = 0.5, g = 0.25, b = 0.75, a = 1 }))
@@ -238,19 +320,23 @@ test("bar style: a compare column draws its block; the side rule did not move", 
     assertEqual(track.edge, nil, "and none in the best's")
 end)
 
-test("bar style: a border follows the skin's bar.borderStyle while its companion is on", function()
+test("bar style: a real style in a skin wins while its companion is on, a skin's None defers", function()
     local i = inst()
     local NS, A = i.NS, i.A
-    local real = NS.Skin.Resolve
-    NS.Skin.Resolve = function(token, v, on)
-        if token == "bar.borderStyle" then return "flat" end
-        return real(token, v, on)
+    local real = NS.Skin.BarBorder
+    NS.Skin.BarBorder = function(style, show, size, fromSkin)
+        if fromSkin then return "flat", true, 2 end
+        return real(style, show, size, fromSkin)
     end
-    assertTrue(A.Bar().border ~= nil, "the skin's border, thickness and color the player's")
-    assertEqual(A.Bar().border.size, 1)
+    assertEqual(A.Bar().border.size, 2, "the skin's style and thickness")
     assertTrue(NS.SetByPath("appearance.bars.borderStyleFromSkin", false))
     assertEqual(A.Bar().border, nil, "off, the stored None")
-    NS.Skin.Resolve = real
+    NS.Skin.BarBorder = real
+    assertTrue(NS.SetByPath("appearance.bars.borderStyleFromSkin", true))
+    assertEqual(A.Bar().border, nil, "a skin's None over a stored None draws none")
+    assertTrue(NS.SetByPath("appearance.bars.borderStyle", "Solid"))
+    assertTrue(NS.SetByPath("appearance.bars.borderSize", 3))
+    assertEqual(A.Bar().border.size, 3, "a skin's None defers to the stored style and thickness")
 end)
 
 test("bar style: a border key LSM cannot answer draws no border", function()
@@ -311,15 +397,15 @@ test("bar style: a page's Defaults, a profile reset and a profile copy reach the
     assertTrue(NS.SetByPath("compare.other.barAlpha", 0.3))
     assertTrue(NS.SetByPath("compare.best.borderSize", 4))
     assertTrue(NS.ApplyDefault(NS.FindSchemaRow("compare.other.barAlpha")))
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "Defaults")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "Defaults")
     assertTrue(NS.SetByPath("compare.other.barAlpha", 0.3))
     NS.db:SetProfile("Copy")
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "a new profile reads the default")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "a new profile reads the default")
     NS.db:CopyProfile("Default")
     assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.3, "a copy carries the value")
     assertEqual(NS.GetSetting("compare.best.borderSize"), 4)
     NS.db:ResetProfile()
-    assertEqual(NS.GetSetting("compare.other.barAlpha"), 1, "a reset clears it")
+    assertEqual(NS.GetSetting("compare.other.barAlpha"), 0.9, "a reset clears it")
     assertEqual(NS.GetSetting("compare.best.borderSize"), 1)
 end)
 
@@ -327,6 +413,10 @@ end)
 
 local function migrated(profiles)
     local i = T.load({ init = false })
+    for _, p in pairs(profiles) do   -- the one step onto the skin has its own suite (test_skin_flip)
+        p.skin = p.skin or {}
+        p.skin.fullSkinReset = true
+    end
     _G.DpsRaceDB = { global = { schemaVersion = 7, schema = 4 }, profiles = profiles }
     i.mocks._G.DpsRaceDB = _G.DpsRaceDB
     i.NS:InitDB()
@@ -350,6 +440,7 @@ test("bar style: v8 copies a stored spell-bar fill to the detail, and a bare pro
     assertTrue(d.barColor ~= color, "the two blocks share no table")
     assertEqual(d.rowHeight, nil, "the row height stays the HUD's block's")
     assertEqual(custom.appearance.bars.barAlpha, 0.5, "the HUD's block keeps its own")
+    bare.skin = nil
     assertEqual(next(bare), nil, "an untouched profile reads the new defaults")
     assertEqual(other.resultsDetail, nil)
 end)

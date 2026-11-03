@@ -4,12 +4,13 @@
 -- What this addon owes the picker, and nothing the library pins itself: the spec it hands O.SkinPicker
 -- (its owner, its two seams, the General page's Skin tab, the eye, the close); WHEN it shows (a profile
 -- whose `skin.pickerSeen` is false, once two seconds after login and after every profile event, never
--- while the addon stands down, held through combat); that only the player's close marks it seen; and
--- that the eye turns test mode on. Then the Profiles page: AceConfigDialog acquires its widgets past
--- the Options proxy, so the renderer paints the tree itself. Last, the library-absent load.
+-- while the addon stands down, held through combat); and that only the player's close marks it seen.
+-- The eye's test mode is tests/test_skin_picker_preview.lua's. Then the Profiles page: AceConfigDialog
+-- acquires its widgets past the Options proxy, so the renderer paints the tree itself. Last, the
+-- library-absent load.
 --
--- Every case builds its own instance (the harness fires the login fuse, so each one starts with the
--- picker up).
+-- Every case builds its own instance on an unseen profile (`loginPicker`: the harness fires the login
+-- fuse, so each one starts with the picker up).
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
@@ -18,6 +19,8 @@ local PATH = "skin.pickerSeen"
 
 --- A fresh instance with the picker the login fuse showed taken down, unmarked.
 local function fresh(opts)
+    opts = opts or {}
+    opts.loginPicker = true
     local inst = T.load(opts)
     if inst.NS.HideSkinPicker then inst.NS.HideSkinPicker() end
     return inst.NS, inst.mocks
@@ -60,7 +63,7 @@ test("skin picker: the spec names this owner, its seams, the General page's Skin
     assertEqual(spec.tab, "Appearance", "the Skin tab's key")
     M.__subcategories["General"]:__fire("OnShow")
     assertTrue(NS.Helpers.__panelFor("general") ~= nil, "\"general\" is the page O.SelectTab finds")
-    assertEqual(type(spec.onPreview), "function")
+    assertEqual(type(spec.preview), "table", "the eye's mode (tests/test_skin_picker_preview.lua)")
     assertEqual(type(spec.onClose), "function")
 end)
 
@@ -150,7 +153,7 @@ end)
 -- ── the real window ──────────────────────────────────────────────────────────────────────────────
 
 test("skin picker: the harness login shows the library's window", function()
-    local inst = T.load()
+    local inst = T.load({ loginPicker = true })
     local f = inst.NS.MaybeShowSkinPicker()
     assertTrue(f ~= nil and f:IsShown(), "the login fuse left no picker up on an unseen profile")
 end)
@@ -176,20 +179,6 @@ test("skin picker: a profile that has seen it takes a shown picker down, unmarke
     NS.db.profile.skin.pickerSeen = true
     NS.MaybeShowSkinPicker()
     assertFalse(f:IsShown(), "the picker stayed up on a profile that has seen it")
-end)
-
-test("skin picker: the eye turns test mode on, and with it on shows the Results window", function()
-    local NS, M = fresh()
-    M.__resetPrinted()
-    NS.SkinPickerSpec().onPreview()
-    assertTrue(NS.Preview.IsActive(), "the eye did not start test mode")
-    assertEqual(NS.Preview.Mode(), "test")
-    assertTrue(NS.Results.IsShown(), "test mode opens the Results window on sample data")
-    NS.Results.Hide()
-    NS.SkinPickerSpec().onPreview()
-    assertTrue(NS.Preview.IsActive(), "the eye leaves test mode on")
-    assertTrue(NS.Results.IsShown(), "with test mode already on, the eye still shows the window")
-    NS.Preview.Stop()
 end)
 
 -- ── the Profiles page ────────────────────────────────────────────────────────────────────────────

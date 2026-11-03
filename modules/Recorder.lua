@@ -71,6 +71,15 @@ local function snapshotSpec(char)
     char.role = Secrets.PlainString(role)
 end
 
+--- The player's spec, read now (the idle body's Your best board, modules/Hud_Best.lua).
+--- @return number|nil specID
+--- @return string|nil spec  its name
+function Recorder.CurrentSpec()
+    local char = {}
+    snapshotSpec(char)
+    return char.specID, char.spec
+end
+
 --- Who the player is, read while everything is readable (at arm, out of combat).
 --- @return table char  { name, realm, class, specID, spec, role, ilvl, ilvlOverall, level, race }
 function Recorder.SnapshotPlayer()

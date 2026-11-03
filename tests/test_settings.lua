@@ -45,9 +45,10 @@ local STORED = {
     ["state.debugConsole"]   = { "bool",   nil },
     ["global.minimap.shown"] = { "bool",   true },
     ["state.testMode"]       = { "bool",   false },
+    ["state.sim"]            = { "bool",   false },   -- R6-SIM: the session Sim mode box, stores nothing
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
-    ["hud.autoShow"]         = { "bool",   false },
+    ["hud.autoShow"]         = { "bool",   true },
     ["live.rows"]            = { "number", 8,       0,    15,    1 },
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
@@ -56,7 +57,7 @@ local STORED = {
     ["live.paceBar"]         = { "bool",   true },
     ["live.castDots"]        = { "bool",   true },
     ["live.paceRange"]       = { "number", 1.5,     1.1,  2.0,   0.05 },
-    ["race.defaultLength"]   = { "number", 120 },
+    ["race.defaultLength"]   = { "number", 60 },
     ["race.autoArm"]         = { "bool",   false },
     ["race.countdownCue"]    = { "bool",   true },
     ["race.centerCountdown"] = { "bool",   true },
@@ -69,8 +70,10 @@ local STORED = {
     ["share.talentsLink"]    = { "bool",   false },
     ["toast.enabled"]        = { "bool",   true },
     ["toast.sound"]          = { "bool",   true },
-    ["toast.duration"]       = { "number", 8,       3,    30,    1 },
+    ["toast.soundKey"]       = { "string", "Default" },
+    ["toast.duration"]       = { "number", 10,      3,    30,    1 },
     ["toast.scale"]          = { "number", 1.0,     0.5,  2.0,   0.05 },
+    ["sim.stepDelay"]        = { "number", 1,       0.5,  10,    0.5 },
     -- General > Skin (skinning-§2/§3, core/SkinSetup.lua): skip-render rows the library's tab draws.
     ["skin.source"]          = { "string", "ka0s" },
     ["skin.skin"]            = { "string", "ka0s" },
@@ -97,27 +100,27 @@ local STORED = {
     ["appearance.left.useClassColorFont"] = { "bool", false },
     ["appearance.left.fontFlags"] = { "string", "@skin" },
     ["appearance.left.fontShadow"] = { "bool", false },
-    ["appearance.figures.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.figures.font"] = { "string", "Ka0s Prototype" },
     ["appearance.figures.fontSize"] = { "number", 20, 6, 32, 1 },
     ["appearance.figures.fontColor"] = { "color", "table" },
     ["appearance.figures.useClassColorFont"] = { "bool", false },
     ["appearance.figures.fontFlags"] = { "string", "@skin" },
     ["appearance.figures.fontShadow"] = { "bool", true },
     ["appearance.figures.fontFromSkin"] = { "bool", true },
-    ["appearance.spellText.font"] = { "string", "Friz Quadrata TT" },
+    ["appearance.spellText.font"] = { "string", "Ka0s Prototype" },
     ["appearance.spellText.fontSize"] = { "number", 10, 6, 32, 1 },
     ["appearance.spellText.fontColor"] = { "color", "table" },
     ["appearance.spellText.useClassColorFont"] = { "bool", false },
     ["appearance.spellText.fontFlags"] = { "string", "@skin" },
     ["appearance.spellText.fontShadow"] = { "bool", true },
     ["appearance.spellText.fontFromSkin"] = { "bool", true },
-    ["appearance.bars.barTexture"] = { "string", "Solid" },
+    ["appearance.bars.barTexture"] = { "string", "Ka0s Default" },
     ["appearance.bars.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.bars.barColor"] = { "color", "table" },
     ["appearance.bars.useClassColorBar"] = { "bool", false },
     ["appearance.bars.rowHeight"] = { "number", 18, 12, 30, 1 },
     ["appearance.bars.barTextureFromSkin"] = { "bool", true },
-    ["appearance.chart.barTexture"] = { "string", "Solid" },
+    ["appearance.chart.barTexture"] = { "string", "Ka0s Default" },
     ["appearance.chart.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.chart.barColor"] = { "color", "table" },
     ["appearance.chart.useClassColorBar"] = { "bool", false },
@@ -125,24 +128,35 @@ local STORED = {
     ["appearance.chart.columnGap"] = { "number", 0, 0, 3, 1 },
     ["appearance.chart.bgColor"] = { "color", "table" },
     ["appearance.chart.useClassColorBg"] = { "bool", false },
+    ["appearance.chart.bgFromSkin"] = { "bool", true },
+    ["appearance.elapsed.fontShadowFromSkin"] = { "bool", true },
+    ["appearance.elapsed.fontFromSkin"] = { "bool", true },
+    ["appearance.left.fontFromSkin"] = { "bool", true },
+    ["appearance.left.fontShadowFromSkin"] = { "bool", true },
+    ["appearance.figures.fontColorFromSkin"] = { "bool", true },
+    ["appearance.figures.fontShadowFromSkin"] = { "bool", true },
+    ["appearance.spellText.fontColorFromSkin"] = { "bool", true },
+    ["appearance.spellText.fontShadowFromSkin"] = { "bool", true },
+    ["resultsTable.barText.fontColorFromSkin"] = { "bool", true },
+    ["resultsTable.barText.fontShadowFromSkin"] = { "bool", true },
     ["appearance.chart.barTextureFromSkin"] = { "bool", true },
-    ["appearance.pace.barTexture"] = { "string", "Solid" },
+    ["appearance.pace.barTexture"] = { "string", "Ka0s Default" },
     ["appearance.pace.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["appearance.pace.barColor"] = { "color", "table" },
     ["appearance.pace.useClassColorBar"] = { "bool", false },
     ["appearance.pace.barTextureFromSkin"] = { "bool", true },
     -- History > Results table: composed blocks.
-    ["resultsTable.damageBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.damageBar.barTexture"] = { "string", "Ka0s Default" },
     ["resultsTable.damageBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.damageBar.barColor"] = { "color", "table" },
     ["resultsTable.damageBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.damageBar.barTextureFromSkin"] = { "bool", true },
-    ["resultsTable.dpsBar.barTexture"] = { "string", "Solid" },
+    ["resultsTable.dpsBar.barTexture"] = { "string", "Ka0s Default" },
     ["resultsTable.dpsBar.barAlpha"] = { "number", 0.9, 0, 1, 0.05 },
     ["resultsTable.dpsBar.barColor"] = { "color", "table" },
     ["resultsTable.dpsBar.useClassColorBar"] = { "bool", false },
     ["resultsTable.dpsBar.barTextureFromSkin"] = { "bool", true },
-    ["resultsTable.barText.font"] = { "string", "Friz Quadrata TT" },
+    ["resultsTable.barText.font"] = { "string", "Ka0s Prototype" },
     ["resultsTable.barText.fontSize"] = { "number", 10, 6, 32, 1 },
     ["resultsTable.barText.fontColor"] = { "color", "table" },
     ["resultsTable.barText.useClassColorFont"] = { "bool", false },
@@ -162,9 +176,10 @@ local function pinBar(prefix, bg)
     STORED[prefix .. "borderColor"] = { "color", "table" }
     STORED[prefix .. "useClassColorBorder"] = { "bool", false }
     STORED[prefix .. "borderStyleFromSkin"] = { "bool", true }
+    STORED[prefix .. "borderColorFromSkin"] = { "bool", true }
 end
 local function pinFill(prefix, alpha, fromSkin)
-    STORED[prefix .. "barTexture"] = { "string", "Solid" }
+    STORED[prefix .. "barTexture"] = { "string", "Ka0s Default" }
     STORED[prefix .. "barAlpha"] = { "number", alpha, 0, 1, 0.05 }
     STORED[prefix .. "barColor"] = { "color", "table" }
     STORED[prefix .. "useClassColorBar"] = { "bool", false }
@@ -177,9 +192,9 @@ pinBar("resultsTable.dpsBar.", false)
 pinBar("resultsDetail.spellBars.", true)
 pinFill("resultsDetail.spellBars.", 0.9, true)
 pinBar("compare.best.", false)
-pinFill("compare.best.", 1, true)
+pinFill("compare.best.", 0.9, true)
 pinBar("compare.other.", false)
-pinFill("compare.other.", 1, true)
+pinFill("compare.other.", 0.9, true)
 
 test("settings: the stored paths, types, defaults and ranges are exactly the pinned set", function()
     local NS = T.NS
@@ -225,7 +240,7 @@ test("settings: HUD Appearance's chart blocks: Damage chart (bar, height, column
         "appearance.chart.barTexture", "appearance.chart.barAlpha", "appearance.chart.barColor",
         "appearance.chart.useClassColorBar", "appearance.chart.barTextureFromSkin",
         "appearance.chart.height", "appearance.chart.columnGap",
-        "appearance.chart.bgColor", "appearance.chart.useClassColorBg",
+        "appearance.chart.bgColor", "appearance.chart.useClassColorBg", "appearance.chart.bgFromSkin",
         "appearance.pace.barTexture", "appearance.pace.barAlpha", "appearance.pace.barColor",
         "appearance.pace.useClassColorBar", "appearance.pace.barTextureFromSkin" }, ","))
     assertEqual(row(NS, "appearance.chart.bgColor").label, "Background color")
@@ -276,7 +291,7 @@ end)
 test("settings: the Race page's rows, ranges and defaults", function()
     local NS = T.NS
     local length = row(NS, "race.defaultLength")
-    assertEqual(length.default, 120, "2:00 for a new profile (the owner's call, 2026-10-26)")
+    assertEqual(length.default, 60, "1:00 for a new profile (the owner's call, 2026-11-03, R3-DR-2; 2:00 before)")
     local offered = {}
     for _, v in ipairs(length.values) do offered[#offered + 1] = v.value end
     assertEqual(table.concat(offered, ","), "30,60,120,180,300")
@@ -416,14 +431,14 @@ local function tabsOf(NS, page)
     return table.concat(out, "|")
 end
 
-test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin", function()
+test("settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, then Skin", function()
     local NS = T.NS
     assertEqual(tabsOf(NS, "hud"), "Race HUD|HUD Appearance")
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
-    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|New-best toast|Appearance",
+    assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 5),
-        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions and two Background and Border sets")
+    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1 + 2,
+        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions, two Background and Border sets, the text blocks' color and shadow companions and the chart background's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -454,12 +469,25 @@ test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned
     }, "\n"))
 end)
 
-test("settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order", function()
+test("settings: Race is four tabs, the timeline, the late-cast ignore list, the new-best toast, then Training dummies", function()
     local NS = T.NS
+    assertEqual(tabsOf(NS, "race"), "Race|Late-cast ignore list|New-best toast|Training dummies")
     for _, r in ipairs(NS.SchemaForPage("race")) do
-        local want = (r.path == "race.dummies" or r.path == "race.dummyCategory") and "Training dummies" or "Race"
+        local want = "Race"
+        if r.path == "race.dummies" or r.path == "race.dummyCategory" then want = "Training dummies"
+        elseif r.path == "race.lateIgnore" then want = "Late-cast ignore list"
+        elseif r.path:sub(1, 6) == "toast." then want = "New-best toast" end
         assertEqual(r.group, want, r.path .. " tab")
     end
+    assertEqual(tabRows(NS, "race", "Late-cast ignore list"),
+        "race.lateIgnore|Late-cast ignore list|Late-cast ignore list|false")
+    assertEqual(tabRows(NS, "race", "New-best toast"), table.concat({
+        "toast.enabled|New-best toast|Show a toast for a new best|false",
+        "toast.sound|New-best toast|Play a sound|true",
+        "toast.soundKey|New-best toast|Toast sound|false",
+        "toast.duration|New-best toast|Toast duration (seconds)|true",
+        "toast.scale|New-best toast|Toast scale|false",
+    }, "\n"))
     assertEqual(tabRows(NS, "race", "Training dummies"), table.concat({
         "race.dummyCategory|New dummies|Category for new dummies|false",
         "race.dummies|Your training dummies|Training dummies|false",
@@ -474,7 +502,7 @@ test("settings: Race is two tabs, the race's timeline then Training dummies, in 
         "race.hintDelay|At the buzzer|Sticky-combat hint after (seconds)|false",
         "race.grace|Scoring rules|Late-cast grace (seconds)|false",
         "race.restartGap|Scoring rules|Damage-restart gap (seconds)|false",
-        "race.lateIgnore|Late-cast ignore list|Late-cast ignore list|false",
+        "sim.stepDelay|Simulator|Simulation step delay (seconds)|false",
     }, "\n"))
 end)
 
@@ -489,10 +517,10 @@ test("settings: the show mode's tooltip points at General visibility", function(
         .. "the HUD stays hidden whatever this says.", 1, true) ~= nil, tip)
 end)
 
-test("settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD", function()
+test("settings: General's Defaults names Master controls and the skin, and not the keys or the HUD", function()
     local tip = T.mocks.__subcategories["General"].defaultsTooltip
-    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls, the "
-        .. "new-best toast and the skin. "
+    assertEqual(tip, "Restore every General setting on this profile to its addon default: Master controls "
+        .. "and the skin. "
         .. T.NS.Helpers.KEYBINDS_UNCHANGED)
     assertTrue(tip:find("live breakdown", 1, true) == nil and tip:find("HUD Appearance", 1, true) == nil, tip)
 end)
@@ -660,7 +688,7 @@ local IGNORE_DEFAULT = "66,1856,5384,8690,58984,110959"
 local function drawRace(inst)
     local NS, M = inst.NS, inst.mocks
     local H = NS.Helpers
-    local drawn, spec, button = {}, nil, nil
+    local drawn, spec, button
     local realList, realText, realPair = H.IdList, H.TextRow, H.InlineButtonPair
     H.IdList = function(ctx, s, ...) spec = s drawn[#drawn + 1] = "list" return realList(ctx, s, ...) end
     H.TextRow = function(ctx, text, ...) drawn[#drawn + 1] = "text" return realText(ctx, text, ...) end
@@ -668,6 +696,10 @@ local function drawRace(inst)
     local panel = M.__subcategories["Race"]
     panel:Show()
     panel:__fire("OnShow")
+    drawn, spec, button = {}, nil, nil
+    local ctx = assert(NS.pageCtx.race, "the Race page drew no ctx")
+    ctx.activeTab = "Late-cast ignore list"     -- its own tab (SF-DR-5)
+    H.RefreshPanel(ctx, true)
     H.IdList, H.TextRow, H.InlineButtonPair = realList, realText, realPair
     return spec, button, drawn
 end
@@ -727,6 +759,17 @@ test("settings: Race's Defaults resets the ignore list too, and its tooltip says
     assertEqual(NS.db.profile.race.lateIgnore, IGNORE_DEFAULT)
     local tip = M.__subcategories["Race"].defaultsTooltip
     assertTrue(tip:find("late-cast ignore list", 1, true) ~= nil, tip)
+    assertTrue(tip:find("new-best toast", 1, true) ~= nil, tip)
+end)
+
+test("settings: Race's Defaults brings the toast back, and General's no longer holds it (SF-DR-6)", function()
+    local inst = T.load()
+    local NS = inst.NS
+    assertTrue(NS.SetByPath("toast.scale", 1.5))
+    NS.Helpers.RestoreDefaults("general")
+    assertEqual(NS.db.profile.toast.scale, 1.5, "General leaves the toast alone")
+    NS.Helpers.RestoreDefaults("race")
+    assertEqual(NS.db.profile.toast.scale, 1.0)
 end)
 
 test("settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others", function()
@@ -781,7 +824,7 @@ test("settings: Race's Training dummies tab: the blurb, Add your target, your li
     local NS, M = inst.NS, inst.mocks
     local got = drawDummies(inst)
     -- The list draws its empty line through TextRow too.
-    assertEqual(table.concat(got.drawn, ","), "text,button,list,text,text,box,box,box,box,box,button")
+    assertEqual(table.concat(got.drawn, ","), "text,button,list,text,text," .. string.rep("box,", 42) .. "button")
     local list = got.list
     assertEqual(list.label, "Add a creature")
     assertEqual(list.removeStyle, "icon")
@@ -795,12 +838,14 @@ test("settings: Race's Training dummies tab: the blurb, Add your target, your li
     list.onRemove(99999)
     assertEqual(NS.db.profile.race.dummies, "")
     -- One checkbox per built-in, ascending; clearing one switches it off.
-    assertEqual(got.boxes[3].label, "Reinforced Golem (243205) \194\183 Boss-level")
-    assertTrue(got.boxes[3].get())
-    got.boxes[3].set(false)
+    local box
+    for _, b in ipairs(got.boxes) do if b.label:find("(243205)", 1, true) then box = b end end
+    assertEqual(box.label, "Reinforced Golem (243205) \194\183 Boss-level")
+    assertTrue(box.get())
+    box.set(false)
     assertEqual(NS.db.profile.race.dummies, "-243205")
-    assertFalse(got.boxes[3].get())
-    got.boxes[3].set(true)
+    assertFalse(box.get())
+    box.set(true)
     assertEqual(NS.db.profile.race.dummies, "")
     -- Add your target: the target, captured, with the row's category.
     assertEqual(got.buttons[1].text, "Add your target")

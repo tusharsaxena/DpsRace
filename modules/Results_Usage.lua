@@ -256,9 +256,10 @@ function ResultsUsage.Icon(e)
     return ResultsUsage.UNKNOWN_ICON
 end
 
---- An entry's icon as an inline texture for a tooltip line, "|T<icon>:14:14|t".
+--- An entry's icon as an inline texture for a tooltip line, its art cropped 5/64 (0.078) per side, past
+--- the icon rule's 0.07, so no native rounded edge shows (R5-ICON; an inline icon takes no edge).
 function ResultsUsage.InlineIcon(e)
-    return "|T" .. tostring(ResultsUsage.Icon(e)) .. ":14:14|t"
+    return "|T" .. tostring(ResultsUsage.Icon(e)) .. ":14:14:0:0:64:64:5:59:5:59|t"
 end
 
 --- The Used column's icons for `run`, in Entries' order; nil when not recorded.
@@ -309,9 +310,9 @@ end
 --- @return boolean opened
 function ResultsUsage.RowMenu(p, row)
     local data = row and row.data
-    if not (p.usage.editing and data and data.itemID and MenuUtil and MenuUtil.CreateContextMenu) then return false end
+    if not (p.usage.editing and data and data.itemID and NS.CanOpenMenu()) then return false end
     local itemID, name = data.itemID, ResultsUsage.Name(data)
-    MenuUtil.CreateContextMenu(row, function(_, root)
+    NS.OpenMenu(row, function(root)
         root:CreateButton(L["Never show %s"]:format(name), function() NS.Usage.Hide(itemID) end)
     end)
     return true
@@ -339,6 +340,7 @@ local function newRow(p, x, i)
     row.check:SetPoint("LEFT", row, "LEFT", 0, 0)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetSize(ResultsUsage.ICON, ResultsUsage.ICON)
+    NS.Style.EdgeIcon(row.icon)   -- cropped and outlined (R5-ICON, image 52)
     row.check.label = Tbl.Text(row, FONT.TEXT, C.text)
     row.check.label:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
     row.check:SetScript("OnClick", function() toggle(x, i) end)

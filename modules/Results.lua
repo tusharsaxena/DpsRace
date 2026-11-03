@@ -49,7 +49,7 @@ Results.TABS = { "runs", "insights" }
 
 -- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
 local Style = NS.Style
-local HEADER_H, TAB_H, FOOTER_H = Style.TITLE_BAR_H, Style.TAB_STRIP_H, 20
+local TAB_H, FOOTER_H = Style.TAB_STRIP_H, 20
 -- The footer's hint; on the Runs tab the run count goes before it.
 local HINT = L["Click a row for details \194\183 right-click for options"]
 
@@ -170,7 +170,8 @@ local function tabButton(name, label, i)
     -- `tab.text` when not.
     local b = CreateFrame("Button", nil, ui.frame)
     b:SetSize(Style.TAB_W, TAB_H)
-    b:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 7 + (i - 1) * Style.TAB_PITCH, -HEADER_H)
+    -- Flush under the title band (R5-DR1), so no skin's band runs over the tab strip.
+    b:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 6 + (i - 1) * Style.TAB_PITCH, 0)
     b.label = Style.Text(b, Style.FONT.TAB, nil, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
@@ -184,29 +185,22 @@ local function tabButton(name, label, i)
 end
 
 local function buildChrome(f)
-    -- The title centered in the title bar, as LootHistory's is: the skin's Shell paints it and the
-    -- divider (`title.text`, the title face; `divider`).
+    -- The title on the title band by the skin's `title.align`, as LootHistory's is: the skin's Shell
+    -- paints it (`title.text`, the title face), Style.Header places it and the controls on the band's
+    -- middle (R5-DR1). No line under the title band (R4-SEP), as the Skin Tester's showroom has none;
+    -- the rule under the tab strip stays.
     f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
-    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race \226\128\148 Results"])
-    f.divider = f:CreateTexture(nil, "ARTWORK")
-    f.divider:SetHeight(1)
-    f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
     -- The close control is the skin's (Core's, its hover `close.hot`); the view toggle beside it
     -- turns the accent under the pointer, as the HUD's controls do (modules/Style.lua).
     ui.controls = Style.NewStrip()
     ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
-    if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
     -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
     -- away), collapsed chevron-right (open it).
     ui.viewToggle = Style.AddToStrip(ui.controls, Style.ControlButton(f, "chevron-left", "<", "",
         function() Results.ToggleView() end))
-    ui.viewToggle:SetPoint("RIGHT", f, "TOPRIGHT", -6 - Style.CONTROL_PITCH, -HEADER_H / 2)
     local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28 - Style.CONTROL_PITCH, -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() f:StartMoving() end)
@@ -215,13 +209,15 @@ local function buildChrome(f)
         savePosition()
     end)
     ui.drag = drag
+    Style.Header(f, { title = f.title, drag = drag, right = { ui.close, ui.viewToggle }, n = 2 })
     tabButton("runs", L["Runs"], 1)
     tabButton("insights", L["Insights"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
     NS.Skin.Divider(line)
-    line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H - TAB_H)
-    line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H - TAB_H)
+    local band = Style.Band(f)
+    line:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -TAB_H)
+    line:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -TAB_H)
 end
 
 local function buildFooter(f)
@@ -285,7 +281,7 @@ local function ensureWindow()
     buildChrome(f)
     buildFooter(f)
     ui.body = CreateFrame("Frame", nil, f)
-    ui.body:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1))
+    ui.body:SetPoint("TOPLEFT", Style.Band(f), "BOTTOMLEFT", 0, -(TAB_H + 1))
     ui.body:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H + 1)
     ui.detail = NS.ResultsDetail.Build(ui.body, {
         back = function() Results.Back() end,
@@ -352,8 +348,13 @@ function Results.ToggleView()
     return Results.SetView(Results.View() == "expanded" and "collapsed" or "expanded")
 end
 
+-- The body stands under the tab strip, which stands under the title band, and over the footer rule:
+-- its size is the band's own geometry (Shell's inset and `title.height`, or EllesmereUI's 25 px bar
+-- flush at the top), so the panes fill the body in every source (R5-DR1's review: from TITLE_BAR_H the
+-- panes came out 6 px short under EllesmereUI and left an empty strip at the body's foot).
 local function bodySize()
-    return ui.width - 2, ui.height - HEADER_H - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
+    local inset, bandH = Style.BandGeometry()
+    return ui.width - 1 - inset, ui.height - inset - bandH - TAB_H - FOOTER_H - 2 - (ui.drop or 0)
 end
 
 local function layoutRuns(pane, width, height)
@@ -470,8 +471,9 @@ local function ensureStrip()
     ui.stripTried = true
     local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"])
     if strip then
-        strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1))
-        strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + TAB_H + 1))
+        local band = Style.Band(ui.frame)   -- under the tab strip, which stands under the band
+        strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1))
+        strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + 1))
     end
     ui.strip = strip
     return strip
@@ -484,7 +486,7 @@ local function applySampleMarker()
     local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
     if ui.drop ~= drop then
         ui.drop = drop
-        ui.body:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + TAB_H + 1 + drop))
+        ui.body:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 0, -(TAB_H + 1 + drop))
     end
     local marked = on and not strip
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])
@@ -766,8 +768,8 @@ end
 --- @param owner table  the row
 --- @return boolean opened
 function Results.RowMenu(r, owner)
-    if not (r and MenuUtil and MenuUtil.CreateContextMenu) then return false end
-    MenuUtil.CreateContextMenu(owner or UIParent, function(_, root)
+    if not (r and NS.CanOpenMenu()) then return false end
+    NS.OpenMenu(owner or UIParent, function(root)
         root:CreateTitle(NS.ResultsTable.Date(r.date, "%d %b %H:%M"))
         local hasNote = type(r.note) == "string" and r.note ~= ""
         root:CreateButton(hasNote and L["Edit Note"] or L["Add Note"], function() Results.EditNote(r.id) end)
@@ -778,8 +780,7 @@ function Results.RowMenu(r, owner)
         if not Source.IsMock() and NS.LateIgnore.Offers(r) then
             NS.LateIgnore.FillMenu(root:CreateButton(L["Ignore for late casts"]), r)
         end
-        -- A destructive item in the skin's `sem.danger` (ff5555 in Ka0s Default): the menu is the
-        -- client's own (skinning-§7), only the line written on it is the skin's.
+        -- A destructive item in the skin's `sem.danger` (ff5555 in Ka0s Default).
         root:CreateButton((NS.SkinEscape("sem.danger") or "") .. L["Delete"] .. "|r",
             function() Results.ConfirmDelete(r.id) end)
     end)

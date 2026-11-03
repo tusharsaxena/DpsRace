@@ -38,6 +38,9 @@ local addonName, NS = ...
 --   NS.QualityColor(q)      an item quality's r, g, b: the skin's q.* token where it sets one (a
 --                           legibility override), else the client's ITEM_QUALITY_COLORS; nil for none
 --                           (LootHistory's).
+--   NS.SkinBandGeometry()   where S.Band lays the title band now, its inset and height (the library's
+--                           rule; EllesmereUI's flush 25 px bar while it paints the Shell). Live only:
+--                           with no library Style.BandGeometry answers the host holder's.
 --   NS.SkinPaintAceTree(c)  `Skin:PaintAceTree` with the owner bound: an AceGUI tree this addon
 --                           acquired past the Options proxy (the Profiles page), painted for its skin.
 --   NS.MaybeShowSkinPicker() the first-run skin picker (owner ruling O3): `O.SkinPicker` while the
@@ -102,6 +105,8 @@ NS.SKIN_FALLBACK = {
     ["icon.tint"]        = { 0.7, 0.7, 0.72, 1 },
     ["icon.arrow"]       = { 1, 0.82, 0, 1 },
     ["icon.border"]      = { 0, 0, 0, 1 },
+    -- A window icon's outline (LibKa0s R4-L3); icon.border above stays the HUD icon edge.
+    ["icon.outline"]     = { 0x4d / 255, 0x4d / 255, 0x57 / 255, 1 },
     ["tab.text"]         = { 0.7, 0.7, 0.72, 1 },
     ["tab.onText"]       = { 1, 0.82, 0, 1 },
     ["tab.onLine"]       = { 1, 0.82, 0, 1 },
@@ -216,6 +221,12 @@ NS.SKIN_TOKENS = {
     -- The HUD's and the Results window's body text and its dim gray; the flat boxes' faint edge.
     ["dr.text"]       = { default = { 0.93, 0.93, 0.95, 1 }, follow = "text.body" },
     ["dr.dim"]        = { default = { 0.62, 0.62, 0.68, 1 }, follow = "text.muted" },
+    -- The HUD's own values where they differ from the skin's (FS-DR-FLIP, LibKa0s v1.85.0): the live
+    -- figures' gray over hud.text's white, the shadow the text blocks store over Ka0s Default's none
+    -- (S.HudFont's shadowToken), and the chart plot's dark wash over chart.track.
+    ["dr.figures.text"] = { default = { 0.93, 0.93, 0.95, 1 }, follow = "hud.text" },
+    ["dr.hud.shadow"]   = { default = { 0, 0, 0, 1 }, follow = "hud.shadow" },
+    ["dr.chart.bg"]     = { default = { 0, 0, 0, 0.35 }, follow = "chart.track" },
     ["dr.box.border"] = { default = { 1, 1, 1, 0.10 }, follow = "list.boxEdge" },
     -- The Results list (and the spell rows that share it): the stripe, the hover and selection
     -- washes, and the scroll thumb (D-5's values, kept).
@@ -223,7 +234,10 @@ NS.SKIN_TOKENS = {
     ["dr.list.hover"]   = { default = { 1, 1, 1, 0.04 }, follow = "list.hover" },
     ["dr.list.sel"]     = { default = rgba(GOLD, 0.10), follow = "list.sel" },
     ["dr.scroll.thumb"] = { default = { 1, 1, 1, 0.25 }, follow = "scroll.thumb" },
-    ["dr.list.track"]   = { default = { 1, 1, 1, 0.04 }, follow = "chart.track" },
+    -- A bar's track, the spell rows' and the pace bar's: Ka0s Default keeps this addon's two washes, and
+    -- every other skin draws its own bar.bg (the owner's ruling of 2026-11-01).
+    ["dr.list.track"]   = { default = { 1, 1, 1, 0.04 }, follow = "bar.bg" },
+    ["dr.pace.track"]   = { default = { 1, 1, 1, 0.08 }, follow = "bar.bg" },
     -- The run detail: its pane's dim wash, and the timing strip's two segments and their edge.
     ["dr.pane.bg"]       = { default = { 0, 0, 0, 0.15 }, follow = "panel.bg" },
     -- The dim cover over the Results window while the ability timeline is open (D-8's .45, kept).
@@ -378,9 +392,14 @@ end
 --
 -- PREVIEW. A pick only previews; `set` (NS.WriteSkinChoice) runs on Apply, the gear or Apply to all,
 -- and the close control and Escape put back the stored choice the library reads through `get`. The
--- eye (X6: this addon has a test mode to preview in) turns test mode on through its row's write
--- seam, the path `/dr test` takes, so the HUD and the Results window show sample data in the skin;
--- the library raises the picker over them once the eye returns.
+-- eye's mode is test mode (`spec.preview`, LibKa0s OptionsSkinPicker minor 11; R6-PV, the lead's
+-- call 2): the picker shown while the race HUD is hidden turns it on, so the HUD and the Results
+-- window show sample data in the skin; the eye turns it off and on; and every close (Apply, the gear,
+-- the close control, Escape, a hide) puts back what the picker or its eye moved, after the skin's own
+-- put-back. Enter and exit are NS.ToggleTestMode, the handler `/dr test` and the launcher's Test mode
+-- entry call, so the Master controls' checkbox follows and its refusals (combat, a real race, the
+-- stand-down) hold; isActive and isShown read what the launcher's isTestMode and isWindowShown read.
+-- A playing sim is not test mode and is never toggled: the toggle would read it as on and end it.
 --
 -- QUEUED. One picker is up at a time across every Ka0s addon: while another addon's is up,
 -- O.SkinPicker queues this one and answers nil, "queued", which NS.MaybeShowSkinPicker passes on.
@@ -389,17 +408,22 @@ local PICKER_PATH = "skin.pickerSeen"
 local pickerTarget       -- the one-shot PLAYER_REGEN_ENABLED target, while a start is held
 local quietClose = false -- true while NS.HideSkinPicker takes the picker down
 
---- The eye: test mode on (the HUD and the Results window on sample data). Test mode already on only
---- needs the Results window shown. A refused start (combat, a real race) prints its own line.
-local function previewSkin()
-    local P = NS.Preview
-    if not P then return end
-    if P.IsActive() then
-        P.OpenResults()
-    elseif NS.ToggleTestMode then
-        NS.ToggleTestMode()
-    end
-end
+--- The eye's mode (spec.preview): test mode, through NS.ToggleTestMode. Enter only from off (a sim
+--- playing counts as on, so it is left alone); exit only from test mode. A refused start (combat, a
+--- real race) prints its own line and moves nothing, which the library reads back through isActive.
+local preview = {
+    mode     = "test",
+    isActive = function() return NS.Preview ~= nil and NS.Preview.Mode() == "test" end,
+    isShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
+    enter    = function()
+        if not NS.Preview or NS.Preview.IsActive() then return false end
+        return NS.ToggleTestMode()
+    end,
+    exit     = function()
+        if not NS.Preview or NS.Preview.Mode() ~= "test" then return false end
+        return NS.ToggleTestMode()
+    end,
+}
 
 --- The player's close: the picker seen, and nothing else (the library's put-back already wears the
 --- stored choice).
@@ -414,7 +438,7 @@ function NS.SkinPickerSpec()
         -- The gear's default: O.OpenOptionsPanel("general"), then O.SelectTab("general",
         -- "Appearance"), the Skin tab's key on the General page (settings/General.lua).
         page = "general", tab = "Appearance",
-        onPreview = previewSkin, onClose = pickerClosed,
+        preview = preview, onClose = pickerClosed,
     }
 end
 
@@ -467,6 +491,51 @@ function NS.MaybeShowSkinPicker()
     return O.SkinPicker(NS.SkinPickerSpec())
 end
 
+-- ── the one-time skin notice (LibKa0s OptionsSkinPicker minor 9, SG-L3) ────────────────────────
+-- A release that wants every account to learn skins exist raises lib.SKIN_NOTICE_VERSION. The first
+-- addon to ask in a session claims the notice and shows the picker; every other addon records the
+-- version and stays quiet. The record is `db.global.skinNotice`, a number: account-wide, so a profile
+-- switch never shows it twice. In combat nothing is claimed; it asks again every NOTICE_RETRY seconds until combat ends.
+local NOTICE_RETRY = 5   -- seconds between asks while the player is in combat
+local noticeWaiting = false
+
+local function noticeGlobal()
+    local d = NS.db or (NS.addon and NS.addon.db)
+    return d and d.global or nil
+end
+
+local noticeStore = {
+    get = function() local g = noticeGlobal(); return g and g.skinNotice or nil end,
+    set = function(v) local g = noticeGlobal(); if g then g.skinNotice = v end end,
+}
+
+function NS.MaybeShowSkinNotice()
+    local O = NS.Helpers
+    if not (O and type(O.SkinNotice) == "function" and noticeGlobal()) then return nil, "unavailable" end
+    if NS.IsStoodDown and NS.IsStoodDown() then
+        -- A stood-down addon shows nothing, but a seen record still silences the rest (SG-L3).
+        O.SkinNotice(nil, noticeStore, true)
+        return nil, "standdown"
+    end
+    local spec = NS.SkinPickerSpec()
+    local frame, why = O.SkinNotice(spec, noticeStore)
+    if why == "combat" and not noticeWaiting and type(_G.C_Timer) == "table" and _G.C_Timer.After then
+        noticeWaiting = true
+        _G.C_Timer.After(NOTICE_RETRY, function()
+            noticeWaiting = false
+            NS.MaybeShowSkinNotice()
+        end)
+    end
+    return frame, why
+end
+
+local pickerFirstRun = NS.MaybeShowSkinPicker
+function NS.MaybeShowSkinPicker()
+    local frame, why = NS.MaybeShowSkinNotice()
+    if frame or why == "queued" then return frame, why end
+    return pickerFirstRun()
+end
+
 --- The reserved `/dr skin` verb's act (LibKa0s v1.82.0, OptionsSkinPicker minor 3, ruling D-16):
 --- O.SkinVerb with the spec the first-run start builds, so it shows the picker a new profile shows
 --- whatever skin.pickerSeen says, and writes nothing itself (the player's close marks it seen, as
@@ -506,7 +575,8 @@ if not Skin then
         "GetAccentColor", "GetPanelColor", "GetFont",
         "TitleBar", "Divider", "Footer", "Card", "Slider", "NavItem", "Drawer", "ListRow", "MenuFrame",
         "Tooltip", "Strip", "Cover", "Text", "ChartStyle", "BarStyle", "IconBorder", "GlowColor",
-        "BarTexture", "FontFlags", "HudFontSize",
+        "BarTexture", "FontFlags", "HudFontSize", "Mark", "MarkText", "HudTextColor", "HudLabelColor",
+        "BarFillColor", "HudShadow", "BarGloss", "HudFont", "HoverArt", "Band", "Header",
     }) do S[name] = noop end
 
     S.Token = function(name)
@@ -540,6 +610,23 @@ if not Skin then
         return (n and n > 0) and n or 12
     end
 
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 16): with no skin, a bar border is the stored three.
+    S.BarBorder = function(style, show, size) return style, show, size end
+
+    -- LibKa0s v1.85.0 (SkinPaintExtras minor 14): S.HudFont is the one facade member that must draw, or
+    -- a HUD string has no face. No skin to read, so a stored shadow draws no shadow on a 12.0.7 client,
+    -- which keeps only a font object's: accepted (Options doc, Moving to, section 7).
+    S.HudFont = function(fs, opts)
+        opts = type(opts) == "table" and opts or {}
+        local face = opts.face
+        if type(face) ~= "string" or face == "" then face = STANDARD_TEXT_FONT end
+        if type(face) ~= "string" then return nil end
+        fs:SetFont(face, S.HudFontSize(opts.size), S.FontFlags(opts.flags))
+        local on = opts.shadow and true or false
+        fs:SetShadowColor(0, 0, 0, on and 1 or 0)
+        fs:SetShadowOffset(on and 1 or 0, on and -1 or 0)
+    end
+
     NS.Skin = S
     function NS.ApplySkinChoice() return false, false end
     function NS.ApplySkinIgnore() return false, false end
@@ -562,6 +649,27 @@ Skin:RegisterOwner(addonName, {
     -- console under the Skin tag (resolved at call time: core/DebugLogSetup.lua loads below).
     log    = function(line) if NS.Debug then NS.Debug("Skin", "%s", line) end end,
 })
+
+-- EllesmereUI's shell bar, flush with the window's top, while it paints this owner's Shell: the
+-- library's EUI_BAR_H (SkinPaintExtras.lua, bandGeometry), measured by Premade Groups Filter Extension.
+local EUI_BAR_H = 25
+
+--- Where S.Band lays this owner's title band now, as the library works it out (SkinPaintExtras.lua's
+--- bandGeometry): flush and EUI_BAR_H high while EllesmereUI paints the Shell and has not been
+--- refused, else `win.borderSize` in from a flat edge (1 from any other) and `title.height` high.
+--- The library exposes no reader of its own; LibKa0s's suite holds the rule this mirrors.
+--- @return number inset, number height
+function NS.SkinBandGeometry()
+    local route = Skin.__euiRoute
+    local refused = type(Skin.euiRefused) == "table" and Skin.euiRefused[addonName]
+    if type(route) == "function" and route(addonName, "Shell") and not refused then
+        return 0, EUI_BAR_H
+    end
+    local style = Skin:Token(addonName, "win.borderStyle") or "flat"
+    local inset = style == "flat" and Skin:Token(addonName, "win.borderSize") or 1
+    local height = Skin:Token(addonName, "title.height")
+    return type(inset) == "number" and inset or 1, type(height) == "number" and height or 30
+end
 
 -- The one line a reload request earns on the path that has no popup of its own (a profile change
 -- leaving an EllesmereUI that painted this session). The Skin tab raises the library's popup for its

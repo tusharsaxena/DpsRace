@@ -17,7 +17,7 @@ local _, NS = ...
 -- position* clears it).
 --
 -- TEST MODE shows the sample race's toast (modules/Preview.lua: the same sample the HUD holds), sticky,
--- for placing it; the end of test mode takes it down. *Test toast* (General > New-best toast) queues a
+-- for placing it; the end of test mode takes it down. *Test toast* (Race > New-best toast) queues a
 -- sample toast that runs its course as a real one does.
 --
 -- PLAIN VALUES ONLY. The payload is text made from the stored run (every number on it went through
@@ -197,6 +197,9 @@ local function makeRows(frame)
     w.spec = frame:CreateTexture(nil, "ARTWORK")
     w.spec:SetSize(B.CLASS_ICON, B.CLASS_ICON)
     w.spec:SetPoint("LEFT", w.class, "RIGHT", 2, 0)
+    -- Both cropped and edged in the HUD's icon.border: a toast floats over the game world (R5-ICON).
+    Style.EdgeClassIcon(w.class, true)
+    Style.EdgeIcon(w.spec, true)
     w.who = Style.ScaledText(frame, Style.FONT.TITLE, SCALE)
     w.who:SetHeight(B.TITLE_H)
     if w.who.SetJustifyV then w.who:SetJustifyV("MIDDLE") end
@@ -283,6 +286,36 @@ local function draggable()
     return key == BestToast.SAMPLE or key == NS.TOAST_PREVIEW
 end
 
+local DEFAULT_SOUND = NS.defaults.profile.toast.soundKey
+
+local function lsm()
+    return LibStub and LibStub("LibSharedMedia-3.0", true)
+end
+
+--- The Toast sound row's list: Default first, then every LibSharedMedia sound, read as the list is
+--- drawn, since a media pack may register after this file loads. The row hands the picker this
+--- list every time, so Default stays listed after another pick.
+--- @return table { { value, text } }
+function BestToast.SoundValues()
+    local out = { { value = DEFAULT_SOUND, text = L[DEFAULT_SOUND] } }
+    local media = lsm()
+    local keys = {}
+    for key in pairs(media and media:HashTable("sound") or {}) do keys[#keys + 1] = key end
+    table.sort(keys, function(a, b) return tostring(a):upper() < tostring(b):upper() end)
+    for _, key in ipairs(keys) do out[#out + 1] = { value = key, text = key } end
+    return out
+end
+
+--- The file the picked sound names, read as a toast shows (Toast's d.soundFile). Nil for Default, a
+--- key LibSharedMedia does not know, or no library: the shell then plays its alert, today's sound.
+--- @return string|number|nil
+function BestToast.SoundFile()
+    local key, media = setting("soundKey"), lsm()
+    if key == nil or key == DEFAULT_SOUND or not media then return nil end
+    local ok, file = pcall(media.Fetch, media, "sound", key, true)
+    return ok and file or nil
+end
+
 toast = NS.NewToast({
     name        = "DpsRaceBestToast",
     build       = build,
@@ -291,6 +324,7 @@ toast = NS.NewToast({
     duration    = function() return setting("duration") end,
     scale       = function() return setting("scale") end,
     sound       = function() return setting("sound") end,
+    soundFile   = BestToast.SoundFile,
     draggable   = draggable,
     getPosition = getPosition,
     setPosition = setPosition,

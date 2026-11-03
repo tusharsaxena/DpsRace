@@ -197,7 +197,7 @@ end
 
 --- Add the channels to a menu description (the Share menu's root, or the Results row menu's Share
 --- submenu), the ones the player is not in grayed.
---- @param desc table  a MenuUtil description
+--- @param desc table  a menu description (NS.OpenMenu's, MenuUtil's shape)
 --- @param run table
 function Share.FillMenu(desc, run)
     for _, c in ipairs(Share.CHANNELS) do
@@ -217,12 +217,12 @@ function Share.Prompt(run, owner)
         return false
     end
     if fighting() then return refuseInCombat() end
-    if not (MenuUtil and MenuUtil.CreateContextMenu) then
+    if not NS.CanOpenMenu() then
         -- No menu on this client: the line in the player's own chat, to copy by hand.
         NS.Print(Share.Line(run))
         return true
     end
-    MenuUtil.CreateContextMenu(owner or UIParent, function(_, root)
+    NS.OpenMenu(owner or UIParent, function(root)
         root:CreateTitle(L["Share to"])
         Share.FillMenu(root, run)
     end)

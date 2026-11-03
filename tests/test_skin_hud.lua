@@ -8,7 +8,8 @@
 --     facade, and the stored pick comes back when it is off; the stored pick is never rewritten;
 --   - while Ignore fonts is on a face block draws its stored pick even with its companion on, and
 --     says it is not the skin's; the textures still follow (LibKa0s v1.81.0, R-1);
---   - a skin switch restyles the blocks (Appearance.stamp) and moves the face, never a color;
+--   - a skin switch restyles the blocks (Appearance.stamp) and moves the face (the colors and shadows
+--     are tests/test_skin_flip.lua's, LibKa0s v1.85.0);
 --   - the v6 step puts every stored companion back on, once, keeps the picks and the colors, never
 --     writes the "@skin" sentinel, and a player's later pick survives the next login.
 
@@ -16,6 +17,8 @@ local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertFalse = T.test, T.assertEqual, T.assertTrue, T.assertFalse
 
 local FOLLOWING = {
+    ["appearance.elapsed.fontFromSkin"] = "font",
+    ["appearance.left.fontFromSkin"] = "font",
     ["appearance.figures.fontFromSkin"] = "font",
     ["appearance.spellText.fontFromSkin"] = "font",
     ["appearance.bars.barTextureFromSkin"] = "barTexture",
@@ -62,12 +65,11 @@ test("skin hud: the defaults list every companion, on, and the full-path list ma
     assertEqual(seen, n)
 end)
 
-test("skin hud: the clocks keep their monospace face, with no companion (D-15)", function()
+test("skin hud: the clocks take the skin's font like the other blocks, with no color companion (SF-DR-1)", function()
     local NS = T.NS
     for _, block in ipairs({ "elapsed", "left" }) do
-        assertEqual(NS.defaults.profile.appearance[block].fontFromSkin, nil, block .. " default")
-        assertEqual(rowAt(NS, "appearance." .. block .. ".fontFromSkin"), nil, block .. " row")
-        assertEqual(rowAt(NS, "appearance." .. block .. ".font").disabledIf, nil, block .. " picker free")
+        assertEqual(NS.defaults.profile.appearance[block].fontFromSkin, true, block .. " default")
+        assertEqual(rowAt(NS, "appearance." .. block .. ".fontColorFromSkin"), nil, block .. " color row")
     end
 end)
 
@@ -113,6 +115,7 @@ test("skin hud: Ignore fonts gives each face block its stored face, the textures
     local LSM = M.LibStub("LibSharedMedia-3.0")
     local stamp = A.stamp
     local skinFace = LSM:Fetch("font", NS.Skin.Token("hud.font"))
+    assertTrue(NS.SetByPath("appearance.figures.font", "Ka0s Expressway"))
     assertTrue(NS.SetByPath("skin.ignoreFonts", true))
     assertTrue(A.stamp ~= stamp, "the toggle restyles the HUD live")
     for path, leaf in pairs(FOLLOWING) do
@@ -127,8 +130,7 @@ test("skin hud: Ignore fonts gives each face block its stored face, the textures
             assertTrue(on, path .. " says it is the skin's")
         end
     end
-    -- Friz Quadrata by default: the mock LSM does not register it, so the shipped fallback path.
-    local own = LSM:Fetch("font", NS.GetSetting("appearance.figures.font"), true) or "Fonts\\FRIZQT__.TTF"
+    local own = LSM:Fetch("font", "Ka0s Expressway")
     assertEqual(A.Font("figures").path, own, "the figures draw their own Font")
     assertTrue(own ~= skinFace, "and not the skin's face")
     assertEqual(A.Bar().texture, LSM:Fetch("statusbar", NS.Skin.Token("bar.texture")))
@@ -157,10 +159,15 @@ test("skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Defaul
     assertEqual(A.Bar().texture, bar)
     assertEqual(A.Chart().texture, bar)
     assertEqual(A.Pace().texture, bar)
-    -- The clocks stay on their own face.
+    -- The clocks follow it too (SF-DR-1), and off they draw their stored mono pick.
+    assertEqual(A.Font("elapsed").path, face)
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFromSkin", false))
     assertEqual(A.Font("elapsed").path, LSM:Fetch("font", "JetBrains Mono") or NS.Constants.FONT_MONO)
-    -- Off, the stored pick: Solid is the shipped flat texture.
+    assertTrue(NS.SetByPath("appearance.elapsed.fontFromSkin", true))
+    -- Off, the stored pick: the Ka0s pick by default (LibKa0s v1.85.0), then a player's.
     assertTrue(NS.SetByPath("appearance.bars.barTextureFromSkin", false))
+    assertEqual(A.Bar().texture, bar)
+    assertTrue(NS.SetByPath("appearance.bars.barTexture", "Solid"))
     assertEqual(A.Bar().texture, LSM:Fetch("statusbar", "Solid") or "Interface\\Buttons\\WHITE8x8")
 end)
 
@@ -173,7 +180,7 @@ test("skin hud: the Results table's bar cells and their text follow the skin too
     assertEqual(style.font.path, LSM:Fetch("font", NS.Skin.Token("hud.font")))
 end)
 
-test("skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)", function()
+test("skin hud: a skin switch restyles the blocks and moves the face and the color; the swatch is kept", function()
     local inst = T.load()
     local NS, M = inst.NS, inst.mocks
     local Skin = M.LibStub("LibKa0s-Skin-1.0")
@@ -190,8 +197,10 @@ test("skin hud: a skin switch restyles the blocks and moves the face, never a co
     local tex = A.MediaKey("appearance.bars.", "barTexture")
     assertTrue(name == face or tex == face, "the blocks read the new skin's media")
     local after = A.Font("figures")
-    assertEqual(("%.3f %.3f %.3f %.3f"):format(after.r, after.g, after.b, after.a),
-        ("%.3f %.3f %.3f %.3f"):format(before.r, before.g, before.b, before.a), "the player's color holds")
+    local r, g, b = NS.Skin.Color("dr.figures.text")
+    assertEqual(("%.3f %.3f %.3f"):format(after.r, after.g, after.b), ("%.3f %.3f %.3f"):format(r, g, b),
+        "the skin's text color draws")
+    assertEqual(NS.GetSetting("appearance.figures.fontColor").r, 0.93, "the player's swatch waits")
     -- The stored size holds; the drawn one is the new skin's HUD scale of it (LibKa0s v1.82.0, D-09).
     assertEqual(NS.GetSetting("appearance.figures.fontSize"), before.size, "the player's size holds")
     assertEqual(after.size, NS.Skin.HudFontSize(before.size, true), "drawn at the skin's HUD scale")
@@ -202,6 +211,10 @@ end)
 --- An instance over a v5 store with `profiles`, initialized and migrated.
 local function migrated(profiles)
     local inst = T.load({ init = false })
+    for _, p in pairs(profiles) do   -- the one step onto the skin has its own suite (test_skin_flip)
+        p.skin = p.skin or {}
+        p.skin.fullSkinReset = true
+    end
     _G.DpsRaceDB = { global = { schemaVersion = 5, schema = 4 }, profiles = profiles }
     inst.mocks._G.DpsRaceDB = _G.DpsRaceDB
     inst.NS:InitDB()
@@ -234,6 +247,7 @@ test("skin hud: the v6 step puts every stored companion back on, keeping the pic
     assertEqual(a.elapsed.fontFromSkin, nil, "no clock companion written")
     assertEqual(off.resultsTable.dpsBar.barTexture, "Blizzard", "no sentinel in a pick")
     assertEqual(off.resultsTable.dpsBar.barTextureFromSkin, nil, "an absent companion stays absent: its default is on")
+    bare.skin = nil
     assertEqual(next(bare), nil, "an empty profile untouched")
 end)
 

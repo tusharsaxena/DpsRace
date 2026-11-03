@@ -62,7 +62,9 @@ Hud.DROP_COMBAT = {
 Hud.FRAME_NAME = "DpsRaceHud"
 
 local SOUND_BUZZER = 8959    -- SOUNDKIT.RAID_WARNING
-local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }
+-- PLAYER_SPECIALIZATION_CHANGED: the idle body's Your best board is the spec's (R3-DR-4).
+local BASE_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
+                      "PLAYER_SPECIALIZATION_CHANGED" }
 local METER_EVENT = "DAMAGE_METER_COMBAT_SESSION_UPDATED"
 
 local ui                       -- the built window
@@ -274,6 +276,7 @@ local function idleView(v)
     v.editing = pick.editing
     v.blocker, v.detail = armBlocker()
     v.warning = targetWarning(target)
+    v.best = NS.HudBest.View(target, v.length)
 end
 
 local function resultView(v)
@@ -392,41 +395,25 @@ local function saveSize(width, height)
     if type(height) == "number" then w.height = math.floor(height + 0.5) end
 end
 
--- One title-bar control, the `slot`-th from the right edge, vertically centered in the title bar.
-local function placeControl(b, f, slot)
-    b:SetPoint("RIGHT", f, "TOPRIGHT", -6 - slot * NS.Style.CONTROL_PITCH, -HEADER_H / 2)
-end
-
--- The title bar: the title centered (the skin's Shell paints it and the divider), and the four
--- controls on the right: the close control is the skin's own (S.CloseButton through Core, its hover
--- `close.hot`), the other three turn the accent under the pointer (one shared strip, modules/Style.lua).
+-- The title bar on the skin's title band (Style.Header, R5-DR1): the title LEFT in every skin (item
+-- 3a: the four controls crowd a centered title), and the four controls on the right: the close
+-- control is the skin's own (S.CloseButton through Core, its hover `close.hot`), the other three turn
+-- the accent under the pointer (one shared strip, modules/Style.lua). Each is on the band's middle.
 local function buildHeader(f)
     local Style = NS.Style
     f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
-    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
     f.title:SetText(L["DPS Race"])
-    f.divider = f:CreateTexture(nil, "ARTWORK")
-    f.divider:SetHeight(1)
-    f.divider:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    f.divider:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    -- No line under the title band (R4-SEP): every Ka0s window reads like the Skin Tester's showroom.
     ui.controls = Style.NewStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
-    if close then
-        placeControl(close, f, 0)
-        NS.HudStates.AddTip(close, NS.HudTips.close)
-    end
+    if close then NS.HudStates.AddTip(close, NS.HudTips.close) end
     ui.close = close
     ui.lock = Style.ControlButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
     ui.settings = Style.ControlButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
     ui.results = Style.ControlButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
-    for slot, b in ipairs({ ui.lock, ui.settings, ui.results }) do
-        placeControl(b, f, slot)
-        Style.AddToStrip(ui.controls, b)
-    end
-    -- The drag strip: the title bar left of the controls.
+    for _, b in ipairs({ ui.lock, ui.settings, ui.results }) do Style.AddToStrip(ui.controls, b) end
+    -- The drag strip: the title band left of the controls.
     local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -(8 + 4 * NS.Style.CONTROL_PITCH), -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() if not Hud.locked then f:StartMoving() end end)
@@ -435,6 +422,8 @@ local function buildHeader(f)
         savePosition()
     end)
     ui.drag = drag
+    Style.Header(f, { title = f.title, align = "LEFT", drag = drag,
+        right = { close, ui.lock, ui.settings, ui.results }, n = 4 })
 end
 
 local function buildFooter(f)
@@ -507,23 +496,6 @@ local function titleText()
     return L["DPS Race"]
 end
 
--- The plain title is centered. The marked one is too long to center at the minimum width without
--- reaching the controls, so it sits left and stops where the drag strip does.
-local function placeTitle(marked)
-    if ui.titleMarked == marked then return end
-    ui.titleMarked = marked
-    local t = ui.frame.title
-    t:ClearAllPoints()
-    if marked then
-        t:SetPoint("LEFT", ui.frame, "TOPLEFT", 10, -HEADER_H / 2)
-        t:SetPoint("RIGHT", ui.drag, "RIGHT", -4, 0)
-        t:SetJustifyH("LEFT")
-    else
-        t:SetPoint("CENTER", ui.frame, "TOP", 0, -HEADER_H / 2)
-        t:SetJustifyH("CENTER")
-    end
-end
-
 --- The title the window shows now, for the suites.
 function Hud.TitleText() return titleText() end
 
@@ -533,8 +505,9 @@ local function ensureStrip()
     -- What test mode shows and what ends it, in one line short enough for the minimum width.
     local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"])
     if strip then
-        strip:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", 1, -(HEADER_H + 1))
-        strip:SetPoint("TOPRIGHT", ui.frame, "TOPRIGHT", -1, -(HEADER_H + 1))
+        local band = NS.Style.Band(ui.frame)   -- flush under the title band, in every skin
+        strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, 0)
+        strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, 0)
     end
     ui.strip = strip
     return strip
@@ -550,7 +523,6 @@ local function applyTestMarker()
         ui.content:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", PAD, -(CONTENT_TOP + drop))
         layoutBodies()
     end
-    placeTitle(titleMarked())
     ui.frame.title:SetText(titleText())
 end
 
@@ -942,6 +914,12 @@ local backToIdle -- defined with the acts below
 local function runsChanged(race, get)
     local accepted = deleting
     deleting = nil
+    -- The idle body's Your best card reads the board a change may have moved (R3-DR-4). The bus
+    -- keeps no order between its receivers, so the board is dropped here too, not only in Bests'.
+    if race.State() == S().IDLE and windowShown() then
+        NS.Bests.Invalidate()
+        return Hud.Refresh()
+    end
     if race.State() ~= S().RESULT then return end
     local run = race.Current()
     if not run then return end
@@ -1061,6 +1039,13 @@ function Act.details()
     openRun(run)
 end
 
+--- The idle body's Your best card: its run in the Results window (the sample's in test mode).
+function Act.openBest(run)
+    if type(run) ~= "table" then return end
+    if previewOn() then return NS.Preview.OpenResults(run.id) end
+    openRun(run)
+end
+
 --- New Race: back to the Arm Race screen (the owner's call, 2026-10-24), not straight to an armed
 --- race. The result card is dismissed (the run is kept), the window stays open as the player's, and
 --- the idle body is set to the same length, so Arm Race repeats the race.
@@ -1109,6 +1094,9 @@ function Hud.Diagnose()
     return { body = ui and ui.current or "none", events = registered, ticking = ticking, locked = Hud.locked,
              height = (ui and ui.height) or select(2, storedSize()) }
 end
+
+--- The HUD's window, or nil before it is first built (the stepper docks beside it, SF-DR-8).
+function Hud.Frame() return ui and ui.frame or nil end
 
 --- The built window and its bodies, for the suites (nil until first shown).
 function Hud.__ui() return ui end

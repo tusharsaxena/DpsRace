@@ -210,8 +210,10 @@ Style.GOLD = Style.Tok("text.accent")
 Style.REST = Style.Tok("icon.tint")
 
 -- The title bar, the tab strip and a control slot (LootHistory and BankLedger: titleBarH 30,
--- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot).
-Style.TITLE_BAR_H = 30
+-- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot). The bar's height is the
+-- skin's `title.height`, read once: geometry every layout in the windows is built on, and the same in
+-- every skin (SkinDefs), with 30 for a degraded load.
+Style.TITLE_BAR_H = NS.Skin.Token("title.height") or 30
 Style.TAB_STRIP_H = 26
 Style.TAB_W, Style.TAB_PITCH = 90, 94
 Style.CONTROL = 18
@@ -279,6 +281,20 @@ function Style.Paint(fs, color, font, force)
     local token = ROLE_TOKEN[role] or role
     tinted[fs] = token
     tint(fs, token)
+end
+
+--- The color Style.Paint would give `fs`, alpha included, and nothing else: for a label that takes
+--- its face and shadow from S.HudFont, which a forced Paint would put back on the role's face. Paint's
+--- stamp is not consulted, because the color it remembers is not the one on the string.
+--- @param fs table
+--- @param color table|string
+function Style.Recolor(fs, color)
+    local c = color
+    if type(c) ~= "table" or c.token then
+        local role = Style.Role(fontOf[fs], c)
+        c = Style.Tok(ROLE_TOKEN[role] or role)
+    end
+    fs:SetTextColor(c[1], c[2], c[3], c[4] or 1)
 end
 
 local SkinLib = LibStub and LibStub("LibKa0s-Skin-1.0", true)
@@ -474,6 +490,152 @@ function Style.AddToStrip(strip, b)
     end)
     paintControl(b, Style.REST)
     return b
+end
+
+--- The skin's icon border around a spell icon's texture `tex`, on a frame of its own, since a border
+--- needs a frame (S.IconBorder, cause A1). Recorded, so a skin change reaches it. A caller hiding the
+--- icon hides this with it. The icon is named (`opts.icon`), so the library's zoom crops its art's own
+--- edge inside the 1 px outline: the bare edge frame has no `.icon` for it to find (R3-FIX, image 103).
+--- With `hud` the edge is the HUD's `icon.border` (black under Ka0s Default), never a window icon's
+--- `icon.outline` (gray): LibKa0s's `opts.hud` (R4-HUD, the owner's scope answer in R4_SIGNOFF.md).
+--- @param parent table  a frame
+--- @param tex table  the icon's Texture
+--- @param hud boolean|nil  true for an icon on the race HUD; nil: a window's
+--- @return table frame
+function Style.IconEdge(parent, tex, hud)
+    local edge = CreateFrame("Frame", nil, parent)
+    edge:SetAllPoints(tex)
+    NS.Skin.IconBorder(edge, { fromSkin = true, icon = tex, hud = hud == true })
+    return edge
+end
+
+--- The crop a Blizzard icon's art takes inside an edge of this addon's own, or on the HUD: 0.08 per
+--- side, the chart's and the timeline's, past the library's 0.07 zoom, so the icon's own rounded
+--- native edge never shows inside the edge (R4-ZOOM, the owner's scope answer in R4_SIGNOFF.md).
+Style.ICON_CROP = 0.08
+
+--- Crop `tex`'s art by Style.ICON_CROP per side (an item, enchant or gem icon in its quality edge).
+--- @param tex table  a Texture
+--- @return table tex
+function Style.CropIcon(tex)
+    local c = Style.ICON_CROP
+    tex:SetTexCoord(c, 1 - c, c, 1 - c)
+    return tex
+end
+
+--- A standalone Blizzard icon, cropped (Style.CropIcon) and edged 1 px through S.IconBorder's
+--- Texture form, which hangs the edge on a holder of its own over the icon and shows and hides it
+--- with the icon: a window's `icon.outline`, or with `hud` (a toast) the HUD's `icon.border`. The
+--- icon rule (R5-ICON, LibKa0s docs/api/README.md "Icon art: the rule"). The library's 0.07 zoom
+--- only tightens, so the 0.08 crop stands through every replay.
+--- @param tex table  the icon's Texture
+--- @param hud boolean|nil  true for an icon on a toast; nil: a window's
+--- @return table tex
+function Style.EdgeIcon(tex, hud)
+    Style.CropIcon(tex)
+    NS.Skin.IconBorder(tex, { fromSkin = true, hud = hud == true })
+    return tex
+end
+
+--- A class icon's edge: one cell of the character-creation sheet, cropped inside its cell by
+--- ResultsTable.SetClassIcon, so the edge leaves its coords alone (zoom = false: the library's zoom
+--- clamps in whole-texture space, which would cut 28% off a cell on the sheet's edge).
+--- @param tex table  the class icon's Texture
+--- @param hud boolean|nil  true for an icon on a toast
+--- @return table tex
+function Style.EdgeClassIcon(tex, hud)
+    NS.Skin.IconBorder(tex, { fromSkin = true, zoom = false, hud = hud == true })
+    return tex
+end
+
+-- ── the header on the title band (R5-DR1) ────────────────────────────────────────────────────
+-- Every window's header stands on the title band's own frame: LibKa0s's S.Band, which Shell lays at
+-- its own inset (`win.borderSize` in from a flat edge, else 1) and `title.height`, and lays again on
+-- a skin switch. S.Header anchors the title and the controls LEFT, CENTER or RIGHT to it at y 0, so
+-- each sits on the band's vertical middle in every skin (feedback item 5 of Ka0sAddonsCommonTasks
+-- docs/2026-11-03-SMOKE_ROUND5: -HEADER_H/2 off the frame's top was 1 px high of a band inset 1).
+-- Recorded, so a switch places them again. The drag strip covers the band left of the controls.
+-- With no library (a degraded load: S.Band answers nil, S.Header draws nothing) a host holder
+-- stands where Shell would lay the band, and the same anchors are set once by hand.
+
+local CONTROL_PAD = 6   -- the outermost control's gap to the band's right edge (S.Header's pad)
+
+--- The window's title band: the library's, else the host's holder. Answers it and whether it is
+--- the library's.
+local function bandOf(f)
+    local band = NS.Skin.Band and NS.Skin.Band(f)
+    if band then return band, true end
+    if not f.drBand then
+        local b = CreateFrame("Frame", nil, f)
+        b:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+        b:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
+        b:SetHeight(Style.TITLE_BAR_H)
+        b:EnableMouse(false)
+        f.drBand = b
+    end
+    return f.drBand, false
+end
+
+--- Where the title band stands now, for a layout that sizes what hangs from its foot: its inset
+--- from the frame's top and its height. The library's rule (NS.SkinBandGeometry, S.Band's own: flush
+--- and 25 high while EllesmereUI paints the Shell), else the degraded holder's, 1 in and TITLE_BAR_H
+--- high. Worked out, never read back off the frame (the window makes no geometry read as it lays out).
+--- @return number inset, number height
+function Style.BandGeometry()
+    if NS.Skin.Band and NS.SkinBandGeometry then return NS.SkinBandGeometry() end
+    return 1, Style.TITLE_BAR_H
+end
+
+--- The window's title band frame (S.Band, or the degraded holder), for what stands under it.
+--- @param f table  the window
+--- @return table band
+function Style.Band(f)
+    return (bandOf(f))
+end
+
+--- The header of `f` on its band. `spec.right` lists the title-bar controls outermost first, `spec.n`
+--- of them (an entry may be nil: a slot kept for a control that could not be made); each is RIGHT on
+--- the band, CONTROL_PAD in, one CONTROL_PITCH apart. `spec.title` is anchored by `spec.align`, else
+--- the skin's `title.align` (CENTER with no library). `spec.drag` takes the band's rect up to the
+--- controls.
+--- @param f table  the window
+--- @param spec table  { title = fs, align = "LEFT"|nil, right = { ... }, n = number, drag = frame }
+function Style.Header(f, spec)
+    local band, fromLib = bandOf(f)
+    local n = spec.n or #(spec.right or {})
+    local right = {}
+    for i = 1, n do
+        local b = spec.right[i]
+        local x = CONTROL_PAD + (i - 1) * Style.CONTROL_PITCH
+        if b then
+            right[#right + 1] = { frame = b, width = Style.CONTROL, x = x }
+            if not fromLib then
+                b:ClearAllPoints()
+                b:SetPoint("RIGHT", band, "RIGHT", -x, 0)
+            end
+        end
+    end
+    local reach = n > 0 and (CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH + Style.CONTROL + 2) or 0
+    local drag = spec.drag
+    if drag then
+        drag:ClearAllPoints()
+        drag:SetPoint("TOPLEFT", band, "TOPLEFT", 0, 0)
+        drag:SetPoint("BOTTOMRIGHT", band, "BOTTOMRIGHT", -reach, 0)
+    end
+    if fromLib then
+        NS.Skin.Header(f, { title = spec.title, align = spec.align, right = right })
+        return
+    end
+    local fs, align = spec.title, spec.align or "CENTER"
+    if not fs then return end
+    fs:ClearAllPoints()
+    if align == "LEFT" then
+        fs:SetPoint("LEFT", band, "LEFT", 8, 0)
+        if drag then fs:SetPoint("RIGHT", drag, "RIGHT", -4, 0) end
+    else
+        fs:SetPoint("CENTER", band, "CENTER", 0, 0)
+    end
+    fs:SetJustifyH(align)
 end
 
 --- A title-bar control drawn from the shared catalog, a plain character beneath it when the catalog

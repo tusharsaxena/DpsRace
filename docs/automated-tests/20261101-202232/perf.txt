@@ -1,0 +1,18 @@
+Ka0s DPS Race — offline perf  (v0.1.0, label 'offline')
+
+scenario                    iters     ms/iter notes/iter  bytes/iter
+raceEventCaptureOff          2000     0.00168       0.00         0.3
+raceEventCaptureOn           2000     0.00191       1.00         0.3
+hudTickCaptureOff            2000     0.01601       0.00       800.3
+hudTickCaptureOn             2000     0.01692       1.00       800.3
+hudLiveCaptureOff            2000     0.07761       0.00      6112.4
+hudLiveCaptureOn             2000     0.06837       1.00      6112.4
+combatEventCaptureOff        2000     0.09222       0.00      1241.4
+combatEventCaptureOn         2000     0.09528       1.00      2224.5
+raceInputStoodDown           2000     0.00012       0.00         0.0
+
+timings are for orientation only — compare scenarios within a run, never across machines
+
+1 assertion FAILED:
+  - combatEventCaptureOn allocated 2224.5 bytes/iter, over combatEventCaptureOff's 1241.4 by more than 64
+wrote docs/automated-tests/20261101-202232/perf.json

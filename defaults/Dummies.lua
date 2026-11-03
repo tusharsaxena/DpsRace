@@ -26,11 +26,48 @@ Dummies.LABELS = {
 
 -- Keyed by creature ID (the sixth field of a Creature GUID, as a number).
 Dummies.BY_ID = {
-    [243167] = { name = "Dungeoneer's Training Dummy", category = "dungeoneer" },  -- 2026-10-23, Silvermoon
-    [243168] = { name = "Dungeoneer's Training Dummy", category = "dungeoneer" },  -- 2026-10-23, Silvermoon
-    [243208] = { name = "Cleave Training Dummy",       category = "cleave" },      -- 2026-10-23, Silvermoon
-    [243205] = { name = "Reinforced Golem",            category = "boss" },  -- 2026-10-23, Silvermoon
-    [243211] = { name = "PvP Training Dummy",          category = "pvp" },  -- MultiMeters, 2026-09-26
+    [31146] = { name = "Raider's Training Dummy",        category = "boss"        },  -- 2026-11-01, City of Ironforge, Orgrimmar, Shrine of Seven Stars, Stormwind City, The Exodar, Thunder Bluff
+    [65310] = { name = "Turnip Punching Bag",            category = "boss"        },  -- 2026-11-01, Silvermoon City
+    [67127] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Shrine of Seven Stars
+    [114832] = { name = "PvP Training Dummy",             category = "pvp"         },  -- 2026-11-01, Stormwind City
+    [126781] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Tiragarde Sound
+    [131983] = { name = "Raider's Training Dummy",        category = "boss"        },  -- 2026-11-01, Tiragarde Sound
+    [131989] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Tiragarde Sound
+    [131992] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Tiragarde Sound
+    [144078] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Zuldazar
+    [144081] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Zuldazar
+    [144082] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Zuldazar
+    [144085] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Zuldazar
+    [144086] = { name = "Raider's Training Dummy",        category = "boss"        },  -- 2026-11-01, Zuldazar
+    [153285] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, City of Ironforge, Orgrimmar, The Exodar, Thunder Bluff
+    [153292] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Stormwind City
+    [189617] = { name = "Boulderfist",                    category = "boss"        },  -- 2026-11-01, Valdrakken
+    [189632] = { name = "Animated Duelist",               category = "boss"        },  -- 2026-11-01, Valdrakken
+    [194643] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Valdrakken
+    [194644] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Valdrakken
+    [194648] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Valdrakken
+    [194649] = { name = "Normal Tank Dummy",              category = "single"      },  -- 2026-11-01, Valdrakken
+    [196394] = { name = "Tuskarr Training Dummy",         category = "boss"        },  -- 2026-11-01, Silvermoon City
+    [197833] = { name = "PvP Training Dummy",             category = "pvp"         },  -- 2026-11-01, Valdrakken
+    [198594] = { name = "Cleave Training Dummy",          category = "cleave"      },  -- 2026-11-01, Valdrakken
+    [199057] = { name = "Black Dragon's Challenge Dummy", category = "boss"        },  -- 2026-11-01, Silvermoon City
+    [216458] = { name = "Sparring Dummy",                 category = "single"      },  -- 2026-11-01, Bel'ameth
+    [219250] = { name = "PvP Training Dummy",             category = "pvp"         },  -- 2026-11-01, Dornogal
+    [225976] = { name = "Normal Tank Dummy",              category = "single"      },  -- 2026-11-01, Dornogal
+    [225977] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Dornogal
+    [225978] = { name = "Crystalmaw",                     category = "boss"        },  -- 2026-11-01, Dornogal
+    [225982] = { name = "Cleave Training Dummy",          category = "cleave"      },  -- 2026-11-01, Dornogal
+    [225983] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-11-01, Dornogal
+    [225984] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Dornogal
+    [225985] = { name = "Kelpfist",                       category = "boss"        },  -- 2026-11-01, Dornogal
+    [243166] = { name = "Normal Tank Dummy",              category = "single"      },  -- 2026-11-01, Silvermoon City
+    [243167] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-10-23, Silvermoon
+    [243168] = { name = "Dungeoneer's Training Dummy",    category = "dungeoneer"  },  -- 2026-10-23, Silvermoon
+    [243205] = { name = "Reinforced Golem",               category = "boss"        },  -- 2026-10-23, Silvermoon
+    [243206] = { name = "Heavyweight Golem",              category = "boss"        },  -- 2026-11-01, Silvermoon City
+    [243207] = { name = "Training Dummy",                 category = "single"      },  -- 2026-11-01, Silvermoon City
+    [243208] = { name = "Cleave Training Dummy",          category = "cleave"      },  -- 2026-10-23, Silvermoon
+    [243211] = { name = "PvP Training Dummy",             category = "pvp"         },  -- MultiMeters, 2026-09-26
 }
 
 --- The shipped catalog's entry for a creature ID, as a fresh copy, whatever the profile's list says.

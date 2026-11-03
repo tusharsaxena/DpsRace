@@ -172,6 +172,8 @@ local HEADER_H = Style.TITLE_BAR_H
 -- The skin's Shell made opaque (DR-G1, LibKa0s-Skin-1.0's slot remap): the skin's window fill at
 -- alpha 1, its inner rule and divider blended over that fill to alpha 1 (core/SkinSetup.lua's
 -- dr.modal.* owner tokens), so they read as on the other windows and nothing behind shows through.
+-- The divider slot colors only a frame.divider, which neither modal makes (R4-SEP: no line under a
+-- title band); the remap stays, as tests/test_results_timeline_modal.lua pins it.
 Timeline.SHELL = { tokens = { bg = "dr.modal.bg", inner = "dr.modal.inner", divider = "dr.modal.divider" } }
 
 local ui        -- the built window
@@ -200,26 +202,21 @@ local function disc(parent, color, size, layer)
 end
 
 local function buildChrome(f)
-    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")   -- the Shell's (title.text, the title face)
-    f.title:SetPoint("CENTER", f, "TOP", 0, -HEADER_H / 2)
+    -- The title and the close on the title band, the title by the skin's `title.align` (Style.Header,
+    -- R5-DR1): the Shell paints it (title.text, the title face).
+    f.title = Style.PlainText(f, FONT.TITLE, "CENTER")
     f.title:SetText(L["Ability timeline"])
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line, { token = "dr.modal.divider" })
-    line:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -HEADER_H)
-    line:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -HEADER_H)
+    -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
     ui.controls = Style.NewStrip()
     ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
-    if ui.close then ui.close:SetPoint("RIGHT", f, "TOPRIGHT", -6, -HEADER_H / 2) end
     local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -28, -HEADER_H)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
     drag:SetScript("OnDragStart", function() f:StartMoving() end)
     -- Moved for as long as it is open: nothing stored, the next open goes over the Results window.
     drag:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
     ui.drag = drag
+    Style.Header(f, { title = f.title, drag = drag, right = { ui.close }, n = 1 })
 end
 
 -- The legend bar: a gold disc and this run's label, a blue one and the compared run's, then the hint;
@@ -498,6 +495,7 @@ local function newPair()
     pair.icon = pair:CreateTexture(nil, "ARTWORK")
     pair.icon:SetSize(Timeline.ICON, Timeline.ICON)
     pair.icon:SetPoint("LEFT", pair, "TOPLEFT", 0, -Timeline.LANE_H / 2)
+    Style.IconEdge(pair, pair.icon)
     pair.name = Style.Text(pair, FONT.TEXT, C.text)
     pair.name:SetPoint("LEFT", pair.icon, "RIGHT", 6, 0)
     pair.name:SetWidth(Timeline.NAME_W - Timeline.ICON - 6)
@@ -620,6 +618,7 @@ local function newIcon()
     f.tex = f:CreateTexture(nil, "OVERLAY")
     f.tex:SetAllPoints(f)
     f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    NS.Skin.IconBorder(f, { fromSkin = true })
     f:SetScript("OnEnter", iconTip)
     f:SetScript("OnLeave", Tbl.HideTip)
     return f

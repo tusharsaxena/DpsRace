@@ -197,6 +197,7 @@ test("chart: the columns take the Column gap setting; the plot's background its 
     rawset(chart.plot, "SetBackdropColor", function(_, r, g, b, a) bg = { r, g, b, a } end)
     assertTrue(f.NS.SetByPath("appearance.chart.columnGap", 2))
     assertTrue(f.NS.SetByPath("appearance.chart.bgColor", { r = 0.1, g = 0.2, b = 0.3, a = 0.5 }))
+    assertTrue(f.NS.SetByPath("appearance.chart.bgFromSkin", false))
     tick(f)
     assertEqual(chart.colX[2] - (chart.colX[1] + chart.colW[1]), 2, "the gap drawn")
     assertTrue(bg ~= nil, "the plot restyled on the change")
@@ -564,6 +565,7 @@ test("chart: the sim draws the sample's chart live against a best, then on its r
     local f = hud()
     local Sim = f.NS.Sim
     assertTrue(f.NS.Preview.Start({ mode = "sim", scenario = "newbest" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(3.2)
     Sim.Beat()
     f:advance(10)
@@ -583,6 +585,7 @@ test("chart: the sim honors Show damage chart and Show pace bar", function()
     local f = hud()
     local P = f.NS.Sim
     assertTrue(f.NS.Preview.Start({ mode = "sim" }))
+    f.NS.SampleRace.Unpark(f.NS.Sim.ARM_HOLD)  -- SG-DR-1: the stepper parks the arm
     f:advance(3.2)
     P.Beat()
     f:advance(10)

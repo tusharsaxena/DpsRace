@@ -93,14 +93,19 @@ NS.Launcher = Launcher:New({
     -- toggle below calls the same handler its verb or key calls -- never a copy -- and the library
     -- grays every entry but Enabled while the addon is disabled.
     openSettings   = function() NS.OpenOptionsPanel() end,
+    openSkinPicker = function() if NS.RunSkinVerb then NS.RunSkinVerb() end end,
     isEnabled      = function() return not NS.IsDisabled() end,
     setEnabled     = function(on) NS.RunVerb(on and "enable" or "disable") end,
     isLocked       = function() return NS.GetSetting("locked") == true end,
     toggleLock     = function() NS.ToggleLock() end,
-    isTestMode     = function() return NS.Preview ~= nil and NS.Preview.IsActive() == true end,
+    isTestMode     = function() return NS.Preview ~= nil and NS.Preview.Mode() == "test" end,
     toggleTestMode = function() NS.ToggleTestMode() end,
     isWindowShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
     toggleWindow   = function() NS.ToggleHud() end,
+    -- MultiMeters' rule (R5-DR2): stop a running sim, otherwise the bare verb (the idle step panel).
+    -- The ONE pair General > Master controls' Sim mode box carries too (R6-SIM, core/DpsRace.lua).
+    isSimMode = function() return NS.IsSimMode() end,
+    toggleSim = function() return NS.ToggleSim() end,
     version        = function() return NS.Version() end,
     print          = function(line) NS.Print(line) end,
     debug          = function(tag, message) NS.Debug(tag, "%s", message) end,

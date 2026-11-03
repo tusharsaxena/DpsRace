@@ -477,13 +477,16 @@ end
 
 --- A chart built into `parent`: its heading, plot and time labels, placed by Place(). `titleFont`
 --- (a Style.FONT value) sets the title's font and `headH` its line's height; both default to the
---- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share.
+--- section heading's (FONT.SECTION on HEAD_H), which the HUD and the Results detail share. `where`
+--- is "window" for the Results detail's chart, whose cooldown icons keep the window outline; nil: the
+--- HUD's, whose icons keep the HUD's black edge (R4-HUD), as Breakdown.New's `where`.
 --- @param parent table
 --- @param titleFont string|nil
 --- @param headH number|nil
+--- @param where string|nil
 --- @return table chart
-function Chart.New(parent, titleFont, headH)
-    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H,
+function Chart.New(parent, titleFont, headH, where)
+    local s = setmetatable({ parent = parent, cols = {}, diag = {}, headH = headH or Chart.HEAD_H, where = where,
                              iconPool = NS.Pool.New(), icons = {}, markPool = NS.Pool.New(), marks = {} },
                            Strip)
     s.title = Style.Text(parent, titleFont or FONT.SECTION)
@@ -569,6 +572,7 @@ local function restyle(col)
     local fill = A.Chart()
     col:SetStatusBarTexture(fill.texture)
     col:SetStatusBarColor(fill.r, fill.g, fill.b, fill.a)
+    NS.Skin.BarGloss(col, fill.fromSkin)
 end
 
 -- A column: a vertical StatusBar and nothing else (no track of its own: the plot's backdrop is the
@@ -687,13 +691,15 @@ local function markEnter(mark)
 end
 
 -- An icon: a plain frame on the overlay (it takes the mouse for its tooltip) holding the spell's art.
-local function newIcon(over)
+-- `hud`: the HUD chart's, edged in the HUD's black (R4-HUD); the Results detail's keeps the outline.
+local function newIcon(over, hud)
     local f = CreateFrame("Frame", nil, over)
     f:SetSize(Chart.ICON, Chart.ICON)
     f:EnableMouse(true)
     f.tex = f:CreateTexture(nil, "OVERLAY")
     f.tex:SetAllPoints(f)
     f.tex:SetTexCoord(ICON_CROP[1], ICON_CROP[2], ICON_CROP[3], ICON_CROP[4])
+    NS.Skin.IconBorder(f, { fromSkin = true, hud = hud })
     f:SetScript("OnEnter", iconEnter)
     f:SetScript("OnLeave", iconLeave)
     return f
@@ -726,7 +732,7 @@ end
 
 -- One icon for `cast` centered at (x, y) from the plot's top left.
 function Strip:placeIcon(cast, x, y, row)
-    local f = NS.Pool.Acquire(self.iconPool, function() return newIcon(self.over) end)
+    local f = NS.Pool.Acquire(self.iconPool, function() return newIcon(self.over, self.where ~= "window") end)
     f.cast = cast
     f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
     f:ClearAllPoints()
@@ -809,6 +815,8 @@ local function restylePace(p)
     p.behind:SetStatusBarColor(look.r, look.g, look.b, look.a)
     p.ahead:SetStatusBarTexture(look.texture)
     p.ahead:SetStatusBarColor(Style.Rgba(AHEAD, PACE_A))
+    NS.Skin.BarGloss(p.behind, look.fromSkin)
+    NS.Skin.BarGloss(p.ahead, look.fromSkin)
     anchorShortfall(p)
     A.PaintTrack(p.track, look.bg)
     A.PaintEdge(p, p.bar, p.bar, look.border)

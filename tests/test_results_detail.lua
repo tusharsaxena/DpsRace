@@ -503,10 +503,12 @@ test("results: Share is grayed without a Share module; a row's right-click menu 
     assert(menu, "no row menu")
     local labels = {}
     for n, e in ipairs(menu.entries) do labels[n] = e.text end
+    assertEqual(labels[2]:sub(1, 6), "Share ", "a submenu's row carries its mark")
+    labels[2] = "Share"
     assertEqual(table.concat(labels, "|"), "Add Note|Share|Compare With This Run|\124cffff5555Delete\124r")
-    local shareEntry = menu:Find("Share")
+    menu:Click("Share")
     local channels = {}
-    for n, e in ipairs(shareEntry.children) do channels[n] = e.text end
+    for n, e in ipairs(i.mocks.__lastMenu.entries) do channels[n] = e.text end
     assertEqual(table.concat(channels, "|"), "Say|Party|Raid|Guild|Whisper\226\128\166", "Share's channels as a submenu")
     menu:Click("Add Note")
     assertEqual(i.R.Selected(), "a", "Add Note opens the run")

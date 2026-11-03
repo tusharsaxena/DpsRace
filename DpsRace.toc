@@ -57,6 +57,9 @@ core\SkinSetup.lua
 # LOAD-BEARING: the compat family's root (compat). Resolves LibKa0s-Compat-1.0 at FILE SCOPE and
 # publishes NS.Compat, whose guards core\Secrets.lua binds at FILE SCOPE; modules read it at CALL time.
 core\Compat.lua
+# LOAD-BEARING: after core\Compat.lua. Resolves LibKa0s-Sim-1.0 at FILE SCOPE and publishes NS.SimSeam;
+# modules\Sim.lua builds the stepper's session from it at FILE SCOPE.
+core\SimSetup.lua
 # LOAD-BEARING: after core\Compat.lua (binds its guards at FILE SCOPE); publishes NS.Secrets, which
 # modules\Meter.lua captures at FILE SCOPE, so it sits before the modules.
 core\Secrets.lua
@@ -140,6 +143,9 @@ modules\Hud_Breakdown.lua
 modules\Hud_Chart.lua
 modules\Hud_Tips.lua
 modules\Hud_States.lua
+# The idle body's Your best card (R3-DR-4): reads NS.Style at FILE SCOPE; Hud_States builds it and
+# Hud.lua reads its view at CALL time.
+modules\Hud_Best.lua
 # LOAD-BEARING: builds its bus receiver (RACE_STATE_CHANGED / RACE_BUZZER / RACE_RESULT / RUNS_CHANGED /
 # SETTINGS_CHANGED) at FILE SCOPE through core\Bus.lua, reads NS.defaults (defaults\Profile.lua) for its
 # default size, and calls

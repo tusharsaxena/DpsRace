@@ -351,7 +351,7 @@ race.
   `Hud.Hide(true)`, which is not the player's close and does not move `Hud.Closes()`). Only an addon-opened window closes by itself
   when its race goes back to idle, and the stand-down (`Hud.Suspend`) drops it, because
   `Race.Suspend` ends the race without a message and the stand-up must not reopen it.
-- **Near a training dummy** (#16, `modules/AutoArm.lua`, both rows off by default): registered on its
+- **Near a training dummy** (#16, `modules/AutoArm.lua`; auto-show on by default since R3-DR-3, auto-arm off): registered on its
   own AceEvent target only while a row is on and the addon stands up. *Auto-show* (`hud.autoShow`):
   `PLAYER_TARGET_CHANGED` and `NAME_PLATE_UNIT_ADDED` / `_REMOVED` keep the set of known dummies'
   plates (`Recorder.DummyOf`: the unit's GUID through `NS.Secrets`, its creature ID looked up through
@@ -497,9 +497,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   Spells, was removed in the owner's feedback round), each drawn by a renderer of
   `LibKa0s-Charts-1.0`. B (Spec Comparison) and C (Consistency, a worst-to-best
   range per spec with its average marked) draw one board: the tab picked from `stats.boardTabs`, one
-  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. The most raced pair
-  (`stats.boardTop`) opens first, and `View.boardKey` keeps a pick while the filters leave it
-  present; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
+  per target x length pair in `NS.Dummies.CATEGORIES` order and then by length. Overall opens
+  first (SG-DR-3), and `View.boardKey` follows the board last picked this session
+  (`Insights.lastBoard`) while the filters leave it present, else Overall; it is never saved. A closed dropdown shows `InsightsData.ClosedLabel` (the All head with
   the number of choices under it, a pick by its name alone), and the open list keeps the run counts.
   Every date is the Runs tab's *26 Oct*, the year added when it is not this year's and the time in a
   run's hover. Every figure that mixes boards is a
@@ -522,7 +522,7 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 
 - **Share**: the HUD's result card and the Results detail call `Share.Prompt(run)`; a Results row's
   right-click menu fills its *Share* submenu with the same channels through `Share.FillMenu`. A run with no score (lost) prints one line and opens nothing; in combat, or in
-  the client's chat lockdown, one line refuses. Otherwise a `MenuUtil` context menu offers Say, Party,
+  the client's chat lockdown, one line refuses. Otherwise a context menu (`NS.OpenMenu`: `W.ContextMenu` at the cursor, the client's `MenuUtil` without the library) offers Say, Party,
   Raid, Guild and Whisper…, the channels the player is not in grayed. A pick re-checks combat and
   sends `Share.Line(run)` (*DPS Race 3:00 · Cleave · Destruction 313 · 26.56M · 147.6K DPS (Ka0s
   DPS Race)*) through `NS.Compat.ChatSender()` (`C_ChatInfo.SendChatMessage`); Whisper asks for a name first
@@ -550,12 +550,18 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
 
 - **On**: the Master controls' *Test mode* row (`state.testMode`), `/dr test` and the launcher's *Test
   mode* entry all reach `NS.ToggleTestMode` → the row's `set` → `Preview.Start()`. `/dr test <armed|running|result>`
-  and `/dr sim [scenario]` queue their start (`Preview.Queue`) and turn the same row on through the
-  seam (`NS.StartSim` for the sim, both in `core/DpsRace.lua`), so the checkbox follows; with the
-  preview already on they switch it in place (`Preview.Start` again, or `Preview.SetState` for a still
-  body). A start is refused with one line in combat and while a real race is armed, running or waiting
+  queues its start (`Preview.Queue`) and turns the same row on through the seam (`core/DpsRace.lua`),
+  so the checkbox follows; with the preview already on it switches it in place (`Preview.Start`
+  again, or `Preview.SetState` for a still body). `/dr sim` (`NS.RunSimVerb`; the Master controls' *Sim mode* row and the launcher's
+  *Sim mode* entry run the same act through `NS.ToggleSim`, R6-SIM) is the library's sim
+  grammar (R5-DR2): a bare line opens the step panel idle and starts nothing; its *Start*, `/dr sim
+  start <scenario>` or a bare scenario word (`NS.StartSim`, `Sim.Open`) start the step session, whose
+  prepare calls `Preview.Start({ mode = "sim", session = true })`, switching test mode in place
+  without touching the session it is building; the checkbox reads `Preview.IsActive()`, so it
+  follows. A start is refused with one line in combat and while a real race is armed, running or waiting
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
-- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`: 17 runs on the
+- **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`, the sim's
+  `Sim.Dataset()` racing its 0:30 rows on the sim's 0:15 board: 17 runs on the
   player and two made-up characters, every Status, target type and preset length, notes, loadouts
   from the player's own `Recorder.SnapshotLoadout()` and the made-up characters' own, chart records,
   and casts and usage detected by `Usage.Build`; one run raced before format 3 has none of them) and

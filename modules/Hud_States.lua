@@ -88,14 +88,30 @@ local STOP_CHIPS_Y = STOP_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
 local STOP_NOTE_Y = STOP_CHIPS_Y + 28
 local WAITING_HINT_Y = WAITING_KPI_Y + KPI_CAPTIONED_HEIGHT + GAP
 States.STOP_CHIPS_Y, States.STOP_NOTE_Y, States.WAITING_HINT_Y = STOP_CHIPS_Y, STOP_NOTE_Y, WAITING_HINT_Y
--- The idle body's stack, top down: the caption, two rows of presets, the target caption and card, the
--- warning line (two lines at the minimum width), then Arm and the refusal line under it.
+-- The idle body's stack, top down, in blocks (a caption and its boxes, R4-DR2) BLOCK_GAP apart: Race
+-- Length (its caption, two rows of presets), Target (its caption and card, and the amber warning line
+-- under it when one shows, two lines at the minimum width), Your best (R3-DR-4, modules/Hud_Best.lua:
+-- its caption and card), then ARM_GAP, a little more, above Arm and the refusal line under it.
 local PRESET_TOP, PRESET_H, PRESET_GAP = 14, 20, 6
-local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + 8
+local BLOCK_GAP, ARM_GAP = 8, 14
+local IDLE_TARGET_Y = PRESET_TOP + 2 * PRESET_H + PRESET_GAP + BLOCK_GAP
 local IDLE_CARD_Y = IDLE_TARGET_Y + 14
-local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 6
-local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = IDLE_WARN_Y + 28, 24, 14
+local IDLE_WARN_Y = IDLE_CARD_Y + 46 + 4
+-- The section: its 14 px caption and its 38 px card (two lines). With no warning it sits a block gap
+-- under the Target card; under a warning, under the warning's two-line room. Arm Race follows it,
+-- ARM_GAP down, and under a warning no deeper than IDLE_ARM_Y, where the minimum height holds it.
+local BEST_CAPTION_H, BEST_CARD_H = 14, 38
+local BEST_H = BEST_CAPTION_H + BEST_CARD_H
+local IDLE_BEST_Y_PLAIN = IDLE_CARD_Y + 46 + BLOCK_GAP
+local IDLE_BEST_Y_WARNED = IDLE_WARN_Y + 28
+local IDLE_ARM_Y_PLAIN = IDLE_BEST_Y_PLAIN + BEST_H + ARM_GAP
+local IDLE_ARM_Y, ARM_HEIGHT, REASON_HEIGHT = 220, 24, 14
+local IDLE_ARM_Y_WARNED = math.min(IDLE_ARM_Y, IDLE_BEST_Y_WARNED + BEST_H + ARM_GAP)
 States.IDLE_ARM_Y, States.ARM_HEIGHT = IDLE_ARM_Y, ARM_HEIGHT
+States.BLOCK_GAP, States.ARM_GAP, States.BEST_H = BLOCK_GAP, ARM_GAP, BEST_H
+States.IDLE_BEST_Y_PLAIN, States.IDLE_BEST_Y_WARNED = IDLE_BEST_Y_PLAIN, IDLE_BEST_Y_WARNED
+States.IDLE_ARM_Y_PLAIN = IDLE_ARM_Y_PLAIN
+States.BEST_CAPTION_H, States.BEST_CARD_H = BEST_CAPTION_H, BEST_CARD_H
 -- The running body's rows sit between the KPIs and the caption over Cancel.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
@@ -150,12 +166,20 @@ Style.OnLooks(function()
     for fs, size in pairs(bigTexts) do fs:SetFont(face, size, "") end
 end)
 
--- `styled`: a clock a HUD Appearance block restyles (the running body's), whose face is the
--- player's from its first draw and never the skin's.
+-- `styled`: a clock a HUD Appearance block restyles (the running body's). It is made from a font
+-- object and given no SetFont of its own: the client lets a string's own font beat any font object,
+-- so a SetFont here kept the mono face at 26 under every skin S.HudFont later handed it (R3-DR-1,
+-- Ka0sAddonsCommonTasks docs/2026-11-02-SMOKE_ROUND3). Its face comes only from styleRunning's
+-- Appearance.ApplyFont, which the body's Update runs before the clocks' first SetText.
 local function bigText(parent, size, color, styled)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    fs:SetFont(monoFace(), size, "")
-    if not styled then bigTexts[fs] = size end
+    local fs
+    if styled then
+        fs = parent:CreateFontString(nil, "OVERLAY", Style.FONT.TEXT)
+    else
+        fs = parent:CreateFontString(nil, "OVERLAY")
+        fs:SetFont(monoFace(), size, "")
+        bigTexts[fs] = size
+    end
     fs:SetTextColor(Style.Rgb(color))
     fs:SetJustifyH("CENTER")
     return fs
@@ -275,16 +299,21 @@ local function kpi(parent, label, valueColor, captioned)
     local f = panel(parent, nil, "card")
     f:SetHeight(captioned and KPI_CAPTIONED_HEIGHT or KPI_HEIGHT)
     local k = { frame = f }
-    k.label = Style.Text(f, FONT.CAPTION)
+    -- Every line spans the box inside its 8 px padding and is centered in it (R4-DR1): justify, never
+    -- a measure, so the running body's secret figures stay safe.
+    k.label = Style.Text(f, FONT.CAPTION, nil, "CENTER")
     k.label:SetPoint("TOPLEFT", f, "TOPLEFT", 8, -7)
+    k.label:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, -7)
     k.label:SetText(label)
     -- A figure the Live figures block styles (`valueColor` false: the running body's) is a plain
     -- label the skin never paints; every other is the skin's.
-    if valueColor == false then k.value = Style.PlainText(f, FONT.FIGURE)
-    else k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text) end
-    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD + (captioned and KPI_CAPTION_H or 0))
+    if valueColor == false then k.value = Style.PlainText(f, FONT.FIGURE, "CENTER")
+    else k.value = Style.Text(f, FONT.FIGURE, valueColor or C.text, "CENTER") end
+    local valueY = KPI_PAD + (captioned and KPI_CAPTION_H or 0)
+    k.value:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, valueY)
+    k.value:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, valueY)
     if captioned then
-        k.caption = Style.Text(f, FONT.CAPTION)
+        k.caption = Style.Text(f, FONT.CAPTION, nil, "CENTER")
         k.caption:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, KPI_PAD)
         k.caption:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, KPI_PAD)
     end
@@ -539,9 +568,11 @@ function Builders.idle(parent)
     w.warn = text(f, FONT.TEXT, C.amber)
     w.warn:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_WARN_Y)
     w.warn:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_WARN_Y)
+    w.best = NS.HudBest.Build(f, -IDLE_BEST_Y_PLAIN)
     w.arm = wideButton(body, L["Arm Race"], function() act("arm") end, "primary", ARM_HEIGHT, FONT.TITLE)
-    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y)
-    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y)
+    w.arm:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -IDLE_ARM_Y_PLAIN)
+    w.arm:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -IDLE_ARM_Y_PLAIN)
+    body.warned = false
     w.arm.tip = Tips.arm
     w.reason = text(f, FONT.TEXT, C.amber, "CENTER")
     w.reason:SetPoint("TOPLEFT", w.arm, "BOTTOMLEFT", 0, -4)
@@ -579,6 +610,18 @@ function Builders.idle(parent)
         self.w.custom:SetShown(v.editing ~= true)
         setTarget(self.w.card, v.target)
         self.w.warn:SetText(v.warning or "")
+        -- The Your best block and Arm Race step down under a warning and back up without one; moved
+        -- only when that changes.
+        local warned = v.warning ~= nil
+        if warned ~= self.warned then
+            self.warned = warned
+            local armY = warned and IDLE_ARM_Y_WARNED or IDLE_ARM_Y_PLAIN
+            NS.HudBest.Place(self.w.best, self.frame, -(warned and IDLE_BEST_Y_WARNED or IDLE_BEST_Y_PLAIN))
+            self.w.arm:ClearAllPoints()
+            self.w.arm:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -armY)
+            self.w.arm:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 0, -armY)
+        end
+        NS.HudBest.Update(self.w.best, v.best)
         setEnabled(self.w.arm, v.blocker == nil)
         self.w.reason:SetText(v.blocker and NS.Format.ArmRefusal(v.blocker, v.detail) or "")
     end

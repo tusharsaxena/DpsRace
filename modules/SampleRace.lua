@@ -19,6 +19,10 @@ local _, NS = ...
 -- and the combat end. Stop! and Waiting are not scripted: the HUD chooses between them as it does for
 -- a real race, and the read waits for the same quiet after combat. Sim moves it on the clock with
 -- Advance; test mode replays it silently to a moment with Hold and leaves it there, frozen.
+--
+-- THE CLOCK runs at real speed (R5-DR2: the owner's call, a race in real time), so the countdown, Stop!,
+-- the tail, late casts and the quiet before the read keep their real lengths. Only the stepper's jumps
+-- (Skip, SkipToResult) move it on. Casts are stamped on a zero fixed when the race starts.
 
 local SampleRace = {}
 NS.SampleRace = SampleRace
@@ -27,7 +31,9 @@ local STATE = NS.Race.STATE
 
 local state = STATE.IDLE
 local run, sample, plan
-local origin          -- GetTime() of the race clock's zero
+local anchor, wallAt  -- the race clock read `anchor` at GetTime() `wallAt`
+local zero            -- the GetTime() casts are stamped from, fixed when the race starts
+local parked          -- armed and waiting for the stepper's first step: the clock does not move (SG-DR-1)
 local held            -- the frozen race-clock moment (test mode), or nil
 local silent          -- replaying: no messages
 local hit, cast       -- the plan's next hit and next cast
@@ -64,8 +70,16 @@ end
 
 local function clock()
     if held then return held end
-    return GetTime() - origin
+    return anchor + (GetTime() - wallAt)
 end
+
+-- Read second `t` now.
+local function setClock(t)
+    anchor, wallAt = t, GetTime()
+end
+
+-- The GetTime() the clock reads zero at, at real speed: a cast's stamp before the race starts.
+local function origin() return wallAt - anchor end
 
 local function racing() return state == STATE.RUNNING or state == STATE.STOPPING end
 
@@ -105,7 +119,7 @@ local function round2(v) return math.floor(v * 100 + 0.5) / 100 end
 local function hear(t)
     while plan.casts[cast] and plan.casts[cast].t <= t do
         local c = plan.casts[cast]
-        NS.Casts.Hear("succeeded", c.pet and "pet" or "player", c.id, nil, origin + c.t)
+        NS.Casts.Hear("succeeded", c.pet and "pet" or "player", c.id, nil, (zero or origin()) + c.t)
         local offset = c.t - run.race.length
         if offset > 0 and not c.pet and NS.Scoring.IsLateCast(offset, run.race.grace) then
             local list = run.flags.lateCasts
@@ -127,7 +141,8 @@ end
 local function begin()
     run.status, run.date = "running", time()
     run.flags.sharedSession = sample.run.flags.sharedSession
-    NS.Casts.Start(origin)
+    zero = origin()
+    NS.Casts.Start(zero)
     NS.ResultsSource.Put(run)
     inCombat = true
     setState(STATE.RUNNING)
@@ -214,28 +229,66 @@ end
 local function load(s, lead)
     SampleRace.Clear()
     sample, plan, run = s, s.plan, shell(s.run)
-    origin = GetTime() + lead
+    setClock(-lead)
+    zero = nil
     hit, cast, lastHit, inCombat, quietFrom, stopNow, buzzed, pulse = 1, 1, nil, false, nil, nil, nil, nil
     NS.Casts.Begin(plan.cooldowns)
     state = STATE.ARMED
 end
 
 --- Arm sample `s`; the clock starts `lead` seconds from now (the sim's Armed body), on Advance.
-function SampleRace.Start(s, lead)
+function SampleRace.Start(s, lead, park)
     load(s, lead)
+    parked = park == true
     state = STATE.IDLE
     setState(STATE.ARMED)
+end
+
+--- Release a parked arm: its clock's zero is `lead` seconds from now (the stepper's Armed step, SG-DR-1).
+--- A race that is not parked is left alone.
+function SampleRace.Unpark(lead)
+    if parked then
+        parked = false
+        setClock(-(lead or 0))
+    end
 end
 
 --- One step of the sim's clock. Answers true when damage landed since the last step (the meter's
 --- update: the HUD reads through its throttle).
 --- @return boolean updated
 function SampleRace.Advance()
-    if not run then return false end
+    if not run or parked then return false end
     pulse = false
     advance(clock())
     return pulse
 end
+
+--- The stepper's jump (SF-DR-8): bring the race clock forward to second `t` (never back), then let
+--- the script catch up. The race keeps its own rules: Stop! and the quiet before the read still run.
+--- @return boolean moved
+function SampleRace.Skip(t)
+    if not run or held then return false end
+    SampleRace.Unpark(0)
+    if clock() < t then setClock(t) end
+    SampleRace.Advance()
+    return true
+end
+
+--- The stepper's last jump: forward in half-seconds until the race has read its result.
+--- @return boolean reached
+function SampleRace.SkipToResult()
+    if not run or held then return false end
+    SampleRace.Unpark(0)
+    for _ = 1, 400 do
+        if state == STATE.RESULT or state == STATE.IDLE then break end
+        anchor = anchor + 0.5
+        SampleRace.Advance()
+    end
+    return state == STATE.RESULT
+end
+
+--- The race-clock second the sample's buzzer (or early end) falls on, or nil with no sample race.
+function SampleRace.StopAt() return sample and sample.stopAt or nil end
 
 --- Replay `s` silently to race-clock second `t` and stay there (test mode). `key` "armed" holds the
 --- arm, "running" the moment `t` (its buckets captured as the live reads would have), "result" the card.
@@ -294,6 +347,7 @@ function SampleRace.Clear()
         -- A real arm ended the preview: the cast list is that race's now.
         if NS.Race.State() ~= STATE.ARMED then NS.Casts.Reset() end
     end
-    run, sample, plan, held, silent = nil, nil, nil, nil, nil
+    run, sample, plan, held, silent, parked = nil, nil, nil, nil, nil, nil
+    zero = nil
     state = STATE.IDLE
 end

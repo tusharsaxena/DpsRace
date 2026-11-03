@@ -385,9 +385,9 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     f.meter.SetSecret(true)
     pump(f, 0.5)
     local w = body(f).w
-    -- The defaults are the shipped look: the monospace clocks at 26, green and red.
+    -- The defaults are the shipped look: the clocks at 26, green and red.
     assertEqual(w.elapsed.__font.size, 26)
-    assertEqual(w.elapsed.__font.path, f.NS.Constants.FONT_MONO)
+    assertEqual(w.elapsed.__font.path, f.NS.HudAppearance.Font("elapsed").path)   -- the skin's face (SF-DR-1)
     assertEqual(w.elapsed.__color[1], 0.36)
     assertEqual(w.left.__color[1], 1.0)
     assertEqual(w.damage.value.__font.size, 20)
@@ -404,6 +404,7 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     assertTrue(f.NS.SetByPath("appearance.elapsed.fontSize", 32))
     assertTrue(f.NS.SetByPath("appearance.elapsed.fontFlags", "OUTLINE"))
     assertTrue(f.NS.SetByPath("appearance.figures.fontShadow", false))
+    assertTrue(f.NS.SetByPath("appearance.figures.fontShadowFromSkin", false))
     assertTrue(f.NS.SetByPath("appearance.bars.rowHeight", 24))
     assertTrue(f.NS.SetByPath("appearance.bars.barColor", { r = 0.1, g = 0.2, b = 0.3, a = 1 }))
     pump(f, 0.5)
@@ -424,6 +425,58 @@ test("hud: the running clocks, figures and spell rows take their HUD Appearance 
     -- Spell breakdown.
     assertEqual(body(f).rowsTop, 58 + 46 + 8 + (6 + 22 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN)
     assertEqual(#f.W.geomReads, 0, "nothing measured")
+end)
+
+--- The client's CreateFont, for S.HudFont's font-object branch: a named object that keeps its face
+--- and shadow. With it, a string with no SetFont of its own draws its object's face (mock_widgets).
+local function fontObjects(m)
+    m.CreateFont = function(name)
+        local o = { name = name }
+        function o:GetName() return self.name end
+        function o:SetFont(path, size, flags) self.font = { path, size, flags or "" }; return true end
+        function o:GetFont() if self.font then return unpack(self.font) end end
+        function o:SetShadowColor(...) self.shadowColor = { ... } end
+        function o:SetShadowOffset(x, y) self.shadowOffset = { x, y } end
+        return o
+    end
+end
+
+test("hud: the clocks, figures and spell rows draw every skin's HUD face, a switch restyles them (R3-DR-1)", function()
+    -- red under: bigText's SetFont on the styled clocks at creation. The client lets a string's own
+    -- font beat the font object S.HudFont hands it, so both clocks drew JetBrains Mono at 26 in every
+    -- skin while only the object's shadow followed (Ka0sAddonsCommonTasks SMOKE_ROUND3 img 81, 82).
+    local f = hud({ mutate = fontObjects })
+    f.Hud.Show()
+    running(f, 30)
+    f.meter.SetSession(25, session(4))
+    f.meter.SetSecret(true)
+    pump(f, 0.5)
+    local LSM = f.M.LibStub("LibSharedMedia-3.0")
+    local Skin = f.M.LibStub("LibKa0s-Skin-1.0")
+    local faces = {}
+    for _, key in ipairs({ "ka0s", "obsidian", "forever", "glass" }) do
+        f.NS.ApplySkinChoice("ka0s", key)   -- no timer fired: the race's own would end it
+        pump(f, 0.5)
+        assertEqual(current(f), "running", key .. ": still the running body")
+        local w = body(f).w
+        local face = LSM:Fetch("font", Skin:ResolveSkin(key)["hud.font"])
+        assertTrue(type(face) == "string", key .. ": the skin's hud.font is registered")
+        faces[face] = true
+        local strings = { elapsed = w.elapsed, left = w.left, damage = w.damage.value, dps = w.dps.value,
+                          spell = w.list.rows[1].name }
+        for what, fs in pairs(strings) do
+            assertTrue(fs.__font == nil, key .. ": the " .. what .. " string has no face of its own")
+            assertTrue(type(fs.__fontObject) == "table", key .. ": the " .. what .. " string wears a font object")
+            assertEqual((fs:GetFont()), face, key .. ": the " .. what .. " string draws the skin's hud.font")
+        end
+        assertEqual(select(3, w.elapsed:GetFont()), "", key .. ": the mono clocks stay unoutlined")
+        assertEqual(select(3, w.left:GetFont()), "", key .. ": the mono clocks stay unoutlined")
+        assertEqual(w.elapsed.__color[1], 0.36, key .. ": elapsed keeps its green")
+        assertEqual(w.left.__color[1], 1.0, key .. ": left keeps its red")
+    end
+    local n = 0
+    for _ in pairs(faces) do n = n + 1 end
+    assertEqual(n, 4, "four skins, four faces")
 end)
 
 test("hud: a clock shown alone draws half again as large, in its block's color", function()

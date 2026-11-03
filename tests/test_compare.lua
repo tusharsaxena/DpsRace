@@ -936,7 +936,7 @@ test("compare: every spell row alternates the Results list's stripe, compared an
     assertTrue(d.w.list.parent:IsShown())
     assertEqual(d.w.list:Count(), 5)
     for n, row in ipairs(d.w.list.rows) do
-        assertEqual(row.stripe.__vertex[4], n % 2 == 0 and alpha or 0, "plain row " .. n .. "'s stripe")
+        assertEqual(row.stripe.__colorTex[4], n % 2 == 0 and alpha or 0, "plain row " .. n .. "'s stripe")
     end
     -- Compared: the matched rows, top down (by y).
     d:SetComparing(true)

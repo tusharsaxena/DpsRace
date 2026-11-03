@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.84.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.85.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -80,7 +80,8 @@ to keep* (a count) with *Days to keep* (90 by default, 0 never). What it stores 
 IDs and castGUIDs pass through `NS.Secrets` (the probe measured both plain in combat), and the usage
 snapshot is read out of combat.
 The 2026-10-28 pass ([`superpowers/plans/2026-10-28-toast-autoarm-gearview.md`](superpowers/plans/2026-10-28-toast-autoarm-gearview.md))
-added the race near a training dummy (#16, `modules/AutoArm.lua`), both opt-in: *Show near a training
+added the race near a training dummy (#16, `modules/AutoArm.lua`), both opt-in then; auto-show is on by default since
+2026-11-03 (R3-DR-3) and auto-arm stays opt-in: *Show near a training
 dummy* (`hud.autoShow`) opens the HUD while a known dummy (the catalog or `race.dummies`) is the target or has a nameplate up, and
 closes it a debounce after none is, never over a race or a result and never against the player's own
 close in the same dummy session; *Arm on a training dummy* (`race.autoArm`) arms a race through
@@ -96,7 +97,7 @@ The same pass added the new-best toast (#5, `modules/BestToast.lua`, on LibKa0s-
 complete run that beats an earlier best on its board (`Bests.Delta` names a gain; a board's first run
 does not toast) shows a toast near the top of the screen with the spec, the board, the time, the DPS
 and the gain over the old best, whether or not the HUD is open; the shell queues, times, pauses under
-the pointer and closes it. Its rows are General > *New-best toast* (`toast.*`), test mode shows a
+the pointer and closes it. Its rows are Race > *New-best toast* (`toast.*`), test mode shows a
 sample to drag into place (`profile.toast.point`), and *Test toast* plays one through. Since DR-04
 (2026-10-30, the owner's Addendum 03) the toast is 25% larger, every size in it scaled by
 `BestToast.SCALE` (its faces through `Style.ScaledText`, its chips through `Tbl.Chip(parent, scale)`),
@@ -168,7 +169,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the twelve `*Setup.lua` descriptors (`SkinSetup.lua` the skin seam), the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded; `Dummies.lua`, the training-dummy catalog (`Lookup` answers it with the profile's own list, `CategoryOf` a stored run's category now); `Hearthstones.lua`, every hearthstone variant's spell ID (#8) |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` and `Results_TimelineData` (the ability timeline window and its pure half), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass and the tab, drawn through `LibKa0s-Charts-1.0`), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud_Best` (the idle body's Your best card), `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` and `Results_TimelineData` (the ability timeline window and its pure half), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass and the tab, drawn through `LibKa0s-Charts-1.0`), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -247,7 +248,7 @@ in `settings/Slash.lua`, in its declared order:
 | `results [insights]` | Open the Results window, on the Insights tab when asked (`bests`, the tab's old name, still opens it) |
 | `target` | Print the target's name, creature ID and category (the catalog with your own training dummies) |
 | `test [armed\|running\|result]` | Static sample data in the HUD and the Results window: a bare `test` turns test mode on or off (the Master controls' *Test mode* row); a word holds that HUD body still |
-| `sim [scenario]` | Play a whole sample race, then open the Results window on it; `newbest` (the default), `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; an unknown word lists them |
+| `sim [verb\|scenario]` | The simulator (R5-DR2): a bare `sim` opens its step panel idle (scenario dropdown and *Start*; the Master controls' *Sim mode* row runs the same act, R6-SIM); `sim <scenario>` or `sim start <scenario>` plays a whole 0:15 sample race in real time, then opens the Results window on it; `newbest`, `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; the library's verbs (`step`, `run`, `stop`, ...) as `/mm sim`; an unknown word lists them |
 | `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
 | `ignore [show\|add\|remove\|defaults] <spell>` | The late-cast ignore list (#8): a bare `ignore` or `show` lists it, `add` and `remove` take a spell ID, a shift-clicked link or a name, `defaults` puts the six defaults back |
 | `targetdummy [show\|add\|remove\|capture\|defaults] [category or creature ID]` | Your training dummies (#9): a bare `targetdummy` or `show` lists your own and the switched-off built-ins; `add [category]` marks the target (a typed category wins, else *Category for new dummies*), saves what the game says about it and prints it, and switches a switched-off built-in back on; `remove [creature ID or name]` (the target when none is typed) takes a custom dummy off or switches a built-in off; `capture` saves the target's details without marking it; `defaults` clears the list |
@@ -267,7 +268,8 @@ HUD*, *Toggle results window*, *Arm or cancel race*, all in the addon's own cate
 `core/DpsRace.lua`. `NS.BINDINGS` (`core/LauncherSetup.lua`) declares them once, in `Bindings.xml`'s
 order; the General page's last tab, *Keybindings*, is the library's `O.KeybindingsTab` drawn from
 it (options-ui-§20), so a key set there or in Options -> Keybindings shows in both. The launcher's right-click menu is `LibKa0s-Launcher-1.0`'s fixed set
-(launcher-§2: Enabled, Locked, Test mode, Show window), so the Results window is reached from the
+(launcher-§2: Enabled, Locked, Test mode, Sim mode, Show window, then the *Open settings* and
+*Open skin selector* actions), so the Results window is reached from the
 HUD's title bar, `/dr results` or its key (spec §6.4).
 
 ## Event Subscriptions
@@ -389,7 +391,15 @@ it does nothing). Escape closes the timeline first: the close stack hides both, 
 `OnHide` shows it again while the cover is up; the cover goes a frame later. The timeline wears the
 skin's `Shell` made opaque (`ResultsTimeline.SHELL`, the `dr.modal.*` owner tokens: each skin's window
 fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1), and so does the gear
-view (the same table). The StaticPopups, the debug console,
+view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
+showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
+there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
+strip and the timeline's legend line stay (`test_header_rule`). Each window's header stands on the
+library's title band (`S.Band`, which Shell lays at its own inset and `title.height`, and LibKa0s
+R5-L2 draws above a backdrop's fill): `Style.Header` hands the title, the controls and the drag strip
+to `S.Header`, so each is centered on the band's middle in every skin, the HUD's title LEFT in every
+skin and the others by `title.align`; the Results tab strip stands under the band (R5-DR1,
+`test_header_band`). With no library a host holder stands where the band would. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.
@@ -435,8 +445,11 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   skin's `hud.font` or `bar.texture` through `HudAppearance.MediaKey` while it is on, unless the Skin
   tab's *Ignore fonts* is on, which makes a face block draw its stored *Font* (the library answers no
   `hud.font` then, LibKa0s v1.81.0, R-1; the textures still follow). Each skin names its own HUD face
-  (v1.81.0, R-4). Only the face and the texture follow (X4): sizes, flags, shadows and colors stay the player's. The two race clocks
-  have no companion and keep their monospace face (D-15). Migration 5 -> 6 turns every stored
+  (v1.81.0, R-4). Since LibKa0s v1.85.0 (the owner's rulings of 2026-11-01, reversing X4) text colors, shadows, the chart's
+  background and border colors and thickness follow too, each through a companion after any class color, with
+  three owner tokens keeping this addon's pixels under Ka0s Default (`dr.figures.text`, `dr.hud.shadow`,
+  `dr.chart.bg`), and text draws through `S.HudFont`, the only shadow a 12.0.7 client draws. Sizes stay the player's,
+  the bar fills the owner's call (A9). The two race clocks have a face companion (SF-DR-1, reversing D-15) and no color one. Migration 8 -> 9 is the one step onto the skin (schema.md). Migration 5 -> 6 turns every stored
   companion back on once for every profile (the owner's ruling O2), keeping the stored picks.
   LibKa0s v1.82.0 reads two of the player's values through the skin without rewriting them: a
   *Font flags* of *From skin* (`"@skin"`, every block's default, the clocks' too; D-07) draws the Skin
@@ -458,8 +471,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
 - **The first-run skin picker** (the owner's ruling O3). `NS.MaybeShowSkinPicker` shows the
   library's `O.SkinPicker` while the profile's `skin.pickerSeen` is false: two seconds after login on
   an addon that stands up (an AceTimer the stand-down cancels), and after every profile event; never
-  while the addon stands down, and in combat it waits for one `PLAYER_REGEN_ENABLED`. Its eye turns test
-  mode on (X6). Only the player's close sets the key; `NS.HideSkinPicker` (the stand-down, and first on
+  while the addon stands down, and in combat it waits for one `PLAYER_REGEN_ENABLED`. Its preview is
+  test mode (`spec.preview`, LibKa0s OptionsSkinPicker minor 11, R6-PV): shown while the race HUD is
+  hidden, the picker turns test mode on; the eye turns it off and on; every close restores what the
+  picker or the eye moved. Enter and exit are `NS.ToggleTestMode` (the `/dr test` and launcher
+  handler, so the Master controls' row and the refusals stay in step); `isActive` and `isShown` read
+  the launcher's `isTestMode` and `isWindowShown`; a playing sim is never toggled. Only the player's close sets the key; `NS.HideSkinPicker` (the stand-down, and first on
   every profile event) takes it down without setting it.
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`; the TOC's `OptionalDeps` names
   EllesmereUI). With source `eui` and its gate holding, EllesmereUI's facade paints the vocabulary it
@@ -469,13 +486,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   and its menu and the test strip (`core/WidgetsSetup.lua`), the copy window, the debug console, the
   perf panel and the new-best toast each carry this addon's folder as their skin owner;
   `tests/test_skinsetup.lua` pins the ones this addon hands over.
-- **The color gate.** `tests/test_skin_literals.lua` (anti-pattern #107) fails on a numeric literal in
-  a color position of `SetTextColor`, `SetColorTexture`, `SetVertexColor`, `SetBackdropColor`,
-  `SetBackdropBorderColor`, `AddLine` and `AddDoubleLine`, and on any `|cff` escape in code, in every
-  tracked file under `core/`, `modules/` and `settings/` outside `core/SkinSetup.lua` and its
-  allow-list: the chat prefix and the slash suite's disabled line (chat output, X7), the talent export
-  hyperlink (the client's own link gold) and `Style.HueEscape` (the escape builder for a data hue). An
-  allow-list entry that matches nothing also fails.
+- **The typed-value gate and the switch test.** The kit's `test_skin_values` (kit revision 50,
+  anti-pattern #107) fails on a typed color or texture no kit category takes, in every tracked source
+  file; `tests/run.lua`'s `Kit.skinValues.rows` names the three left, each with its cause: the
+  countdown's two digit sheets (A6) and the timeline legend's disc (L10). A row that matches nothing
+  fails. The kit's `test_skin_switch` flips a probe skin over the surfaces `tests/skin_surfaces.lua`
+  declares, and fails on one that draws the same.
 
 **What stays as it is** (skinning's rungs 3 and 4): the data hues (class, spec, category, length and
 quality colors, the meaning colors of a gain or a late cast, which `Style.Hue` keeps on the body face
@@ -698,12 +714,12 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: one test file,
 `tests/test_insights.lua` at 1225 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1195 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1162 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll` and `_controls`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1227
+seven addon files, `modules/Results_Table.lua` at 1198 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1164 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll` and `_controls`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1227
 (the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1364 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
 `modules/Results_Runs.lua` at 1119 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
 `modules/Hud.lua` at 1114 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
-`locales/enUS.lua` at 1167 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+`locales/enUS.lua` at 1176 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
 2026-10-28 passes their own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`, then `LateIgnore`, then `Results_InsightsData`,

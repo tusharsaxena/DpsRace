@@ -147,6 +147,22 @@ test("skin seam: the dropdown and the test strip factories are handed the owner"
     assertEqual(seen.strip, OWNER, "MakeTestStrip")
 end)
 
+test("test strip: the factory hands the library an onEnd that turns the preview off (SF-F1)", function()
+    -- red under: dropping `onEnd` from core/WidgetsSetup.lua's MakeTestStrip (the strip takes no mouse).
+    local NS, M = setup()
+    local W = M.LibStub("LibKa0s-Widgets-1.0")
+    local seen, real = {}, W.TestStrip
+    W.TestStrip = function(_, opts) seen.opts = opts end
+    local ok, err = pcall(function() NS.MakeTestStrip(M.CreateFrame("Frame"), "probe") end)
+    W.TestStrip = real
+    if not ok then error(err, 0) end
+    assertEqual(type(seen.opts.onEnd), "function", "onEnd is passed")
+    NS.Preview.Start()
+    assertTrue(NS.Preview.IsActive())
+    seen.opts.onEnd()
+    assertTrue(not NS.Preview.IsActive(), "the strip's End test turns the preview off")
+end)
+
 -- ── the owner tokens ─────────────────────────────────────────────────────────────────────────────
 
 test("skin seam: every owner token is namespaced dr. and registered with the owner", function()
@@ -199,8 +215,9 @@ end)
 
 test("skin seam: the eight skin keys default to Ka0s Default, the picker unseen", function()
     -- red under: a default other than today's look, or pickerSeen true (owner ruling O3: every
-    -- profile, old and new, gets the first-run picker).
-    local NS = setup()
+    -- profile, old and new, gets the first-run picker). `loginPicker`: the harness marks the
+    -- picker seen before login unless asked not to.
+    local NS = setup({ loginPicker = true })
     local p = NS.db.profile.skin
     for _, kv in ipairs(KEYS) do assertEqual(p[kv[1]], kv[2], "skin." .. kv[1]) end
 end)
@@ -356,6 +373,26 @@ test("skin seam: the degraded facade answers every name the live facade carries"
     assertEqual(degraded.ApplySkinChoice(), false, "nothing to apply without the library")
 end)
 
+test("skin seam: the degraded HudFont draws the face, a picked flag and no shadow", function()
+    -- Moving to, section 7: the one facade member that must draw. A no-op leaves a HUD string no face.
+    local S = T.load({ libFiles = {} }).NS.Skin
+    local drawn = {}
+    local fs = {
+        SetFont = function(_, face, size, flags) drawn.face, drawn.size, drawn.flags = face, size, flags end,
+        SetShadowColor = function(_, _, _, _, a) drawn.shadowA = a end,
+        SetShadowOffset = function(_, x, y) drawn.x, drawn.y = x, y end,
+    }
+    S.HudFont(fs, { face = "F.ttf", size = 14, flags = "THICKOUTLINE", shadow = false })
+    assertEqual(drawn.face, "F.ttf")
+    assertEqual(drawn.size, 14)
+    assertEqual(drawn.flags, "THICKOUTLINE", "a picked flag draws as stored")
+    assertEqual(drawn.x, 0, "the off arm clears the shadow")
+    S.HudFont(fs, { face = "F.ttf", flags = "@skin", shadow = true })
+    assertEqual(drawn.flags, "OUTLINE", "the sentinel never reaches SetFont")
+    assertEqual(drawn.size, 12, "no size is Ka0s Default's HUD size")
+    assertEqual(drawn.x, 1, "the stored shadow is still written on the string")
+end)
+
 test("skin seam: each host-copy skin token is the live library's Ka0s Default value", function()
     -- A copy that drifts from the library goes red here, so a degraded install draws Ka0s Default.
     local degraded = T.load({ libFiles = {} }).NS
@@ -372,4 +409,19 @@ test("skin seam: each host-copy skin token is the live library's Ka0s Default va
         end
     end
     assertTrue(n > 0, "the host copy is empty")
+end)
+
+test("skin seam: the host copy carries icon.outline beside icon.border (R4-L3)", function()
+    -- LibKa0s R4-L3 split a window icon's outline (icon.outline, #4D4D57 under Ka0s Default) from the
+    -- HUD icon edge (icon.border, black). The host copy mirrors both, so a degraded install answers
+    -- the outline as Ka0s Default draws it; the drift case above holds the value.
+    local degraded = T.load({ libFiles = {} }).NS
+    local c = degraded.SKIN_FALLBACK["icon.outline"]
+    assertTrue(type(c) == "table", "icon.outline is in the host copy")
+    for i, want in ipairs({ 0x4d / 255, 0x4d / 255, 0x57 / 255, 1 }) do
+        assertTrue(near(c[i], want), ("icon.outline[%d]"):format(i))
+    end
+    local edge = degraded.SKIN_FALLBACK["icon.border"]
+    assertTrue(edge[1] == 0 and edge[2] == 0 and edge[3] == 0 and edge[4] == 1, "icon.border stays black")
+    assertEqual(degraded.Skin.Color("icon.outline"), c[1])
 end)

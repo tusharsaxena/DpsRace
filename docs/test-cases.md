@@ -289,7 +289,7 @@ Total.
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (29)
+### test_hud.lua (30)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -297,6 +297,7 @@ Total.
 - hud: idle Arm uses the picked length; the card has no target count; a refusal prints its line
 - hud: a custom length is parsed, range-checked and selected
 - hud: an unknown target is allowed and said so
+- hud: a new profile's idle body races 1:00 (R3-DR-2)
 - hud: a changed Default race length takes effect over the remembered pick
 - hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own
 - hud: a target changed while the HUD is closed is never armed as the old one
@@ -348,7 +349,7 @@ Total.
 - hud: Share is live on a result card, and grayed without a Share module
 - hud: closing a result card dismisses it and keeps the run
 
-### test_hud_window.lua (20)
+### test_hud_window.lua (21)
 
 - hud: the window is skinned, closable with Escape, resizable and clamped
 - hud: Lock frame, Master scale and Reset position act on the window
@@ -368,8 +369,21 @@ Total.
 - hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
 - hud: the minimum size still holds every body after the compact restyle
 - hud: the running clocks, figures and spell rows take their HUD Appearance blocks
+- hud: the clocks, figures and spell rows draw every skin's HUD face, a switch restyles them (R3-DR-1)
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
+
+### test_hud_best.lua (9)
+
+- hud best: the board's best sits between Target and Arm Race, and Arm Race reads just Arm Race
+- hud best: with no race on the board, the card says this one sets the mark
+- hud best: with no target, it asks for a dummy
+- hud best: the card's second line shows the consumables the run used, not its top ability
+- hud best: with no consumables used, or none recorded, the line ends at the ilvl
+- hud best: it swaps at once on a length, Custom, a new target, a spec change and a board change
+- hud best: the hover names the whole run, the click opens it in Results
+- hud best: every launcher block sits the same gap apart, with more above Arm Race (R4-DR2)
+- hud best: nothing above it moves, it fits the width, and the minimum size holds
 
 ### test_hud_hint.lua (6)
 
@@ -386,10 +400,11 @@ Total.
 - hud: a hovered live row's tooltip is re-run on each redraw, for the spell the row draws now
 - hud: a result row's hover shows the spell tooltip right of the HUD, then its damage and share
 
-### test_hud_tiles.lua (9)
+### test_hud_tiles.lua (10)
 
 - hud tiles: the Stop! tail reads +x.xs in one large string, after buzzer on the row under it
 - hud tiles: the caption row sits inside the tile at the old padding, the figure a row above it
+- hud tiles: the running, Stop!, waiting and result figure boxes are centered (R4-DR1)
 - hud tiles: both tiles of the pair are one taller height; the running and result tiles keep 46
 - hud tiles: under the taller pair the Stop! chips and note and the waiting hint move down by config
 - hud tiles: the right tile's caption says what its figure is in each state
@@ -471,9 +486,10 @@ Total.
 - countdown: never broadcasts a pull timer nor drives Blizzard's TimerTracker
 - countdown: the diagnostics state section names what it shows and holds
 
-### test_autoarm.lua (30)
+### test_autoarm.lua (31)
 
-- autoarm: both rules are off by default and register nothing
+- autoarm: a new profile shows the HUD near a dummy and never arms by itself (R3-DR-3)
+- autoarm: both rules off register nothing
 - autoarm: each rule registers only what it needs, and turning both off drops it all
 - autoshow: a dummy target opens the HUD, and leaving it closes it after the debounce
 - autoshow: a dummy's nameplate opens the HUD, with no target at all
@@ -590,9 +606,10 @@ Total.
 - results: Group by spec + target + time, one group per board, the spec in its class color
 - results: Group by Full: character, class, spec, target and time, in that order
 
-### test_results_delta.lua (4)
+### test_results_delta.lua (5)
 
 - results: the detail's Delta box: a best's lead, a non-best's Delta cell, a lone run, an incomplete run's muted figure, a lost run
+- results: the detail's figure boxes are centered, and Delta + New best sit as a centered pair under the three (R4-DR1)
 - results: Runs.Leaders breaks a DPS tie on the earlier run, then the id; the tied runner-up reads 0.0% in green
 - results: the detail's Delta box follows the Runs view's grouping and filters while the run is shown
 - results: a run the Runs filters leave out falls back to its board among every stored run
@@ -899,6 +916,52 @@ Total.
 - gear view: the followed run deleted (the pane left empty) closes the view
 - gear view: a run without a compared run marks nothing and says so
 
+### test_header_rule.lua (3)
+
+- header rule: the race HUD draws no line under its title band, and keeps its footer rule
+- header rule: the Results window draws no line under its title band, and keeps the tab rule
+- header rule: the ability timeline and the gear view draw no line under their title band
+
+### test_header_band.lua (5)
+
+- header band: each window wears Shell's top band, shown, over its backdrop's fill
+- header band: every header child is centered on the band, in every skin
+- header band: the HUD's title is LEFT in every skin; the other titles follow title.align
+- header band: the Results tab strip and its rule stand under the band, in every skin
+- header band: with no library each window's header stands where Shell would lay the band
+
+### test_results_body.lua (2)
+
+- results body: the panes fill the body under the band, in every skin
+- results body: the panes fill the body under EllesmereUI's 25 px bar
+
+### test_icon_rule.lua (8)
+
+- icon rule: the Runs list's Used column crops each icon and edges it in the window outline
+- icon rule: the Runs list's class and spec icons are cropped and outlined
+- icon rule: a class cell on the sheet's edge keeps its crop inside the cell
+- icon rule: the run detail's class and spec icons are cropped and outlined
+- icon rule: the run detail's Usage list crops each icon and edges it in the window outline
+- icon rule: the compare's Damage and DPS line icons are cropped and outlined
+- icon rule: a tooltip line's inline icon is cropped 5:59 of 64
+- icon rule: the new-best toast's class and spec icons are cropped and edged in the HUD's border
+
+### test_icon_crop.lua (4)
+
+- icon crop: Style.CropIcon crops 0.08 per side, the chart's and the timeline's crop
+- icon crop: the run detail's gear cells crop each item's art inside the quality edge
+- icon crop: the gear view crops each item's art and each enchant and gem mark
+- icon crop: the HUD's Your best card crops each consumable icon in its markup
+
+### test_hud_icon_edge.lua (6)
+
+- hud icon edge: under Ka0s Default the HUD's black and the window's gray differ
+- hud icon edge: a race HUD spell row's icon edge is icon.border, never icon.outline
+- hud icon edge: the HUD chart's cooldown icon edge is icon.border, never icon.outline
+- hud icon edge: the Results detail's spell rows and chart icons keep the window outline
+- hud icon edge: Style.IconEdge keeps the window outline unless told it is on the HUD
+- hud icon edge: a skin switch and back keeps the HUD edge on icon.border
+
 ### test_insights_data.lua (13)
 
 - insights: Runs.OptionLists has each list without its All head, and WithAll adds it
@@ -915,7 +978,7 @@ Total.
 - insights: Compute buckets the damage tail, the 155 s outlier in 20+
 - insights: Compute lists late casts by spell, ignored apart, a sealed one as Unknown
 
-### test_insights.lua (58)
+### test_insights.lua (61)
 
 - insights charts: New fills the colors and fonts it is not given, and writes no host table
 - insights charts: truncate counts glyphs, not bytes, and ends in three periods inside the cap
@@ -958,7 +1021,10 @@ Total.
 - insights tab: above 60 runs the progression is one column a day, the same day of two years apart
 - insights tab: DPS Progression carries a legend of its specs in their class colors
 - insights tab: a section with nothing to show hides; Top Spells and Races By Length are gone
-- insights tab: a tab per target x length board, the most raced first, the pick kept while present
+- insights tab: a tab per target x length board, Overall first, the pick kept while present
+- insights tab: a new tab in the same session opens on the last board picked, nothing saved (SG-DR-3)
+- insights tab: the sections under the tabs read the tab picked, Overall reads every board
+- insights data: Scope keeps the runs of one board, or all of them
 - insights tab: Consistency on a board tab is a worst-to-best range per spec, the average marked
 - insights tab: Races By Character x Length stacks each character's races in the length colors
 - insights tab: one date format everywhere: the day, then the time where it matters
@@ -1026,7 +1092,7 @@ Total.
 - panel: the landing page is the library's, with the logo and one row per verb
 - schema: a new profile and Reset all settings open each window at its minimum width
 
-### test_settings.lua (37)
+### test_settings.lua (38)
 
 - settings: every schema row has default, enUS label and desc
 - settings: the stored paths, types, defaults and ranges are exactly the pinned set
@@ -1043,12 +1109,12 @@ Total.
 - settings: the race clock is a Race HUD row: both, left or elapsed, default both, redrawing the HUD
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
-- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, New-best toast, then Skin
+- settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, then Skin
 - settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
-- settings: Race is two tabs, the race's timeline then Training dummies, in the pinned order
+- settings: Race is four tabs, the timeline, the late-cast ignore list, the new-best toast, then Training dummies
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
-- settings: General's Defaults names Master controls, the toast and the skin, and not the keys or the HUD
+- settings: General's Defaults names Master controls and the skin, and not the keys or the HUD
 - settings: the HUD page's Defaults names the Race HUD tab and HUD Appearance
 - settings: History says how many runs are stored
 - settings: Purge history… asks first, then deletes through Recorder.DeleteAll
@@ -1062,17 +1128,19 @@ Total.
 - settings: Race draws the late-cast ignore list as the library's spell ID list, writing through LateIgnore
 - settings: Race's Reset list puts the six defaults back and touches no other Race setting
 - settings: Race's Defaults resets the ignore list too, and its tooltip says so
+- settings: Race's Defaults brings the toast back, and General's no longer holds it (SF-DR-6)
 - settings: Race repaints when the ignore list changes from anywhere or the profile does, and not for others
 - settings: Race's Training dummies tab: the blurb, Add your target, your list, the built-ins, Reset list
 - settings: Race repaints when your training dummies change from anywhere
 
-### test_skinsetup.lua (22)
+### test_skinsetup.lua (25)
 
 - skin seam: the owner is the folder name, and NS.Skin is its facade
 - skin seam: the owner is registered at file load, before the profile store exists
 - skin seam: the read answers Ka0s Default before the profile store exists
 - skin seam: Core's window edge is handed the owner
 - skin seam: the dropdown and the test strip factories are handed the owner
+- test strip: the factory hands the library an onEnd that turns the preview off (SF-F1)
 - skin seam: every owner token is namespaced dr. and registered with the owner
 - skin seam: under Ka0s Default each owner token is today's pixel
 - skin seam: under another skin a wash is that skin's role color at the wash's alpha
@@ -1089,13 +1157,9 @@ Total.
 - skin seam: a profile switch applies the new profile's skin, panel built or not
 - skin seam: Reset all settings puts the skin back on Ka0s Default and applies it
 - skin seam: the degraded facade answers every name the live facade carries
+- skin seam: the degraded HudFont draws the face, a picked flag and no shadow
 - skin seam: each host-copy skin token is the live library's Ka0s Default value
-
-### test_skin_literals.lua (3)
-
-- no color literal outside core/SkinSetup.lua and the named allow-list
-- every allow-list entry carries its reason
-- the gate is falsifiable: a planted literal of each shape is reported
+- skin seam: the host copy carries icon.outline beside icon.border (R4-L3)
 
 ### test_skin.lua (12)
 
@@ -1115,28 +1179,74 @@ Total.
 ### test_skin_hud.lua (10)
 
 - skin hud: the defaults list every companion, on, and the full-path list matches them
-- skin hud: the clocks keep their monospace face, with no companion (D-15)
+- skin hud: the clocks take the skin's font like the other blocks, with no color companion (SF-DR-1)
 - skin hud: each companion is a bool row, default on, governing its picker
 - skin hud: a companion on draws the skin's face or texture, off the stored pick, never rewritten
 - skin hud: Ignore fonts gives each face block its stored face, the textures still the skin's (R-1)
 - skin hud: under Ka0s Default the blocks draw Prototype and the Ka0s Default bar through LSM
 - skin hud: the Results table's bar cells and their text follow the skin too (D-16)
-- skin hud: a skin switch restyles the blocks and moves the face, never a color (X4)
+- skin hud: a skin switch restyles the blocks and moves the face and the color; the swatch is kept
 - skin hud: the v6 step puts every stored companion back on, keeping the picks and the colors
 - skin hud: the reset runs once, and a player's later pick is kept
 
-### test_bar_style.lua (18)
+### test_skin_flip.lua (25)
 
+- skin flip: every new companion is a row in the addon's words, on in both places
+- skin flip: a swatch stays live under its companion, and the border governs its thickness
+- skin flip: the picks' defaults are the Ka0s picks, the clocks' mono face and the fills kept
+- skin flip: Ka0s Default draws the addon's own pixels
+- skin flip: a switch moves each text's drawn color and shadow; the clocks' color stays
+- skin flip: companions off draw the stored value under every skin
+- skin flip: Ignore fonts stands a followed shadow down to the stored one
+- skin flip: a block with its own shadow takes the skin's offset, and Ignore fonts the stored one
+- skin flip: a class color comes before every companion
+- skin flip: a border draws the skin's color and thickness while on, the stored ones off
+- skin flip: with no library a stored background draws, its companion on
+- skin flip: every skin but Ka0s Default reads its own bar.bg on a followed track
+- skin flip: a gloss draws under a glossy skin, never over a player's texture
+- skin flip: the real S.BarBorder draws a shipped skin's style over a stored None
+- skin flip: a switch repaints the running HUD's strings and plot past their stamps
+- skin flip: the step moves a stored partial profile onto the skin and rewrites nothing else
+- skin flip: the list names every companion on by default, and the three flags keys
+- skin flip: the list names no size, class color, ignore, bar fill or clock color
+- skin flip: a sub-table the profile never stored is skipped and stays absent
+- skin flip: a current profile born after the stamp reached 9 takes the step at the next init
+- skin flip: a second run writes nothing, on a profile event too
+- skin flip: a companion turned off afterwards stays off through every Defaults path
+- skin flip: a new profile and a reset profile run it against defaults, seen by nobody
+- skin flip: with the library absent the step makes the same writes and its own record
+- skin flip: a profile already through the step meets the clocks' companions at the next one (SG-DR-2)
+
+### test_skin_menus.lua (13)
+
+- skin menus: a row's right-click opens the Ka0s menu, skinned for this addon
+- skin menus: the context menu holds no test seam
+- skin menus: a button runs, a title and a disabled row do nothing
+- skin menus: a disabled row in a submenu stays on that submenu
+- skin menus: a second right-click reopens the menu on the new rows
+- skin menus: a submenu replaces the rows it drops from
+- skin menus: without the library the same fill reaches the client's menu
+- skin menus: the Back button's mark wears btn.icon and follows a switch
+- skin menus: the Runs list's scroll bar has the skin's track
+- skin menus: a spell icon wears the skin's icon border, and the library zooms that icon
+- skin menus: a spell row of the breakdown is edged, and the edge goes with its icon
+- skin menus: the chart's, the compare's and the timeline's icons are edged
+- skin menus: the title bar and the scroll bar read their size off the skin
+
+### test_bar_style.lua (20)
+
+- bar style: a dash takes its muted color back after the bar text's font, on a pooled row too
 - bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
-- bar style: the compare's defaults are the old hues, brighter and opaque, on the skin's texture
+- bar style: the compare's bars are as bright as the Runs list's, in their own hues (R3-DR-5)
 - bar style: a compare column draws the skin's texture by default, in its own color
 - bar style: the default look keeps the skin's two tracks and draws no border
 - bar style: the HUD's and the detail's spell rows are separate blocks, live
 - bar style: the detail's spell rows draw their block, track and border
 - bar style: the pace bar draws its block's track and border, keeping its green
 - bar style: the table's two bars are separate blocks; a track and a border span the cell
+- bar style: every skin draws the compare's bars in their bright fills (R3-DR-5)
 - bar style: a compare column draws its block; the side rule did not move
-- bar style: a border follows the skin's bar.borderStyle while its companion is on
+- bar style: a real style in a skin wins while its companion is on, a skin's None defers
 - bar style: a border key LSM cannot answer draws no border
 - bar style: a skin switch moves a skin track and leaves a swatch
 - bar style: every styled bar's media rows are composed pickers, on the page that draws them
@@ -1146,7 +1256,7 @@ Total.
 - bar style: v8 holds a partly stripped swatch at the color the player saw
 - bar style: v8 runs once: a later pick on the detail's block is kept
 
-### test_skin_fonts.lua (12)
+### test_skin_fonts.lua (13)
 
 - skin fonts: every font block carries size, color, class color, flags and shadow
 - skin fonts: every Font flags row leads with From skin and defaults to it
@@ -1159,9 +1269,10 @@ Total.
 - skin fonts: the v7 step moves a stored old-default flag onto From skin, and keeps a changed one
 - skin fonts: the v7 step runs once, so a None picked afterwards is kept
 - skin fonts: a block on the skin's face draws the skin's HUD scale; its own face the stored size
-- skin fonts: the clocks keep their stored size in every skin
+- skin fonts: the clocks keep their stored size in every skin once they stop following its font
+- skin fonts: v11 moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept
 
-### test_skin_picker.lua (12)
+### test_skin_picker.lua (11)
 
 - skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
 - skin picker: an unseen profile shows it; a seen one does not
@@ -1172,9 +1283,26 @@ Total.
 - skin picker: the harness login shows the library's window
 - skin picker: the player's close marks it seen; this addon's own hide does not
 - skin picker: a profile that has seen it takes a shown picker down, unmarked
-- skin picker: the eye turns test mode on, and with it on shows the Results window
 - skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
 - skin picker: degraded, no picker shows and the Profiles paint is a no-op
+
+### test_skin_picker_preview.lua (15)
+
+- skin picker preview: the spec passes spec.preview in test mode, and no one-shot onPreview
+- skin picker preview: the hook goes through NS.ToggleTestMode, the verb's and the launcher's seam
+- skin picker preview: opened with the HUD hidden, the picker turns test mode on
+- skin picker preview: the eye turns test mode off and on again
+- skin picker preview: Apply puts test mode back off
+- skin picker preview: the gear puts test mode back off
+- skin picker preview: the close control puts test mode back off
+- skin picker preview: Escape puts test mode back off
+- skin picker preview: O.HideSkinPicker puts test mode back off
+- skin picker preview: NS.HideSkinPicker (the stand-down's and a profile event's) puts test mode back off
+- skin picker preview: an eye-off then a close leaves it off; an eye-on then a close turns it off
+- skin picker preview: a HUD the player has up is left alone, and so is its close
+- skin picker preview: test mode on at open, turned off by the eye, is on again after the close
+- skin picker preview: a playing sim is never stopped or switched by the eye
+- skin picker preview: in combat the eye's start is refused and the close moves nothing
 
 ### test_skin_outline.lua (10)
 
@@ -1223,7 +1351,7 @@ Total.
 - pins: Resolve answers the lowest ID a name is captured under, and refuses an ID past MAX_ID
 - pins: the capture line names each part it has, in order, and leaves out what it has not
 
-### test_slash.lua (37)
+### test_slash.lua (38)
 
 - slash: bare /dr opens the settings panel
 - slash: `options` is the legacy spelling of `config`
@@ -1249,7 +1377,8 @@ Total.
 - slash: results opens the Results window; results insights opens Insights, and bests still does
 - slash: test turns test mode on and off through the Master controls row
 - slash: test armed|running|result holds that HUD body still, on or switched to; another word prints the usage
-- slash: sim plays the default scenario or the one named; an unknown one lists them all
+- slash: a bare sim opens the idle panel and starts nothing (R5-DR2)
+- slash: sim <scenario> and sim start <scenario> start at once; the panel's verbs work (R5-DR2)
 - slash: the sim help line lists every scenario Sim.Names() has
 - slash: lock and unlock write the Lock frame row through the seam and echo it
 - slash: /dr and /dpsrace both dispatch
@@ -1280,7 +1409,7 @@ Total.
 - share: the race's own result is printed once, when it resolves
 - share: the chat sender and the number formatter are reached only through NS.Compat
 
-### test_toast.lua (19)
+### test_toast.lua (27)
 
 - toast: a complete run that beats the board's best toasts once, whatever the HUD shows
 - toast: none for an incomplete or lost run, a run that is no best, a board's first run, or turned off
@@ -1289,6 +1418,14 @@ Total.
 - toast: a flagged run may toast, its flags on the last line as the result card words them
 - toast: a new best whose late casts are all ignored shows no flags line and no ignored chip
 - toast: it closes after Toast duration, plays its sound only with Play a sound on
+- toast sound: Default plays today's alert and no file
+- toast sound: another key plays that file alone, resolved as the toast shows
+- toast sound: a key LibSharedMedia does not know falls back to Default
+- toast sound: with no LibSharedMedia a picked key falls back to Default
+- toast sound: Play a sound stays the switch, and the row works with it off
+- toast sound: Test toast plays the picked sound
+- toast sound: the list leads with Default, then every LibSharedMedia sound, after any pick
+- toast sound: a page's Defaults brings it back
 - toast: test mode holds the sample race's toast, and its end takes it down
 - toast: Test toast queues a sample that runs its course, and a second click replaces it
 - toast: a real toast never moves; in test mode or as a sample it drags
@@ -1328,7 +1465,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (14)
+### test_sim.lua (31)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -1344,6 +1481,23 @@ Total.
 - sim: the sample card's Delete asks, leaves the sample history and goes to the Arm screen
 - sim: the sample card's Details opens its run, and Share stays refused
 - sim: the result card draws the best's diagonal with a best before the run, and none on a first race
+- sim stepper: a sim starts a session whose panel docks beside the race window
+- sim stepper: the panel's Stop ends the preview, the ticker and the sample race (SF-DR-8)
+- sim panel: a bare RunVerb opens the idle panel, nothing started; Start plays the run (R5-DR2)
+- sim panel: Start from test mode switches to the sim in place (R5-DR2)
+- sim panel: Start is refused in combat and during a real race, with Preview's line (R5-DR2)
+- sim stepper: a restart does not end the preview (SF-DR-8)
+- sim stepper: each step moves the sample race to its moment, the last opens the Results window
+- sim stepper: an early end has no buzzer step, and switching scenarios restarts the session
+- sim stepper: the race holds armed until a step is played, then counts down (SG-DR-1)
+- sim stepper: the Armed countdown is the step delay, so Race starts lights as it ends (SG-SIM)
+- sim stepper: Run waits the sim.stepDelay setting between steps (SG-SIM)
+- sim race: an imaginary 15 s race on a 0:15 board, its history beside it (R5-DR2)
+- sim race: Racing plays at real speed to the buzzer, one countdown number a second (R5-DR2)
+- sim race: the casts keep the plan's times (R5-DR2)
+- sim race: the gate holds the buzzer, then the read, then the card's hold (R5-DR2)
+- sim race: sticky's wait says combat holds on (R5-DR2)
+- sim race: Start plays the whole script in real time, the card held 4 s (R5-DR2)
 
 ### test_sample_parity.lua (32)
 
@@ -1380,16 +1534,31 @@ Total.
 - sample parity: a held race reads nothing and holds no timer; the sim's timers end with it
 - sample parity: arming a real race from under a sim keeps that race's cast list
 
-### test_launcher.lua (8)
+### test_launcher.lua (10)
 
 - launcher: one object named for the folder, labeled with the brand, wearing the logo
 - launcher: left-click opens the settings panel
-- launcher: right-click lists Enabled, Locked, Test mode and Show window, in that order
+- launcher: right-click lists Enabled, Locked, Test mode, Show window and Open skin selector, in that order
 - launcher: each menu toggle runs the shared handler
+- launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)
+- launcher: Sim mode opens the idle panel, ticks after Start and stops it, as MultiMeters' (R5-DR2)
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
+
+### test_sim_checkbox.lua (6)
+
+- sim checkbox: Master controls carries a session-only Sim mode row right after Test mode
+- sim checkbox: the launcher's pair is the one NS pair, so the box and the launcher read alike
+- sim checkbox: ticking does what /dr sim does, unticking stops the sim
+- sim checkbox: a tick in combat starts nothing and leaves the box unticked
+- sim checkbox: Reset all settings stops a running sim and starts none on an idle one
+- sim checkbox: a sim started or ended elsewhere repaints an open page with the live state
+
+### test_launcher_skin_entry.lua (1)
+
+- launcher descriptor passes openSkinPicker, which runs the skin verb
 
 ### test_keybinds.lua (7)
 
@@ -1461,6 +1630,60 @@ Total.
 - libs/LibKa0s is the LibKa0s release CLAUDE.md says this addon bundles
 - tests/_kit is the test kit that shipped with that release
 - the automated-test runner is recorded executable (100755)
+
+### test_skin_values.lua (3)
+
+- skin values: every host row carries its file, substring, why and cause id
+- skin values: no typed value outside the kit's categories and the host's rows
+- skin values: the check is falsifiable, a planted value of each shape is reported
+
+### test_skin_switch.lua (45)
+
+- skin switch: the check is falsifiable, a surface that redraws a literal is reported
+- skin switch: the HUD's window shell changes
+- skin switch: the HUD's window shell changes with the Scope ignored
+- skin switch: the live figures' text changes
+- skin switch: the spells section's heading changes
+- skin switch: the spells section's heading changes with the Scope ignored
+- skin switch: the pace bar's track changes
+- skin switch: the pace bar's behind half changes
+- skin switch: the pace bar's on-pace tick changes
+- skin switch: the pace bar's on-pace tick changes with the Scope ignored
+- skin switch: the damage chart's plot changes
+- skin switch: the Cancel button changes
+- skin switch: the Cancel button changes with the Scope ignored
+- skin switch: the Results window's shell changes
+- skin switch: the Results window's shell changes with the Scope ignored
+- skin switch: the Results footer changes
+- skin switch: the Results footer changes with the Scope ignored
+- skin switch: the run detail's Back mark changes
+- skin switch: the run detail's Back mark changes with the Scope ignored
+- skin switch: the run detail's Delete button changes
+- skin switch: the run detail's Delete button changes with the Scope ignored
+- skin switch: the run detail's flags box changes
+- skin switch: the run detail's flags box changes with the Scope ignored
+- skin switch: the timing strip's segment changes
+- skin switch: the timing strip's segment changes with the Scope ignored
+- skin switch: a Results tab's underline changes
+- skin switch: a Results tab's underline changes with the Scope ignored
+- skin switch: a spell row's track changes
+- skin switch: a spell row's stripe changes
+- skin switch: a spell row's stripe changes with the Scope ignored
+- skin switch: a spell row's bar changes
+- skin switch: a spell row's name changes
+- skin switch: a spell row's border changes
+- skin switch: a spell icon's edge changes
+- skin switch: a spell icon's edge changes with the Scope ignored
+- skin switch: the dim cover changes
+- skin switch: the dim cover changes with the Scope ignored
+- skin switch: the ability timeline's shell changes
+- skin switch: the ability timeline's shell changes with the Scope ignored
+- skin switch: the gear view's shell changes
+- skin switch: the gear view's shell changes with the Scope ignored
+- skin switch: a filter dropdown changes
+- skin switch: a filter dropdown changes with the Scope ignored
+- skin switch: the test-mode strip changes
+- skin switch: the test-mode strip changes with the Scope ignored
 
 ### test_eol.lua (2)
 
@@ -1542,23 +1765,24 @@ Total.
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
 | test_format.lua | 8 |
-| test_hud.lua | 29 |
+| test_hud.lua | 30 |
 | test_hud_layout.lua | 24 |
-| test_hud_window.lua | 20 |
+| test_hud_window.lua | 21 |
+| test_hud_best.lua | 9 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
-| test_hud_tiles.lua | 9 |
+| test_hud_tiles.lua | 10 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
 | test_countdown.lua | 20 |
-| test_autoarm.lua | 30 |
+| test_autoarm.lua | 31 |
 | test_layers.lua | 7 |
 | test_results.lua | 18 |
 | test_results_detail.lua | 18 |
 | test_results_window.lua | 14 |
 | test_results_fit.lua | 5 |
 | test_results_group.lua | 6 |
-| test_results_delta.lua | 4 |
+| test_results_delta.lua | 5 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 10 |
 | test_compare.lua | 28 |
@@ -1576,42 +1800,54 @@ Total.
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
+| test_header_rule.lua | 3 |
+| test_header_band.lua | 5 |
+| test_results_body.lua | 2 |
+| test_icon_rule.lua | 8 |
+| test_icon_crop.lua | 4 |
+| test_hud_icon_edge.lua | 6 |
 | test_insights_data.lua | 13 |
-| test_insights.lua | 58 |
+| test_insights.lua | 61 |
 | test_switched_sections.lua | 3 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
 | test_schema.lua | 18 |
-| test_settings.lua | 37 |
-| test_skinsetup.lua | 22 |
-| test_skin_literals.lua | 3 |
+| test_settings.lua | 38 |
+| test_skinsetup.lua | 25 |
 | test_skin.lua | 12 |
 | test_skin_hud.lua | 10 |
-| test_bar_style.lua | 18 |
-| test_skin_fonts.lua | 12 |
-| test_skin_picker.lua | 12 |
+| test_skin_flip.lua | 25 |
+| test_skin_menus.lua | 13 |
+| test_bar_style.lua | 20 |
+| test_skin_fonts.lua | 13 |
+| test_skin_picker.lua | 11 |
+| test_skin_picker_preview.lua | 15 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
 | test_hud_element_tips.lua | 11 |
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
-| test_slash.lua | 37 |
+| test_slash.lua | 38 |
 | test_share.lua | 14 |
-| test_toast.lua | 19 |
+| test_toast.lua | 27 |
 | test_preview.lua | 23 |
-| test_sim.lua | 14 |
+| test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
-| test_launcher.lua | 8 |
+| test_launcher.lua | 10 |
+| test_sim_checkbox.lua | 6 |
+| test_launcher_skin_entry.lua | 1 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
 | test_surface_parity.lua | 17 |
 | test_perf_harness.lua | 5 |
 | test_loadorder.lua | 4 |
 | test_vendor_sync.lua | 3 |
+| test_skin_values.lua | 3 |
+| test_skin_switch.lua | 45 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1260** |
+| **Total** | **1444** |

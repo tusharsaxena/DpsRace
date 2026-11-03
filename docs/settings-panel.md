@@ -10,8 +10,8 @@ built on first show (options-ui-§1, §5).
 | Page | Covers |
 |---|---|
 | *(landing)* | Logo, the TOC's notes line, and one line per slash command from `NS.COMMANDS` |
-| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, the two resets; the New-best toast tab: the toast on or off, its sound, duration and scale, *Test toast*; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
-| Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap) and the late-cast ignore list; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
+| General | Master controls: on/off, visibility, scale, lock, debug console, minimap button, test mode, sim mode, the two resets; the Skin tab: the skin this addon wears (the library's); the Keybindings tab: the three key bindings |
+| Race | The Race tab along the race's timeline: the default race length, auto-arm, the countdown (cue and center numbers), the buzzer with the sticky-combat hint's delay, the scoring rules (late-cast grace, damage-restart gap); the Late-cast ignore list tab; the New-best toast tab (moved from General, SF-DR-6): the toast on or off, its sound, duration and scale, *Test toast*; the Training dummies tab: the category for new dummies, *Add your target*, your own dummies and the built-ins' switches (#9) |
 | HUD | The Race HUD tab: when the HUD shows and what its running clock shows (*Display*), then the live breakdown's spell rows shown, spell icons, live DPS and live reads per second (*Live breakdown*), then the damage chart, its cooldown icons and the pace bar (*Chart and pace*); the HUD Appearance tab: the clocks', figures', spell rows' and damage chart's look |
 | History | The stored count, Days to keep (90 by default, 0 = never prune), *Purge history…*; the Results table tab: the Runs list's Damage and DPS bars and their text; the Run detail tab: the detail's spell bars and the compare's two bars; the Usage tab: the hidden items |
 | Profiles | AceDB profiles: choose, create, copy, delete, reset |
@@ -58,7 +58,8 @@ Composed by the library's `MasterControls` from one declaration, in canonical or
 | Lock frame | `locked` | checkbox | The Race HUD's lock: no drag, no resize grip (`Hud.SetLocked`) |
 | Debug console | `state.debugConsole` | checkbox, session-only | Shows or hides the console; does not change the logging flag |
 | Minimap button | `global.minimap.shown` | checkbox | Reads and writes LibDBIcon's inverted `global.minimap.hide`; no reset touches it |
-| Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while `/dr sim` plays too, and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
+| Test mode | `state.testMode` | checkbox, session-only | Starts or stops test mode (`/dr test`: static sample data in the HUD and the Results window); ticked while a `/dr sim` session plays too (not while its panel sits idle), and unticking ends either; refused in combat, ended by combat. Every start and stop (a race armed from chat or the key included) repaints an open panel through `Helpers.RefreshScalars` |
+| Sim mode | `state.sim` | checkbox, session-only | The library's row (LibKa0s compose minor 19, R6-SIM), beside *Test mode*, driven by the launcher's own pair, `NS.IsSimMode` and `NS.ToggleSim`, so the box, the launcher's *Sim mode* entry and `/dr sim` are one act. Ticking runs the bare `/dr sim`: the idle step panel opens and nothing starts, so the box stays unticked until the panel's *Start* (or `/dr sim <scenario>`) plays the sim; unticking stops a running sim. Ticked only while the sim plays. Stores nothing (a reload ends it); refused in combat; *Reset all settings* writes its `false`, so it stops a running sim and starts none. Every session start and stop repaints an open panel (`modules/Sim.lua`'s session listener calls `Helpers.RefreshScalars`) |
 | Reset position | — | button | Puts the HUD and the Results window back at their default positions and sizes (`Hud.ResetPosition`, `Results.ResetPosition`), an open ability timeline and gear view back over the Results window (`ResultsTimeline.ResetPosition`, `ResultsGear.ResetPosition`; they store no place of their own), and the new-best toast back under the top of the screen (`BestToast.ResetPosition` clears `profile.toast.point`); the run detail's folded sections (`windows.results.collapsedSections`) stay folded |
 | Reset all settings | — | button | Asks first (`DPSRACE_RESET_ALL`), then resets the current profile; run history, other profiles and the minimap button are untouched |
 
@@ -75,8 +76,10 @@ case act after the rows.
 |---|---|---|---|
 | Show a toast for a new best | `toast.enabled` | checkbox | On by default. Off drops a toast on screen and every one waiting (`BestToast.Sync`); on again while test mode is on brings its sample back |
 | Play a sound | `toast.sound` | checkbox | On by default: the shell's alert sound (`SOUNDKIT.UI_EPICLOOT_TOAST`, else `RAID_WARNING`) as each toast appears; read as each shows |
-| Toast duration (seconds) | `toast.duration` | slider, 3-30, step 1 | 8 by default (the shell's `DURATION`): seconds on screen, paused while the pointer is over it; starts its own line |
+| Toast sound | `toast.soundKey` | `Ka0sMedia_Sound` picker | *Default* by default, today's alert; below it every LibSharedMedia sound, read as the list is drawn, each with a play button. Beside *Play a sound*, which stays the switch: the row works with it off. An unknown key plays Default |
+| Toast duration (seconds) | `toast.duration` | slider, 3-30, step 1 | 10 by default (the shell's `DURATION`): seconds on screen, paused while the pointer is over it; starts its own line |
 | Toast scale | `toast.scale` | slider, 0.5-2.0, step 0.05 | 1 by default; the toast grows and shrinks about its stored place (`BestToast.Refresh`). Not multiplied by Master scale |
+| Simulation step delay (seconds) | `sim.stepDelay` | slider, 0.5-10, step 0.5 | 1 by default; the Race tab's *Simulator* heading. Paces `/dr sim` between steps; read at each step (`Sim.StepDelay`) |
 | Test toast | — | button, after the rows | A sample toast (*Test <thing>*, options-ui-§21), run as a real one is: its duration, sound and scale; movable while it shows. A second click replaces it (`BestToast.Test`) |
 
 The place is not a row: test mode shows a sample toast held still, and a drag stores it in
@@ -117,8 +120,13 @@ titled *Choose a skin*, with *Ka0s DPS Race* on its own line above the skin drop
 R-11: the window widens to the name, never cutting it off), shown by `NS.MaybeShowSkinPicker` (`core/SkinSetup.lua`) while the
 profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the stand-down cancels) and
 after every profile event, never while the addon stands down, and in combat held for one
-`PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
-mode on as `/dr test` does, or shows the Results window when it is already on), a gear (opens this
+`PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (the picker's preview, `spec.preview` in test
+mode, LibKa0s OptionsSkinPicker minor 11, R6-PV: the picker shown while the race HUD is hidden turns
+test mode on, so the HUD and the Results window show sample data in the skin; the eye turns it off and
+on, lit while it is on, its tooltip saying which; every close puts back what the picker or the eye
+moved. Each turn is `NS.ToggleTestMode`, the handler `/dr test` and the launcher's *Test mode* entry
+call, so the Master controls' *Test mode* checkbox follows and the combat and race refusals hold; a
+HUD already up, or a sim playing, is left alone), a gear (opens this
 tab), the Skin tab's own rows (LibKa0s v1.83.0, LK-A3: *Font*, *Texture* and *Font outline*, then the
 Scope's two checkboxes), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
 skins is loaded). A pick or a row's change only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and
@@ -218,7 +226,7 @@ cooldown icons*; *Show pace bar*; *Pace bar range*.
 | *Display* heading | | | |
 | Show the race HUD | `hud.showMode` | dropdown | `onArm` (*When a race is armed*, the default): the HUD opens on arm and on a result, and closes again when that race is over; `always`: open from login. Choosing *Always* opens it now. The tooltip says *General visibility* on Master controls still applies: while it hides the addon, the HUD stays hidden |
 | Race clock | `hud.clock` | dropdown | `both` (*Elapsed and time left*, the default): the running body's elapsed clock in green beside time left in red, each captioned; `left` (*Time left*): one big red clock; `elapsed` (*Time elapsed*): one big green clock. Test mode follows it. Reaction: `NS.Hud.Refresh()` |
-| Show near a training dummy | `hud.autoShow` | checkbox | Off by default (#16). On: the HUD opens by itself (`Hud.ShowNearDummy`) while a known training dummy (the catalog or `race.dummies`) is the target or has a nameplate up, and closes again (`Hud.HideAwayFromDummy`) once none has been seen for `AutoArm.HIDE_DELAY` (3) s, only while the race is idle (an armed or running race, or a result card, holds it; the idle edge asks again). A close by the player during a dummy session keeps it closed until the session ends (the end of test mode closing a window it opened is not the player's close). An arm's or a result card's window becomes the dummy's while one is near, so the race going idle there leaves it open. A window the player opened is never closed by it. `hud.showMode` is unchanged (*Always* already wants the window), and *General visibility* still applies. Not in instances; with nameplates off only the target counts. Off closes a window it opened. Reaction: `NS.AutoArm.Sync()` |
+| Show near a training dummy | `hud.autoShow` | checkbox | On by default (#16; the owner's call, 2026-11-03, R3-DR-3; off from 2026-10-28). On: the HUD opens by itself (`Hud.ShowNearDummy`) while a known training dummy (the catalog or `race.dummies`) is the target or has a nameplate up, and closes again (`Hud.HideAwayFromDummy`) once none has been seen for `AutoArm.HIDE_DELAY` (3) s, only while the race is idle (an armed or running race, or a result card, holds it; the idle edge asks again). A close by the player during a dummy session keeps it closed until the session ends (the end of test mode closing a window it opened is not the player's close). An arm's or a result card's window becomes the dummy's while one is near, so the race going idle there leaves it open. A window the player opened is never closed by it. `hud.showMode` is unchanged (*Always* already wants the window), and *General visibility* still applies. Not in instances; with nameplates off only the target counts. Off closes a window it opened. Reaction: `NS.AutoArm.Sync()` |
 | *Live breakdown* heading | | | |
 | Spell rows shown | `live.rows` | slider 0 to 15 | Spells the running HUD lists, in Blizzard's order. 0 lists every spell: as many as fit show, and the mouse wheel scrolls through the rest (the caption reads *1-8 of 23*). The HUD result card follows it too, with the same wheel scroll |
 | Show spell icons | `live.icons` | checkbox | Icons on the HUD's rows, live and on the result card |
@@ -248,31 +256,33 @@ On, the block draws the skin's `hud.font` or `bar.texture` (`HudAppearance.Media
 which a companion never rewrites. Each skin has its own HUD face (LibKa0s v1.83.0): Ka0s Default
 Prototype, Obsidian Expressway, Azeroth Open Sans Semibold, Glass Avant Garde, High Contrast
 Doris PP, Ember Emblem, WoW Midnight Segoe UI Semibold, WoW Forever Fira Sans SemiBold, WoW
-Default Ka0s Friz Quadrata TT. Only the face and the
-texture follow: sizes, flags, shadows and every color stay the player's (X4), with two readings the
-library makes without rewriting them. Every block's *Font flags* (the clocks' too) leads with
+Default pick Ka0s Prototype. Since LibKa0s v1.85.0 text colors, shadows, the chart's background and
+border colors follow too, each through an appended companion in the addon's words (*Use the skin's color*,
+*Use the skin's shadow*, *Use the skin's background*), on by default, after any class color; its swatch stays
+live and waits. The clocks' colors mean something and have only the shadow's. Bar fills stay the owner's call
+(cause A9). Sizes stay the player's, with two readings the library makes without rewriting them. Every block's *Font flags* (the clocks' too) leads with
 *From skin*, the default (LibKa0s v1.82.0, D-07), which draws the Skin tab's *Font outline*: outlined
 under *All text* and *HUD text only*, none under *Off*, outlined while *Ignore fonts* is on; a flag the
 player picks wins. And a block drawing the skin's face draws its *Font size* at the skin's HUD scale
 (D-09: Obsidian 13 for Ka0s Default's 12, Glass 11), so its text is as wide in every skin; its own face
-and *Ignore fonts* draw the size as set. The two clocks have no
-companion and keep their monospace face (D-15). Under Ka0s Default a following block draws Prototype
+and *Ignore fonts* draw the size as set. The two clocks take the font
+companion too (SF-DR-1, reversing D-15), and so no longer keep their monospace face under a skin. Under Ka0s Default a following block draws Prototype
 and the Ka0s Default bar (the one-time reset, schema 5 -> 6, the owner's ruling O2).
 
 | Subsection | Schema prefix | Rows | Styles |
 |---|---|---|---|
 | *Elapsed clock* | `appearance.elapsed.` | the font block (*Font*, *Font size*, *Font color*, *Use class color*, *Font flags*, *Font shadow*); JetBrains Mono 26, green | the running body's elapsed clock. *Font size* is the pair's; a clock shown alone draws half again as large (its tooltip says so, through the composer's `tooltips`) |
 | *Time left clock* | `appearance.left.` | the font block; JetBrains Mono 26, red | the time-left clock, the same way. Each clock block draws only while *Race clock* picks it (`shownWhen` on `hud.clock`, options-ui-§22): *Both* draws the two. The selector is on the Race HUD tab, so a `/dr set hud.clock` made with this tab on screen shows when the tab is next drawn. This page's **Defaults** puts *Race clock* back too, so it redraws the page (`redrawOnDefaults`) and a hidden block returns at once, whichever tab is showing |
-| *Live figures* | `appearance.figures.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 20, shadowed | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
+| *Live figures* | `appearance.figures.` | the font block with *Use the skin's font*; the skin's face (stored pick Ka0s Prototype) 20, shadowed, with *Use the skin's color* and *Use the skin's shadow* | the running body's *Damage* and *DPS · Live* figures. A larger size grows the KPI boxes |
 | *Spell bars* | `appearance.bars.` | the bar block (*Bar texture*, *Use the skin's texture*, *Bar opacity*, *Bar color*, *Use class color*), then *Row height* (12 to 30, an `extra`); the skin's texture (stored pick solid), 90%, the pace bar's blue (0.36, 0.37, 0.84) | the HUD's spell rows' fill (live and result), and the row height of the HUD and the Results window's breakdown alike. The detail's fill is History > Run detail's |
-| *Spell text* | `appearance.spellText.` | the font block with *Use the skin's font*; the skin's face (stored pick Friz Quadrata) 10, white, shadowed | the spell rows' name and amount; the share column keeps its caption gray |
+| *Spell text* | `appearance.spellText.` | the font block with *Use the skin's font*; the skin's face (stored pick Ka0s Prototype) 10, white, shadowed, with *Use the skin's color* and *Use the skin's shadow* | the spell rows' name and amount; the share column keeps its caption gray |
 | *Damage chart* | `appearance.chart.` | the bar block with *Use the skin's texture*; the skin's texture (stored pick solid), 90%, the mockup's indigo (0.36, 0.37, 0.84); then *Chart height* (40 to 160, step 2, default 80) and *Column gap* (0 to 3 px, step 1, default 0), each an `extra` | the damage chart's columns, its plot height (the columns' and the best-pace line's: the plot is one 13 px icon row taller, on top) and the space between two columns (0: one smooth area), on the HUD (running and result card) and in the Results detail |
-| *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color* | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch and its class-color companion and nothing else (options-ui-§16, §17), under its own heading |
+| *Chart background* | `appearance.chart.` (`bgColor`, `useClassColorBg`, `bgFromSkin`) | the composed color pair (`H.ColorPair`): *Background color* (with alpha; default black at 35%, the plot's old backdrop) and *Use class color*, then *Use the skin's background* (on: `dr.chart.bg`, the same black under Ka0s Default, `chart.track` in every other skin) | the damage chart plot's backdrop. A backdrop has no fill texture, so it takes a swatch, its class-color companion and the skin's (options-ui-§16, §17), under its own heading |
 | *Spell bar background* | `appearance.bars.` | a *Background* set (below); the skin's track | the track behind the HUD's spell rows |
 | *Spell bar border* | `appearance.bars.` | a *Border* set (below); none | a border around each HUD spell row's bar |
 | *Pace bar* | `appearance.pace.` | the bar block with *Use the skin's texture*; the chart's old look (the skin's texture, stored pick solid, 90%, the same indigo): `BAR_BLUE` in `defaults/Profile.lua`, the one source of every blue bar's default | the pace bar's fill, its own block since 2026-10-25: restyling the chart's columns leaves it alone |
 
-| *Pace bar background* | `appearance.pace.` | a *Background* set; the skin's `dr.chart.grid` track | the empty part of the pace bar |
+| *Pace bar background* | `appearance.pace.` | a *Background* set; the skin's `dr.pace.track` track, which follows `bar.bg` | the empty part of the pace bar |
 | *Pace bar border* | `appearance.pace.` | a *Border* set; none | a border around the whole pace bar. Its green and red parts are meaning colors, no block's |
 
 Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
@@ -280,7 +290,7 @@ Every live breakdown and chart and pace row's reaction is `NS.Hud.Refresh()`.
 **The Background and Border sets** (`NS.BarStyleRows`, `settings/OptionsSetup.lua`; a styled bar, `HudAppearance.Styled`): every bar on HUD Appearance, the Results table and the Run detail tab carries both, each under its own heading.
 
 - *Background*: the composed color pair, *Background color* (`bgColor`, with alpha) and *Use class color* (`useClassColorBg`), then one appended row in the addon's words, *Use the skin's background* (`bgFromSkin`), which draws the surface's skin track and leaves the swatch unread. On by default where a track shipped (the spell rows, `dr.list.track`; the pace bar, `dr.chart.grid`). Off over a swatch of no opacity on the Results table and the compare, which draw no track by default; there the companion draws `dr.list.track`.
-- *Border*: `H.BorderGroup` with `fromSkin = true`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`, on: the skin's `bar.borderStyle`, *None* under Ka0s Default). Thickness and color stay the player's (X4). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
+- *Border*: `H.BorderGroup` with `fromSkin = "bar"`: *Border style*, *Border thickness (px)*, *Border color*, *Use class color*, *Use the skin's border* (`borderStyleFromSkin`; on, `S.BarBorder` draws a skin's real `bar.borderStyle` at its `bar.borderSize` and grays both rows, and a skin's *None*, Ka0s Default's among them, leaves both live and draws the stored style and thickness), then one appended row in the addon's words, *Use the skin's color* (`borderColorFromSkin`, on: `bar.border`). A style of *None*, a key LibSharedMedia cannot answer, or no thickness draws nothing.
 - Both span the bar's whole length, the row, the cell or the compare column, not the fill. The border is a frame with no fill and no mouse, made the first time a block draws one, so it sits over the text at its edges.
 - The texture and border pickers are the composer's `Ka0sMedia_*` rows, the previewing pickers the skin paints (options-ui-§23). They read LibSharedMedia's lists.
 
@@ -314,7 +324,7 @@ on by default, as HUD Appearance's do (D-16: the Results table counts as HUD sty
 | *Damage bar background*, *Damage bar border* | `resultsTable.damageBar.` | a *Background* and a *Border* set | none, each spanning the cell |
 | *DPS bar* | `resultsTable.dpsBar.` | the bar block | the same as *Damage bar* |
 | *DPS bar background*, *DPS bar border* | `resultsTable.dpsBar.` | a *Background* and a *Border* set | none |
-| *Bar text* | `resultsTable.barText.` | the font block with *Use the skin's font* | the skin's face (stored pick Friz Quadrata) 10, white, shadowed; a dash keeps the column's muted gray |
+| *Bar text* | `resultsTable.barText.` | the font block with *Use the skin's font* | the skin's face (stored pick Ka0s Prototype) 10, white, shadowed, with *Use the skin's color* and *Use the skin's shadow*; a dash keeps the column's muted gray |
 
 The Runs list's rows keep the table's alternating stripe; by default the bar cells draw no background
 of their own.
@@ -328,8 +338,8 @@ stamped look. Row height and the spell text stay HUD Appearance's.
 | Subsection | Schema prefix | Class color | Default |
 |---|---|---|---|
 | *Spell bars*, *Spell bar background*, *Spell bar border* | `resultsDetail.spellBars.` | the player's | as HUD Appearance's *Spell bars*: the skin's texture, 90%, the pace bar's blue, the skin's track, no border |
-| *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | the skin's texture (stored pick solid) at 100%, (42, 70, 107) / 255, no track, no border |
-| *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | the skin's texture (stored pick solid) at 100%, (83, 69, 0) / 255, no track, no border |
+| *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (84, 140, 214) / 255 (R3-DR-5), no track, no border |
+| *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (174, 145, 0) / 255 (R3-DR-5), no track, no border |
 
 *Best run bar* is the blue column and *Other run bar* the gold one, decided by `Compare.BestSide` as
 before. A compare line draws both columns' tracks and borders whichever side its bar is on. *Use the
@@ -360,7 +370,7 @@ the library is absent), and it follows the skin as the other pages do. See [prof
 | Surface | What it does |
 |---|---|
 | Minimap button / broker row | One LibDataBroker launcher (`core/LauncherSetup.lua`, launcher-§1). Left-click always opens this panel; right-click opens the options menu. The tooltip is the library's status tooltip |
-| Options menu entries | **Enabled** (`/dr enable` / `disable`), **Locked** (`NS.ToggleLock`, the *Lock frame* row), **Test mode** (`NS.ToggleTestMode`, the *Test mode* row), **Show window** (`NS.ToggleHud`, the race HUD). While disabled, only *Enabled* stays clickable; the rest are grayed and write nothing (launcher-§2) |
+| Options menu entries | **Enabled** (`/dr enable` / `disable`), **Locked** (`NS.ToggleLock`, the *Lock frame* row), **Test mode** (`NS.ToggleTestMode`, the *Test mode* row), **Sim mode** (`NS.IsSimMode` / `NS.ToggleSim`, the *Sim mode* row's own pair, the act of `/dr sim`: it opens the idle step panel, or stops a running sim), **Show window** (`NS.ToggleHud`, the race HUD), then the actions **Open settings** (this panel, never grayed) and **Open skin selector** (`NS.RunSkinVerb`, `/dr skin`). While disabled, only *Enabled* and *Open settings* stay clickable; the rest are grayed and write nothing (launcher-§2) |
 | Key binding: *Toggle race HUD* | `CLICK DpsRaceToggleHud:LeftButton`, category `BINDING_HEADER_DPSRACE`: set in **Options → Keybindings → Ka0s DPS Race**, or in **General > Keybindings** in this addon's settings. Presses the same `NS.ToggleHud` the *Show window* entry runs (launcher-§6) |
 | Key binding: *Toggle results window* | `CLICK DpsRaceToggleResults:LeftButton`, same category. Runs `NS.ToggleResults` |
 | Key binding: *Arm or cancel race* | `CLICK DpsRaceArmToggle:LeftButton`, same category. Runs `NS.ToggleArm`: arms the HUD's length, or cancels an armed or running race; never discards a pending result (spec §6.4) |

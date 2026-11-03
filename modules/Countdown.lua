@@ -292,7 +292,8 @@ end
 local function schedule()
     cancel()
     if not racing() then return stopRace() end
-    local left = theRace().TimeLeft()
+    local race = theRace()
+    local left = race.TimeLeft()
     if not left then return stopRace() end
     owner = "race"
     local numbers = numbersOn()
