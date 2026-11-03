@@ -12,7 +12,7 @@
 --   - the empty states: "No race yet: this one sets the mark." and, with no target, "Target a dummy
 --     to see your best.";
 --   - it swaps at once on a length, Custom, a new target, a spec change and a board change;
---   - the hover names the whole run, the click opens it in Results;
+--   - the hover names the whole run (no top damaging abilities, R4-DR7), the click opens it in Results;
 --   - nothing above it moves, and the HUD's minimum size holds.
 
 local T = _G.DPSRACE_TEST
@@ -155,12 +155,14 @@ test("hud best: the card's second line shows the consumables the run used, not i
     assertTrue(line:find("x1", 1, true) == nil, "no x1 for a single use: " .. line)
     assertTrue(line:find(tostring(5000000 + TRINKET), 1, true) == nil, "gear is not a consumable: " .. line)
     assertTrue(line:find("Chaos Bolt", 1, true) == nil, "no top ability: " .. line)
-    -- The hover keeps the top 3 spells and names each consumable.
+    -- The hover names each consumable, and no spell (R4-DR7).
     b.card:__fire("OnEnter")
     local all = table.concat(f.tip.lines, "\n")
-    for _, want in ipairs({ "Chaos Bolt", "Incinerate", "Immolate", "Tempered Potion x2", "Well Fed",
-                            "Crystallized Augment Rune" }) do
+    for _, want in ipairs({ "Tempered Potion x2", "Well Fed", "Crystallized Augment Rune" }) do
         assertTrue(all:find(want, 1, true) ~= nil, "the tooltip names " .. want .. ":\n" .. all)
+    end
+    for _, spell in ipairs({ "Chaos Bolt", "Incinerate", "Immolate" }) do
+        assertTrue(all:find(spell, 1, true) == nil, "no damaging ability in the hover: " .. spell)
     end
     assertTrue(all:find(ITEMS[TRINKET], 1, true) == nil, "no gear in the hover's consumables")
 end)
@@ -226,11 +228,18 @@ test("hud best: the hover names the whole run, the click opens it in Results", f
     assertEqual(f.tip.lines[1], "Your best")
     local board = f.M.__context.spec .. DOT .. "Cleave" .. DOT .. "1:00"
     assertTrue(f.tip.lines[2]:find(board, 1, true) ~= nil, "the board under the title (R4-DR3): " .. f.tip.lines[2])
-    for _, want in ipairs({ f.NS.ResultsTable.Date(best.date, "%d %b %Y %H:%M"), "1:00", fmt(f, 153900 * 60),
-                            fmt(f, 153900), "Chaos Bolt", "Incinerate", "Immolate" }) do
-        assertTrue(all:find(want, 1, true) ~= nil, "the tooltip names " .. want .. ":\n" .. all)
+    -- The header, date, length, damage, DPS and the click hint, in order; no numbered top 3
+    -- damaging abilities (R4-DR7, image 30).
+    local want = { "Your best", board, f.NS.ResultsTable.Date(best.date, "%d %b %Y %H:%M"),
+                   "Length: 1:00", "Damage: " .. fmt(f, 153900 * 60), "DPS: " .. fmt(f, 153900),
+                   "Click to open this run in Results." }
+    assertEqual(#f.tip.lines, #want, "no other line (this run used no consumables):\n" .. all)
+    for n, line in ipairs(want) do
+        assertTrue(f.tip.lines[n]:find(line, 1, true) ~= nil, ("line %d is %s: %s"):format(n, line, f.tip.lines[n]))
     end
-    assertTrue(all:find("Conflagrate", 1, true) == nil, "top 3 spells only")
+    for _, spell in ipairs({ "Chaos Bolt", "Incinerate", "Immolate", "Conflagrate", "1. " }) do
+        assertTrue(all:find(spell, 1, true) == nil, "no top damaging ability: " .. spell)
+    end
     local opened
     f.NS.Results = f.NS.Results or {}
     local real = f.NS.Results.ShowRun

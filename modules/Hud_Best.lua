@@ -27,7 +27,6 @@ local FONT = Style.FONT
 -- so two lines fit the card.
 local FIGURE_SCALE = 0.8
 local DOT = " \194\183 "
-local TOP_SPELLS = 3
 
 local function dpsOf(run) return run.result and run.result.dps end
 local function damageOf(run) return run.result and run.result.damage end
@@ -98,7 +97,8 @@ local function lineText(run)
     return table.concat(parts, DOT)
 end
 
---- The hover: the board, then the whole run, as fixed lines of its stored figures.
+--- The hover: the board, then the whole run, as fixed lines of its stored figures, then the
+--- consumables. No damaging abilities: the owner dropped the numbered top 3 (R4-DR7, image 30).
 local function tipOf(run, v)
     local Tbl, Format = NS.ResultsTable, NS.Format
     local tip = { L["Your best"],
@@ -108,10 +108,6 @@ local function tipOf(run, v)
         L["Damage: %s"]:format(Format.Number(damageOf(run))),
         L["DPS: %s"]:format(Format.Number(dpsOf(run))),
     }
-    for i = 1, math.min(TOP_SPELLS, type(run.spells) == "table" and #run.spells or 0) do
-        local s = run.spells[i]
-        tip[#tip + 1] = ("%d. %s  %s"):format(i, NS.HudBreakdown.SpellName(s.id), Format.Number(s.dmg))
-    end
     -- The consumables the card's icons stand for, by name.
     for _, e in ipairs(consumables(run)) do
         local n = times(e)
