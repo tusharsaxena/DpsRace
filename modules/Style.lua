@@ -506,6 +506,20 @@ function Style.IconEdge(parent, tex)
     return edge
 end
 
+--- The crop a Blizzard icon's art takes inside an edge of this addon's own, or on the HUD: 0.08 per
+--- side, the chart's and the timeline's, past the library's 0.07 zoom, so the icon's own rounded
+--- native edge never shows inside the edge (R4-ZOOM, the owner's scope answer in R4_SIGNOFF.md).
+Style.ICON_CROP = 0.08
+
+--- Crop `tex`'s art by Style.ICON_CROP per side (an item, enchant or gem icon in its quality edge).
+--- @param tex table  a Texture
+--- @return table tex
+function Style.CropIcon(tex)
+    local c = Style.ICON_CROP
+    tex:SetTexCoord(c, 1 - c, c, 1 - c)
+    return tex
+end
+
 --- A title-bar control drawn from the shared catalog, a plain character beneath it when the catalog
 --- cannot answer (standalone-windows), with its tooltip. Its tint is the strip's (AddToStrip).
 --- @param parent table

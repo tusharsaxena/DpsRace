@@ -403,6 +403,7 @@ local function newMark(cell)
     local m = { edge = cell:CreateTexture(nil, "BORDER"), icon = cell:CreateTexture(nil, "ARTWORK") }
     m.edge:SetSize(Gear.MARK + 2, Gear.MARK + 2)
     m.icon:SetSize(Gear.MARK, Gear.MARK)
+    Style.CropIcon(m.icon)   -- the art's own edge stays outside the 1px mark edge (R4-ZOOM)
     m.icon:SetPoint("CENTER", m.edge, "CENTER", 0, 0)
     return m
 end
@@ -417,6 +418,7 @@ local function newCell(body)
     cell.edge:SetSize(Gear.ICON + 2, Gear.ICON + 2)
     cell.icon = cell:CreateTexture(nil, "ARTWORK")
     cell.icon:SetSize(Gear.ICON, Gear.ICON)
+    Style.CropIcon(cell.icon)   -- the art's own edge stays outside the quality edge (R4-ZOOM)
     cell.icon:SetPoint("CENTER", cell.edge, "CENTER", 0, 0)
     cell.ilvl = Style.Text(cell, FONT.TEXT, C.text, "CENTER")
     cell.ilvl:SetPoint("BOTTOM", cell.icon, "BOTTOM", 0, 2)

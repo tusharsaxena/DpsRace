@@ -72,6 +72,12 @@ local function consumables(run)
 end
 
 --- "x2" past a single use, else "".
+--- A consumable's icon as inline markup at the caption line's 12 px, its art cropped 5/64 (0.078)
+--- per side, past the owner's floor of 0.07, so no native rounded edge shows on the HUD (R4-ZOOM).
+function Best.ConsumableIcon(e)
+    return "|T" .. tostring(NS.ResultsUsage.Icon(e)) .. ":12:12:0:0:64:64:5:59:5:59|t"
+end
+
 local function times(e)
     local n = tonumber(e.n) or 1
     return n > 1 and ("x" .. n) or ""
@@ -86,7 +92,7 @@ local function lineText(run)
     if type(char.ilvl) == "number" then parts[#parts + 1] = L["ilvl %s"]:format(Tbl.Ilvl(char.ilvl)) end
     local icons = {}
     for _, e in ipairs(consumables(run)) do
-        icons[#icons + 1] = "|T" .. tostring(NS.ResultsUsage.Icon(e)) .. ":12:12|t" .. times(e)
+        icons[#icons + 1] = Best.ConsumableIcon(e) .. times(e)
     end
     if #icons > 0 then parts[#parts + 1] = table.concat(icons, " ") end
     return table.concat(parts, DOT)

@@ -149,9 +149,9 @@ test("hud best: the card's second line shows the consumables the run used, not i
     local line = b.line.__text
     local head = f.NS.ResultsTable.Date(best.date, "%d %b") .. DOT .. "ilvl 316.4" .. DOT
     assertEqual(line:sub(1, #head), head, "date and ilvl first: " .. line)
-    assertTrue(line:find("|T" .. (5000000 + POTION) .. ":12:12|tx2", 1, true) ~= nil, "the potion, x2: " .. line)
-    assertTrue(line:find("|TInterface\\Icons\\Spell_Misc_Food:12:12|t", 1, true) ~= nil, "Well Fed: " .. line)
-    assertTrue(line:find("|T" .. (5000000 + RUNE) .. ":12:12|t", 1, true) ~= nil, "every kind, the rune too: " .. line)
+    assertTrue(line:find("|T" .. (5000000 + POTION) .. ":12:12:0:0:64:64:5:59:5:59|tx2", 1, true) ~= nil, "the potion, x2: " .. line)
+    assertTrue(line:find("|TInterface\\Icons\\Spell_Misc_Food:12:12:0:0:64:64:5:59:5:59|t", 1, true) ~= nil, "Well Fed: " .. line)
+    assertTrue(line:find("|T" .. (5000000 + RUNE) .. ":12:12:0:0:64:64:5:59:5:59|t", 1, true) ~= nil, "every kind, the rune too: " .. line)
     assertTrue(line:find("x1", 1, true) == nil, "no x1 for a single use: " .. line)
     assertTrue(line:find(tostring(5000000 + TRINKET), 1, true) == nil, "gear is not a consumable: " .. line)
     assertTrue(line:find("Chaos Bolt", 1, true) == nil, "no top ability: " .. line)
