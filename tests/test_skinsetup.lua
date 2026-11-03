@@ -215,8 +215,9 @@ end)
 
 test("skin seam: the eight skin keys default to Ka0s Default, the picker unseen", function()
     -- red under: a default other than today's look, or pickerSeen true (owner ruling O3: every
-    -- profile, old and new, gets the first-run picker).
-    local NS = setup()
+    -- profile, old and new, gets the first-run picker). `loginPicker`: the harness marks the
+    -- picker seen before login unless asked not to.
+    local NS = setup({ loginPicker = true })
     local p = NS.db.profile.skin
     for _, kv in ipairs(KEYS) do assertEqual(p[kv[1]], kv[2], "skin." .. kv[1]) end
 end)

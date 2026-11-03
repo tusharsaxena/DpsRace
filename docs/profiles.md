@@ -57,13 +57,14 @@ AceDB fires `OnProfileChanged`, `OnProfileCopied` or `OnProfileReset`; all three
 
 - logs one `[Set]` line;
 - takes the first-run skin picker down without marking it seen (`NS.HideSkinPicker`), so a preview
-  it had up is put back, then applies the new profile's skin, its Scope and its overrides
+  it had up is put back (the skin pick, and test mode when the picker or its eye turned it on, R6-PV), then applies the new profile's skin, its Scope and its overrides
   (`NS.ApplySkinChoice`), which repaints every window whether or not it was ever built;
 - re-reads the stored `enabled` and takes or releases the `disabled` hold, since the new profile may
   hold the other value;
 - rebuilds the combat event set for the new *General visibility*;
 - offers the first-run skin picker again when the new profile has not closed it
-  (`NS.MaybeShowSkinPicker`; nothing while the addon is off);
+  (`NS.MaybeShowSkinPicker`; nothing while the addon is off), which turns test mode on while the
+  race HUD is hidden, as every showing of the picker does;
 - announces `SETTINGS_CHANGED("profile", key)`.
 
 These callbacks are setup and stay live while the addon is disabled (slash-commands-§7), so

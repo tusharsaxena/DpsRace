@@ -470,8 +470,12 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
 - **The first-run skin picker** (the owner's ruling O3). `NS.MaybeShowSkinPicker` shows the
   library's `O.SkinPicker` while the profile's `skin.pickerSeen` is false: two seconds after login on
   an addon that stands up (an AceTimer the stand-down cancels), and after every profile event; never
-  while the addon stands down, and in combat it waits for one `PLAYER_REGEN_ENABLED`. Its eye turns test
-  mode on (X6). Only the player's close sets the key; `NS.HideSkinPicker` (the stand-down, and first on
+  while the addon stands down, and in combat it waits for one `PLAYER_REGEN_ENABLED`. Its preview is
+  test mode (`spec.preview`, LibKa0s OptionsSkinPicker minor 11, R6-PV): shown while the race HUD is
+  hidden, the picker turns test mode on; the eye turns it off and on; every close restores what the
+  picker or the eye moved. Enter and exit are `NS.ToggleTestMode` (the `/dr test` and launcher
+  handler, so the Master controls' row and the refusals stay in step); `isActive` and `isShown` read
+  the launcher's `isTestMode` and `isWindowShown`; a playing sim is never toggled. Only the player's close sets the key; `NS.HideSkinPicker` (the stand-down, and first on
   every profile event) takes it down without setting it.
 - **The EllesmereUI provider** is the library's (`SkinEUI.lua`; the TOC's `OptionalDeps` names
   EllesmereUI). With source `eui` and its gate holding, EllesmereUI's facade paints the vocabulary it

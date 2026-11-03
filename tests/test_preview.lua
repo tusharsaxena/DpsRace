@@ -362,6 +362,9 @@ test("preview: closing the HUD ends it; Reset all settings ends it", function()
     assertFalse(f.NS.ResultsSource.IsMock())
     assertTrue(f.Preview.Start())
     f.NS.Helpers.RestoreAllDefaults()
+    -- The reset profile is unseen, so the first-run skin picker shows and turns test mode on as its
+    -- preview (spec.preview, R6-PV); the player's close puts that back.
+    f.NS.Helpers.HideSkinPicker()
     assertFalse(f.Preview.IsActive())
     assertFalse(f.NS.ResultsSource.IsMock())
 end)

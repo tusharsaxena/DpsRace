@@ -119,8 +119,13 @@ titled *Choose a skin*, with *Ka0s DPS Race* on its own line above the skin drop
 R-11: the window widens to the name, never cutting it off), shown by `NS.MaybeShowSkinPicker` (`core/SkinSetup.lua`) while the
 profile's `skin.pickerSeen` is false: two seconds after login (an AceTimer the stand-down cancels) and
 after every profile event, never while the addon stands down, and in combat held for one
-`PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (this addon has a test mode, X6: it turns test
-mode on as `/dr test` does, or shows the Results window when it is already on), a gear (opens this
+`PLAYER_REGEN_ENABLED`. A dropdown of the skins, an eye (the picker's preview, `spec.preview` in test
+mode, LibKa0s OptionsSkinPicker minor 11, R6-PV: the picker shown while the race HUD is hidden turns
+test mode on, so the HUD and the Results window show sample data in the skin; the eye turns it off and
+on, lit while it is on, its tooltip saying which; every close puts back what the picker or the eye
+moved. Each turn is `NS.ToggleTestMode`, the handler `/dr test` and the launcher's *Test mode* entry
+call, so the Master controls' *Test mode* checkbox follows and the combat and race refusals hold; a
+HUD already up, or a sim playing, is left alone), a gear (opens this
 tab), the Skin tab's own rows (LibKa0s v1.83.0, LK-A3: *Font*, *Texture* and *Font outline*, then the
 Scope's two checkboxes), then **Apply** and **Apply to all Ka0s addons** (shown only while another Ka0s addon that uses
 skins is loaded). A pick or a row's change only previews; *Apply* and the gear save it through `NS.WriteSkinChoice`, and

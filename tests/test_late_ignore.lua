@@ -272,6 +272,8 @@ test("late ignore: a profile switch re-scores the flags by the other profile's l
     assertFalse(NS.ResultsRuns.IsFlagged(f))
     assertEqual(NS.Bests.Board({ cleanOnly = true })["253|boss|30"].id, "f")
     NS.db:SetProfile("Other")
+    -- A new profile shows the first-run skin picker, in test mode (R6-PV): the player closes it.
+    NS.Helpers.HideSkinPicker()
     assertTrue(NS.SetByPath(NS.LateIgnore.PATH, ""))
     assertTrue(NS.ResultsRuns.IsFlagged(f), "the other profile ignores nothing")
     NS.db:SetProfile("Default")

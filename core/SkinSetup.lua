@@ -392,9 +392,14 @@ end
 --
 -- PREVIEW. A pick only previews; `set` (NS.WriteSkinChoice) runs on Apply, the gear or Apply to all,
 -- and the close control and Escape put back the stored choice the library reads through `get`. The
--- eye (X6: this addon has a test mode to preview in) turns test mode on through its row's write
--- seam, the path `/dr test` takes, so the HUD and the Results window show sample data in the skin;
--- the library raises the picker over them once the eye returns.
+-- eye's mode is test mode (`spec.preview`, LibKa0s OptionsSkinPicker minor 11; R6-PV, the lead's
+-- call 2): the picker shown while the race HUD is hidden turns it on, so the HUD and the Results
+-- window show sample data in the skin; the eye turns it off and on; and every close (Apply, the gear,
+-- the close control, Escape, a hide) puts back what the picker or its eye moved, after the skin's own
+-- put-back. Enter and exit are NS.ToggleTestMode, the handler `/dr test` and the launcher's Test mode
+-- entry call, so the Master controls' checkbox follows and its refusals (combat, a real race, the
+-- stand-down) hold; isActive and isShown read what the launcher's isTestMode and isWindowShown read.
+-- A playing sim is not test mode and is never toggled: the toggle would read it as on and end it.
 --
 -- QUEUED. One picker is up at a time across every Ka0s addon: while another addon's is up,
 -- O.SkinPicker queues this one and answers nil, "queued", which NS.MaybeShowSkinPicker passes on.
@@ -403,17 +408,22 @@ local PICKER_PATH = "skin.pickerSeen"
 local pickerTarget       -- the one-shot PLAYER_REGEN_ENABLED target, while a start is held
 local quietClose = false -- true while NS.HideSkinPicker takes the picker down
 
---- The eye: test mode on (the HUD and the Results window on sample data). Test mode already on only
---- needs the Results window shown. A refused start (combat, a real race) prints its own line.
-local function previewSkin()
-    local P = NS.Preview
-    if not P then return end
-    if P.IsActive() then
-        P.OpenResults()
-    elseif NS.ToggleTestMode then
-        NS.ToggleTestMode()
-    end
-end
+--- The eye's mode (spec.preview): test mode, through NS.ToggleTestMode. Enter only from off (a sim
+--- playing counts as on, so it is left alone); exit only from test mode. A refused start (combat, a
+--- real race) prints its own line and moves nothing, which the library reads back through isActive.
+local preview = {
+    mode     = "test",
+    isActive = function() return NS.Preview ~= nil and NS.Preview.Mode() == "test" end,
+    isShown  = function() return NS.Hud ~= nil and NS.Hud.IsShown() == true end,
+    enter    = function()
+        if not NS.Preview or NS.Preview.IsActive() then return false end
+        return NS.ToggleTestMode()
+    end,
+    exit     = function()
+        if not NS.Preview or NS.Preview.Mode() ~= "test" then return false end
+        return NS.ToggleTestMode()
+    end,
+}
 
 --- The player's close: the picker seen, and nothing else (the library's put-back already wears the
 --- stored choice).
@@ -428,7 +438,7 @@ function NS.SkinPickerSpec()
         -- The gear's default: O.OpenOptionsPanel("general"), then O.SelectTab("general",
         -- "Appearance"), the Skin tab's key on the General page (settings/General.lua).
         page = "general", tab = "Appearance",
-        onPreview = previewSkin, onClose = pickerClosed,
+        preview = preview, onClose = pickerClosed,
     }
 end
 

@@ -210,7 +210,9 @@ end)
 test("sim: closing the HUD, Reset all settings and the stand-down end a running script", function()
     local ends = {
         close = function(f) f.Hud.Act.close() end,
-        resetall = function(f) f.NS.Helpers.RestoreAllDefaults() end,
+        -- The reset profile's first-run skin picker turns test mode on as its preview (R6-PV);
+        -- the player's close puts that back.
+        resetall = function(f) f.NS.Helpers.RestoreAllDefaults(); f.NS.Helpers.HideSkinPicker() end,
         standdown = function(f) assertTrue(f.NS.SetByPath("enabled", false)) end,
     }
     for _, key in ipairs({ "close", "resetall", "standdown" }) do

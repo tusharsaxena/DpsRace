@@ -1272,7 +1272,7 @@ Total.
 - skin fonts: the clocks keep their stored size in every skin once they stop following its font
 - skin fonts: v11 moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in every profile, Blizzard's Friz kept
 
-### test_skin_picker.lua (12)
+### test_skin_picker.lua (11)
 
 - skin picker: the spec names this owner, its seams, the General page's Skin tab and the eye
 - skin picker: an unseen profile shows it; a seen one does not
@@ -1283,9 +1283,26 @@ Total.
 - skin picker: the harness login shows the library's window
 - skin picker: the player's close marks it seen; this addon's own hide does not
 - skin picker: a profile that has seen it takes a shown picker down, unmarked
-- skin picker: the eye turns test mode on, and with it on shows the Results window
 - skin picker: the Profiles page paints the tree AceConfigDialog draws, on every render
 - skin picker: degraded, no picker shows and the Profiles paint is a no-op
+
+### test_skin_picker_preview.lua (15)
+
+- skin picker preview: the spec passes spec.preview in test mode, and no one-shot onPreview
+- skin picker preview: the hook goes through NS.ToggleTestMode, the verb's and the launcher's seam
+- skin picker preview: opened with the HUD hidden, the picker turns test mode on
+- skin picker preview: the eye turns test mode off and on again
+- skin picker preview: Apply puts test mode back off
+- skin picker preview: the gear puts test mode back off
+- skin picker preview: the close control puts test mode back off
+- skin picker preview: Escape puts test mode back off
+- skin picker preview: O.HideSkinPicker puts test mode back off
+- skin picker preview: NS.HideSkinPicker (the stand-down's and a profile event's) puts test mode back off
+- skin picker preview: an eye-off then a close leaves it off; an eye-on then a close turns it off
+- skin picker preview: a HUD the player has up is left alone, and so is its close
+- skin picker preview: test mode on at open, turned off by the eye, is on again after the close
+- skin picker preview: a playing sim is never stopped or switched by the eye
+- skin picker preview: in combat the eye's start is refused and the close moves nothing
 
 ### test_skin_outline.lua (10)
 
@@ -1794,7 +1811,8 @@ Total.
 | test_skin_menus.lua | 13 |
 | test_bar_style.lua | 20 |
 | test_skin_fonts.lua | 13 |
-| test_skin_picker.lua | 12 |
+| test_skin_picker.lua | 11 |
+| test_skin_picker_preview.lua | 15 |
 | test_skin_outline.lua | 10 |
 | test_skin_verb.lua | 6 |
 | test_hud_element_tips.lua | 11 |
@@ -1822,4 +1840,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1424** |
+| **Total** | **1438** |
