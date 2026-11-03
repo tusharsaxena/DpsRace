@@ -1,4 +1,4 @@
-# Ka0s DPS Race
+# DPS Race
 
 ![WoW](https://img.shields.io/badge/WoW-Midnight_12.1.5-purple)
 ![License](https://img.shields.io/badge/License-MIT-orange)
