@@ -37,13 +37,16 @@ Sim.RESULT_HOLD = 4
 Sim.STICKY_EXTRA = 3
 -- How often the clock moves the sample race on (the HUD's own tick, modules/Hud.lua).
 Sim.TICK = 0.05
+-- The stepper's Racing step (R4-DR6): the wall seconds the rest of the race plays in, as MultiMeters'
+-- fight steps last ten seconds of dense meter updates.
+Sim.RACE_STEP_SECONDS = 10
 
 -- The pace of a playing stepper (SG-SIM): the seconds between two steps, the `sim.stepDelay` setting.
 -- The range and the validator are the row's (settings/Race.lua).
 Sim.STEP_DELAY = NS.defaults.profile.sim.stepDelay
 Sim.STEP_DELAY_MIN, Sim.STEP_DELAY_MAX, Sim.STEP_DELAY_STEP = 0.5, 10, 0.5
 
-local ticker, sample, scenario, resultAt, finished, history, quiet
+local ticker, sample, scenario, resultAt, finished, history, quiet, racing
 
 --- Whether `v` is a pace the setting takes.
 function Sim.ValidStepDelay(v)
@@ -131,21 +134,38 @@ local function launch(key)
     cancelTicker()
     local s = find(key) or find(Sim.DEFAULT)
     scenario = s.key
-    sample, resultAt, finished = Sim.Sample(s.key, history), nil, false
+    sample, resultAt, finished, racing = Sim.Sample(s.key, history), nil, false, false
     -- With the stepper open the arm is parked until its first step (SG-DR-1); without it the old hold.
     NS.SampleRace.Start(sample, Sim.ARM_HOLD, Sim.session ~= nil)
     ticker = C_Timer.NewTicker(Sim.TICK, beat)
 end
 
 -- ── the stepper (SF-DR-8) ───────────────────────────────────────────────────────────────────────
--- LibKa0s-Sim-1.0's step window beside the race window. The race still plays on its own clock; a
--- click on a step jumps the clock to that moment (SampleRace.Skip), so the stepper skips the waits
--- and never changes what the race does. The session fakes no client answer (core/SimSetup.lua).
+-- LibKa0s-Sim-1.0's step window beside the race window. The race still plays on its own clock and by
+-- its own plan. Armed, Race starts, Result card and Results window jump the clock to their moment
+-- (SampleRace.Skip), skipping the waits. Racing (R4-DR6) does not jump: it paces the clock so the
+-- rest of the race, every hit and cast in order, plays in Sim.RACE_STEP_SECONDS of wall time and
+-- reaches its own buzzer, and the gate (Sim.Gate) holds the next step until it does, as MultiMeters'
+-- fight steps hold theirs. Buzzer is then a marker. The session fakes no client answer
+-- (core/SimSetup.lua).
+
+-- Racing: what is left of the race over the step's ten seconds, never slower than real speed. The
+-- countdown re-arms its marks on the new pace.
+local function paceTheRace()
+    local Race = NS.SampleRace
+    Race.Skip(0)
+    local left = (Race.StopAt() or 0) - (Race.Elapsed() or math.huge)
+    racing = true
+    if left <= 0 then return end
+    Race.Pace(math.max(1, left / Sim.RACE_STEP_SECONDS))
+    if NS.Countdown then NS.Countdown.Refresh() end
+end
 
 local STEP_MOMENTS = {
     -- The countdown is one step delay, so "Race starts" lights as the clock passes zero (SG-SIM).
     armed = function() NS.SampleRace.Unpark(Sim.StepDelay()) end,
     start = function() NS.SampleRace.Skip(0) end,
+    race = paceTheRace,
     buzzer = function() NS.SampleRace.Skip(NS.SampleRace.StopAt() or 0) end,
     result = function() NS.SampleRace.SkipToResult() end,
     results = function() if not finished then Sim.Finish() end end,
@@ -154,13 +174,26 @@ local STEP_MOMENTS = {
 local function timeline(_, opts)
     local s = find(opts.scenario) or find(Sim.DEFAULT)
     local stopLabel = s.endAt and L["Combat ends"] or L["Buzzer"]
+    local raceLabel = L["Racing (%d s of damage in %d s)"]:format(s.endAt or MockRuns.LENGTH, Sim.RACE_STEP_SECONDS)
     return {
         { kind = "armed", label = L["Armed"] },
         { kind = "start", label = L["Race starts"] },
+        { kind = "race", label = raceLabel },
         { kind = "buzzer", label = stopLabel },
         { kind = "result", label = L["Result card"] },
         { kind = "results", label = L["Results window"] },
     }
+end
+
+--- The stepper's gate (R4-DR6): closed, with its line, while the Racing step's race is still running;
+--- open otherwise.
+--- @return boolean open
+--- @return string|nil line
+function Sim.Gate()
+    if racing and sample and NS.SampleRace.State() == NS.Race.STATE.RUNNING then
+        return false, L["The race is still running."]
+    end
+    return true
 end
 
 local function playStep(step)
@@ -190,6 +223,7 @@ local function newSession()
             ready()
         end,
         play = playStep,
+        gate = function() return Sim.Gate() end,
         refusal = function(opts)
             if not (opts.fromHost or history) then return L["Start the simulation with /dr sim [scenario]."] end
         end,
@@ -243,7 +277,7 @@ end
 function Sim.Cancel()
     cancelTicker()
     stopSession("stop")
-    sample, scenario, resultAt, finished, history = nil, nil, nil, false, nil
+    sample, scenario, resultAt, finished, history, racing = nil, nil, nil, false, nil, false
 end
 
 --- What the sim is doing, for the diagnostics report and the suites.

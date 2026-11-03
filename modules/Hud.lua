@@ -632,7 +632,8 @@ local readLive
 -- THE CHART'S BUCKETS (#2). A read at or after a bucket's boundary copies its live total into the
 -- bucket (modules/Slices.lua): the throttled reads above do it while damage lands, and a timer at the
 -- next boundary makes sure one comes then even in a quiet stretch. The last boundary is the buzzer's
--- (onState). A boundary still unfilled is retried no faster than LIVE_RETRY.
+-- (onState). A boundary still unfilled is retried no faster than LIVE_RETRY. The wait is in wall
+-- seconds: a sim race the stepper paces (R4-DR6) covers its race seconds `Rate` times as fast.
 local LIVE_RETRY = 0.1
 
 local function scheduleSlice()
@@ -641,7 +642,8 @@ local function scheduleSlice()
     local run, elapsed = race.Current(), race.Elapsed()
     local at = NS.Slices.NextBoundary(run)
     if not (at and elapsed) or at >= run.race.length then return end
-    sliceTimer = C_Timer.NewTimer(math.max(LIVE_RETRY, at - elapsed), function()
+    local rate = race.Rate and race.Rate() or 1
+    sliceTimer = C_Timer.NewTimer(math.max(LIVE_RETRY, (at - elapsed) / rate), function()
         sliceTimer = nil
         if liveTimer then liveTimer:Cancel() end
         liveTimer = nil

@@ -328,7 +328,7 @@ test("sim stepper: a sim starts a session whose panel docks beside the race wind
     sim(f, "newbest")
     local s = stepper(f)
     assertTrue(s:IsActive())
-    assertEqual(labels(f), "armed,start,buzzer,result,results")
+    assertEqual(labels(f), "armed,start,race,buzzer,result,results")
     assertTrue(s:IsPanelShown(), "the stepper window shows with the sim")
     assertEqual(s:Status().scenario, "newbest")
     f.Preview.Stop()
@@ -363,7 +363,14 @@ test("sim stepper: each step moves the sample race to its moment, the last opens
     assertEqual(f.NS.SampleRace.State(), "armed")
     assertTrue(s:Step())    -- the race starts
     assertEqual(f.NS.SampleRace.State(), "running")
-    assertTrue(s:Step())    -- the buzzer
+    assertTrue(s:Step())    -- racing (R4-DR6): the race plays fast to its own buzzer
+    assertEqual(f.NS.SampleRace.State(), "running")
+    local step, code = s:Step()
+    assertEqual(step, nil, "the buzzer waits out the racing step")
+    assertEqual(code, "settling")
+    f:advance(f.NS.Sim.RACE_STEP_SECONDS + 0.5)
+    assertEqual(f.NS.SampleRace.State(), "stopping", "the race reached its buzzer by itself")
+    assertTrue(s:Step())    -- the buzzer: a marker now
     assertEqual(f.NS.SampleRace.State(), "stopping")
     assertTrue(s:Step())    -- the result card
     assertEqual(f.NS.SampleRace.State(), "result")
@@ -376,11 +383,13 @@ end)
 test("sim stepper: an early end has no buzzer step, and switching scenarios restarts the session", function()
     local f = fixture()
     sim(f, "died")
-    assertEqual(labels(f), "armed,start,buzzer,result,results")
-    assertEqual(stepper(f):Steps()[3].label, "Combat ends")
+    assertEqual(labels(f), "armed,start,race,buzzer,result,results")
+    assertEqual(stepper(f):Steps()[3].label, "Racing (12 s of damage in 10 s)")
+    assertEqual(stepper(f):Steps()[4].label, "Combat ends")
     sim(f, "behind")
     assertEqual(stepper(f):Status().scenario, "behind")
-    assertEqual(stepper(f):Steps()[3].label, "Buzzer")
+    assertEqual(stepper(f):Steps()[3].label, "Racing (30 s of damage in 10 s)")
+    assertEqual(stepper(f):Steps()[4].label, "Buzzer")
 end)
 
 
@@ -424,4 +433,101 @@ test("sim stepper: Run waits the sim.stepDelay setting between steps (SG-SIM)", 
     assertEqual(s:Status().pos, first, "no step inside the setting's 4 s")
     f:advance(1.5)
     assertEqual(s:Status().pos, first + 1, "the next step after it")
+end)
+
+
+-- ── R4-DR6: the Racing step, MultiMeters' fight steps for a race ─────────────────────────────────
+
+-- The stepper to the moment just after its Racing step: armed, the countdown, Race starts, Racing.
+local function toRacing(f, key)
+    sim(f, key, true)
+    local s = stepper(f)
+    assertTrue(s:Step(), "the armed step")
+    f:advance(f.NS.Sim.StepDelay() + 0.1)
+    assertEqual(f.NS.SampleRace.State(), "running", key)
+    assertTrue(s:Step(), "Race starts")
+    assertTrue(s:Step(), "Racing")
+    return s
+end
+
+test("sim racing: the race step plays the race to its own buzzer in about 10 s, never before 9.5 (R4-DR6)", function()
+    -- red under: no race step; the buzzer step jumped the clock (Skip) and the race stood still before it.
+    for _, key in ipairs({ "newbest", "died", "incomplete" }) do
+        local f = fixture()
+        toRacing(f, key)
+        local stopAt = f.NS.SampleRace.StopAt()
+        assertTrue(f.NS.SampleRace.Rate() > 1, key .. ": the race clock runs fast")
+        f:advance(9.5)
+        assertEqual(f.NS.SampleRace.State(), "running", key .. ": the buzzer came early")
+        assertTrue(f.NS.SampleRace.Elapsed() > stopAt - 2, key .. ": most of the race played in the step")
+        f:advance(0.6)
+        assertEqual(f.NS.SampleRace.State(), "stopping", key .. ": no buzzer after 10 s")
+    end
+end)
+
+test("sim racing: every chart bucket fills, the casts keep the plan's times, the countdown runs (R4-DR6)", function()
+    -- red under: Skip(30) at the buzzer step, which left buckets 2..29 late and shifted the casts heard after it.
+    local f = fixture()
+    toRacing(f, "newbest")
+    local shown = {}
+    for _ = 1, 105 do
+        f:advance(0.1)
+        local n = f.NS.Countdown.Shown()
+        if n then shown[n] = true end
+    end
+    assertEqual(f.NS.SampleRace.State(), "stopping")
+    local rec = assert(f.NS.Slices.Get("sim-newbest"), "no live capture")
+    assertEqual(rec.filled, rec.count, "a hole in the live chart")
+    assertTrue(shown[5] and shown[1], "the final countdown played inside the racing step")
+    local planned = {}
+    for _, c in ipairs(f.Sim.Sample("newbest", f.NS.MockRuns.Dataset()).plan.casts) do
+        planned[math.floor(c.t * 100 + 0.5)] = true
+    end
+    local k = 0
+    for _, c in ipairs(f.NS.Casts.Live()) do
+        k = k + 1
+        assertTrue(planned[math.floor(c.t * 100 + 0.5)], ("a cast at %.2f the plan never made"):format(c.t))
+    end
+    assertTrue(k >= 10, "the race's casts were heard")
+end)
+
+test("sim racing: after the buzzer the race runs at real speed, and the gate opens (R4-DR6)", function()
+    local f = fixture()
+    local Sim = f.NS.Sim
+    sim(f, "newbest", true)
+    assertTrue(Sim.Gate(), "armed: open")
+    local s = toRacing(f, "newbest")
+    local open, line = Sim.Gate()
+    assertFalse(open, "the racing step holds the next")
+    assertEqual(line, "The race is still running.")
+    f:advance(Sim.RACE_STEP_SECONDS + 0.2)
+    assertEqual(f.NS.SampleRace.State(), "stopping")
+    assertEqual(f.NS.SampleRace.Rate(), 1, "Stop!, the tail and the read play at real speed")
+    assertTrue(Sim.Gate(), "the buzzer opens the gate")
+    local since = f.NS.SampleRace.SinceBuzzer()
+    f:advance(1)
+    local moved = f.NS.SampleRace.SinceBuzzer() - since
+    assertTrue(math.abs(moved - 1) < 0.06, ("a second after the buzzer took %.2f race seconds"):format(moved))
+    assertTrue(s:Step(), "the buzzer step")
+    assertTrue(Sim.Gate())
+end)
+
+test("sim racing: Run plays the whole script, the racing step about 10 s of it (R4-DR6)", function()
+    local f = fixture()
+    sim(f, "newbest", true)
+    local s = stepper(f)
+    assertTrue(s:Run())
+    local racingFrom, buzzerAt
+    for _ = 1, 400 do
+        f:advance(0.1)
+        local pos = s:Status().pos
+        if pos == 3 and not racingFrom then racingFrom = f:now() end
+        if pos == 4 and not buzzerAt then buzzerAt = f:now() end
+        if f.R.IsShown() then break end
+    end
+    assertTrue(racingFrom and buzzerAt, "the racing and buzzer steps played")
+    local span = buzzerAt - racingFrom
+    assertTrue(span >= 9.9 and span <= 10.5, ("the racing step took %.2f s"):format(span))
+    assertTrue(f.R.IsShown(), "the Results window opened at the end")
+    assertEqual(f.R.Selected(), "sim-newbest")
 end)

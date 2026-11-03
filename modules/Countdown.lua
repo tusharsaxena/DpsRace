@@ -289,10 +289,14 @@ local function stopRace()
 end
 
 --- Arm the marks still ahead from the race's own clock, showing the number of the moment silently.
+--- A sim race the stepper paces (R4-DR6) runs `Rate` race seconds a wall second, so its marks come
+--- that much sooner; the stepper asks again (Refresh) when it sets the pace.
 local function schedule()
     cancel()
     if not racing() then return stopRace() end
-    local left = theRace().TimeLeft()
+    local race = theRace()
+    local left = race.TimeLeft()
+    local rate = race.Rate and race.Rate() or 1
     if not left then return stopRace() end
     owner = "race"
     local numbers = numbersOn()
@@ -301,7 +305,7 @@ local function schedule()
     if not (numbers or cueOn()) then return end
     for m = Countdown.MAX, 1, -1 do
         if left > m + EPS then
-            timers[m] = C_Timer.NewTimer(left - m, function() mark(m) end)
+            timers[m] = C_Timer.NewTimer((left - m) / rate, function() mark(m) end)
         end
     end
 end

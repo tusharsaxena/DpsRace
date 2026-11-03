@@ -1400,7 +1400,7 @@ Total.
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
 
-### test_sim.lua (22)
+### test_sim.lua (26)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
 - sim: newbest beats the history's best: the chart and pace bar against it, a New best chip
@@ -1424,6 +1424,10 @@ Total.
 - sim stepper: the race holds armed until a step is played, then counts down (SG-DR-1)
 - sim stepper: the Armed countdown is the step delay, so Race starts lights as it ends (SG-SIM)
 - sim stepper: Run waits the sim.stepDelay setting between steps (SG-SIM)
+- sim racing: the race step plays the race to its own buzzer in about 10 s, never before 9.5 (R4-DR6)
+- sim racing: every chart bucket fills, the casts keep the plan's times, the countdown runs (R4-DR6)
+- sim racing: after the buzzer the race runs at real speed, and the gate opens (R4-DR6)
+- sim racing: Run plays the whole script, the racing step about 10 s of it (R4-DR6)
 
 ### test_sample_parity.lua (32)
 
@@ -1740,7 +1744,7 @@ Total.
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
 | test_preview.lua | 23 |
-| test_sim.lua | 22 |
+| test_sim.lua | 26 |
 | test_sample_parity.lua | 32 |
 | test_launcher.lua | 9 |
 | test_launcher_skin_entry.lua | 1 |
@@ -1758,4 +1762,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1384** |
+| **Total** | **1388** |
