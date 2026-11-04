@@ -290,11 +290,45 @@ if Sim.session then
 end
 -- Every start and stop (the slash verb, the panel, the launcher, its own end) repaints an open
 -- settings page, so Master controls' Sim mode box shows the live sim (R6-SIM, LibKa0s R6-SIM-L).
+local function repaintSettings()
+    local H = NS.Helpers
+    if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
+end
+if Sim.session then Sim.session:AddListener(repaintSettings) end
+
+-- The sim window's show and hide repaint it too (R7-SIM): the box reads "window shown or running", and
+-- the window also closes by its own close button and by Escape, neither of which goes through
+-- HidePanel. The library builds the window on its first show and publishes no handle, so the frame is
+-- found by its global name (the library's `<name>SimPanel`) after that show and hooked once; the show
+-- that built it is repainted here, as its OnShow ran before the hook.
+local PANEL_NAME = "DpsRaceSimPanel"
+local panelHooked = false
+local function hookPanel()
+    if panelHooked then return end
+    local frame = _G[PANEL_NAME]
+    if type(frame) ~= "table" or type(frame.HookScript) ~= "function" then return end
+    panelHooked = true
+    frame:HookScript("OnShow", repaintSettings)
+    frame:HookScript("OnHide", repaintSettings)
+end
 if Sim.session then
-    Sim.session:AddListener(function()
-        local H = NS.Helpers
-        if H and type(H.RefreshScalars) == "function" then H.RefreshScalars() end
-    end)
+    local show, hide = Sim.session.ShowPanel, Sim.session.HidePanel
+    -- The members are the instance's own fields (LibKa0s-Sim-1.0 installs them per session), so the
+    -- wrap is this session's alone. It repaints only when the window's state moved: the client's Show
+    -- and Hide run the hooks as well, and the repaint here covers the first show, before the hook.
+    local session = Sim.session
+    function session.ShowPanel(...)
+        local was = session:IsPanelShown()
+        local shown = show(...)
+        hookPanel()
+        if not was and session:IsPanelShown() then repaintSettings() end
+        return shown
+    end
+    function session.HidePanel(...)
+        local was = session:IsPanelShown()
+        hide(...)
+        if was and not session:IsPanelShown() then repaintSettings() end
+    end
 end
 NS.SimSession = Sim.session
 
