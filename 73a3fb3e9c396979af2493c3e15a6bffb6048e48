@@ -1,0 +1,7 @@
+R7-SIM independent review (2026-11-04): PASS, no defects.
+- Against 00_PLAN.md call 2 and LibKa0s releasing.md's R7-L1 host list: NS.IsSimMode = IsPanelShown() or IsActive(); both the MasterControls spec (settings/General.lua) and the Launcher descriptor (core/LauncherSetup.lua) carry that one function. ToggleSim off -> bare /dr sim (idle window, stays ticked); on -> stop through the verb (refusals kept) then HidePanel.
+- Refresh paths checked against the vendored library: every library show/hide goes through the session members (SimTimeline bare verb sim:ShowPanel, TogglePanel, Sim.lua stand-down S.sim:HidePanel), so the per-instance wrap fires; the close button (panel.Hide) and Escape (UISpecialFrames, frame name d.name = DpsRaceSimPanel from SimPanelRender build) hit the OnShow/OnHide hooks installed after the first show; sim start/stop/end hit the session listener; stopSession's hide hits the wrap. Combat: library combat lock on the box; Preview.Refusal still refuses a start. Test mode start cancels the sim (Preview stopSim -> Sim.Cancel -> HidePanel), so exclusivity holds.
+- Red first, reproduced in a scratch copy with master's core/DpsRace.lua and modules/Sim.lua: the 6 R7/updated sim and launcher cases fail.
+- Gate fresh: 1448 passed, 0 failed, 1 skipped; luacheck 0/0 in 180 files; files under cap, CRLF.
+- Smoke SM-DR-R7SIM added with blank Result; SM-DR-R6SIM/R5DR2 expected text updated, Results blank.
+- Note (not a defect): relies on the library-internal frame name <name>SimPanel; the tests would catch a rename.
