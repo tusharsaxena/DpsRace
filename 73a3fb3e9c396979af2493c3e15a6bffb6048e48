@@ -5,3 +5,5 @@ R7-SIM independent review (2026-11-04): PASS, no defects.
 - Gate fresh: 1448 passed, 0 failed, 1 skipped; luacheck 0/0 in 180 files; files under cap, CRLF.
 - Smoke SM-DR-R7SIM added with blank Result; SM-DR-R6SIM/R5DR2 expected text updated, Results blank.
 - Note (not a defect): relies on the library-internal frame name <name>SimPanel; the tests would catch a rename.
+
+Second independent review (R7 adversarial reviewer, 2026-11-04): R7-SIM PASS, agrees with the note above. Extra checks: a scratch probe of SM-DR-R6SIM's sequence matched its expected text (untick closes the window; /dr sim newbest with the window closed shows it; combat stops the sim and hides the window, box unticked). Nit: a HidePanel repaints twice (wrap + OnHide hook), harmless. Gate fresh at 613cdc0: 1448/0/1, luacheck 0/0.
