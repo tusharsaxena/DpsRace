@@ -1,3 +1,5 @@
 R7-RD independent review (2026-11-04): PASS, no defects.
 - README.md ## Usage names /dr skin; the sentence now says hover/select previews a skin on the addon's windows and Apply keeps it; the existing text already says the picker turns test mode on while the race window is closed, the eye turns it off and on, and closing restores (true to SM-DR-R6PV / R6-PV behaviour). No command table; title DPS Race (R6-NAME) kept; CRLF kept.
 - Gate fresh: 1448 passed, 0 failed, 1 skipped; luacheck 0/0.
+
+Second independent review (R7 adversarial reviewer, 2026-11-04): R7-RD DEFECT, fixed in 613cdc0. 'hover or select a skin in its list to preview it' was untrue: list rows preview only on a pick (OnClick -> Skin:SetChoice, OptionsSkinPicker); OnEnter only paints the hover wash (SkinPaintControls ListRow). README now says 'click a skin in its list to preview it ... press Apply to keep it'. Gate fresh at 613cdc0: 1448/0/1, luacheck 0/0.
