@@ -212,23 +212,30 @@ function NS.RunSimVerb(line)
     return (session:RunVerb(line)) == true
 end
 
---- Whether the sim plays (the launcher's Sim mode row): its step session is live, else the preview's mode.
+--- Whether Sim mode reads on (the launcher's Sim mode entry and Master controls' Sim mode box): the sim
+--- window (the step panel) is shown or a sim runs (R7-SIM, the owner's round 7 rule). With no library
+--- session, the preview's mode.
 function NS.IsSimMode()
     local session = NS.Sim and NS.Sim.session
-    if session then return session:IsActive() == true end
+    if session then return session:IsPanelShown() == true or session:IsActive() == true end
     return NS.Preview ~= nil and NS.Preview.Mode() == "sim"
 end
 
---- The Sim mode toggle (MultiMeters' rule, R5-DR2): stop a running sim, otherwise the bare `/dr sim`
---- (the idle step panel), so it picks no scenario. With no library session, the old path: Test mode
---- off, or StartSim. The launcher's Sim mode entry and General > Master controls' Sim mode box both
---- call it, with NS.IsSimMode as their read (R6-SIM), so the two and the verb are one act.
+--- The Sim mode toggle. Off, it is the bare `/dr sim` (the idle sim window), so it picks no scenario and
+--- the box stays ticked. On, it stops a running sim and closes the window (R7-SIM), so one untick or one
+--- launcher click leaves it off. With no library session, the old path: Test mode off, or StartSim. The
+--- launcher's Sim mode entry and General > Master controls' Sim mode box both call it, with
+--- NS.IsSimMode as their read (R6-SIM), so the two and the verb are one act.
 function NS.ToggleSim()
-    if not (NS.Sim and NS.Sim.session) then
+    local session = NS.Sim and NS.Sim.session
+    if not session then
         if NS.IsSimMode() then return NS.ToggleTestMode() end
         return NS.StartSim()
     end
-    return NS.RunSimVerb(NS.IsSimMode() and "stop" or "")
+    if not NS.IsSimMode() then return NS.RunSimVerb("") end
+    if session:IsActive() and not NS.RunSimVerb("stop") then return false end
+    session:HidePanel()
+    return true
 end
 
 --- Test mode's combat end, said once (preview-mode).

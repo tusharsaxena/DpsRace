@@ -1541,20 +1541,24 @@ Total.
 - launcher: right-click lists Enabled, Locked, Test mode, Show window and Open skin selector, in that order
 - launcher: each menu toggle runs the shared handler
 - launcher: during a sim only Sim mode ticks, Test mode does not (SG-L1)
-- launcher: Sim mode opens the idle panel, ticks after Start and stops it, as MultiMeters' (R5-DR2)
+- launcher: Sim mode opens the idle panel, ticked while it shows; a click stops the sim and closes it (R7-SIM)
 - launcher: the Minimap button row hides and shows the real button
 - bindings: both Show-window buttons exist, plain and hidden, with their labels
 - bindings: a key press runs the same toggle the menu does
 - bindings: Bindings.xml names exactly the three buttons, in the addon's category, no default key
 
-### test_sim_checkbox.lua (6)
+### test_sim_checkbox.lua (10)
 
 - sim checkbox: Master controls carries a session-only Sim mode row right after Test mode
 - sim checkbox: the launcher's pair is the one NS pair, so the box and the launcher read alike
 - sim checkbox: ticking does what /dr sim does, unticking stops the sim
-- sim checkbox: a tick in combat starts nothing and leaves the box unticked
+- sim checkbox: a tick in combat starts no sim; the box reads only the window it opened
 - sim checkbox: Reset all settings stops a running sim and starts none on an idle one
 - sim checkbox: a sim started or ended elsewhere repaints an open page with the live state
+- sim checkbox R7-SIM: the sim window open and idle reads ticked, on the box and the launcher
+- sim checkbox R7-SIM: closing the sim window with its own close unticks the box and repaints the page
+- sim checkbox R7-SIM: a sim running with the window hidden reads ticked
+- sim checkbox R7-SIM: an untick while a sim runs stops it and hides the window; unticked after
 
 ### test_launcher_skin_entry.lua (1)
 
@@ -1834,7 +1838,7 @@ Total.
 | test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
 | test_launcher.lua | 10 |
-| test_sim_checkbox.lua | 6 |
+| test_sim_checkbox.lua | 10 |
 | test_launcher_skin_entry.lua | 1 |
 | test_keybinds.lua | 7 |
 | test_disabled.lua | 17 |
@@ -1850,4 +1854,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1444** |
+| **Total** | **1448** |
