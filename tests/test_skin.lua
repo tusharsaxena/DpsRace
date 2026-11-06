@@ -1,6 +1,6 @@
 -- tests/test_skin.lua — the windows painted through the skin (DR-02; skinning-§3, anti-pattern #107).
 --
--- What this pins, beyond the literal gate (tests/test_skin_literals.lua) and the seam
+-- What this pins, beyond the kit's typed-value gate (tests/_kit/test_skin_values.lua) and the seam
 -- (tests/test_skinsetup.lua):
 --   - every owner token a source file names is one core/SkinSetup.lua registers, so a misspelled
 --     name never resolves to nothing (the library answers nil, and a live table draws white);
