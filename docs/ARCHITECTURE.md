@@ -680,7 +680,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | `slash-dispatch.md` | Present | 25 commands in `NS.COMMANDS` (eight or more) |
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
-| `midnight-quirks.md` | Not applicable | No client-version workaround of the addon's own: the secret guards are LibKa0s-Compat-1.0's, routed from `core/Compat.lua`, and the shims there are API ladders, not behavior workarounds; re-check when one is added |
+| [`midnight-quirks.md`](midnight-quirks.md) | Present | Always (documentation-§3): the vendored catalog block (client-quirks-§1), then the addon's own section, empty today |
 | [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`, `PopupEditBox`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | [`known-limitations.md`](known-limitations.md) | Present | Known Limitations passed ~60 lines (2026-10-25); the hub keeps a summary |
