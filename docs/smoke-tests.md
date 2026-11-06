@@ -875,3 +875,12 @@ Branch `feat/2026-11-06-revendor-libka0s-v1-89` (the run's SM-02). With `/consol
 | ID | Do | Pass when | If it fails, report | Result |
 |---|---|---|---|---|
 | SM-DR-V89MENU | `/dr results` with a run that has a late cast; right-click its row; hover *Share*, then *Ignore for late casts*, then a plain row (*Add Note*); open *Share* again and pick a channel; right-click again, open *Ignore for late casts* and pick an entry; right-click the *Flags* box and a Usage item on *Edit*; press Share on the result card | *Share* and *Ignore for late casts* each open as a child menu beside their row, with the client's submenu arrow at the row's right and no chevron after the label, and the parent menu stays drawn. Hovering another submenu row swaps the child; hovering a plain row closes it. Picking a channel or an entry runs it and closes every level. Grayed channels stay grayed in the child. The flat menus (the *Flags* box, Usage, the result card's Share) open as before | Which menu, a screenshot | |
+
+## 40. The 2026-11-06 build: LibKa0s v1.90.0, column headers with no rule
+
+Branch `feat/2026-11-06-revendor-libka0s-v1-89` (the run's SM-09 and SM-11). With `/console scriptErrors 1` on.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-SF1HDR | `/dr results` on the *Runs* tab beside LootHistory's browser, under Ka0s Default and then two other skins (the run's SM-11) | The column headers (*Date*, *Character*, ... *Note*) have no gray line above them (under the filter bar) and none below them (over the first row), the same as LootHistory's; a skin that paints LootHistory's header band paints DpsRace's too; the *Insights* tab's line under its filter bar, the line under the *Runs* / *Insights* tabs and the footer line stay | A screenshot beside LootHistory | |
+| SM-DR-SF1EDGE | On the *Runs* and *Insights* tabs, look at each filter dropdown, open one, and change the UI scale (the run's SM-09) | Each dropdown, the opened menu and every cascade level have a crisp 1 px edge on all four sides, as in LootHistory, before and after the scale change | A close-up screenshot | |

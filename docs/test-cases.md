@@ -922,6 +922,13 @@ Total.
 - header rule: the Results window draws no line under its title band, and keeps the tab rule
 - header rule: the ability timeline and the gear view draw no line under their title band
 
+### test_column_header_rule.lua (4)
+
+- column header rule: no line under the Runs list's column headers
+- column header rule: no line above them (the Runs filter bar draws no bottom rule)
+- column header rule: the header row takes the skin's SortHeaderBar, LootHistory's seam
+- column header rule: the Insights filter bar keeps its rule (cards sit under it, not headers)
+
 ### test_header_band.lua (5)
 
 - header band: each window wears Shell's top band, shown, over its backdrop's fill
@@ -1805,6 +1812,7 @@ Total.
 | test_results_timeline_controls.lua | 13 |
 | test_results_gear.lua | 13 |
 | test_header_rule.lua | 3 |
+| test_column_header_rule.lua | 4 |
 | test_header_band.lua | 5 |
 | test_results_body.lua | 2 |
 | test_icon_rule.lua | 8 |
@@ -1854,4 +1862,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1448** |
+| **Total** | **1452** |

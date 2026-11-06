@@ -798,11 +798,9 @@ function Tbl.New(parent, columns, opts)
     t.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     t.header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     t.header:SetHeight(Tbl.HEADER_H)
-    local line = t.header:CreateTexture(nil, "ARTWORK")
-    NS.Skin.Divider(line)
-    line:SetHeight(1)
-    line:SetPoint("BOTTOMLEFT", t.header, "BOTTOMLEFT", 0, 0)
-    line:SetPoint("BOTTOMRIGHT", t.header, "BOTTOMRIGHT", 0, 0)
+    -- The header band LootHistory's takes (its modules/BrowserTable.lua): the skin's list.header.bg
+    -- behind the labels (none under Ka0s Default), and no rule above or below (SF1-DR).
+    NS.Skin.SortHeaderBar(t.header)
     for i, col in ipairs(columns) do newHeader(t, i, col) end
     t.body = CreateFrame("Frame", nil, frame)
     t.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -Tbl.HEADER_H)

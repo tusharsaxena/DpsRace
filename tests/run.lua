@@ -174,6 +174,7 @@ local SUITES = {
     "test_results_timeline_controls",
     "test_results_gear",
     "test_header_rule",
+    "test_column_header_rule",
     "test_header_band",
     "test_results_body",
     "test_icon_rule",
