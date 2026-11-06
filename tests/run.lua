@@ -19,9 +19,9 @@ Loader.addonName = "DpsRace"
 local LIB_FILES = Loader.xmlFiles(root .. "/libs/LibKa0s/LibKa0s.xml")
 do
     local EXPECTED = {
-        "Core.lua", "Env.lua", "Lifecycle.lua", "Bus.lua", "Schema.lua", "Pool.lua", "Media.lua",
-        "Widgets.lua", "DebugLog.lua", "DebugLogDiagnostics.lua", "DebugLogGates.lua",
-        "Slash.lua", "SlashParse.lua", "Launcher.lua",
+        "Core.lua", "CorePixel.lua", "Env.lua", "Lifecycle.lua", "Bus.lua", "Schema.lua", "Pool.lua",
+        "Media.lua", "Widgets.lua", "WidgetsDropdown.lua", "DebugLog.lua", "DebugLogDiagnostics.lua",
+        "DebugLogGates.lua", "Slash.lua", "SlashParse.lua", "Launcher.lua",
         "Options.lua", "OptionsRegistry.lua", "OptionsWidgets.lua", "OptionsFlow.lua", "OptionsTabs.lua",
         "OptionsTabbed.lua",
         "OptionsCombat.lua", "OptionsCompose.lua", "OptionsScroll.lua", "OptionsKeybinds.lua",
@@ -30,7 +30,7 @@ do
         "OptionsSwitch.lua", "OptionsMedia.lua",
         -- The skin engine core/SkinSetup.lua registers the owner with (skinning-§1).
         "Skin.lua", "SkinOwnerTokens.lua", "SkinDefs.lua", "SkinDefsOthers.lua", "SkinPaint.lua",
-        "SkinPaintControls.lua", "SkinPaintExtras.lua",
+        "SkinPaintExtras.lua", "SkinPaintHud.lua", "SkinAceConfirm.lua", "SkinPaintControls.lua",
         "SkinEUI.lua", "SkinAce.lua",
         -- The Insights tab's chart widgets, through core/ChartsSetup.lua.
         "Charts.lua", "ChartsRender.lua",
