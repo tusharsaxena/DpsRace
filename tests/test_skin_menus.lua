@@ -105,18 +105,86 @@ test("skin menus: a button runs, a title and a disabled row do nothing", functio
     assertFalse(menu:IsShown(), "a button closes it")
 end)
 
-test("skin menus: a disabled row in a submenu stays on that submenu", function()
+--- Every W.ContextMenu call's rows, as the seam hands them to the library (the real menu opens too).
+local function captureRows(i)
+    local calls = {}
+    local W = i.mocks.LibStub("LibKa0s-Widgets-1.0")
+    local open = W.ContextMenu
+    W.ContextMenu = function(anchor, rows, opts)
+        calls[#calls + 1] = { rows = rows, opts = opts }
+        return open(anchor, rows, opts)
+    end
+    return calls
+end
+
+test("skin menus: a disabled row in a submenu is a disabled row of that child", function()
     local i = kaos()
+    local calls = captureRows(i)
     i.NS.OpenMenu(i.mocks.UIParent, function(root)
         local sub = root:CreateButton("Share")
         sub:CreateButton("Party", function() end):SetEnabled(false)
         sub:CreateButton("Raid", function() end)
     end)
-    clickRow(i, 1)
-    assertEqual(labels(i)[1], "Party")
-    local menu = clickRow(i, 1)
-    assertTrue(menu:IsShown())
-    assertEqual(table.concat(labels(i), "|"), "Party|Raid")
+    assertEqual(#calls, 1)
+    local child = calls[1].rows[1].submenu
+    assertEqual(child[1].label, "Party")
+    assertTrue(child[1].disabled, "Party is grayed")
+    assertEqual(child[2].label, "Raid")
+    assertEqual(child[2].disabled, nil)
+end)
+
+test("skin menus: the whole tree goes to one W.ContextMenu as submenu rows, any depth (Widgets 23)", function()
+    local i = kaos()
+    local calls = captureRows(i)
+    local picked = {}
+    i.NS.OpenMenu(i.mocks.UIParent, function(root)
+        root:CreateTitle("Heading")
+        root:CreateButton("Plain", function() picked[#picked + 1] = "plain" end)
+        local share = root:CreateButton("Share")
+        share:CreateButton("Party", function() picked[#picked + 1] = "party" end)
+        local deeper = share:CreateButton("More")
+        deeper:CreateButton("Deep", function() picked[#picked + 1] = "deep" end)
+        local off = root:CreateButton("Off")
+        off:CreateButton("Hidden", function() end)
+        off:SetEnabled(false)
+    end)
+    assertEqual(#calls, 1, "one call carries every level")
+    assertEqual(calls[1].opts.owner, "DpsRace")
+    assertTrue(calls[1].opts.cursor)
+    local rows = calls[1].rows
+    assertEqual(#rows, 4)
+    assertEqual(rows[1].label, "Heading")
+    assertTrue(rows[1].title)
+    assertEqual(rows[2].label, "Plain")
+    assertEqual(rows[2].submenu, nil, "a plain button opens nothing")
+    assertEqual(rows[3].label, "Share", "no hand-drawn mark: the library draws the arrow")
+    assertEqual(rows[3].onClick, nil, "a submenu row has no click of its own")
+    local share = rows[3].submenu
+    assertEqual(#share, 2)
+    assertEqual(share[1].label, "Party")
+    assertEqual(share[2].label, "More")
+    assertEqual(share[2].submenu[1].label, "Deep", "two levels down")
+    assertEqual(rows[4].label, "Off")
+    assertTrue(rows[4].disabled, "a disabled submenu row opens nothing")
+    assertEqual(rows[4].submenu[1].label, "Hidden")
+    for _, r in ipairs({ rows[2], share[1], share[2].submenu[1] }) do
+        assertEqual(r.radio, nil)
+        assertEqual(r.selected, nil)
+        assertEqual(r.keepOpen, nil)
+    end
+    -- Drawn by the library: Share's click opens its child beside it and the parent stays.
+    local menu = sharedMenu(i)
+    local onClick = menu.buttons[3]:GetScript("OnClick")
+    onClick(menu.buttons[3])
+    assertTrue(menu:IsShown(), "the parent stays drawn")
+    local child = menu.__child
+    assertTrue(child ~= nil and child:IsShown(), "the child opens beside it")
+    assertEqual(child.buttons[1].fs:GetText(), "Party")
+    assertEqual(#calls, 1, "no reopen of the shared menu")
+    assertEqual(#picked, 0)
+    child.buttons[1]:GetScript("OnClick")(child.buttons[1])
+    assertEqual(table.concat(picked, ","), "party")
+    assertFalse(menu:IsShown(), "a pick closes every level")
 end)
 
 test("skin menus: a second right-click reopens the menu on the new rows", function()
@@ -131,26 +199,6 @@ test("skin menus: a second right-click reopens the menu on the new rows", functi
     assertTrue(menu:IsShown(), "cursor: a second call moves it, it never toggles shut")
     assertEqual(table.concat(labels(i), "|"), "Second|Third")
     assertTrue(menu.buttons[2]:IsShown(), "drawn with the second fill's rows")
-end)
-
-test("skin menus: a submenu replaces the rows it drops from", function()
-    local i = kaos()
-    local picked
-    i.NS.OpenMenu(i.mocks.UIParent, function(root)
-        local sub = root:CreateButton("Share")
-        sub:CreateButton("Party", function() picked = "party" end)
-    end)
-    local row = labels(i)[1]
-    assertEqual(#labels(i), 1)
-    assertTrue(row:find("Share", 1, true) == 1)
-    assertTrue(row:find("|T", 1, true) ~= nil, "a mark says it opens")
-    local menu = clickRow(i, 1)
-    assertTrue(menu:IsShown(), "the submenu stands in the menu's place")
-    assertEqual(picked, nil)
-    assertEqual(labels(i)[1], "Party", "the channel row")
-    clickRow(i, 1)
-    assertEqual(picked, "party")
-    assertFalse(menu:IsShown())
 end)
 
 test("skin menus: without the library the same fill reaches the client's menu", function()

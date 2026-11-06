@@ -1222,9 +1222,9 @@ Total.
 - skin menus: a row's right-click opens the Ka0s menu, skinned for this addon
 - skin menus: the context menu holds no test seam
 - skin menus: a button runs, a title and a disabled row do nothing
-- skin menus: a disabled row in a submenu stays on that submenu
+- skin menus: a disabled row in a submenu is a disabled row of that child
+- skin menus: the whole tree goes to one W.ContextMenu as submenu rows, any depth (Widgets 23)
 - skin menus: a second right-click reopens the menu on the new rows
-- skin menus: a submenu replaces the rows it drops from
 - skin menus: without the library the same fill reaches the client's menu
 - skin menus: the Back button's mark wears btn.icon and follows a switch
 - skin menus: the Runs list's scroll bar has the skin's track

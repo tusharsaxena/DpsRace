@@ -66,8 +66,8 @@ local function settleSkinLogin(mocks)
 end
 
 --- W.ContextMenu's rows, written to the mock's menu record (__menus, __lastMenu) as MenuUtil's are, so
---- a suite reads a row menu the way it reads the launcher's; a submenu is the record its row's click
---- opens. `real` opens the library's menu as well: the shared menu needs the kit's paint mock, which
+--- a suite reads a row menu the way it reads the launcher's; a submenu row's child rows are its
+--- entry's `submenu` record. `real` opens the library's menu as well: the shared menu needs the kit's paint mock, which
 --- tests/test_skin_menus.lua installs.
 local function recordContextMenus(mocks, real)
     local W = mocks.LibStub("LibKa0s-Widgets-1.0", true)
