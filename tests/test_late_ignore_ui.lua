@@ -85,9 +85,8 @@ test("late ignore ui: the row menu holds an Ignore for late casts submenu only w
     seed(i, { m, c })
     i.R.ShowRun("m")
     assertTrue(i.R.RowMenu(m, detail(i).frame))
-    i.mocks.__lastMenu:Click("Ignore for late casts")
-    local sub = i.mocks.__lastMenu
-    assertEqual(#sub.entries, 2, "the row's click opens its own rows")
+    local sub = assert(i.mocks.__lastMenu:Find("Ignore for late casts").submenu, "a child menu")
+    assertEqual(#sub.entries, 2, "the row's own rows, beside it")
     assertEqual(sub.entries[1].text, "Ignore Incinerate for late casts")
     assertEqual(sub.entries[2].text, "Stop ignoring Feign Death")
     sub:Click("Ignore Incinerate")

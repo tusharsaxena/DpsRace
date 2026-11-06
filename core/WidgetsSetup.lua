@@ -38,8 +38,10 @@ end
 -- ── the context menus (cause A2) ─────────────────────────────────────────────────────────────────
 -- A row's right-click wears the skin through W.ContextMenu (Widgets minor 21), the shared Ka0s menu
 -- opened at the cursor. A `fill(root)` is written against MenuUtil's own description (CreateTitle,
--- CreateButton, and on a button SetEnabled and a nested CreateButton), recorded here, then drawn one
--- level at a time: that menu has no flyout, so a submenu's row opens its own rows in the menu's place.
+-- CreateButton, and on a button SetEnabled and a nested CreateButton), recorded here, then turned
+-- into rows once and handed to one W.ContextMenu call: a button with a nested level is a `submenu`
+-- row (Widgets minor 23, cascading menus), so its rows open beside it, any depth, while the parent
+-- stays drawn, and the library draws the client's submenu arrow on it.
 -- Without the library the same `fill` goes to the client's menu.
 
 --- A level of a description: the recorder a `fill` writes to, and each button's own nested level.
@@ -59,27 +61,26 @@ local function newLevel()
     return level
 end
 
-local showLevel
+local menuRows
 
---- One W.ContextMenu row: a title, or a button with its click, a submenu's mark and its disabled state.
-local function menuRow(owner, item)
+--- One W.ContextMenu row: a title, or a button with its click and its disabled state; a button with
+--- a nested level is a submenu row whose child rows are that level's (the library opens them).
+local function menuRow(item)
     if item.title then return { label = item.label, title = true } end
-    local isSubmenu = #item.items > 0
-    local label = item.label
-    if isSubmenu then label = label .. " " .. NS.Skin.MarkText(NS.Icon("chevron-right"), 0) end
-    return {
-        label = label,
-        disabled = item.enabled == false or nil,
-        onClick = isSubmenu and function() showLevel(owner, item) end or item.onClick,
-    }
+    local row = { label = item.label, disabled = item.enabled == false or nil }
+    if #item.items > 0 then
+        row.submenu = menuRows(item)
+    else
+        row.onClick = item.onClick
+    end
+    return row
 end
 
---- Open `level` at the cursor. The library hides the menu before a row's click, so a submenu's row
---- may open the next level from its own callback.
-showLevel = function(owner, level)
+--- A recorded level's rows, its nested levels as `submenu` rows.
+menuRows = function(level)
     local rows = {}
-    for i, item in ipairs(level.items) do rows[i] = menuRow(owner, item) end
-    W.ContextMenu(owner, rows, { owner = addonName, cursor = true })
+    for i, item in ipairs(level.items) do rows[i] = menuRow(item) end
+    return rows
 end
 
 --- True when a context menu can open: the Ka0s menu, or the client's without the library.
@@ -98,7 +99,7 @@ function NS.OpenMenu(owner, fill)
     end
     local level = newLevel()
     fill(level)
-    showLevel(owner, level)
+    W.ContextMenu(owner, menuRows(level), { owner = addonName, cursor = true })
 end
 
 --- The strip's height, for a window laying its content out below it (the library publishes it).

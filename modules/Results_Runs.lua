@@ -810,11 +810,8 @@ local function buildBar(view)
     bar:SetPoint("TOPLEFT", view.frame, "TOPLEFT", 0, 0)
     bar:SetPoint("TOPRIGHT", view.frame, "TOPRIGHT", 0, 0)
     bar:SetHeight(FILTER_H)
-    local line = bar:CreateTexture(nil, "ARTWORK")
-    NS.Skin.Divider(line)
-    line:SetHeight(1)
-    line:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-    line:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    -- No rule along the bar's foot: the list's column headers sit on it, and LootHistory's draw no
+    -- line above or below (SF1-DR, tests/test_column_header_rule.lua).
     view.dropdowns, view.checks = {}, {}
     for _, spec in ipairs(DROPDOWNS) do
         local dd = NS.MakeDropdown(bar, spec.width)

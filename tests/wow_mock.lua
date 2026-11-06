@@ -154,20 +154,34 @@ local function build()
         end,
     }
     -- W.ContextMenu's rows as the same record, for tests/run.lua's recorder: titles apart, each other
-    -- row an entry whose click is the row's own.
-    function M.__recordContextMenu(owner, rows)
-        local description
-        M.MenuUtil.CreateContextMenu(owner, function(_, desc) description = desc end)
-        local menu = M.__lastMenu
+    -- row an entry whose click is the row's own. A `submenu` row (Widgets minor 23) records its child
+    -- rows as the entry's `children`, and `entry.submenu` reads them as a menu (Find, Click).
+    local function recordRows(description, rows)
         for _, row in ipairs(rows) do
             if row.title then
                 description:CreateTitle(row.label)
             else
-                description:CreateButton(row.label, function() return row.onClick and row.onClick(row.value, row) end)
-                    :SetEnabled(not row.disabled)
+                local element = description:CreateButton(row.label,
+                    function() return row.onClick and row.onClick(row.value, row) end)
+                element:SetEnabled(not row.disabled)
+                if row.submenu then recordRows(element, row.submenu) end
+            end
+        end
+    end
+    local function linkSubmenus(menu)
+        for _, e in ipairs(menu.entries) do
+            if e.children and #e.children > 0 then
+                e.submenu = linkSubmenus({ entries = e.children, titles = {}, Find = menu.Find, Click = menu.Click })
             end
         end
         return menu
+    end
+    function M.__recordContextMenu(owner, rows)
+        local description
+        M.MenuUtil.CreateContextMenu(owner, function(_, desc) description = desc end)
+        local menu = M.__lastMenu
+        recordRows(description, rows)
+        return linkSubmenus(menu)
     end
     M.MenuResponse = { Close = 1, Refresh = 2, Open = 3 }
 

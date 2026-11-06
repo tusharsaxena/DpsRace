@@ -18,7 +18,7 @@ bests per spec, dummy category and race length. It never reads the combat log.
 
 It is an Ace3 addon in the standard's modular layout. The shared subsystems (chat printer, debug
 console, options toolkit, slash dispatcher, launcher, performance harness, stand-down latch, widget
-pool, message bus, settings schema) come from the vendored `LibKa0s` v1.85.0; this addon holds one
+pool, message bus, settings schema) come from the vendored `LibKa0s` v1.90.0; this addon holds one
 setup file per module, each a descriptor plus a degradation stub (anti-pattern #47).
 
 **What ships in v0.1.0.** Three layers, each listening on the message bus to the one below:
@@ -395,7 +395,9 @@ fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1)
 view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
 showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
 there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
-strip and the timeline's legend line stay (`test_header_rule`). Each window's header stands on the
+strip and the timeline's legend line stay (`test_header_rule`). The Runs list's column headers have no rule above or below either (SF1-DR, like LootHistory's): the
+filter bar draws none at its foot, and the header row takes the skin's `SortHeaderBar` band
+(`test_column_header_rule`). Each window's header stands on the
 library's title band (`S.Band`, which Shell lays at its own inset and `title.height`, and LibKa0s
 R5-L2 draws above a backdrop's fill): `Style.Header` hands the title, the controls and the drag strip
 to `S.Header`, so each is centered on the band's middle in every skin, the HUD's title LEFT in every
