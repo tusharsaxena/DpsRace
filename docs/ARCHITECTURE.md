@@ -316,6 +316,7 @@ own frame. `Countdown.Suspend()` drops them at the stand-down.
 |---|---|---|---|
 | `PLAYER_TARGET_CHANGED` | the window shown | `Hud.Refresh` (target re-read) | the idle target card (spec §4.1) |
 | `PLAYER_REGEN_DISABLED` / `_ENABLED` | the window shown | `Hud.Refresh` | the Arm button's *Leave combat to arm* and the footer |
+| `PLAYER_SPECIALIZATION_CHANGED` | the window shown | `Hud.Refresh` | the idle body's *Your best* board, which is the current spec's |
 | `DAMAGE_METER_COMBAT_SESSION_UPDATED` | the window shown and the race RUNNING | one coalesced `Meter.ReadLive` per `1/live.hz` s | the live breakdown at 4 Hz by default, never from `OnUpdate` (spec §10) |
 
 `modules/AutoArm.lua` (#16) registers on its own AceEvent target only while one of its two rows is
