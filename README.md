@@ -5,7 +5,7 @@
 ![Standard](https://img.shields.io/badge/Ka0s-WoW_Addon_Standard-yellow)
 ![Tests](https://img.shields.io/badge/Tests-1452%2F1452_passing-green)
 
-DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
+Retail only for now; WoW Forever support is planned. DPS Race turns a training dummy into a stopwatch. You pick a length and arm the race, and the clock starts on the exact frame your first hit lands. A buzzer tells you when to stop. A few seconds after combat drops, you get your DPS and a breakdown of every ability that went into it.
 
 Each run is saved with your spec, item level and the dummy you hit, which makes it easy to check whether that new trinket or rotation change actually helped. Bests are kept per spec, dummy type and race length, across all your characters. The numbers come from Blizzard's built-in damage meter, so you don't need Details or any other meter running.
 

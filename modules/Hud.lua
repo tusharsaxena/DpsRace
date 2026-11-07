@@ -483,12 +483,24 @@ local function applyLock()
 end
 
 -- ── the test-mode marker (preview-mode) ─────────────────────────────────────────────────────────
--- While test mode is on the HUD says so on the display: the library's strip under the title bar, the
--- content moved down by its height. With no Widgets library there is no strip, and the title carries
+-- While test mode or the sim is on the HUD says so on the display: the library's strip under the title
+-- bar, the content moved down by its height. Test mode shows the test strip and a running sim shows the
+-- sim strip, never both (WFP-FIX-01). With no Widgets library there is no strip, and the title carries
 -- the word instead; never both (one marker per mode).
 
+local function simOn()
+    return previewOn() and NS.Preview.Mode() == "sim"
+end
+
+-- The strip the current mode shows, nil before it is built or with no Widgets library.
+local function modeStrip()
+    if not ui then return nil end
+    if simOn() then return ui.simStrip end
+    return ui.strip
+end
+
 local function titleMarked()
-    return previewOn() and not (ui and ui.strip)
+    return previewOn() and not modeStrip()
 end
 
 local function titleText()
@@ -499,24 +511,37 @@ end
 --- The title the window shows now, for the suites.
 function Hud.TitleText() return titleText() end
 
+local function anchorStrip(strip)
+    if not strip then return strip end
+    local band = NS.Style.Band(ui.frame)   -- flush under the title band, in every skin
+    strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, 0)
+    strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, 0)
+    return strip
+end
+
 local function ensureStrip()
     if ui.stripTried then return ui.strip end
     ui.stripTried = true
     -- What test mode shows and what ends it, in one line short enough for the minimum width.
-    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"])
-    if strip then
-        local band = NS.Style.Band(ui.frame)   -- flush under the title band, in every skin
-        strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, 0)
-        strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, 0)
-    end
-    ui.strip = strip
-    return strip
+    ui.strip = anchorStrip(NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"]))
+    return ui.strip
+end
+
+local function ensureSimStrip()
+    if ui.simStripTried then return ui.simStrip end
+    ui.simStripTried = true
+    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
+    return ui.simStrip
 end
 
 local function applyTestMarker()
-    local on = previewOn()
-    local strip = on and ensureStrip() or ui.strip
-    if strip then strip:SetShown(on) end
+    local on, sim = previewOn(), simOn()
+    -- One strip per mode: the sim's while a sim runs, the test strip for test mode, the other hidden.
+    local testStrip = (on and not sim) and ensureStrip() or ui.strip
+    local simStrip = (on and sim) and ensureSimStrip() or ui.simStrip
+    if testStrip then testStrip:SetShown(on and not sim) end
+    if simStrip then simStrip:SetShown(on and sim) end
+    local strip = sim and simStrip or testStrip
     local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
     if ui.drop ~= drop then
         ui.drop = drop

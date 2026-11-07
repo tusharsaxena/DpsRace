@@ -269,7 +269,7 @@ local function newSession()
         stepDelay = function() return Sim.StepDelay() end,
         print = function(line) if not quiet then NS.Print(line) end end,
         panel = {
-            title = function() return L["DPS Race - Simulation"] end,
+            title = function() return L["DPS Race - SIM"] end,
             anchorTo = function() return NS.Hud.Frame() end,
         },
     })

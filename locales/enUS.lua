@@ -580,6 +580,7 @@ L["Test mode is not available in combat."] = "Test mode is not available in comb
 L["Test mode is not available during a race."] = "Test mode is not available during a race."
 L["Test mode ended: a race was armed."] = "Test mode ended: a race was armed."
 L["Test mode: sample numbers. Combat or Arm ends it"] = "Test mode: sample numbers. Combat or Arm ends it"
+L["SIM: a scripted race, not your data. /dr sim stop ends it."] = "SIM: a scripted race, not your data. /dr sim stop ends it."
 L["DPS Race \194\183 Test"] = "DPS Race \194\183 Test"
 L["Training Dummy"] = "Training Dummy"
 
@@ -599,7 +600,7 @@ L["The race is still running."] = "The race is still running."
 L["Waiting for the result."] = "Waiting for the result."
 L["Waiting for the result (combat holds on)."] = "Waiting for the result (combat holds on)."
 L["The result card holds."] = "The result card holds."
-L["DPS Race - Simulation"] = "DPS Race - Simulation"
+L["DPS Race - SIM"] = "DPS Race - SIM"
 -- The scenario dropdown's labels (R5-DR2; "New best", "Incomplete" and "Late cast" are above).
 L["Behind the best"] = "Behind the best"
 L["First race"] = "First race"

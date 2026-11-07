@@ -218,6 +218,7 @@ local SUITES = {
     "test_vendor_sync",
     { name = "test_skin_values", dir = "tests/_kit/" },
     { name = "test_skin_switch", dir = "tests/_kit/" },
+    { name = "test_client_globals", dir = "tests/_kit/" },
     { name = "test_eol", dir = "tests/_kit/" },
     { name = "test_prose", dir = "tests/_kit/" },
     { name = "test_layout_cap", dir = "tests/_kit/" },

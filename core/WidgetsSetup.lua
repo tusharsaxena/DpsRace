@@ -118,6 +118,18 @@ function NS.MakeTestStrip(parent, text)
     return W.TestStrip(parent, { text = text, icon = NS.Icon("info"), owner = addonName, onEnd = endMode })
 end
 
+--- The simulation strip: the same widget in its sim flavor (kind = "sim", the library's cyan wash), born
+--- hidden and unanchored, or nil when the library is absent. A running sim shows this one and never the
+--- test strip (WFP-FIX-01). Its right-click menu ends the preview, the sim's script and stepper with it.
+--- @param parent table the frame to parent it to
+--- @param text string the localized line it says
+--- @return table|nil
+function NS.MakeSimStrip(parent, text)
+    if not W then return nil end
+    local function endMode() if NS.Preview and NS.Preview.IsActive() then NS.Preview.Stop() end end
+    return W.TestStrip(parent, { kind = "sim", text = text, icon = NS.Icon("info"), owner = addonName, onEnd = endMode })
+end
+
 -- The one copy window, its frame built on the first ShowCopy (the library's lazy handle), over the
 -- window that asked for it.
 local copyWindow, copyAnchor
