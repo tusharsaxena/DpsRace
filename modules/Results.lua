@@ -466,23 +466,39 @@ end
 -- strip under the tab strip, the body moved down by its height. With no Widgets library there is no
 -- strip, and the title carries the word instead; never both.
 
-local function ensureStrip()
-    if ui.stripTried then return ui.strip end
-    ui.stripTried = true
-    local strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"])
+local function anchorStrip(strip)
     if strip then
         local band = Style.Band(ui.frame)   -- under the tab strip, which stands under the band
         strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1))
         strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + 1))
     end
-    ui.strip = strip
     return strip
+end
+
+local function ensureStrip()
+    if ui.stripTried then return ui.strip end
+    ui.stripTried = true
+    ui.strip = anchorStrip(NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"]))
+    return ui.strip
+end
+
+-- A running sim wears the library's sim flavor, the cyan strip the HUD shows (WFP-FIX-01), never the test
+-- strip; test mode alone keeps the test strip.
+local function ensureSimStrip()
+    if ui.simStripTried then return ui.simStrip end
+    ui.simStripTried = true
+    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
+    return ui.simStrip
 end
 
 local function applySampleMarker()
     local on = Source.IsMock()
-    local strip = on and ensureStrip() or ui.strip
-    if strip then strip:SetShown(on) end
+    local sim = on and NS.Preview ~= nil and NS.Preview.Mode() == "sim"
+    local testStrip = (on and not sim) and ensureStrip() or ui.strip
+    local simStrip = (on and sim) and ensureSimStrip() or ui.simStrip
+    if testStrip then testStrip:SetShown(on and not sim) end
+    if simStrip then simStrip:SetShown(on and sim) end
+    local strip = sim and simStrip or testStrip
     local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
     if ui.drop ~= drop then
         ui.drop = drop

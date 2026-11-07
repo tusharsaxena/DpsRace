@@ -1446,7 +1446,7 @@ Total.
 - toast: a spec icon without a class icon sits one gap after New best:
 - toast: the rows' text draws at the scaled sizes
 
-### test_preview.lua (23)
+### test_preview.lua (25)
 
 - preview: test mode holds the running body still with live figures, chart, pace bar and spells
 - preview: the still running clock follows the Race clock setting
@@ -1454,6 +1454,7 @@ Total.
 - preview: the test strip says so on the HUD while it is on, and only then
 - preview: with no Widgets library each window's title carries the marker
 - preview: test mode opens the Results window on the sample history, with its strip
+- preview: the Results window shows the sim strip, not the test strip, while a sim runs
 - preview: the detail's Delta box and New best badge read the sample history's Runs view
 - preview: the sample history covers every status, target type, preset length, notes, loadouts and charts
 - preview: the sample detail draws its chart, compare and gear; the Insights tab counts the sample
@@ -1471,6 +1472,7 @@ Total.
 - preview: a HUD test mode opened is handed to the race that ended it, and closes with it
 - preview: a stand-down drops the windows test mode opened
 - preview: every start and stop repaints an open panel's Test mode checkbox
+- preview: the HUD shows the sim strip, not the test strip, while a sim runs
 
 ### test_sim.lua (31)
 
@@ -1696,6 +1698,12 @@ Total.
 - skin switch: the test-mode strip changes
 - skin switch: the test-mode strip changes with the Scope ignored
 
+### test_client_globals.lua (3)
+
+- client globals: no call of a global a client lacks
+- client globals: every allowlist row has a reason and a finding to excuse
+- client globals: the check is falsifiable, a planted bare call is flagged for both clients
+
 ### test_eol.lua (2)
 
 - eol: every tracked file carries the terminator .gitattributes declares for it
@@ -1842,7 +1850,7 @@ Total.
 | test_slash.lua | 38 |
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
-| test_preview.lua | 23 |
+| test_preview.lua | 25 |
 | test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
 | test_launcher.lua | 10 |
@@ -1856,10 +1864,11 @@ Total.
 | test_vendor_sync.lua | 3 |
 | test_skin_values.lua | 3 |
 | test_skin_switch.lua | 45 |
+| test_client_globals.lua | 3 |
 | test_eol.lua | 2 |
 | test_prose.lua | 15 |
 | test_layout_cap.lua | 13 |
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1452** |
+| **Total** | **1457** |
