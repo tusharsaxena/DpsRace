@@ -495,7 +495,8 @@ end
 -- The strip the current mode shows, nil before it is built or with no Widgets library.
 local function modeStrip()
     if not ui then return nil end
-    return simOn() and ui.simStrip or ui.strip
+    if simOn() then return ui.simStrip end
+    return ui.strip
 end
 
 local function titleMarked()
