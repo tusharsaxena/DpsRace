@@ -529,7 +529,7 @@ end
 local function ensureSimStrip()
     if ui.simStripTried then return ui.simStrip end
     ui.simStripTried = true
-    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIMULATION: a scripted race, not your data. /dr sim stop ends it."]))
+    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
     return ui.simStrip
 end
 
