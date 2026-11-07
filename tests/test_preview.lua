@@ -441,3 +441,26 @@ test("preview: every start and stop repaints an open panel's Test mode checkbox"
     assertEqual(repaints, 2, "the race-armed stop left the checkbox ticked")
     assertEqual(f.NS.GetSetting("state.testMode"), false)
 end)
+
+-- WFP-FIX-01: a running sim shows the library's SIM strip on the HUD and never the test strip; test
+-- mode alone keeps the test strip. Both flavors are the library's W.TestStrip, told apart by `kind`.
+test("preview: the HUD shows the sim strip, not the test strip, while a sim runs", function()
+    local f = fixture()
+    f.Hud.Show()
+    assertTrue(f.Preview.Start({ mode = "sim", scenario = f.NS.Sim.DEFAULT }))
+    local u = ui(f)
+    local sim = assert(u.simStrip, "no sim strip on the HUD during a sim")
+    assertEqual(sim.kind, "sim")
+    assertTrue(sim:IsShown())
+    assertTrue(u.strip == nil or not u.strip:IsShown(), "the test strip showed during a sim")
+    assertEqual(u.frame.title.__text, "DPS Race", "one marker per mode: the strip, not the title too")
+    f.Preview.Stop()
+    assertFalse(sim:IsShown())
+    -- Test mode alone: the test strip, and no sim strip.
+    assertTrue(f.Preview.Start({ mode = "test" }))
+    u = ui(f)
+    assertEqual(u.strip.kind, "test")
+    assertTrue(u.strip:IsShown())
+    assertFalse(u.simStrip ~= nil and u.simStrip:IsShown(), "the sim strip showed in test mode")
+    f.Preview.Stop()
+end)
