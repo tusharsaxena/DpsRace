@@ -600,7 +600,7 @@ L["The race is still running."] = "The race is still running."
 L["Waiting for the result."] = "Waiting for the result."
 L["Waiting for the result (combat holds on)."] = "Waiting for the result (combat holds on)."
 L["The result card holds."] = "The result card holds."
-L["DPS Race - Simulation"] = "DPS Race - Simulation"
+L["DPS Race - SIM"] = "DPS Race - SIM"
 -- The scenario dropdown's labels (R5-DR2; "New best", "Incomplete" and "Late cast" are above).
 L["Behind the best"] = "Behind the best"
 L["First race"] = "First race"
