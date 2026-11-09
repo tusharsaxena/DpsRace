@@ -10,7 +10,8 @@ such rather than listed as a requirement.
 ## Runtime (in-game): what a player needs
 
 - **World of Warcraft (Retail), Midnight.** A single `## Interface: 120105` line in `DpsRace.toc`;
-  Retail only.
+  Retail only, by the owner's ruling of 2026-11-10 (WoW Forever has no training dummies), so the TOC also
+  carries `## AllowLoadGameType: standard` and `## ExcludeLoadGameType: camelot` (clients-§2).
 - **Blizzard's built-in damage meter, switched on.** Every number the addon shows comes from
   `C_DamageMeter`, which exists from 12.0 (spec §2, §8). The code that reads it,
   `modules/Meter.lua`; when the meter is unavailable the HUD shows Blizzard's own
