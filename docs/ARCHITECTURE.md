@@ -550,7 +550,10 @@ Prototype.
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
   (`modules/Format.lua`, the one instance) and `C_Spell`'s name and icon lookups; the one question it
-  asks of one is `== nil`. A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
+  asks of one is `== nil`. The formatter's answer to a secret may itself be a secret string, and
+  `modules/Format.lua` asks its presence of `Secrets.IsPresent` (secret first, then `type()`) instead
+  of comparing it to nil: stricter than the contract needs, since a non-boolean secret may be tested
+  for nil-ness, and the same as Combat Trail's (its v0.2 F1a, ported in F1b). A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
   its spell's ID, possibly secret, to `ResultsTable.SpellTip`, which tests it for nil and passes it to
   the client's `GameTooltip:SetSpellByID` (pcall'd; the name through `C_Spell` when the client
   refuses), adds no line of a live value, and reads its placement (the row's top, the window's edge,

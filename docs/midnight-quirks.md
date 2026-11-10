@@ -248,5 +248,6 @@ a figure with a long tail of decimals. *Do:* `modules/Format.lua` checks each co
 (`Compat.NumberFormatterCandidates`) against a fractional value too (30190.4761904 -> "30.1K") and
 uses the first that passes. A plain number never reaches the client formatter; Lua abbreviates and
 truncates it. A secret with no trusted formatter goes to `AbbreviateNumbers` in pcall, and the raw
-secret is the last resort. `/dr debug` writes which path served the numbers. Settle it with smoke
-C18's probe. *Source:* this repo, `modules/Format.lua` header; Combat Trail plan v0.2 Tasks A5 and E3.
+secret is the last resort. An answer to a secret may itself be a secret string, so its presence is
+asked of `Secrets.IsPresent`, not compared to nil. `/dr debug` writes which path served the numbers.
+Settle it with smoke C18's probe. *Source:* this repo, `modules/Format.lua` header; Combat Trail plan v0.2 Tasks A5, E3 and F1b.

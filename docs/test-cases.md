@@ -278,7 +278,7 @@ Total.
 - resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
 - resume: a run with no session ID never adopts a session from before its arm
 
-### test_format.lua (14)
+### test_format.lua (16)
 
 - format: Number abbreviates through the client's formatter, secret or plain
 - format: Number never does Lua arithmetic on a secret when no formatter exists
@@ -287,6 +287,8 @@ Total.
 - format: a secret goes to a formatter that passes both checks
 - format: a formatter that renders a fraction raw fails the check, and the next constructor answers
 - format: a secret with no trusted formatter goes to AbbreviateNumbers
+- format: a secret the client formatter answers with a secret string goes to SetText untouched
+- format: Secrets.IsPresent answers a secret and a plain value without comparing either
 - format: the debug log names the path that served a number, once per change
 - format: a refused or failing constructor is skipped
 - format: Clock is m:ss.t with tenths truncated; Length is m:ss
@@ -1834,7 +1836,7 @@ Total.
 | test_late_ignore_ui.lua | 3 |
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
-| test_format.lua | 14 |
+| test_format.lua | 16 |
 | test_hud.lua | 31 |
 | test_hud_layout.lua | 24 |
 | test_hud_window.lua | 21 |
@@ -1924,4 +1926,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1502** |
+| **Total** | **1504** |
