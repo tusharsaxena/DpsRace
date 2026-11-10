@@ -1,4 +1,6 @@
 ## Interface: 120105
+## AllowLoadGameType: standard
+## ExcludeLoadGameType: camelot
 ## Title: Ka0s DPS Race
 ## Notes: A timed DPS race against training dummies, with a live HUD, a run history and personal bests.
 ## Author: add1kted2ka0s
