@@ -192,9 +192,9 @@ test("hud tiles: the moved Stop! and waiting stacks still fit the minimum height
     local S = f.NS.HudStates
     local note = b.w.note.__text
     local noteBottom = S.STOP_NOTE_Y + S.HintLines(note, 236) * S.HINT_LINE_H
-    assertTrue(noteBottom + 8 + 20 <= S.MinContentHeight(), "the note clears Stop Now and Cancel")
+    assertTrue(noteBottom + 8 + 20 <= S.BaseContentHeight(), "the note clears Stop Now and Cancel")
     local named = "Combat is holding. Walk out of range, or use Feign Death or Shadowmeld. Your score is safe: it waits for combat to end, however long that takes."
-    assertTrue(S.WAITING_HINT_Y + S.HintHeight(named, 236) + 8 + 20 <= S.MinContentHeight(),
+    assertTrue(S.WAITING_HINT_Y + S.HintHeight(named, 236) + 8 + 20 <= S.BaseContentHeight(),
         "the tallest hint box clears the foot row")
 end)
 

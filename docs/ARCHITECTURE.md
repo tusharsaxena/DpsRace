@@ -355,7 +355,7 @@ the library's corner grip through one pattern, `modules/Sizing.lua`: while the g
 change runs the window's cheap layout (re-anchor and resize what the new size needs, nothing rebound
 or redrawn) at most once a frame, a second change in one frame waiting for a single
 `C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
-stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before; the timeline stores none (UT-P14: it opens over the Results window at that window's size every time). What runs per frame, before and
+stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before; the timeline stores none (UT-P14: it opens over the Results window at that window's size every time). The HUD follows the v0.2 sizing model (Combat Trail's plan decisions D2 and D9; `docs/schema.md` `hud.sizeMode`): its height is derived, never stored. In the fixed mode (the default) it is the chrome plus `HudStates.FixedContentHeight(hud.bars)`, reserved from the configuration alone, so the window is the same whatever the race holds and whichever body shows; its grip (fixed mode only, hidden while locked) lays the body on screen out and draws it each frame at the dragged size with the rows that size holds (no meter read), and the release stores the width and the whole rows the height holds (`hud.bars`, 1-15) and snaps the window to them. In the auto-grow mode there is no grip and the height is the body's stack, growing with the rows up to `hud.bars`, its `hud.grow` edge held by the stored anchor. In both the wheel scrolls through spells past the rows. What runs per frame, before and
 after: [performance.md](performance.md#window-sizing). A size change can also arrive in the middle of a
 draw: the first row an open shows can resolve the window's rect and run its OnSizeChanged right there,
 a full layout nested in the list's row loop. The Results lists' `Table:Bind` counts itself and stops
@@ -561,8 +561,12 @@ Prototype.
   the best before it, and so is the chart after the race, the best's diagonal and the shared max
   included), and the columns' edges are plain config math (whole pixels from the plot's
   width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
-  combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
-  never displays a value.
+  combat (standalone-windows); its only geometry reads are the shell frame's own: its anchor on drag
+  stop, and its edges (`GetLeft`, `GetTop`, `GetBottom`, each through a pcall and
+  `NS.Secrets.PlainNumber`) when it is re-anchored on its grow edge (`normalizeAnchor`, the v0.2
+  sizing model). The shell never displays a value, and its sizes come from the configuration and from
+  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured, and the
+  rows' count and scroll are the `#` of the addon's own spell lists.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
   it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store
   (or, in test mode and the sim, `modules/MockRuns.lua`'s plain sample records),

@@ -272,10 +272,12 @@ race.
   `live.hz`, which calls `Meter.ReadLive()` and hands every opaque value to the KPIs and the pooled
   rows (`hudLive`): bars by `SetMinMaxValues(0, maxAmount)` / `SetValue(total)` (the first row's
   total when there is no `maxAmount`), amounts by `Format.Number`, names and icons by `C_Spell`, in
-  Blizzard's order, `live.rows` of them, no %. `live.rows` 0 is every spell: as many as fit the
-  window are drawn, and the mouse wheel moves a plain offset over the rest (MultiMeters' model: the
-  slice is redrawn from the offset, nothing is measured, and the count is the length of the addon's
-  own copy of the list). The rows, the clocks and the figures take their look from HUD > HUD
+  Blizzard's order, `hud.bars` of them (fewer where a fixed window has no room), no %. More spells
+  than rows: the mouse wheel moves a plain offset over the rest, in both size modes (MultiMeters'
+  model: the slice is redrawn from the offset, clamped to the spells past the rows, nothing is
+  measured, and the count, *1-5 of 12*, is the length of the addon's own copy of the list). An
+  auto-grow window is sized from the stack the rows drawn take (`body.needH`), so a live read that
+  brings a spell can grow it. The rows, the clocks and the figures take their look from HUD > HUD
   Appearance (`modules/Hud_Appearance.lua`), restyled once per change, never per read. The live DPS figure is the first rung of `Meter.ReadLive`'s chain to answer (the source's `amountPerSecond`, the local `combatSources` row's, the Dps meter type's), copied opaque; with none, a dash.
 - **The damage chart and the pace bar** (#2, #3; `modules/Slices.lua`, `modules/Hud_Chart.lua`):
   every fresh `Meter.ReadLive()` while RUNNING also goes to `Slices.Capture(run, elapsed, total)`,
@@ -302,7 +304,7 @@ race.
 - **The result card**: plain numbers from the read: damage, DPS, the best delta
   (`Bests.Delta(run)`: *New best +2.4%*, or *−3.2% vs best*), one chip per flag (the full
   `Scoring.Flags` text is its tooltip; the late casts' chip adds the ignored casts' dimmed line and opens
-  the ignore menu on a right-click, and a gray *N ignored* chip stands in when every late cast is ignored), the time chip, the spells with their share (as many as *Spell rows shown*, or all of them, wheel-scrolled, at 0), and *New Race*
+  the ignore menu on a right-click, and a gray *N ignored* chip stands in when every late cast is ignored), the time chip, the spells with their share (as many as *Spell rows shown*, the wheel over the rest, its count on the heading's line), and *New Race*
   (back to the Arm Race screen on the run's length and count), *Details* (`NS.Results.ShowRun`), *Share*
   (`NS.Share.Prompt`) and *Delete*, one row of equal widths (`HudStates.RowWidths`: the card's width
   less a 4 px gap between two, split four ways). *Delete* asks through the Results window's own

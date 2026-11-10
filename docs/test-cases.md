@@ -324,12 +324,12 @@ Total.
 
 ### test_hud_layout.lua (24)
 
-- hud: the live rows stop above the caption and CANCEL at every window height
-- hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest
+- hud: at every count of Spell rows shown the live rows stop above the caption and CANCEL
+- hud: more spells than rows: the wheel scrolls through the rest
 - hud: the default window size shows every default live row under the chart and the pace bar
-- hud: the result card's rows stop above its buttons at every window height
-- hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls
-- hud: the minimum height holds the idle body's whole stack
+- hud: the result card's rows stop above its buttons at every count of Spell rows shown
+- hud: the result card follows Spell rows shown and the wheel scrolls the rest
+- hud: the idle body's whole stack is every window's floor
 - hud: the equal buttons' width is whole pixels from the body's width and the gap
 - hud: the result card's four buttons sit in one row, the same width each, at any width
 - hud: Cancel on the waiting body throws the attempt away
@@ -367,11 +367,40 @@ Total.
 - hud: labels take the collection's font objects; the clocks and KPI figures stay large
 - hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)
 - hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
-- hud: the minimum size still holds every body after the compact restyle
+- hud: the smallest window still holds every body after the compact restyle
 - hud: the running clocks, figures and spell rows take their HUD Appearance blocks
 - hud: the clocks, figures and spell rows draw every skin's HUD face, a switch restyles them (R3-DR-1)
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
+
+### test_hud_sizing.lua (26)
+
+- hud sizing: the defaults are fixed, 5 rows, grow down; live.rows and the stored height are retired
+- hud sizing: the migration drops the retired live.rows and stored height
+- hud sizing: the fixed height is derived from the rows, the same with 0, 3 or 20 spells
+- hud sizing: a fixed window keeps its height from the idle body through the race to the result
+- hud sizing: the running body with a best, a chart and every row fills the fixed window exactly
+- hud sizing: the chart and the pace bar switched off shrink the fixed height, never under the idle body
+- hud sizing: spells arriving mid-race keep the fixed height and the rows
+- hud sizing: the result card fits the fixed window, its rows the bars and the wheel past them
+- hud sizing: the result card with every spell in view shows no count
+- hud sizing: a grip release stores the width and the rounded rows, and the height snaps
+- hud sizing: a release that only moved the width keeps the rows, where the idle floor is the height
+- hud sizing: while the grip is held the rows follow the drag and nothing is stored
+- hud sizing: the grip's bounds follow the parts shown
+- hud sizing: the grip is hidden while locked and in auto mode, and refuses a drag
+- hud sizing: the wheel scrolls the live rows, clamped, and the count names them
+- hud sizing: with every spell in view there is no scroll
+- hud sizing: zero spells draws no row and keeps the HUD drawable in both modes
+- hud sizing: a new race starts its rows at the top
+- hud sizing: auto mode grows with the rows up to the bars, then scrolls
+- hud sizing: auto mode grows as spells arrive mid-race
+- hud sizing: grow down keeps the top in place, grow up the bottom
+- hud sizing: a stored point that already suits the grow edge is kept, and a fixed window keeps its own
+- hud sizing: a fixed window's title-bar drag stores the client's point, its grip release the top edge
+- hud sizing: switching the mode mid-race redraws without error
+- hud sizing: grow up chosen before the window is built takes the bottom edge at its first show
+- hud sizing: the diagnostics name the mode, the rows and the height
 
 ### test_hud_best.lua (9)
 
@@ -430,7 +459,7 @@ Total.
 - chart: hidden, with the pace bar, while the run is on a shared session
 - chart: Show damage chart and Show pace bar turn each off
 - chart: a quiet stretch still fills each bucket at its boundary, and the buzzer fills the last
-- chart: the chart steps aside at the minimum height; the rows keep their three
+- chart: a fixed window at its fewest rows still holds the chart: the height reserves it
 - chart: the overlay sits one band over the plot's columns
 - chart: the result card draws the race's slices to its plain final damage, and none without them
 - chart: WithBest scales an after-the-race view to max(run, best at its length) x 1.15
@@ -457,7 +486,7 @@ Total.
 - pace: a run that just became the best is set against the previous best
 - pace: no pace bar on the result card with no earlier best, and the rows move back up
 - pace: Show pace bar off, a shared session and a lost run hide the result card's bar
-- pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside
+- pace: at the fewest rows the result card keeps its pace bar, its chart and its one row
 - pace: the sim's result card shows the pace bar against the sample best, and honors the setting
 - pace: the running body stacks Damage profile, the pace bar, the plot, then Spell breakdown
 - pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
@@ -1068,7 +1097,7 @@ Total.
 - results sizing: the first drag after opening moves every row's cells, none left behind
 - results sizing: a rebind inside a row the drag adds leaves no second row behind
 - timeline sizing: a 30-frame drag moves the ticks and the cast icons and re-pools nothing until the release
-- hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws
+- hud sizing: a 30-frame drag lays out and draws the body on screen alone; the release lays out all and redraws
 - hud sizing: locked, the grip starts no drag
 
 ### test_tooltips.lua (4)
@@ -1108,7 +1137,7 @@ Total.
 - settings: grace slider 0..5 step 0.1, restartGap 3..15, history.keepDays 0..3650 default 90
 - settings: the scoring sliders say they apply to new runs
 - settings: the Race page's rows, ranges and defaults
-- settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD
+- settings: the spell rows 1..15 on HUD > Race HUD > Size, and reads 2..10 per second
 - settings: a write out of range is refused and stores nothing
 - settings: changing grace does not alter saved runs
 - settings: a live breakdown change redraws the HUD
@@ -1117,7 +1146,7 @@ Total.
 - settings: the General, Race, HUD and History pages register and render quietly
 - settings: the pages register in the panel's order, General first and Profiles last
 - settings: the HUD page holds Race HUD then HUD Appearance; General holds Master controls, then Skin
-- settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order
+- settings: HUD > Race HUD draws Display, then Size, then Live breakdown, in the pinned order
 - settings: Race is four tabs, the timeline, the late-cast ignore list, the new-best toast, then Training dummies
 - settings: the sticky-combat hint's tooltip states its range
 - settings: the show mode's tooltip points at General visibility
@@ -1787,6 +1816,7 @@ Total.
 | test_hud.lua | 30 |
 | test_hud_layout.lua | 24 |
 | test_hud_window.lua | 21 |
+| test_hud_sizing.lua | 26 |
 | test_hud_best.lua | 9 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
@@ -1871,4 +1901,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1457** |
+| **Total** | **1483** |

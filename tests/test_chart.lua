@@ -368,15 +368,14 @@ test("chart: a quiet stretch still fills each bucket at its boundary, and the bu
     assertEqual(rec.filled, 30)
 end)
 
-test("chart: the chart steps aside at the minimum height; the rows keep their three", function()
+test("chart: a fixed window at its fewest rows still holds the chart: the height reserves it", function()
     local f = hud()
-    f.NS.db.profile.windows.hud.height = f.Hud.MIN_HEIGHT
-    f.NS.db.profile.live.rows = 15
+    f.NS.db.profile.hud.bars = f.Hud.MIN_BARS
     running(f, 30)
     pump(f, 1)
     local b = body(f)
-    assertFalse(b.w.chart.shown, "no room for the chart and three rows")
-    assertTrue(b.w.list:Count() >= 3)
+    assertTrue(b.w.chart.shown, "the chart keeps its place over one row")
+    assertEqual(b.w.list:Count(), 1)
 end)
 
 test("chart: the overlay sits one band over the plot's columns", function()

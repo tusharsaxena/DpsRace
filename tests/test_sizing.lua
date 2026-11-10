@@ -412,7 +412,7 @@ end)
 
 -- ── the Race HUD ────────────────────────────────────────────────────────────────────────────────
 
-test("hud sizing: a 30-frame drag lays out the body on screen alone; the release lays out all and redraws", function()
+test("hud sizing: a 30-frame drag lays out and draws the body on screen alone; the release lays out all and redraws", function()
     local f = RaceClock.new{ mutate = function(m) Widgets.install(m) end }
     f.NS.Hud.Show()
     assertTrue(f:arm(30))
@@ -427,18 +427,21 @@ test("hud sizing: a 30-frame drag lays out the body on screen alone; the release
     local grip = u.frame.resizeGrip
     grip:__fire("OnMouseDown", "LeftButton")
     drag(f.M, u.frame, 30, function(k) return 300 + k, 400 + k end)
+    -- The body on screen is drawn again each frame too (the rows the dragged height holds, no meter
+    -- read: the v0.2 sizing model); the others wait.
     for key, body in pairs(u.body) do
         local laid = (key == u.current and body.Layout) and 30 or 0
         assertEqual(layouts[key].n, laid, key .. ": laid out per frame")
-        assertEqual(updates[key].n, 0, key .. ": redrawn while the grip is held")
+        assertEqual(updates[key].n, key == u.current and 30 or 0, key .. ": drawn per frame only on screen")
     end
     released(u.frame, 330, 430)
     grip:__fire("OnMouseUp")
     for key, body in pairs(u.body) do
         if body.Layout then assertTrue(layouts[key].n >= 1, key .. ": not laid out on release") end
-        assertEqual(updates[key].n, key == u.current and 1 or 0, key .. ": the shown body redrawn once")
+        assertEqual(updates[key].n, key == u.current and 31 or 0, key .. ": the shown body redrawn once more")
     end
     assertEqual(f.NS.db.profile.windows.hud.width, 330)
+    assertEqual(f.NS.db.profile.hud.bars, 1, "430 high holds one row under the default stack")
 end)
 
 test("hud sizing: locked, the grip starts no drag", function()

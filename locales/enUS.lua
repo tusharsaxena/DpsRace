@@ -465,11 +465,24 @@ L["How long combat may hold after the buzzer before the HUD suggests ways to dro
 L["Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."] =
     "Restore every HUD setting on this profile to its addon default: the Race HUD tab (display, live breakdown, chart and pace) and HUD Appearance."
 
+-- HUD page: the Race HUD tab's Size subsection (settings/Hud.lua, the v0.2 sizing model)
+L["Size"] = "Size"
+L["Window size"] = "Window size"
+L["Fixed: drag the corner to set the rows"] = "Fixed: drag the corner to set the rows"
+L["Auto-grow with the rows"] = "Auto-grow with the rows"
+L["Fixed: the HUD keeps one height, room for Spell rows shown, and dragging its bottom-right corner sets its width and that count. Auto-grow: it grows with the spell rows up to Spell rows shown, then scrolls. Either way the mouse wheel scrolls through spells past the rows."] =
+    "Fixed: the HUD keeps one height, room for Spell rows shown, and dragging its bottom-right corner sets its width and that count. Auto-grow: it grows with the spell rows up to Spell rows shown, then scrolls. Either way the mouse wheel scrolls through spells past the rows."
+L["Spell rows shown"] = "Spell rows shown"
+L["How many spell rows the HUD shows, live and on the result card, in the order Blizzard's meter gives them while the race runs. More spells than this scroll with the mouse wheel."] =
+    "How many spell rows the HUD shows, live and on the result card, in the order Blizzard's meter gives them while the race runs. More spells than this scroll with the mouse wheel."
+L["Grow"] = "Grow"
+L["Down: the top stays put"] = "Down: the top stays put"
+L["Up: the bottom stays put"] = "Up: the bottom stays put"
+L["Which way an Auto-grow HUD grows as rows arrive: down keeps its top in place, up keeps its bottom. Needs Window size Auto-grow."] =
+    "Which way an Auto-grow HUD grows as rows arrive: down keeps its top in place, up keeps its bottom. Needs Window size Auto-grow."
+
 -- HUD page: the Race HUD tab's Live breakdown subsection (settings/Hud.lua)
 L["Live breakdown"] = "Live breakdown"
-L["Spell rows shown"] = "Spell rows shown"
-L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."] =
-    "How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."
 L["Live reads per second"] = "Live reads per second"
 L["HUD Appearance"] = "HUD Appearance"
 L["Elapsed clock"] = "Elapsed clock"
@@ -480,8 +493,8 @@ L["Spell text"] = "Spell text"
 L["Row height"] = "Row height"
 L["Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."] =
     "Height of the clock, in points, when both clocks show. A clock shown alone draws half again as large."
-L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."] =
-    "The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."
+L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows make a Fixed HUD taller for the same Spell rows shown."] =
+    "The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows make a Fixed HUD taller for the same Spell rows shown."
 L["How often the running HUD reads the meter while damage is landing. 2 to 10."] =
     "How often the running HUD reads the meter while damage is landing. 2 to 10."
 L["Show spell icons"] = "Show spell icons"
@@ -506,8 +519,8 @@ L["How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, em
     "How far either side of the best's pace the bar reaches: 1.5 = \194\17750%, empty at half the best's damage by now and full at half again. The tick in the middle is the best's pace. 1.1 to 2.0."
 L["Damage chart"] = "Damage chart"
 L["Chart height"] = "Chart height"
-L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."] =
-    "The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."
+L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart makes a Fixed HUD taller for the same Spell rows shown."] =
+    "The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart makes a Fixed HUD taller for the same Spell rows shown."
 L["Column gap"] = "Column gap"
 L["The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."] =
     "The space between two of the damage chart's columns, in pixels. 0 draws them as one smooth area."
@@ -1165,16 +1178,16 @@ L["Your damage against your best's average at this point in the race. The tick i
     "Your damage against your best's average at this point in the race. The tick in the middle is on pace: green is ahead of it, red behind."
 L["This run's final damage against the best you had before it. The tick in the middle is level with that best: green is ahead of it, red behind."] =
     "This run's final damage against the best you had before it. The tick in the middle is level with that best: green is ahead of it, red behind."
-L["Your spells in this race. Hover a row for the spell. With Spell rows shown at 0, the mouse wheel scrolls the list."] =
-    "Your spells in this race. Hover a row for the spell. With Spell rows shown at 0, the mouse wheel scrolls the list."
-L["This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. With Spell rows shown at 0, the mouse wheel scrolls the list."] =
-    "This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. With Spell rows shown at 0, the mouse wheel scrolls the list."
+L["Your spells in this race. Hover a row for the spell. The mouse wheel scrolls through more spells than the rows hold."] =
+    "Your spells in this race. Hover a row for the spell. The mouse wheel scrolls through more spells than the rows hold."
+L["This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. The mouse wheel scrolls through more spells than the rows hold."] =
+    "This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. The mouse wheel scrolls through more spells than the rows hold."
 L["Live order"] = "Live order"
 L["Spells stay in the damage meter's order while the race runs. Each one's share appears on the result."] =
     "Spells stay in the damage meter's order while the race runs. Each one's share appears on the result."
 L["Spell rows"] = "Spell rows"
-L["How many spell rows are drawn. HUD > Spell rows shown sets it."] =
-    "How many spell rows are drawn. HUD > Spell rows shown sets it."
+L["How many spell rows are drawn, or which of them while the wheel has more. HUD > Race HUD > Spell rows shown sets it, and so does dragging the corner of a Fixed HUD."] =
+    "How many spell rows are drawn, or which of them while the wheel has more. HUD > Race HUD > Spell rows shown sets it, and so does dragging the corner of a Fixed HUD."
 L["The buzzer has gone: stop casting. Damage still landing counts, but a cast that starts after the grace flags the run."] =
     "The buzzer has gone: stop casting. Damage still landing counts, but a cast that starts after the grace flags the run."
 L["How long after the buzzer your last damage landed, as far as the race has seen."] =

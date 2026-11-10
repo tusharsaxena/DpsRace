@@ -114,7 +114,7 @@ NS.defaults = {
         -- The live breakdown (spec §6.3; its rows are HUD > Race HUD > Live breakdown,
         -- settings/Hud.lua).
         live = {
-            rows    = 8,      -- spells shown, 1-15; 0 = every spell, wheel-scrolled
+            -- How many spell rows show is `hud.bars` (the v0.2 sizing model; `rows`, 8, before it).
             icons   = true,   -- spell icons
             showDps = true,   -- Blizzard's live DPS figure, labeled live
             hz      = 4,      -- live reads per second, 2-10 (spec §10)
@@ -135,7 +135,11 @@ NS.defaults = {
         -- (#16, modules/AutoArm.lua): the HUD opens by itself near a cataloged training dummy, on by
         -- default (the owner's call, 2026-11-03; opt-in from 2026-10-28). Auto-arm stays opt-in. All
         -- three rows are on the HUD page's Race HUD tab (settings/Hud.lua).
-        hud = { showMode = "onArm", clock = "both", autoShow = true },
+        -- Its size (the v0.2 sizing model, Combat Trail's plan decisions D2 and D9; Race HUD > Size):
+        -- `sizeMode` "fixed", the height derived from `bars` spell rows and set by the grip, or "auto",
+        -- growing with the rows up to `bars` and then scrolling, toward `grow` "down" or "up". `bars`
+        -- runs Hud.MIN_BARS to MAX_BARS (1-15) and is the result card's row count too.
+        hud = { showMode = "onArm", clock = "both", autoShow = true, sizeMode = "fixed", bars = 5, grow = "down" },
         -- The HUD's look (the owner's call, 2026-10-24; HUD > HUD Appearance, settings/Hud.lua,
         -- applied by modules/Hud_Appearance.lua). Each block is a composed group (options-ui-§16), so
         -- its keys are the composer's leaves. The defaults ARE the look shipped before the tab existed:
@@ -232,10 +236,9 @@ NS.defaults = {
         -- opens each window at its minimum width (the owner's call, 2026-10-26): Hud.MIN_WIDTH and
         -- Results.VIEWS[view].minWidth, pinned equal by tests/test_schema.lua.
         windows = {
-            -- Tall enough for all 8 live rows under the Damage profile heading (the pace bar and the
-            -- damage chart, screen 04, #2) and the Spell breakdown heading (520 before Round C; 560
-            -- before the chart's icon row on top, UT-P11). 300 wide before 2026-10-26.
-            hud = { width = 260, height = 573 },
+            -- The width alone: the height is derived from `hud.bars` (the v0.2 sizing model; a stored
+            -- 573 before it, tall enough for 8 live rows). 300 wide before 2026-10-26.
+            hud = { width = 260 },
             -- The Results window's two views (the owner's call, 2026-10-25): expanded (the detail beside
             -- the list) and collapsed (the list alone), the default (UT-P14, 2026-10-27; expanded before).
             -- Each keeps its own size; only the title bar's toggle switches them.

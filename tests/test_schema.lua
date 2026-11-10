@@ -219,7 +219,7 @@ test("schema: a new profile and Reset all settings open each window at its minim
     assertEqual(W.hud.width, NSi.Hud.MIN_WIDTH, "the HUD")
     assertEqual(W.results.expanded.width, NSi.Results.VIEWS.expanded.minWidth, "Results, expanded")
     assertEqual(W.results.collapsed.width, NSi.Results.VIEWS.collapsed.minWidth, "Results, collapsed")
-    assertEqual(W.hud.height, 573, "the HUD's 560 plus the chart's icon row (UT-P11)")
+    assertEqual(W.hud.height, nil, "the HUD's height is derived from hud.bars (573 stored before it)")
     assertEqual(W.results.expanded.height, 560)
     assertEqual(W.results.collapsed.height, 560)
     assertEqual(type(W.results.collapsedSections), "table", "the detail's folded sections (UT-P10)")

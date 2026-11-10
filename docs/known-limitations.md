@@ -16,6 +16,11 @@ and the smoke row that measures it where one exists.
   or by Arm Race. Auto-show decides on a dummy event (a target change, a nameplate, the race's idle
   edge): when test mode closes the window it opened beside a dummy, the window comes back on the next
   such event, not on its own (smoke rows SM-DR-TA1 to SM-DR-TA8, SM-DR-TA24 to SM-DR-TA28).
+- **A scrolled live list moves under the pointer** (the v0.2 sizing model). The wheel's offset is a
+  plain row count over the meter's own order, which changes on every read while damage lands: a list
+  scrolled to rows 3-7 shows whichever spells are third to seventh now, not the ones the wheel
+  stopped on. The order is Blizzard's and secret, so nothing can pin a spell to its place; the result
+  card's list is sorted once and holds still (smoke row S6).
 - **The late-cast ignore list judges by spell ID, from a static hearthstone table** (#8,
   `modules/LateIgnore.lua`).
   - The hearthstone variants are a table per patch (`defaults/Hearthstones.lua`, built from the

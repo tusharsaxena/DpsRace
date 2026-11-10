@@ -3,7 +3,7 @@ local addonName, NS = ...
 
 -- The runner's target: the highest step's `to` (savedvariables-§1). Distinct from
 -- `global.schema`, which is the RUN RECORD format version (spec §7) and never migrates settings.
-NS.SCHEMA_VERSION = 11
+NS.SCHEMA_VERSION = 12
 
 -- The 7 -> 8 step's facts. The Results detail's spell rows split off `appearance.bars`, so these leaves
 -- of a stored block are copied to theirs; and the default fill the three blue blocks had before, for
@@ -224,6 +224,16 @@ local STEPS = {
         if moved > 0 and NS.Debug then
             NS.Debug("Set", "migrate v11: moved %d Ka0s Friz Quadrata TT pick(s) to Ka0s Ubuntu", moved)
         end
+    end },
+    -- 11 -> 12 (the v0.2 sizing model, Combat Trail's plan decision D9): `hud.bars` took over from
+    -- `live.rows` and the HUD's height is derived from it, so the two retired leaves are dropped. No
+    -- value moves: the new default (5 rows, fixed) is the owner's (D2), and a stored 0 ("every spell")
+    -- has no meaning under it.
+    { to = 12, perProfile = true, run = function(_sv, profile)
+        if type(profile) ~= "table" then return end
+        if type(profile.live) == "table" then profile.live.rows = nil end
+        local w = type(profile.windows) == "table" and profile.windows.hud
+        if type(w) == "table" then w.height = nil end
     end },
 }
 NS.__migrationSteps = STEPS   -- test seam only

@@ -30,10 +30,10 @@ local Tips = {
     profile = { L["Damage profile"], L["How your damage built up over the race. Each column is one slice of time. The line is your best's pace where you have one, and icons mark your cooldowns: hover one for the spell."] },
     pace = { L["Pace bar"], L["Your damage against your best's average at this point in the race. The tick in the middle is on pace: green is ahead of it, red behind."] },
     resultPace = { L["Pace bar"], L["This run's final damage against the best you had before it. The tick in the middle is level with that best: green is ahead of it, red behind."] },
-    liveSpells = { L["Spell breakdown"], L["Your spells in this race. Hover a row for the spell. With Spell rows shown at 0, the mouse wheel scrolls the list."] },
-    resultSpells = { L["Spell breakdown"], L["This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. With Spell rows shown at 0, the mouse wheel scrolls the list."] },
+    liveSpells = { L["Spell breakdown"], L["Your spells in this race. Hover a row for the spell. The mouse wheel scrolls through more spells than the rows hold."] },
+    resultSpells = { L["Spell breakdown"], L["This run's spells, highest damage first, with each one's share. Hover a row for the spell and its figures. The mouse wheel scrolls through more spells than the rows hold."] },
     order = { L["Live order"], L["Spells stay in the damage meter's order while the race runs. Each one's share appears on the result."] },
-    count = { L["Spell rows"], L["How many spell rows are drawn. HUD > Spell rows shown sets it."] },
+    count = { L["Spell rows"], L["How many spell rows are drawn, or which of them while the wheel has more. HUD > Race HUD > Spell rows shown sets it, and so does dragging the corner of a Fixed HUD."] },
 
     stop = { L["STOP"], L["The buzzer has gone: stop casting. Damage still landing counts, but a cast that starts after the grace flags the run."] },
     damageStopped = { L["Damage Stopped"], L["How long after the buzzer your last damage landed, as far as the race has seen."] },

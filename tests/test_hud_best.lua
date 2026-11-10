@@ -296,7 +296,7 @@ test("hud best: nothing above it moves, it fits the width, and the minimum size 
     assertEqual(S.IDLE_ARM_Y_PLAIN, S.IDLE_BEST_Y_PLAIN + S.BEST_H + S.ARM_GAP)
     assertTrue(S.ARM_GAP > S.BLOCK_GAP, "a little extra above Arm Race")
     assertTrue(S.IDLE_ARM_Y >= S.IDLE_BEST_Y_WARNED + S.BEST_H + S.BLOCK_GAP, "under the warning too")
-    assertEqual(f.Hud.MIN_HEIGHT, 354, "the HUD's minimum height is unchanged")
+    assertEqual(f.NS.HudStates.BaseContentHeight(), 286, "the idle body's floor is unchanged")
     target(f, CLEAVE)
     stored(f, 60, 153900)
     f.Hud.Show()
