@@ -9,7 +9,9 @@ local _, NS = ...
 -- and the two words at the right of the By ability heading line, which write it through NS.SetByPath).
 -- "icon", the default: each cast is its ability's LANE_ICON icon centered on its time in the lane, with
 -- the Casts icon's tooltip (the client's spell tooltip, then *Cast at m:ss* and its run). A lane is
--- 16 px, so icons in one lane do not stack: casts closer than an icon overlap, the later drawn over.
+-- 16 px, so icons in one lane do not stack: casts closer than an icon overlap. The icons are pooled
+-- siblings at one frame level on the marks layer, so which of two overlapping icons draws on top (and
+-- takes the pointer) is the client's, not the cast order (docs/known-limitations.md, SM-DR-TM4).
 -- "tick": the thin tick the lane's full height (MARK_W) with its wider hover frame and the tick's
 -- tooltip (MarkLines), as before. The row's reaction redraws an open window (Timeline.Redraw), keeping
 -- its zoom, pan and scroll.
@@ -199,6 +201,9 @@ end
 
 -- ── the mode's two words ────────────────────────────────────────────────────────────────────────
 
+-- A word's tooltip sits above it, the way the window's other controls' do (the `?` beside the zoom,
+-- pinned by test_results_timeline_controls); the side tooltip (Tbl.SideTip) is for what a row or a mark
+-- shows, level with it beside the window.
 local function toggleTip(self)
     local tip = GameTooltip
     if not tip then return end

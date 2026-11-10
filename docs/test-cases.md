@@ -939,7 +939,7 @@ Total.
 - timeline controls: every corridor wears its run's dark, translucent color
 - timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
 
-### test_results_timeline_marks.lua (9)
+### test_results_timeline_marks.lua (10)
 
 - timeline marks: the caster colors are Combat Trail's palette lines, and the row defaults to icons
 - timeline marks: by default every cast in By ability is its ability's icon on the lanes' layer
@@ -949,6 +949,7 @@ Total.
 - timeline marks: in tick mode a pet's tick is PET_LINE and a player's PLAYER_LINE in both lanes
 - timeline marks: the setting written while the window is open redraws it as ticks, keeping the zoom
 - timeline marks: the two words on the By ability heading line switch the marks
+- timeline marks: a word's tooltip sits above it, the way the window's other controls' do
 - timeline marks: zoomed in, the icons follow the zoomed axis; a drag of the grip moves them without re-pooling
 
 ### test_results_gear.lua (13)
@@ -1872,7 +1873,7 @@ Total.
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
-| test_results_timeline_marks.lua | 9 |
+| test_results_timeline_marks.lua | 10 |
 | test_results_gear.lua | 13 |
 | test_header_rule.lua | 3 |
 | test_column_header_rule.lua | 4 |
@@ -1926,4 +1927,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1504** |
+| **Total** | **1505** |

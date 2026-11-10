@@ -268,6 +268,22 @@ test("timeline marks: the two words on the By ability heading line switch the ma
     assertEqual(TL.Marks()[1].kind, "icon")
 end)
 
+test("timeline marks: a word's tooltip sits above it, the way the window's other controls' do", function()
+    local i, u = opened()
+    local tip = { lines = {} }
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetPoint" }) do tip[m] = function() end end
+    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
+    function tip.SetText(_, text) tip.lines[1] = text end
+    function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
+    i.mocks.GameTooltip = tip
+    u.marksTicks:GetScript("OnEnter")(u.marksTicks)
+    assertTrue(tip.owner == u.marksTicks and tip.anchor == "ANCHOR_TOP", "above the word, as the ? control's")
+    assertEqual(tip.lines[1], "Show each cast in By ability as a thin line")
+    u.marksIcons:GetScript("OnEnter")(u.marksIcons)
+    assertTrue(tip.owner == u.marksIcons and tip.anchor == "ANCHOR_TOP")
+    assertEqual(tip.lines[1], "Show each cast in By ability as its ability's icon")
+end)
+
 -- ── the zoom and the grip ───────────────────────────────────────────────────────────────────────
 
 test("timeline marks: zoomed in, the icons follow the zoomed axis; a drag of the grip moves them without re-pooling", function()
