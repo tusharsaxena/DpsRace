@@ -158,8 +158,9 @@ Timeline.LEVEL_REST = Style.Tok("text.disabled")
 Timeline.HOT = C.red
 
 -- The two runs' colors: this run gold, the compared run blue (the mock's). They and the corridors are
--- the runs' identity, DATA hues (skinning rung 4), the same under every skin.
-Timeline.THIS = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3] }
+-- the runs' identity, DATA hues (skinning rung 4), the same under every skin: fixed literals, Combat
+-- Trail's PALETTE.THIS_TEXT and BEST_TEXT, never Style.GOLD (the skin's `text.accent`) copied at load.
+Timeline.THIS = { 1, 0.82, 0 }
 Timeline.OTHER = { 0.35, 0.66, 1.0 }
 -- The corridors behind them (P16, the owner's call, 2026-10-28: the faint white track read as nobody's):
 -- this run's strip and lanes a dark gold of THIS's hue, the compared run's a dark blue of OTHER's, each

@@ -210,6 +210,25 @@ test("bar style: the bar, chart, pace, compare and caster colors equal Combat Tr
     sameColor(TL.OTHER, CT_PALETTE.BEST_TEXT, "timeline other run")
 end)
 
+-- Timeline.THIS and OTHER are the runs' identity, DATA hues the same under every skin: fixed palette
+-- literals, not Style.GOLD (the skin's `text.accent`) copied when the file loads. Loaded under a skin
+-- whose accent is not gold, the file still draws this run in Combat Trail's THIS_TEXT (F1b).
+test("bar style: the timeline's run colors are the fixed palette under a non-default skin", function()
+    local i = inst()
+    local NS, Style = i.NS, i.NS.Style
+    local Skin = i.mocks.LibStub("LibKa0s-Skin-1.0")
+    Skin:SetChoice("DpsRace", "ka0s", "obsidian")
+    Style.SyncColors()
+    local gold = Style.GOLD
+    assertTrue(math.abs(gold[1] - 1) + math.abs(gold[2] - 0.82) + math.abs(gold[3]) > 0.01,
+        "the chosen skin's accent is not gold, so a load-time copy would drift")
+    -- The file loads again with that skin in force, as it would on a client whose default skin differs.
+    assert(loadfile(T.root .. "/modules/Results_Timeline.lua"))("DpsRace", NS)
+    local TL = NS.ResultsTimeline
+    sameColor(TL.THIS, CT_PALETTE.THIS_TEXT, "timeline this run under another skin")
+    sameColor(TL.OTHER, CT_PALETTE.BEST_TEXT, "timeline other run under another skin")
+end)
+
 test("bar style: a compare column draws the skin's texture by default, in its own color", function()
     local i = inst()
     local Compare, defaults = i.NS.ResultsCompare, i.NS.defaults.profile.compare
