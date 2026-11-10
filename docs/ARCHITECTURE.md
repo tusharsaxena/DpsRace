@@ -695,7 +695,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | [`midnight-quirks.md`](midnight-quirks.md) | Present | Always (documentation-§3): the vendored catalog block (client-quirks-§1), then the addon's own section, empty today |
-| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`, `PopupEditBox`); the trigger is three or more |
+| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NumberFormatterCandidates`, `PopupEditBox`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | [`known-limitations.md`](known-limitations.md) | Present | Known Limitations passed ~60 lines (2026-10-25); the hub keeps a summary |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |

@@ -278,18 +278,24 @@ Total.
 - resume: the stamps before a /reload keep a DoT tail across it from looking like a restart
 - resume: a run with no session ID never adopts a session from before its arm
 
-### test_format.lua (8)
+### test_format.lua (14)
 
 - format: Number abbreviates through the client's formatter, secret or plain
 - format: Number never does Lua arithmetic on a secret when no formatter exists
 - format: a formatter that renders the check value wrongly is not used
+- format: a plain fractional DPS abbreviates in Lua, never through the client formatter
+- format: a secret goes to a formatter that passes both checks
+- format: a formatter that renders a fraction raw fails the check, and the next constructor answers
+- format: a secret with no trusted formatter goes to AbbreviateNumbers
+- format: the debug log names the path that served a number, once per change
+- format: a refused or failing constructor is skipped
 - format: Clock is m:ss.t with tenths truncated; Length is m:ss
 - format: Pct and Seconds take plain numbers
 - format: ParseLength accepts 90, 90s, 1:30, 3m and 1m30s, and rejects anything else
 - format: ArmRefusal maps every Race.Arm reason to its line
 - format: RunTime is the length and the tail, or the time in combat against the length
 
-### test_hud.lua (30)
+### test_hud.lua (31)
 
 - hud: switches body on RACE_STATE_CHANGED for all six states
 - hud: a run that ended before the buzzer waits for its read on the waiting body
@@ -303,6 +309,7 @@ Total.
 - hud: a target changed while the HUD is closed is never armed as the old one
 - hud: reopening the HUD offers the target of the moment, not the one cached at close
 - hud: running render raises nothing with secret values
+- hud: a fractional secret live DPS draws the trusted formatter's text, never a raw decimal
 - hud: running body shows no percentage text
 - hud: live rows keep Blizzard's order and the configured count
 - hud: a live read with no DPS figure shows a dash
@@ -1282,11 +1289,12 @@ Total.
 - skin menus: the chart's, the compare's and the timeline's icons are edged
 - skin menus: the title bar and the scroll bar read their size off the skin
 
-### test_bar_style.lua (20)
+### test_bar_style.lua (21)
 
 - bar style: a dash takes its muted color back after the bar text's font, on a pooled row too
 - bar style: the pace bar's blue is every blue bar's default, by value and opacity, each a copy
 - bar style: the compare's bars are as bright as the Runs list's, in their own hues (R3-DR-5)
+- bar style: the bar, chart, pace, compare and caster colors equal Combat Trail's PALETTE
 - bar style: a compare column draws the skin's texture by default, in its own color
 - bar style: the default look keeps the skin's two tracks and draws no border
 - bar style: the HUD's and the detail's spell rows are separate blocks, live
@@ -1825,8 +1833,8 @@ Total.
 | test_late_ignore_ui.lua | 3 |
 | test_race.lua | 58 |
 | test_race_resume.lua | 16 |
-| test_format.lua | 8 |
-| test_hud.lua | 30 |
+| test_format.lua | 14 |
+| test_hud.lua | 31 |
 | test_hud_layout.lua | 24 |
 | test_hud_window.lua | 21 |
 | test_hud_sizing.lua | 27 |
@@ -1882,7 +1890,7 @@ Total.
 | test_skin_hud.lua | 10 |
 | test_skin_flip.lua | 25 |
 | test_skin_menus.lua | 13 |
-| test_bar_style.lua | 20 |
+| test_bar_style.lua | 21 |
 | test_skin_fonts.lua | 13 |
 | test_skin_picker.lua | 11 |
 | test_skin_picker_preview.lua | 15 |
@@ -1915,4 +1923,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1493** |
+| **Total** | **1501** |

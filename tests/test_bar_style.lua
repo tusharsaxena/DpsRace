@@ -173,6 +173,43 @@ test("bar style: the compare's bars are as bright as the Runs list's, in their o
     assertTrue(math.abs(hue(C.other.barColor.r, C.other.barColor.g, C.other.barColor.b) - hue(64, 53, 0)) < 1, "gold hue")
 end)
 
+-- Combat Trail's NS.Constants.PALETTE (its core/Constants.lua, plan v0.2 B1), copied as literals: DPS
+-- Race is the reference it was taken from, so these pins say the two addons still draw the same bars
+-- (Combat Trail plan v0.2 E3). A move on either side is a deliberate change to both.
+local CT_PALETTE = {
+    BAR = { 0.36, 0.37, 0.84, 1 }, BAR_A = 0.9,
+    PLAYER_LINE = { 0.50, 0.52, 1.0, 1 }, PET_LINE = { 0.40, 0.85, 0.45, 1 },
+    THIS_BAR = { 0.682, 0.569, 0, 1 }, BEST_BAR = { 0.329, 0.549, 0.839, 1 },
+    THIS_TEXT = { 1, 0.82, 0 }, BEST_TEXT = { 0.35, 0.66, 1 },
+    PACE = { 0.9, 0.9, 0.92, 0.4 },
+}
+
+-- `got` (an {r,g,b,a} record or an array) within half a byte of the array `want`, channel by channel.
+local function sameColor(got, want, what)
+    local c = { got.r or got[1], got.g or got[2], got.b or got[3], got.a or got[4] }
+    for i = 1, #want do
+        assertTrue(math.abs((c[i] or 1) - want[i]) < 0.5 / 255, ("%s channel %d: %s vs Combat Trail's %s")
+            :format(what, i, tostring(c[i]), tostring(want[i])))
+    end
+end
+
+test("bar style: the bar, chart, pace, compare and caster colors equal Combat Trail's PALETTE", function()
+    local P = T.NS.defaults.profile
+    eachBlue(P, function(block, what)      -- the spell rows, pace, chart and table bars
+        sameColor(block.barColor, CT_PALETTE.BAR, what)
+        assertEqual(block.barAlpha, CT_PALETTE.BAR_A, what)
+    end)
+    sameColor(P.compare.best.barColor, CT_PALETTE.BEST_BAR, "compare best")
+    sameColor(P.compare.other.barColor, CT_PALETTE.THIS_BAR, "compare other")
+    assertEqual(P.compare.best.barAlpha, CT_PALETTE.BAR_A)
+    sameColor(T.NS.SKIN_TOKENS["dr.chart.diag"].default, CT_PALETTE.PACE, "the pace diagonal")
+    local TL = T.NS.ResultsTimeline
+    sameColor(TL.PLAYER_LINE, CT_PALETTE.PLAYER_LINE, "player caster line")
+    sameColor(TL.PET_LINE, CT_PALETTE.PET_LINE, "pet caster line")
+    sameColor(TL.THIS, CT_PALETTE.THIS_TEXT, "timeline this run (Ka0s Default's accent)")
+    sameColor(TL.OTHER, CT_PALETTE.BEST_TEXT, "timeline other run")
+end)
+
 test("bar style: a compare column draws the skin's texture by default, in its own color", function()
     local i = inst()
     local Compare, defaults = i.NS.ResultsCompare, i.NS.defaults.profile.compare

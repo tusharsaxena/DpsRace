@@ -22,7 +22,7 @@ which client is running. There is no `WOW_PROJECT_ID` branch anywhere in the add
 | `CanAccessTable(t)` | May this context read the contents of table `t`? | `canaccesstable`, then `issecrettable` | `true` (no secrets system: every table is readable) | `core/Secrets.lua` only |
 | `ChatSender()` | Which function sends one chat line? | `C_ChatInfo.SendChatMessage`, then the bare `SendChatMessage` (deprecated 11.2.0) | `nil`; nothing is sent | `modules/Share.lua` |
 | `PopupEditBox(dialog)` | A StaticPopup's edit box | the `GetEditBox` method, then the `editBox` / `EditBox` field | `nil`; the whisper popup sends nothing | `modules/Share.lua` |
-| `NewNumberFormatter()` | A new native number formatter that takes a secret | `C_StringUtil.CreateAbbreviatedNumberFormatter`, then `CreateNumericRuleFormatter` (pcall'd) | `nil`; `modules/Format.lua` abbreviates a plain number in Lua and hands a secret to `AbbreviateNumbers` | `modules/Format.lua` |
+| `NumberFormatterCandidates()` | The client's native number-formatter constructors (each answers an instance that takes a secret), as `{ name, make }` | `C_StringUtil.CreateAbbreviatedNumberFormatter`, then `CreateNumericRuleFormatter`, every one present | an empty list; `modules/Format.lua` builds each in pcall, checks it against an integer and a fractional value and uses the first that passes, else hands a secret to `AbbreviateNumbers` (a plain number always abbreviates in Lua) | `modules/Format.lua` |
 
 Two rungs are kept on the dead-rung rule's terms (compat): neither the bare `SendChatMessage` nor the
 second `C_StringUtil` constructor has been confirmed absent on every 120105 client. The smoke tests ask

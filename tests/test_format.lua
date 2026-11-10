@@ -1,9 +1,16 @@
 -- tests/test_format.lua — modules/Format.lua: the one secret-safe number formatter, the race clock,
--- percentages, typed race lengths and the Arm refusal copy.
+-- percentages, typed race lengths and the Arm refusal copy. Format.Number never draws a raw decimal
+-- (Combat Trail plan v0.2 E3, its A5 ported): a plain number abbreviates in Lua; a secret goes to the
+-- first client formatter that passes both the integer and the fractional check; with none trusted, to
+-- AbbreviateNumbers, and the raw secret is the last resort.
 
 local T = _G.DPSRACE_TEST
 local test, assertEqual, assertTrue, assertNil = T.test, T.assertEqual, T.assertTrue, T.assertNil
 local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+local Formatter = dofile(T.root .. "/tests/mock_formatter.lua")(T)
+
+-- 634/21 K: a raw per-second rate, the shape Combat Trail's live tile drew unfloored (its plan v0.2 A5).
+local FRACTION = 30190.4761904
 
 local function withFormatter()
     return T.load{ mutate = function(m) Widgets.install(m) end }.NS
@@ -36,6 +43,91 @@ test("format: a formatter that renders the check value wrongly is not used", fun
         end }
     end }
     assertEqual(inst.NS.Format.Number(2763000), "2.76M", "the Lua fallback answered")
+end)
+
+-- A fresh instance with the scripted constructors (`spec`, tests/mock_formatter.lua), or none.
+local function fresh(spec)
+    local inst = T.load{ mutate = function(m) if spec then Formatter.install(m, spec) end end }
+    return inst.NS, inst.mocks, inst
+end
+
+local function logged(inst, needle)
+    local n = 0
+    for _, line in ipairs(inst.NS.DebugLog.buffer) do
+        if line:find(needle, 1, true) then n = n + 1 end
+    end
+    return n
+end
+
+-- The values a formatter was handed after its two checks.
+local function handedAfterChecks(f)
+    return #f.seen - 2
+end
+
+test("format: a plain fractional DPS abbreviates in Lua, never through the client formatter", function()
+    local NS, m = fresh{ abbreviated = "raw" }
+    assertEqual(NS.Format.Number(77.142857), "77", "no raw decimals")
+    assertEqual(NS.Format.Number(FRACTION), "30.1K")
+    assertEqual(NS.Format.Number(2763000), "2.76M")
+    assertEqual(NS.Format.Number(812), "812")
+    assertEqual(NS.Format.Number(nil), "")
+    for _, f in ipairs(m.__formatters) do
+        assertEqual(handedAfterChecks(f), 0, "a plain number never reaches " .. f.name)
+    end
+end)
+
+test("format: a secret goes to a formatter that passes both checks", function()
+    local NS, m = fresh{ abbreviated = "floor" }
+    assertEqual(NS.Format.Number(T.secret(FRACTION)), "30.1K")
+    assertEqual(NS.Format.Number(T.secret(130600)), "130.6K")
+    local f = m.__formatters[1]
+    assertTrue(T.isSecret(f.seen[#f.seen]), "the secret itself was handed over")
+    NS.Format.Number(77.142857)
+    assertEqual(handedAfterChecks(f), 2, "a plain number skips even a trusted formatter")
+end)
+
+test("format: a formatter that renders a fraction raw fails the check, and the next constructor answers", function()
+    local NS, m = fresh{ abbreviated = "raw", numeric = "floor" }
+    assertEqual(NS.Format.Number(T.secret(FRACTION)), "30.1K")
+    assertEqual(#m.__formatters, 2, "both constructors were tried")
+    assertEqual(m.__formatters[1].name, "abbreviated", "in order")
+    assertEqual(handedAfterChecks(m.__formatters[1]), 0, "the raw formatter is never used")
+    assertEqual(handedAfterChecks(m.__formatters[2]), 1, "the numeric-rule formatter served the secret")
+end)
+
+test("format: a secret with no trusted formatter goes to AbbreviateNumbers", function()
+    local NS, m = fresh{ abbreviated = "raw", numeric = "raw", abbreviate = true }
+    local s = T.secret(FRACTION)
+    assertEqual(NS.Format.Number(s), "abbr")
+    assertEqual(#m.__abbreviated, 1)
+    assertTrue(m.__abbreviated[1] == s, "the secret itself, untouched")
+end)
+
+test("format: the debug log names the path that served a number, once per change", function()
+    local NS, _, inst = fresh{ abbreviated = "raw", numeric = "floor" }
+    NS.State.debug = true
+    NS.Format.Number(T.secret(FRACTION))
+    NS.Format.Number(T.secret(FRACTION))
+    assertEqual(logged(inst, "[Format] numbers served by the client formatter (CreateNumericRuleFormatter)"), 1)
+    assertEqual(logged(inst, "[Format] CreateAbbreviatedNumberFormatter rendered "), 1,
+        "the build names the constructor it passed over")
+    NS.Format.Number(12.5)
+    assertEqual(logged(inst, "[Format] numbers served by Lua (plain)"), 1)
+end)
+
+test("format: a refused or failing constructor is skipped", function()
+    local inst = T.load{ mutate = function(m)
+        m.C_StringUtil = {
+            CreateAbbreviatedNumberFormatter = function() error("refused") end,
+            CreateNumericRuleFormatter = function()
+                return { SetBreakpoints = function() end, FormatNumber = function() return "nonsense" end }
+            end,
+        }
+    end }
+    local s = T.secret(5)
+    assertTrue(inst.NS.Format.Number(s) == s, "neither was trusted")
+    assertEqual(inst.NS.Format.Number(2763000), "2.76M")
+    assertEqual(inst.NS.Format.Number(-1234), "-1.2K")
 end)
 
 test("format: Clock is m:ss.t with tenths truncated; Length is m:ss", function()

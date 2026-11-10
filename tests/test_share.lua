@@ -202,5 +202,5 @@ test("share: the chat sender and the number formatter are reached only through N
     assertEqual(table.concat(offenders, "; "), "")
     local Compat = assert(T.NS.Compat, "no NS.Compat")
     assertEqual(type(Compat.ChatSender), "function")
-    assertEqual(type(Compat.NewNumberFormatter), "function")
+    assertEqual(type(Compat.NumberFormatterCandidates), "function")
 end)

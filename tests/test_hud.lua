@@ -266,6 +266,16 @@ test("hud: running render raises nothing with secret values", function()
     assertEqual(T.reveal(row.icon.__texture), 1000 + 29722)
 end)
 
+test("hud: a fractional secret live DPS draws the trusted formatter's text, never a raw decimal", function()
+    local Formatter = dofile(T.root .. "/tests/mock_formatter.lua")(T)
+    local f = hud{ mutate = function(m) Formatter.install(m, { abbreviated = "raw", numeric = "floor" }) end }
+    running(f, 30)
+    pump(f, 0.5)
+    local b = body(f)
+    assertEqual(b.w.dps.value.__text, "39.4K", "the raw-fraction formatter (39.4798K) was passed over")
+    assertEqual(b.w.damage.value.__text, "1.53M")
+end)
+
 test("hud: running body shows no percentage text", function()
     local f = hud()
     running(f, 30)
