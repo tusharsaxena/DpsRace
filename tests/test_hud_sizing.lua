@@ -277,6 +277,70 @@ test("hud sizing: the result card with every spell in view shows no count", func
     assertEqual(body(f).offset, 0)
 end)
 
+-- The one place a fixed window's content height binds the rows (the E1 review): the result card's
+-- chips wrapping to a third line (and more) at a narrow width push the stack down past the room the
+-- fixed height reserves for two lines (RESULT_ROWS_TOP). Then rowsFor shows fewer rows than the bars,
+-- the wheel moving over the rest, and roomForRows sets the chart aside before it leaves no row; the
+-- window's height never moves. The chips' lines are forced here (their wrap is a width estimate).
+local function chipLines(b, n)
+    local chips = b.w.chips
+    local real = chips.Set
+    rawset(chips, "Set", function(self, ...) real(self, ...); self.lines = n end)
+end
+
+test("hud sizing: chips wrapping past two lines cut the result card's rows to what the fixed window holds", function()
+    local f = hud()
+    resolved(f, 12)
+    local h = frame(f).__height
+    local b = body(f)
+    assertEqual(count(f), 5)
+    assertEqual(b.w.count.__text, "1-5 of 12")
+    chipLines(b, 4)
+    f.Hud.Refresh()
+    assertEqual(frame(f).__height, h, "the fixed height holds")
+    assertTrue(b.w.chart.shown, "the chart still leaves a row")
+    assertEqual(count(f), 4, "one row fewer than the bars")
+    assertEqual(b.w.count.__text, "1-4 of 12")
+    assertTrue(b.needH <= b.fitH, "the rows end inside the content")
+    chipLines(b, 6)
+    f.Hud.Refresh()
+    assertEqual(count(f), 2)
+    assertEqual(b.w.count.__text, "1-2 of 12")
+    assertTrue(b.needH <= b.fitH)
+    wheel(f, -1)
+    assertEqual(b.offset, 1, "the wheel moves over the rest")
+    assertEqual(firstName(f), name(f, 2))
+    assertEqual(frame(f).__height, h)
+end)
+
+test("hud sizing: chips that leave no row under the chart set the chart aside in the fixed window", function()
+    local f = hud()
+    resolved(f, 12)
+    local h = frame(f).__height
+    local b = body(f)
+    chipLines(b, 8)
+    f.Hud.Refresh()
+    assertFalse(b.w.chart.shown, "the plot steps aside")
+    assertTrue(count(f) >= 1, "and the rows take its room")
+    assertTrue(b.needH <= b.fitH)
+    assertEqual(frame(f).__height, h)
+end)
+
+test("hud sizing: fewer bars with wrapped chips set the chart aside on the same draw", function()
+    -- roomForRows reads the new view's fitH, not the one before it: the bars and fitH land on the body
+    -- before the chart's room is asked.
+    local f = hud()
+    resolved(f, 12)
+    local b = body(f)
+    chipLines(b, 6)
+    f.Hud.Refresh()
+    assertTrue(b.w.chart.shown, "two rows under the chart at 5 bars")
+    assertTrue(f.NS.SetByPath("hud.bars", 1))
+    assertFalse(b.w.chart.shown, "the smaller window has no room for the plot and a row")
+    assertTrue(count(f) >= 1, "a row shows")
+    assertTrue(b.needH <= b.fitH)
+end)
+
 -- ── the grip ────────────────────────────────────────────────────────────────────────────────────
 
 test("hud sizing: a grip release stores the width and the rounded rows, and the height snaps", function()

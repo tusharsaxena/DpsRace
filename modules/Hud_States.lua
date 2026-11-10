@@ -1010,6 +1010,8 @@ function Builders.running(parent)
 
     function body.Update(self, v)
         styleRunning(self, v.clockMode)
+        -- The view's bars and fitH first: placeExtras asks roomForRows of this view's height.
+        self.bars, self.fitH = v.bars, v.fitH
         placeExtras(self, v)
         self.paceShown = v.pace ~= nil
         if v.pace then self.w.pace:SetRange(v.pace.lo, v.pace.hi) end
@@ -1017,7 +1019,6 @@ function Builders.running(parent)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.
         if v.run ~= self.run then self.run, self.offset = v.run, 0 end
-        self.bars, self.fitH = v.bars, v.fitH
         local total, cap = liveTotal(self), liveCap(self)
         local n, offset = States.Window(total, cap, self.offset)
         self.w.count:SetText(States.CountText(total, cap, offset, n))
@@ -1374,8 +1375,10 @@ function Builders.result(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
-        -- The chips first: the stack under them starts where they end.
+        -- The chips first: the stack under them starts where they end. The view's bars and fitH
+        -- before the stack too: resultExtras asks roomForRows of this view's height.
         self.w.chips:Set(States.ResultChips(v))
+        self.bars, self.fitH = v.bars, v.fitH
         Builders.resultExtras(self, v)
         local lost = resultKpis(self.w, v.run)
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
@@ -1384,7 +1387,6 @@ function Builders.result(parent)
         self.w.count:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
         self.shownRun, self.icons = (not lost) and v.run or nil, v.icons
-        self.bars, self.fitH = v.bars, v.fitH
         if lost then
             self.w.list:Clear()
             self.needH = nil
