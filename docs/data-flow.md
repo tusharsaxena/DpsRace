@@ -457,7 +457,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   live for a run with a non-empty cast list, opens a pop-out window on the detail pane. It draws
   `Rows(run, other)`: one row per ability and caster across both runs (a base cooldown of 29 s or more
   first, longest first, then by this run's count, then the other's, the player's before the pet's),
-  each with two lanes, this run's casts as thin gold ticks above the compared run's as blue, each lane's
+  each with two lanes, this run's casts above the compared run's, each cast its ability's icon (the
+  default) or a thin tick (`results.timelineMarks`, `modules/Results_TimelineMarks.lua`, DpsRace#21), in
+  its caster's color (`PLAYER_LINE` or `PET_LINE`: a tick tinted, an icon edged), each lane's
   count just past its right end (`COUNT_GAP`), over an axis to the longer of the two races (`Span`, `Ticks`),
   drawn again under the *Casts* strips.
   Above the lanes (under a *Casts* heading; the lanes under *By ability*) two strips on the same axis,

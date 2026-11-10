@@ -211,6 +211,11 @@ NS.defaults = {
         -- line (#6). Off: the line stays the one line it always was (the owner's call, 2026-10-25).
         -- Its row is History > History > Sharing (settings/History.lua).
         share = { talentsLink = false },
+        -- The ability timeline (modules/Results_TimelineMarks.lua, DpsRace#21): how By ability draws a
+        -- cast, "icon" (its ability's icon, the default) or "tick" (a thin line). Its row is History >
+        -- Run detail > Ability timeline (settings/History.lua); the window's own two words write it too.
+        -- The window's place and size stay unstored (windows.timeline is gone).
+        results = { timelineMarks = "icon" },
         -- The new-best toast (#5, modules/BestToast.lua; General > New-best toast, settings/General.lua):
         -- on, 10 s on screen, with its sound, at scale 1. `soundKey`: the sound it plays, a
         -- LibSharedMedia key or "Default", today's alert. `point`

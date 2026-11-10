@@ -182,6 +182,10 @@ modules\Results_Timeline.lua
 # The timeline's pure half. LOAD-BEARING: takes NS.ResultsTimeline at FILE SCOPE, so it follows
 # modules\Results_Timeline.lua, which reaches it at CALL time.
 modules\Results_TimelineData.lua
+# The timeline's cast marks (DpsRace#21): icons or ticks in By ability, the caster colors, the cast icons'
+# art. LOAD-BEARING: takes NS.ResultsTimeline and captures NS.Style and NS.ResultsTable at FILE SCOPE, so
+# it follows modules\Results_Timeline.lua, which reaches it at CALL time.
+modules\Results_TimelineMarks.lua
 # The gear view window (#17). LOAD-BEARING: takes NS.ResultsTimeline.SKIN (the opaque modal skin) and
 # captures NS.Style and NS.ResultsTable at FILE SCOPE, so it follows modules\Results_Timeline.lua; the
 # detail and the shell reach it at CALL time.

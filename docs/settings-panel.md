@@ -344,6 +344,12 @@ stamped look. Row height and the spell text stay HUD Appearance's.
 | *Best run bar*, *Best run bar background*, *Best run bar border* | `compare.best.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (84, 140, 214) / 255 (R3-DR-5), no track, no border |
 | *Other run bar*, *Other run bar background*, *Other run bar border* | `compare.other.` | the column's run's character's | the skin's texture (stored pick solid) at 90%, (174, 145, 0) / 255 (R3-DR-5), no track, no border |
 
+Last, under its own *Ability timeline* heading (DpsRace#21):
+
+| Row | Schema path | Control | Behavior |
+|---|---|---|---|
+| Casts in By ability | `results.timelineMarks` | dropdown: *Ability icons* (`icon`, the default), *Tick lines* (`tick`) | How the ability timeline's *By ability* lanes draw each cast: its ability's icon, whose tooltip is the *Casts* icon's, or a thin tick line. A pet's cast is green and the player's blue either way. Its reaction is `NS.ResultsTimeline.Redraw()`: an open timeline redraws at once, keeping its zoom and pan. The timeline's own *Icons* and *Ticks* words, at the right of its *By ability* heading line, write the same row |
+
 *Best run bar* is the blue column and *Other run bar* the gold one, decided by `Compare.BestSide` as
 before. A compare line draws both columns' tracks and borders whichever side its bar is on. *Use the
 skin's texture* is **on** for the two compare bars as for every bar (the owner's call, 2026-10-31): a

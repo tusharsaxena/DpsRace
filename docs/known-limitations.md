@@ -108,6 +108,10 @@ and the smoke row that measures it where one exists.
 - **The chart and the pace bar compare by eye only** (#3). A secret cannot be compared, so neither
   says ahead or behind, and the pace is the best's *average* (its damage spread evenly over its
   length): the best has no stored curve, so an opener-heavy best looks easy early on.
+- **Close casts' icons overlap in a timeline lane** (DpsRace#21, `modules/Results_TimelineMarks.lua`). A
+  *By ability* lane is 16 px, so icons there never stack as the *Casts* strips' do: casts closer than an
+  icon overlap, and only the one on top takes the pointer. At 1x a filler cast every global cooldown
+  reads as a run of icons; zoom in to part them, or switch the lanes to *Ticks*.
 - **The compare's picked run lasts the session** (#7). *Compare With This Run* is view state, never
   stored: a `/reload` or login returns every run's compare to its board's best (the runner-up for
   the best itself). A run alone on its board has nothing to compare with until one is picked.

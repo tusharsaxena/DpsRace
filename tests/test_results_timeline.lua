@@ -206,9 +206,10 @@ end)
 
 -- ── the lanes ───────────────────────────────────────────────────────────────────────────────────
 
-test("results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts", function()
+test("results timeline: two lanes per ability, this run's ticks on top and the best's below, with counts", function()
     local i = inst()
     local TL = i.TL
+    i.NS.db.profile.results.timelineMarks = "tick"   -- icons are the default (test_results_timeline_marks)
     board(i)
     local u = open(i, "this")
     local drawn = pairsOf(i)
@@ -238,7 +239,7 @@ test("results timeline: two lanes per ability, this run's gold ticks on top and 
     for _, d in ipairs(marksIn(i, "a", INCINERATE)) do
         assertEqual(d.x, laneX + TL.MarkX(d.cast.t, 60, laneW))
         assertEqual(d.y, pairTop - TL.LANE_H / 2)
-        assertEqual(d.tex.__vertex[1], TL.THIS[1])
+        assertEqual(d.tex.__vertex[1], TL.PLAYER_LINE[1], "the caster's color, not the run's (DpsRace#21)")
         -- A thin tick the lane's full height, with a hover frame a few px wider.
         assertEqual(d.tex.__texture, "Interface\\Buttons\\WHITE8x8")
         assertEqual(d.tex.__width, TL.MARK_W)
@@ -246,9 +247,13 @@ test("results timeline: two lanes per ability, this run's gold ticks on top and 
     end
     local below = marksIn(i, "b", INCINERATE)[1]
     assertEqual(below.y, pairTop - TL.LANE_H - TL.LANE_GAP - TL.LANE_H / 2)
-    assertEqual(below.tex.__vertex[3], TL.OTHER[3])
+    assertEqual(below.tex.__vertex[3], TL.PLAYER_LINE[3])
+    assertEqual(marksIn(i, "a", FIREBOLT)[1].tex.__vertex[2], TL.PET_LINE[2], "a pet's tick")
     -- The pre-pull Soul Fire clamps to 0:00.
     assertEqual(marksIn(i, "a", SOUL_FIRE)[1].x, laneX + TL.INSET)
+    -- On the lanes' layer, which starts CLIP_PAD left of the lanes.
+    local first = marksIn(i, "a", SOUL_FIRE)[1].tex.__points
+    assertEqual(first[#first][4], TL.INSET + TL.CLIP_PAD)
     -- The axis: 0, the quarters and the end.
     local axis = {}
     for n, fs in ipairs(u.axis) do axis[n] = fs.__text end
@@ -258,6 +263,7 @@ end)
 
 test("results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run", function()
     local i = inst()
+    i.NS.db.profile.results.timelineMarks = "tick"
     board(i)
     local u = open(i, "this")
     local best = i.NS.Recorder.Get("best")

@@ -885,3 +885,18 @@ Branch `feat/2026-11-06-revendor-libka0s-v1-89` (the run's SM-09 and SM-11). Wit
 |---|---|---|---|---|
 | SM-DR-SF1HDR | `/dr results` on the *Runs* tab beside LootHistory's browser, under Ka0s Default and then two other skins (the run's SM-11) | The column headers (*Date*, *Character*, ... *Note*) have no gray line above them (under the filter bar) and none below them (over the first row), the same as LootHistory's; a skin that paints LootHistory's header band paints DpsRace's too; the *Insights* tab's line under its filter bar, the line under the *Runs* / *Insights* tabs and the footer line stay | A screenshot beside LootHistory | |
 | SM-DR-SF1EDGE | On the *Runs* and *Insights* tabs, look at each filter dropdown, open one, and change the UI scale (the run's SM-09) | Each dropdown, the opened menu and every cascade level have a crisp 1 px edge on all four sides, as in LootHistory, before and after the scale change | A close-up screenshot | |
+
+## 41. The 2026-11-10 build: the timeline's marks, icons or ticks, player and pet colors (DpsRace#21)
+
+Branch `feat/2026-11-10-ct-parity` (Combat Trail's v0.2 plan, task E2). With `/console scriptErrors 1` on. The
+*By ability* lanes now show icons by default, so where SM-DR-UT17, UT18, UT30, UT78 and UT80 say *gold
+ticks* and *blue ticks* they describe tick mode (*Ticks*), and a tick is now its caster's color (blue for
+yours, green for your pet's) whichever lane it is in: the gold and blue stay on the corridors, the counts
+and the legend.
+
+| ID | Do | Pass when | If it fails, report | Result |
+|---|---|---|---|---|
+| SM-DR-TM1 | On a run with a pet (a Destruction Warlock's Infernal and imp, say) and a best on its board, press *Timeline* | Every cast in *By ability* is its ability's small icon centered on its time, inside its lane, the player's on a thin blue-violet edge and the pet's on a green one; the *Casts* strips' icons carry the same edges. A cast at 0:00 or at the race's end shows whole, not cut in half, and never reaches the name cell or the counts. *Icons* (gold) and *Ticks* (gray) sit at the right of the *By ability* heading line, ending on the lanes' right edge | A screenshot | |
+| SM-DR-TM2 | In TM1's window hover a lane icon of yours, one of your pet's, and the *Casts* icon of the same cast as the first | Each tooltip opens beside the window, level with the icon: the client's spell tooltip, then *Cast at m:ss* (*(pet)* after the pet's) and which run, on bullets; the lane icon's reads the same as the *Casts* icon's | A screenshot of each | |
+| SM-DR-TM3 | Zoom in two steps and pan right once; click *Ticks*; then *Icons*; then open History > *Run detail* and set *Casts in By ability* to *Tick lines*, and back to *Ability icons*, with the timeline open; `/reload` and open it again | *Ticks* turns every icon into a thin line the lane's height (blue for yours, green for your pet's) and turns gold; *Icons* brings the icons back. The zoom, the pan and the scroll stay where they were through each switch. The settings row switches the open window at once the same way and shows what the words chose. The choice survives the `/reload` | Which switch did not redraw, and a screenshot | |
+| SM-DR-TM4 | At 1x on a long race (3:00 or more) with a filler cast every global cooldown, look at the *By ability* lanes in icon mode, then drag the window's grip wider and narrower | Close casts overlap (one lane has no room to stack them) and stay readable as a run of icons; hovering shows the topmost. While dragging, the icons slide along their lanes with no lag; on release they are redrawn where they already are | A screenshot | |

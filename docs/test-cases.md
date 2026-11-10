@@ -856,7 +856,7 @@ Total.
 - results timeline: cooldowns of 29 s or more first, the longest first; then by count, the player's before the pet's
 - results timeline: the axis runs to the longer race, in quarters; a tick's x is clamped inside its lane
 - results timeline: the detail's Timeline button is live for a run with casts and disabled without
-- results timeline: two lanes per ability, this run's gold ticks on top and the best's blue below, with counts
+- results timeline: two lanes per ability, this run's ticks on top and the best's below, with counts
 - results timeline: the legend names both runs; a tick's tooltip names the spell, its time and its run
 - results timeline: each lane's count sits just past the lane's right end, not out at the window's edge
 - results timeline: overlapping icons stack onto extra rows and the strip grows to fit them all
@@ -929,6 +929,18 @@ Total.
 - timeline controls: the zoom level keeps its gray at 1x and runs from gold to red above it
 - timeline controls: every corridor wears its run's dark, translucent color
 - timeline controls: a /run change to CORRIDOR shows on Repaint; closed, Repaint does nothing
+
+### test_results_timeline_marks.lua (9)
+
+- timeline marks: the caster colors are Combat Trail's palette lines, and the row defaults to icons
+- timeline marks: by default every cast in By ability is its ability's icon on the lanes' layer
+- timeline marks: a lane icon's tooltip is the Casts icon's for the same cast
+- timeline marks: a pre-pull cast's icon sits whole inside the lanes' padded clip
+- timeline marks: a player's cast is edged PLAYER_LINE and a pet's PET_LINE, in the lanes and the Casts strips
+- timeline marks: in tick mode a pet's tick is PET_LINE and a player's PLAYER_LINE in both lanes
+- timeline marks: the setting written while the window is open redraws it as ticks, keeping the zoom
+- timeline marks: the two words on the By ability heading line switch the marks
+- timeline marks: zoomed in, the icons follow the zoomed axis; a drag of the grip moves them without re-pooling
 
 ### test_results_gear.lua (13)
 
@@ -1849,6 +1861,7 @@ Total.
 | test_results_timeline_view.lua | 6 |
 | test_results_timeline_scroll.lua | 8 |
 | test_results_timeline_controls.lua | 13 |
+| test_results_timeline_marks.lua | 9 |
 | test_results_gear.lua | 13 |
 | test_header_rule.lua | 3 |
 | test_column_header_rule.lua | 4 |
@@ -1902,4 +1915,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1484** |
+| **Total** | **1493** |

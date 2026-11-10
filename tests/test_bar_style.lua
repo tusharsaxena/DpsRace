@@ -388,7 +388,8 @@ test("bar style: History holds the Run detail tab after Results table, Fill befo
     assertEqual(table.concat(groups, ","), "History,Results table,Run detail,Usage")
     assertEqual(table.concat(subs, ","), table.concat({ "Spell bars", "Spell bar background", "Spell bar border",
         "Best run bar", "Best run bar background", "Best run bar border",
-        "Other run bar", "Other run bar background", "Other run bar border" }, ","))
+        "Other run bar", "Other run bar background", "Other run bar border",
+        "Ability timeline" }, ","), "the timeline's marks after the bars (DpsRace#21)")
 end)
 
 test("bar style: a page's Defaults, a profile reset and a profile copy reach the new rows", function()

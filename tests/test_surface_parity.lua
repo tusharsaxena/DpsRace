@@ -202,8 +202,9 @@ test("parity: the hollow composers cost the library-absent load exactly the comp
     -- rows the library's tab draws, skinning-§3, the 31st to the 38th: skin.outline, LibKa0s v1.82.0).
     -- General's Toast sound, the 39th; Race's Simulation step delay (SG-SIM), the 40th; HUD's Size
     -- subsection (the v0.2 sizing model: Window size, Spell rows shown, Grow, the last taking over
-    -- from Live breakdown's Spell rows shown), the 41st and 42nd.
-    local PAGE_ROWS = 42
+    -- from Live breakdown's Spell rows shown), the 41st and 42nd; History's Casts in By ability (the
+    -- timeline's marks, DpsRace#21), the 43rd.
+    local PAGE_ROWS = 43
     local COMPOSED = MASTER_CONTROLS_ROWS + APPEARANCE_ROWS + RESULTS_TABLE_ROWS + RUN_DETAIL_ROWS
     assertEqual(#l.NS.Schema, COMPOSED + PAGE_ROWS, "the full load's row count")
     assertEqual(#d.NS.Schema, PAGE_ROWS, "the library-absent load's row count")

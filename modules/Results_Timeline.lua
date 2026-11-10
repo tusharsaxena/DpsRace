@@ -16,13 +16,15 @@ local _, NS = ...
 -- the window's but the controls' is (P17: under the cursor, P16's, covered the strips).
 -- *By ability*: one pair of lanes per ability: its name cell (icon,
 -- name, "(pet)" for a pet's, and under the name its cooldown when 29 s or more) beside two lanes, the top
--- one this run's casts (thin gold ticks, the lane's full height), the bottom one the compared run's
--- (blue), each lane's cast count just past its right end. Nothing sits between the name cell and the lanes but
+-- one this run's casts, the bottom one the compared run's, each cast its ability's icon or, by the
+-- `results.timelineMarks` setting, a thin tick the lane's full height, in its caster's color (the
+-- player's or the pet's: modules/Results_TimelineMarks.lua, DpsRace#21), each lane's cast count just
+-- past its right end. Nothing sits between the name cell and the lanes but
 -- the gap (the owner's call, 2026-10-26: a cooldown beside the lanes read as part of them). Abilities
 -- with a cooldown of 29 s or more come first, longest first; the rest follow by count. The time axis (0,
 -- the quarters, the end) is pinned under both sections, which scroll together (the mouse wheel), and
--- drawn again under the compared run's strip (P12). A tick's tooltip names the spell and its time; a
--- name's shows the client's spell tooltip and both counts; both beside the window, level with them.
+-- drawn again under the compared run's strip (P12). A lane icon's tooltip is a Casts icon's; a tick's
+-- names the spell and its time; a name's shows the client's spell tooltip and both counts; both beside the window, level with them.
 --
 -- ZOOM (P12, the owner's call, 2026-10-27). Three controls at the right of the *Casts* heading line
 -- (zoom out, zoom in, reset: `- +` since P16) step the time axis through ZOOMS for the strips and the
@@ -164,7 +166,7 @@ Timeline.OTHER = { 0.35, 0.66, 1.0 }
 -- translucent over the window's fill. Read at paint time: change them with /run, then Timeline.Repaint().
 Timeline.CORRIDOR = { this = { 0.30, 0.24, 0.02, 0.45 }, other = { 0.06, 0.16, 0.32, 0.45 } }
 local DISC = "Interface\\CharacterFrame\\TempPortraitAlphaMask"   -- a white disc, tinted (the legend's swatches)
-local WHITE = "Interface\\Buttons\\WHITE8x8"                      -- a cast's tick, tinted
+local WHITE = "Interface\\Buttons\\WHITE8x8"                      -- the `-` and `+` strokes
 local TRACK = Style.Tok("chart.track")
 local GRID = Style.Tok("dr.chart.grid")
 local HEADER_H = Style.TITLE_BAR_H
@@ -342,6 +344,7 @@ end
 local function placeControls(g)
     ui.help:ClearAllPoints()
     ui.help:SetPoint("TOPRIGHT", ui.content, "TOPLEFT", g.laneX + g.laneW, 0)
+    Timeline.PlaceMarks(ui, g)   -- the mode's two words, on the By ability heading line
 end
 
 -- One mouse-wheel notch on any part of the window.
@@ -394,14 +397,13 @@ local function buildBody(f)
     ui.castsClip:SetFrameLevel(level)
     ui.lanesClip:SetFrameLevel(level)
     ui.pairs = NS.Pool.New()
-    ui.markPool = NS.Pool.New()
-    ui.hitPool = NS.Pool.New()
     ui.iconPool = NS.Pool.New()
     ui.castsHead = Style.Text(ui.content, FONT.SECTION)
     ui.castsHead:SetText(L["Casts"])
     ui.lanesHead = Style.Text(ui.content, FONT.SECTION)
     ui.lanesHead:SetText(L["By ability"])
     ui.strips = { a = buildStrip(Timeline.THIS), b = buildStrip(Timeline.OTHER) }
+    Timeline.BuildMarks(ui)   -- the lanes' pools and the mode's two words (Results_TimelineMarks.lua)
     ui.empty = Style.Text(f, FONT.EMPTY, nil, "CENTER")
     ui.empty:SetPoint("CENTER", f, "CENTER", 0, 0)
     buildZoom()
@@ -540,89 +542,7 @@ local function fillPair(pair, row, y, g)
     pair.countB:SetText(ui.otherHas and tostring(row.countB) or "")
 end
 
--- ── the cast ticks ──────────────────────────────────────────────────────────────────────────────
-
--- A tick's hover frame; its tooltip beside the window, level with the tick (P17, the owner's call,
--- 2026-10-28), as its name's and the icons' are.
-local function newHit()
-    local h = CreateFrame("Frame", nil, ui.marks)
-    h:SetSize(Timeline.MARK_HIT, Timeline.LANE_H)
-    h:EnableMouse(true)
-    h:SetScript("OnEnter", function(self)
-        if self.cast and ui then Tbl.SideTip(ui.frame, self, Timeline.MarkLines(self.cast, self.label)) end
-    end)
-    h:SetScript("OnLeave", Tbl.HideTip)
-    return h
-end
-
-local function newMark()
-    local t = ui.marks:CreateTexture(nil, "OVERLAY")
-    t:SetTexture(WHITE)
-    t:SetWidth(Timeline.MARK_W)
-    t:SetHeight(Timeline.LANE_H)
-    return t
-end
-
---- A tick's tooltip: the spell and its time (ResultsTips.Cast), then which run it is.
-function Timeline.MarkLines(cast, label)
-    local lines = NS.ResultsTips.Cast(cast)
-    if lines and label then lines[#lines + 1] = { label, Style.Rgb("dr.dim") } end
-    return lines
-end
-
--- A tick drawn now on the lanes' layer: its x and y are content coordinates as if unpanned (the
--- layer starts at the lanes' left, under the first pair).
-local function putMark(d, g)
-    local x, y = d.x - g.laneX, d.y + ui.sections.lanes
-    d.tex:ClearAllPoints()
-    d.tex:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
-    d.hit:ClearAllPoints()
-    d.hit:SetPoint("CENTER", ui.marks, "TOPLEFT", x, y)
-end
-
--- One tick at `x` along the lane whose middle is `y` (content coordinates), the lane's full height.
-local function placeMark(cast, x, y, color, label, g)
-    local m = NS.Pool.Acquire(ui.markPool, newMark)
-    m:SetVertexColor(color[1], color[2], color[3], 0.95)
-    local h = NS.Pool.Acquire(ui.hitPool, newHit)
-    h.cast, h.label = cast, label
-    local d = { tex = m, hit = h, cast = cast, x = x, y = y, lane = color == Timeline.THIS and "a" or "b" }
-    putMark(d, g)
-    ui.drawn[#ui.drawn + 1] = d
-end
-
-local function laneMarks(row, side, top, g)
-    local times = row[side]
-    local color = side == "a" and Timeline.THIS or Timeline.OTHER
-    local label = side == "a" and ui.thisLabel or ui.otherLabel
-    for _, t in ipairs(times) do
-        local x = Timeline.MarkX(t, g.span, g.zoomW)
-        if x then placeMark({ t = t, id = row.id, pet = row.pet }, g.laneX + x, top - Timeline.LANE_H / 2, color, label, g) end
-    end
-end
-
 -- ── the cast icons (*Casts*) ────────────────────────────────────────────────────────────────────
-
--- An icon's hover: the client's spell tooltip, then the cast's time and its run, beside the window
--- level with the icon (P17, the owner's call, 2026-10-28: P16's, under the cursor, covered the strips).
-local function iconTip(self)
-    if not (self.cast and ui) then return end
-    Tbl.SpellTip(ui.frame, self, self.cast.id, Timeline.IconLines(self.cast, self.label, self.over))
-end
-
--- An icon: a plain frame on the strips' layer (it takes the mouse for its tooltip) holding the art.
-local function newIcon()
-    local f = CreateFrame("Frame", nil, ui.castsLayer)
-    f:SetSize(Timeline.CAST_ICON, Timeline.CAST_ICON)
-    f:EnableMouse(true)
-    f.tex = f:CreateTexture(nil, "OVERLAY")
-    f.tex:SetAllPoints(f)
-    f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    NS.Skin.IconBorder(f, { fromSkin = true })
-    f:SetScript("OnEnter", iconTip)
-    f:SetScript("OnLeave", Tbl.HideTip)
-    return f
-end
 
 -- An icon drawn now on the strips' layer, which starts CLIP_PAD left of the lanes, at this run's strip.
 local function putIcon(d, g)
@@ -664,12 +584,15 @@ local function placeStrip(side, g, label, note)
     st.note:SetShown(note ~= nil)
 end
 
+-- A Casts icon on the strips' layer (modules/Results_TimelineMarks.lua: its art, caster edge and tooltip).
+local function newIcon() return Timeline.NewCastIcon(ui.castsLayer, Timeline.CAST_ICON) end
+
 -- One strip's icons, from its stack.
 local function stripIcons(side, list, stack, label, g)
     for n, cast in ipairs(list) do
         local f = NS.Pool.Acquire(ui.iconPool, newIcon)
         f.cast, f.label, f.over = cast, label, stack.over[n] == true
-        f.tex:SetTexture(NS.HudBreakdown.SpellIcon(cast.id))
+        Timeline.PaintCast(f, cast)
         local d = { frame = f, cast = cast, x = stack.xs[n], y = -rowMid(side, stack.rows[n]), row = stack.rows[n], side = side }
         putIcon(d, g)
         ui.icons[#ui.icons + 1] = d
@@ -716,8 +639,8 @@ local function sized(f, width, height)
 end
 
 -- The time area's clips and layers at this geometry: the strips' clip from this run's strip to the
--- bottom of their axis, CLIP_PAD wider than the lanes at each end; the lanes' clip over the pairs; the
--- pinned axis's under the scrolling content. Each layer is the zoomed axis's width.
+-- bottom of their axis and the lanes' clip over the pairs, each CLIP_PAD wider than the lanes at each
+-- end (an icon at 0:00 or at the end shows whole); the pinned axis's under the scrolling content. Each layer is the zoomed axis's width.
 local function sizeClips(g)
     local s, pad = ui.sections, Timeline.CLIP_PAD
     local castsH = s.castsAxis + Timeline.CASTS_AXIS_H - s.stripA
@@ -727,9 +650,9 @@ local function sizeClips(g)
     sized(ui.castsClip, g.laneW + 2 * pad, castsH)
     sized(ui.castsLayer, g.zoomW + 2 * pad, castsH)
     ui.lanesClip:ClearAllPoints()
-    ui.lanesClip:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX, -s.lanes)
-    sized(ui.lanesClip, g.laneW, lanesH)
-    sized(ui.marks, g.zoomW, lanesH)
+    ui.lanesClip:SetPoint("TOPLEFT", ui.content, "TOPLEFT", g.laneX - pad, -s.lanes)
+    sized(ui.lanesClip, g.laneW + 2 * pad, lanesH)
+    sized(ui.marks, g.zoomW + 2 * pad, lanesH)
     ui.axisClip:ClearAllPoints()
     ui.axisClip:SetPoint("BOTTOMLEFT", ui.frame, "BOTTOMLEFT", Timeline.PAD + g.laneX,
         Timeline.BOTTOM + Timeline.BarBand(g.zoom))
@@ -874,25 +797,23 @@ local function placeAxes(g, shown)
         line.casts:SetPoint("TOPLEFT", ui.castsLayer, "TOPLEFT", x + pad, 0)
         line.casts:SetHeight(stripsH)
         line.lanes:ClearAllPoints()
-        line.lanes:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", x, 0)
-        line.lanes:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", x, 0)
+        line.lanes:SetPoint("TOPLEFT", ui.marks, "TOPLEFT", x + pad, 0)
+        line.lanes:SetPoint("BOTTOMLEFT", ui.marks, "BOTTOMLEFT", x + pad, 0)
     end
 end
 
 local function layoutRows(g)
     NS.Pool.ReleaseAll(ui.pairs, function(pair) pair.row = nil end)
-    NS.Pool.ReleaseAll(ui.markPool)
-    NS.Pool.ReleaseAll(ui.hitPool, function(h) h.cast, h.label = nil, nil end)
-    ui.drawn = {}
+    Timeline.ReleaseMarks()
     for i, row in ipairs(ui.rows) do
         local y = -ui.sections.lanes - (i - 1) * Timeline.PAIR_H
         fillPair(NS.Pool.Acquire(ui.pairs, newPair), row, y, g)
-        laneMarks(row, "a", y, g)
-        laneMarks(row, "b", y - Timeline.LANE_H - Timeline.LANE_GAP, g)
+        Timeline.LaneMarks(row, "a", y, g)
+        Timeline.LaneMarks(row, "b", y - Timeline.LANE_H - Timeline.LANE_GAP, g)
     end
 end
 
--- While the window is being sized: the pairs drawn now to the new lane width and each tick drawn now
+-- While the window is being sized: the pairs drawn now to the new lane width and each mark drawn now
 -- moved along its lane, with nothing re-pooled, refilled or recolored.
 local function stretchRows(g)
     for _, pair in ipairs(ui.pairs.active) do
@@ -902,7 +823,7 @@ local function stretchRows(g)
     end
     for _, d in ipairs(ui.drawn or {}) do
         d.x = g.laneX + (Timeline.MarkX(d.cast.t, g.span, g.zoomW) or 0)
-        putMark(d, g)
+        Timeline.PutMark(d, g)
     end
 end
 
@@ -1131,6 +1052,11 @@ function Timeline.ResetPosition()
     layout()
 end
 
+--- Draw an open window again as it is (the mark mode's row): its zoom, pan and scroll kept.
+function Timeline.Redraw()
+    if Timeline.IsShown() then layout() end
+end
+
 --- Paint every corridor drawn now from CORRIDOR again (after a /run change to it); nothing while the
 --- window is closed (the next open paints from it).
 function Timeline.Repaint()
@@ -1142,7 +1068,8 @@ function Timeline.Repaint()
     end
 end
 
---- The cast ticks drawn now, for the suites: { { tex, hit, cast, x, y, lane = "a" | "b" }, ... }.
+--- The cast marks drawn now, for the suites: { { kind = "icon", frame, ... } or { kind = "tick", tex,
+--- hit, ... }, each with cast, x, y and lane = "a" | "b" }.
 function Timeline.Marks()
     return ui and ui.drawn or {}
 end

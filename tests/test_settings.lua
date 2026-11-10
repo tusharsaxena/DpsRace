@@ -70,6 +70,7 @@ local STORED = {
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
+    ["results.timelineMarks"] = { "string", "icon" },
     ["toast.enabled"]        = { "bool",   true },
     ["toast.sound"]          = { "bool",   true },
     ["toast.soundKey"]       = { "string", "Default" },

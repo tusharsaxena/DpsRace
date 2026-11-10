@@ -138,6 +138,22 @@ detailBlock("compare.best.", ROW_CLASS, NS.defaults.profile.compare.best, 400,
 detailBlock("compare.other.", ROW_CLASS, NS.defaults.profile.compare.other, 700,
     L["Other run bar"], L["Other run bar background"], L["Other run bar border"])
 
+-- ── Run detail > Ability timeline ── how By ability draws each cast (DpsRace#21,
+-- modules/Results_TimelineMarks.lua): its ability's icon or a thin tick, in its caster's color either
+-- way. The timeline's two words on the By ability heading line write the same row; its reaction redraws
+-- an open timeline, keeping its zoom.
+NS.RegisterSchemaRows({
+    { path = "results.timelineMarks", page = PAGE, group = RUN_DETAIL, subgroup = L["Ability timeline"], order = 1000,
+      type = "string", label = L["Casts in By ability"], default = NS.defaults.profile.results.timelineMarks,
+      values = {
+          { value = "icon", text = L["Ability icons"] },
+          { value = "tick", text = L["Tick lines"] },
+      },
+      validate = function(v) return NS.ResultsTimeline.MARK_MODES[v] == true end,
+      tooltip = L["How the ability timeline's By ability lanes show each cast: the ability's icon (hover it for the spell and its time) or a thin tick line. Either way a pet's cast is green and yours blue. The timeline's Icons and Ticks words switch it too."],
+      onChange = function() NS.ResultsTimeline.Redraw() end },
+})
+
 -- ── Usage ── the hidden items (P9, modules/Usage.lua): item IDs the Results window's Usage never
 -- lists, in the section, the Used column or its tooltip, on any run. One plain string of IDs written
 -- WHOLE through the seam (a value, architecture-§5: the set has no rows of its own), so the CLI's

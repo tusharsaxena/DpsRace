@@ -173,6 +173,7 @@ local SUITES = {
     "test_results_timeline_view",
     "test_results_timeline_scroll",
     "test_results_timeline_controls",
+    "test_results_timeline_marks",
     "test_results_gear",
     "test_header_rule",
     "test_column_header_rule",
