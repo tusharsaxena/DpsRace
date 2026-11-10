@@ -306,6 +306,22 @@ test("hud sizing: a grip release stores the width and the rounded rows, and the 
     assertEqual(fr.__height, fixedFor(15))
 end)
 
+test("hud sizing: a height-only release that rounds back to the same rows still snaps the window", function()
+    local f = hud()
+    racing(f, 20)
+    local NS, fr = f.NS, frame(f)
+    local h = fixedFor(5) + 9   -- under one more row: still five
+    fr.resizeGrip:__fire("OnMouseDown", "LeftButton")
+    f.M.__now = f.M.__now + 1 / 60
+    fr.__width, fr.__height = 260, h   -- the client sizes the frame while the grip is held
+    fr:__fire("OnSizeChanged", 260, h)
+    rawset(fr, "GetWidth", function() return 260 end)
+    rawset(fr, "GetHeight", function() return h end)
+    fr.resizeGrip:__fire("OnMouseUp")
+    assertEqual(NS.db.profile.hud.bars, 5, "the count is unchanged")
+    assertEqual(fr.__height, fixedFor(5), "snapped back to the five rows' height")
+end)
+
 test("hud sizing: a release that only moved the width keeps the rows, where the idle floor is the height", function()
     local f = hud({ set = { ["live.chart"] = false, ["hud.bars"] = 1 } })
     f.Hud.Show()

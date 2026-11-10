@@ -373,7 +373,7 @@ Total.
 - hud: a clock shown alone draws half again as large, in its block's color
 - hud: a bar's class color companion takes the player's class, the swatch's opacity kept
 
-### test_hud_sizing.lua (26)
+### test_hud_sizing.lua (27)
 
 - hud sizing: the defaults are fixed, 5 rows, grow down; live.rows and the stored height are retired
 - hud sizing: the migration drops the retired live.rows and stored height
@@ -385,6 +385,7 @@ Total.
 - hud sizing: the result card fits the fixed window, its rows the bars and the wheel past them
 - hud sizing: the result card with every spell in view shows no count
 - hud sizing: a grip release stores the width and the rounded rows, and the height snaps
+- hud sizing: a height-only release that rounds back to the same rows still snaps the window
 - hud sizing: a release that only moved the width keeps the rows, where the idle floor is the height
 - hud sizing: while the grip is held the rows follow the drag and nothing is stored
 - hud sizing: the grip's bounds follow the parts shown
@@ -1816,7 +1817,7 @@ Total.
 | test_hud.lua | 30 |
 | test_hud_layout.lua | 24 |
 | test_hud_window.lua | 21 |
-| test_hud_sizing.lua | 26 |
+| test_hud_sizing.lua | 27 |
 | test_hud_best.lua | 9 |
 | test_hud_hint.lua | 6 |
 | test_hud_tips.lua | 3 |
@@ -1901,4 +1902,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1483** |
+| **Total** | **1484** |

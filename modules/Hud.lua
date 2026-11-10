@@ -754,6 +754,9 @@ function resized(width, height)
     local h = NS.Secrets.PlainNumber(height) or ui.dragH
     local n = h and barsFor(clamp(h, fixedHeightFor(Hud.MIN_BARS), fixedHeightFor(Hud.MAX_BARS)))
     ui.dragW, ui.dragH = nil, nil
+    -- The grip has left the frame at the dragged size, which ui.height never tracked: the next
+    -- fitWindow sets the size again, so a release whose rows round back to the same count snaps too.
+    ui.sizedWidth = nil
     placeAfterDrag(true)
     if w then
         ui.width = clamp(math.floor(w + 0.5), Hud.MIN_WIDTH, Hud.MAX_WIDTH)
