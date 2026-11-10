@@ -175,6 +175,11 @@ annotated (toc-file-§5).
 
 Every file, its one-line job and why the TOC orders it as it does: [module-map.md](module-map.md).
 
+**Per-client features (clients-§4).** All features serve Retail; the addon is Retail-only by owner decision
+(2026-11-10, clients-§2): WoW Forever has no training dummies, and a race against a training dummy is the
+addon's core, so there is nothing for it to do there. The TOC's `## AllowLoadGameType: standard` and
+`## ExcludeLoadGameType: camelot` keep it off the Forever AddOns list (clients-§7).
+
 ## Settings Schema
 
 Settings are schema-driven (architecture-§5): page files register rows into `NS.Schema`, and every
