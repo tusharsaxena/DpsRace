@@ -635,7 +635,7 @@ Total.
 - badges: group headers color their value as plain text: class, target type, length
 - badges: the HUD draws none of the Results chips
 
-### test_compare.lua (28)
+### test_compare.lua (29)
 
 - compare: CompareSpells matches by id, with each side's damage, share and the difference
 - compare: a spell on one side only has nil damage and share on the other
@@ -665,6 +665,7 @@ Total.
 - compare: the separator draws one physical pixel wide at any UI scale, not one UI unit
 - compare: Damage and DPS in the spell names' white, each after a game icon at the spell icons' size and x
 - compare: every spell row alternates the Results list's stripe, compared and plain
+- breakdown: the stripe is a white BACKGROUND texture over the whole row and its gap, live and read
 
 ### test_loadout.lua (27)
 
@@ -1804,7 +1805,7 @@ Total.
 | test_results_delta.lua | 5 |
 | test_results_tree.lua | 5 |
 | test_results_badges.lua | 10 |
-| test_compare.lua | 28 |
+| test_compare.lua | 29 |
 | test_loadout.lua | 27 |
 | test_stats.lua | 9 |
 | test_casts.lua | 10 |
@@ -1871,4 +1872,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1457** |
+| **Total** | **1458** |

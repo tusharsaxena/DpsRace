@@ -86,7 +86,7 @@ return function(T)
         results()
         if not spellList then
             local parent = live().M.CreateFrame("Frame", nil, live().M.UIParent)
-            spellList = NS.HudBreakdown.New(parent, nil, NS.Style.StripeAlpha, "window")
+            spellList = NS.HudBreakdown.New(parent, nil, "window")
         end
         spellList:ShowResult(NS.db.global.runs.surface, 2, true, 0)
         return spellList.rows[2]

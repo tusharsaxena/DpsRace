@@ -136,7 +136,7 @@ test("skin fonts: the Results detail's breakdown list draws its spell rows as wi
     local function rowFlags(where)
         local flags
         A.ApplyFont = function(fs, font, ...) flags = font.flags return apply(fs, font, ...) end
-        local list = NS.HudBreakdown.New(inst.mocks.CreateFrame("Frame"), nil, nil, where)
+        local list = NS.HudBreakdown.New(inst.mocks.CreateFrame("Frame"), nil, where)
         list:acquire(1, false, false)
         A.ApplyFont = apply
         return flags

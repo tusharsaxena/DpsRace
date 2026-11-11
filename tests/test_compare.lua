@@ -936,7 +936,8 @@ test("compare: every spell row alternates the Results list's stripe, compared an
     assertTrue(d.w.list.parent:IsShown())
     assertEqual(d.w.list:Count(), 5)
     for n, row in ipairs(d.w.list.rows) do
-        assertEqual(row.stripe.__colorTex[4], n % 2 == 0 and alpha or 0, "plain row " .. n .. "'s stripe")
+        assertEqual(row.stripe.__texture, i.NS.ResultsTable.WHITE, "plain row " .. n .. "'s stripe has no file")
+        assertEqual(row.stripe.__vertex[4], n % 2 == 0 and alpha or 0, "plain row " .. n .. "'s stripe")
     end
     -- Compared: the matched rows, top down (by y).
     d:SetComparing(true)
@@ -947,8 +948,46 @@ test("compare: every spell row alternates the Results list's stripe, compared an
     for n, row in ipairs(rows) do
         assertEqual(row.bg.__vertex[4], n % 2 == 0 and alpha or 0, "compared row " .. n .. "'s stripe")
     end
-    -- The HUD's list draws none.
+    -- The HUD's list draws the same stripe.
     local hudList = i.NS.HudBreakdown.New(i.mocks.CreateFrame("Frame"))
     hudList:ShowResult({ spells = spells, result = { damage = 20000 } }, 5, true)
-    for _, row in ipairs(hudList.rows) do assertEqual(row.stripe, nil, "a HUD row has a stripe") end
+    for n, row in ipairs(hudList.rows) do
+        assertEqual(row.stripe.__vertex[4], n % 2 == 0 and alpha or 0, "HUD row " .. n .. "'s stripe")
+    end
+end)
+
+test("breakdown: the stripe is a white BACKGROUND texture over the whole row and its gap, live and read", function()
+    -- The kit's paint recorder, so the stripe's draw layer is readable.
+    local i = T.load{ mutate = function(m)
+        Widgets.install(m)
+        dofile(T.root .. "/tests/_kit/mock_paint.lua")(m)
+    end }
+    local NS = i.NS
+    local alpha = NS.Style.StripeAlpha(2)
+    assertTrue(alpha > 0)
+    local list = NS.HudBreakdown.New(i.mocks.CreateFrame("Frame"))
+    local live = { spells = {}, maxAmount = 900 }
+    for n = 1, 4 do live.spells[n] = { spellID = 2000 + n, total = 1000 - n * 100 } end
+    assertEqual(list:ShowLive(live, 4, true), 4)
+    for n, row in ipairs(list.rows) do
+        local s = row.stripe
+        assertEqual(s.__layer, "BACKGROUND", "live row " .. n .. "'s stripe layer")
+        assertEqual(s.__texture, NS.ResultsTable.WHITE, "live row " .. n .. "'s stripe has no file")
+        assertEqual(s.__points[1][1], "TOPLEFT")
+        assertEqual(s.__points[1][2], row)
+        assertEqual(s.__points[2][1], "BOTTOMRIGHT")
+        assertEqual(s.__points[2][5], -NS.HudBreakdown.ROW_GAP, "down through the gap")
+        assertEqual(s.__vertex[4], n % 2 == 0 and alpha or 0, "live row " .. n .. "'s stripe")
+    end
+    -- Scrolled one spell down, the tint follows the spell: the top row is the second spell, striped.
+    list:ShowLive(live, 3, true, 1)
+    for n, row in ipairs(list.rows) do
+        assertEqual(row.stripe.__vertex[4], (n + 1) % 2 == 0 and alpha or 0, "scrolled live row " .. n)
+    end
+    local spells = {}
+    for n = 1, 4 do spells[n] = { id = 1000 + n, dmg = 5000 - n * 1000 } end
+    list:ShowResult({ spells = spells, result = { damage = 10000 } }, 3, true, 1)
+    for n, row in ipairs(list.rows) do
+        assertEqual(row.stripe.__vertex[4], (n + 1) % 2 == 0 and alpha or 0, "scrolled result row " .. n)
+    end
 end)

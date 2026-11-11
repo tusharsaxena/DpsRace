@@ -19,8 +19,10 @@ local _, NS = ...
 -- id)`): the hook passes it straight to ResultsTable.SpellTip, which never compares or type-tests it
 -- and reads plain geometry only. A list built without one keeps its rows click-through.
 --
--- STRIPES ARE OPT-IN TOO. A list built with a `stripe` hook (the Results detail's, the Results list's
--- tint) tints every other row by its index; the HUD passes none and draws no stripe.
+-- EVERY LIST STRIPES. Each row draws the Results run list's stripe behind it (Style.Stripe, the skin's
+-- `dr.list.stripe`): every even spell faintly tinted, by its rank (the offset plus the row), so the
+-- tint travels with the spell on the wheel as the run list's does with its run. The HUD's lists and
+-- the Results detail's alike.
 
 local Breakdown = {}
 NS.HudBreakdown = Breakdown
@@ -34,6 +36,8 @@ local L = NS.L
 Breakdown.ROW_HEIGHT = 18
 Breakdown.ROW_GAP = 2
 local PCT_WIDTH = 44
+-- The stripe's file: a vertex tint on a texture with no file draws nothing (modules/Results_Table.lua).
+local WHITE = "Interface\\Buttons\\WHITE8x8"
 local FONT = NS.Style.FONT
 
 --- The configured row height, and the pitch from one row's top to the next (both config, never a
@@ -74,6 +78,12 @@ end
 -- window list's keeps the window outline.
 local function newRow(parent, hud)
     local row = CreateFrame("Frame", nil, parent)
+    -- The stripe: the whole row behind the icon and the bar's own track, down through the gap under it.
+    local stripe = row:CreateTexture(nil, "BACKGROUND")
+    stripe:SetTexture(WHITE)
+    stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    stripe:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -Breakdown.ROW_GAP)
+    row.stripe = stripe
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetPoint("LEFT", row, "LEFT", 0, 0)
     local bar = CreateFrame("StatusBar", nil, row)
@@ -141,23 +151,11 @@ List.__index = List
 --- @param parent table
 --- @param tip function|nil  tip(row, spell, rank, liveID): a row's hover, a result row's plain record
 ---   and rank, or a live row's (possibly secret) ID alone (none: rows take no mouse)
---- @param stripe function|nil  stripe(index): the alpha of the row's tint (none: no stripes)
 --- @param where string|nil  "window" for a list in the Results window: its spell text is window text
 ---   to the Font outline (D-06), and its bars are the Run detail tab's; nil: the HUD's
 --- @return table list
-function Breakdown.New(parent, tip, stripe, where)
-    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, stripe = stripe,
-        where = where }, List)
-end
-
--- A row's stripe, made once per pooled row of a list with a `stripe` hook: the row and the gap under it.
-local function paintStripe(list, row, i)
-    if not row.stripe then
-        row.stripe = row:CreateTexture(nil, "BACKGROUND")
-        row.stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-        row.stripe:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, -Breakdown.ROW_GAP)
-    end
-    NS.Style.Fill(row.stripe, "dr.list.stripe", list.stripe(i))
+function Breakdown.New(parent, tip, where)
+    return setmetatable({ parent = parent, pool = NS.Pool.New(), rows = {}, tip = tip, where = where }, List)
 end
 
 -- A row's hover, wired once per pooled row of a list with a `tip` hook.
@@ -190,7 +188,8 @@ function List:Count()
     return #self.rows
 end
 
-function List:acquire(i, icons, pct)
+-- Row `i` from the top, drawing the spell ranked `rank` (its stripe's index; default `i`).
+function List:acquire(i, icons, pct, rank)
     local parent = self.parent
     local row = NS.Pool.Acquire(self.pool, function() return newRow(parent, self.where ~= "window") end)
     restyle(row, self.where)
@@ -201,7 +200,7 @@ function List:acquire(i, icons, pct)
     setMode(row, icons, pct)
     row.spell, row.rank, row.liveID = nil, nil, nil
     if self.tip then wireTip(self, row) end
-    if self.stripe then paintStripe(self, row, i) end
+    NS.Style.Stripe(row.stripe, rank or i)
     self.rows[i] = row
     return row
 end
@@ -231,7 +230,7 @@ function List:ShowLive(live, n, icons, offset)
     for i = 1, n do
         local s = spells[offset + i]
         if s == nil then break end
-        local row = self:acquire(i, icons, false)
+        local row = self:acquire(i, icons, false, offset + i)
         if max ~= nil then row.bar:SetMinMaxValues(0, max) end
         if s.total ~= nil then row.bar:SetValue(s.total) end
         row.name:SetText(Breakdown.SpellName(s.spellID))
@@ -287,7 +286,7 @@ function List:ShowResult(run, n, icons, offset)
     local top = spells[1].dmg or 0
     offset = offset or 0
     for i = 1, math.min(n, #spells - offset) do
-        local row = self:acquire(i, icons, true)
+        local row = self:acquire(i, icons, true, offset + i)
         fillResult(row, spells[offset + i], top, damage, icons)
         row.spell, row.rank = spells[offset + i], offset + i
     end
