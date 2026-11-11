@@ -95,7 +95,7 @@ test("hud hint: under the box only the foot row, on the body's bottom, clear of 
         assertEqual(p[5], 0, "the buttons sit on the body's foot")
     end
     local bottom = -top[5] + b.w.hint.__height
-    assertTrue(bottom + 8 <= S.MinContentHeight() - 20, "the hint box reaches the foot row at the minimum height")
+    assertTrue(bottom + 8 <= S.BaseContentHeight() - 20, "the hint box reaches the foot row at the minimum height")
 end)
 
 test("hud hint: the box resizes when the hint's text changes, and not on every redraw", function()

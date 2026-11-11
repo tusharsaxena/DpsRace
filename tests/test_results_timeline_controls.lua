@@ -100,6 +100,7 @@ end
 
 test("timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them", function()
     local i, u = opened()
+    i.NS.SetByPath("results.timelineMarks", "tick")   -- icons are the default (test_results_timeline_marks)
     local tip = besideTip(i, u, 1200)
     local d = i.TL.Icons()[1]
     rawset(d.frame, "GetTop", function() return 700 end)
@@ -120,6 +121,7 @@ end)
 
 test("timeline controls: against the screen's right edge the tooltips open left of the window instead", function()
     local i, u = opened()
+    i.NS.SetByPath("results.timelineMarks", "tick")
     local tip = besideTip(i, u, 1800)
     local d = i.TL.Icons()[1]
     d.frame:GetScript("OnEnter")(d.frame)

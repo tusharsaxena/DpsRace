@@ -10,12 +10,15 @@ local PAGE = "hud"
 
 -- ── Race HUD ────────────────────────────────────────────────────────────────────────────────────
 -- The page's first tab (spec §6.3; on General until 2026-10-25), holding every HUD behavior: Display
--- (show the HUD on arm only or always, and its clock), then Live breakdown (what the running HUD lists
--- and how often it reads the meter; the Live breakdown page folded in here, item 020), then Chart and
--- pace (#2, #3). The HUD's scale
+-- (show the HUD on arm only or always, and its clock), then Size (the v0.2 sizing model: Window size,
+-- Spell bars and Grow, which only Auto-grow reads, so it is drawn disabled in Fixed: disabledIf), then
+-- Live breakdown (what the running HUD lists and how often it reads the meter; the Live breakdown page
+-- folded in here, item 020), then Chart and pace (#2, #3). The HUD's scale
 -- and lock are General's Master controls rows: the HUD is the addon's positionable display.
 local SHOW_MODES = { onArm = true, always = true }
 local CLOCK_MODES = { both = true, left = true, elapsed = true }
+local SIZE_MODES = { fixed = true, auto = true }
+local GROWS = { down = true, up = true }
 
 NS.RegisterSchemaRows({
     { path = "hud.showMode", page = PAGE, group = L["Race HUD"], subgroup = L["Display"], type = "string",
@@ -48,17 +51,44 @@ NS.RegisterSchemaRows({
       onChange = function() NS.AutoArm.Sync() end },
 })
 
--- The live breakdown: each row is read when the HUD draws or reads, so a redraw is the whole
--- reaction: the next live read takes the new rate, and the rows and figures follow at once. Line 1 is
--- what the spell rows show, line 2 the live figure and how often it refreshes.
-local LIVE = NS.defaults.profile.live
+-- The size (the v0.2 sizing model): read on every redraw; a new mode or edge also re-anchors an
+-- auto-grow window on the edge that stays put (Hud.SizeModeChanged).
+local HUD = NS.defaults.profile.hud
 local function redraw() NS.Hud.Refresh() end
+local function resized() NS.Hud.SizeModeChanged() end
 
 NS.RegisterSchemaRows({
-    { path = "live.rows", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "number",
-      min = 0, max = 15, step = 1, label = L["Spell rows shown"], default = LIVE.rows,
-      tooltip = L["How many spells the running HUD lists, in the order Blizzard's meter gives them. 0 lists every spell: as many as fit the window show, and the mouse wheel scrolls through the rest."],
+    { path = "hud.sizeMode", page = PAGE, group = L["Race HUD"], subgroup = L["Size"], type = "string",
+      label = L["Window size"], default = HUD.sizeMode,
+      values = {
+          { value = "fixed", text = L["Fixed: drag the corner to set the rows"] },
+          { value = "auto", text = L["Auto-grow with the rows"] },
+      },
+      validate = function(v) return SIZE_MODES[v] == true end,
+      tooltip = L["Fixed: the HUD keeps one height, room for Spell rows shown, and dragging its bottom-right corner sets its width and that count. Auto-grow: it grows with the spell rows up to Spell rows shown, then scrolls. Either way the mouse wheel scrolls through spells past the rows."],
+      onChange = resized },
+    { path = "hud.bars", page = PAGE, group = L["Race HUD"], subgroup = L["Size"], type = "number",
+      min = NS.Hud.MIN_BARS, max = NS.Hud.MAX_BARS, step = 1, label = L["Spell rows shown"], default = HUD.bars,
+      tooltip = L["How many spell rows the HUD shows, live and on the result card, in the order Blizzard's meter gives them while the race runs. More spells than this scroll with the mouse wheel."],
       onChange = redraw },
+    { path = "hud.grow", page = PAGE, group = L["Race HUD"], subgroup = L["Size"], type = "string",
+      label = L["Grow"], default = HUD.grow, startsLine = true,
+      values = {
+          { value = "down", text = L["Down: the top stays put"] },
+          { value = "up", text = L["Up: the bottom stays put"] },
+      },
+      validate = function(v) return GROWS[v] == true end,
+      disabledIf = function() return NS.GetSetting("hud.sizeMode") ~= "auto" end,
+      tooltip = L["Which way an Auto-grow HUD grows as rows arrive: down keeps its top in place, up keeps its bottom. Needs Window size Auto-grow."],
+      onChange = resized },
+})
+
+-- The live breakdown: each row is read when the HUD draws or reads, so a redraw is the whole
+-- reaction: the next live read takes the new rate, and the figures follow at once. Line 1 is the
+-- spell rows' icons, line 2 the live figure and how often it refreshes.
+local LIVE = NS.defaults.profile.live
+
+NS.RegisterSchemaRows({
     { path = "live.icons", page = PAGE, group = L["Race HUD"], subgroup = L["Live breakdown"], type = "bool",
       label = L["Show spell icons"], default = LIVE.icons,
       tooltip = L["Draw each spell's icon on the HUD's rows."],
@@ -152,7 +182,7 @@ append(H.BarGroup({
     extra = { {
         path = "appearance.bars.rowHeight", type = "number", min = 12, max = 30, step = 1,
         label = L["Row height"], default = AD.bars.rowHeight, startsLine = true,
-        tooltip = L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows fit fewer spells in the same window."],
+        tooltip = L["The height of each spell row, in pixels, on the HUD and in the Results window's breakdown. Taller rows make a Fixed HUD taller for the same Spell rows shown."],
     } },
 }))
 append(fontBlock("spellText", L["Spell text"], 500, nil, true, true))
@@ -171,7 +201,7 @@ append(H.BarGroup({
     extra = { {
         path = "appearance.chart.height", type = "number", min = 40, max = 160, step = 2,
         label = L["Chart height"], default = AD.chart.height, startsLine = true,
-        tooltip = L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart leaves fewer spell rows in the same window; when even three rows would not fit, the chart steps aside."],
+        tooltip = L["The height of the damage chart's plot, in pixels, on the HUD and in the Results window. A taller chart makes a Fixed HUD taller for the same Spell rows shown."],
     }, {
         path = "appearance.chart.columnGap", type = "number", min = 0, max = 3, step = 1,
         label = L["Column gap"], default = AD.chart.columnGap,

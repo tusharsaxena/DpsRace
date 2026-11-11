@@ -236,3 +236,18 @@ Each needs an in-game probe, recorded with the build, before any section of this
 <!-- END VENDORED -->
 
 ## DpsRace-specific quirks
+
+**The client number formatter may draw a fractional value raw.** *Client:* Retail. *Measured:* not
+measured by probe; inferred from Combat Trail's owner report, 2026-11-10 (its live DPS tile drew
+`77.142857...` and `30.1904761...`, a raw per-second rate with its "K" lost to the tile's ellipsis).
+The C_StringUtil formatter's ladder truncates through the integer significand, so the integer check
+(2763000 -> "2.76M") passes while a fractional input can come back unfloored. DPS Race's live DPS
+comes from the Current-type source, which has been served by a rung that renders cleanly, but the
+same code drew a plain fraction (the result card's DPS) through the client formatter first. *Cost:*
+a figure with a long tail of decimals. *Do:* `modules/Format.lua` checks each constructor
+(`Compat.NumberFormatterCandidates`) against a fractional value too (30190.4761904 -> "30.1K") and
+uses the first that passes. A plain number never reaches the client formatter; Lua abbreviates and
+truncates it. A secret with no trusted formatter goes to `AbbreviateNumbers` in pcall, and the raw
+secret is the last resort. An answer to a secret may itself be a secret string, so its presence is
+asked of `Secrets.IsPresent`, not compared to nil. `/dr debug` writes which path served the numbers.
+Settle it with smoke C18's probe. *Source:* this repo, `modules/Format.lua` header; Combat Trail plan v0.2 Tasks A5, E3 and F1b.

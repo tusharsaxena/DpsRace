@@ -261,6 +261,7 @@ test("skin fonts: v11 moves a stored Ka0s Friz Quadrata TT to Ka0s Ubuntu in eve
     assertEqual(a.skin.font, "Ka0s Ubuntu", "the skin override")
     assertEqual(b.resultsTable.barText.font, "Ka0s Ubuntu", "another profile's Results face")
     assertEqual(a.appearance.elapsed.font, "Friz Quadrata TT", "Blizzard's own Friz stays")
-    assertEqual(_G.DpsRaceDB.global.schemaVersion, 11)
+    assertEqual(_G.DpsRaceDB.global.schemaVersion, i.NS.SCHEMA_VERSION, "the run goes on to the last step")
+    assertTrue(i.NS.SCHEMA_VERSION >= 11)
     assertEqual(i.NS.RetireFonts(a), 0, "a second pass moves nothing")
 end)

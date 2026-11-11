@@ -36,7 +36,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Casts` | `modules/Casts.lua`: at the result, how many casts the race kept and how many were dropped for a sealed spell ID (#14) |
 | `Timeline` | `modules/Results_Timeline.lua`: the ability timeline window built, and each draw's ability count (#14) |
 | `Gear` | `modules/Results_Gear.lua`: the gear view window built, and each draw's slot count (#17) |
-| `Format` | `modules/Format.lua`: the client's number formatter refused, so numbers fall back to Lua |
+| `Format` | `modules/Format.lua`: a client formatter constructor passed over and why (it built nothing, refused the breakpoints or drew a check value wrongly), and which path served the numbers (the client formatter by name, Lua for a plain number, `AbbreviateNumbers`, or the raw value), written when it changes |
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
 | `Countdown` | `modules/Countdown.lua`: the center numbers' frame built (with the digit art or the font fallback), and a pop animation the client refused |
 | `AutoArm` | `modules/AutoArm.lua`: a dummy session beginning and ending, each auto-arm (or its refusal, with the reason) and each cancel when the target moves off the dummies (#16) |
@@ -88,7 +88,7 @@ locked=<bool>` (the body on screen, the event set the HUD's frame holds, whether
 rows=<n> selected=<id|none>` (the tab, whether the detail sits beside the list, the rows the tab
 shows (on Insights, the runs its filters pass), the run the detail shows). The HUD's trace lines carry the `Hud` tag (the window built, each
 race transition it heard); the Results window's the `Results` tag (the window and each tab built, the talent tree step-aside);
-`Format` says when the client's formatter is refused.
+`Format` names each formatter constructor it passed over and the path that served the numbers.
 
 ### Caps
 

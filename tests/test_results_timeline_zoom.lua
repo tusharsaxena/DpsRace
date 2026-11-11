@@ -153,8 +153,8 @@ test("timeline zoom: zoomed in, the strips and the lanes widen together and the 
         if d.side == "a" then assertEqual(d.x, byT[d.cast.t], "the icon over its tick") end
     end
     -- The layers are the zoomed axis's width, the clips the lanes'.
-    assertEqual(u.marks.__width, zoomW)
-    assertEqual(u.lanesClip.__width, laneW)
+    assertEqual(u.marks.__width, zoomW + 2 * TL.CLIP_PAD, "padded as the strips' (DpsRace#21)")
+    assertEqual(u.lanesClip.__width, laneW + 2 * TL.CLIP_PAD)
     assertEqual(u.castsLayer.__width, zoomW + 2 * TL.CLIP_PAD)
     assertEqual(u.castsClip.__width, laneW + 2 * TL.CLIP_PAD)
     assertEqual(u.axisLayer.__width, zoomW)
@@ -258,7 +258,7 @@ test("timeline zoom: zoomed in, a drag of the grip keeps the view's left edge an
     assertEqual(mark.x, laneX + TL.MarkX(mark.cast.t, 60, 4 * laneW), "each tick along the zoomed axis")
     local icon = TL.Icons()[1]
     assertEqual(icon.x, laneX + TL.MarkX(icon.cast.t, 60, 4 * laneW))
-    assertEqual(u.marks.__width, 4 * laneW, "the layers stretched with the lanes")
+    assertEqual(u.marks.__width, 4 * laneW + 2 * TL.CLIP_PAD, "the layers stretched with the lanes")
     assertEqual(last(u.axis[2])[4], TL.MarkX(u.ticks[2], 60, 4 * laneW), "the axis labels followed")
     u.frame.resizeGrip:__fire("OnMouseUp")
 end)

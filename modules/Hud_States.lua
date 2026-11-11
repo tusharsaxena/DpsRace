@@ -1,15 +1,25 @@
 local _, NS = ...
 -- modules/Hud_States.lua — the Race HUD's six bodies (spec §6.1, mockup screens 02-07): idle, armed,
 -- running, stop, waiting and result. Each is built on first show into the HUD's content frame and
--- answers Update(view) (and the running body SetLive(live, rows, icons)); modules/Hud.lua owns the
+-- answers Update(view) (and the running body SetLive(live, bars, icons)); modules/Hud.lua owns the
 -- shell, decides which body shows and builds the view.
 --
--- LAYOUT FROM CONFIG. Every position is a constant offset or an anchor; the only size a body uses is
--- the one Layout(width, height) hands it, which modules/Hud.lua computes from the stored window size.
--- No body reads the size or position of anything that has displayed a meter value. The spell rows
--- are capped to what fits between a body's fixed top and bottom at that height (RowCapacity), and
--- States.MinContentHeight() is the tallest body's fixed stack, which sets the window's minimum. The chip strips measure
--- their own text (GetStringWidth on a label that only ever holds plain copy), never a value.
+-- LAYOUT FROM CONFIG. Every position is a constant offset or an anchor; the only width a body uses is
+-- the one Layout(width, height) hands it, which modules/Hud.lua computes from the stored window width.
+-- No body reads the size or position of anything that has displayed a meter value. The chip strips
+-- measure their own text (GetStringWidth on a label that only ever holds plain copy), never a value.
+--
+-- THE ROWS' WINDOW (the v0.2 sizing model, Combat Trail's plan decision D9). The view carries `bars`
+-- (`hud.bars`, or the grip's count while it is dragged) and, in the fixed size mode, `fitH`: the
+-- content's height. The running body and the result card show `bars` spell rows, fewer where fitH
+-- leaves no room for them under the stack (the card's chips on a third line), and the wheel scrolls
+-- the rest in both modes: the offset is clamped to the spells past the window (States.Window) and the
+-- count names them ("1-5 of 12"). Each body answers `needH`, the height its stack takes with the rows
+-- it drew, which an auto-grow window is sized from. States.FixedContentHeight is the content a fixed
+-- window reserves, from the configuration alone: the tallest of the idle body (BaseContentHeight) and
+-- the two row bodies with every part their settings may show (RowsChrome) over `bars` rows, so the
+-- window never moves with the race. Every count is plain (the `#` of the addon's own spell lists) and
+-- every height config.
 --
 -- A body's buttons call NS.Hud.Act.* at CALL time, so the act is the shell's and a test may drive it.
 
@@ -115,8 +125,9 @@ States.BEST_CAPTION_H, States.BEST_CARD_H = BEST_CAPTION_H, BEST_CARD_H
 -- The running body's rows sit between the KPIs and the caption over Cancel.
 local RUNNING_ROWS_TOP = 52 + KPI_HEIGHT + GAP
 local RUNNING_ROWS_BOTTOM = BUTTON_HEIGHT + 22
--- The fewest spell rows any window size may leave a body (the minimum height is set from it).
-local MIN_ROWS = 3
+-- The fewest spell rows the damage chart may leave a body before it steps aside: Hud.MIN_BARS, the
+-- fewest a window shows (3 before the v0.2 sizing model, whose bars run 1-15).
+local MIN_ROWS = 1
 -- THE HEADINGS (Round C, 2026-10-25): *Damage profile* over the pace bar and the plot, and *Spell
 -- breakdown* over the rows, in the Results detail's heading role (FONT.SECTION on SECTION_H). The
 -- clear space above each is the shared SECTION_GAP, less the GAP the block above already leaves.
@@ -527,11 +538,41 @@ function States.RowCapacity(height)
     return math.max(0, math.floor((height + B.ROW_GAP) / B.Pitch()))
 end
 
--- `wanted` rows, or fewer: what fits between `top` and `bottom` in the height Layout handed the body.
+--- The height `n` spell rows take: n at the breakdown's pitch, the last without its gap; 0 for none.
+--- @param n number
+--- @return number
+function States.RowsHeight(n)
+    local B = NS.HudBreakdown
+    if not n or n <= 0 then return 0 end
+    return n * B.Pitch() - B.ROW_GAP
+end
+
+--- The rows' window over `total` spells: at most `cap` drawn, from `offset` clamped to the spells past
+--- them. Answers the rows to draw and the clamped offset. Plain counts only.
+--- @param total number
+--- @param cap number
+--- @param offset number|nil
+--- @return number drawn, number offset
+function States.Window(total, cap, offset)
+    cap = math.max(0, cap or 0)
+    local maxOffset = math.max(0, total - cap)
+    offset = math.max(0, math.min(math.floor(offset or 0), maxOffset))
+    return math.min(cap, total - offset), offset
+end
+
+--- The rows' count: which of `total` show while the wheel has more ("1-5 of 12"), else `cap` rows.
+--- @return string
+function States.CountText(total, cap, offset, drawn)
+    if total <= cap or drawn < 1 then return L["%d rows"]:format(cap) end
+    return L["%d-%d of %d"]:format(offset + 1, offset + drawn, total)
+end
+
+-- `wanted` rows (the view's bars), or fewer: what fits between `top` and `bottom` in a fixed window's
+-- content height (body.fitH); an auto-grow window has none, and grows to take them.
 local function rowsFor(body, top, bottom, wanted)
     wanted = wanted or 0
-    if type(body.height) ~= "number" then return wanted end
-    return math.min(wanted, States.RowCapacity(body.height - top - bottom))
+    if type(body.fitH) ~= "number" then return wanted end
+    return math.min(wanted, States.RowCapacity(body.fitH - top - bottom))
 end
 
 local Builders = {}
@@ -712,6 +753,24 @@ local function kpiTop(both, elapsedSize, leftSize, singleSize)
     return 12 + math.floor(singleSize * SINGLE_SCALE + 0.5)
 end
 
+-- The clocks' block and the KPIs' height for the clock mode, from the HUD Appearance sizes alone.
+local function runningTop(A, mode)
+    local both = mode ~= "left" and mode ~= "elapsed"
+    local ef, lf, ff = A.Font("elapsed"), A.Font("left"), A.Font("figures")
+    local single = mode == "elapsed" and ef or lf
+    return kpiTop(both, ef.size, lf.size, single.size), math.max(KPI_HEIGHT, ff.size + 26)
+end
+
+--- The running body's stack top under its KPIs for the clock mode (body.kpiBottom), config only.
+--- @param mode string|nil  `hud.clock`
+--- @return number
+function States.RunningTop(mode)
+    local A = NS.HudAppearance
+    if not A then return RUNNING_ROWS_TOP end
+    local top, kpiH = runningTop(A, mode)
+    return top + kpiH + GAP
+end
+
 local function placeKpi(k, f, y, h, left)
     k.frame:ClearAllPoints()
     k.frame:SetHeight(h)
@@ -728,7 +787,6 @@ end
 local function styleRunning(body, mode)
     local A = NS.HudAppearance
     if not A then return end
-    local both = mode ~= "left" and mode ~= "elapsed"
     local key = A.stamp .. ":" .. tostring(mode)
     if body.styled == key then return end
     body.styled = key
@@ -740,17 +798,17 @@ local function styleRunning(body, mode)
     A.ApplyFont(w.clock, single, SINGLE_SCALE)
     A.ApplyFont(w.damage.value, ff)
     A.ApplyFont(w.dps.value, ff)
-    local top = kpiTop(both, ef.size, lf.size, single.size)
-    local kpiH = math.max(KPI_HEIGHT, ff.size + 26)
+    local top, kpiH = runningTop(A, mode)
     placeKpi(w.damage, f, -top, kpiH, true)
     placeKpi(w.dps, f, -top, kpiH, false)
     body.kpiBottom = top + kpiH + GAP
 end
 
--- Whether `top` and `bottom` leave room for MIN_ROWS spell rows in the height Layout handed the body.
+-- Whether `top` and `bottom` leave room for MIN_ROWS spell rows in a fixed window's content height
+-- (an auto-grow window always has room: it grows).
 local function roomForRows(body, top, bottom)
-    if type(body.height) ~= "number" then return true end
-    return States.RowCapacity(body.height - top - bottom) >= MIN_ROWS
+    if type(body.fitH) ~= "number" then return true end
+    return States.RowCapacity(body.fitH - top - bottom) >= MIN_ROWS
 end
 
 -- The pace bar's line under the profile heading, or 0 without one.
@@ -798,12 +856,12 @@ end
 local function restack(body, top, paceH, chart, plotH)
     local last = body.placed
     if last and last.top == top and last.paceH == paceH and last.chart == chart and last.plotH == plotH
-        and last.width == body.width and last.height == body.height then
+        and last.width == body.width then
         return false
     end
     last = last or {}
     last.top, last.paceH, last.chart, last.plotH = top, paceH, chart, plotH
-    last.width, last.height = body.width, body.height
+    last.width = body.width
     body.placed = last
     return true
 end
@@ -843,40 +901,33 @@ local function drawExtras(body, live)
     body.w.chart:Draw(view, scale)
 end
 
--- The running body's spell rows. live.rows 0 is every spell (the owner's call, 2026-10-24): as many as
--- fit are drawn and the wheel moves the window over the rest, MultiMeters' model (a plain offset from
--- a wheel event, the slice drawn from it; no ScrollFrame and nothing measured). The count is the
--- length of the addon's own copy of the spell list (Meter.ReadLive), a plain number.
+-- The running body's spell rows: the view's bars of them (fewer where a fixed window has no room),
+-- and the wheel moves the window over the rest, MultiMeters' model (a plain offset from a wheel event,
+-- the slice drawn from it; no ScrollFrame and nothing measured). The count is the length of the
+-- addon's own copy of the spell list (Meter.ReadLive), a plain number.
 local function liveTotal(body)
     local live = body.live
     if type(live) ~= "table" or type(live.spells) ~= "table" then return 0 end
     return #live.spells
 end
 
-local function liveCap(body, rows)
-    local top = body.rowsTop or RUNNING_ROWS_TOP
-    if rows ~= 0 then return rowsFor(body, top, RUNNING_ROWS_BOTTOM, rows) end
-    local total = liveTotal(body)
-    if type(body.height) ~= "number" then return total end
-    return math.min(total, States.RowCapacity(body.height - top - RUNNING_ROWS_BOTTOM))
+local function liveCap(body)
+    return rowsFor(body, body.rowsTop or RUNNING_ROWS_TOP, RUNNING_ROWS_BOTTOM, body.bars)
 end
 
-local function liveCount(body, rows)
-    local cap = liveCap(body, rows)
-    if rows ~= 0 then return L["%d rows"]:format(cap) end
-    local total, offset = liveTotal(body), body.offset or 0
-    if total == 0 then return L["%d rows"]:format(0) end
-    return L["%d-%d of %d"]:format(offset + 1, offset + cap, total)
+-- The stack the running body takes with `drawn` rows: an auto-grow window's height (body.needH).
+local function liveNeed(body, drawn)
+    return (body.rowsTop or RUNNING_ROWS_TOP) + States.RowsHeight(drawn) + RUNNING_ROWS_BOTTOM
 end
 
 local function drawLive(body)
-    local rows, total = body.rowsSetting, liveTotal(body)
-    local cap = liveCap(body, rows)
-    local offset = 0
-    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    local total, cap = liveTotal(body), liveCap(body)
+    local n, offset = States.Window(total, cap, body.offset)
     body.offset = offset
-    body.w.list:ShowLive(body.live, cap, body.icons ~= false, offset)
-    body.w.count:SetText(liveCount(body, rows))
+    local drawn = 0
+    if type(body.live) == "table" then drawn = body.w.list:ShowLive(body.live, n, body.icons ~= false, offset) end
+    body.w.count:SetText(States.CountText(total, cap, offset, drawn))
+    body.needH = liveNeed(body, drawn)
 end
 
 -- A spell row's hover on the running and result bodies (DR-03, the owner's call, 2026-10-30): the
@@ -936,10 +987,10 @@ function Builders.running(parent)
     w.spellsTitle = Style.Text(f, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
     w.spellsTip = tipZone(f, w.spellsTitle, Tips.liveSpells)
-    -- live.rows 0: the wheel moves the drawn slice, a row a notch (up is toward the top).
+    -- More spells than rows: the wheel moves the drawn slice, a row a notch (up is toward the top).
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
-        if body.rowsSetting ~= 0 or type(body.live) ~= "table" then return end
+        if type(body.live) ~= "table" then return end
         body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
         drawLive(body)
     end)
@@ -959,6 +1010,8 @@ function Builders.running(parent)
 
     function body.Update(self, v)
         styleRunning(self, v.clockMode)
+        -- The view's bars and fitH first: placeExtras asks roomForRows of this view's height.
+        self.bars, self.fitH = v.bars, v.fitH
         placeExtras(self, v)
         self.paceShown = v.pace ~= nil
         if v.pace then self.w.pace:SetRange(v.pace.lo, v.pace.hi) end
@@ -966,22 +1019,29 @@ function Builders.running(parent)
         self.w.dps.frame:SetShown(v.showDps ~= false)
         -- A new race scrolls back to the top.
         if v.run ~= self.run then self.run, self.offset = v.run, 0 end
-        self.rowsSetting = v.rows
-        self.w.count:SetText(liveCount(self, v.rows))
+        local total, cap = liveTotal(self), liveCap(self)
+        local n, offset = States.Window(total, cap, self.offset)
+        self.w.count:SetText(States.CountText(total, cap, offset, n))
+        self.needH = liveNeed(self, n)
     end
 
-    --- The live figures: opaque values, straight to the formatter and the rows.
-    function body.SetLive(self, live, rows, icons)
+    --- The live figures: opaque values, straight to the formatter and the rows. `bars`, when given,
+    --- is the view's (Update carries it otherwise).
+    function body.SetLive(self, live, bars, icons)
         drawExtras(self, live)
+        if bars ~= nil then self.bars = bars end
         if type(live) ~= "table" then
             setKpi(self.w.damage, DASH)
             setKpi(self.w.dps, DASH)
             self.w.list:Clear()
+            self.live = nil
+            self.w.count:SetText(States.CountText(0, liveCap(self), 0, 0))
+            self.needH = liveNeed(self, 0)
             return
         end
         setKpi(self.w.damage, NS.Format.Number(live.total))
         if live.dps == nil then setKpi(self.w.dps, DASH) else setKpi(self.w.dps, NS.Format.Number(live.dps)) end
-        self.live, self.rowsSetting, self.icons = live, rows, icons
+        self.live, self.icons = live, icons
         drawLive(self)
     end
     return body
@@ -1290,10 +1350,12 @@ function Builders.result(parent)
     w.spellsTitle = Style.Text(f, FONT.SECTION)
     w.spellsTitle:SetText(L["Spell breakdown"])
     w.spellsTip = tipZone(f, w.spellsTitle, Tips.resultSpells)
-    -- live.rows 0: every spell, the wheel moving the slice, as on the running body.
+    -- Which rows show while the wheel has more ("1-5 of 12"), right on the heading's line.
+    w.count = Style.Text(f, FONT.CAPTION, nil, "RIGHT")
+    -- More spells than rows: the wheel moves the slice, as on the running body.
     w.rows:EnableMouseWheel(true)
     w.rows:SetScript("OnMouseWheel", function(_, delta)
-        if body.rowsSetting ~= 0 or not body.shownRun then return end
+        if not body.shownRun then return end
         body.offset = (body.offset or 0) + (delta > 0 and -1 or 1)
         body:DrawRows()
     end)
@@ -1313,31 +1375,39 @@ function Builders.result(parent)
         layoutRow(self.footer, self.frame, width)
     end
     function body.Update(self, v)
-        -- The chips first: the stack under them starts where they end.
+        -- The chips first: the stack under them starts where they end. The view's bars and fitH
+        -- before the stack too: resultExtras asks roomForRows of this view's height.
         self.w.chips:Set(States.ResultChips(v))
+        self.bars, self.fitH = v.bars, v.fitH
         Builders.resultExtras(self, v)
         local lost = resultKpis(self.w, v.run)
         self.w.lost:SetText(lost and L["Couldn't read the result"] or "")
         self.w.spellsTitle:SetShown(not lost)
         self.w.spellsTip:SetShown(not lost)
+        self.w.count:SetShown(not lost)
         if v.run ~= self.shownRun then self.offset = 0 end
-        self.shownRun, self.rowsSetting, self.icons = (not lost) and v.run or nil, v.rows, v.icons
-        if lost then self.w.list:Clear() else self:DrawRows() end
+        self.shownRun, self.icons = (not lost) and v.run or nil, v.icons
+        if lost then
+            self.w.list:Clear()
+            self.needH = nil
+        else
+            self:DrawRows()
+        end
         setEnabled(self.w.share, v.canShare == true)
     end
     function body.DrawRows(self) Builders.resultRows(self) end
     return body
 end
 
--- The result card's spell rows follow *Spell rows shown* (live.rows), as the live list does: that many
--- from the top, or with 0 every spell, as many as fit and the wheel over the rest (the owner's call,
--- 2026-10-24; the spec's top 5 is the fallback when the setting cannot answer).
+-- The result card's spell rows follow the view's bars, as the live list does: that many from the top
+-- (fewer where a fixed window's room under the chips holds fewer), the wheel over the rest. The
+-- spec's top 5 is the fallback when the view carries none.
 States.RESULT_ROWS = 5
 
 -- The result card's pace bar (#3) and chart (#2), between the chips and the rows, under the Damage
 -- profile heading as on the running body, then the Spell breakdown heading. The pace bar is the run's
 -- plain final damage against the best before it (modules/Hud_Chart.lua ResultPace), the running bar's
--- widget, range and tick; it never steps aside, so MinContentHeight carries it. The chart is the run's
+-- widget, range and tick; it never steps aside, so RowsChrome reserves it. The chart is the run's
 -- in-session slices, scaled to its plain final damage; none for a run without slices, and it steps
 -- aside when it would leave fewer than MIN_ROWS rows. Every value here is plain (a stored run).
 function Builders.resultExtras(body, v)
@@ -1356,44 +1426,53 @@ function Builders.resultExtras(body, v)
     w.rows:ClearAllPoints()
     w.rows:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -body.rowsTop)
     w.rows:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, RESULT_ROWS_BOTTOM)
+    w.count:ClearAllPoints()
+    w.count:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, -body.rowsTop + 4)
     if on then w.chart:Draw(v.chart) end
 end
 
 function Builders.resultRows(body)
     local run = body.shownRun
     local spells = type(run) == "table" and type(run.spells) == "table" and run.spells or {}
-    local rows = tonumber(body.rowsSetting) or States.RESULT_ROWS
     local total = #spells
     local top = body.rowsTop or RESULT_ROWS_TOP
-    local cap
-    if rows == 0 then
-        cap = total
-        if type(body.height) == "number" then
-            cap = math.min(total, States.RowCapacity(body.height - top - RESULT_ROWS_BOTTOM))
-        end
-    else
-        cap = rowsFor(body, top, RESULT_ROWS_BOTTOM, rows)
-    end
-    local offset = 0
-    if rows == 0 then offset = math.max(0, math.min(body.offset or 0, total - cap)) end
+    local cap = rowsFor(body, top, RESULT_ROWS_BOTTOM, tonumber(body.bars) or States.RESULT_ROWS)
+    local n, offset = States.Window(total, cap, body.offset)
     body.offset = offset
-    body.w.list:ShowResult(run, cap, body.icons ~= false, offset)
+    local drawn = body.w.list:ShowResult(run, n, body.icons ~= false, offset)
+    body.w.count:SetText(total > cap and States.CountText(total, cap, offset, drawn) or "")
+    body.needH = top + States.RowsHeight(drawn) + RESULT_ROWS_BOTTOM
 end
 
---- The content height the tallest body's fixed stack needs: the idle body down to its links, and
---- the running and result bodies (each with its pace bar under the Damage profile heading, then the
---- Spell breakdown heading) with MIN_ROWS spell rows. modules/Hud.lua sets its minimum from it.
+--- The content height every body without spell rows fits in: the idle body down to its links, the
+--- tallest of them (the armed, Stop! and waiting screens sit inside it). The floor of every window.
 --- @return number
-function States.MinContentHeight()
-    local B = NS.HudBreakdown
-    local rows = MIN_ROWS * (B.ROW_HEIGHT + B.ROW_GAP) - B.ROW_GAP
-    local idle = IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
-    -- The pace bar never steps aside (the plot does), so the running and result minimums carry it
-    -- with its heading.
-    local stack = profileH(true, false, 0) + BREAKDOWN_H + rows
-    local running = RUNNING_ROWS_TOP + stack + RUNNING_ROWS_BOTTOM
-    local result = RESULT_ROWS_TOP + stack + RESULT_ROWS_BOTTOM
-    return math.max(idle, running, result)
+function States.BaseContentHeight()
+    return IDLE_ARM_Y + ARM_HEIGHT + 4 + REASON_HEIGHT + 4 + LINK_HEIGHT
+end
+
+--- The stack the two row bodies take around their spell rows, from the configuration alone: the
+--- tallest of the running body (its clocks and KPIs for `opts.mode`) and the result card (its chips
+--- on two lines), each with the Damage profile block for `opts.pace` and `opts.chart` (the settings,
+--- whether or not this race has a best or a chart) and the Spell breakdown heading.
+--- @param opts table  { mode = hud.clock, pace = boolean, chart = boolean }
+--- @return number
+function States.RowsChrome(opts)
+    opts = opts or {}
+    local profile = profileH(opts.pace == true, opts.chart == true, NS.HudChart.PlotHeight())
+    local running = States.RunningTop(opts.mode) + profile + BREAKDOWN_H + RUNNING_ROWS_BOTTOM
+    local result = RESULT_ROWS_TOP + profile + BREAKDOWN_H + RESULT_ROWS_BOTTOM
+    return math.max(running, result)
+end
+
+--- The content a fixed window reserves for `bars` spell rows (the shell adds its chrome): the row
+--- bodies' stack over the rows, never less than BaseContentHeight. The running body with a best, a
+--- chart and at least `bars` spells fills it exactly.
+--- @param bars number
+--- @param opts table  as RowsChrome's
+--- @return number
+function States.FixedContentHeight(bars, opts)
+    return math.max(States.BaseContentHeight(), States.RowsChrome(opts) + States.RowsHeight(bars))
 end
 
 --- Build one body into `parent`.

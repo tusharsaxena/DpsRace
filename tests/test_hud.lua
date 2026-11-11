@@ -200,12 +200,12 @@ end)
 test("hud: with no stored answer it falls back to defaults/Profile.lua, never a literal of its own", function()
     local f = hud()
     local D = f.NS.defaults.profile
-    D.race.defaultLength, D.live.hz, D.live.rows = 180, 6, 5
+    D.race.defaultLength, D.live.hz, D.hud.bars = 180, 6, 7
     f.NS.GetSetting = function() return nil end      -- a degraded load: the store cannot answer
     local v = f.Hud.View()
     assertEqual(v.length, 180, "a second default for race.defaultLength")
     assertEqual(v.hz, 6, "a second default for live.hz")
-    assertEqual(v.rows, 5, "a second default for live.rows")
+    assertEqual(v.bars, 7, "a second default for hud.bars")
 end)
 
 local CLEAVE = { guid = "Creature-0-1-2-3-243208-0001", name = "Cleave Training Dummy" }
@@ -266,6 +266,16 @@ test("hud: running render raises nothing with secret values", function()
     assertEqual(T.reveal(row.icon.__texture), 1000 + 29722)
 end)
 
+test("hud: a fractional secret live DPS draws the trusted formatter's text, never a raw decimal", function()
+    local Formatter = dofile(T.root .. "/tests/mock_formatter.lua")(T)
+    local f = hud{ mutate = function(m) Formatter.install(m, { abbreviated = "raw", numeric = "floor" }) end }
+    running(f, 30)
+    pump(f, 0.5)
+    local b = body(f)
+    assertEqual(b.w.dps.value.__text, "39.4K", "the raw-fraction formatter (39.4798K) was passed over")
+    assertEqual(b.w.damage.value.__text, "1.53M")
+end)
+
 test("hud: running body shows no percentage text", function()
     local f = hud()
     running(f, 30)
@@ -281,7 +291,7 @@ end)
 
 test("hud: live rows keep Blizzard's order and the configured count", function()
     local f = hud()
-    f.NS.db.profile.live.rows = 2
+    f.NS.db.profile.hud.bars = 2
     assertTrue(f:arm(30))
     f.M.__inCombat = true
     f.meter.SetSession(25, { damage = 900, dps = 30, duration = 5, spells = {
@@ -295,7 +305,7 @@ test("hud: live rows keep Blizzard's order and the configured count", function()
     assertEqual(#rows, 2)
     assertEqual(T.reveal(rows[1].name.__text), "Immolate", "unsorted: the order the meter gave")
     assertEqual(T.reveal(rows[2].name.__text), "Incinerate")
-    assertEqual(body(f).w.count.__text, "2 rows")
+    assertEqual(body(f).w.count.__text, "1-2 of 3", "the third waits for the wheel")
 end)
 
 test("hud: a live read with no DPS figure shows a dash", function()

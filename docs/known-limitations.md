@@ -16,6 +16,11 @@ and the smoke row that measures it where one exists.
   or by Arm Race. Auto-show decides on a dummy event (a target change, a nameplate, the race's idle
   edge): when test mode closes the window it opened beside a dummy, the window comes back on the next
   such event, not on its own (smoke rows SM-DR-TA1 to SM-DR-TA8, SM-DR-TA24 to SM-DR-TA28).
+- **A scrolled live list moves under the pointer** (the v0.2 sizing model). The wheel's offset is a
+  plain row count over the meter's own order, which changes on every read while damage lands: a list
+  scrolled to rows 3-7 shows whichever spells are third to seventh now, not the ones the wheel
+  stopped on. The order is Blizzard's and secret, so nothing can pin a spell to its place; the result
+  card's list is sorted once and holds still (smoke row S6).
 - **The late-cast ignore list judges by spell ID, from a static hearthstone table** (#8,
   `modules/LateIgnore.lua`).
   - The hearthstone variants are a table per patch (`defaults/Hearthstones.lua`, built from the
@@ -103,6 +108,11 @@ and the smoke row that measures it where one exists.
 - **The chart and the pace bar compare by eye only** (#3). A secret cannot be compared, so neither
   says ahead or behind, and the pace is the best's *average* (its damage spread evenly over its
   length): the best has no stored curve, so an opener-heavy best looks easy early on.
+- **Close casts' icons overlap in a timeline lane** (DpsRace#21, `modules/Results_TimelineMarks.lua`). A
+  *By ability* lane is 16 px, so icons there never stack as the *Casts* strips' do: casts closer than an
+  icon overlap, and only the one on top takes the pointer. Which one is on top is not the cast order:
+  the icons are pooled siblings at one frame level, so the client picks. At 1x a filler cast every global cooldown
+  reads as a run of icons; zoom in to part them, or switch the lanes to *Ticks*.
 - **The compare's picked run lasts the session** (#7). *Compare With This Run* is view state, never
   stored: a `/reload` or login returns every run's compare to its board's best (the runner-up for
   the best itself). A run alone on its board has nothing to compare with until one is picked.

@@ -169,7 +169,7 @@ annotated (toc-file-§5).
 | `locales/` | `enUS.lua`, the canonical locale (`NS.L`, key-is-the-string fallback) |
 | `core/` | the namespace, constants, session state, the twelve `*Setup.lua` descriptors (`SkinSetup.lua` the skin seam), the message-bus names, AceAddon registration and AceDB |
 | `defaults/` | `Profile.lua`, the only place a default is hardcoded; `Dummies.lua`, the training-dummy catalog (`Lookup` answers it with the profile's own list, `CategoryOf` a stored run's category now); `Hearthstones.lua`, every hearthstone variant's spell ID (#8) |
-| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud_Best` (the idle body's Your best card), `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline` and `Results_TimelineData` (the ability timeline window and its pure half), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass and the tab, drawn through `LibKa0s-Charts-1.0`), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
+| `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud_Best` (the idle body's Your best card), `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline`, `Results_TimelineData` and `Results_TimelineMarks` (the ability timeline window, its pure half and its cast marks), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass and the tab, drawn through `LibKa0s-Charts-1.0`), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
 
@@ -355,7 +355,7 @@ the library's corner grip through one pattern, `modules/Sizing.lua`: while the g
 change runs the window's cheap layout (re-anchor and resize what the new size needs, nothing rebound
 or redrawn) at most once a frame, a second change in one frame waiting for a single
 `C_Timer.After(0)` that only exists mid-drag; the release runs the window's full layout once and
-stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before; the timeline stores none (UT-P14: it opens over the Results window at that window's size every time). What runs per frame, before and
+stores the size, and so does a hide while the grip is held (no mouse-up follows one). The minimums and the stored sizes are as before; the timeline stores none (UT-P14: it opens over the Results window at that window's size every time). The HUD follows the v0.2 sizing model (Combat Trail's plan decisions D2 and D9; `docs/schema.md` `hud.sizeMode`): its height is derived, never stored. In the fixed mode (the default) it is the chrome plus `HudStates.FixedContentHeight(hud.bars)`, reserved from the configuration alone, so the window is the same whatever the race holds and whichever body shows; its grip (fixed mode only, hidden while locked) lays the body on screen out and draws it each frame at the dragged size with the rows that size holds (no meter read), and the release stores the width and the whole rows the height holds (`hud.bars`, 1-15) and snaps the window to them. In the auto-grow mode there is no grip and the height is the body's stack, growing with the rows up to `hud.bars`, its `hud.grow` edge held by the stored anchor. In both the wheel scrolls through spells past the rows. What runs per frame, before and
 after: [performance.md](performance.md#window-sizing). A size change can also arrive in the middle of a
 draw: the first row an open shows can resolve the window's rect and run its OnSizeChanged right there,
 a full layout nested in the list's row loop. The Results lists' `Table:Bind` counts itself and stops
@@ -503,7 +503,9 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
 
 **What stays as it is** (skinning's rungs 3 and 4): the data hues (class, spec, category, length and
 quality colors, the meaning colors of a gain or a late cast, which `Style.Hue` keeps on the body face
-under every skin), the countdown's BigGold digit art and its glow, the game's menus, StaticPopups,
+under every skin; the ability timeline's run colors and corridors, and its caster colors `PLAYER_LINE`
+and `PET_LINE`, DpsRace#21: a cast icon there sits on a 1 px edge in its caster's color, not the skin's
+icon outline, because the color is the information, skinning-§9), the countdown's BigGold digit art and its glow, the game's menus, StaticPopups,
 raid warning and tooltip frames (only the lines this addon writes into a tooltip take the skin), chat
 output (X7) and inline markup in help text (X9).
 
@@ -548,7 +550,10 @@ Prototype.
   off a breakdown row (spec §6.1). The HUD's live path hands a live value to three native seams and
   nothing else: a bar's `SetMinMaxValues`/`SetValue`, the client's number formatter
   (`modules/Format.lua`, the one instance) and `C_Spell`'s name and icon lookups; the one question it
-  asks of one is `== nil`. A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
+  asks of one is `== nil`. The formatter's answer to a secret may itself be a secret string, and
+  `modules/Format.lua` asks its presence of `Secrets.IsPresent` (secret first, then `type()`) instead
+  of comparing it to nil: stricter than the contract needs, since a non-boolean secret may be tested
+  for nil-ness, and the same as Combat Trail's (its v0.2 F1a, ported in F1b). A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
   its spell's ID, possibly secret, to `ResultsTable.SpellTip`, which tests it for nil and passes it to
   the client's `GameTooltip:SetSpellByID` (pcall'd; the name through `C_Spell` when the client
   refuses), adds no line of a live value, and reads its placement (the row's top, the window's edge,
@@ -561,8 +566,12 @@ Prototype.
   the best before it, and so is the chart after the race, the best's diagonal and the shared max
   included), and the columns' edges are plain config math (whole pixels from the plot's
   width and the *Column gap* setting). The HUD window is a plain non-secure frame, so it opens and redraws in
-  combat (standalone-windows); its only geometry read is its own anchor on drag stop, and the shell
-  never displays a value.
+  combat (standalone-windows); its only geometry reads are the shell frame's own: its anchor on drag
+  stop, and its edges (`GetLeft`, `GetTop`, `GetBottom`, each through a pcall and
+  `NS.Secrets.PlainNumber`) when it is re-anchored on its grow edge (`normalizeAnchor`, the v0.2
+  sizing model). The shell never displays a value, and its sizes come from the configuration and from
+  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured, and the
+  rows' count and scroll are the `#` of the addon's own spell lists.
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
   it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store
   (or, in test mode and the sim, `modules/MockRuns.lua`'s plain sample records),
@@ -689,7 +698,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | `profiles.md` | Present | A Profiles page ships in the options UI (`settings/Profiles.lua`) |
 | `debug.md` | Present | The diagnostics report ships (always fired) |
 | [`midnight-quirks.md`](midnight-quirks.md) | Present | Always (documentation-§3): the vendored catalog block (client-quirks-§1), then the addon's own section, empty today |
-| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NewNumberFormatter`, `PopupEditBox`); the trigger is three or more |
+| [`compat-layer.md`](compat-layer.md) | Present | `core/Compat.lua` publishes four hand-written shims (`CanAccessTable`, `ChatSender`, `NumberFormatterCandidates`, `PopupEditBox`); the trigger is three or more |
 | `message-bus.md` | Not applicable | 6 messages in `NS.MSG` (the trigger is more than ten) |
 | [`known-limitations.md`](known-limitations.md) | Present | Known Limitations passed ~60 lines (2026-10-25); the hub keeps a summary |
 | `taint.md` | Not applicable | Taint Notes above is under ~60 lines |
@@ -720,18 +729,18 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: one test file,
-`tests/test_insights.lua` at 1225 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
+`tests/test_insights.lua` at 1268 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1198 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1164 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll` and `_controls`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1227
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1364 (the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
-`modules/Results_Runs.lua` at 1119 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
-`modules/Hud.lua` at 1114 (layout-§1; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
-`locales/enUS.lua` at 1176 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
+seven addon files, `modules/Results_Table.lua` at 1209 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1089 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31, and its cast marks to `modules/Results_TimelineMarks.lua`, DpsRace#21, 2026-11-10; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll`, `_controls` and `_marks`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1250
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1486, 14 under the cap (the Combat Trail parity pass's rows-driven sizing, CT v0.2 F1b, 2026-11-10, grew it in place; its next part goes to a new module, not this file; the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
+`modules/Results_Runs.lua` at 1116 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
+`modules/Hud.lua` at 1308 (layout-§1; the rows-driven sizing model's fit and pinning, CT v0.2 F1b, 2026-11-10; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
+`locales/enUS.lua` at 1232 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
 2026-10-28 passes their own (`AutoArm`, `Stats`, `Results_Gear`, `BestToast`, then `LateIgnore`, then `Results_InsightsData`,
-`Results_Insights` and a chart file since promoted to `LibKa0s-Charts-1.0`, then `DummyList`), rather than grow these. The
+`Results_Insights` and a chart file since promoted to `LibKa0s-Charts-1.0`, then `DummyList`), rather than grow these (the 2026-11-10 parity pass is the exception: it grew `Hud.lua` and `Hud_States.lua` in place). The
 2026-10-29 skinning rollout moved each file to the skin in place (most by a few lines; the timeline
 shed its hand-built opaque skin) and put its cases in new suites (`test_skinsetup`, `test_skin_literals`,
 `test_skin`, `test_skin_hud`, `test_skin_picker`) rather than in `test_hud` or `test_results`. On

@@ -362,17 +362,18 @@ test("hud: a title-bar control turns gold under the pointer and back at rest, a 
     assertTrue(is(u.lock, GOLD))
 end)
 
-test("hud: the minimum size still holds every body after the compact restyle", function()
+test("hud: the smallest window still holds every body after the compact restyle", function()
     local f = hud()
     f.NS.db.profile.windows.hud.width = 1
-    f.NS.db.profile.windows.hud.height = 1
+    f.NS.db.profile.hud.bars = f.Hud.MIN_BARS
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, f.Hud.MIN_HEIGHT)
+    assertEqual(f.Hud.Diagnose().height, f.Hud.FixedHeight())
+    assertEqual(ui(f).frame.__width, f.Hud.MIN_WIDTH, "a stored width under the minimum is not used")
     local States = f.NS.HudStates
-    local content = f.Hud.MIN_HEIGHT - CHROME
+    local content = f.Hud.FixedHeight() - CHROME
     assertTrue(content >= States.IDLE_ARM_Y + States.ARM_HEIGHT + 4 + 14 + 4 + 20, "idle")
-    assertTrue(content >= RUNNING_TOP + 3 * PITCH - 2 + RUNNING_BOTTOM, "running with three rows")
-    assertTrue(content >= RESULT_TOP + 3 * PITCH - 2 + RESULT_BOTTOM, "result with three rows")
+    assertTrue(content >= RUNNING_TOP + PITCH - 2 + RUNNING_BOTTOM, "running with one row")
+    assertTrue(content >= RESULT_TOP + PITCH - 2 + RESULT_BOTTOM, "result with one row")
 end)
 
 -- ── HUD Appearance (HUD > HUD Appearance, modules/Hud_Appearance.lua) ─────────────────────────────

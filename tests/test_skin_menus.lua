@@ -326,7 +326,10 @@ test("skin menus: the chart's, the compare's and the timeline's icons are edged"
     local u = assert(i.NS.ResultsTimeline.__ui(), "the timeline was never built")
     assertTrue(edged(i, function(f) return f:GetParent().laneA ~= nil end) ~= nil, "a timeline row")
     assertTrue(#u.icons > 0, "the timeline draws an icon")
-    assertTrue(edged(i, function(f) return f == u.icons[1].frame end) ~= nil, "a timeline cast")
+    -- A cast icon's edge is its caster's color (DpsRace#21), a meaning color: not the skin's outline.
+    assertTrue(edged(i, function(f) return f == u.icons[1].frame end) == nil, "a timeline cast: its caster's edge")
+    local edge = u.icons[1].frame.edge.__colorTex
+    assertTrue(edge ~= nil and edge[3] == i.NS.ResultsTimeline.CasterColor(u.icons[1].cast.pet)[3], "the caster's color")
 end)
 
 test("skin menus: the title bar and the scroll bar read their size off the skin", function()

@@ -49,7 +49,9 @@ local STORED = {
     ["hud.showMode"]         = { "string", "onArm" },
     ["hud.clock"]            = { "string", "both" },
     ["hud.autoShow"]         = { "bool",   true },
-    ["live.rows"]            = { "number", 8,       0,    15,    1 },
+    ["hud.sizeMode"]         = { "string", "fixed" },
+    ["hud.bars"]             = { "number", 5,       1,    15,    1 },
+    ["hud.grow"]             = { "string", "down" },
     ["live.icons"]           = { "bool",   true },
     ["live.showDps"]         = { "bool",   true },
     ["live.hz"]              = { "number", 4,       2,    10,    1 },
@@ -68,6 +70,7 @@ local STORED = {
     ["race.restartGap"]      = { "number", 6,       3,    15,    1 },
     ["global.history.keepDays"] = { "number", 90,   0,    3650,  1 },
     ["share.talentsLink"]    = { "bool",   false },
+    ["results.timelineMarks"] = { "string", "icon" },
     ["toast.enabled"]        = { "bool",   true },
     ["toast.sound"]          = { "bool",   true },
     ["toast.soundKey"]       = { "string", "Default" },
@@ -302,15 +305,15 @@ test("settings: the Race page's rows, ranges and defaults", function()
     assertTrue(hint.min <= 15 and hint.max >= 15)
 end)
 
-test("settings: the live breakdown's rows 0 (all) ..15 and reads 2..10 per second, on HUD > Race HUD", function()
+test("settings: the spell rows 1..15 on HUD > Race HUD > Size, and reads 2..10 per second", function()
     local NS = T.NS
-    local rows = row(NS, "live.rows")
+    local rows = row(NS, "hud.bars")
     assertEqual(rows.page, "hud")
     assertEqual(rows.group, "Race HUD")
-    assertEqual(rows.subgroup, "Live breakdown")
-    assertEqual(rows.min, 0, "0 shows every spell")
+    assertEqual(rows.subgroup, "Size")
+    assertEqual(rows.min, 1, "one row at the least (0, every spell, retired with live.rows)")
     assertEqual(rows.max, 15)
-    assertEqual(rows.default, 8)
+    assertEqual(rows.default, 5)
     local hz = row(NS, "live.hz")
     assertEqual(hz.min, 2)
     assertEqual(hz.max, 10)
@@ -326,10 +329,10 @@ test("settings: a write out of range is refused and stores nothing", function()
     M.__resetPrinted()
     NS.Slash:OnSlash("set race.grace 9")
     assertEqual(NS.GetSetting("race.grace"), 5, "a slider value is clamped to its range by the CLI")
-    NS.Slash:OnSlash("set live.rows 40")
-    assertEqual(NS.GetSetting("live.rows"), 15)
-    NS.Slash:OnSlash("set live.rows -1")
-    assertEqual(NS.GetSetting("live.rows"), 0, "0 is every spell, the floor")
+    NS.Slash:OnSlash("set hud.bars 40")
+    assertEqual(NS.GetSetting("hud.bars"), 15)
+    NS.Slash:OnSlash("set hud.bars -1")
+    assertEqual(NS.GetSetting("hud.bars"), 1, "one row, the floor")
 end)
 
 test("settings: changing grace does not alter saved runs", function()
@@ -355,8 +358,8 @@ test("settings: a live breakdown change redraws the HUD", function()
     local refreshed = 0
     local real = NS.Hud.Refresh
     NS.Hud.Refresh = function() refreshed = refreshed + 1 return real() end
-    for _, write in ipairs({ { "live.rows", 5 }, { "live.icons", false }, { "live.showDps", false },
-                             { "live.hz", 8 } }) do
+    for _, write in ipairs({ { "hud.bars", 7 }, { "live.icons", false }, { "live.showDps", false },
+                             { "live.hz", 8 }, { "hud.sizeMode", "auto" }, { "hud.grow", "up" } }) do
         local before = refreshed
         assertTrue(NS.SetByPath(write[1], write[2]))
         assertTrue(refreshed > before, write[1] .. " did not redraw the HUD")
@@ -437,8 +440,8 @@ test("settings: the HUD page holds Race HUD then HUD Appearance; General holds M
     -- The skin rows' group is the library's Skin tab's key ("Appearance"), so the tab takes its place.
     assertEqual(tabsOf(NS, "general"), NS.Helpers.MASTER_GROUP .. "|Appearance",
         "Keybindings is a host tab, not a schema one")
-    assertEqual(#NS.SchemaForPage("hud"), 11 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1 + 2,
-        "the Race HUD tab's eleven rows and HUD Appearance's, with its five skin companions, two Background and Border sets, the text blocks' color and shadow companions and the chart background's")
+    assertEqual(#NS.SchemaForPage("hud"), 13 + 4 * 6 + 4 + 1 + 4 + 2 + 2 + 4 + 5 + 2 * (3 + 6) + 6 + 1 + 2,
+        "the Race HUD tab's thirteen rows and HUD Appearance's, with its five skin companions, two Background and Border sets, the text blocks' color and shadow companions and the chart background's")
 end)
 
 -- The tab's rows in drawn order: path, subgroup, label, and whether the row opens a new line.
@@ -452,13 +455,15 @@ local function tabRows(NS, page, group)
     return table.concat(out, "\n")
 end
 
-test("settings: HUD > Race HUD draws Display, then Live breakdown, in the pinned order", function()
+test("settings: HUD > Race HUD draws Display, then Size, then Live breakdown, in the pinned order", function()
     local NS = T.NS
     assertEqual(tabRows(NS, "hud", "Race HUD"), table.concat({
         "hud.showMode|Display|Show the race HUD|false",
         "hud.clock|Display|Race clock|false",
         "hud.autoShow|Display|Show near a training dummy|true",
-        "live.rows|Live breakdown|Spell rows shown|false",
+        "hud.sizeMode|Size|Window size|false",
+        "hud.bars|Size|Spell rows shown|false",
+        "hud.grow|Size|Grow|true",
         "live.icons|Live breakdown|Show spell icons|false",
         "live.showDps|Live breakdown|Show live DPS|true",
         "live.hz|Live breakdown|Live reads per second|false",

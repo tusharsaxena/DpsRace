@@ -273,19 +273,17 @@ test("pace: Show pace bar off, a shared session and a lost run hide the result c
         "no plain damage")
 end)
 
-test("pace: at the minimum height the result card keeps its pace bar and three rows; the chart steps aside", function()
+test("pace: at the fewest rows the result card keeps its pace bar, its chart and its one row", function()
     local f = hud()
-    f.NS.db.profile.windows.hud.height = f.Hud.MIN_HEIGHT
-    f.NS.db.profile.live.rows = 15
+    f.NS.db.profile.hud.bars = f.Hud.MIN_BARS
     seedBest(f, 1e12, 30)
     resolved(f)
     local b = body(f)
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar never steps aside")
-    assertFalse(b.w.chart.shown, "no room for the chart and three rows")
-    assertTrue(b.w.chart.title:IsShown(), "the Damage profile heading stays over the pace bar")
-    assertFalse(b.w.chart.plot:IsShown())
-    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 8) + BREAKDOWN)
-    assertTrue(b.w.list:Count() >= 3)
+    assertTrue(b.w.chart.shown, "the fixed window reserves the chart over one row")
+    assertTrue(b.w.chart.title:IsShown(), "the Damage profile heading over the pace bar")
+    assertEqual(b.rowsTop, RESULT_ROWS_TOP + (6 + 22 + 12 + 4 + 80 + 13 + 2 + 12 + 8) + BREAKDOWN)
+    assertEqual(b.w.list:Count(), 1)
 end)
 
 test("pace: the sim's result card shows the pace bar against the sample best, and honors the setting", function()

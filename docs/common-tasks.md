@@ -59,8 +59,9 @@ catalog is grown from the same captures:
 
 - Write `Builders.<key>(parent)` in `modules/Hud_States.lua` (a `newBody`, its widgets laid out
   from config, never from a geometry read) and its `:Update(v)` for the view `modules/Hud.lua`
-  hands it. If its fixed stack is taller than idle's, `MinContentHeight` must include it, and the HUD's
-  minimum height follows. Draw every label through `NS.Style.Text` in the font object for its role
+  hands it. If its fixed stack is taller than idle's, `BaseContentHeight` must include it, and every
+  window's floor follows; a body with spell rows answers `needH` (its stack with the rows drawn, an
+  auto-grow window's height) and its stack around the rows joins `RowsChrome` (a fixed window's). Draw every label through `NS.Style.Text` in the font object for its role
   (`modules/Style.lua`, spec §6 *Style*) and every button through `NS.HudStates.Button`; only a race
   clock keeps a face and size of its own. Give each main element a tooltip: its fixed words in
   `modules/Hud_Tips.lua`, on a frame through `AddTip` or over a label through `TipZone`, never a live

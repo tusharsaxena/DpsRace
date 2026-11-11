@@ -155,6 +155,8 @@ files["modules/Results_Usage.lua"] = { read_globals = { "GameTooltip", "C_Item" 
 files["modules/Results_Timeline.lua"] = {
     read_globals = { "IsShiftKeyDown", "IsControlKeyDown", "GetCursorPosition", "GameTooltip" },
 }
+-- Its cast marks (DpsRace#21): the Icons and Ticks words draw their own tooltips.
+files["modules/Results_TimelineMarks.lua"] = { read_globals = { "GameTooltip" } }
 
 -- The sample history (B5) dates its runs back from now.
 files["modules/MockRuns.lua"] = { read_globals = { "time" } }

@@ -72,9 +72,7 @@ local BREAKDOWN = 6 + 22
 local RUNNING_TOP, RUNNING_BOTTOM = 106 + BREAKDOWN, 42
 local RESULT_TOP, RESULT_BOTTOM = 80 + BREAKDOWN, 28   -- under one chip line (Chips:Bottom)
 
-local function fits(height, top, bottom)
-    return math.floor((height - CHROME - top - bottom + 2) / PITCH)
-end
+local function rowsH(n) return n > 0 and n * PITCH - 2 or 0 end
 
 local function session(n)
     local s = { damage = 9000000, dps = 300000, duration = 30, spells = {} }
@@ -82,12 +80,12 @@ local function session(n)
     return s
 end
 
-test("hud: the live rows stop above the caption and CANCEL at every window height", function()
-    for _, height in ipairs({ 0, 360, 460, 700 }) do
+-- The rows at each count of Spell rows shown (the v0.2 sizing model: the fixed window's height is
+-- derived from it); the scroll and the grip are tests/test_hud_sizing.lua's.
+test("hud: at every count of Spell rows shown the live rows stop above the caption and CANCEL", function()
+    for _, n in ipairs({ 1, 3, 8, 15 }) do
         local f = hud()
-        local h = math.max(height, f.Hud.MIN_HEIGHT)
-        f.NS.db.profile.windows.hud.height = h
-        f.NS.db.profile.live.rows = 15
+        f.NS.db.profile.hud.bars = n
         -- The rows alone: the chart's own share of the stack has its own case (Damage chart, below).
         f.NS.db.profile.live.chart = false
         f.Hud.Show()
@@ -95,53 +93,44 @@ test("hud: the live rows stop above the caption and CANCEL at every window heigh
         f.meter.SetSession(25, session(15))
         f.meter.SetSecret(true)
         pump(f, 0.5)
-        local want = math.min(15, fits(h, RUNNING_TOP, RUNNING_BOTTOM))
-        assertTrue(want >= 3, "the minimum height leaves room for " .. want .. " rows")
-        assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
-        assertEqual(body(f).w.count.__text, ("%d rows"):format(want))
+        local content = f.Hud.Diagnose().height - CHROME
+        assertTrue(content >= RUNNING_TOP + rowsH(n) + RUNNING_BOTTOM, n .. " rows fit the window")
+        assertEqual(body(f).w.list:Count(), n, "rows drawn at " .. n)
+        assertEqual(body(f).w.count.__text, n < 15 and ("1-%d of 15"):format(n) or "15 rows")
     end
 end)
 
-test("hud: live rows 0 shows every spell that fits and the wheel scrolls through the rest", function()
+test("hud: more spells than rows: the wheel scrolls through the rest", function()
     local f = hud()
-    local h = f.Hud.MIN_HEIGHT
-    f.NS.db.profile.windows.hud.height = h
-    f.NS.db.profile.live.rows = 0
     f.Hud.Show()
     running(f, 30)
     f.meter.SetSession(25, session(20))
     f.meter.SetSecret(true)
     pump(f, 0.5)
     local b = body(f)
-    local cap = fits(h, RUNNING_TOP, RUNNING_BOTTOM)
-    assertEqual(b.w.list:Count(), cap, "as many rows as fit")
-    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap))
+    assertEqual(b.w.list:Count(), 5, "the default five")
+    assertEqual(b.w.count.__text, "1-5 of 20")
     assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2001)))
     b.w.rows:__fire("OnMouseWheel", -1)       -- down: one row further
-    assertEqual(b.w.count.__text, ("2-%d of 20"):format(cap + 1))
+    assertEqual(b.w.count.__text, "2-6 of 20")
     for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", -1) end
-    assertEqual(b.w.count.__text, ("%d-20 of 20"):format(20 - cap + 1), "clamped at the end")
+    assertEqual(b.w.count.__text, "16-20 of 20", "clamped at the end")
     for _ = 1, 40 do b.w.rows:__fire("OnMouseWheel", 1) end
-    assertEqual(b.w.count.__text, ("1-%d of 20"):format(cap), "clamped at the top")
-    -- A set count never scrolls.
-    f.NS.db.profile.live.rows = 3
-    pump(f, 0.5)
-    b.w.rows:__fire("OnMouseWheel", -1)
-    assertEqual(b.w.count.__text, "3 rows")
+    assertEqual(b.w.count.__text, "1-5 of 20", "clamped at the top")
 end)
 
 test("hud: the default window size shows every default live row under the chart and the pace bar", function()
     local f = hud()
-    assertEqual(f.NS.defaults.profile.windows.hud.height, 573,
-        "screen 04's rows plus the headings, the chart (its icon row too, UT-P11) and the pace bar (#2, #3, Round C)")
-    assertEqual(f.NS.db.profile.live.rows, 8)
+    assertEqual(f.NS.db.profile.hud.bars, 5)
+    assertEqual(f.NS.db.profile.hud.sizeMode, "fixed")
     -- A best on the board, so the pace bar shows too: the tallest default stack.
     local best = f.NS.Recorder.NewRun(30)
     best.status, best.result = "complete", { damage = 9000000, dps = 300000 }
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 573)
+    assertEqual(f.Hud.Diagnose().height, 501,
+        "five rows plus the headings, the chart (its icon row too, UT-P11) and the pace bar (#2, #3, Round C)")
     running(f, 30)
     f.meter.SetSession(25, session(15))
     f.meter.SetSecret(true)
@@ -149,28 +138,26 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 8, "all 8 rows fit at 260x573")
+    assertEqual(b.w.list:Count(), 5, "all 5 rows fit at 260x501")
 end)
 
-test("hud: the result card's rows stop above its buttons at every window height", function()
-    for _, height in ipairs({ 0, 360 }) do
+test("hud: the result card's rows stop above its buttons at every count of Spell rows shown", function()
+    for _, n in ipairs({ 1, 5 }) do
         local f = hud()
-        local h = math.max(height, f.Hud.MIN_HEIGHT)
-        f.NS.db.profile.windows.hud.height = h
+        f.NS.db.profile.hud.bars = n
         local run = resolved(f)
         run.spells = {}
         for i = 1, 8 do run.spells[i] = { id = 2000 + i, dmg = 100000 - i, dps = 1 } end
         f.Hud.Refresh()
-        local want = math.min(f.NS.db.profile.live.rows, fits(h, RESULT_TOP, RESULT_BOTTOM))
-        assertTrue(want >= 3)
-        assertEqual(body(f).w.list:Count(), want, "rows drawn at height " .. h)
+        local content = f.Hud.Diagnose().height - CHROME
+        assertTrue(content >= RESULT_TOP + rowsH(n) + RESULT_BOTTOM)
+        assertEqual(body(f).w.list:Count(), n, "rows drawn at " .. n)
     end
 end)
 
-test("hud: the result card follows Spell rows shown; at 0 it lists every spell and scrolls", function()
+test("hud: the result card follows Spell rows shown and the wheel scrolls the rest", function()
     local f = hud()
-    f.NS.db.profile.windows.hud.height = 700
-    f.NS.db.profile.live.rows = 3
+    f.NS.db.profile.hud.bars = 3
     f.NS.db.profile.live.chart = false   -- the rows alone; the card's chart has its own case
     local run = resolved(f)
     run.spells = {}
@@ -178,35 +165,31 @@ test("hud: the result card follows Spell rows shown; at 0 it lists every spell a
     f.Hud.Refresh()
     local b = body(f)
     assertEqual(b.w.list:Count(), 3, "the set count")
-    f.NS.db.profile.live.rows = 0
-    f.Hud.Refresh()
-    local cap = fits(700, RESULT_TOP, RESULT_BOTTOM)
-    assertTrue(cap > 5 and cap < 40)
-    assertEqual(b.w.list:Count(), cap, "as many as fit, not the top 5")
+    assertEqual(b.w.count.__text, "1-3 of 40")
     b.w.rows:__fire("OnMouseWheel", -1)
     assertEqual(T.reveal(b.w.list.rows[1].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2002)), "one row down")
     for _ = 1, 60 do b.w.rows:__fire("OnMouseWheel", -1) end
-    assertEqual(b.w.list:Count(), cap)
-    assertEqual(T.reveal(b.w.list.rows[cap].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2040)), "clamped at the last spell")
+    assertEqual(b.w.list:Count(), 3)
+    assertEqual(T.reveal(b.w.list.rows[3].name.__text), T.reveal(f.NS.HudBreakdown.SpellName(2040)), "clamped at the last spell")
 end)
 
-test("hud: the minimum height holds the idle body's whole stack", function()
+test("hud: the idle body's whole stack is every window's floor", function()
     local f = hud()
     -- Your best at 136 with no warning, 160 under the amber warning (R4-DR2: 14 + 38, the blocks 8
     -- apart, 14 above Arm Race); Arm Race at its deepest at 220 and 24 tall, its refusal line (4 + 14),
-    -- then 4 and the 20px links: the running body's minimum held it, so it stays 354.
+    -- then 4 and the 20px links: 286, the content no window goes under.
     local States = f.NS.HudStates
     assertEqual(States.IDLE_BEST_Y_PLAIN, 136)
     assertEqual(States.IDLE_BEST_Y_WARNED, 160)
     assertEqual(States.IDLE_ARM_Y_PLAIN, 202)
     assertEqual(States.IDLE_ARM_Y, 220, "Arm Race at its deepest, under the warning")
     assertEqual(States.ARM_HEIGHT, 24)
-    assertTrue(f.Hud.MIN_HEIGHT - CHROME >= 220 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
-    assertEqual(f.Hud.MIN_HEIGHT, 354, "the minimum height, re-derived for the headings (Round C)")
-    assertEqual(f.Hud.MIN_HEIGHT - CHROME, f.NS.HudStates.MinContentHeight())
-    f.NS.db.profile.windows.hud.height = 200
+    assertEqual(States.BaseContentHeight(), 220 + 24 + 4 + 14 + 4 + 20, "Arm Race meets the links")
+    -- One row with no chart and no pace bar is a shorter stack than the idle body's: the floor holds.
+    f.NS.db.profile.hud.bars = 1
+    f.NS.db.profile.live.chart, f.NS.db.profile.live.paceBar = false, false
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, f.Hud.MIN_HEIGHT, "a stored height below the minimum is used as is")
+    assertEqual(f.Hud.Diagnose().height, CHROME + 286)
 end)
 
 -- A HUD whose frames record their SetSize and SetPoint calls (the widget recorder keeps neither size).
