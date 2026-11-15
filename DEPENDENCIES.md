@@ -62,6 +62,22 @@ Versions are pinned only where a version matters: `lua5.1` is hard, and `luachec
 sighted complexity suite checks function-count parity on every run, so a version that reads
 differently shows up as a blind file rather than a quiet pass.
 
+## Seed validation: per patch, maintainer only
+
+`tools/seeds/seeds.py` re-derives `defaults/Hearthstones.lua` from the client's own DB2 data
+([`docs/validate-seeds.md`](docs/validate-seeds.md), clients-§10). **None of this is needed to build,
+run or test the addon**: the headless suite and lint never call it.
+
+| Need | Version | Needed for | Evidence |
+|---|---|---|---|
+| `python3` | **3.8 or later**, standard library only | `tools/seeds/seeds.py` and its tests | the tool imports nothing outside the standard library (its docstring) |
+| `pytest` | any recent (verified with 9.1.1); optional | `python3 -m pytest -q -p no:cacheprovider tools/seeds` | `python3 -m unittest discover -s tools/seeds` runs the same cases without it |
+| Network access to `https://wago.tools` | n/a | `seeds.py status` and a `derive` without `--replay` | the builds API and the per-build CSV exports; a `--replay` and the tests need none |
+| Disk | about 76 MB a build | the git-ignored download cache `tools/seeds/.cache/` | six tables, `SpellEffect` alone 57 MB; the committed bundle's `raw/` is about 12 MB gzipped |
+
+wago.tools is a community site, not Blizzard's. It answers HTTP 403 to Python's default
+User-Agent, so the tool sends its own.
+
 ## Release / assets
 
 **One entry: Pillow**, and only for **regenerating** the logo. The four files in `media/logos/` are

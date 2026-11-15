@@ -9,6 +9,7 @@ ignore:
   - .gitattributes   # dev-only: the repo's line-ending policy (line-endings)
   - docs             # holds the spec, the plan and the mockups too -- all dev-only
   - tests
+  - tools            # the seed-validation tool (layout-§1): dev-only Python, never loaded
   - CLAUDE.md        # contributor brief
   - DEPENDENCIES.md  # contributor toolchain
   - media/logos/*.png   # the editable logo source (layout-§4): committed, never loadable, never shipped

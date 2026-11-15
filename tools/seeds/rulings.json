@@ -1,0 +1,6 @@
+{
+  "shipped:unnamed:hearthstones:1310840": {
+    "reason": "needs owner review: no SpellName row on live 12.1.5.70783 (nor on 70575, the header's build); the PTR 12.1.7.70892 names it Wood-Cursed Hearthstone, so the 2026-10-28 list took it from a build-less (PTR) export; a dead entry is harmless until 12.1.7 ships, and removing it is the owner's call",
+    "ruling": "keep"
+  }
+}

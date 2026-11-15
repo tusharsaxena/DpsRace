@@ -172,6 +172,7 @@ annotated (toc-file-§5).
 | `modules/` | the engine (`Meter`, `Recorder`, `Loadouts`, `Stats`, `Timeline`, `LateIgnore`, `DummyList`, `Scoring`, `Bests`, `Slices`, `Casts`, `Usage`, `Race`, `Watchers`), the shared look of both windows (`Style`), smooth resizing for all three windows (`Sizing`), the Race HUD (`Format`, `Hud_Appearance`, `Hud_Breakdown`, `Hud_Chart`, `Hud_Tips`, `Hud_States`, `Hud_Best` (the idle body's Your best card), `Hud`), the final seconds (`Countdown`), auto-show and auto-arm near a training dummy (`AutoArm`), the Results window (`Results_Source`, `Results_Table`, `Results_Tips`, `Results_Runs`, `Results_Detail`, `Results_Compare`, `Results_Loadout`, `Results_Usage`, `Results_Timeline`, `Results_TimelineData` and `Results_TimelineMarks` (the ability timeline window, its pure half and its cast marks), `Results_Gear` (the gear view window), `Results_InsightsData` and `Results_Insights` (the Insights tab: its stats pass and the tab, drawn through `LibKa0s-Charts-1.0`), `Results`), `Share` (the one-line share and the race's chat lines), `BestToast` (the new-best toast), `MockRotations` and `MockRuns` (the sample data), `SampleRace` (a sample race on the race's own surface), `Preview` (test mode and the sim's shell), `Sim` (the sim's scenarios and clock) and `Diagnostics.lua` (the report's sections) |
 | `settings/` | the schema runtime, the slash table, the options descriptor, and the pages in panel order: General, Race, HUD, History, Profiles |
 | `tests/` | the headless harness on the vendored `tests/_kit/` |
+| `tools/` | `seeds/`, the seed-validation tool for `defaults/Hearthstones.lua` (Python 3, dev-only, `.pkgmeta`-ignored; [validate-seeds.md](validate-seeds.md)) |
 
 Every file, its one-line job and why the TOC orders it as it does: [module-map.md](module-map.md).
 
@@ -673,8 +674,9 @@ shape the design most:
 
 Frozen and generated stores are named once each and not enumerated: `docs/audits/`,
 `docs/reviews/`, `docs/automated-tests/<run>/`, `docs/perf-analysis/<run>/`,
-`docs/revendor/<date>-v<tag>/`, `docs/superpowers/` and `docs/investigations/` (documentation-§3).
-Of those, `docs/automated-tests/<run>/`, `docs/revendor/<date>-v<tag>/` and `docs/superpowers/`
+`docs/revendor/<date>-v<tag>/`, `docs/seed-research/<date>-<flavor>/`, `docs/superpowers/` and
+`docs/investigations/` (documentation-§3). Of those, `docs/automated-tests/<run>/`,
+`docs/revendor/<date>-v<tag>/`, `docs/seed-research/<date>-<flavor>/` and `docs/superpowers/`
 exist today; `docs/superpowers/` holds the spec and the plans.
 
 ### Required (documentation-§3, Tier 1)
@@ -719,6 +721,7 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 | Doc | Covers |
 |---|---|
 | `brainstorm/mockup/README.md` | The UX mockups (`screens/*.png`, `index.html`): the visual reference for every window |
+| [`validate-seeds.md`](validate-seeds.md) | The seed-validation contract `/dev-copilot:validate-seeds DpsRace retail` runs (clients-§10): the hearthstone list re-derived per build, the dummy catalog left measured, the rulings, the gate |
 
 ## Documented deviations
 

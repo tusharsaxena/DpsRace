@@ -46,14 +46,18 @@ catalog is grown from the same captures:
 
 - `defaults/Hearthstones.lua` (`NS.HEARTHSTONE_SPELLS`) is a static table per patch: the spells the
   ignore list's 8690 entry stands for (#8). Refresh it when a patch adds a hearthstone toy.
-- Download SpellCategories, SpellEffect, SpellName, ItemEffect and ItemXItemEffect for the new build
-  from wago.tools, and re-run the four rules in the file's header: every spell on the hearthstone
-  charge category (2309); plus every teleport to the bind point (SpellEffect `Effect` 252,
-  `ImplicitTarget` 9) that a toy or an item casts; plus Dalaran 222695 and Garrison 171253; minus
-  Astral Recall 556 and the test and placeholder spells the header names.
-- Diff the result against the table, update it and the build named in its header, and update the pin
-  test in `tests/test_late_ignore.lua` (the count, 8690, 222695 and 171253 present, 556 absent). The
-  Race page's *(all hearthstones, N)* suffix reads the table's length, so it follows on its own.
+- Run `/dev-copilot:validate-seeds DpsRace retail`. It follows [validate-seeds.md](validate-seeds.md):
+  `tools/seeds/seeds.py` pins one wago.tools build, re-runs the four rules in the file's header (every
+  spell on the hearthstone charge category 2309; plus every teleport to the bind point, SpellEffect
+  `Effect` 252 and `ImplicitTarget` 9; plus Dalaran 222695 and Garrison 171253; minus Astral Recall
+  556 and the test and placeholder spells the header names), freezes the run under
+  `docs/seed-research/`, and applies only what is ruled in `tools/seeds/rulings.json`.
+- If the count moved, update the pin test in `tests/test_late_ignore.lua` (the count, 8690, 222695
+  and 171253 present, 556 absent), the count in [module-map.md](module-map.md) and in SM-DR-IL1, and
+  the re-validation line in the file's header. The Race page's *(all hearthstones, N)* suffix reads
+  the table's length, so it follows on its own.
+- The training-dummy catalog (`defaults/Dummies.lua`) is not part of this: it is measured, and no
+  DB2 table names a training dummy ([validate-seeds.md](validate-seeds.md), Notes).
 
 ## Add a HUD body
 

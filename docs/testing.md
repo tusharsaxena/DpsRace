@@ -13,6 +13,7 @@ How to verify Ka0s DPS Race (testing-§6). What to install first is in the root
 | `lua tests/run.lua --list > docs/test-cases.md` | Regenerates the case inventory without running anything |
 | `~/.claude/dev-copilot/bin/ka0s-bounded luacheck .` | Lint, configured by `.luacheckrc`; must report 0 warnings and 0 errors. `luacheck` loads no kit, so it runs through the bounded runner (testing-§15) |
 | `luac -p path/to/file.lua` | Syntax-check one file |
+| `python3 -m pytest -q -p no:cacheprovider tools/seeds` | The seed-validation tool's own tests, offline on tiny fixtures ([validate-seeds.md](validate-seeds.md)); in the gate of a seed run, not of every commit |
 | `bash tests/_kit/run-automated-tests.sh` | All four out-of-game suites, written to a dated bundle ([automated-tests/README.md](automated-tests/README.md)) |
 
 Every run is bounded by the vendored kit as it loads (memory, time, process depth; testing-§15).
