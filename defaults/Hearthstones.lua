@@ -18,10 +18,12 @@ local _, NS = ...
 -- Scrolls of Recall and the other consumables and items that send a player home on the hearthstone's
 -- cooldown are kept (the owner's call, 2026-10-28).
 --
--- To refresh it for a new build: download SpellCategories, SpellEffect, SpellName, ItemEffect and
--- ItemXItemEffect from wago.tools, re-run the four rules, diff the result against this table, and
--- update it and its pin test (tests/test_late_ignore.lua: the count, 8690, 222695 and 171253 in, 556
--- out). The names in the comments are enUS, for review only.
+-- To refresh it for a new build: `/dev-copilot:validate-seeds DpsRace retail` (docs/validate-seeds.md).
+-- Its tool, tools/seeds/seeds.py, runs these four rules on one pinned build and applies only what is
+-- ruled; then, if the count moved, update the pin test (tests/test_late_ignore.lua: the count, 8690,
+-- 222695 and 171253 in, 556 out). Re-validated against 12.1.5.70783 on 2026-11-15
+-- (docs/seed-research/2026-11-15-retail): the same 58 derived IDs; 1310840 is named only on the 12.1.7
+-- PTR and is kept pending the owner. The names in the comments are enUS, for review only.
 
 NS.HEARTHSTONE_SPELLS = {
     8690,     -- Hearthstone
