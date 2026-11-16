@@ -799,7 +799,8 @@ function Tbl.New(parent, columns, opts)
     t.header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     t.header:SetHeight(Tbl.HEADER_H)
     -- The header band LootHistory's takes (its modules/BrowserTable.lua): the skin's list.header.bg
-    -- behind the labels (none under Ka0s Default), and no rule above or below (SF1-DR).
+    -- behind the labels (black .35 under Ka0s Default since LibKa0s v1.105.0's SR-L4, told apart from
+    -- a row, a stripe and a hover in every skin), and no rule above or below (SF1-DR).
     NS.Skin.SortHeaderBar(t.header)
     for i, col in ipairs(columns) do newHeader(t, i, col) end
     t.body = CreateFrame("Frame", nil, frame)

@@ -210,7 +210,7 @@ local function buildChrome(f)
     f.title = Style.PlainText(f, FONT.TITLE, "CENTER")
     f.title:SetText(L["Ability timeline"])
     -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
-    ui.controls = Style.NewStrip()
+    ui.controls = Style.TitleStrip()
     ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)

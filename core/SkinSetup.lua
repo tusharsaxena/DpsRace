@@ -99,6 +99,8 @@ NS.SKIN_FALLBACK = {
     ["text.accent"]      = { 1, 0.82, 0, 1 },
     ["text.disabled"]    = { 0.5, 0.5, 0.5, 1 },
     ["text.highlight"]   = { 1, 1, 1, 1 },
+    -- A title-bar control under the pointer (smoke round 1, SR-L3).
+    ["text.link"]        = { 1, 0.5, 0, 1 },
     ["gtip.title"]       = { 1, 0.82, 0, 1 },
     ["gtip.body"]        = { 0.9, 0.9, 0.9, 1 },
     ["gtip.value"]       = { 1, 1, 1, 1 },

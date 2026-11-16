@@ -208,6 +208,9 @@ end
 Style.GOLD = Style.Tok("text.accent")
 -- A title-bar control at rest: the close control's own gray (`icon.tint`).
 Style.REST = Style.Tok("icon.tint")
+-- A title-bar control under the pointer (smoke round 1, SR-L3): `text.link`, the color the library's
+-- header marks and the console's Diagnostics link take; the close keeps the skin's `close.hot`.
+Style.LINK = Style.Tok("text.link")
 
 -- The title bar, the tab strip and a control slot (LootHistory and BankLedger: titleBarH 30,
 -- tabStripH 26, 90px tabs on a 94px pitch; the close control's 18px slot). The bar's height is the
@@ -455,20 +458,26 @@ end
 --- Repaint every control of `strip` for the control under the pointer.
 --- @param strip table  Style.NewStrip's
 function Style.PaintStrip(strip)
-    for _, b in ipairs(strip.controls) do paintControl(b, strip.hovered == b and Style.GOLD or Style.REST) end
+    local hot = strip.hot or Style.GOLD
+    for _, b in ipairs(strip.controls) do paintControl(b, strip.hovered == b and hot or Style.REST) end
 end
 
 local strips = setmetatable({}, { __mode = "k" })
 
---- A strip of title-bar controls sharing one hover state, repainted on a skin change.
---- @return table strip  { controls = {}, hovered = nil }
-function Style.NewStrip()
-    local strip = { controls = {} }
+--- A strip of controls sharing one hover state, repainted on a skin change. `hot` is the live color
+--- a hovered control takes: Style.LINK on a title bar (Style.TitleStrip), the gold elsewhere.
+--- @param hot table|nil  a Style.Tok table (default Style.GOLD)
+--- @return table strip  { controls = {}, hovered = nil, hot = hot }
+function Style.NewStrip(hot)
+    local strip = { controls = {}, hot = hot }
     strips[strip] = true
     return strip
 end
 
 Style.OnLooks(function() for strip in pairs(strips) do Style.PaintStrip(strip) end end)
+
+--- A title bar's strip: `icon.tint` at rest, `text.link` under the pointer (SR-L3).
+function Style.TitleStrip() return Style.NewStrip(Style.LINK) end
 
 --- Add `b` to `strip`: hooked (never replacing a script the control already has, such as the close
 --- control's own tint, which this repaints after) so it turns gold under the pointer.
@@ -664,6 +673,63 @@ function Style.ControlButton(parent, name, glyph, tip, onClick)
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    return b
+end
+
+-- ── the title-bar tooltip (smoke round 1, SR-L1 and SR-L2) ───────────────────────────────────────
+-- Every title-bar control's tooltip: its `tip` (a string, or a { title, line, ... } read on each
+-- hover) in the skin's `gtip.title`, placed by LibKa0s-Tooltip-1.0's PlaceAttached, centered above
+-- the control and below only without room above, the side the pointer never covers. Where the
+-- library cannot place it (unreadable geometry, a degraded load) it goes above by a relative point.
+local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
+local TIP_GAP = 2
+
+local function showTitleTip(b)
+    local tip, lines = GameTooltip, b.tip
+    if not (tip and lines) then return end
+    if type(lines) ~= "table" then lines = { tostring(lines) } end
+    if type(lines[1]) ~= "string" or lines[1] == "" then return end
+    tip:SetOwner(b, "ANCHOR_NONE")
+    local r, g, bl = Style.Rgb("gtip.title")
+    tip:SetText(lines[1], r, g, bl, 1, true)
+    Style.AddTipLines(tip, lines, 2, r, g, bl)
+    tip:Show()
+    if Tip and Tip.PlaceAttached and Tip.PlaceAttached(tip, b) then return end
+    tip:ClearAllPoints()
+    tip:SetPoint("BOTTOM", b, "TOP", 0, TIP_GAP)
+end
+
+local function hideTitleTip(b)
+    local tip = GameTooltip
+    if not (tip and b.tip) then return end
+    if type(tip.IsOwned) == "function" and not tip:IsOwned(b) then return end
+    tip:Hide()
+end
+
+--- Give `b` the title-bar tooltip for `tip` (or its own `b.tip`), hooked so its own hover pair keeps
+--- running. A library close already carries the library's title tip (LibKa0s-Tooltip-1.0's
+--- AttachTitleTip, its one line "Close"): its words are cleared, so the host's lines show in their
+--- place, and the library's own leave takes the tooltip down.
+--- @param b table
+--- @param tip string|table|nil
+--- @return table|nil b
+function Style.TitleTip(b, tip)
+    if not b then return nil end
+    if tip ~= nil then b.tip = tip end
+    local hook = b.HookScript and "HookScript" or "SetScript"
+    local library = rawget(b, "__titleTip") ~= nil
+    if library and Tip and Tip.AttachTitleTip then Tip.AttachTitleTip(b, false) end
+    b[hook](b, "OnEnter", showTitleTip)
+    if not library then b[hook](b, "OnLeave", hideTitleTip) end
+    return b
+end
+
+--- A title-bar control (Style.ControlButton) whose tooltip is the title-bar tooltip above.
+--- @return table
+function Style.TitleButton(parent, name, glyph, tip, onClick)
+    local b = Style.ControlButton(parent, name, glyph, tip, onClick)
+    b:SetScript("OnEnter", showTitleTip)
+    b:SetScript("OnLeave", hideTitleTip)
     return b
 end
 
