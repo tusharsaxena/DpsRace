@@ -229,10 +229,12 @@ NS.SKIN_TOKENS = {
     ["dr.chart.bg"]     = { default = { 0, 0, 0, 0.35 }, follow = "chart.track" },
     ["dr.box.border"] = { default = { 1, 1, 1, 0.10 }, follow = "list.boxEdge" },
     -- The Results list (and the spell rows that share it): the stripe, the hover and selection
-    -- washes, and the scroll thumb (D-5's values, kept).
-    ["dr.list.stripe"]  = { default = { 1, 1, 1, 0.025 }, follow = "list.stripe" },
-    ["dr.list.hover"]   = { default = { 1, 1, 1, 0.04 }, follow = "list.hover" },
-    ["dr.list.sel"]     = { default = rgba(GOLD, 0.10), follow = "list.sel" },
+    -- washes, and the scroll thumb. Under Ka0s Default the three washes are the library's own Ka0s
+    -- Default rows (LibKa0s v1.105.0, #84: stripe .08, hover gold .16, selection gold .26), so a
+    -- stripe shows and hover stays below selection.
+    ["dr.list.stripe"]  = { default = { 1, 1, 1, 0.08 }, follow = "list.stripe" },
+    ["dr.list.hover"]   = { default = rgba(GOLD, 0.16), follow = "list.hover" },
+    ["dr.list.sel"]     = { default = rgba(GOLD, 0.26), follow = "list.sel" },
     ["dr.scroll.thumb"] = { default = { 1, 1, 1, 0.25 }, follow = "scroll.thumb" },
     -- A bar's track, the spell rows' and the pace bar's: Ka0s Default keeps this addon's two washes, and
     -- every other skin draws its own bar.bg (the owner's ruling of 2026-11-01).

@@ -183,7 +183,7 @@ if not lib then
         "RefreshScalars", "RefreshPanel", "RestoreDefaults", "PatchAlwaysShowScrollbar",
         "RegisterOptionsPage", "CreateOptionsPanel", "OpenOptionsPanel", "SetChromeHeight", "TabStrip",
         "PageBanner", "RenderTabbedSchema", "SelectTab", "ChoiceGrid", "IdInput", "IdList", "NavRail",
-        "Drawer", "Relayout", "KeybindingsTab", "KeybindRows",
+        "SideTabs", "Drawer", "Relayout", "KeybindingsTab", "KeybindRows",
     }) do
         Helpers[name] = function() end
     end
