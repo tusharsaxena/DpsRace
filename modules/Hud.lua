@@ -570,7 +570,8 @@ end
 
 -- The footer is the library's (W.Footer, standalone-windows' *The footer*, LibKa0s#89): no fill, the
 -- skin's `divider` hairline along its top, its two lines in `text.muted`, FOOTER.HEIGHT tall, the right
--- line clear of the resize grip's corner while the grip shows (applyGrip). The host owns the strings.
+-- line clear of the resize grip's corner while the grip shows (applyGrip), and the grip itself built on
+-- it (`gripParent`, ensureWindow). The host owns the strings.
 local function buildFooter(f)
     ui.footer = NS.MakeFooter(f, { grip = true })
     ui.footLeft, ui.footRight = ui.footer.left, ui.footer.right
@@ -603,8 +604,10 @@ local function ensureWindow()
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Hud.FRAME_NAME) end
     -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only the body on screen is laid
     -- out and drawn, once a frame; on release every body is laid out, the size stored, and the shown
-    -- one drawn again at the snapped height.
+    -- one drawn again at the snapped height. The grip is built on the footer (`gripParent`, the pairing
+    -- W.Footer's `opts.resize` makes) and sits in its corner; sizing still acts on the window.
     NS.Sizing.MakeResizable(f, {
+        gripParent = ui.footer,
         minWidth = Hud.MIN_WIDTH, minHeight = fixedHeightFor(Hud.MIN_BARS),
         canResize = function() return canResize() end,
         size = trackSize, layout = layoutCurrent, redraw = layoutBodies,

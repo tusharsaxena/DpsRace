@@ -161,3 +161,46 @@ test("chrome: with no Widgets library each window keeps a 24 px footer with its 
     end
     assertEqual(NS.FOOTER_HEIGHT, 24)
 end)
+
+-- The resize grip is built on the footer (Core minor 10's `gripParent`, the pairing W.Footer's own
+-- `opts.resize` makes): it sits in the footer's bottom-right corner, which is the window's, while sizing
+-- still acts on the window (`frame.resizeGrip` stays on it).
+local function gripOnFooter(u, what)
+    local grip = assert(u.frame.resizeGrip, what .. ": no resize grip")
+    local br = lastPoint(grip, "BOTTOMRIGHT")
+    assertTrue(br[2] == u.footer, what .. ": the grip is not built on the footer")
+end
+
+test("chrome: the HUD's and the Results window's resize grips are built on their footers", function()
+    local f = fixture()
+    f.Hud.Show()
+    f.R.Show()
+    gripOnFooter(hudUi(f), "the HUD")
+    gripOnFooter(resUi(f), "the Results window")
+end)
+
+-- The right line's inset from the footer's right edge (its last RIGHT point's x, negated).
+local function rightInset(foot)
+    return -lastPoint(foot.right, "RIGHT")[4]
+end
+
+test("chrome: with no Widgets library the footer's right line follows the HUD's grip", function()
+    local inst = T.load{ libFiles = {}, mutate = function(m) Widgets.install(m) end }
+    local NS = inst.NS
+    NS.Hud.Show()
+    local foot = NS.Hud.__ui().footer
+    foot:SetGrip(true)
+    assertEqual(rightInset(foot), 22, "clear of the grip's corner while the grip shows")
+    foot:SetGrip(false)
+    assertEqual(rightInset(foot), 8, "the corner back while the grip is hidden")
+    foot:SetGrip(true)
+    assertEqual(rightInset(foot), 22)
+end)
+
+test("chrome: with no Widgets library a footer made without grip keeps its right line at the pad", function()
+    local inst = T.load{ libFiles = {}, mutate = function(m) Widgets.install(m) end }
+    local NS = inst.NS
+    local parent = inst.mocks.CreateFrame("Frame", nil, inst.mocks.UIParent)
+    assertEqual(rightInset(NS.MakeFooter(parent)), 8, "no grip: the pad")
+    assertEqual(rightInset(NS.MakeFooter(parent, { grip = true })), 22, "grip: the grip's corner")
+end)

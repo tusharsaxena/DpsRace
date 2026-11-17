@@ -405,7 +405,9 @@ strip and the timeline's legend line stay (`test_header_rule`). Both windows' fo
 `W.Footer` (`NS.MakeFooter`, LibKa0s#89, standalone-windows' *The footer*): no fill, the skin's
 `divider` hairline along the top, both lines in `text.muted`, `FOOTER.HEIGHT` (24 px) tall, the right
 line clear of the resize grip's corner (the HUD's follows the grip: hidden while locked or in auto
-mode, `SetGrip`); the HUD's content and the Results body end that far up plus their own gap (8 and
+mode, `SetGrip`; with no library the bare stand-in footer's right line follows it the same way), and
+the resize grip itself is built on the footer (`gripParent`, through `Sizing.MakeResizable`, the
+pairing W.Footer's `opts.resize` makes), in its corner, while sizing acts on the window; the HUD's content and the Results body end that far up plus their own gap (8 and
 1 px). Each window's test or sim strip is docked by the library directly under its title band
 (`dock = "title"`, LibKa0s#88, preview-mode's *Where the strip sits*): the HUD is a race window with
 a title bar, which the standard counts as a window, so its strip never sits on its top edge outside

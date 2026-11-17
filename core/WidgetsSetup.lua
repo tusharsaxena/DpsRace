@@ -151,22 +151,32 @@ NS.FOOTER_HEIGHT = (W and W.FOOTER and W.FOOTER.HEIGHT) or 24
 
 -- A footer with no library (a degraded install only; with the library every footer is W.Footer, and a
 -- host-built one beside it is anti-pattern #118): a bare frame of the same height along the window's
--- bottom edge with W.Footer's two lines and setters, so the window's paint runs unchanged.
-local function bareFooter(parent)
+-- bottom edge with W.Footer's two lines and setters, so the window's paint runs unchanged. Its right
+-- line follows SetGrip as W.Footer's does: FOOTER.GRIP (22) in from the edge while the grip shows,
+-- FOOTER.PAD (8) while it is hidden.
+local BARE_PAD, BARE_GRIP = 8, 22
+
+local function bareRight(foot)
+    foot.right:ClearAllPoints()
+    foot.right:SetPoint("RIGHT", foot, "RIGHT", -(foot.__grip and BARE_GRIP or BARE_PAD), 0)
+end
+
+local function bareFooter(parent, opts)
     local foot = CreateFrame("Frame", nil, parent)
     foot:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 0, 0)
     foot:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
     foot:SetHeight(NS.FOOTER_HEIGHT)
     -- No skin to paint from: the client's small gray font object draws the muted lines.
     foot.left = foot:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    foot.left:SetPoint("LEFT", foot, "LEFT", 8, 0)
+    foot.left:SetPoint("LEFT", foot, "LEFT", BARE_PAD, 0)
     foot.right = foot:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    foot.right:SetPoint("RIGHT", foot, "RIGHT", -22, 0)
     foot.right:SetJustifyH("RIGHT")
+    foot.__grip = (type(opts) == "table" and opts.grip == true) or nil
+    bareRight(foot)
     for _, fs in ipairs({ foot.left, foot.right }) do fs:SetWordWrap(false) end
     foot.SetLeft = function(self, text) self.left:SetText(type(text) == "string" and text or "") end
     foot.SetRight = function(self, text) self.right:SetText(type(text) == "string" and text or "") end
-    foot.SetGrip = function() end
+    foot.SetGrip = function(self, on) self.__grip = on and true or nil; bareRight(self) end
     return foot
 end
 
@@ -180,7 +190,7 @@ end
 --- @param opts table|nil W.Footer's opts; `owner` is always this addon
 --- @return table
 function NS.MakeFooter(parent, opts)
-    if not W or type(W.Footer) ~= "function" then return bareFooter(parent) end
+    if not W or type(W.Footer) ~= "function" then return bareFooter(parent, opts) end
     local o = {}
     for k, v in pairs(opts or {}) do o[k] = v end
     o.owner = addonName

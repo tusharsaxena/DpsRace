@@ -301,8 +301,10 @@ local function ensureWindow()
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Results.FRAME_NAME) end
     -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
-    -- the full `layout` (every row rebound, the detail redrawn) runs once on release.
+    -- the full `layout` (every row rebound, the detail redrawn) runs once on release. The grip is built
+    -- on the footer (`gripParent`, the pairing W.Footer's `opts.resize` makes) and sits in its corner.
     NS.Sizing.MakeResizable(f, {
+        gripParent = ui.footer,
         minWidth = Results.VIEWS[Results.View()].minWidth, minHeight = Results.MIN_HEIGHT,
         size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
     })

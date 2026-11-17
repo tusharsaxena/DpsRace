@@ -1539,6 +1539,19 @@ Total.
 - preview: every start and stop repaints an open panel's Test mode checkbox
 - preview: the HUD shows the sim strip, not the test strip, while a sim runs
 
+### test_window_chrome.lua (10)
+
+- chrome: the HUD's test strip is docked under its title bar, and the content moves by its offset
+- chrome: the HUD's sim strip is docked under its title bar too
+- chrome: the Results strip is docked under the title bar, above the tabs, which move down with the body
+- chrome: the Results sim strip is docked under the title bar
+- chrome: the HUD's footer is the library's, 24 px, and the content ends above it
+- chrome: the Results footer is the library's, 24 px, and the body ends above it
+- chrome: with no Widgets library each window keeps a 24 px footer with its two lines
+- chrome: the HUD's and the Results window's resize grips are built on their footers
+- chrome: with no Widgets library the footer's right line follows the HUD's grip
+- chrome: with no Widgets library a footer made without grip keeps its right line at the pad
+
 ### test_sim.lua (31)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
@@ -1919,6 +1932,7 @@ Total.
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
 | test_preview.lua | 25 |
+| test_window_chrome.lua | 10 |
 | test_sim.lua | 31 |
 | test_sample_parity.lua | 32 |
 | test_launcher.lua | 10 |
@@ -1939,4 +1953,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1513** |
+| **Total** | **1523** |
