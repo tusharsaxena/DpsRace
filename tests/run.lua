@@ -208,6 +208,7 @@ local SUITES = {
     "test_share",
     "test_toast",
     "test_preview",
+    "test_window_chrome",
     "test_sim",
     "test_sample_parity",
     "test_launcher",

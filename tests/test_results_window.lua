@@ -357,8 +357,9 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(u.tabs.runs.label.__fontObject, "GameFontNormal", "a tab")
     assertEqual(u.tabs.runs.label.__color[2], 0.82, "the active tab is gold")
     assertEqual(u.tabs.insights.label.__color[1], 0.7, "an idle tab is gray")
-    assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
-    assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
+    -- The footer is the library's since AD-89-DR (W.Footer): GameFontHighlightSmall in `text.muted`.
+    assertEqual(u.footLeft.__fontObject, "GameFontHighlightSmall", "the footer")
+    assertEqual(u.footRight.__fontObject, "GameFontHighlightSmall")
     local Tbl = i.NS.ResultsTable
     assertEqual(Tbl.ROW_H, 18, "LootHistory's compact row (BrowserTable.ROW_H_DEFAULT)")
     assertEqual(Tbl.HEADER_H, 20, "LootHistory's 20px header")
@@ -372,7 +373,7 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(cells.char.fs.__fontObject, "GameFontHighlightSmall", "a cell")
     assertEqual(cells.target.fs.__fontObject, "GameFontHighlightSmall", "the badge")
     for _, b in pairs(runsPane(i).checks) do assertEqual(b.label.__fontObject, "GameFontHighlightSmall") end
-    assertEqual(ui(i).footLeft.__fontObject, "GameFontDisableSmall", "the footer, where the run count is")
+    assertEqual(ui(i).footLeft.__fontObject, "GameFontHighlightSmall", "the footer, where the run count is")
     assertTrue(ui(i).footLeft.__text:find(runsPane(i).countText, 1, true) == 1, "the count leads the footer")
     i.R.ShowRun("a")
     local d = ui(i).detail

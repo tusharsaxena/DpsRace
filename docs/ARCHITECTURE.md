@@ -401,7 +401,17 @@ fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1)
 view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
 showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
 there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
-strip and the timeline's legend line stay (`test_header_rule`). The Runs list's column headers have no rule above or below either (SF1-DR, like LootHistory's): the
+strip and the timeline's legend line stay (`test_header_rule`). Both windows' footers are the library's
+`W.Footer` (`NS.MakeFooter`, LibKa0s#89, standalone-windows' *The footer*): no fill, the skin's
+`divider` hairline along the top, both lines in `text.muted`, `FOOTER.HEIGHT` (24 px) tall, the right
+line clear of the resize grip's corner (the HUD's follows the grip: hidden while locked or in auto
+mode, `SetGrip`); the HUD's content and the Results body end that far up plus their own gap (8 and
+1 px). Each window's test or sim strip is docked by the library directly under its title band
+(`dock = "title"`, LibKa0s#88, preview-mode's *Where the strip sits*): the HUD is a race window with
+a title bar, which the standard counts as a window, so its strip never sits on its top edge outside
+it. While a strip shows, everything below the title band moves down by the strip's `BodyOffset()`:
+the HUD's content, and the Results window's tabs, the rule under them and its body
+(`test_window_chrome`). The Runs list's column headers have no rule above or below either (SF1-DR, like LootHistory's): the
 filter bar draws none at its foot, and the header row takes the skin's `SortHeaderBar` band
 (`test_column_header_rule`). Each window's header stands on the
 library's title band (`S.Band`, which Shell lays at its own inset and `title.height`, and LibKa0s

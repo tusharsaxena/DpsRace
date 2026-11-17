@@ -47,9 +47,10 @@ Results.FRAME_NAME = "DpsRaceResults"
 -- The dim cover over the window while the ability timeline is open: the skin's `dr.cover.dim`.
 Results.TABS = { "runs", "insights" }
 
--- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
+-- The collection's title bar and tab strip (modules/Style.lua), and the library's footer (W.Footer,
+-- FOOTER.HEIGHT: 24 px under every skin, standalone-windows' *Window chrome geometry*).
 local Style = NS.Style
-local TAB_H, FOOTER_H = Style.TAB_STRIP_H, 20
+local TAB_H, FOOTER_H = Style.TAB_STRIP_H, NS.FOOTER_HEIGHT
 -- The footer's hint; on the Runs tab the run count goes before it.
 local HINT = L["Click a row for details \194\183 right-click for options"]
 
@@ -170,8 +171,10 @@ local function tabButton(name, label, i)
     -- `tab.text` when not.
     local b = CreateFrame("Button", nil, ui.frame)
     b:SetSize(Style.TAB_W, TAB_H)
-    -- Flush under the title band (R5-DR1), so no skin's band runs over the tab strip.
-    b:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 6 + (i - 1) * Style.TAB_PITCH, 0)
+    b.x = 6 + (i - 1) * Style.TAB_PITCH
+    -- Flush under the title band (R5-DR1), so no skin's band runs over the tab strip; under the mode
+    -- strip while one shows (placeUnderStrip).
+    b:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", b.x, 0)
     b.label = Style.Text(b, Style.FONT.TAB, nil, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
@@ -220,19 +223,15 @@ local function buildChrome(f)
     local band = Style.Band(f)
     line:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -TAB_H)
     line:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -TAB_H)
+    ui.tabLine = line
 end
 
+-- The footer is the library's (W.Footer, standalone-windows' *The footer*, LibKa0s#89): no fill, the
+-- skin's `divider` hairline along its top, its two lines in `text.muted`, FOOTER.HEIGHT tall, the right
+-- line clear of the resize grip's corner. The host owns the strings.
 local function buildFooter(f)
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line)
-    line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
-    line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
-    ui.footLeft = Style.Text(f, Style.FONT.CAPTION)
-    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    ui.footLeft:SetText(HINT)
-    ui.footRight = Style.Text(f, Style.FONT.CAPTION, nil, "RIGHT")
-    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
+    ui.footer = NS.MakeFooter(f, { left = HINT, grip = true })
+    ui.footLeft, ui.footRight = ui.footer.left, ui.footer.right
 end
 
 local onHide
@@ -465,22 +464,30 @@ end
 
 -- ── the sample marker (test mode, a sim) ────────────────────────────────────────────────────────
 -- While the window shows the sample history it says so, as the HUD does in test mode: the library's
--- strip under the tab strip, the body moved down by its height. With no Widgets library there is no
--- strip, and the title carries the word instead; never both.
+-- strip, docked by the library directly under the title bar (`dock = "title"`, preview-mode's *Where
+-- the strip sits*, LibKa0s#88), above the tabs; the tabs, the rule under them and the body move down by
+-- the strip's BodyOffset(). With no Widgets library there is no strip, and the title carries the word
+-- instead; never both.
 
-local function anchorStrip(strip)
-    if strip then
-        local band = Style.Band(ui.frame)   -- under the tab strip, which stands under the band
-        strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1))
-        strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + 1))
+-- Everything below the title bar `drop` lower: the tabs, the rule under them and the body.
+local function placeUnderStrip(drop)
+    local band = Style.Band(ui.frame)
+    for _, name in ipairs(Results.TABS) do
+        local b = ui.tabs[name]
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", band, "BOTTOMLEFT", b.x, -drop)
     end
-    return strip
+    ui.tabLine:ClearAllPoints()
+    ui.tabLine:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + drop))
+    ui.tabLine:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + drop))
+    ui.body:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1 + drop))
 end
 
 local function ensureStrip()
     if ui.stripTried then return ui.strip end
     ui.stripTried = true
-    ui.strip = anchorStrip(NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"]))
+    ui.strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"],
+        Style.Band(ui.frame), ui.frame)
     return ui.strip
 end
 
@@ -489,7 +496,8 @@ end
 local function ensureSimStrip()
     if ui.simStripTried then return ui.simStrip end
     ui.simStripTried = true
-    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
+    ui.simStrip = NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."],
+        Style.Band(ui.frame), ui.frame)
     return ui.simStrip
 end
 
@@ -501,10 +509,11 @@ local function applySampleMarker()
     if testStrip then testStrip:SetShown(on and not sim) end
     if simStrip then simStrip:SetShown(on and sim) end
     local strip = sim and simStrip or testStrip
-    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    -- The strip's own BodyOffset: its height while it shows, 0 while it is hidden.
+    local drop = (on and strip) and strip:BodyOffset() or 0
     if ui.drop ~= drop then
         ui.drop = drop
-        ui.body:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 0, -(TAB_H + 1 + drop))
+        placeUnderStrip(drop)
     end
     local marked = on and not strip
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])

@@ -57,8 +57,10 @@ NS.Hud = Hud
 local L = NS.L
 local Perf = NS.Perf
 
--- The title bar is the collection's (modules/Style.lua: 30px, the title centered in GameFontNormal).
-local HEADER_H, FOOTER_H, PAD = NS.Style.TITLE_BAR_H, 20, 12
+-- The title bar is the collection's (modules/Style.lua: 30px, the title centered in GameFontNormal);
+-- the footer is the library's, FOOTER.HEIGHT (24 px) under every skin (standalone-windows' *Window
+-- chrome geometry*), read where core/WidgetsSetup.lua publishes it.
+local HEADER_H, FOOTER_H, PAD = NS.Style.TITLE_BAR_H, NS.FOOTER_HEIGHT, 12
 local CONTENT_TOP = HEADER_H + 10
 local CONTENT_BOTTOM = FOOTER_H + 8
 
@@ -404,6 +406,9 @@ local function canResize() return not Hud.locked and fixedMode() end
 local function applyGrip()
     local f = ui.frame
     if f.resizeGrip then f.resizeGrip:SetShown(canResize()) end
+    -- The footer's right line keeps clear of the grip's corner while the grip shows, and takes it back
+    -- while it is hidden (W.Footer's SetGrip).
+    if ui.footer then ui.footer:SetGrip(canResize()) end
     if type(f.SetResizeBounds) == "function" then
         f:SetResizeBounds(Hud.MIN_WIDTH, fixedHeightFor(Hud.MIN_BARS), Hud.MAX_WIDTH, fixedHeightFor(Hud.MAX_BARS))
     end
@@ -563,17 +568,12 @@ local function buildHeader(f)
         right = { close, ui.lock, ui.settings, ui.results }, n = 4 })
 end
 
+-- The footer is the library's (W.Footer, standalone-windows' *The footer*, LibKa0s#89): no fill, the
+-- skin's `divider` hairline along its top, its two lines in `text.muted`, FOOTER.HEIGHT tall, the right
+-- line clear of the resize grip's corner while the grip shows (applyGrip). The host owns the strings.
 local function buildFooter(f)
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line)
-    line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
-    line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
-    -- The footer's two lines are GameFontDisableSmall, as every Ka0s window's footer is.
-    ui.footLeft = NS.Style.Text(f, NS.Style.FONT.CAPTION)
-    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    ui.footRight = NS.Style.Text(f, NS.Style.FONT.CAPTION, nil, "RIGHT")
-    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
+    ui.footer = NS.MakeFooter(f, { grip = true })
+    ui.footLeft, ui.footRight = ui.footer.left, ui.footer.right
     local tips, States = NS.HudTips, NS.HudStates
     ui.footLeftTip = States.TipZone(f, ui.footLeft, tips.footLeft)
     ui.footRightTip = States.TipZone(f, ui.footRight, tips.footRight)
@@ -621,8 +621,11 @@ local function applyLock()
 end
 
 -- ── the test-mode marker (preview-mode) ─────────────────────────────────────────────────────────
--- While test mode or the sim is on the HUD says so on the display: the library's strip under the title
--- bar, the content moved down by its height. Test mode shows the test strip and a running sim shows the
+-- While test mode or the sim is on the HUD says so on the display: the library's strip, docked by the
+-- library directly under the title bar (`dock = "title"`, preview-mode's *Where the strip sits*,
+-- LibKa0s#88). The HUD is a race window with a title bar, so the standard counts it a window, not a HUD
+-- display: its strip sits under the title bar, never on the frame's top edge outside it. The content
+-- moves down by the strip's BodyOffset(). Test mode shows the test strip and a running sim shows the
 -- sim strip, never both (WFP-FIX-01). With no Widgets library there is no strip, and the title carries
 -- the word instead; never both (one marker per mode).
 
@@ -649,26 +652,21 @@ end
 --- The title the window shows now, for the suites.
 function Hud.TitleText() return titleText() end
 
-local function anchorStrip(strip)
-    if not strip then return strip end
-    local band = NS.Style.Band(ui.frame)   -- flush under the title band, in every skin
-    strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, 0)
-    strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, 0)
-    return strip
-end
-
 local function ensureStrip()
     if ui.stripTried then return ui.strip end
     ui.stripTried = true
-    -- What test mode shows and what ends it, in one line short enough for the minimum width.
-    ui.strip = anchorStrip(NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"]))
+    -- What test mode shows and what ends it, in one line short enough for the minimum width. Docked
+    -- under the title band, in every skin.
+    ui.strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample numbers. Combat or Arm ends it"],
+        NS.Style.Band(ui.frame), ui.frame)
     return ui.strip
 end
 
 local function ensureSimStrip()
     if ui.simStripTried then return ui.simStrip end
     ui.simStripTried = true
-    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
+    ui.simStrip = NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."],
+        NS.Style.Band(ui.frame), ui.frame)
     return ui.simStrip
 end
 
@@ -680,7 +678,8 @@ local function applyTestMarker()
     if testStrip then testStrip:SetShown(on and not sim) end
     if simStrip then simStrip:SetShown(on and sim) end
     local strip = sim and simStrip or testStrip
-    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    -- The strip's own BodyOffset: its height while it shows, 0 while it is hidden.
+    local drop = (on and strip) and strip:BodyOffset() or 0
     if ui.drop ~= drop then
         ui.drop = drop
         ui.content:SetPoint("TOPLEFT", ui.frame, "TOPLEFT", PAD, -(CONTENT_TOP + drop))

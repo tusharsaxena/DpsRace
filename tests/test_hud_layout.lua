@@ -64,8 +64,9 @@ end
 
 -- The window's chrome above and below the content (title bar + gap, footer + gap) and each body's
 -- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
--- The 30px title bar + 10, the 20px footer + 8; 18px rows on a 20px pitch; 20px buttons.
-local CHROME, PITCH = 40 + 28, 20
+-- The 30px title bar + 10, the library footer's 24px (FOOTER.HEIGHT, AD-89-DR) + 8; 18px rows on a
+-- 20px pitch; 20px buttons.
+local CHROME, PITCH = 40 + 32, 20
 -- The rows' top: the KPIs (and the chips), then the Spell breakdown heading (Round C): its 22px line
 -- and the 6px that, with the GAP above, makes the shared 14px of clear space.
 local BREAKDOWN = 6 + 22
@@ -129,7 +130,7 @@ test("hud: the default window size shows every default live row under the chart 
     best.date = 1
     f.NS.Recorder.Save(best)
     f.Hud.Show()
-    assertEqual(f.Hud.Diagnose().height, 501,
+    assertEqual(f.Hud.Diagnose().height, 505,
         "five rows plus the headings, the chart (its icon row too, UT-P11) and the pace bar (#2, #3, Round C)")
     running(f, 30)
     f.meter.SetSession(25, session(15))
@@ -138,7 +139,7 @@ test("hud: the default window size shows every default live row under the chart 
     local b = body(f)
     assertTrue(b.w.chart.shown, "the chart is up")
     assertTrue(b.w.pace.bar:IsShown(), "the pace bar is up")
-    assertEqual(b.w.list:Count(), 5, "all 5 rows fit at 260x501")
+    assertEqual(b.w.list:Count(), 5, "all 5 rows fit at 260x505")
 end)
 
 test("hud: the result card's rows stop above its buttons at every count of Spell rows shown", function()
