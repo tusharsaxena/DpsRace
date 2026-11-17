@@ -36,6 +36,8 @@ local function hud()
     function tip.AddDoubleLine(_, a, b) tip.lines[#tip.lines + 1] = tostring(a) .. "|" .. tostring(b) end
     function tip.Show() end
     function tip.Hide() end
+    function tip.ClearAllPoints() end   -- placed by Style.PlaceTip (AD-92-DR)
+    function tip.SetPoint() end
     f.M.GameTooltip, f.tip = tip, tip
     return f
 end

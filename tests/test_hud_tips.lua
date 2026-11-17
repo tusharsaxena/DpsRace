@@ -123,19 +123,33 @@ test("hud: a result row's hover shows the spell tooltip right of the HUD, then i
     assertTrue(row.__mouse and row.spell ~= nil, "a result row takes the mouse")
     assertNil(row.liveID, "a pooled row keeps no live ID past the race")
     local tip = recordingTip(f)
+    -- Plain geometry (a result row holds no secret): LibKa0s-Tooltip-1.0's PlaceBeside places it, one
+    -- absolute point on UIParent 2 px off the HUD's edge (re-pinned to standalone-windows *Tooltip
+    -- placement*, AD-92-DR). The screen is the kit's fake one.
+    local scr = dofile(T.root .. "/tests/_kit/mock_screen.lua")(f.M, { width = 1920, height = 1080 })
+    function tip.GetHeight() return 120 end
     local frame = ui(f).frame
-    rawset(frame, "GetRight", function() return 600 end)
-    rawset(frame, "GetTop", function() return 800 end)
-    rawset(row, "GetTop", function() return 650 end)
+    local function at(fr, l, bt, w, h)
+        rawset(fr, "GetLeft", function() return l end)
+        rawset(fr, "GetBottom", function() return bt end)
+        rawset(fr, "GetRight", function() return l + w end)
+        rawset(fr, "GetTop", function() return bt + h end)
+        rawset(fr, "GetEffectiveScale", function() return 1 end)
+    end
+    at(frame, 300, 500, 300, 300)
+    at(row, 310, 630, 280, 20)
     row:GetScript("OnEnter")(row)
     assertTrue(tip.owner == frame and tip.anchor == "ANCHOR_NONE", "owned by the HUD")
     assertEqual(tip.spell, run.spells[1].id, "the client's spell tooltip")
-    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[2] == frame and tip.placed[3] == "TOPRIGHT", "right of the HUD")
-    assertEqual(tip.placed[5], -150, "level with the row")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[3] == "BOTTOMLEFT", "right of the HUD")
+    assertEqual(tip.placed[4], 602, "2 px off the HUD's right edge")
+    assertEqual(tip.placed[5], 650, "level with the row")
     local want = f.NS.ResultsTips.Spell(run.spells[1], run, 1, #run.spells)
     assertEqual(#tip.lines, 2 + #want, "the spell's text, a spacer, then the run's lines")
     -- Against the screen's right edge: left of the HUD.
-    rawset(frame, "GetRight", function() return 1800 end)
+    at(frame, 1500, 500, 300, 300)
+    at(row, 1510, 630, 280, 20)
     row:GetScript("OnEnter")(row)
-    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[3] == "TOPLEFT", "left of it without the room")
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[4] == 1498, "left of it without the room, 2 px off")
+    scr.restore()
 end)

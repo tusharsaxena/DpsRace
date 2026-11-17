@@ -6,15 +6,19 @@ local _, NS = ...
 --- tab keeps its filters and its count and says the charts are unavailable.
 NS.Charts = LibStub and LibStub("LibKa0s-Charts-1.0", true)
 
--- A gold title over the lines, bulleted from two (Style.AddTipLines), by the cursor.
-local function cursorTip(owner, lines, anchor)
+-- A gold title over the lines, bulleted from two (Style.AddTipLines). A chart mark is a body element
+-- (AD-92-DR): placed by the context's PlaceTip, beside the Results window, and the library's legacy
+-- `anchor` is not read; with no context (an older Charts), Style.PlaceTip places it the same way.
+local function markTip(owner, lines, _, ctx)
     local tip = GameTooltip
     if not tip then return end
     local r, g, b = NS.Style.Rgb("gtip.title")
-    tip:SetOwner(owner, anchor)
+    tip:SetOwner(owner, "ANCHOR_NONE")
     tip:SetText(lines[1], r, g, b, 1, true)
     NS.Style.AddTipLines(tip, lines, 2)
     tip:Show()
+    if type(ctx) == "table" and type(ctx.PlaceTip) == "function" then return ctx:PlaceTip(tip, owner) end
+    NS.Style.PlaceTip(tip, owner)
 end
 
 --- The host table for DpsRace's Results window: NS.Pool, the window's flat panel, its tooltip, its
@@ -31,7 +35,7 @@ function NS.ChartsHost()
     return {
         pool = NS.Pool,
         panel = function(parent) return Tbl.Panel(parent) end,
-        tip = cursorTip,
+        tip = markTip,
         hideTip = Tbl.HideTip,
         text = Style.PlainText,
         paint = function(fs, c) Style.Paint(fs, c, nil, true) end,

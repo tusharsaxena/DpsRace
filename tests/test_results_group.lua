@@ -252,6 +252,7 @@ test("results: hovering Save, Reset or Clear shows its tooltip without an error"
     local shown = {}
     i.mocks.GameTooltip = {
         SetOwner = function() end, Show = function() end, Hide = function() end,
+        ClearAllPoints = function() end, SetPoint = function() end,   -- placed by Style.PlaceTip (AD-92-DR)
         AddLine = function(_, text) shown[#shown + 1] = text end,
         SetText = function(_, text)
             assertTrue(type(text) == "string", "SetText needs a string, got " .. type(text))

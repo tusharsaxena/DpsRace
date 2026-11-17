@@ -826,6 +826,7 @@ local function buildBar(view)
         local b = NS.HudStates.Button(bar, L[spec.label], function() view[spec.act](view) end)
         b:SetWidth(VIEW_BUTTON_W)
         b.tip = { L[spec.label], L[spec.tip] }   -- the shared button's own tooltip shape
+        b.tipChrome = true   -- a filter bar's button: chrome, its tooltip above it (AD-92-DR)
         view.viewButtons[spec.key] = b
     end
     view.bar = bar

@@ -662,11 +662,14 @@ function Style.ControlButton(parent, name, glyph, tip, onClick)
     b.tip = tip
     Style.SetControlIcon(b, name, glyph)
     b:SetScript("OnClick", function() onClick() end)
+    -- A section heading's control is a body element (AD-92-DR): beside its window. `b.tipChrome` makes
+    -- it a chrome element's, centered above it (Style.PlaceTip).
     b:SetScript("OnEnter", function(self)
         if not GameTooltip then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetOwner(self, "ANCHOR_NONE")
         GameTooltip:SetText(self.tip, Style.Rgb("gtip.value"))
         GameTooltip:Show()
+        Style.PlaceTip(GameTooltip, self, self.tipChrome)
     end)
     b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     return b
@@ -680,6 +683,40 @@ end
 local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
 local TIP_GAP = 2
 
+local function plainTop(frame)
+    local fn = type(frame) == "table" and frame.GetTop
+    return type(fn) == "function" and NS.Secrets.PlainNumber(fn(frame)) or nil
+end
+
+--- Place the filled, shown `tip` for `el` (standalone-windows *Tooltip placement*, AD-92-DR): a body
+--- element's beside its window group (`group`, a frame, else the library's GroupOf: the window it sits
+--- in), right when it fits and left without the room, its top level with `el`'s (PlaceBeside); a
+--- chrome element's (`chrome`) centered above it, below only without room above (PlaceAttached).
+--- Where the library places nothing (a tooltip showing a secret spell has secret geometry, DR-03; a
+--- degraded load), a body tooltip goes right of its window by a relative point, level with `el` when
+--- both tops read plain (NS.Secrets.PlainNumber), and a chrome one above `el`. Never the cursor,
+--- never a corner.
+--- @param tip table  GameTooltip
+--- @param el table
+--- @param chrome boolean|nil
+--- @param group table|nil
+function Style.PlaceTip(tip, el, chrome, group)
+    if Tip then
+        if chrome then
+            if Tip.PlaceAttached and Tip.PlaceAttached(tip, el) then return end
+        elseif Tip.PlaceBeside and Tip.PlaceBeside(tip, el, group) then return end
+    end
+    local win = group
+    if not chrome and type(win) ~= "table" and Tip and Tip.GroupOf then win = select(2, Tip.GroupOf(el)) end
+    tip:ClearAllPoints()
+    if chrome or type(win) ~= "table" or win == el then
+        tip:SetPoint("BOTTOM", el, "TOP", 0, TIP_GAP)
+        return
+    end
+    local top, winTop = plainTop(el), plainTop(win)
+    tip:SetPoint("TOPLEFT", win, "TOPRIGHT", TIP_GAP, (top and winTop) and top - winTop or 0)
+end
+
 local function showTitleTip(b)
     local tip, lines = GameTooltip, b.tip
     if not (tip and lines) then return end
@@ -690,9 +727,7 @@ local function showTitleTip(b)
     tip:SetText(lines[1], r, g, bl, 1, true)
     Style.AddTipLines(tip, lines, 2, r, g, bl)
     tip:Show()
-    if Tip and Tip.PlaceAttached and Tip.PlaceAttached(tip, b) then return end
-    tip:ClearAllPoints()
-    tip:SetPoint("BOTTOM", b, "TOP", 0, TIP_GAP)
+    Style.PlaceTip(tip, b, true)
 end
 
 local function hideTitleTip(b)

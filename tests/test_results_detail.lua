@@ -413,10 +413,12 @@ test("results: every detail element has a tooltip; spells show the client's spel
     -- The Spell breakdown heading: beside the window, as every tooltip of its section (DR-05).
     d.w.spellsTitleHover:__fire("OnEnter")
     assertTrue(tip.anchor == "ANCHOR_NONE" and tip.placed[1] == "TOPLEFT", "the breakdown heading's beside the window")
-    -- Anything else: under itself.
+    -- Anything else: owned by itself, and beside the window too, level with it (re-pinned from under
+    -- itself to standalone-windows *Tooltip placement*, AD-92-DR: a card is a body element).
     d.w.dps.frame:__fire("OnEnter")
-    assertEqual(tip.anchor, "ANCHOR_BOTTOM")
+    assertEqual(tip.anchor, "ANCHOR_NONE")
     assertEqual(tip.owner, d.w.dps.frame)
+    assertEqual(tip.placed[1], "TOPLEFT", "beside the window")
     assertEqual(tip.lines[1], "147,556 DPS")
     d.w.delete:__fire("OnEnter")
     assertEqual(tip.lines[1], "Delete")

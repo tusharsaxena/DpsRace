@@ -201,15 +201,15 @@ end
 
 -- ── the mode's two words ────────────────────────────────────────────────────────────────────────
 
--- A word's tooltip sits above it, the way the window's other controls' do (the `?` beside the zoom,
--- pinned by test_results_timeline_controls); the side tooltip (Tbl.SideTip) is for what a row or a mark
--- shows, level with it beside the window.
+-- A word's tooltip opens beside the window, level with the word, the way the heading's other controls'
+-- do (the `?` beside the zoom, pinned by test_results_timeline_controls): a body element (AD-92-DR).
 local function toggleTip(self)
     local tip = GameTooltip
     if not tip then return end
-    tip:SetOwner(self, "ANCHOR_TOP")
+    tip:SetOwner(self, "ANCHOR_NONE")
     tip:SetText(self.tip, Style.Rgb("gtip.value"))
     tip:Show()
+    Style.PlaceTip(tip, self, false, Tbl.WindowOf(self))
 end
 
 local function newToggle(u, mode, text, tip)

@@ -214,7 +214,7 @@ end
 local function tip(p, owner, key, extra)
     local other = p:CompareTarget()
     local lines = NS.ResultsTips.Loadout(key, p.run, other, extra)
-    if lines then Tbl.BelowTip(owner, lines) end
+    if lines then Tbl.BesideTip(owner, lines) end
 end
 
 -- `frame`'s hover: the loadout tooltip for `key` (a function answers it late) under it.
@@ -237,7 +237,7 @@ local function itemTip(p, cell)
     local tt = GameTooltip
     if not tt then return end
     if not cell.link then return tip(p, cell, "empty") end
-    tt:SetOwner(cell, "ANCHOR_RIGHT")
+    tt:SetOwner(cell, "ANCHOR_NONE")
     local shown = tt.SetHyperlink and pcall(tt.SetHyperlink, tt, cell.link)
     if not shown then
         local r, g, b = Style.Rgb("gtip.value")
@@ -249,6 +249,7 @@ local function itemTip(p, cell)
         Style.AddTipLines(tt, note, 1, Style.Rgb(C.amber))
     end
     tt:Show()
+    Style.PlaceTip(tt, cell, false, Tbl.WindowOf(cell))   -- a body element: beside the window (AD-92-DR)
 end
 
 local function onItemClick(cell)

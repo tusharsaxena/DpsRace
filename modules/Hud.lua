@@ -579,6 +579,8 @@ local function buildFooter(f)
     local tips, States = NS.HudTips, NS.HudStates
     ui.footLeftTip = States.TipZone(f, ui.footLeft, tips.footLeft)
     ui.footRightTip = States.TipZone(f, ui.footRight, tips.footRight)
+    -- The footer's lines are chrome: their tooltips attach above them (AD-92-DR).
+    ui.footLeftTip.tipChrome, ui.footRightTip.tipChrome = true, true
 end
 
 local onHide, resized

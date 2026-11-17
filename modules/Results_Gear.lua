@@ -377,9 +377,9 @@ local function slotTip(cell)
     local tt = GameTooltip
     if not tt then return end
     if not cell.link then
-        return Tbl.BelowTip(cell, { L["Empty"], L["Nothing was equipped in this slot."] })
+        return Tbl.BesideTip(cell, { L["Empty"], L["Nothing was equipped in this slot."] })
     end
-    tt:SetOwner(cell, "ANCHOR_RIGHT")
+    tt:SetOwner(cell, "ANCHOR_NONE")
     local shown = tt.SetHyperlink and pcall(tt.SetHyperlink, tt, cell.link)
     if not shown then
         local r, g, b = Style.Rgb("gtip.value")
@@ -390,6 +390,7 @@ local function slotTip(cell)
         Style.AddTipLines(tt, cell.notes, 1, Style.Rgb(C.amber))
     end
     tt:Show()
+    Style.PlaceTip(tt, cell, false, Tbl.WindowOf(cell))   -- a body element: beside the Gear window (AD-92-DR)
 end
 
 local function onSlotClick(cell)

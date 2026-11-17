@@ -627,10 +627,14 @@ test("insights charts: the DpsRace host pools through NS.Pool and draws in the w
     assertTrue(rec ~= nil and rec.owner == "DpsRace" and rec.calls.Panel ~= nil, "the window's flat panel")
 end)
 
-test("insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor", function()
+-- Re-pinned from by the cursor (ANCHOR_CURSOR_RIGHT) to standalone-windows *Tooltip placement*
+-- (AD-92-DR): owned at ANCHOR_NONE and placed by the context's PlaceTip (where, on the fake screen:
+-- test_tooltip_place).
+test("insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, placed by ctx:PlaceTip", function()
     local i = inst()
     local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide" }) do tip[m] = function() end end
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints" }) do tip[m] = function() end end
+    function tip.SetPoint(_, ...) tip.placed = { ... } end
     function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
     function tip.SetText(_, text, r, g, b) tip.lines[1], tip.title = text, { r, g, b } end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
@@ -639,7 +643,8 @@ test("insights charts: the DpsRace host's tooltip is a gold title over bulleted 
     local pool = ctx:Pool("bars")
     ctx:renderBarSection(pool, ctx:sectionHeader(nil, "x"), SPECS, 0, 600, 8)
     hover(pool.active[2])
-    assertEqual(tip.anchor, "ANCHOR_CURSOR_RIGHT")
+    assertEqual(tip.anchor, "ANCHOR_NONE", "never the cursor")
+    assertTrue(tip.placed ~= nil, "placed against the mark, not left where the pointer is")
     assertEqual(tip.lines[1], "Destruction")
     assertTrue(sameColor(tip.title, i.NS.Style.GOLD))
     assertEqual(tip.lines[2], i.NS.Style.BULLET .. "Best 342.0k")

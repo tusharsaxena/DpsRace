@@ -79,56 +79,75 @@ end
 
 -- ── the tooltips beside the window ─────────────────────────────────────────────────────────────
 
--- A recording GameTooltip, the window's right edge at `right` on a 1920 px screen, its top at 800.
+-- `frame` 20 high with its top at `top` (and 40 wide, at `left`), in screen units at scale 1.
+local function placeAt(frame, top, left, w, h)
+    left, w, h = left or 200, w or 40, h or 20
+    rawset(frame, "GetLeft", function() return left end)
+    rawset(frame, "GetBottom", function() return top - h end)
+    rawset(frame, "GetRight", function() return left + w end)
+    rawset(frame, "GetTop", function() return top end)
+    rawset(frame, "GetEffectiveScale", function() return 1 end)
+end
+
+-- A recording GameTooltip 300 x 120 on the kit's fake 1920 x 1080 screen, the window's right edge at
+-- `right` (600 wide), its top at 800. LibKa0s-Tooltip-1.0's PlaceBeside places it: one absolute point
+-- on UIParent's BOTTOMLEFT, `tip.placed` (re-pinned to standalone-windows *Tooltip placement*,
+-- AD-92-DR, from a relative point on the window). Answers the tip and the screen.
 local function besideTip(i, u, right)
     local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetText" }) do tip[m] = function() end end
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints" }) do tip[m] = function() end end
     function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines, tip.placed = owner, anchor, {}, nil end
     function tip.SetSpellByID(_, id) tip.spell, tip.lines[1] = id, "the client's spell text" end
+    function tip.SetText(_, text) tip.lines[1] = text end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
     function tip.NumLines() return #tip.lines end
     function tip.SetPoint(_, ...) tip.placed = { ... } end
     function tip.GetWidth() return 300 end
+    function tip.GetHeight() return 120 end
     function tip.GetEffectiveScale() return 1 end
     i.mocks.GameTooltip = tip
-    i.mocks.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
-    rawset(u.frame, "GetRight", function() return right end)
-    rawset(u.frame, "GetTop", function() return 800 end)
-    rawset(u.frame, "GetEffectiveScale", function() return 1 end)
-    return tip
+    local scr = dofile(T.root .. "/tests/_kit/mock_screen.lua")(i.mocks, { width = 1920, height = 1080 })
+    placeAt(u.frame, 800, right - 600, 600, 500)
+    return tip, scr
 end
 
 test("timeline controls: a Casts icon's and a By ability tick's tooltips open right of the window, level with them", function()
     local i, u = opened()
     i.NS.SetByPath("results.timelineMarks", "tick")   -- icons are the default (test_results_timeline_marks)
-    local tip = besideTip(i, u, 1200)
+    local tip, scr = besideTip(i, u, 1200)
     local d = i.TL.Icons()[1]
-    rawset(d.frame, "GetTop", function() return 700 end)
+    placeAt(d.frame, 700)
     d.frame:GetScript("OnEnter")(d.frame)
     assertTrue(tip.owner == u.frame and tip.anchor == "ANCHOR_NONE", "owned by the window, not the icon or the cursor")
-    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[2] == u.frame and tip.placed[3] == "TOPRIGHT", "right of the window")
-    assertEqual(tip.placed[5], -100, "level with the icon")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[3] == "BOTTOMLEFT" and tip.placed[4] == 1202,
+        "right of the window, 2 px off its edge")
+    assertEqual(tip.placed[5], 700, "level with the icon")
     assertEqual(tip.spell, d.cast.id, "the client's spell tooltip first")
     assertEqual(tip.lines[#tip.lines - 1], i.NS.Style.BULLET .. "Cast at 0:01", "then its time on a bullet")
     local mark = i.TL.Marks()[1]
-    rawset(mark.hit, "GetTop", function() return 640 end)
+    placeAt(mark.hit, 640)
     mark.hit:GetScript("OnEnter")(mark.hit)
     assertTrue(tip.owner == u.frame and tip.anchor == "ANCHOR_NONE", "a tick's too")
-    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[3] == "TOPRIGHT", "right of the window")
-    assertEqual(tip.placed[5], -160, "level with the tick")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[4] == 1202, "right of the window")
+    assertEqual(tip.placed[5], 640, "level with the tick")
     assertTrue(i.NS.ResultsTable.SpellBelowTip == nil, "the under-the-cursor path is gone")
+    scr.restore()
 end)
 
 test("timeline controls: against the screen's right edge the tooltips open left of the window instead", function()
     local i, u = opened()
     i.NS.SetByPath("results.timelineMarks", "tick")
-    local tip = besideTip(i, u, 1800)
+    local tip, scr = besideTip(i, u, 1800)
     local d = i.TL.Icons()[1]
+    placeAt(d.frame, 700, 1300)
     d.frame:GetScript("OnEnter")(d.frame)
-    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[2] == u.frame and tip.placed[3] == "TOPLEFT", "left of it")
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[3] == "BOTTOMLEFT" and tip.placed[4] == 1198,
+        "left of it, 2 px off its left edge")
     local mark = i.TL.Marks()[1]
+    placeAt(mark.hit, 640, 1300)
     mark.hit:GetScript("OnEnter")(mark.hit)
-    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[3] == "TOPLEFT", "a tick's too")
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[4] == 1198, "a tick's too")
+    scr.restore()
 end)
 
 -- ── Ctrl+wheel ──────────────────────────────────────────────────────────────────────────────────
@@ -236,17 +255,18 @@ end)
 test("timeline controls: the ? is always live, turns gold under the pointer and its tooltip lists the mouse controls on bullets", function()
     local i, u = opened()
     local B = i.NS.Style.BULLET
-    local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetPoint" }) do tip[m] = function() end end
-    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
-    function tip.SetText(_, text) tip.lines[1] = text end
-    function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
-    i.mocks.GameTooltip = tip
+    local tip, scr = besideTip(i, u, 1200)
+    placeAt(u.help, 760, 1150, 16, 16)
     assertTrue(u.help:IsEnabled(), "live at 1x")
     u.help:__fire("OnClick")
     assertEqual(i.TL.Zoom(), 1, "a click does nothing")
     u.help:GetScript("OnEnter")(u.help)
-    assertTrue(tip.owner == u.help and tip.anchor == "ANCHOR_TOP", "above it, the other controls' way")
+    -- Re-pinned from above it (ANCHOR_TOP) to standalone-windows *Tooltip placement* (AD-92-DR): a
+    -- heading's control is a body element, beside the window, level with the control.
+    assertTrue(tip.owner == u.help and tip.anchor == "ANCHOR_NONE", "owned by the ?, never the cursor")
+    assertTrue(tip.placed[1] == "TOPLEFT" and tip.placed[4] == 1202 and tip.placed[5] == 760,
+        "beside the window, level with the ?, the heading's other controls' way")
+    scr.restore()
     assertEqual(tip.lines[1], "Mouse controls")
     assertEqual(tip.lines[2], B .. "Mouse wheel: scroll up and down")
     assertEqual(tip.lines[3], B .. "Shift+mouse wheel: scroll left and right (zoomed in)")

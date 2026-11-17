@@ -953,7 +953,7 @@ Total.
 - timeline marks: in tick mode a pet's tick is PET_LINE and a player's PLAYER_LINE in both lanes
 - timeline marks: the setting written while the window is open redraws it as ticks, keeping the zoom
 - timeline marks: the two words on the By ability heading line switch the marks
-- timeline marks: a word's tooltip sits above it, the way the window's other controls' do
+- timeline marks: a word's tooltip opens beside the window, level with it, as the ? control's does
 - timeline marks: zoomed in, the icons follow the zoomed axis; a drag of the grip moves them without re-pooling
 
 ### test_results_gear.lua (13)
@@ -1088,7 +1088,7 @@ Total.
 - insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below
 - insights charts: the panel comes from the host, a plain frame without one
 - insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
-- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
+- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, placed by ctx:PlaceTip
 - insights tab: built on its first show, its tab label gold while it shows
 - insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
 - insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
@@ -1149,6 +1149,19 @@ Total.
 - tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
+
+### test_tooltip_place.lua (10)
+
+- tooltip place: SideTip opens beside the window, right when it fits and left without the room
+- tooltip place: SpellTip opens beside the window with its comparisons on the same side
+- tooltip place: BesideTip (a section part, a loadout or usage part) opens beside its window
+- tooltip place: a section heading's control (Style.ControlButton) is a body element
+- tooltip place: a HUD button and tile are body elements; a filter bar's button is chrome
+- tooltip place: the Runs and Insights filter bars' buttons are chrome
+- tooltip place: a list's column header is a body element, beside the window
+- tooltip place: the HUD's footer lines are chrome, attached above
+- tooltip place: an Insights chart mark's tooltip goes through the Charts host's PlaceTip
+- tooltip place: no addon file anchors a tooltip to the cursor or a corner
 
 ### test_schema.lua (18)
 
@@ -1419,7 +1432,7 @@ Total.
 - hud tips: the result card names its figures, chart, pace bar, heading and four buttons
 - hud tips: a heading's zone hides with its heading
 - hud tips: the title bar's controls and the footer's lines
-- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry
+- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no secret geometry
 
 ### test_glyphs.lua (1)
 
@@ -1921,6 +1934,7 @@ Total.
 | test_switched_sections.lua | 3 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
+| test_tooltip_place.lua | 10 |
 | test_schema.lua | 18 |
 | test_settings.lua | 38 |
 | test_skinsetup.lua | 25 |
@@ -1962,4 +1976,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1532** |
+| **Total** | **1542** |

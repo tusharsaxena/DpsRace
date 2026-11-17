@@ -275,7 +275,7 @@ end
 
 local function tip(p, owner, key, extra)
     local lines = NS.ResultsTips.Usage(key, p.run, extra)
-    if lines then Tbl.BelowTip(owner, lines) end
+    if lines then Tbl.BesideTip(owner, lines) end
 end
 
 local function hoverOver(p, region, key)
@@ -296,13 +296,14 @@ local function rowTip(p, row)
     if p.usage.editing and data.itemID then lines[#lines + 1] = { L["Right-click: never show this item."], NS.Style.Rgb("dr.dim") } end
     local shown = false
     if data.itemID then
-        tt:SetOwner(row, "ANCHOR_RIGHT")
+        tt:SetOwner(row, "ANCHOR_NONE")
         shown = tt.SetItemByID and pcall(tt.SetItemByID, tt, data.itemID)
     end
-    if not shown then return Tbl.BelowTip(row, lines) end
+    if not shown then return Tbl.BesideTip(row, lines) end
     tt:AddLine(" ")
     NS.Style.AddTipLines(tt, lines, 2)
     tt:Show()
+    NS.Style.PlaceTip(tt, row, false, Tbl.WindowOf(row))   -- a body element: beside the window (AD-92-DR)
 end
 
 --- An item row's right-click while editing: a menu with *Never show <item>* (Usage.Hide; the window

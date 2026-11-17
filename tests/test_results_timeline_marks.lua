@@ -268,20 +268,42 @@ test("timeline marks: the two words on the By ability heading line switch the ma
     assertEqual(TL.Marks()[1].kind, "icon")
 end)
 
-test("timeline marks: a word's tooltip sits above it, the way the window's other controls' do", function()
+-- Re-pinned from above the word (ANCHOR_TOP) to standalone-windows *Tooltip placement* (AD-92-DR):
+-- the words sit on a heading line, body elements, so their tooltips open beside the window, level
+-- with the word, as the ? control's does (test_results_timeline_controls).
+test("timeline marks: a word's tooltip opens beside the window, level with it, as the ? control's does", function()
     local i, u = opened()
     local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints", "SetPoint" }) do tip[m] = function() end end
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints" }) do tip[m] = function() end end
     function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
     function tip.SetText(_, text) tip.lines[1] = text end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
+    function tip.SetPoint(_, ...) tip.placed = { ... } end
+    function tip.GetWidth() return 300 end
+    function tip.GetHeight() return 60 end
+    function tip.GetEffectiveScale() return 1 end
     i.mocks.GameTooltip = tip
+    local scr = dofile(T.root .. "/tests/_kit/mock_screen.lua")(i.mocks, { width = 1920, height = 1080 })
+    local function at(frame, left, top, w, h)
+        rawset(frame, "GetLeft", function() return left end)
+        rawset(frame, "GetBottom", function() return top - h end)
+        rawset(frame, "GetRight", function() return left + w end)
+        rawset(frame, "GetTop", function() return top end)
+        rawset(frame, "GetEffectiveScale", function() return 1 end)
+    end
+    at(u.frame, 1300, 800, 500, 500)   -- against the screen's right edge: the left side
+    at(u.marksTicks, 1600, 760, 40, 16)
+    at(u.marksIcons, 1650, 760, 40, 16)
     u.marksTicks:GetScript("OnEnter")(u.marksTicks)
-    assertTrue(tip.owner == u.marksTicks and tip.anchor == "ANCHOR_TOP", "above the word, as the ? control's")
+    assertTrue(tip.owner == u.marksTicks and tip.anchor == "ANCHOR_NONE", "owned by the word, never the cursor")
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[4] == 1298 and tip.placed[5] == 760,
+        "left of the window, 2 px off, level with the word")
     assertEqual(tip.lines[1], "Show each cast in By ability as a thin line")
     u.marksIcons:GetScript("OnEnter")(u.marksIcons)
-    assertTrue(tip.owner == u.marksIcons and tip.anchor == "ANCHOR_TOP")
+    assertTrue(tip.owner == u.marksIcons and tip.anchor == "ANCHOR_NONE")
+    assertTrue(tip.placed[1] == "TOPRIGHT" and tip.placed[5] == 760)
     assertEqual(tip.lines[1], "Show each cast in By ability as its ability's icon")
+    scr.restore()
 end)
 
 -- ── the zoom and the grip ───────────────────────────────────────────────────────────────────────

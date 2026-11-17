@@ -179,28 +179,26 @@ test("results: every cell and header has a tooltip; it sits right of the window,
     end
     assertEqual(list:TipLines(run, 7)[1], "36,812,345 damage", "the exact damage")
     assertEqual(list:TipLines(run, 8)[1], "306,769 DPS")
-    -- Placement: a stand-in tooltip, window and row with scripted geometry.
-    local placed
-    local tip = {}
-    for _, m in ipairs({ "AddLine", "Show", "ClearAllPoints" }) do tip[m] = function() end end
-    function tip.SetOwner() end
-    function tip.SetText() end
-    function tip.GetWidth() return 300 end
-    function tip.GetEffectiveScale() return 1 end
-    function tip.SetPoint(_, point, _, rel, x) placed = { point, rel, x } end
-    local env = i.mocks
-    env.GameTooltip = tip
-    env.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
-    local window = { GetRight = function() return 1200 end, GetTop = function() return 800 end,
-                     GetEffectiveScale = function() return 1 end }
-    local row = { GetTop = function() return 700 end }
+    -- Placement, on the kit's fake screen (re-pinned to standalone-windows *Tooltip placement*,
+    -- AD-92-DR: LibKa0s-Tooltip-1.0's PlaceBeside, one absolute point 2 px off the window's edge).
+    local scr = dofile(T.root .. "/tests/_kit/mock_screen.lua")(i.mocks, { width = 1920, height = 1080 })
+    local tip = scr.tooltip{ width = 300, height = 80 }
+    i.mocks.GameTooltip = tip
+    local window = scr.frame{ left = 800, bottom = 300, width = 400, height = 500 }
+    local row = scr.frame{ left = 810, bottom = 680, width = 380, height = 20, parent = window }
     i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
-    assertEqual(placed[1], "TOPLEFT", "room on the right: the tooltip's left edge on the window's right")
-    assertEqual(placed[2], "TOPRIGHT")
-    window.GetRight = function() return 1800 end
+    local l, _, _, t = scr.rectOf(tip)
+    assertEqual(l, 1202, "room on the right: the tooltip's left edge 2 px off the window's right")
+    assertEqual(t, 700, "level with the row")
+    window:__place(1400, 300, 400, 500)
+    row:__place(1410, 680, 380, 20)
     i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
-    assertEqual(placed[1], "TOPRIGHT", "no room: on the window's left")
-    assertEqual(placed[2], "TOPLEFT")
+    local r
+    l, _, r, t = scr.rectOf(tip)
+    assertEqual(r, 1398, "no room: its right edge 2 px off the window's left")
+    assertEqual(t, 700)
+    assertTrue(l ~= nil, "on the screen")
+    scr.restore()
 end)
 
 test("results: the Status column tags each run; the DPS column shows every run's DPS", function()

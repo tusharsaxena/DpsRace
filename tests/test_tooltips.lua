@@ -1,5 +1,5 @@
 -- tests/test_tooltips.lua — the body of every tooltip the addon draws itself (modules/Style.lua's
--- AddTipLines, through modules/Results_Table.lua's BelowTip, SideTip and SpellTip and the shared
+-- AddTipLines, through modules/Results_Table.lua's BesideTip, SideTip and SpellTip and the shared
 -- button's tooltip in modules/Hud_States.lua): two or more lines under the title go on bullets, each
 -- in its own color; one line stays plain; the client's own spell text is never touched.
 
@@ -33,14 +33,14 @@ end
 test("tooltips: one line under the title stays plain; the title never takes a bullet", function()
     local i = inst()
     assertEqual(i.B, "\226\128\162 ")
-    i.NS.ResultsTable.BelowTip(i.mocks.CreateFrame("Frame"), { "Title", "Only line" })
+    i.NS.ResultsTable.BesideTip(i.mocks.CreateFrame("Frame"), { "Title", "Only line" })
     assertEqual(i.tip.lines[1], "Title")
     assertEqual(i.tip.lines[2], "Only line")
 end)
 
 test("tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them", function()
     local i = inst()
-    i.NS.ResultsTable.BelowTip(i.mocks.CreateFrame("Frame"), { "Title", "First", { "Hint", 0.62, 0.62, 0.68 } })
+    i.NS.ResultsTable.BesideTip(i.mocks.CreateFrame("Frame"), { "Title", "First", { "Hint", 0.62, 0.62, 0.68 } })
     assertEqual(i.tip.lines[1], "Title")
     assertEqual(i.tip.lines[2], i.B .. "First")
     assertEqual(i.tip.lines[3], i.B .. "Hint", "the dim footer is a body line")

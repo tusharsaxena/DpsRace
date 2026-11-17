@@ -34,6 +34,8 @@ do
         "SkinEUI.lua", "SkinAce.lua",
         -- The Insights tab's chart widgets, through core/ChartsSetup.lua.
         "Charts.lua", "ChartsRender.lua",
+        -- Where every tooltip the addon places opens (AD-92-DR, LibKa0s#92).
+        "Tooltip.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do present[path:match("([^/]+)$")] = true end
@@ -188,6 +190,7 @@ local SUITES = {
     "test_switched_sections",
     "test_sizing",
     "test_tooltips",
+    "test_tooltip_place",
     "test_schema",
     "test_settings",
     "test_skinsetup",

@@ -267,15 +267,17 @@ local function clipLayer(parent)
     return clip, layer
 end
 
--- The `?` control's hover: the mouse controls on bullets, above it as the other controls' tooltips are.
+-- The `?` control's hover: the mouse controls on bullets. It sits on the *Casts* heading line, so it
+-- is a body element as the other heading controls are: beside the window, level with it (AD-92-DR).
 local function helpTip(self)
     local tip, lines = GameTooltip, Timeline.HelpLines()
     if not tip then return end
-    tip:SetOwner(self, "ANCHOR_TOP")
+    tip:SetOwner(self, "ANCHOR_NONE")
     local r, g, b = Style.Rgb("gtip.title")
     tip:SetText(lines[1], r, g, b, 1, true)
     Style.AddTipLines(tip, lines, 2)
     tip:Show()
+    Style.PlaceTip(tip, self, false, ui and ui.frame)
 end
 
 -- The skin's body face at `size` px on `fs` (its color kept): the `?` and the level. The skin keeps

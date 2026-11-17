@@ -444,6 +444,52 @@ the perf panel, the dropdown menu and the tooltips are Blizzard's or the library
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.
 
+## Tooltip placement
+
+Every tooltip this addon places itself follows standalone-windows' *Tooltip placement* (WowAddonStandards
+v2.113.0) through LibKa0s-Tooltip-1.0 (AD-92-DR, LibKa0s#92). One seam does it, `Style.PlaceTip(tip, el,
+chrome, group)`, called after the tooltip is owned at `ANCHOR_NONE`, filled and shown:
+
+- **A body element** (`chrome` falsy): `PlaceBeside`, beside the window group (`group`, else the
+  library's `GroupOf`, the window the element sits in), `TOPLEFT` 2 px off its right edge or `TOPRIGHT`
+  2 px off its left without the room, top level with the element, the comparison tooltips on the same
+  side. Body elements here: the Runs list's rows, cells and column headers, the detail's figures,
+  meta lines, Delta box, section parts and spell rows, a section heading's control (`Style.ControlButton`,
+  the detail's collapse arrows and the timeline's zoom, scroll, `?` and mark-mode words on its *Casts*
+  heading line), the compare's parts and rows, the loadout's and gear view's items and cells, the usage
+  rows, the timeline's lanes, icons and ticks, the Insights chart marks and cards, and on the HUD every
+  tile, button (`HudStates.Button`), chip and spell row and the chart's icons and *+n* marks. The
+  shared entry points are `ResultsTable.SideTip` (owned by the window), `SpellTip` (the client's spell
+  tooltip), `BesideTip` (owned by the element) and the Charts host's `tip`, which hands the mark to
+  `ctx:PlaceTip` (Charts minor 2) and ignores the library's legacy anchor.
+- **A chrome element** (`chrome` true, or `b.tipChrome` on a `HudStates.Button`, a `HudStates.TipZone` or
+  a `Style.ControlButton`): `PlaceAttached`, centered 2 px above it, below only at the screen's top.
+  Chrome here: the Runs and Insights filter bars' *Save*, *Reset* and *Clear*, the HUD footer's two
+  lines, and every title-bar control (`Style.TitleTip`, `Style.TitleButton`; the library's marks and
+  closes place their own).
+- **Where the library places nothing** (a tooltip showing a secret spell answers secret geometry; a
+  degraded load with no Tooltip major): a body tooltip goes right of its window by a relative point
+  (`TOPLEFT` on its `TOPRIGHT`, 2 px), level with the element when both tops read plain, and a chrome
+  one above the element (`BOTTOM` on its `TOP`, 2 px). Never the cursor, never a corner.
+
+The Runs list's row reads which cell the pointer is over (`Table:columnAt`, `GetCursorPosition`) to
+choose the words; it never places by it. `test_tooltip_place` drives each path on the kit's fake screen
+(`tests/_kit/mock_screen.lua`) through a right-fits and a right-does-not-fit layout, and guards every
+loaded addon file against any anchor but `ANCHOR_NONE` and a point set from the cursor.
+
+**Left as they are (standalone-windows, *What it does not bind*):**
+
+- The settings pages (`settings/`, AceConfig and the library's Options widgets inside Blizzard's
+  Settings canvas): options-ui governs them.
+- The minimap button's options menu and every right-click menu (`NS.OpenMenu`, `MenuUtil.CreateContextMenu`):
+  the client's menu system places their entries' tooltips (`core/LauncherSetup.lua`'s entry tooltips
+  among them).
+- The minimap button's own tooltip: the library's launcher places it (`PlaceLauncher`, Launcher minor 11).
+- A LibDataBroker display's bar: the display places the tooltip.
+- The library's own windows and widgets (the debug console, the copy window, the sim panel, the skin
+  picker, the dropdowns, the Charts default tooltip, the title-bar marks and closes): the library's
+  placers, LibKa0s v1.105.0.
+
 ## Skins
 
 Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addon as its **owner**
@@ -588,8 +634,10 @@ Prototype.
   for nil-ness, and the same as Combat Trail's (its v0.2 F1a, ported in F1b). A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
   its spell's ID, possibly secret, to `ResultsTable.SpellTip`, which tests it for nil and passes it to
   the client's `GameTooltip:SetSpellByID` (pcall'd; the name through `C_Spell` when the client
-  refuses), adds no line of a live value, and reads its placement (the row's top, the window's edge,
-  the tooltip's width) through `NS.Secrets.PlainNumber`, a secret answer counting as nothing. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
+  refuses), adds no line of a live value, and is placed by LibKa0s-Tooltip-1.0 (`Style.PlaceTip`,
+  AD-92-DR), whose reads answer nothing for a secret: a tooltip showing a secret spell has secret
+  geometry, so it falls back to right of the HUD by a relative point, level with the row when both
+  tops read plain (`NS.Secrets.PlainNumber`), else with the HUD's top. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
@@ -602,13 +650,19 @@ Prototype.
   stop, and its edges (`GetLeft`, `GetTop`, `GetBottom`, each through a pcall and
   `NS.Secrets.PlainNumber`) when it is re-anchored on its grow edge (`normalizeAnchor`, the v0.2
   sizing model). The shell never displays a value, and its sizes come from the configuration and from
-  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured, and the
-  rows' count and scroll are the `#` of the addon's own spell lists.
+  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured for
+  layout, and the rows' count and scroll are the `#` of the addon's own spell lists. A hover's tooltip
+  placement (*Tooltip placement*, below) reads the hovered element's, the HUD's and the tooltip's edges
+  through LibKa0s-Tooltip-1.0's guarded reads, which answer nothing for a secret (`issecretvalue`, no
+  arithmetic on one); it decides nothing but where the tooltip opens, and a secret read falls back to
+  a relative point (`test_hud_tips`, `test_hud_element_tips`: no geometry read off a frame that holds a
+  secret).
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
   it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store
   (or, in test mode and the sim, `modules/MockRuns.lua`'s plain sample records),
   so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
-  config; its only geometry read is its own anchor on drag stop.
+  config; its only geometry reads are its own anchor on drag stop and, on a hover, the edges the
+  tooltip placer reads (*Tooltip placement*).
 - The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
   textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
   broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
@@ -660,7 +714,8 @@ Prototype.
   and like the timeline's hover frames show tooltips built from plain cast records (the chart's icons,
   the timeline's name cell and its cast icons the client's spell tooltip by the stored ID, beside the
   window, DR-03). The timeline window is plain and non-secure like the Results
-  window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop. Neither
+  window, in `UISpecialFrames`, and its only geometry reads are its own anchor on drag stop and the
+  tooltip placer's on a hover. Neither
   window's `UISpecialFrames` entry is ever removed or rewritten for the modal's Escape order (a write to
   that shared table from addon code would taint Blizzard's own entries): the Results window shows
   itself again from its own `OnHide` instead. Its re-raise of a shown StaticPopup is the library's
@@ -763,13 +818,13 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: one test file,
-`tests/test_insights.lua` at 1268 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
+`tests/test_insights.lua` at 1273 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1209 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1089 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31, and its cast marks to `modules/Results_TimelineMarks.lua`, DpsRace#21, 2026-11-10; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll`, `_controls` and `_marks`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1250
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1486, 14 under the cap (the Combat Trail parity pass's rows-driven sizing, CT v0.2 F1b, 2026-11-10, grew it in place; its next part goes to a new module, not this file; the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
-`modules/Results_Runs.lua` at 1116 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
-`modules/Hud.lua` at 1308 (layout-§1; the rows-driven sizing model's fit and pinning, CT v0.2 F1b, 2026-11-10; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
+seven addon files, `modules/Results_Table.lua` at 1203 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1095 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31, and its cast marks to `modules/Results_TimelineMarks.lua`, DpsRace#21, 2026-11-10; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll`, `_controls` and `_marks`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1251
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1489, 11 under the cap (the Combat Trail parity pass's rows-driven sizing, CT v0.2 F1b, 2026-11-10, grew it in place; its next part goes to a new module, not this file; the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
+`modules/Results_Runs.lua` at 1117 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
+`modules/Hud.lua` at 1314 (layout-§1; the rows-driven sizing model's fit and pinning, CT v0.2 F1b, 2026-11-10; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
 `locales/enUS.lua` at 1232 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the
