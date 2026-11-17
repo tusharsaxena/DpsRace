@@ -536,24 +536,26 @@ local function saveWidth(width)
 end
 
 -- The title bar on the skin's title band (Style.Header, R5-DR1): the title LEFT in every skin (item
--- 3a: the four controls crowd a centered title), and the four controls on the right: the close
--- control is the skin's own (S.CloseButton through Core, `icon.tint` at rest, `close.hot` under the
--- pointer), the other three rest in `icon.tint` and take `text.link` under the pointer (one shared
--- title strip, modules/Style.lua; smoke round 1, SR-L3). Each shows its tooltip above it, in the
--- skin's `gtip.title` (Style.TitleTip, SR-L1/SR-L2). Each is on the band's middle.
+-- 3a: the four marks crowd a centered title), and the four marks on the right, left to right Results,
+-- lock, settings, close: LibKa0s-Widgets-1.0's HeaderButtons (Style.HeaderMarks, LibKa0s#86,
+-- standalone-windows' *Title-bar controls*), extras . settings . close. The close is the skin's own
+-- (S.CloseButton through Core, `icon.tint` at rest, `close.hot` under the pointer); the other three
+-- rest in `icon.tint` and take `text.link` under the pointer (SR-L3). Each shows its tooltip above it,
+-- in the skin's `gtip.title` (SR-L1/SR-L2); the close's is the HUD's own two lines (Style.TitleTip).
+-- Settings opens the settings panel through the launcher's opener. Each is on the band's middle.
 local function buildHeader(f)
     local Style = NS.Style
     f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
     f.title:SetText(L["DPS Race"])
     -- No line under the title band (R4-SEP): every Ka0s window reads like the Skin Tester's showroom.
-    ui.controls = Style.TitleStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
-    Style.TitleTip(close, NS.HudTips.close)
-    ui.close = close
-    ui.lock = Style.TitleButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
-    ui.settings = Style.TitleButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
-    ui.results = Style.TitleButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
-    for _, b in ipairs({ ui.lock, ui.settings, ui.results }) do Style.AddToStrip(ui.controls, b) end
+    local marks = Style.HeaderMarks(f, { close = close, settingsTip = L["Settings"], extras = {
+        { key = "results", icon = "chart", glyph = "R", tip = L["Results"], onClick = function() Hud.Act.results() end },
+        { key = "lock", icon = "unlock", glyph = "L", tip = L["Lock or unlock the HUD"],
+          onClick = function() Hud.Act.lock() end },
+    } })
+    Style.TitleTip(marks.close, NS.HudTips.close)
+    ui.close, ui.settings, ui.lock, ui.results = marks.close, marks.settings, marks.lock, marks.results
     -- The drag strip: the title band left of the controls.
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)
@@ -564,8 +566,7 @@ local function buildHeader(f)
         placeAfterDrag(false)
     end)
     ui.drag = drag
-    Style.Header(f, { title = f.title, align = "LEFT", drag = drag,
-        right = { close, ui.lock, ui.settings, ui.results }, n = 4 })
+    Style.Header(f, { title = f.title, align = "LEFT", drag = drag, marks = marks.right })
 end
 
 -- The footer is the library's (W.Footer, standalone-windows' *The footer*, LibKa0s#89): no fill, the
@@ -1241,7 +1242,6 @@ function Act.close()
 end
 
 function Act.lock() return NS.ToggleLock() end
-function Act.settings() return NS.OpenOptionsPanel() end
 function Act.results() return NS.ToggleResults() end
 function Act.details()
     local run = raceNow().Current()

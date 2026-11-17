@@ -69,9 +69,9 @@ local function windows(i, NS)
     detail.lo.gearView:__fire("OnClick")
     return {
         { "the race HUD", NS.Hud.__ui(), { "close", "lock", "settings", "results" } },
-        { "the Results window", NS.Results.__ui(), { "close", "viewToggle" } },
-        { "the ability timeline", tl, { "close" } },
-        { "the gear view", NS.ResultsGear.__ui(), { "close" } },
+        { "the Results window", NS.Results.__ui(), { "close", "settings", "viewToggle" } },
+        { "the ability timeline", tl, { "close", "settings" } },
+        { "the gear view", NS.ResultsGear.__ui(), { "close", "settings" } },
     }
 end
 

@@ -194,17 +194,21 @@ local function buildChrome(f)
     -- the rule under the tab strip stays.
     f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
     f.title:SetText(L["DPS Race \226\128\148 Results"])
-    -- The close control is the skin's (Core's: `icon.tint` at rest, `close.hot` under the pointer,
-    -- the library's "Close" tooltip); the view toggle beside it rests in `icon.tint` and takes
-    -- `text.link` under the pointer, its tooltip above it, as the HUD's controls do (modules/Style.lua,
-    -- smoke round 1's SR-L1 to SR-L3).
-    ui.controls = Style.TitleStrip()
-    ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
-    -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
-    -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
-    -- away), collapsed chevron-right (open it).
-    ui.viewToggle = Style.AddToStrip(ui.controls, Style.TitleButton(f, "chevron-left", "<", "",
-        function() Results.ToggleView() end))
+    -- The marks are LibKa0s-Widgets-1.0's HeaderButtons (Style.HeaderMarks, LibKa0s#86), left to
+    -- right the view toggle, settings, close. The close is the skin's (Core's: `icon.tint` at rest,
+    -- `close.hot` under the pointer, the library's "Close" tooltip); the view toggle and settings rest
+    -- in `icon.tint` and take `text.link` under the pointer, each tooltip above it, as the HUD's marks
+    -- do (smoke round 1's SR-L1 to SR-L3). Settings opens the settings panel through the launcher's
+    -- opener; the window stands at HIGH, the panel's own strata, and the panel raises over it.
+    -- The view toggle: DropWatcher's expand/collapse chevrons turned on their side, since the detail
+    -- opens to the right. Expanded shows chevron-left (fold the detail away), collapsed chevron-right
+    -- (open it).
+    local marks = Style.HeaderMarks(f, { close = NS.MakeCloseButton(f, function() Results.Hide() end),
+        settingsTip = L["Settings"], extras = {
+            { key = "viewToggle", icon = "chevron-left", glyph = "<", tip = "",
+              onClick = function() Results.ToggleView() end },
+        } })
+    ui.close, ui.settings, ui.viewToggle = marks.close, marks.settings, marks.viewToggle
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
@@ -214,7 +218,7 @@ local function buildChrome(f)
         savePosition()
     end)
     ui.drag = drag
-    Style.Header(f, { title = f.title, drag = drag, right = { ui.close, ui.viewToggle }, n = 2 })
+    Style.Header(f, { title = f.title, drag = drag, marks = marks.right })
     tabButton("runs", L["Runs"], 1)
     tabButton("insights", L["Insights"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
@@ -248,9 +252,8 @@ local function paintToggle()
     if not b then return end
     local expanded = Results.View() == "expanded"
     Style.SetControlIcon(b, expanded and "chevron-left" or "chevron-right", expanded and "<" or ">")
-    b.tip = expanded and L["Collapse: the list alone (a click opens a run in its place)"]
-        or L["Expand: the run's detail beside the list"]
-    Style.PaintStrip(ui.controls)
+    Style.SetMarkTip(b, expanded and L["Collapse: the list alone (a click opens a run in its place)"]
+        or L["Expand: the run's detail beside the list"])
 end
 
 -- The resize grip's minimum for the view shown.

@@ -1,4 +1,4 @@
-local _, NS = ...
+local addonName, NS = ...
 -- modules/Style.lua — the look the HUD and the Results window share with the other Ka0s windows
 -- (LootHistory's browser is the reference; BankLedger and MultiMeters agree): Blizzard's font objects
 -- for every label, the header gold, the title-bar geometry, and the title-bar controls that turn gold
@@ -220,7 +220,9 @@ Style.TITLE_BAR_H = NS.Skin.Token("title.height") or 30
 Style.TAB_STRIP_H = 26
 Style.TAB_W, Style.TAB_PITCH = 90, 94
 Style.CONTROL = 18
-Style.CONTROL_PITCH = 22
+-- The title-bar marks' pitch: the library's HEADER (SIZE 18, GAP 6; LibKa0s#86's one strip), which
+-- the degraded marks (Style.HeaderMarks with no HeaderButtons) keep too.
+Style.CONTROL_PITCH = 24
 
 -- The text role each font object answers when no color is named: the gold objects are headings (the
 -- skin's title face), the white ones the highlight white, the gray ones the disabled gray (Ka0s
@@ -602,29 +604,23 @@ function Style.Band(f)
     return (bandOf(f))
 end
 
---- The header of `f` on its band. `spec.right` lists the title-bar controls outermost first, `spec.n`
---- of them (an entry may be nil: a slot kept for a control that could not be made); each is RIGHT on
---- the band, CONTROL_PAD in, one CONTROL_PITCH apart. `spec.title` is anchored by `spec.align`, else
---- the skin's `title.align` (CENTER with no library). `spec.drag` takes the band's rect up to the
---- controls.
+--- The header of `f` on its band. `spec.marks` is the title bar's marks outermost first, each
+--- `{ frame, x }` (Style.HeaderMarks' `right`, which is W.HeaderButtons'): RIGHT on the band, `x` in.
+--- `spec.title` is anchored by `spec.align`, else the skin's `title.align` (CENTER with no library).
+--- `spec.drag` takes the band's rect up to the marks.
 --- @param f table  the window
---- @param spec table  { title = fs, align = "LEFT"|nil, right = { ... }, n = number, drag = frame }
+--- @param spec table  { title = fs, align = "LEFT"|nil, marks = { { frame, x }, ... }, drag = frame }
 function Style.Header(f, spec)
     local band, fromLib = bandOf(f)
-    local n = spec.n or #(spec.right or {})
-    local right = {}
-    for i = 1, n do
-        local b = spec.right[i]
-        local x = CONTROL_PAD + (i - 1) * Style.CONTROL_PITCH
-        if b then
-            right[#right + 1] = { frame = b, width = Style.CONTROL, x = x }
-            if not fromLib then
-                b:ClearAllPoints()
-                b:SetPoint("RIGHT", band, "RIGHT", -x, 0)
-            end
+    local right, reach = {}, 0
+    for _, m in ipairs(spec.marks or {}) do
+        right[#right + 1] = { frame = m.frame, width = Style.CONTROL, x = m.x }
+        reach = math.max(reach, m.x + Style.CONTROL + 2)
+        if not fromLib then
+            m.frame:ClearAllPoints()
+            m.frame:SetPoint("RIGHT", band, "RIGHT", -m.x, 0)
         end
     end
-    local reach = n > 0 and (CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH + Style.CONTROL + 2) or 0
     local drag = spec.drag
     if drag then
         drag:ClearAllPoints()
@@ -733,11 +729,90 @@ function Style.TitleButton(parent, name, glyph, tip, onClick)
     return b
 end
 
---- Draw `name` on a control (the glyph when the catalog has no path). The tint is left as it is.
+--- Draw `name` on a control (the glyph when the catalog has no path). The tint is left as it is. A
+--- header mark (W.HeaderButton) has its art as `icon` or, built with no art, its glyph as `label`.
 function Style.SetControlIcon(b, name, glyph)
     local path = NS.Icon(name)
-    b.icon:SetShown(path ~= nil)
-    b.glyph:SetShown(path == nil)
-    if path then b.icon:SetTexture(path) else b.glyph:SetText(glyph) end
+    local word = b.glyph or b.label
+    local art = path ~= nil and b.icon ~= nil
+    if b.icon then
+        b.icon:SetShown(art)
+        if art then b.icon:SetTexture(path) end
+    end
+    if word then
+        word:SetShown(not art)
+        if not art then word:SetText(glyph) end
+    end
     b.iconName = name
+end
+
+--- Set a title-bar mark's tooltip: `b.tip` (the host's) and `b.__tip`, which W.HeaderButton reads on
+--- each hover.
+function Style.SetMarkTip(b, tip)
+    if not b then return end
+    b.tip, b.__tip = tip, tip
+end
+
+-- ── the title-bar marks (standalone-windows' *Title-bar controls*, LibKa0s#86) ───────────────────
+-- Every window's marks are LibKa0s-Widgets-1.0's HeaderButtons: right-aligned, left to right the
+-- window's extras in their order, then settings, then close, one 18 px size and a 6 px gap. The
+-- library builds and paints each extra and the settings mark (`icon.tint` at rest, `text.link` under
+-- the pointer, its tooltip above it in `gtip.title`); the close is the window's own, built through
+-- NS.MakeCloseButton (its `close.hot`, D-9) and adopted. Settings opens this addon's settings through
+-- the opener the launcher registered for this folder (Core's OpenSettings, `owner = addonName`, the
+-- launcher's `name`). The library anchors nothing (`place = false`): Style.Header hands the marks'
+-- offsets to S.Header, which centers them on the band in every skin. With no HeaderButtons (a degraded
+-- load) the same marks are host controls on one title strip, at the same offsets, settings opening
+-- the panel directly.
+local Widgets = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
+local SETTINGS_GLYPH = "S"
+
+--- A degraded load's marks: host controls, outermost first, at the library's offsets.
+local function hostMarks(f, spec, marks)
+    local strip = Style.TitleStrip()
+    local list = {}
+    if spec.close then list[1] = { key = "close", btn = spec.close } end
+    local hide = spec.hideOnSettings
+    local settings = Style.TitleButton(f, "settings", SETTINGS_GLYPH, spec.settingsTip, function()
+        if hide then hide:Hide() end
+        NS.OpenOptionsPanel()
+    end)
+    list[#list + 1] = { key = "settings", btn = Style.AddToStrip(strip, settings) }
+    local extras = spec.extras or {}
+    for n = #extras, 1, -1 do
+        local x = extras[n]
+        local b = Style.TitleButton(f, x.icon, x.glyph, x.tip, x.onClick)
+        list[#list + 1] = { key = x.key, btn = Style.AddToStrip(strip, b) }
+    end
+    for n, e in ipairs(list) do
+        marks[e.key] = e.btn
+        marks.right[n] = { frame = e.btn, x = CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH }
+    end
+    marks.strip = strip
+    return marks
+end
+
+--- Build window `f`'s title-bar marks. `spec.close` is the window's close (NS.MakeCloseButton's, nil
+--- on a load that cannot make one); `spec.extras` its own marks left to right, each
+--- `{ key, icon, glyph, tip, onClick }`; `spec.settingsTip` the settings mark's tooltip; and
+--- `spec.hideOnSettings` a window to hide before the settings open (one that would cover the panel).
+--- @param f table  the window
+--- @param spec table
+--- @return table marks  `{ [key] = btn, settings = btn, close = btn, right = { { frame, x }, ... } }`,
+---                      `right` outermost first, for Style.Header's `marks`
+function Style.HeaderMarks(f, spec)
+    local marks = { right = {} }
+    if not (Widgets and type(Widgets.HeaderButtons) == "function") then return hostMarks(f, spec, marks) end
+    local hb = Widgets.HeaderButtons(f, {
+        owner = addonName, frame = f, place = false,
+        closeButton = spec.close or false,
+        settingsTip = spec.settingsTip, hideOnSettings = spec.hideOnSettings,
+        extras = spec.extras,
+    })
+    marks.settings, marks.close = hb.settings, hb.close
+    for key, b in pairs(hb.extras) do marks[key] = b end
+    for _, x in ipairs(spec.extras or {}) do Style.SetMarkTip(marks[x.key], x.tip) end
+    if marks.settings then marks.settings.tip = marks.settings.__tip end
+    for n, e in ipairs(hb.right) do marks.right[n] = { frame = e.frame, x = e.x } end
+    return marks
 end

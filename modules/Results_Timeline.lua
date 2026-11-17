@@ -205,13 +205,17 @@ local function disc(parent, color, size, layer)
 end
 
 local function buildChrome(f)
-    -- The title and the close on the title band, the title by the skin's `title.align` (Style.Header,
-    -- R5-DR1): the Shell paints it (title.text, the title face).
+    -- The title and the marks on the title band, the title by the skin's `title.align` (Style.Header,
+    -- R5-DR1): the Shell paints it (title.text, the title face). The marks are LibKa0s-Widgets-1.0's
+    -- HeaderButtons (Style.HeaderMarks, LibKa0s#86), settings then close. The window stands at DIALOG,
+    -- over the settings panel, so the settings mark hides it first (`hideOnSettings`; the hide is the
+    -- Escape close's, onHide).
     f.title = Style.PlainText(f, FONT.TITLE, "CENTER")
     f.title:SetText(L["Ability timeline"])
     -- No line under the title band (R4-SEP), as the Skin Tester's showroom has none.
-    ui.controls = Style.TitleStrip()
-    ui.close = NS.MakeCloseButton(f, function() Timeline.Hide() end)   -- the skin's own hover (D-9)
+    local marks = Style.HeaderMarks(f, { settingsTip = L["Settings"], hideOnSettings = f,
+        close = NS.MakeCloseButton(f, function() Timeline.Hide() end) })   -- the close: the skin's own hover (D-9)
+    ui.close, ui.settings = marks.close, marks.settings
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
@@ -219,7 +223,7 @@ local function buildChrome(f)
     -- Moved for as long as it is open: nothing stored, the next open goes over the Results window.
     drag:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
     ui.drag = drag
-    Style.Header(f, { title = f.title, drag = drag, right = { ui.close }, n = 1 })
+    Style.Header(f, { title = f.title, drag = drag, marks = marks.right })
 end
 
 -- The legend bar: a gold disc and this run's label, a blue one and the compared run's, then the hint;

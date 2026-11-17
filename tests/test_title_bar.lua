@@ -2,7 +2,7 @@
 -- Ka0sAddonsCommonTasks docs/2026-11-16-LIBKA0S_ISSUES_75_PLUS, rulings 2 to 4: SR-L1, SR-L2, SR-L3).
 --
 -- One case per window (the race HUD, the Results window, the ability timeline, the gear view), each
--- under Ka0s Default and a second skin:
+-- under Ka0s Default and a second skin (each window's settings mark included, LibKa0s#86):
 --   - every control shows a non-empty tooltip on hover, owned by the control, its first line in the
 --     skin's `gtip.title`, placed above it (BOTTOM on its TOP; headless, the tooltip answers no size, so
 --     LibKa0s-Tooltip-1.0's PlaceAttached cannot read it and the relative fallback places it), and
@@ -62,7 +62,7 @@ local OPEN = {
     end,
     results = function(_, NS)
         NS.Results.Show()
-        return NS.Results.__ui(), { "close", "viewToggle" }
+        return NS.Results.__ui(), { "close", "settings", "viewToggle" }
     end,
     timeline = function(_, NS)
         mkRun(NS, "this", 100)
@@ -70,7 +70,7 @@ local OPEN = {
         NS.Bests.Invalidate()
         NS.Results.ShowRun("this")
         NS.Results.__ui().detail.w.timeline:__fire("OnClick")
-        return NS.ResultsTimeline.__ui(), { "close" }
+        return NS.ResultsTimeline.__ui(), { "close", "settings" }
     end,
     gear = function(_, NS)
         mkRun(NS, "this", 100)
@@ -78,7 +78,7 @@ local OPEN = {
         NS.Bests.Invalidate()
         NS.Results.ShowRun("this")
         NS.Results.__ui().detail.lo.gearView:__fire("OnClick")
-        return NS.ResultsGear.__ui(), { "close" }
+        return NS.ResultsGear.__ui(), { "close", "settings" }
     end,
 }
 
@@ -145,14 +145,105 @@ test("title bar: the race HUD's close, lock, settings and Results controls (tool
     checkWindow("hud")
 end)
 
-test("title bar: the Results window's close and view toggle (tooltips, rest and hover)", function()
+test("title bar: the Results window's close, settings and view toggle (tooltips, rest and hover)", function()
     checkWindow("results")
 end)
 
-test("title bar: the ability timeline's close (tooltip, rest and hover)", function()
+test("title bar: the ability timeline's close and settings (tooltips, rest and hover)", function()
     checkWindow("timeline")
 end)
 
-test("title bar: the gear view's close (tooltip, rest and hover)", function()
+test("title bar: the gear view's close and settings (tooltips, rest and hover)", function()
     checkWindow("gear")
+end)
+
+-- ── the marks are W.HeaderButtons' (LibKa0s#86, item AD-86-DR) ──────────────────────────────────
+-- standalone-windows' *Title-bar controls* (WowAddonStandards v2.113.0): every window's marks are
+-- LibKa0s-Widgets-1.0's HeaderButtons, right-aligned, left to right extras . settings . close, one 18 px
+-- size and a 6 px gap (the library's HEADER: PAD 6 in from the corner, GAP 6 between marks), so the
+-- close sits 6 in, settings 30, the first extra 54 and the next 78. The settings mark opens this
+-- addon's settings through the opener its launcher registered (Core's OpenSettings("DpsRace"), filled
+-- from the launcher's `openSettings`). The timeline and the gear view stand at DIALOG, over the
+-- settings panel, so each hides first (`hideOnSettings`).
+
+-- Each window's marks, left to right, as its ui table names them.
+local ORDER = {
+    hud = { "results", "lock", "settings", "close" },
+    results = { "viewToggle", "settings", "close" },
+    timeline = { "settings", "close" },
+    gear = { "settings", "close" },
+}
+
+--- The x a frame's last RIGHT point on the band was given (negative: in from the right edge).
+local function rightX(b)
+    local x
+    for _, p in ipairs(rawget(b, "__points") or {}) do
+        if p[1] == "RIGHT" and p[3] == "RIGHT" then x = p[4] end
+    end
+    return x
+end
+
+local function checkStrip(key)
+    local i, NS = inst()
+    local u = OPEN[key](i, NS)
+    local hb = u.frame.headerButtons
+    assertTrue(type(hb) == "table", key .. ": the marks are W.HeaderButtons' (frame.headerButtons)")
+    local want = ORDER[key]
+    assertEqual(table.concat(hb.order, " "), table.concat(want, " "), key .. ": left to right extras . settings . close")
+    assertTrue(hb.optOut == nil, key .. ": no settings opt-out")
+    assertTrue(hb.settings ~= nil and hb.settings == u.settings, key .. ": the settings mark is the window's")
+    assertTrue(hb.close ~= nil and hb.close == u.close, key .. ": the close is the window's own")
+    for n = #want, 1, -1 do
+        local name = want[n]
+        local slot = #want - n
+        local b = u[name]
+        local x = 6 + slot * 24
+        assertEqual(hb.offsets[name], -x,
+            ("%s: %s at %d in from the corner"):format(key, name, x))
+        assertEqual(rightX(b), -x, ("%s: %s placed on the band %d in"):format(key, name, x))
+    end
+end
+
+test("title bar: the race HUD's marks are W.HeaderButtons', results . lock . settings . close", function()
+    checkStrip("hud")
+end)
+
+test("title bar: the Results window's marks are W.HeaderButtons', view toggle . settings . close", function()
+    checkStrip("results")
+end)
+
+test("title bar: the ability timeline's and the gear view's marks are W.HeaderButtons', settings . close", function()
+    checkStrip("timeline")
+    checkStrip("gear")
+end)
+
+--- Click the window's settings mark with the settings panel spied: answers how often it opened.
+local function clickSettings(key)
+    local i, NS = inst()
+    local u = OPEN[key](i, NS)
+    local opened = 0
+    NS.OpenOptionsPanel = function() opened = opened + 1 end
+    assertTrue(u.settings ~= nil, key .. ": a settings mark")
+    u.settings:__fire("OnClick", "LeftButton")
+    i.mocks.__fireTimers()
+    return opened, u, NS
+end
+
+test("title bar: each window's settings mark opens the settings through the launcher's opener", function()
+    for _, key in ipairs({ "hud", "results", "timeline", "gear" }) do
+        local opened = clickSettings(key)
+        assertEqual(opened, 1, key .. ": the settings panel opened once")
+    end
+end)
+
+test("title bar: the timeline and the gear view hide before the settings open; the HUD and Results stay", function()
+    for _, key in ipairs({ "timeline", "gear" }) do
+        local _, u, NS = clickSettings(key)
+        assertTrue(not u.frame:IsShown(), key .. ": hidden, so it never covers the settings panel")
+        assertTrue(NS.Results.__ui().frame:IsShown(), key .. ": the Results window under it stays open")
+    end
+    for _, key in ipairs({ "hud", "results" }) do
+        local _, u = clickSettings(key)
+        assertTrue(u.frame:IsShown(), key .. ": stays open beside the settings")
+    end
 end)

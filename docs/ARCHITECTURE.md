@@ -420,7 +420,21 @@ library's title band (`S.Band`, which Shell lays at its own inset and `title.hei
 R5-L2 draws above a backdrop's fill): `Style.Header` hands the title, the controls and the drag strip
 to `S.Header`, so each is centered on the band's middle in every skin, the HUD's title LEFT in every
 skin and the others by `title.align`; the Results tab strip stands under the band (R5-DR1,
-`test_header_band`). With no library a host holder stands where the band would. The StaticPopups, the debug console,
+`test_header_band`). Each window's title-bar marks are LibKa0s-Widgets-1.0's `W.HeaderButtons`
+(`Style.HeaderMarks`, LibKa0s#86, standalone-windows' *Title-bar controls*): right-aligned, left to
+right the window's extras, settings, close, 18 px marks 6 px apart (the HUD's Results, lock, settings,
+close; the Results window's view toggle, settings, close; the timeline's and gear view's settings,
+close). The library builds and paints the extras and the settings mark (`icon.tint` at rest,
+`text.link` under the pointer, the tooltip above in `gtip.title`); the close is the window's own
+(`NS.MakeCloseButton`, adopted as `closeButton`), the HUD's carrying its two-line tooltip through
+`Style.TitleTip`. The library anchors nothing (`place = false`): `Style.Header` hands its offsets to
+`S.Header`. Every settings mark opens the settings panel through the opener the launcher registered for
+the folder (Core's `OpenSettings("DpsRace")`; no window opts out). The timeline and the gear view stand
+at DIALOG, over the settings panel, so each passes `hideOnSettings` and hides first (the hide is their
+Escape close); the HUD (MEDIUM) and the Results window (HIGH, the panel's own strata) stay open. With
+no `HeaderButtons` (a degraded load) the same marks are host controls on one title strip at the same
+offsets, settings opening the panel directly (`test_title_bar`). The addon builds no
+`W.DragHandle`, so the drag strip's settings mark has no use here. With no library a host holder stands where the band would. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.

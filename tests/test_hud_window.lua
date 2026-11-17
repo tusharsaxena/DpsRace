@@ -331,8 +331,11 @@ end)
 
 test("hud: a title-bar control takes text.link under the pointer and back at rest, a late leave included", function()
     -- Smoke round 1 (SR-L3): a title-bar control rests in `icon.tint` and lights in `text.link` under
-    -- the pointer, as the library's header marks do; it was the accent gold before.
-    local f = hud()
+    -- the pointer, as the library's header marks do; it was the accent gold before. Since LibKa0s#86
+    -- (AD-86-DR) the marks ARE the library's (W.HeaderButtons), painted by the skin's own Mark painter,
+    -- so the fixture takes the kit's paint recorder (real Textures, as test_title_bar's does): under the
+    -- bare recorder the painter finds no texture object and paints nothing.
+    local f = hud{ mutate = function(m) dofile(T.root .. "/tests/_kit/mock_paint.lua")(m) end }
     f.Hud.Show()
     local u = ui(f)
     local GOLD, LINK, REST = f.NS.Style.GOLD, f.NS.Style.LINK, f.NS.Style.REST
