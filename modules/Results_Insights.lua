@@ -384,7 +384,8 @@ end
 
 -- A board tab: LootHistory's tab look in the small font, the skin's `tab.onText` and `tab.onLine`
 -- underline when picked, `tab.text` when not. Pooled through the chart context; the click and the
--- hover are the bind's.
+-- hover are the bind's. A tab is chrome (standalone-windows *Tooltip placement*, AD-92-DR): its
+-- tooltip is attached above it (`tipChrome`, read by core/ChartsSetup.lua's markTip).
 local function makeBoardTab(ctx, parent)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(BOARD_TAB_W, BOARD_TAB_H)
@@ -395,6 +396,7 @@ local function makeBoardTab(ctx, parent)
     b.underline:SetHeight(2)
     b.underline:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 8, 0)
     b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 0)
+    b.tipChrome = true
     b:SetScript("OnClick", function(self2) if self2._onClick then self2._onClick() end end)
     b:SetScript("OnEnter", function(self2) ctx:showTip(self2, self2._tip) end)
     b:SetScript("OnLeave", function() ctx.hideTip() end)

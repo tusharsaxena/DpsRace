@@ -8,7 +8,8 @@ NS.Charts = LibStub and LibStub("LibKa0s-Charts-1.0", true)
 
 -- A gold title over the lines, bulleted from two (Style.AddTipLines). A chart mark is a body element
 -- (AD-92-DR): placed by the context's PlaceTip, beside the Results window, and the library's legacy
--- `anchor` is not read; with no context (an older Charts), Style.PlaceTip places it the same way.
+-- `anchor` is not read; with no context (an older Charts), Style.PlaceTip places it the same way. An
+-- owner marked `tipChrome` (the Insights board tabs) is chrome: attached above it (Style.PlaceTip).
 local function markTip(owner, lines, _, ctx)
     local tip = GameTooltip
     if not tip then return end
@@ -17,6 +18,7 @@ local function markTip(owner, lines, _, ctx)
     tip:SetText(lines[1], r, g, b, 1, true)
     NS.Style.AddTipLines(tip, lines, 2)
     tip:Show()
+    if type(owner) == "table" and owner.tipChrome then return NS.Style.PlaceTip(tip, owner, true) end
     if type(ctx) == "table" and type(ctx.PlaceTip) == "function" then return ctx:PlaceTip(tip, owner) end
     NS.Style.PlaceTip(tip, owner)
 end

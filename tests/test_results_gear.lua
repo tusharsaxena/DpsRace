@@ -253,9 +253,14 @@ test("gear view: each slot's item, item level and marks; Shift-click and the too
             if k == "SetHyperlink" then shown.link = a end
         end
     end })
+    local placedOn
+    local place = i.NS.Style.PlaceItemTip
+    i.NS.Style.PlaceItemTip = function(tip, el, group) placedOn = el return place(tip, el, group) end
     ring:__fire("OnEnter")
+    i.NS.Style.PlaceItemTip = place
     assertEqual(shown.owner, ring)
     assertEqual(shown.link, RING)
+    assertEqual(placedOn, ring, "placed as an item tooltip, again as it grows (AD-92-DR)")
     ring:__fire("OnClick")
     assertEqual(i.mocks.__modClicks[1], RING, "Shift-click never reached the client's handler")
 end)

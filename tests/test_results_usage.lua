@@ -534,8 +534,13 @@ test("results usage: a row's hover is the item's own tooltip with its detail and
     seed(i, { mkRun("a") })
     i.R.ShowRun("a")
     local x = section(i)
+    local placedOn
+    local place = i.NS.Style.PlaceItemTip
+    i.NS.Style.PlaceItemTip = function(tip, el, group) placedOn = el return place(tip, el, group) end
     x.items[1]:__fire("OnEnter")
+    i.NS.Style.PlaceItemTip = place
     assertEqual(shown.item, TRINKET)
+    assertEqual(placedOn, x.items[1], "placed as an item tooltip, again as it grows (AD-92-DR)")
     -- Two lines of its own after the client's: each on a bullet (modules/Style.lua).
     assertEqual(shown.lines[2], "\226\128\162 x2 at 0:09, 1:12")
     assertEqual(shown.lines[3], "\226\128\162 Detected from its cast during the race.")

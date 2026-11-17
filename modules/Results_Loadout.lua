@@ -249,7 +249,7 @@ local function itemTip(p, cell)
         Style.AddTipLines(tt, note, 1, Style.Rgb(C.amber))
     end
     tt:Show()
-    Style.PlaceTip(tt, cell, false, Tbl.WindowOf(cell))   -- a body element: beside the window (AD-92-DR)
+    Style.PlaceItemTip(tt, cell, Tbl.WindowOf(cell))   -- a body element: beside the window, re-placed as it grows (AD-92-DR)
 end
 
 local function onItemClick(cell)

@@ -683,9 +683,24 @@ end
 local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
 local TIP_GAP = 2
 
-local function plainTop(frame)
-    local fn = type(frame) == "table" and frame.GetTop
+local function plainRead(frame, method)
+    local fn = type(frame) == "table" and frame[method]
     return type(fn) == "function" and NS.Secrets.PlainNumber(fn(frame)) or nil
+end
+
+local function plainTop(frame) return plainRead(frame, "GetTop") end
+
+-- The side of `win` with the more room on the screen, in screen units (its own edges times its
+-- effective scale, the screen UIParent's right edge times its own): "left" only when every read is a
+-- plain number and the room left of it is the larger; "right" otherwise (DR-03). Reads the window
+-- and the screen, never the tooltip, whose width can be a secret.
+local function roomierSide(win)
+    local ui = UIParent
+    local l, r = plainRead(win, "GetLeft"), plainRead(win, "GetRight")
+    local sw = plainRead(ui, "GetRight") or plainRead(ui, "GetWidth")
+    if not (l and r and sw) then return "right" end
+    local s, us = plainRead(win, "GetEffectiveScale") or 1, plainRead(ui, "GetEffectiveScale") or 1
+    return (l * s > sw * us - r * s) and "left" or "right"
 end
 
 --- Place the filled, shown `tip` for `el` (standalone-windows *Tooltip placement*, AD-92-DR): a body
@@ -693,8 +708,10 @@ end
 --- in), right when it fits and left without the room, its top level with `el`'s (PlaceBeside); a
 --- chrome element's (`chrome`) centered above it, below only without room above (PlaceAttached).
 --- Where the library places nothing (a tooltip showing a secret spell has secret geometry, DR-03; a
---- degraded load), a body tooltip goes right of its window by a relative point, level with `el` when
---- both tops read plain (NS.Secrets.PlainNumber), and a chrome one above `el`. Never the cursor,
+--- degraded load), a body tooltip goes beside its window by a relative point, on the side with the
+--- more room on the screen (right unless the window's edges read plain and the room left is larger),
+--- level with `el` when both tops read plain (NS.Secrets.PlainNumber); with no window, it and a chrome
+--- one are attached above `el` (PlaceAttached, then a plain `BOTTOM` on its `TOP`). Never the cursor,
 --- never a corner.
 --- @param tip table  GameTooltip
 --- @param el table
@@ -708,13 +725,48 @@ function Style.PlaceTip(tip, el, chrome, group)
     end
     local win = group
     if not chrome and type(win) ~= "table" and Tip and Tip.GroupOf then win = select(2, Tip.GroupOf(el)) end
-    tip:ClearAllPoints()
     if chrome or type(win) ~= "table" or win == el then
+        if not chrome and Tip and Tip.PlaceAttached and Tip.PlaceAttached(tip, el) then return end
+        tip:ClearAllPoints()
         tip:SetPoint("BOTTOM", el, "TOP", 0, TIP_GAP)
         return
     end
+    tip:ClearAllPoints()
     local top, winTop = plainTop(el), plainTop(win)
-    tip:SetPoint("TOPLEFT", win, "TOPRIGHT", TIP_GAP, (top and winTop) and top - winTop or 0)
+    local dy = (top and winTop) and top - winTop or 0
+    if roomierSide(win) == "left" then
+        tip:SetPoint("TOPRIGHT", win, "TOPLEFT", -TIP_GAP, dy)
+    else
+        tip:SetPoint("TOPLEFT", win, "TOPRIGHT", TIP_GAP, dy)
+    end
+end
+
+-- The item tooltips placed by Style.PlaceItemTip: re-placed when the tooltip changes size while the
+-- element still owns it (item data arriving after Show grows it; LibKa0s-Tooltip-1.0's *Replace*).
+local function regrow(tip)
+    local rec = rawget(tip, "__drItemTip")
+    if not rec or rec.busy then return end
+    if type(tip.IsOwned) == "function" and not tip:IsOwned(rec.el) then return end
+    rec.busy = true
+    Style.PlaceTip(tip, rec.el, false, rec.group)
+    rec.busy = false
+end
+
+--- Place a filled, shown item tooltip (the client's own, from a link or an item ID) for the body
+--- element `el` beside `group` (Style.PlaceTip), and place it again, with the same arguments, each
+--- time it changes size while `el` owns it: an item whose data arrives after Show grows the tooltip,
+--- and the clamp read at the first placement goes stale (Tooltip v1, *Replace*). Hidden, it forgets.
+--- @param tip table  GameTooltip
+--- @param el table
+--- @param group table|nil
+function Style.PlaceItemTip(tip, el, group)
+    rawset(tip, "__drItemTip", { el = el, group = group })
+    if not rawget(tip, "__drItemHooked") and type(tip.HookScript) == "function" then
+        rawset(tip, "__drItemHooked", true)
+        tip:HookScript("OnSizeChanged", regrow)
+        tip:HookScript("OnHide", function(self) rawset(self, "__drItemTip", nil) end)
+    end
+    Style.PlaceTip(tip, el, false, group)
 end
 
 local function showTitleTip(b)

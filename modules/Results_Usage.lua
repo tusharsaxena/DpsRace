@@ -303,7 +303,7 @@ local function rowTip(p, row)
     tt:AddLine(" ")
     NS.Style.AddTipLines(tt, lines, 2)
     tt:Show()
-    NS.Style.PlaceTip(tt, row, false, Tbl.WindowOf(row))   -- a body element: beside the window (AD-92-DR)
+    NS.Style.PlaceItemTip(tt, row, Tbl.WindowOf(row))   -- a body element: beside the window, re-placed as it grows (AD-92-DR)
 end
 
 --- An item row's right-click while editing: a menu with *Never show <item>* (Usage.Hide; the window

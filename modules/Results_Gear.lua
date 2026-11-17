@@ -390,7 +390,7 @@ local function slotTip(cell)
         Style.AddTipLines(tt, cell.notes, 1, Style.Rgb(C.amber))
     end
     tt:Show()
-    Style.PlaceTip(tt, cell, false, Tbl.WindowOf(cell))   -- a body element: beside the Gear window (AD-92-DR)
+    Style.PlaceItemTip(tt, cell, Tbl.WindowOf(cell))   -- a body element: beside the Gear window, re-placed as it grows (AD-92-DR)
 end
 
 local function onSlotClick(cell)

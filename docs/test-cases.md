@@ -1150,7 +1150,7 @@ Total.
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
 
-### test_tooltip_place.lua (10)
+### test_tooltip_place.lua (14)
 
 - tooltip place: SideTip opens beside the window, right when it fits and left without the room
 - tooltip place: SpellTip opens beside the window with its comparisons on the same side
@@ -1161,6 +1161,10 @@ Total.
 - tooltip place: a list's column header is a body element, beside the window
 - tooltip place: the HUD's footer lines are chrome, attached above
 - tooltip place: an Insights chart mark's tooltip goes through the Charts host's PlaceTip
+- tooltip place: a body tooltip the library cannot measure goes beside its window, on the roomier side
+- tooltip place: a body tooltip with no window to stand beside is attached above its element
+- tooltip place: an Insights board tab is chrome, its tooltip attached above it
+- tooltip place: an item tooltip is placed again when it grows while its element owns it
 - tooltip place: no addon file anchors a tooltip to the cursor or a corner
 
 ### test_schema.lua (18)
@@ -1934,7 +1938,7 @@ Total.
 | test_switched_sections.lua | 3 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
-| test_tooltip_place.lua | 10 |
+| test_tooltip_place.lua | 14 |
 | test_schema.lua | 18 |
 | test_settings.lua | 38 |
 | test_skinsetup.lua | 25 |
@@ -1976,4 +1980,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1542** |
+| **Total** | **1546** |

@@ -388,9 +388,14 @@ test("loadout: an item's hover is the client's own tooltip; a modified click goe
     end })
     NS.Results.ShowRun("r")
     local hood = cellOf(pane(i).lo, 1)
+    local placedOn
+    local place = NS.Style.PlaceItemTip
+    NS.Style.PlaceItemTip = function(tip, el, group) placedOn = el return place(tip, el, group) end
     hood:__fire("OnEnter")
+    NS.Style.PlaceItemTip = place
     assertEqual(shown.owner, hood)
     assertEqual(shown.link, M.__gear[1])
+    assertEqual(placedOn, hood, "placed as an item tooltip, again as it grows (AD-92-DR)")
     hood:__fire("OnClick")
     assertEqual(M.__modClicks[1], M.__gear[1], "Shift-click never reached the client's handler")
 end)

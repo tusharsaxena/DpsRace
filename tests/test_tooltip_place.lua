@@ -195,6 +195,81 @@ test("tooltip place: an Insights chart mark's tooltip goes through the Charts ho
     i.scr.restore()
 end)
 
+-- ── where the library places nothing (review fixes) ────────────────────────────────────────────
+
+-- A tooltip showing a secret spell: its width reads as a secret, so PlaceBeside places nothing.
+local function secretWide(i) rawset(i.tip, "GetWidth", function() return T.secret(TIP_W) end) end
+
+test("tooltip place: a body tooltip the library cannot measure goes beside its window, on the roomier side", function()
+    -- red under: the fallback always went right of the window, so a window against the screen's right
+    -- edge had its tooltip clamped back over it (body rule 3).
+    local i = inst()
+    secretWide(i)
+    local Style = i.NS.Style
+    local win, el = layout(i, 1500, 300, 620)
+    Style.PlaceTip(i.tip, el, false, win)
+    local p = i.tip.__point
+    assertTrue(p ~= nil and p.point == "TOPRIGHT" and p.rel == win and p.relPoint == "TOPLEFT",
+        "left of a window against the right edge, by a relative point")
+    assertEqual(p.x, -2, "2 px off its left edge")
+    assertEqual(p.y, -80, "level with the element")
+    win, el = layout(i, 100, 300, 620)
+    fresh(i)
+    Style.PlaceTip(i.tip, el, false, win)
+    p = i.tip.__point
+    assertTrue(p ~= nil and p.point == "TOPLEFT" and p.rel == win and p.relPoint == "TOPRIGHT",
+        "right of a window near the left edge")
+    assertEqual(p.x, 2, "2 px off its right edge")
+    owned(i, "the fallback")
+    i.scr.restore()
+end)
+
+test("tooltip place: a body tooltip with no window to stand beside is attached above its element", function()
+    local i = inst()
+    secretWide(i)
+    local _, el = layout(i, 1500, 300, 620)
+    i.NS.Style.PlaceTip(i.tip, el, false, el)
+    local p = i.tip.__point
+    assertTrue(p ~= nil and p.point == "BOTTOM" and p.rel == el and p.relPoint == "TOP" and p.y == 2,
+        "a plain attach 2 px above the element, never the cursor")
+    i.scr.restore()
+end)
+
+test("tooltip place: an Insights board tab is chrome, its tooltip attached above it", function()
+    local i = inst()
+    local host = i.NS.ChartsHost()
+    local _, tab = layout(i, 1500, 300, 620)
+    tab.tipChrome = true
+    local placed
+    local ctx = { PlaceTip = function() placed = true end }
+    host.tip(tab, { "Overall", "3 runs" }, "ANCHOR_CURSOR_RIGHT", ctx)
+    assertTrue(placed == nil, "not placed beside the window by ctx:PlaceTip")
+    above(i, tab, "a board tab")
+    owned(i, "a board tab")
+    i.scr.restore()
+end)
+
+test("tooltip place: an item tooltip is placed again when it grows while its element owns it", function()
+    -- red under: placed once after Show, so an item whose data arrived later grew the tooltip past
+    -- the clamp read at the first placement (Tooltip v1, *Replace*).
+    local i = inst()
+    local win, el = layout(i, 1500, 300, 400)
+    i.NS.Style.PlaceItemTip(i.tip, el, win)
+    beside(i, win, el, "left", "an item tooltip")
+    i.tip:__size(TIP_W, 600)
+    fresh(i)
+    i.tip:__fire("OnSizeChanged", TIP_W, 600)
+    local _, b, r, t = i.scr.rectOf(i.tip)
+    assertTrue(b ~= nil and b >= 0, "the grown tooltip clamped onto the screen")
+    assertEqual(t, 600, "its top moved up to keep it on the screen")
+    assertEqual(r, win:GetLeft() - 2, "still 2 px left of the window")
+    i.tip:__fire("OnHide")
+    fresh(i)
+    i.tip:__fire("OnSizeChanged", TIP_W, 80)
+    assertEqual(i.scr.ops(i.tip), "", "hidden, it forgets the element")
+    i.scr.restore()
+end)
+
 -- ── the guard ──────────────────────────────────────────────────────────────────────────────────
 
 test("tooltip place: no addon file anchors a tooltip to the cursor or a corner", function()

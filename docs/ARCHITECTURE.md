@@ -464,13 +464,29 @@ chrome, group)`, called after the tooltip is owned at `ANCHOR_NONE`, filled and 
   `ctx:PlaceTip` (Charts minor 2) and ignores the library's legacy anchor.
 - **A chrome element** (`chrome` true, or `b.tipChrome` on a `HudStates.Button`, a `HudStates.TipZone` or
   a `Style.ControlButton`): `PlaceAttached`, centered 2 px above it, below only at the screen's top.
-  Chrome here: the Runs and Insights filter bars' *Save*, *Reset* and *Clear*, the HUD footer's two
+  Chrome here: the Runs and Insights filter bars' *Save*, *Reset* and *Clear*, the Insights board tabs
+  (*Overall* and one per target and length; `tipChrome`, read by `core/ChartsSetup.lua`'s chart tip,
+  which then attaches above the tab instead of handing it to `ctx:PlaceTip`), the HUD footer's two
   lines, and every title-bar control (`Style.TitleTip`, `Style.TitleButton`; the library's marks and
   closes place their own).
+- **Item tooltips** (the loadout's and the Gear view's items, the *Used* rows: the client's own, from a
+  link or an item ID) go through `Style.PlaceItemTip`, which places them as body tooltips and places
+  them again, with the same arguments, each time the tooltip changes size while the element still owns
+  it (`OnSizeChanged`, hooked once on the tooltip; forgotten on `OnHide`). Item data that arrives after
+  `Show` grows the tooltip, and the clamp read at the first placement would go stale (Tooltip v1,
+  *Replace*).
 - **Where the library places nothing** (a tooltip showing a secret spell answers secret geometry; a
-  degraded load with no Tooltip major): a body tooltip goes right of its window by a relative point
-  (`TOPLEFT` on its `TOPRIGHT`, 2 px), level with the element when both tops read plain, and a chrome
-  one above the element (`BOTTOM` on its `TOP`, 2 px). Never the cursor, never a corner.
+  degraded load with no Tooltip major): a body tooltip goes beside its window by a relative point, on
+  the side with the more room on the screen, read from the window's edges and UIParent's (never the
+  tooltip's, which may be secret): `TOPLEFT` on its `TOPRIGHT` + 2 px, or `TOPRIGHT` on its `TOPLEFT`
+  minus 2 px when the window's edges read plain and the room left is larger; level with the element when
+  both tops read plain. With no window to stand beside, a body tooltip and a chrome one are attached
+  above the element (`PlaceAttached`, then `BOTTOM` on its `TOP`, 2 px). Never the cursor, never a
+  corner. **A recorded deviation:** the standard's library-surface text and Tooltip v1 name the
+  fallback as attaching to the element. Here a body tooltip with a window keeps DR-03's owner call
+  (2026-10-30, the HUD's spell rows' tooltips beside the HUD, not over it), because an attach on a
+  HUD row covers the HUD's other rows (body rule 3). With an unknown tooltip width, a window close to
+  both screen edges can still clamp back over it.
 
 The Runs list's row reads which cell the pointer is over (`Table:columnAt`, `GetCursorPosition`) to
 choose the words; it never places by it. `test_tooltip_place` drives each path on the kit's fake screen

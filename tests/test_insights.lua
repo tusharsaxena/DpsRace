@@ -933,6 +933,7 @@ test("insights tab: a tab per target x length board, Overall first, the pick kep
     assertEqual(tabs[3].label.__text, "Boss-level \194\183 1:00")
     assertEqual(pane.boardKey, "all", "the tab opens on Overall (SG-DR-3)")
     assertTrue(tabs[1].underline:IsShown())
+    for n, t in ipairs(tabs) do assertTrue(t.tipChrome == true, "board tab " .. n .. " is chrome (AD-92-DR)") end
     assertFalse(tabs[2].underline:IsShown())
     tabs[2]:GetScript("OnClick")(tabs[2])
     assertEqual(pane.boardKey, "cleave|180")
