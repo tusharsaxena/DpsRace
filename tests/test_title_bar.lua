@@ -1,0 +1,158 @@
+-- tests/test_title_bar.lua — every title-bar control of DpsRace's own windows (smoke round 1 of
+-- Ka0sAddonsCommonTasks docs/2026-11-16-LIBKA0S_ISSUES_75_PLUS, rulings 2 to 4: SR-L1, SR-L2, SR-L3).
+--
+-- One case per window (the race HUD, the Results window, the ability timeline, the gear view), each
+-- under Ka0s Default and a second skin:
+--   - every control shows a non-empty tooltip on hover, owned by the control, its first line in the
+--     skin's `gtip.title`, placed above it (BOTTOM on its TOP; headless, the tooltip answers no size, so
+--     LibKa0s-Tooltip-1.0's PlaceAttached cannot read it and the relative fallback places it), and
+--     takes it down on leave;
+--   - every control but the close rests in `icon.tint` and takes `text.link` under the pointer;
+--   - the close X rests in `icon.tint` (`close.rest`, which follows it) and takes `close.hot`.
+-- The expected colors are read from the skin's own definition (ResolveSkin), never from the host's
+-- live tables, so a host that painted the wrong token goes red here.
+
+local T = _G.DPSRACE_TEST
+local test, assertEqual, assertTrue = T.test, T.assertEqual, T.assertTrue
+local Widgets = dofile(T.root .. "/tests/mock_widgets.lua")(T)
+
+local NOW = os.time()
+local HOUR = 3600
+local GEAR = { [1] = "|cnIQ4:|Hitem:212001::::::::80:267::6:2:10390:1540::::::|h[Hood of the Test]|h|r" }
+local SKINS = { "ka0s", "obsidian" }
+
+local function inst()
+    local i = T.load{ mutate = function(m)
+        Widgets.install(m)
+        -- Real Textures and FontStrings (the kit's paint recorder), so the skin's own close painter
+        -- finds its art: under the bare recorder it answers no object type and the close is never painted.
+        dofile(T.root .. "/tests/_kit/mock_paint.lua")(m)
+        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.GetSpecialization = function() return 1 end
+        m.GetSpecializationInfo = function() return 267, "Destruction" end
+        m.StaticPopup_Show = function() end
+    end }
+    i.Skin = i.mocks.LibStub("LibKa0s-Skin-1.0")
+    return i, i.NS
+end
+
+local function mkRun(NS, id, dps, fields)
+    local decoded = { { t = 1, id = 29722 }, { t = 2, id = 17962 } }
+    local run = {
+        id = id, schema = 4, status = "complete", addon = "0.1.0", date = NOW - HOUR,
+        race = { length = 60, grace = 1.0 },
+        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
+                 level = 80, ilvl = 639.4 },
+        target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
+        result = { damage = dps * 60, dps = dps, tail = 2 },
+        flags = { lateCasts = {} }, spells = { { id = 29722, dmg = dps * 50 } }, note = "",
+        casts = { v = 1, list = NS.Casts.Encode(decoded), spells = { [29722] = 0, [17962] = 13000 }, dropped = 0 },
+        loadout = NS.Loadouts.Store({ gear = GEAR }),
+    }
+    for k, v in pairs(fields or {}) do run[k] = v end
+    NS.db.global.runs[id] = run
+    return run
+end
+
+-- Each window's ui table, shown, and the title-bar controls it draws (close first).
+local OPEN = {
+    hud = function(_, NS)
+        NS.Hud.Show()
+        return NS.Hud.__ui(), { "close", "lock", "settings", "results" }
+    end,
+    results = function(_, NS)
+        NS.Results.Show()
+        return NS.Results.__ui(), { "close", "viewToggle" }
+    end,
+    timeline = function(_, NS)
+        mkRun(NS, "this", 100)
+        mkRun(NS, "best", 300, { date = NOW - 2 * HOUR })
+        NS.Bests.Invalidate()
+        NS.Results.ShowRun("this")
+        NS.Results.__ui().detail.w.timeline:__fire("OnClick")
+        return NS.ResultsTimeline.__ui(), { "close" }
+    end,
+    gear = function(_, NS)
+        mkRun(NS, "this", 100)
+        mkRun(NS, "best", 300, { date = NOW - 2 * HOUR })
+        NS.Bests.Invalidate()
+        NS.Results.ShowRun("this")
+        NS.Results.__ui().detail.lo.gearView:__fire("OnClick")
+        return NS.ResultsGear.__ui(), { "close" }
+    end,
+}
+
+-- A recording GameTooltip: its owner, lines, title color, points and shown state.
+local function recordingTip(i)
+    local tip = { lines = {}, points = {}, shown = false }
+    function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines, tip.points = owner, anchor, {}, {} end
+    function tip.SetText(_, text, r, g, b) tip.lines = { text }; tip.title = { r, g, b } end
+    function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
+    function tip.Show() tip.shown = true end
+    function tip.Hide() tip.shown = false end
+    function tip.IsOwned(_, f) return tip.owner == f end
+    function tip.ClearAllPoints() tip.points = {} end
+    function tip.SetPoint(_, ...) tip.points[#tip.points + 1] = { ... } end
+    i.mocks.GameTooltip = tip
+    return tip
+end
+
+local function rgb(c)
+    if type(c) ~= "table" or c[1] == nil then return "nil" end
+    return ("%.3f,%.3f,%.3f"):format(c[1], c[2], c[3])
+end
+
+--- The color `b` draws: its icon's vertex color (the catalog art), else its glyph's text color.
+local function drawn(b)
+    local icon = rawget(b, "icon")
+    if icon and icon.__vertex then return icon.__vertex end
+    local g = rawget(b, "glyph") or rawget(b, "text") or rawget(b, "label")
+    return g and g.__color
+end
+
+local function checkWindow(key)
+    for _, skin in ipairs(SKINS) do
+        local i, NS = inst()
+        local u, names = OPEN[key](i, NS)
+        assertTrue(u ~= nil, key .. ": the window was never built")
+        NS.ApplySkinChoice("ka0s", skin)
+        i.mocks.__fireTimers()
+        local def = i.Skin:ResolveSkin(skin)
+        local tint, link, hot, title = def["icon.tint"], def["text.link"], def["close.hot"], def["gtip.title"]
+        assertTrue(rgb(tint) ~= rgb(link), skin .. ": icon.tint and text.link tell apart")
+        local tip = recordingTip(i)
+        for _, name in ipairs(names) do
+            local what = ("%s (%s) %s"):format(key, skin, name)
+            local b = u[name]
+            assertTrue(b ~= nil, what .. ": no control")
+            assertEqual(rgb(drawn(b)), rgb(tint), what .. ": at rest, icon.tint")
+            b:__fire("OnEnter")
+            assertTrue(tip.shown and tip.owner == b, what .. ": a tooltip owned by the control")
+            assertTrue(type(tip.lines[1]) == "string" and #tip.lines[1] > 0, what .. ": a non-empty tooltip")
+            assertEqual(rgb(tip.title), rgb(title), what .. ": the title in gtip.title")
+            local pt = tip.points[#tip.points]
+            assertTrue(pt ~= nil and pt[1] == "BOTTOM" and pt[2] == b and pt[3] == "TOP", what .. ": above the control")
+            assertEqual(rgb(drawn(b)), rgb(name == "close" and hot or link),
+                what .. (name == "close" and ": close.hot" or ": text.link") .. " under the pointer")
+            b:__fire("OnLeave")
+            assertTrue(not tip.shown, what .. ": taken down on leave")
+            assertEqual(rgb(drawn(b)), rgb(tint), what .. ": back at rest")
+        end
+    end
+end
+
+test("title bar: the race HUD's close, lock, settings and Results controls (tooltips, rest and hover)", function()
+    checkWindow("hud")
+end)
+
+test("title bar: the Results window's close and view toggle (tooltips, rest and hover)", function()
+    checkWindow("results")
+end)
+
+test("title bar: the ability timeline's close (tooltip, rest and hover)", function()
+    checkWindow("timeline")
+end)
+
+test("title bar: the gear view's close (tooltip, rest and hover)", function()
+    checkWindow("gear")
+end)

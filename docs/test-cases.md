@@ -375,7 +375,7 @@ Total.
 - hud: the diagnostics state section names the body, the event set and the countdown driver
 - hud: labels take the collection's font objects; the clocks and KPI figures stay large
 - hud: no body shouts in capitals (Title Case labels and buttons, Sentence case prose)
-- hud: a title-bar control turns gold under the pointer and back at rest, a late leave included
+- hud: a title-bar control takes text.link under the pointer and back at rest, a late leave included
 - hud: the smallest window still holds every body after the compact restyle
 - hud: the running clocks, figures and spell rows take their HUD Appearance blocks
 - hud: the clocks, figures and spell rows draw every skin's HUD face, a switch restyles them (R3-DR-1)
@@ -992,6 +992,13 @@ Total.
 - header band: the HUD's title is LEFT in every skin; the other titles follow title.align
 - header band: the Results tab strip and its rule stand under the band, in every skin
 - header band: with no library each window's header stands where Shell would lay the band
+
+### test_title_bar.lua (4)
+
+- title bar: the race HUD's close, lock, settings and Results controls (tooltips, rest and hover)
+- title bar: the Results window's close and view toggle (tooltips, rest and hover)
+- title bar: the ability timeline's close (tooltip, rest and hover)
+- title bar: the gear view's close (tooltip, rest and hover)
 
 ### test_results_body.lua (2)
 
@@ -1882,6 +1889,7 @@ Total.
 | test_header_rule.lua | 3 |
 | test_column_header_rule.lua | 4 |
 | test_header_band.lua | 5 |
+| test_title_bar.lua | 4 |
 | test_results_body.lua | 2 |
 | test_icon_rule.lua | 8 |
 | test_icon_crop.lua | 4 |
@@ -1931,4 +1939,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1509** |
+| **Total** | **1513** |

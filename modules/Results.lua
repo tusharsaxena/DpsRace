@@ -191,14 +191,16 @@ local function buildChrome(f)
     -- the rule under the tab strip stays.
     f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
     f.title:SetText(L["DPS Race \226\128\148 Results"])
-    -- The close control is the skin's (Core's, its hover `close.hot`); the view toggle beside it
-    -- turns the accent under the pointer, as the HUD's controls do (modules/Style.lua).
-    ui.controls = Style.NewStrip()
+    -- The close control is the skin's (Core's: `icon.tint` at rest, `close.hot` under the pointer,
+    -- the library's "Close" tooltip); the view toggle beside it rests in `icon.tint` and takes
+    -- `text.link` under the pointer, its tooltip above it, as the HUD's controls do (modules/Style.lua,
+    -- smoke round 1's SR-L1 to SR-L3).
+    ui.controls = Style.TitleStrip()
     ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
     -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
     -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
     -- away), collapsed chevron-right (open it).
-    ui.viewToggle = Style.AddToStrip(ui.controls, Style.ControlButton(f, "chevron-left", "<", "",
+    ui.viewToggle = Style.AddToStrip(ui.controls, Style.TitleButton(f, "chevron-left", "<", "",
         function() Results.ToggleView() end))
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)

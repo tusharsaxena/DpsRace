@@ -532,20 +532,22 @@ end
 
 -- The title bar on the skin's title band (Style.Header, R5-DR1): the title LEFT in every skin (item
 -- 3a: the four controls crowd a centered title), and the four controls on the right: the close
--- control is the skin's own (S.CloseButton through Core, its hover `close.hot`), the other three turn
--- the accent under the pointer (one shared strip, modules/Style.lua). Each is on the band's middle.
+-- control is the skin's own (S.CloseButton through Core, `icon.tint` at rest, `close.hot` under the
+-- pointer), the other three rest in `icon.tint` and take `text.link` under the pointer (one shared
+-- title strip, modules/Style.lua; smoke round 1, SR-L3). Each shows its tooltip above it, in the
+-- skin's `gtip.title` (Style.TitleTip, SR-L1/SR-L2). Each is on the band's middle.
 local function buildHeader(f)
     local Style = NS.Style
     f.title = f:CreateFontString(nil, "OVERLAY", Style.FONT.TITLE)
     f.title:SetText(L["DPS Race"])
     -- No line under the title band (R4-SEP): every Ka0s window reads like the Skin Tester's showroom.
-    ui.controls = Style.NewStrip()
+    ui.controls = Style.TitleStrip()
     local close = NS.MakeCloseButton(f, function() Hud.Act.close() end)
-    if close then NS.HudStates.AddTip(close, NS.HudTips.close) end
+    Style.TitleTip(close, NS.HudTips.close)
     ui.close = close
-    ui.lock = Style.ControlButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
-    ui.settings = Style.ControlButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
-    ui.results = Style.ControlButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
+    ui.lock = Style.TitleButton(f, "unlock", "L", L["Lock or unlock the HUD"], function() Hud.Act.lock() end)
+    ui.settings = Style.TitleButton(f, "settings", "S", L["Settings"], function() Hud.Act.settings() end)
+    ui.results = Style.TitleButton(f, "chart", "R", L["Results"], function() Hud.Act.results() end)
     for _, b in ipairs({ ui.lock, ui.settings, ui.results }) do Style.AddToStrip(ui.controls, b) end
     -- The drag strip: the title band left of the controls.
     local drag = CreateFrame("Frame", nil, f)

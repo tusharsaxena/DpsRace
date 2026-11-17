@@ -4,7 +4,7 @@
 -- The line above was the filter bar's bottom divider, which the header row sits on; the line below was
 -- the table header's own bottom divider. Both go. The header row takes the skin's SortHeaderBar, the
 -- seam LootHistory's header takes (LootHistory modules/BrowserTable.lua), so a skin that sets
--- `list.header.bg` paints its band and Ka0s Default paints none.
+-- `list.header.bg` paints its band (every skin since LibKa0s v1.105.0's SR-L4; Ka0s Default black .35).
 --
 -- The rules that are not against a column header stay: the Insights filter bar's (cards sit under it)
 -- and the Results window's tab-strip and footer rules (tests/test_header_rule.lua).

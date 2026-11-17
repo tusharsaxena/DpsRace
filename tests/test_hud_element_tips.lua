@@ -19,6 +19,9 @@ local function inst()
     end
     function tip.Show() tip.shown = tip.shown + 1 end
     function tip.Hide() tip.hidden = tip.hidden + 1 end
+    -- The client's GameTooltip places itself; a title-bar tooltip is placed above its control.
+    function tip.ClearAllPoints() tip.points = {} end
+    function tip.SetPoint(_, ...) tip.points = tip.points or {}; tip.points[#tip.points + 1] = { ... } end
     i.mocks.GameTooltip, i.tip, i.W = tip, tip, W
     return i
 end
