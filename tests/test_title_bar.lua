@@ -21,18 +21,19 @@ local HOUR = 3600
 local GEAR = { [1] = "|cnIQ4:|Hitem:212001::::::::80:267::6:2:10390:1540::::::|h[Hood of the Test]|h|r" }
 local SKINS = { "ka0s", "obsidian" }
 
-local function inst()
-    local i = T.load{ mutate = function(m)
+local function inst(opts)
+    opts = opts or {}
+    local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         Widgets.install(m)
         -- Real Textures and FontStrings (the kit's paint recorder), so the skin's own close painter
         -- finds its art: under the bare recorder it answers no object type and the close is never painted.
-        dofile(T.root .. "/tests/_kit/mock_paint.lua")(m)
+        if not opts.bare then dofile(T.root .. "/tests/_kit/mock_paint.lua")(m) end
         m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
     end }
-    i.Skin = i.mocks.LibStub("LibKa0s-Skin-1.0")
+    i.Skin = i.mocks.LibStub("LibKa0s-Skin-1.0", opts.libFiles ~= nil)
     return i, i.NS
 end
 
@@ -218,8 +219,8 @@ test("title bar: the ability timeline's and the gear view's marks are W.HeaderBu
 end)
 
 --- Click the window's settings mark with the settings panel spied: answers how often it opened.
-local function clickSettings(key)
-    local i, NS = inst()
+local function clickSettings(key, opts)
+    local i, NS = inst(opts)
     local u = OPEN[key](i, NS)
     local opened = 0
     NS.OpenOptionsPanel = function() opened = opened + 1 end
@@ -246,4 +247,70 @@ test("title bar: the timeline and the gear view hide before the settings open; t
         local _, u = clickSettings(key)
         assertTrue(u.frame:IsShown(), key .. ": stays open beside the settings")
     end
+end)
+
+-- ── the degraded load (no LibKa0s, so no HeaderButtons) ─────────────────────────────────────────
+-- The same marks are host controls on one title strip (Style.HeaderMarks' hostMarks), at the same
+-- offsets (no close: nothing can make one, so settings takes the corner); the settings mark opens the panel directly (NS.OpenOptionsPanel) and draws the library's
+-- own glyph for settings (HEADER_STRINGS.SETTINGS_GLYPH, "*").
+local BARE = { libFiles = {}, bare = true }
+
+test("title bar: with no library each window's settings mark opens the settings panel directly", function()
+    for _, key in ipairs({ "hud", "results", "timeline", "gear" }) do
+        local opened, u = clickSettings(key, BARE)
+        assertTrue(u.frame.headerButtons == nil, key .. ": no W.HeaderButtons on a degraded load")
+        assertEqual(opened, 1, key .. ": the settings panel opened once")
+        assertEqual(u.settings.glyph:GetText(), "*", key .. ": the library's settings glyph")
+    end
+end)
+
+test("title bar: with no library the timeline and the gear view still hide before the settings open", function()
+    for _, key in ipairs({ "timeline", "gear" }) do
+        local _, u = clickSettings(key, BARE)
+        assertTrue(not u.frame:IsShown(), key .. ": hidden, so it never covers the settings panel")
+    end
+    for _, key in ipairs({ "hud", "results" }) do
+        local _, u = clickSettings(key, BARE)
+        assertTrue(u.frame:IsShown(), key .. ": stays open beside the settings")
+    end
+end)
+
+test("title bar: with no library the host marks stand at the library's offsets, extras . settings . close", function()
+    for _, key in ipairs({ "hud", "results", "timeline", "gear" }) do
+        local i, NS = inst(BARE)
+        local u = OPEN[key](i, NS)
+        -- No library, no NS.MakeCloseButton: the window has no close mark, so settings takes the corner.
+        assertTrue(u.close == nil, key .. ": no close on a load that cannot make one")
+        local want = {}
+        for _, name in ipairs(ORDER[key]) do if name ~= "close" then want[#want + 1] = name end end
+        for n = #want, 1, -1 do
+            local name = want[n]
+            local x = 6 + (#want - n) * 24
+            assertTrue(u[name] ~= nil, ("%s: a %s mark"):format(key, name))
+            assertEqual(rightX(u[name]), -x, ("%s: %s placed %d in from the corner"):format(key, name, x))
+        end
+    end
+end)
+
+-- ── a library mark dressed with art whose next icon has no art ──────────────────────────────────
+-- Style.SetControlIcon's ladder: art when the catalog answers, else the glyph. A W.HeaderButton built
+-- with art has no word of its own, so the host gives it one, painted icon.tint at rest and text.link
+-- under the pointer, and the art comes back when the catalog answers again.
+test("title bar: a library mark's icon with no catalog art falls back to its glyph", function()
+    local i, NS = inst()
+    local u = OPEN.hud(i, NS)
+    local b = u.lock
+    assertTrue(rawget(b, "icon") ~= nil and rawget(b, "label") == nil, "the lock is a library mark dressed with art")
+    NS.Style.SetControlIcon(b, "no-such-icon", "L")
+    local g = rawget(b, "glyph")
+    assertTrue(g ~= nil, "a glyph to fall back to")
+    assertTrue(g:IsShown() and not b.icon:IsShown(), "the glyph shows, the art hides")
+    assertEqual(g:GetText(), "L")
+    assertEqual(rgb({ g:GetTextColor() }), rgb(NS.Style.REST), "at rest, icon.tint")
+    b:__fire("OnEnter")
+    assertEqual(rgb({ g:GetTextColor() }), rgb(NS.Style.LINK), "under the pointer, text.link")
+    b:__fire("OnLeave")
+    assertEqual(rgb({ g:GetTextColor() }), rgb(NS.Style.REST), "back at rest")
+    NS.Style.SetControlIcon(b, "unlock", "U")
+    assertTrue(b.icon:IsShown() and not g:IsShown(), "the art comes back when the catalog answers")
 end)

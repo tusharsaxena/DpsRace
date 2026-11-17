@@ -993,7 +993,7 @@ Total.
 - header band: the Results tab strip and its rule stand under the band, in every skin
 - header band: with no library each window's header stands where Shell would lay the band
 
-### test_title_bar.lua (9)
+### test_title_bar.lua (13)
 
 - title bar: the race HUD's close, lock, settings and Results controls (tooltips, rest and hover)
 - title bar: the Results window's close, settings and view toggle (tooltips, rest and hover)
@@ -1004,6 +1004,10 @@ Total.
 - title bar: the ability timeline's and the gear view's marks are W.HeaderButtons', settings . close
 - title bar: each window's settings mark opens the settings through the launcher's opener
 - title bar: the timeline and the gear view hide before the settings open; the HUD and Results stay
+- title bar: with no library each window's settings mark opens the settings panel directly
+- title bar: with no library the timeline and the gear view still hide before the settings open
+- title bar: with no library the host marks stand at the library's offsets, extras . settings . close
+- title bar: a library mark's icon with no catalog art falls back to its glyph
 
 ### test_results_body.lua (2)
 
@@ -1907,7 +1911,7 @@ Total.
 | test_header_rule.lua | 3 |
 | test_column_header_rule.lua | 4 |
 | test_header_band.lua | 5 |
-| test_title_bar.lua | 9 |
+| test_title_bar.lua | 13 |
 | test_results_body.lua | 2 |
 | test_icon_rule.lua | 8 |
 | test_icon_crop.lua | 4 |
@@ -1958,4 +1962,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1528** |
+| **Total** | **1532** |

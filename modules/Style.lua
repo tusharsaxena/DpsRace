@@ -729,12 +729,27 @@ function Style.TitleButton(parent, name, glyph, tip, onClick)
     return b
 end
 
+--- A library mark dressed with art has no word of its own: give it the host's glyph, drawn like a
+--- title-bar control (`icon.tint` at rest, `text.link` under the pointer). Built once, on first need.
+local function markGlyph(b)
+    local fs = b:CreateFontString(nil, "OVERLAY", Style.FONT.TEXT)
+    fs:SetPoint("CENTER", b, "CENTER", 0, 0)
+    fs:SetTextColor(Style.Rgb(Style.REST))
+    local hook = b.HookScript and "HookScript" or "SetScript"
+    b[hook](b, "OnEnter", function() fs:SetTextColor(Style.Rgb(Style.LINK)) end)
+    b[hook](b, "OnLeave", function() fs:SetTextColor(Style.Rgb(Style.REST)) end)
+    b.glyph = fs
+    return fs
+end
+
 --- Draw `name` on a control (the glyph when the catalog has no path). The tint is left as it is. A
---- header mark (W.HeaderButton) has its art as `icon` or, built with no art, its glyph as `label`.
+--- header mark (W.HeaderButton) has its art as `icon` or, built with no art, its glyph as `label`;
+--- one built with art and later handed a name the catalog cannot answer gets a glyph (markGlyph).
 function Style.SetControlIcon(b, name, glyph)
     local path = NS.Icon(name)
     local word = b.glyph or b.label
     local art = path ~= nil and b.icon ~= nil
+    if not (art or word) and b.icon then word = markGlyph(b) end
     if b.icon then
         b.icon:SetShown(art)
         if art then b.icon:SetTexture(path) end
@@ -765,7 +780,9 @@ end
 -- load) the same marks are host controls on one title strip, at the same offsets, settings opening
 -- the panel directly.
 local Widgets = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
-local SETTINGS_GLYPH = "S"
+-- The library's own settings glyph (LibKa0s-Widgets-1.0's HEADER_STRINGS.SETTINGS_GLYPH), so a
+-- degraded window draws what a library window draws with no art.
+local SETTINGS_GLYPH = Widgets and Widgets.HEADER_STRINGS and Widgets.HEADER_STRINGS.SETTINGS_GLYPH or "*"
 
 --- A degraded load's marks: host controls, outermost first, at the library's offsets.
 local function hostMarks(f, spec, marks)

@@ -433,7 +433,12 @@ the folder (Core's `OpenSettings("DpsRace")`; no window opts out). The timeline 
 at DIALOG, over the settings panel, so each passes `hideOnSettings` and hides first (the hide is their
 Escape close); the HUD (MEDIUM) and the Results window (HIGH, the panel's own strata) stay open. With
 no `HeaderButtons` (a degraded load) the same marks are host controls on one title strip at the same
-offsets, settings opening the panel directly (`test_title_bar`). The addon builds no
+offsets (no close there: nothing can make one, so settings takes the corner), settings drawing the
+library's own glyph (`*`) and opening the panel directly, the timeline and the gear view still hiding
+first (`test_title_bar`'s "with no library" cases; `test_header_band` places them on the host's band).
+A library mark built with art that is later handed an icon the catalog cannot answer (the lock's
+padlock, the view toggle's chevrons) falls back to a host glyph painted the same way
+(`Style.SetControlIcon`). The addon builds no
 `W.DragHandle`, so the drag strip's settings mark has no use here. With no library a host holder stands where the band would. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
