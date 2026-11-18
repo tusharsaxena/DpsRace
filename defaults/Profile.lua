@@ -100,7 +100,7 @@ NS.defaults = {
             defaultLength = 60,    -- s; the idle body's length until the player picks one (§4.1); 1:00 for a
                                    -- new profile (the owner's call, 2026-11-03; 2:00 before)
             countdownCue  = true,  -- the sound at 10, 5, 3, 2, 1 s left, and each center number (§4.3)
-            centerCountdown = true, -- the center-screen numbers in the last seconds (modules/Countdown.lua)
+            centerCountdown = true, -- the center-screen numbers in the last seconds (core/CalloutSetup.lua)
             finalCountdown  = 10,   -- s left when the numbers start, 3-10
             buzzer        = true,  -- the raid-warning STOP and its sound at the buzzer (§4.4)
             hintDelay     = 15,    -- s in combat after the buzzer before the drop-combat hint (§4.4)

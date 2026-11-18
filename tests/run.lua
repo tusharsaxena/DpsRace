@@ -36,6 +36,8 @@ do
         "Charts.lua", "ChartsRender.lua",
         -- Where every tooltip the addon places opens (AD-92-DR, LibKa0s#92).
         "Tooltip.lua",
+        -- The race's center-screen countdown, through core/CalloutSetup.lua (AD-85-DR, LibKa0s#85).
+        "Callout.lua",
     }
     local present = {}
     for _, path in ipairs(LIB_FILES) do present[path:match("([^/]+)$")] = true end
@@ -274,10 +276,6 @@ _G.DPSRACE_TEST = Kit.expose{
 Kit.skinValues = {
     root = root,
     rows = {
-        { file = "modules/Countdown.lua", substring = "Countdown.TEXTURE =",
-          why = "the client's own big countdown digits, shipped as art, not a color or a chrome texture", cause = "A6" },
-        { file = "modules/Countdown.lua", substring = "Countdown.GLOW =",
-          why = "the digits' own glow sheet, cut by the same texcoords", cause = "A6" },
         { file = "modules/Results_Timeline.lua", substring = "local DISC =",
           why = "a white disc shape tinted through Style.Vertex, the legend's swatch: a shape, not skin data", cause = "L10" },
     },

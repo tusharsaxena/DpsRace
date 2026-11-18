@@ -17,7 +17,7 @@ test when capture is off.
 | `hudTick` | the HUD window's `OnUpdate` pass in `modules/Hud.lua`: the countdown text, the stop figures, the Stop!/Waiting phase, and the running body's chart and pace views (`HudChart.LiveViews`: the chart's view and the best behind it cached per race and rebuilt only when the run, the bests board, the length or the run's slices change; the pace max refilled into one reused table; the stack placed again only when a compared input changed) | 20 Hz while RUNNING, 4 Hz while STOPPING; attached only while the window is shown and the race in one of them |
 
 The HUD's other work is not a hot path: its own AceEvent target (target and regen edges while shown)
-redraws on an edge. The final seconds (`modules/Countdown.lua`) are at most ten one-shot `C_Timer`s armed when the race runs, each a sound and a texcoord change; no `OnUpdate`.
+redraws on an edge. The final seconds (`core/CalloutSetup.lua`) are one lead-in `C_Timer` and at most five cue-mark `C_Timer`s while the race runs; LibKa0s-Callout-1.0's clock frame runs an `OnUpdate` only from a second before the first number to the buzzer (at most 11 s a race), and none while nothing counts.
 
 The race's own timers are one buzzer (`C_Timer.NewTimer`) while running and one 0.5 s readiness
 poll (`C_Timer.NewTicker`) while stopping; neither exists while idle, and the stand-down cancels both.

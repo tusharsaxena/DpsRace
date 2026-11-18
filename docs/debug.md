@@ -38,7 +38,7 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Gear` | `modules/Results_Gear.lua`: the gear view window built, and each draw's slot count (#17) |
 | `Format` | `modules/Format.lua`: a client formatter constructor passed over and why (it built nothing, refused the breakpoints or drew a check value wrongly), and which path served the numbers (the client formatter by name, Lua for a plain number, `AbbreviateNumbers`, or the raw value), written when it changes |
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
-| `Countdown` | `modules/Countdown.lua`: the center numbers' frame built (with the digit art or the font fallback), and a pop animation the client refused |
+| `Countdown` | `core/CalloutSetup.lua`: the call-out handed the race's countdown (from which second), and the call-out's own lines (`LibKa0s-Callout-1.0`'s `d.debug`) |
 | `AutoArm` | `modules/AutoArm.lua`: a dummy session beginning and ending, each auto-arm (or its refusal, with the reason) and each cancel when the target moves off the dummies (#16) |
 | `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |

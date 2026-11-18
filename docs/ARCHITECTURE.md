@@ -210,7 +210,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `core/CalloutSetup.lua`: the final seconds' countdown on the call-out (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat; `modules/BestToast.lua`: the new-best toast, for a complete run that beats an earlier best |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
@@ -313,10 +313,16 @@ next bucket boundary while the window is shown and the race RUNNING (at most 60 
 stretch still fills its bucket; one more read at the buzzer fills the last), and that is all.
 `Hud.Suspend()` drops all of it at the stand-down.
 
-`modules/Countdown.lua` registers no game event: the race's final seconds are one `C_Timer` per
-whole second still ahead (10 down to 1), armed when the race runs and canceled when it leaves
-RUNNING, each playing the countdown cue once and showing its center-screen number on the module's
-own frame. `Countdown.Suspend()` drops them at the stand-down.
+`core/CalloutSetup.lua` registers no game event: the race's final seconds are LibKa0s-Callout-1.0's
+countdown, handed the race's buzzer on the `GetTime()` clock a second before the first number (one
+lead-in `C_Timer` until then) and canceled when the race leaves RUNNING; the call-out's clock frame
+runs its `OnUpdate` only while it counts. The countdown cue plays with each number (the call-out's
+`onTick`) and on a `C_Timer` for each cue mark the numbers do not show. `Countdown.Suspend()` cancels
+the timers and suspends the call-out at the stand-down (AD-85-DR). The call-out's own settings (its
+Look and Sound, LibKa0s-Callout-1.0's `SchemaRows` and `SettingsTab`) are not offered: the instance is
+built with a read-only `db` (the old countdown's place and gold), never unlocked and given no voice
+pack, so it makes no write and has nothing to register. Offering them, with a voice pack, is the
+owner's call, left open at AD-85-DR.
 
 | Event | Registered | Handler | Why |
 |---|---|---|---|
@@ -385,7 +391,7 @@ Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
 Results window, HIGH, toplevel), `MODAL` (the ability timeline and the gear view, DIALOG, toplevel: each opened from the Results
 window, so one strata above it, and it re-raises a shown StaticPopup when it opens, frame-layering-§4) and
-`SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+`SCREEN_ALERT` (the center-screen countdown, LibKa0s-Callout-1.0's frame at its own `STRATA`, FULLSCREEN,
 mouse-disabled, below the library's FULLSCREEN_DIALOG menus), and the library's own `ALERT` tier for the
 new-best toast (LibKa0s-Toast-1.0 sets it: HIGH, toplevel, mouse-enabled, clamped; frame-layering's
 T5 interactive toast), with three level bands: `LEVEL.DETAIL`,
@@ -590,8 +596,8 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   `tests/test_skinsetup.lua` pins the ones this addon hands over.
 - **The typed-value gate and the switch test.** The kit's `test_skin_values` (kit revision 50,
   anti-pattern #107) fails on a typed color or texture no kit category takes, in every tracked source
-  file; `tests/run.lua`'s `Kit.skinValues.rows` names the three left, each with its cause: the
-  countdown's two digit sheets (A6) and the timeline legend's disc (L10). A row that matches nothing
+  file; `tests/run.lua`'s `Kit.skinValues.rows` names the one left, with its cause: the timeline legend's
+  disc (L10). The countdown's two digit sheets (A6) went with the module at AD-85-DR. A row that matches nothing
   fails. The kit's `test_skin_switch` flips a probe skin over the surfaces `tests/skin_surfaces.lua`
   declares, and fails on one that draws the same.
 
@@ -599,7 +605,7 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
 quality colors, the meaning colors of a gain or a late cast, which `Style.Hue` keeps on the body face
 under every skin; the ability timeline's run colors and corridors, and its caster colors `PLAYER_LINE`
 and `PET_LINE`, DpsRace#21: a cast icon there sits on a 1 px edge in its caster's color, not the skin's
-icon outline, because the color is the information, skinning-§9), the countdown's BigGold digit art and its glow, the game's menus, StaticPopups,
+icon outline, because the color is the information, skinning-§9), the game's menus, StaticPopups,
 raid warning and tooltip frames (only the lines this addon writes into a tooltip take the skin), chat
 output (X7) and inline markup in help text (X9).
 
@@ -679,9 +685,10 @@ Prototype.
   so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
   config; its only geometry reads are its own anchor on drag stop and, on a hover, the edges the
   tooltip placer reads (*Tooltip placement*).
-- The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
-  textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
-  broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
+- The center-screen countdown is LibKa0s-Callout-1.0's frame (`core/CalloutSetup.lua`, AD-85-DR): a
+  library frame with a font string, gold numbers at the old place, never unlocked and never taking the
+  mouse. The addon never calls `C_PartyInfo.DoCountdown` (that broadcasts a pull timer to the group)
+  nor any `TimerTracker` handler, and `test_countdown` scans the seam for both.
 - The detail's *View* (#6) opens the talent tree from addon code, an ACCEPTED RISK (the owner's
   call, 2026-10-25). It calls `SetItemRef` with the stored `talentbuild` link, which shows the talent
   frame (`PlayerSpellsFrame`) from this addon's execution, and it also prints the same link into the

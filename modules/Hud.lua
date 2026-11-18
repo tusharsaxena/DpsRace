@@ -44,7 +44,7 @@ local _, NS = ...
 -- STOPPING (no clock; combat may hold for minutes), the drop-combat spells asked once per race and the
 -- stop chips rebuilt only on a change.
 -- Nothing else. The buzzer's raid warning answers RACE_BUZZER, with the window closed too. The
--- countdown cue and the center-screen numbers of the last seconds are modules/Countdown.lua's.
+-- countdown cue and the center-screen numbers of the last seconds are core/CalloutSetup.lua's.
 -- Stand-down (Suspend) drops every registration, timer and the OnUpdate.
 --
 -- NO DECISION FROM A METER VALUE. The body for STOPPING (Stop! or Waiting) is chosen from GetTime(),

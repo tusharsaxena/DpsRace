@@ -34,7 +34,8 @@ C.LOGO = ("Interface\\AddOns\\%s\\media\\logos\\dpsrace.logo.tga"):format(addonN
 --                                    shown StaticPopup when it opens (frame-layering-§4)
 --   DIALOG             (library)     Blizzard StaticPopups (reset, delete, whisper share), the LibKa0s
 --                                    debug console and perf panel (toplevel from LibKa0s v1.77.0)
---   FULLSCREEN         SCREEN_ALERT  the center-screen countdown (modules/Countdown.lua): mouse-disabled,
+--   FULLSCREEN         SCREEN_ALERT  the center-screen countdown (LibKa0s-Callout-1.0's frame, its STRATA,
+--                                    through core/CalloutSetup.lua): mouse-disabled,
 --                                    over every dialog, and out of the menus' strata so a menu opened
 --                                    in the last ten seconds always draws over the numbers
 --   FULLSCREEN_DIALOG  (library)     the LibKa0s dropdown menu (the Results filter bars)

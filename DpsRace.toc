@@ -72,6 +72,10 @@ core\WidgetsSetup.lua
 # The new-best toast's shell (#5): reads LibStub (LibKa0s-Toast-1.0) at FILE SCOPE and publishes
 # NS.NewToast, which modules\BestToast.lua calls at FILE SCOPE.
 core\ToastSetup.lua
+# The race's final seconds on LibKa0s-Callout-1.0 (#85): reads LibStub (LibKa0s-Callout-1.0) at FILE
+# SCOPE, builds NS.Callout, and builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through
+# core\Bus.lua; reaches the race, the sample race and the settings at CALL time.
+core\CalloutSetup.lua
 # The Insights charts (LibKa0s#66): reads LibStub (LibKa0s-Charts-1.0) at FILE SCOPE, and NS.Style,
 # NS.ResultsTable and NS.Pool at CALL time only (NS.ChartsHost).
 core\ChartsSetup.lua
@@ -152,9 +156,6 @@ modules\Hud_Best.lua
 # its default width; its height (the v0.2 sizing model) is NS.HudStates' at CALL time. Publishes
 # NS.Hud.MIN_BARS / MAX_BARS, which settings\Hud.lua reads at FILE SCOPE.
 modules\Hud.lua
-# The race's final seconds: the countdown cue and the center-screen numbers, its own frame. LOAD-BEARING:
-# builds its bus receiver (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua.
-modules\Countdown.lua
 # Auto-show and auto-arm near a training dummy (#16). LOAD-BEARING: builds its bus receiver
 # (RACE_STATE_CHANGED) at FILE SCOPE through core\Bus.lua; reaches the HUD and the race at CALL time.
 modules\AutoArm.lua

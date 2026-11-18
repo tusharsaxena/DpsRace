@@ -9,6 +9,12 @@
 -- the clock forward, firing every due callback at its own time, in time order. Every handle is also
 -- pushed onto `M.__timers`, so the kit's live-timer survey (`M.__timers()`) still sees what is armed;
 -- a fired one-shot and a canceled handle are marked `cancelled`, which is what the survey skips.
+--
+-- THE FRAMES (AD-85-DR). The walk also runs the client's frames, at FRAME-second steps: after the
+-- timers due by each step, every frame with an OnUpdate and no parent runs it once. Those are the
+-- library's own clock frames (LibKa0s-Callout-1.0's countdown reads ceil(endsAt - now) on each
+-- frame), so the race's center numbers flip as they would in the client. A window's OnUpdate (the
+-- HUD's ticker sits on its parented window) is not run: its suites drive it themselves.
 
 return function(T)
     local F = {}
@@ -16,6 +22,8 @@ return function(T)
     -- Floating tolerance for "due": half-second steps from a whole second are exact, but a sum of
     -- tenths is not.
     local EPS = 1e-9
+    -- One client frame's length, for THE FRAMES (20 per second).
+    local FRAME = 0.05
 
     local function installClock(M)
         local clock = { entries = {} }
@@ -48,9 +56,17 @@ return function(T)
             return due
         end
 
-        --- Walk the clock forward `dt` seconds, firing each due callback at its own time.
-        function clock.advance(dt)
-            local limit = M.__now + dt
+        --- One client frame: every parentless frame's OnUpdate (THE FRAMES, above).
+        local function frame()
+            for _, h in ipairs(M.__timers()) do
+                if type(h) == "table" and h.__scripts and h.__scripts.OnUpdate and h.__parent == nil then
+                    h:__fire("OnUpdate", FRAME)
+                end
+            end
+        end
+
+        --- Fire every callback due by `limit`, each at its own time.
+        local function fireDue(limit)
             local due = nextDue(limit)
             while due do
                 if due.at > M.__now then M.__now = due.at end
@@ -67,6 +83,19 @@ return function(T)
                 due = nextDue(limit)
             end
             M.__now = limit
+        end
+
+        --- Walk the clock forward `dt` seconds, firing each due callback at its own time and running
+        --- a frame every FRAME seconds.
+        function clock.advance(dt)
+            local limit = M.__now + dt
+            -- The last step lands on `limit` exactly (a sum of steps drifts), so its frame runs there.
+            repeat
+                local stepTo = M.__now + FRAME
+                if stepTo > limit - EPS then stepTo = limit end
+                fireDue(stepTo)
+                frame()
+            until M.__now >= limit
         end
 
         --- Walk the clock to the absolute time `t`.
@@ -172,6 +201,7 @@ return function(T)
         local meter, clock
         local inst = T.load{
             enable = opts.enable,
+            libFiles = opts.libFiles,
             mutate = function(m)
                 meter = T.mockMeter.install(m)
                 clock = installClock(m)

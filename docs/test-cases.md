@@ -505,13 +505,12 @@ Total.
 - pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
 - pace: the result card's stack starts under the chips it draws, as the running body's under its boxes
 
-### test_countdown.lua (20)
+### test_countdown.lua (19)
 
 - countdown: 10..1 show one per second in the last 10s, then go at the buzzer
-- countdown: its own frame, center of UIParent, above everything, never taking the mouse
-- countdown: each number pops in through an animation
-- countdown: the digits are Blizzard's BigGold set, cut by texcoord
-- countdown: without the digit art it falls back to a large outlined number
+- countdown: the call-out's frame, above everything, never taking the mouse; gold numbers at the old place
+- countdown: the call-out speaks nothing: no voice pack is shipped and its voice reads off
+- countdown: the stub carries the call-out's surface, and with no library the cue marks still sound
 - countdown: finalCountdown 3 starts at 3
 - countdown: switched off, no frame is ever built and only the cue marks sound
 - countdown: switching it off mid-countdown hides the number at once
@@ -1910,7 +1909,7 @@ Total.
 | test_hud_tiles.lua | 10 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
-| test_countdown.lua | 20 |
+| test_countdown.lua | 19 |
 | test_autoarm.lua | 31 |
 | test_layers.lua | 7 |
 | test_results.lua | 18 |
@@ -1993,4 +1992,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1555** |
+| **Total** | **1554** |
