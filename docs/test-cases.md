@@ -1,3 +1,4 @@
+ka0s-bounded: all 7 slot(s) are in use by other bounded runs; waiting for a slot
 # Test Cases
 
 The full inventory of every headless test case in this repo, grouped by the suite file it
@@ -1482,13 +1483,23 @@ Total.
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
 - slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
-- slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone
+- slash: a bare ignore and ignore show report the list, one spell a line, 8690 as every hearthstone
 - slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored
 - slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off
 - slash: ignore defaults puts the six back, as reset race.lateIgnore does
 - slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
 - slash: ignore is a settings verb: it answers while disabled, on both arms
 - slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore and targetdummy
+
+### test_reports.lua (7)
+
+- reports: ignore show writes the list to the console, ungated, and points to it once in chat
+- reports: a bare ignore is ignore show; an empty list is one chat line and writes nothing
+- reports: ignore defaults acknowledges in chat, then reports the list
+- reports: a usage or refusal inside ignore stays in chat and writes nothing to the console
+- reports: targetdummy show writes the list to the console with one chat pointer
+- reports: targetdummy defaults acknowledges in chat, then reports; a bad word is usage, no report
+- reports: library absent, the stub streams each report to chat with no pointer
 
 ### test_share.lua (14)
 
@@ -1956,6 +1967,7 @@ Total.
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
 | test_slash.lua | 38 |
+| test_reports.lua | 7 |
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
 | test_preview.lua | 25 |
@@ -1980,4 +1992,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1546** |
+| **Total** | **1553** |

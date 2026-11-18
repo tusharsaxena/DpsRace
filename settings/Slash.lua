@@ -319,11 +319,16 @@ local function ignoreUsage()
     out(L["Usage: %s ignore [show|add|remove|defaults] <spell ID, link or name>"]:format(NS.SLASH))
 end
 
+-- The list is a REPORT (debug-logging-§15, the owner's ruling of 2026-11-08): written to the debug
+-- console through NS.DebugLog:Report, ungated, the console revealed and one chat pointer printed. An
+-- empty list is a one-line answer and stays in chat.
 local function showIgnored()
     local ids = NS.LateIgnore.List()
     if #ids == 0 then return out(L["The late-cast ignore list is empty."]) end
-    out(L["Late-cast ignore list:"])
-    for _, id in ipairs(ids) do out("  " .. NS.LateIgnore.Label(id)) end
+    NS.DebugLog:Report("Ignore", "ignore show", function(put)
+        put(L["Late-cast ignore list:"])
+        for _, id in ipairs(ids) do put("  " .. NS.LateIgnore.Label(id)) end
+    end)
 end
 
 -- What a typed spell is, or nil after the one line that says why (none typed: the usage).
@@ -421,6 +426,7 @@ local function capturedTarget()
     return r
 end
 
+-- The list is a REPORT, as `ignore show` is: to the console, one chat pointer (debug-logging-§15).
 local function showDummies()
     local own, off = {}, {}
     for _, e in ipairs(NS.DummyList.Entries()) do
@@ -428,14 +434,16 @@ local function showDummies()
     end
     local builtIn = 0
     for _ in pairs(NS.Dummies.BY_ID) do builtIn = builtIn + 1 end
-    if #own == 0 then
-        out(L["No training dummies of your own. Target one and type %s targetdummy add."]:format(NS.SLASH))
-    else
-        out(L["Your training dummies:"])
-        for _, e in ipairs(own) do out(L["  %s \194\183 %s"]:format(dummyName(e.id), NS.Dummies.Label(e.category))) end
-    end
-    out(L["Built-in training dummies: %d, %d switched off."]:format(builtIn, #off))
-    for _, e in ipairs(off) do out(L["  %s (off)"]:format(dummyName(e.id))) end
+    NS.DebugLog:Report("Dummies", "targetdummy show", function(put)
+        if #own == 0 then
+            put(L["No training dummies of your own. Target one and type %s targetdummy add."]:format(NS.SLASH))
+        else
+            put(L["Your training dummies:"])
+            for _, e in ipairs(own) do put(L["  %s \194\183 %s"]:format(dummyName(e.id), NS.Dummies.Label(e.category))) end
+        end
+        put(L["Built-in training dummies: %d, %d switched off."]:format(builtIn, #off))
+        for _, e in ipairs(off) do put(L["  %s (off)"]:format(dummyName(e.id))) end
+    end)
 end
 
 local DUMMY_VERBS = {

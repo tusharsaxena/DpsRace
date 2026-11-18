@@ -208,6 +208,7 @@ local SUITES = {
     "test_glyphs",
     "test_refactor_pins",
     "test_slash",
+    "test_reports",
     "test_share",
     "test_toast",
     "test_preview",

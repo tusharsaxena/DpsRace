@@ -44,9 +44,36 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
 | `Toast` | `modules/BestToast.lua`: each new best that toasts (its run id and gain), and the shell's own lines (`TOAST`: queued, shown, expired, a builder that failed) |
+| `Ignore` | the `/dr ignore show` report (below), ungated |
+| `Dummies` | the `/dr targetdummy show` report (below), ungated |
 
 The library writes the latch's stand-down and stand-up edges with their holds, and the launcher's
 registration lines, through the same sink.
+
+## Reports
+
+A **report** is a multi-line read-out a player asks for by name (debug-logging-§15, the owner's ruling
+of 2026-11-08, LibKa0s#79). This addon has two, and both go through the library's
+`NS.DebugLog:Report(tag, title, fn)` (`settings/Slash.lua`):
+
+| Verb | Tag | What it writes |
+|---|---|---|
+| `/dr ignore show` (and a bare `/dr ignore`, and the list `/dr ignore defaults` shows after its acknowledgment) | `Ignore` | The late-cast ignore list, one *Name (id)* line a spell |
+| `/dr targetdummy show` (and a bare `/dr targetdummy`, and the list after `defaults`) | `Dummies` | Your own training dummies, the built-ins' count and each switched-off built-in |
+
+- **Written to the console, ungated.** The report is a `/dr <verb> show` header and its lines, through
+  the library's raw append, so it lands whether or not logging is on, and it never turns logging on.
+- **The console opens** if it is hidden.
+- **One chat line points to it:** `ignore show: 8 lines written to the debug console. Use Copy to
+  share it.` (the count includes the header).
+- **What stays in chat:** the acknowledgments (`defaults`' *back to its defaults* line, `add` and
+  `remove`), a usage or refusal line, and a short answer: *The late-cast ignore list is empty.* is one
+  line and writes no report. `/dr list`, the reserved settings listing, stays in chat
+  (slash-commands-§5).
+- **Library absent:** the stub's `Report` (`core/DebugLogSetup.lua`) prints the report's lines in chat,
+  with no header and no pointer, and its `Serialize` answers one line.
+
+The diagnostics report below is a report too, with its own helper and pointer line (§14).
 
 ## The diagnostics report
 

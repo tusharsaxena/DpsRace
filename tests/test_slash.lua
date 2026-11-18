@@ -476,13 +476,28 @@ local function said(inst, msg)
     return bare(inst.mocks)
 end
 
-test("slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone", function()
+--- The list `/dr <msg>` reported to the debug console (AD-79-DR, debug-logging-§15): the body of the
+--- newest `Ignore` report, its `/dr ignore show` header left off. The chat carries one pointer.
+local function listed(inst, msg)
+    inst.NS.DebugLog:Clear()
+    said(inst, msg)
+    local out = {}
+    for _, line in ipairs(inst.NS.DebugLog.buffer) do
+        local body = line:match("| %[Ignore%] (.*)$")
+        if body and body ~= "/dr ignore show" then out[#out + 1] = body end
+    end
+    return out
+end
+
+-- Re-pinned at AD-79-DR: the list is a report in the debug console, one pointer line in chat
+-- (tests/test_reports.lua holds the report's shape).
+test("slash: a bare ignore and ignore show report the list, one spell a line, 8690 as every hearthstone", function()
     local inst = T.load({ mutate = spellClient })
-    assertEqual(table.concat(said(inst, "ignore"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
-    assertEqual(table.concat(said(inst, "ignore show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
-    assertEqual(table.concat(said(inst, "IGNORE Show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"), "words are case-blind")
+    assertEqual(table.concat(listed(inst, "ignore"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
+    assertEqual(table.concat(listed(inst, "ignore show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"))
+    assertEqual(table.concat(listed(inst, "IGNORE Show"), "\n"), table.concat(DEFAULT_SHOWN, "\n"), "words are case-blind")
     assertTrue(inst.NS.SetByPath("race.lateIgnore", "424242"))
-    assertEqual(table.concat(said(inst, "ignore"), "\n"), "Late-cast ignore list:\n  Unknown spell (424242)")
+    assertEqual(table.concat(listed(inst, "ignore"), "\n"), "Late-cast ignore list:\n  Unknown spell (424242)")
     assertTrue(inst.NS.SetByPath("race.lateIgnore", ""))
     assertEqual(table.concat(said(inst, "ignore show"), "\n"), "The late-cast ignore list is empty.")
 end)
@@ -529,7 +544,8 @@ test("slash: ignore defaults puts the six back, as reset race.lateIgnore does", 
     assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
     local out = said(inst, "ignore defaults")
     assertEqual(out[1], "The late-cast ignore list is back to its defaults.")
-    assertEqual(table.concat(out, "\n", 2), table.concat(DEFAULT_SHOWN, "\n"), "then the list")
+    assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
+    assertEqual(table.concat(listed(inst, "ignore defaults"), "\n"), table.concat(DEFAULT_SHOWN, "\n"), "then the list")
     assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,58984,110959")
     assertTrue(NS.SetByPath("race.lateIgnore", "29722"))
     NS.Slash:OnSlash("reset race.lateIgnore")
@@ -563,7 +579,9 @@ test("slash: ignore is a settings verb: it answers while disabled, on both arms"
         local NS = inst.NS
         NS.RunVerb("disable")
         assertTrue(NS.IsDisabled())
-        assertEqual(said(inst, "ignore")[1], "Late-cast ignore list:")
+        -- Re-pinned at AD-79-DR: the live arm points to the console, the stub streams the list.
+        assertEqual(said(inst, "ignore")[1], opts.libFiles and "Late-cast ignore list:"
+            or "ignore show: 8 lines written to the debug console. Use Copy to share it.")
         local out = said(inst, "ignore add 29722")
         assertEqual(out[#out], "Late casts of Incinerate (29722) no longer flag a run.")
         assertEqual(NS.db.profile.race.lateIgnore, "66,1856,5384,8690,29722,58984,110959")

@@ -262,6 +262,20 @@ local function has(M, want)
     return said(M):find(want, 1, true) ~= nil
 end
 
+--- The `targetdummy show` report's lines in the debug console (AD-79-DR, debug-logging-§15).
+local function reported(NS)
+    local out = {}
+    for _, line in ipairs(NS.DebugLog.buffer) do
+        local body = line:match("| %[Dummies%] (.*)$")
+        if body then out[#out + 1] = body end
+    end
+    return table.concat(out, "\n")
+end
+
+local function inReport(NS, want)
+    return reported(NS):find(want, 1, true) ~= nil
+end
+
 test("targetdummy: add marks the target, captures it and says what it saved", function()
     local NS, M = fresh()
     M.__context.zone, M.__context.subZone = "Silvermoon City", "Training Grounds"
@@ -312,18 +326,20 @@ test("targetdummy: remove takes a typed creature ID or name; show lists yours an
     local NS, M = fresh()
     NS.DummyList.Add(BOAR, "single")
     NS.DummyList.Remove(GOLEM)
+    -- Re-pinned at AD-79-DR: the list is a report in the debug console, one pointer in chat.
     NS.Slash:OnSlash("targetdummy")
-    assertTrue(has(M, "Your training dummies:"), said(M))
-    assertTrue(has(M, "Creature 99999 \194\183 Single target"), said(M))
-    assertTrue(has(M, "Built-in training dummies: 42, 1 switched off."), said(M))
-    assertTrue(has(M, "Reinforced Golem (243205) (off)"), said(M))
+    assertTrue(has(M, "targetdummy show: 5 lines written to the debug console."), said(M))
+    assertTrue(inReport(NS, "Your training dummies:"), reported(NS))
+    assertTrue(inReport(NS, "Creature 99999 \194\183 Single target"), reported(NS))
+    assertTrue(inReport(NS, "Built-in training dummies: 42, 1 switched off."), reported(NS))
+    assertTrue(inReport(NS, "Reinforced Golem (243205) (off)"), reported(NS))
     NS.Slash:OnSlash("targetdummy remove 99999")
     assertTrue(has(M, "Creature 99999 is no longer a training dummy."), said(M))
     NS.Slash:OnSlash("targetdummy remove reinforced golem")
     assertTrue(has(M, "Reinforced Golem (243205) is not a training dummy."), said(M))
     NS.Slash:OnSlash("targetdummy defaults")
     assertEqual(NS.db.profile.race.dummies, "")
-    assertTrue(has(M, "No training dummies of your own."), said(M))
+    assertTrue(inReport(NS, "No training dummies of your own."), reported(NS))
 end)
 
 test("targetdummy: capture saves without marking; an unknown word prints the usage", function()
@@ -341,7 +357,8 @@ test("targetdummy: answers while the addon is disabled, as ignore does", functio
     NS.Slash:OnSlash("disable")
     NS.DummyList.Add(BOAR, "pvp")
     NS.Slash:OnSlash("targetdummy show")
-    assertTrue(has(M, "Creature 99999 \194\183 PvP"), said(M))
+    assertTrue(has(M, "targetdummy show:"), said(M))
+    assertTrue(inReport(NS, "Creature 99999 \194\183 PvP"), reported(NS))
 end)
 
 test("dummy list: the idle HUD's unknown-target warning follows the list without a target change", function()
