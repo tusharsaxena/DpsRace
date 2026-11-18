@@ -18,9 +18,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -31,9 +31,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -46,7 +46,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -292,7 +292,7 @@ test("results: a run the Runs filters leave out falls back to its board among ev
     assertEqual(pane:DeltaContext(d.run), nil, "not in the list")
     assertEqual(d.deltaCtx.scope, "board")
     local text, _, badge = deltaBox(i)
-    assertEqual(text, "-33.3%", "against its board's top (Fire, cleave, 3:00): not Lanfear's run, not the 0:30 one")
+    assertEqual(text, "-33.3%", "against its board's top (Fire, cleave, 3:00): not Mocklock's run, not the 0:30 one")
     assertFalse(badge)
     local tip = i.NS.ResultsTips.Detail("delta", d.run, d.deltaCtx)
     assertEqual(tip[#tip], "The Runs list's filters leave this run out, so it is measured on its board.")

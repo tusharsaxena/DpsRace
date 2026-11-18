@@ -24,9 +24,9 @@ end
 local NOW = day(3, 23)
 
 local CHARS = {
-    hunt = { name = "Traxex", realm = "Frostmourne", class = "HUNTER", specID = BM, spec = "Beast Mastery" },
-    lock = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = DESTRO, spec = "Destruction" },
-    sham = { name = "Tiamat", realm = "Frostmourne", class = "SHAMAN", specID = ELE, spec = "Elemental" },
+    hunt = { name = "Samplehunter", realm = "Samplerealm", class = "HUNTER", specID = BM, spec = "Beast Mastery" },
+    lock = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = DESTRO, spec = "Destruction" },
+    sham = { name = "Mockstorm", realm = "Samplerealm", class = "SHAMAN", specID = ELE, spec = "Elemental" },
 }
 
 local function late(...)
@@ -155,9 +155,9 @@ test("insights: Options lists each facet's values among the runs every other fil
     assertEqual(o.char[1].value, "all", "the All head leads")
     assertEqual(o.char[1].count, 8)
     assertEqual(#o.char, 4, "no Current character head")
-    local hunt = option(o.char, "Traxex-Frostmourne")
+    local hunt = option(o.char, "Samplehunter-Samplerealm")
     assertEqual(hunt.count, 5)
-    assertEqual(hunt.label, "Traxex (5)")
+    assertEqual(hunt.label, "Samplehunter (5)")
     assertEqual(values(o.length), "all,30,60,120")
     assertEqual(option(o.length, 120).count, 5)
     -- Picking a spec narrows Length, and the spec list itself keeps every spec.
@@ -178,15 +178,15 @@ test("insights: Options lists each facet's values among the runs every other fil
     assertEqual(values(o.date), "all,today,7d,30d")
     assertEqual(option(o.date, "today").count, 3)
     assertEqual(option(o.date, "all").count, 8)
-    o = D.Options(all, { date = "today", char = "Lanfear-Frostmourne" }, NOW)
-    assertEqual(option(o.char, "Traxex-Frostmourne").count, 1, "today's Traxex run")
+    o = D.Options(all, { date = "today", char = "Mocklock-Samplerealm" }, NOW)
+    assertEqual(option(o.char, "Samplehunter-Samplerealm").count, 1, "today's Samplehunter run")
     assertEqual(option(o.date, "today").count, 1)
     assertEqual(option(o.date, "30d").count, 2)
-    -- The checks narrow every facet: Clean only takes the flagged run out of Lanfear's count.
+    -- The checks narrow every facet: Clean only takes the flagged run out of Mocklock's count.
     o = D.Options(all, { cleanOnly = true }, NOW)
-    assertEqual(option(o.char, "Lanfear-Frostmourne").count, 1)
+    assertEqual(option(o.char, "Mocklock-Samplerealm").count, 1)
     o = D.Options(all, { includeIncomplete = true }, NOW)
-    assertEqual(option(o.char, "Tiamat-Frostmourne").count, 2, "the incomplete run, never the lost one")
+    assertEqual(option(o.char, "Mockstorm-Samplerealm").count, 2, "the incomplete run, never the lost one")
 end)
 
 test("insights: a closed dropdown names its choices on the All head, and a pick by its name alone", function()
@@ -195,13 +195,13 @@ test("insights: a closed dropdown names its choices on the All head, and a pick 
     local o = D.Options(fixture(), D.DEFAULTS, NOW)
     assertEqual(D.ClosedLabel(o.char, "all"), "All characters (3)", "three characters to pick from")
     assertEqual(D.ClosedLabel(o.length, "all"), "Any length (3)")
-    assertEqual(D.ClosedLabel(o.char, "Traxex-Frostmourne"), "Traxex", "no run count on a pick")
+    assertEqual(D.ClosedLabel(o.char, "Samplehunter-Samplerealm"), "Samplehunter", "no run count on a pick")
     assertEqual(D.ClosedLabel(o.length, 120), "2:00")
     assertEqual(D.ClosedLabel(o.date, "all"), "All time", "the date ranges always number four")
     assertEqual(D.ClosedLabel(o.date, "today"), "Today")
     assertNil(D.ClosedLabel(o.char, "Ghost-Nowhere"), "not offered")
     -- The open list keeps its run counts.
-    assertEqual(option(o.char, "Traxex-Frostmourne").label, "Traxex (5)")
+    assertEqual(option(o.char, "Samplehunter-Samplerealm").label, "Samplehunter (5)")
     -- A pick narrows the other heads' choices: Beast Mastery raced two lengths.
     o = D.Options(fixture(), { spec = BM }, NOW)
     assertEqual(D.ClosedLabel(o.length, "all"), "Any length (2)")
@@ -223,8 +223,8 @@ test("insights: Normalize sets a 0-run selection to All, never the one just chan
     f = D.Normalize(all, { char = "Ghost-Nowhere", spec = ELE }, NOW)
     assertEqual(f.char, "all", "a saved character with no runs left")
     assertEqual(f.spec, ELE, "kept: once the character is All, Elemental has runs")
-    f = D.Normalize(all, { date = "today", char = "Tiamat-Frostmourne", length = 120 }, NOW, "char")
-    assertEqual(f.char, "Tiamat-Frostmourne")
+    f = D.Normalize(all, { date = "today", char = "Mockstorm-Samplerealm", length = 120 }, NOW, "char")
+    assertEqual(f.char, "Mockstorm-Samplerealm")
     assertEqual(f.length, "all")
     assertEqual(f.date, "today")
     local given = { char = "Ghost-Nowhere" }
@@ -357,10 +357,10 @@ test("insights: Compute's counts by character, target, length and day, gap days 
     local D = NS.InsightsData
     local s = D.Compute(D.Filter(fixture(), nil, NOW))
     assertEqual(#s.byChar, 3)
-    assertEqual(s.byChar[1].name, "Traxex")
+    assertEqual(s.byChar[1].name, "Samplehunter")
     assertEqual(s.byChar[1].class, "HUNTER")
     assertEqual(s.byChar[1].n, 5)
-    assertEqual(s.byChar[3].name, "Tiamat")
+    assertEqual(s.byChar[3].name, "Mockstorm")
     local hunt = s.byCharTarget.rows[1]
     assertEqual(hunt.byCategory.cleave, 3)
     assertEqual(hunt.byCategory.boss, 2)

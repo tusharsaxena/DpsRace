@@ -963,19 +963,21 @@ lose their earlier pass.
 | SM-DR-AD92INS | Open the *Insights* tab; hover a bar, a column of the per-day strip, a stat card; then its filter bar's buttons and the board tabs (*Overall* and a target and length tab) | The marks' tooltips open beside the Results window, level with the mark (not at the pointer); the filter bar's buttons' and the board tabs' open centered above the button or tab | A screenshot of a mark's tooltip |
 | SM-DR-AD92HUD | `/dr hud show`; hover the idle body's tiles and *Arm Race*; race a dummy (or `/dr test running`) and hover the clock, the live damage and DPS tiles and a live spell row; on the result card hover a figure, a chip and a spell row; hover each footer line. Repeat the live spell row with the HUD against the screen's right edge | Every tile, button, chip and row tooltip opens beside the HUD, level with what is hovered (a live spell row's may sit level with the HUD's top: its geometry can be secret in combat); with the HUD against the right edge, a live spell row's opens left of the HUD, not over it; each footer line's opens centered just above the line. No Lua error in combat | Which tooltip opened on the pointer or over the HUD, and any error |
 
-## 46. The 2026-11-18 build: reports in the debug console (LibKa0s#79)
+## 46. The 2026-11-18 build: reports in the debug console and the shared sample characters (LibKa0s#79, #87)
 
-Branch `feat/2026-11-17-libka0s-adoption` (item AD-79-DR of Ka0sAddonsCommonTasks
+Branch `feat/2026-11-17-libka0s-adoption` (items AD-79-DR and AD-87-DR of Ka0sAddonsCommonTasks
 `docs/2026-11-17-LIBKA0S_V1_105_ADOPTION/`). WowAddonStandards v2.113.0: debug-logging-§15. The two
 list verbs, `/dr ignore show` and `/dr targetdummy show`, write their lists to the debug console as a
 report, whether or not debug logging is on, open the console if it is hidden, and print one line in
 chat. Acknowledgments, usage and refusal lines and a one-line answer stay in chat. SM-DR-IL6,
 SM-DR-TD2, SM-DR-TD4 and SM-DR-TD7 moved with this build (their lists are now in the console) and lose
-their earlier pass. With `/console scriptErrors 1` on and `/dr debug off`.
+their earlier pass. Test mode's two made-up characters are LibKa0s-Sim-1.0's shared sample rows, each on
+its own fictional realm (SM-DR-AD87). With `/console scriptErrors 1` on and `/dr debug off`.
 
 | ID | Do | Pass when | If it fails, report | Result |
 |---|---|---|---|---|
 | SM-DR-AD79IG | Close the debug console. `/dr ignore`; then `/dr ignore defaults`; then `/dr ignore frob` | The console opens and holds `/dr ignore show` and the list under `[Ignore]`, one *Name (id)* a line, though logging is off (its title bar still reads Off). Chat shows exactly one line, *ignore show: 8 lines written to the debug console. Use Copy to share it.* `defaults` prints *The late-cast ignore list is back to its defaults.* and the same pointer, and the list is written again below the first. `frob` prints the usage line in chat and writes nothing to the console | The chat lines and a Copy of the console |
 | SM-DR-AD79EM | `/dr set race.lateIgnore ""` (or remove every spell on the Race page); close the console; `/dr ignore`; then `/dr ignore defaults` | *The late-cast ignore list is empty.* in chat; the console stays closed and gains nothing. Then `defaults` puts the six back | The chat line |
 | SM-DR-AD79TD | Close the console. `/dr targetdummy`; then `/dr targetdummy defaults`; then `/dr targetdummy frob` | The console opens with `/dr targetdummy show` under `[Dummies]`: your own dummies (or *No training dummies of your own…*), *Built-in training dummies: N, M switched off.* and each switched-off one. Chat shows one *targetdummy show: N lines written…* line. `defaults` prints its *cleared* line and the pointer; `frob` the usage line, nothing in the console | The chat lines and a Copy of the console |
+| SM-DR-AD87 | `/dr test`; open the Results window's *Runs* tab with *Character* on *All*; hover a *Sampleblade* run's and a *Mockflame* run's character cell; open one's detail | The two made-up characters read *Sampleblade-Samplerealm* and *Mockflame-Mockrealm*, never your own realm; your own sample runs keep your name and realm | A screenshot of the tooltip |
 | SM-DR-AD79CP | After SM-DR-AD79IG, press the console's *Copy* | The copy window holds the report's lines as plain words, no color codes | The pasted text |

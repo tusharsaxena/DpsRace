@@ -210,7 +210,7 @@ end)
 local function storedRun(NS, id, date, dps, casts)
     local r = {
         id = id, date = date, status = "complete", schema = 1,
-        race = { length = 30, grace = 1 }, char = { name = "Traxex", specID = 253 },
+        race = { length = 30, grace = 1 }, char = { name = "Samplehunter", specID = 253 },
         target = { category = "boss" }, result = { damage = dps * 30, dps = dps, tail = 2 },
         flags = { lateCasts = casts or {}, reloaded = false, died = false },
     }

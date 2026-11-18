@@ -16,7 +16,7 @@ local TIP_W, TIP_H = 200, 80
 local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
     end }

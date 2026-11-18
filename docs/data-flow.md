@@ -567,7 +567,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
 - **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`, the sim's
   `Sim.Dataset()` racing its 0:30 rows on the sim's 0:15 board: 17 runs on the
-  player and two made-up characters, every Status, target type and preset length, notes, loadouts
+  player and two made-up characters (rows 2 and 3 of LibKa0s-Sim-1.0's shared Retail sample set,
+  `Sim.Sample("retail")`, LibKa0s#87: *Sampleblade-Samplerealm* and *Mockflame-Mockrealm*, never on the
+  player's realm; the same two rows from MockRuns' own copy without the library), every Status, target type and preset length, notes, loadouts
   from the player's own `Recorder.SnapshotLoadout()` and the made-up characters' own, chart records,
   and casts and usage detected by `Usage.Build`; one run raced before format 3 has none of them) and
   routes the Results window to it (`ResultsSource.Use`). Each run starts from `Recorder.NewRun` and is

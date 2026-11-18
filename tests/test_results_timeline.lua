@@ -25,7 +25,7 @@ local SPELLS = { [INFERNAL] = 180000, [SOUL_FIRE] = 45000, [CONFLAG] = 13000, [I
 local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -48,12 +48,12 @@ local THIS = { { -1.5, SOUL_FIRE }, { 1, INFERNAL }, { 2, INCINERATE }, { 4, CON
 -- The best's: no Infernal, Soul Fire once, Conflagrate twice, Incinerate once.
 local BEST = { { 0.5, SOUL_FIRE }, { 3, CONFLAG }, { 8, INCINERATE }, { 20, CONFLAG } }
 
---- A stored-shape complete 1:00 cleave run by Lanfear (Destruction); `list` its casts (nil: none).
+--- A stored-shape complete 1:00 cleave run by Mocklock (Destruction); `list` its casts (nil: none).
 local function mkRun(NS, id, dps, list, fields)
     local run = {
         id = id, schema = 3, status = "complete", addon = "0.1.0", date = NOW - HOUR,
         race = { length = 60, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction" },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 60, dps = dps, tail = 2 },
         flags = { lateCasts = {} }, spells = { { id = INCINERATE, dmg = dps * 50 } }, note = "",

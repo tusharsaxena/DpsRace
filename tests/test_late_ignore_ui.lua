@@ -14,7 +14,7 @@ local FEIGN, INCINERATE = 5384, 29722
 local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -23,14 +23,14 @@ local function inst()
     return i
 end
 
---- A stored complete 3:00 cleave run by Lanfear (Destruction) with these late casts ({ t, spellID }).
+--- A stored complete 3:00 cleave run by Mocklock (Destruction) with these late casts ({ t, spellID }).
 local function mkRun(id, casts)
     local late = {}
     for n, c in ipairs(casts or {}) do late[n] = { t = c[1], spellID = c[2] } end
     return {
         id = id, schema = 1, status = "complete", addon = "0.1.0", date = NOW - 3600,
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction" },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 18000000, dps = 100000, tail = 2 },
         flags = { lateCasts = late, reloaded = false, died = false },

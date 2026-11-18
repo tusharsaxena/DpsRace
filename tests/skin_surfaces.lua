@@ -49,7 +49,7 @@ return function(T)
         NS.db.global.runs.surface = NS.db.global.runs.surface or {
             id = "surface", schema = 1, status = "complete", addon = "0.1.0", build = 120105, date = 1000,
             race = { length = 180, grace = 1.0, restartGap = 6, startSource = "meterSession", sessionID = 25 },
-            char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
+            char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction" },
             target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
             where = { mapID = 2393, zone = "Silvermoon City", instanceType = "none" },
             result = { damage = 26560000, dps = 147555.6, meterDps = 134100, sessionDuration = 190, tail = 9.17,

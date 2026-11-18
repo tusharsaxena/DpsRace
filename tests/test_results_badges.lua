@@ -16,7 +16,7 @@ local function inst()
     local W
     local i = T.load{ mutate = function(m)
         W = Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
     end }
@@ -25,8 +25,8 @@ local function inst()
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
 }
 
 local function copy(t)
@@ -36,7 +36,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race (five targets) by Lanfear, an hour ago, with a
+--- A stored-shape run: a complete 3:00 cleave race (five targets) by Mocklock, an hour ago, with a
 --- 9.2 s tail. `fields` replaces any top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -260,7 +260,7 @@ test("badges: group headers color their value as plain text: class, target type,
     _, label = Runs.GROUPS.length.of(run)
     assertEqual(label, "Time: " .. length .. "3:00|r")
     _, label = Runs.GROUPS.char.of(run)
-    assertEqual(label, "Character: " .. class .. "Lanfear|r")
+    assertEqual(label, "Character: " .. class .. "Mocklock|r")
     _, label = Runs.GROUPS.classSpec.of(run)
     assertTrue(label:find("^Class & spec: " .. class:gsub("|", "%%|")) ~= nil, "the class and spec in the class color")
     assertFalse(label:find("|T", 1, true) ~= nil, "no box or texture in a header")

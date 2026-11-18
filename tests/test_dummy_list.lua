@@ -216,7 +216,7 @@ end)
 local function storedRun(NS, id, npcID, category)
     local r = {
         id = id, date = os.time() - 60, status = "complete", schema = 1,
-        race = { length = 30, grace = 1 }, char = { name = "Traxex", specID = 253, class = "HUNTER" },
+        race = { length = 30, grace = 1 }, char = { name = "Samplehunter", specID = 253, class = "HUNTER" },
         target = { npcID = npcID, name = "Angry Boar", category = category },
         result = { damage = 3000, dps = 100, tail = 2 },
         flags = { lateCasts = {}, reloaded = false, died = false },

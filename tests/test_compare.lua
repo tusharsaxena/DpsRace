@@ -18,7 +18,7 @@ local DASH = "\226\128\148"
 local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -27,13 +27,13 @@ local function inst()
     return i
 end
 
---- A stored-shape complete 3:00 cleave run by Lanfear (Destruction). `dps` sets the score; `fields`
+--- A stored-shape complete 3:00 cleave run by Mocklock (Destruction). `dps` sets the score; `fields`
 --- replaces any top-level field.
 local function mkRun(id, dps, fields)
     local run = {
         id = id, schema = 1, status = "complete", addon = "0.1.0", date = NOW - HOUR,
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction" },
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction" },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 180, dps = dps, tail = 2 },
         flags = { lateCasts = {} },

@@ -11,7 +11,7 @@ local function sampleRun(fields)
     local run = {
         id = "1792758447-4429", status = "complete",
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", spec = "Destruction", ilvl = 313.2, class = "WARLOCK" },
+        char = { name = "Mocklock", spec = "Destruction", ilvl = 313.2, class = "WARLOCK" },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 26560000, dps = 147600, tail = 3.1 },
         flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false },

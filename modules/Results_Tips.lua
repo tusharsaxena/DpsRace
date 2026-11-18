@@ -517,7 +517,7 @@ local function otherName(kind)
     return L["the best on its board (same spec, target type and race length)"]
 end
 
--- Who and when the other run was: "Lanfear · 25 Oct 14:02".
+-- Who and when the other run was: "Mocklock · 25 Oct 14:02".
 local function otherStamp(other)
     local char = type(other.char) == "table" and other.char or {}
     return ("%s \194\183 %s"):format(tostring(char.name or "?"), Tbl().Date(other.date, "%d %b %Y %H:%M"))

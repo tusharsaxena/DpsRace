@@ -53,11 +53,12 @@ local function itemLink(id, name)
     return ("|Hitem:%d::::::::80:::::|h[%s]|h"):format(id, name)
 end
 
--- The two made-up characters beside the player, on the player's realm: who they are, what they had
--- at the arm (their own trinket and bags, never the player's), and what they wore.
+-- The two made-up characters beside the player: what they had at the arm (their own trinket and
+-- bags, never the player's), and what they wore. WHO THEY ARE (name, realm, class, spec) is the
+-- collection's shared sample set (SAMPLE_ROWS below), never written here.
 local ALTS = {
     ret = {
-        char = { name = "Sampleblade", class = "PALADIN", specID = 70, spec = "Retribution", ilvl = 312.4 },
+        char = { ilvl = 312.4 },
         snap = { gear = { { slot = 13, itemID = 212454, spellID = 443124 } },
                  bags = { [212265] = { count = 12, subclass = 1, spellID = 431932 },
                           [212283] = { count = 3, subclass = 3, spellID = 432021 } } },
@@ -70,7 +71,7 @@ local ALTS = {
                   mastery = 42.15, versRating = 2310, vers = 7.11 },
     },
     fire = {
-        char = { name = "Mockflame", class = "MAGE", specID = 63, spec = "Fire", ilvl = 309.8 },
+        char = { ilvl = 309.8 },
         snap = { gear = { { slot = 14, itemID = 219313, spellID = 443609 } },
                  bags = { [212265] = { count = 7, subclass = 1, spellID = 431932 } } },
         gear = { [1] = itemLink(16914, "Sample Hood"), [5] = itemLink(16916, "Sample Robe"),
@@ -150,10 +151,26 @@ function MockRuns.Player()
     return c
 end
 
+-- WHO THE MADE-UP CHARACTERS ARE (LibKa0s#87, preview-mode's sample characters): rows 2 and 3 of
+-- LibKa0s-Sim-1.0's shared Retail set, Sampleblade (Retribution, Samplerealm) and Mockflame (Fire,
+-- Mockrealm), each on its own fictional realm and never the player's, so no sample pairs a made-up
+-- name with a real realm. Library absent, the same two rows from this copy.
+local SAMPLE_ROWS = { ret = 2, fire = 3 }
+local SAMPLE_COPY = {
+    ret  = { name = "Sampleblade", realm = "Samplerealm", classFile = "PALADIN", specID = 70, spec = "Retribution" },
+    fire = { name = "Mockflame", realm = "Mockrealm", classFile = "MAGE", specID = 63, spec = "Fire" },
+}
+
+local function sampleRow(who)
+    local Sim = NS.SimLib
+    local rows = Sim and type(Sim.Sample) == "function" and Sim.Sample("retail") or nil
+    return rows and rows[SAMPLE_ROWS[who]] or SAMPLE_COPY[who]
+end
+
 local function charFor(who, me)
     if who == "me" then return copy(me) end
-    local c = copy(ALTS[who].char)
-    c.realm = me.realm
+    local c, row = copy(ALTS[who].char), sampleRow(who)
+    c.name, c.realm, c.class, c.specID, c.spec = row.name, row.realm, row.classFile, row.specID, row.spec
     return c
 end
 

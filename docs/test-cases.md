@@ -1,4 +1,3 @@
-ka0s-bounded: all 7 slot(s) are in use by other bounded runs; waiting for a slot
 # Test Cases
 
 The full inventory of every headless test case in this repo, grouped by the suite file it
@@ -1623,7 +1622,7 @@ Total.
 - sim race: sticky's wait says combat holds on (R5-DR2)
 - sim race: Start plays the whole script in real time, the card held 4 s (R5-DR2)
 
-### test_sample_parity.lua (32)
+### test_sample_parity.lua (34)
 
 - sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
 - sample parity: a sim's new best is not a flat factor of its history: its rows differ too
@@ -1635,6 +1634,8 @@ Total.
 - sample parity: a raised grace judges the sample's late casts as it would a race's
 - sample parity: the player draws their own class's rotation; every class has one
 - sample parity: a made-up character carries its own trinket, bags and gear, not the player's
+- sample parity: the made-up characters are the shared sample set, on their own realms
+- sample parity: library absent, the made-up characters are the same two rows
 - sample parity: loadout b changes a slot, never empties it
 - sample parity: the running figures are the meter's shape: nothing before the first hit, rows that move
 - sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer
@@ -1973,7 +1974,7 @@ Total.
 | test_preview.lua | 25 |
 | test_window_chrome.lua | 10 |
 | test_sim.lua | 31 |
-| test_sample_parity.lua | 32 |
+| test_sample_parity.lua | 34 |
 | test_launcher.lua | 10 |
 | test_sim_checkbox.lua | 10 |
 | test_launcher_skin_entry.lua | 1 |
@@ -1992,4 +1993,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1553** |
+| **Total** | **1555** |

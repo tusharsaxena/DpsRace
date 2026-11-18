@@ -179,7 +179,7 @@ end
 --- once seen in game. Clicking the posted chat link instead opens the tree without that risk.
 --- @param t table|nil  a stored talent loadout
 --- @param level number|nil  the character's level when it raced
---- @param who string|nil  names the run in the line ("Lanfear, 25 Oct 14:02")
+--- @param who string|nil  names the run in the line ("Mocklock, 25 Oct 14:02")
 --- @return boolean opened
 function Loadout.View(t, level, who)
     if not Loadout.CanView(t) then return false end

@@ -20,9 +20,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -33,9 +33,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -48,7 +48,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -112,7 +112,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.icons.spec.__texture, 136186, "the spec icon")
     local tip = pane.list:TipLines(run, 2)
     assertEqual(tip[1], "Destruction Warlock", "the icons' tooltip names the spec and the class")
-    assertEqual(c.char.fs.__text, "Lanfear")
+    assertEqual(c.char.fs.__text, "Mocklock")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
     assertEqual(c.target.fs.__text, "Cleave", "no target count (DpsRace#15)")
@@ -421,7 +421,7 @@ test("results: the bars take History > Results table's look, over the rows' own 
     assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))
     cells = visible(runsPane(i))[1].cells
     local warlock = i.mocks.RAID_CLASS_COLORS.WARLOCK
-    assertEqual(cells.damage.bar.__vertex[1], warlock.r, "the run's character's class, Lanfear's warlock")
+    assertEqual(cells.damage.bar.__vertex[1], warlock.r, "the run's character's class, Mocklock's warlock")
     assertEqual(cells.dps.bar.__vertex[1], D.dpsBar.barColor.r, "each bar its own companion")
     for _, head in ipairs(runsPane(i).list.heads) do assertEqual(head.label.__justifyH, "LEFT") end
     -- The alternating stripe is back: every other row faintly tinted.
@@ -622,12 +622,12 @@ test("results: filters: character, spec, category, length, date range, hide flag
         for k, v in pairs(f) do wide[k] = v end
         return rawIds(wide)
     end
-    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Lanfear), in every spec")
+    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Mocklock), in every spec")
     assertEqual(rawIds({ char = "all" }), "a,b,c,d,e", "every character in every spec")
     assertEqual(rawIds({ char = "all", spec = "current" }), "a,b,e", "the current spec across characters")
     assertEqual(rawIds({ spec = "all" }), "a,b,e", "the current character in every spec")
     assertEqual(ids({}), "a,b,c,d,e", "a running run is the race's, never the list's")
-    assertEqual(ids({ char = "Lanfear-Frostmourne" }), "a,b,e")
+    assertEqual(ids({ char = "Mocklock-Samplerealm" }), "a,b,e")
     assertEqual(ids({ spec = 63 }), "c")
     assertEqual(ids({ category = "boss" }), "b")
     assertEqual(ids({ length = 30 }), "b")
@@ -661,7 +661,7 @@ test("results: filters: character, spec, category, length, date range, hide flag
     assertEqual(pane.countText, "4 runs")
     pane.checks.includeIncomplete:__fire("OnClick")
     assertEqual(pane.countText, "2 runs")
-    pane.dropdowns.char.onSelect("Kaosmage-Frostmourne")
+    pane.dropdowns.char.onSelect("Mockfrost-Samplerealm")
     assertEqual(pane.countText, "1 run")
     assertEqual(visibleIDs(pane), "c")
 end)
