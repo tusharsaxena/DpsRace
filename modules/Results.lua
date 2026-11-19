@@ -47,9 +47,10 @@ Results.FRAME_NAME = "DpsRaceResults"
 -- The dim cover over the window while the ability timeline is open: the skin's `dr.cover.dim`.
 Results.TABS = { "runs", "insights" }
 
--- The collection's title bar and tab strip (modules/Style.lua), and a footer of one small gray line.
+-- The collection's title bar and tab strip (modules/Style.lua), and the library's footer (W.Footer,
+-- FOOTER.HEIGHT: 24 px under every skin, standalone-windows' *Window chrome geometry*).
 local Style = NS.Style
-local TAB_H, FOOTER_H = Style.TAB_STRIP_H, 20
+local TAB_H, FOOTER_H = Style.TAB_STRIP_H, NS.FOOTER_HEIGHT
 -- The footer's hint; on the Runs tab the run count goes before it.
 local HINT = L["Click a row for details \194\183 right-click for options"]
 
@@ -170,8 +171,10 @@ local function tabButton(name, label, i)
     -- `tab.text` when not.
     local b = CreateFrame("Button", nil, ui.frame)
     b:SetSize(Style.TAB_W, TAB_H)
-    -- Flush under the title band (R5-DR1), so no skin's band runs over the tab strip.
-    b:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 6 + (i - 1) * Style.TAB_PITCH, 0)
+    b.x = 6 + (i - 1) * Style.TAB_PITCH
+    -- Flush under the title band (R5-DR1), so no skin's band runs over the tab strip; under the mode
+    -- strip while one shows (placeUnderStrip).
+    b:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", b.x, 0)
     b.label = Style.Text(b, Style.FONT.TAB, nil, "CENTER")
     b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
     b.label:SetText(label)
@@ -191,17 +194,21 @@ local function buildChrome(f)
     -- the rule under the tab strip stays.
     f.title = Style.PlainText(f, Style.FONT.TITLE, "CENTER")
     f.title:SetText(L["DPS Race \226\128\148 Results"])
-    -- The close control is the skin's (Core's: `icon.tint` at rest, `close.hot` under the pointer,
-    -- the library's "Close" tooltip); the view toggle beside it rests in `icon.tint` and takes
-    -- `text.link` under the pointer, its tooltip above it, as the HUD's controls do (modules/Style.lua,
-    -- smoke round 1's SR-L1 to SR-L3).
-    ui.controls = Style.TitleStrip()
-    ui.close = NS.MakeCloseButton(f, function() Results.Hide() end)
-    -- The view toggle, left of the close control: DropWatcher's expand/collapse chevrons turned on
-    -- their side, since the detail opens to the right. Expanded shows chevron-left (fold the detail
-    -- away), collapsed chevron-right (open it).
-    ui.viewToggle = Style.AddToStrip(ui.controls, Style.TitleButton(f, "chevron-left", "<", "",
-        function() Results.ToggleView() end))
+    -- The marks are LibKa0s-Widgets-1.0's HeaderButtons (Style.HeaderMarks, LibKa0s#86), left to
+    -- right the view toggle, settings, close. The close is the skin's (Core's: `icon.tint` at rest,
+    -- `close.hot` under the pointer, the library's "Close" tooltip); the view toggle and settings rest
+    -- in `icon.tint` and take `text.link` under the pointer, each tooltip above it, as the HUD's marks
+    -- do (smoke round 1's SR-L1 to SR-L3). Settings opens the settings panel through the launcher's
+    -- opener; the window stands at HIGH, the panel's own strata, and the panel raises over it.
+    -- The view toggle: DropWatcher's expand/collapse chevrons turned on their side, since the detail
+    -- opens to the right. Expanded shows chevron-left (fold the detail away), collapsed chevron-right
+    -- (open it).
+    local marks = Style.HeaderMarks(f, { close = NS.MakeCloseButton(f, function() Results.Hide() end),
+        settingsTip = L["Settings"], extras = {
+            { key = "viewToggle", icon = "chevron-left", glyph = "<", tip = "",
+              onClick = function() Results.ToggleView() end },
+        } })
+    ui.close, ui.settings, ui.viewToggle = marks.close, marks.settings, marks.viewToggle
     local drag = CreateFrame("Frame", nil, f)
     drag:EnableMouse(true)
     drag:RegisterForDrag("LeftButton")
@@ -211,7 +218,7 @@ local function buildChrome(f)
         savePosition()
     end)
     ui.drag = drag
-    Style.Header(f, { title = f.title, drag = drag, right = { ui.close, ui.viewToggle }, n = 2 })
+    Style.Header(f, { title = f.title, drag = drag, marks = marks.right })
     tabButton("runs", L["Runs"], 1)
     tabButton("insights", L["Insights"], 2)
     local line = f:CreateTexture(nil, "ARTWORK")
@@ -220,19 +227,15 @@ local function buildChrome(f)
     local band = Style.Band(f)
     line:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -TAB_H)
     line:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -TAB_H)
+    ui.tabLine = line
 end
 
+-- The footer is the library's (W.Footer, standalone-windows' *The footer*, LibKa0s#89): no fill, the
+-- skin's `divider` hairline along its top, its two lines in `text.muted`, FOOTER.HEIGHT tall, the right
+-- line clear of the resize grip's corner. The host owns the strings.
 local function buildFooter(f)
-    local line = f:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    NS.Skin.Divider(line)
-    line:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 1, FOOTER_H)
-    line:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H)
-    ui.footLeft = Style.Text(f, Style.FONT.CAPTION)
-    ui.footLeft:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 5)
-    ui.footLeft:SetText(HINT)
-    ui.footRight = Style.Text(f, Style.FONT.CAPTION, nil, "RIGHT")
-    ui.footRight:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 5)
+    ui.footer = NS.MakeFooter(f, { left = HINT, grip = true })
+    ui.footLeft, ui.footRight = ui.footer.left, ui.footer.right
 end
 
 local onHide
@@ -249,9 +252,8 @@ local function paintToggle()
     if not b then return end
     local expanded = Results.View() == "expanded"
     Style.SetControlIcon(b, expanded and "chevron-left" or "chevron-right", expanded and "<" or ">")
-    b.tip = expanded and L["Collapse: the list alone (a click opens a run in its place)"]
-        or L["Expand: the run's detail beside the list"]
-    Style.PaintStrip(ui.controls)
+    Style.SetMarkTip(b, expanded and L["Collapse: the list alone (a click opens a run in its place)"]
+        or L["Expand: the run's detail beside the list"])
 end
 
 -- The resize grip's minimum for the view shown.
@@ -302,8 +304,10 @@ local function ensureWindow()
     -- Escape closes it with the standard close stack (standalone-windows).
     if type(UISpecialFrames) == "table" then table.insert(UISpecialFrames, Results.FRAME_NAME) end
     -- Smooth resizing (modules/Sizing.lua): while the grip is dragged only `resize` runs, once a frame;
-    -- the full `layout` (every row rebound, the detail redrawn) runs once on release.
+    -- the full `layout` (every row rebound, the detail redrawn) runs once on release. The grip is built
+    -- on the footer (`gripParent`, the pairing W.Footer's `opts.resize` makes) and sits in its corner.
     NS.Sizing.MakeResizable(f, {
+        gripParent = ui.footer,
         minWidth = Results.VIEWS[Results.View()].minWidth, minHeight = Results.MIN_HEIGHT,
         size = trackSize, layout = function() resize() end, redraw = function() layout() end, done = saveSize,
     })
@@ -465,22 +469,30 @@ end
 
 -- ── the sample marker (test mode, a sim) ────────────────────────────────────────────────────────
 -- While the window shows the sample history it says so, as the HUD does in test mode: the library's
--- strip under the tab strip, the body moved down by its height. With no Widgets library there is no
--- strip, and the title carries the word instead; never both.
+-- strip, docked by the library directly under the title bar (`dock = "title"`, preview-mode's *Where
+-- the strip sits*, LibKa0s#88), above the tabs; the tabs, the rule under them and the body move down by
+-- the strip's BodyOffset(). With no Widgets library there is no strip, and the title carries the word
+-- instead; never both.
 
-local function anchorStrip(strip)
-    if strip then
-        local band = Style.Band(ui.frame)   -- under the tab strip, which stands under the band
-        strip:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1))
-        strip:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + 1))
+-- Everything below the title bar `drop` lower: the tabs, the rule under them and the body.
+local function placeUnderStrip(drop)
+    local band = Style.Band(ui.frame)
+    for _, name in ipairs(Results.TABS) do
+        local b = ui.tabs[name]
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", band, "BOTTOMLEFT", b.x, -drop)
     end
-    return strip
+    ui.tabLine:ClearAllPoints()
+    ui.tabLine:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + drop))
+    ui.tabLine:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT", 0, -(TAB_H + drop))
+    ui.body:SetPoint("TOPLEFT", band, "BOTTOMLEFT", 0, -(TAB_H + 1 + drop))
 end
 
 local function ensureStrip()
     if ui.stripTried then return ui.strip end
     ui.stripTried = true
-    ui.strip = anchorStrip(NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"]))
+    ui.strip = NS.MakeTestStrip(ui.frame, L["Test mode: sample runs. Nothing here is saved"],
+        Style.Band(ui.frame), ui.frame)
     return ui.strip
 end
 
@@ -489,7 +501,8 @@ end
 local function ensureSimStrip()
     if ui.simStripTried then return ui.simStrip end
     ui.simStripTried = true
-    ui.simStrip = anchorStrip(NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."]))
+    ui.simStrip = NS.MakeSimStrip(ui.frame, L["SIM: a scripted race, not your data. /dr sim stop ends it."],
+        Style.Band(ui.frame), ui.frame)
     return ui.simStrip
 end
 
@@ -501,10 +514,11 @@ local function applySampleMarker()
     if testStrip then testStrip:SetShown(on and not sim) end
     if simStrip then simStrip:SetShown(on and sim) end
     local strip = sim and simStrip or testStrip
-    local drop = (on and strip) and NS.TEST_STRIP_HEIGHT or 0
+    -- The strip's own BodyOffset: its height while it shows, 0 while it is hidden.
+    local drop = (on and strip) and strip:BodyOffset() or 0
     if ui.drop ~= drop then
         ui.drop = drop
-        ui.body:SetPoint("TOPLEFT", Style.Band(ui.frame), "BOTTOMLEFT", 0, -(TAB_H + 1 + drop))
+        placeUnderStrip(drop)
     end
     local marked = on and not strip
     ui.frame.title:SetText(marked and L["DPS Race \226\128\148 Results \194\183 Test"] or L["DPS Race \226\128\148 Results"])

@@ -28,7 +28,7 @@ local function run(id, date, dps, o)
     return {
         id = id, date = date, status = status, schema = 1,
         race   = { length = o.length or 30 },
-        char   = { name = o.name or "Lanfear", specID = o.specID or 267 },
+        char   = { name = o.name or "Mocklock", specID = o.specID or 267 },
         target = { npcID = o.npcID or CATALOG_ID[o.category or "boss"], category = o.category or "boss" },
         result = (status ~= "lost") and { damage = (dps or 0) * (o.length or 30), dps = dps } or nil,
         flags  = o.flags or { lateCasts = {}, reloaded = false, died = false },
@@ -113,7 +113,7 @@ test("bests: deleting a best promotes the next run", function()
     local NS = fresh()
     storeAll(NS, {
         run("alt", 1, 800, { name = "Altchar" }),
-        run("main", 2, 900, { name = "Lanfear" }),
+        run("main", 2, 900, { name = "Mocklock" }),
         run("old", 3, 300),
     })
     assertEqual(NS.Bests.Board()["267|boss|30"].id, "main")

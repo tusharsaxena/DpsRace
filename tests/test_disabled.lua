@@ -151,7 +151,7 @@ test("Disabled 5 (countdown): the center numbers go at the stand-down and nothin
     f:start(25)
     f:to(124)
     assertEqual(NS.Countdown.Shown(), 6, "the fixture needs a number on screen")
-    local frame = NS.Countdown.__ui().frame
+    local frame = NS.Callout:Frame()   -- the call-out's (core/CalloutSetup.lua, AD-85-DR)
     assertTrue(NS.SetByPath("enabled", false))
     assertEqual(NS.Countdown.Shown(), nil, "a number survived the stand-down")
     assertFalse(frame:IsShown(), "the countdown frame stayed on screen")

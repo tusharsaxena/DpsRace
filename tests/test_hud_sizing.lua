@@ -32,12 +32,12 @@ local function ui(f) return assert(f.Hud.__ui(), "the HUD window was never built
 local function frame(f) return ui(f).frame end
 local function body(f, key) local u = ui(f) return u.body[key or u.current] end
 
--- The chrome over and under the content (the 30px title bar + 10, the 20px footer + 8), the running
+-- The chrome over and under the content (the 30px title bar + 10, the library footer's 24px + 8), the running
 -- body's stack at the defaults (the clocks and the KPIs, 106; the Damage profile block with the pace
 -- line and the plot with its icon row, 159; the Spell breakdown heading, 28; the caption and Cancel,
 -- 42), the idle body's floor (Arm Race at 220, 24 tall, its refusal line and the links: 286) and the
 -- rows' 20px pitch (18px rows, 2px apart).
-local CHROME = 40 + 28
+local CHROME = 40 + 32   -- FOOTER.HEIGHT (24, W.Footer, AD-89-DR) + 8; it was a 20px footer + 8
 local RUN_TOP, PROFILE, HEADING, RUN_BOTTOM = 106, 6 + 22 + 16 + 80 + 13 + 2 + 12 + 8, 28, 42
 local PACE_ONLY = 6 + 22 + 16 + 8
 local BASE = 220 + 24 + 4 + 14 + 4 + 20

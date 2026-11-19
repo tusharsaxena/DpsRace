@@ -11,7 +11,7 @@ local function sampleRun(fields)
     local run = {
         id = "1792758447-4429", status = "complete",
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", spec = "Destruction", ilvl = 313.2, class = "WARLOCK" },
+        char = { name = "Mocklock", spec = "Destruction", ilvl = 313.2, class = "WARLOCK" },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 26560000, dps = 147600, tail = 3.1 },
         flags = { lateCasts = { { t = 1.4, spellID = 29722 } }, reloaded = false, died = false },
@@ -123,11 +123,11 @@ test("share: whisper asks for a name, then sends to it", function()
     M.__lastMenu:Click("Whisper")
     assertEqual(shown[1].name, "DPSRACE_SHARE_WHISPER")
     local dialog = M.StaticPopupDialogs.DPSRACE_SHARE_WHISPER
-    local box = { GetText = function() return "  Thrall-Area52 " end }
+    local box = { GetText = function() return "  Mockshield-Mockrealm " end }
     dialog.OnAccept({ editBox = box }, shown[1].data)
     assertEqual(#sent, 1)
     assertEqual(sent[1].channel, "WHISPER")
-    assertEqual(sent[1].target, "Thrall-Area52")
+    assertEqual(sent[1].target, "Mockshield-Mockrealm")
     box.GetText = function() return "   " end
     dialog.OnAccept({ editBox = box }, shown[1].data)
     assertEqual(#sent, 1, "an empty name sends nothing")

@@ -22,7 +22,7 @@ local NAMES = { [TRINKET] = "Test Trinket", [TRINKET2] = "Other Trinket", [POTIO
 local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -59,7 +59,7 @@ local function mkRun(id, fields)
     local run = {
         id = id, schema = 3, status = "complete", addon = "0.1.0", date = NOW - 3600,
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction",
                  ilvl = 313.2 },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = 26560000, dps = 147555.6, tail = 2 },
@@ -534,8 +534,13 @@ test("results usage: a row's hover is the item's own tooltip with its detail and
     seed(i, { mkRun("a") })
     i.R.ShowRun("a")
     local x = section(i)
+    local placedOn
+    local place = i.NS.Style.PlaceItemTip
+    i.NS.Style.PlaceItemTip = function(tip, el, group) placedOn = el return place(tip, el, group) end
     x.items[1]:__fire("OnEnter")
+    i.NS.Style.PlaceItemTip = place
     assertEqual(shown.item, TRINKET)
+    assertEqual(placedOn, x.items[1], "placed as an item tooltip, again as it grows (AD-92-DR)")
     -- Two lines of its own after the client's: each on a bullet (modules/Style.lua).
     assertEqual(shown.lines[2], "\226\128\162 x2 at 0:09, 1:12")
     assertEqual(shown.lines[3], "\226\128\162 Detected from its cast during the race.")

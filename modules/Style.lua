@@ -1,4 +1,4 @@
-local _, NS = ...
+local addonName, NS = ...
 -- modules/Style.lua — the look the HUD and the Results window share with the other Ka0s windows
 -- (LootHistory's browser is the reference; BankLedger and MultiMeters agree): Blizzard's font objects
 -- for every label, the header gold, the title-bar geometry, and the title-bar controls that turn gold
@@ -220,7 +220,9 @@ Style.TITLE_BAR_H = NS.Skin.Token("title.height") or 30
 Style.TAB_STRIP_H = 26
 Style.TAB_W, Style.TAB_PITCH = 90, 94
 Style.CONTROL = 18
-Style.CONTROL_PITCH = 22
+-- The title-bar marks' pitch: the library's HEADER (SIZE 18, GAP 6; LibKa0s#86's one strip), which
+-- the degraded marks (Style.HeaderMarks with no HeaderButtons) keep too.
+Style.CONTROL_PITCH = 24
 
 -- The text role each font object answers when no color is named: the gold objects are headings (the
 -- skin's title face), the white ones the highlight white, the gray ones the disabled gray (Ka0s
@@ -602,29 +604,23 @@ function Style.Band(f)
     return (bandOf(f))
 end
 
---- The header of `f` on its band. `spec.right` lists the title-bar controls outermost first, `spec.n`
---- of them (an entry may be nil: a slot kept for a control that could not be made); each is RIGHT on
---- the band, CONTROL_PAD in, one CONTROL_PITCH apart. `spec.title` is anchored by `spec.align`, else
---- the skin's `title.align` (CENTER with no library). `spec.drag` takes the band's rect up to the
---- controls.
+--- The header of `f` on its band. `spec.marks` is the title bar's marks outermost first, each
+--- `{ frame, x }` (Style.HeaderMarks' `right`, which is W.HeaderButtons'): RIGHT on the band, `x` in.
+--- `spec.title` is anchored by `spec.align`, else the skin's `title.align` (CENTER with no library).
+--- `spec.drag` takes the band's rect up to the marks.
 --- @param f table  the window
---- @param spec table  { title = fs, align = "LEFT"|nil, right = { ... }, n = number, drag = frame }
+--- @param spec table  { title = fs, align = "LEFT"|nil, marks = { { frame, x }, ... }, drag = frame }
 function Style.Header(f, spec)
     local band, fromLib = bandOf(f)
-    local n = spec.n or #(spec.right or {})
-    local right = {}
-    for i = 1, n do
-        local b = spec.right[i]
-        local x = CONTROL_PAD + (i - 1) * Style.CONTROL_PITCH
-        if b then
-            right[#right + 1] = { frame = b, width = Style.CONTROL, x = x }
-            if not fromLib then
-                b:ClearAllPoints()
-                b:SetPoint("RIGHT", band, "RIGHT", -x, 0)
-            end
+    local right, reach = {}, 0
+    for _, m in ipairs(spec.marks or {}) do
+        right[#right + 1] = { frame = m.frame, width = Style.CONTROL, x = m.x }
+        reach = math.max(reach, m.x + Style.CONTROL + 2)
+        if not fromLib then
+            m.frame:ClearAllPoints()
+            m.frame:SetPoint("RIGHT", band, "RIGHT", -m.x, 0)
         end
     end
-    local reach = n > 0 and (CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH + Style.CONTROL + 2) or 0
     local drag = spec.drag
     if drag then
         drag:ClearAllPoints()
@@ -666,11 +662,14 @@ function Style.ControlButton(parent, name, glyph, tip, onClick)
     b.tip = tip
     Style.SetControlIcon(b, name, glyph)
     b:SetScript("OnClick", function() onClick() end)
+    -- A section heading's control is a body element (AD-92-DR): beside its window. `b.tipChrome` makes
+    -- it a chrome element's, centered above it (Style.PlaceTip).
     b:SetScript("OnEnter", function(self)
         if not GameTooltip then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetOwner(self, "ANCHOR_NONE")
         GameTooltip:SetText(self.tip, Style.Rgb("gtip.value"))
         GameTooltip:Show()
+        Style.PlaceTip(GameTooltip, self, self.tipChrome)
     end)
     b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     return b
@@ -684,6 +683,92 @@ end
 local Tip = LibStub and LibStub("LibKa0s-Tooltip-1.0", true)
 local TIP_GAP = 2
 
+local function plainRead(frame, method)
+    local fn = type(frame) == "table" and frame[method]
+    return type(fn) == "function" and NS.Secrets.PlainNumber(fn(frame)) or nil
+end
+
+local function plainTop(frame) return plainRead(frame, "GetTop") end
+
+-- The side of `win` with the more room on the screen, in screen units (its own edges times its
+-- effective scale, the screen UIParent's right edge times its own): "left" only when every read is a
+-- plain number and the room left of it is the larger; "right" otherwise (DR-03). Reads the window
+-- and the screen, never the tooltip, whose width can be a secret.
+local function roomierSide(win)
+    local ui = UIParent
+    local l, r = plainRead(win, "GetLeft"), plainRead(win, "GetRight")
+    local sw = plainRead(ui, "GetRight") or plainRead(ui, "GetWidth")
+    if not (l and r and sw) then return "right" end
+    local s, us = plainRead(win, "GetEffectiveScale") or 1, plainRead(ui, "GetEffectiveScale") or 1
+    return (l * s > sw * us - r * s) and "left" or "right"
+end
+
+--- Place the filled, shown `tip` for `el` (standalone-windows *Tooltip placement*, AD-92-DR): a body
+--- element's beside its window group (`group`, a frame, else the library's GroupOf: the window it sits
+--- in), right when it fits and left without the room, its top level with `el`'s (PlaceBeside); a
+--- chrome element's (`chrome`) centered above it, below only without room above (PlaceAttached).
+--- Where the library places nothing (a tooltip showing a secret spell has secret geometry, DR-03; a
+--- degraded load), a body tooltip goes beside its window by a relative point, on the side with the
+--- more room on the screen (right unless the window's edges read plain and the room left is larger),
+--- level with `el` when both tops read plain (NS.Secrets.PlainNumber); with no window, it and a chrome
+--- one are attached above `el` (PlaceAttached, then a plain `BOTTOM` on its `TOP`). Never the cursor,
+--- never a corner.
+--- @param tip table  GameTooltip
+--- @param el table
+--- @param chrome boolean|nil
+--- @param group table|nil
+function Style.PlaceTip(tip, el, chrome, group)
+    if Tip then
+        if chrome then
+            if Tip.PlaceAttached and Tip.PlaceAttached(tip, el) then return end
+        elseif Tip.PlaceBeside and Tip.PlaceBeside(tip, el, group) then return end
+    end
+    local win = group
+    if not chrome and type(win) ~= "table" and Tip and Tip.GroupOf then win = select(2, Tip.GroupOf(el)) end
+    if chrome or type(win) ~= "table" or win == el then
+        if not chrome and Tip and Tip.PlaceAttached and Tip.PlaceAttached(tip, el) then return end
+        tip:ClearAllPoints()
+        tip:SetPoint("BOTTOM", el, "TOP", 0, TIP_GAP)
+        return
+    end
+    tip:ClearAllPoints()
+    local top, winTop = plainTop(el), plainTop(win)
+    local dy = (top and winTop) and top - winTop or 0
+    if roomierSide(win) == "left" then
+        tip:SetPoint("TOPRIGHT", win, "TOPLEFT", -TIP_GAP, dy)
+    else
+        tip:SetPoint("TOPLEFT", win, "TOPRIGHT", TIP_GAP, dy)
+    end
+end
+
+-- The item tooltips placed by Style.PlaceItemTip: re-placed when the tooltip changes size while the
+-- element still owns it (item data arriving after Show grows it; LibKa0s-Tooltip-1.0's *Replace*).
+local function regrow(tip)
+    local rec = rawget(tip, "__drItemTip")
+    if not rec or rec.busy then return end
+    if type(tip.IsOwned) == "function" and not tip:IsOwned(rec.el) then return end
+    rec.busy = true
+    Style.PlaceTip(tip, rec.el, false, rec.group)
+    rec.busy = false
+end
+
+--- Place a filled, shown item tooltip (the client's own, from a link or an item ID) for the body
+--- element `el` beside `group` (Style.PlaceTip), and place it again, with the same arguments, each
+--- time it changes size while `el` owns it: an item whose data arrives after Show grows the tooltip,
+--- and the clamp read at the first placement goes stale (Tooltip v1, *Replace*). Hidden, it forgets.
+--- @param tip table  GameTooltip
+--- @param el table
+--- @param group table|nil
+function Style.PlaceItemTip(tip, el, group)
+    rawset(tip, "__drItemTip", { el = el, group = group })
+    if not rawget(tip, "__drItemHooked") and type(tip.HookScript) == "function" then
+        rawset(tip, "__drItemHooked", true)
+        tip:HookScript("OnSizeChanged", regrow)
+        tip:HookScript("OnHide", function(self) rawset(self, "__drItemTip", nil) end)
+    end
+    Style.PlaceTip(tip, el, false, group)
+end
+
 local function showTitleTip(b)
     local tip, lines = GameTooltip, b.tip
     if not (tip and lines) then return end
@@ -694,9 +779,7 @@ local function showTitleTip(b)
     tip:SetText(lines[1], r, g, bl, 1, true)
     Style.AddTipLines(tip, lines, 2, r, g, bl)
     tip:Show()
-    if Tip and Tip.PlaceAttached and Tip.PlaceAttached(tip, b) then return end
-    tip:ClearAllPoints()
-    tip:SetPoint("BOTTOM", b, "TOP", 0, TIP_GAP)
+    Style.PlaceTip(tip, b, true)
 end
 
 local function hideTitleTip(b)
@@ -733,11 +816,107 @@ function Style.TitleButton(parent, name, glyph, tip, onClick)
     return b
 end
 
---- Draw `name` on a control (the glyph when the catalog has no path). The tint is left as it is.
+--- A library mark dressed with art has no word of its own: give it the host's glyph, drawn like a
+--- title-bar control (`icon.tint` at rest, `text.link` under the pointer). Built once, on first need.
+local function markGlyph(b)
+    local fs = b:CreateFontString(nil, "OVERLAY", Style.FONT.TEXT)
+    fs:SetPoint("CENTER", b, "CENTER", 0, 0)
+    fs:SetTextColor(Style.Rgb(Style.REST))
+    local hook = b.HookScript and "HookScript" or "SetScript"
+    b[hook](b, "OnEnter", function() fs:SetTextColor(Style.Rgb(Style.LINK)) end)
+    b[hook](b, "OnLeave", function() fs:SetTextColor(Style.Rgb(Style.REST)) end)
+    b.glyph = fs
+    return fs
+end
+
+--- Draw `name` on a control (the glyph when the catalog has no path). The tint is left as it is. A
+--- header mark (W.HeaderButton) has its art as `icon` or, built with no art, its glyph as `label`;
+--- one built with art and later handed a name the catalog cannot answer gets a glyph (markGlyph).
 function Style.SetControlIcon(b, name, glyph)
     local path = NS.Icon(name)
-    b.icon:SetShown(path ~= nil)
-    b.glyph:SetShown(path == nil)
-    if path then b.icon:SetTexture(path) else b.glyph:SetText(glyph) end
+    local word = b.glyph or b.label
+    local art = path ~= nil and b.icon ~= nil
+    if not (art or word) and b.icon then word = markGlyph(b) end
+    if b.icon then
+        b.icon:SetShown(art)
+        if art then b.icon:SetTexture(path) end
+    end
+    if word then
+        word:SetShown(not art)
+        if not art then word:SetText(glyph) end
+    end
     b.iconName = name
+end
+
+--- Set a title-bar mark's tooltip: `b.tip` (the host's) and `b.__tip`, which W.HeaderButton reads on
+--- each hover.
+function Style.SetMarkTip(b, tip)
+    if not b then return end
+    b.tip, b.__tip = tip, tip
+end
+
+-- ── the title-bar marks (standalone-windows' *Title-bar controls*, LibKa0s#86) ───────────────────
+-- Every window's marks are LibKa0s-Widgets-1.0's HeaderButtons: right-aligned, left to right the
+-- window's extras in their order, then settings, then close, one 18 px size and a 6 px gap. The
+-- library builds and paints each extra and the settings mark (`icon.tint` at rest, `text.link` under
+-- the pointer, its tooltip above it in `gtip.title`); the close is the window's own, built through
+-- NS.MakeCloseButton (its `close.hot`, D-9) and adopted. Settings opens this addon's settings through
+-- the opener the launcher registered for this folder (Core's OpenSettings, `owner = addonName`, the
+-- launcher's `name`). The library anchors nothing (`place = false`): Style.Header hands the marks'
+-- offsets to S.Header, which centers them on the band in every skin. With no HeaderButtons (a degraded
+-- load) the same marks are host controls on one title strip, at the same offsets, settings opening
+-- the panel directly.
+local Widgets = LibStub and LibStub("LibKa0s-Widgets-1.0", true)
+-- The library's own settings glyph (LibKa0s-Widgets-1.0's HEADER_STRINGS.SETTINGS_GLYPH), so a
+-- degraded window draws what a library window draws with no art.
+local SETTINGS_GLYPH = Widgets and Widgets.HEADER_STRINGS and Widgets.HEADER_STRINGS.SETTINGS_GLYPH or "*"
+
+--- A degraded load's marks: host controls, outermost first, at the library's offsets.
+local function hostMarks(f, spec, marks)
+    local strip = Style.TitleStrip()
+    local list = {}
+    if spec.close then list[1] = { key = "close", btn = spec.close } end
+    local hide = spec.hideOnSettings
+    local settings = Style.TitleButton(f, "settings", SETTINGS_GLYPH, spec.settingsTip, function()
+        if hide then hide:Hide() end
+        NS.OpenOptionsPanel()
+    end)
+    list[#list + 1] = { key = "settings", btn = Style.AddToStrip(strip, settings) }
+    local extras = spec.extras or {}
+    for n = #extras, 1, -1 do
+        local x = extras[n]
+        local b = Style.TitleButton(f, x.icon, x.glyph, x.tip, x.onClick)
+        list[#list + 1] = { key = x.key, btn = Style.AddToStrip(strip, b) }
+    end
+    for n, e in ipairs(list) do
+        marks[e.key] = e.btn
+        marks.right[n] = { frame = e.btn, x = CONTROL_PAD + (n - 1) * Style.CONTROL_PITCH }
+    end
+    marks.strip = strip
+    return marks
+end
+
+--- Build window `f`'s title-bar marks. `spec.close` is the window's close (NS.MakeCloseButton's, nil
+--- on a load that cannot make one); `spec.extras` its own marks left to right, each
+--- `{ key, icon, glyph, tip, onClick }`; `spec.settingsTip` the settings mark's tooltip; and
+--- `spec.hideOnSettings` a window to hide before the settings open (one that would cover the panel).
+--- @param f table  the window
+--- @param spec table
+--- @return table marks  `{ [key] = btn, settings = btn, close = btn, right = { { frame, x }, ... } }`,
+---                      `right` outermost first, for Style.Header's `marks`
+function Style.HeaderMarks(f, spec)
+    local marks = { right = {} }
+    if not (Widgets and type(Widgets.HeaderButtons) == "function") then return hostMarks(f, spec, marks) end
+    local hb = Widgets.HeaderButtons(f, {
+        owner = addonName, frame = f, place = false,
+        closeButton = spec.close or false,
+        settingsTip = spec.settingsTip, hideOnSettings = spec.hideOnSettings,
+        extras = spec.extras,
+    })
+    marks.settings, marks.close = hb.settings, hb.close
+    for key, b in pairs(hb.extras) do marks[key] = b end
+    for _, x in ipairs(spec.extras or {}) do Style.SetMarkTip(marks[x.key], x.tip) end
+    if marks.settings then marks.settings.tip = marks.settings.__tip end
+    for n, e in ipairs(hb.right) do marks.right[n] = { frame = e.frame, x = e.x } end
+    return marks
 end

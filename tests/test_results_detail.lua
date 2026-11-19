@@ -15,9 +15,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -28,9 +28,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -43,7 +43,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -144,7 +144,7 @@ test("results: the detail's header: 28 px class and spec icons, a larger name, n
     local w = ui(i).detail.w
     assertEqual(i.NS.ResultsDetail.ICON, 28)
     assertEqual(w.name.__fontObject, i.NS.Style.FONT.NAME)
-    assertEqual(w.name.__text, "Lanfear")
+    assertEqual(w.name.__text, "Mocklock")
     assertEqual(w.specName, nil, "the spec text beside the name is gone")
     assertEqual(i.NS.ResultsTips.Detail("class", i.NS.Recorder.Get("a"))[1], "Destruction Warlock",
         "the spec icon's tooltip names the spec and the class")
@@ -190,8 +190,8 @@ test("results: detail renders breakdown sorted with percentages", function()
     assertEqual(rows[1].bar.__max, 500, "bars scale to the top spell")
     assertEqual(d.w.damage.value.__text, "1.0K")
     assertEqual(d.w.meterDps.value.__text, "5", "Blizzard's figure, muted")
-    assertEqual(d.w.name.__text, "Lanfear")
-    assertEqual(d.w.meta[1].__text, "Frostmourne \194\183 ilvl 313.2 \194\183 Silvermoon City, Falconwing Square")
+    assertEqual(d.w.name.__text, "Mocklock")
+    assertEqual(d.w.meta[1].__text, "Samplerealm \194\183 ilvl 313.2 \194\183 Silvermoon City, Falconwing Square")
     assertEqual(d.w.meta[2].__text, "+2.0s \194\183 Cleave Training Dummy")
     assertTrue(d.w.meta[3].__text:find("build 120105", 1, true) ~= nil)
     assertTrue(d.w.meta[3].__text:find("v0.1.0", 1, true) ~= nil)
@@ -413,10 +413,12 @@ test("results: every detail element has a tooltip; spells show the client's spel
     -- The Spell breakdown heading: beside the window, as every tooltip of its section (DR-05).
     d.w.spellsTitleHover:__fire("OnEnter")
     assertTrue(tip.anchor == "ANCHOR_NONE" and tip.placed[1] == "TOPLEFT", "the breakdown heading's beside the window")
-    -- Anything else: under itself.
+    -- Anything else: owned by itself, and beside the window too, level with it (re-pinned from under
+    -- itself to standalone-windows *Tooltip placement*, AD-92-DR: a card is a body element).
     d.w.dps.frame:__fire("OnEnter")
-    assertEqual(tip.anchor, "ANCHOR_BOTTOM")
+    assertEqual(tip.anchor, "ANCHOR_NONE")
     assertEqual(tip.owner, d.w.dps.frame)
+    assertEqual(tip.placed[1], "TOPLEFT", "beside the window")
     assertEqual(tip.lines[1], "147,556 DPS")
     d.w.delete:__fire("OnEnter")
     assertEqual(tip.lines[1], "Delete")

@@ -340,12 +340,15 @@ race.
   (`Casts.Important` on the stored record). Every icon takes the mouse, on the running HUD too, and
   shows `ResultsTips.Cast` under it (the spell and *Cast at m:ss*). With the setting off no chart
   draws any.
-- **The final seconds** (`modules/Countdown.lua`): one `C_Timer` per whole second still ahead (10
-  down to 1) is armed when the race runs, from `Race.TimeLeft()`, and all are canceled when it
-  leaves RUNNING. Each mark reads its rows as it fires: the cue sound once (`race.countdownCue`, at
-  a cue mark 10, 5, 3, 2, 1 or a second of the numbers), then the center-screen number
-  (`race.centerCountdown`, within `race.finalCountdown`). A change to any of the three re-arms the
-  marks (`Countdown.Refresh`); a resume mid-window shows the number of the moment at once, silently.
+- **The final seconds** (`core/CalloutSetup.lua`, on LibKa0s-Callout-1.0, AD-85-DR): when the race
+  runs, the race's buzzer on the `GetTime()` clock (now plus `Race.TimeLeft()`) is handed to the
+  call-out's `Countdown` a second before the first number (one lead-in `C_Timer` until then), and the
+  call-out shows `ceil(endsAt - now)` from `race.finalCountdown` down to 1 on its own frame clock
+  (`race.centerCountdown`); everything is canceled when the race leaves RUNNING. The cue sound
+  (`race.countdownCue`) plays with each number as it shows (the call-out's `onTick`), and a cue mark
+  10, 5, 3, 2 or 1 the numbers do not show keeps a `C_Timer` of its own; each reads its row as it
+  fires, once a second at most. A change to any of the three re-arms it (`Countdown.Refresh`); a resume
+  mid-window shows the number of the moment at once, silently.
   `RACE_BUZZER` raises the raid warning *STOP* and its sound (`race.buzzer`, `modules/Hud.lua`).
   None of it needs the HUD window.
 - **Who opened the window**: the player (`Hud.Show`, the toggle) or the addon (an arm or a result
@@ -567,7 +570,9 @@ coalesces a second size change in a frame (`modules/Sizing.lua`).
   for its result; the checkbox reads `Preview.IsActive()`, so a refused start leaves it unticked.
 - **The sample**: every start builds a fresh sample history (`MockRuns.Dataset()`, the sim's
   `Sim.Dataset()` racing its 0:30 rows on the sim's 0:15 board: 17 runs on the
-  player and two made-up characters, every Status, target type and preset length, notes, loadouts
+  player and two made-up characters (rows 2 and 3 of LibKa0s-Sim-1.0's shared Retail sample set,
+  `Sim.Sample("retail")`, LibKa0s#87: *Sampleblade-Samplerealm* and *Mockflame-Mockrealm*, never on the
+  player's realm; the same two rows from MockRuns' own copy without the library), every Status, target type and preset length, notes, loadouts
   from the player's own `Recorder.SnapshotLoadout()` and the made-up characters' own, chart records,
   and casts and usage detected by `Usage.Build`; one run raced before format 3 has none of them) and
   routes the Results window to it (`ResultsSource.Use`). Each run starts from `Recorder.NewRun` and is

@@ -47,8 +47,9 @@ end
 
 -- The window's chrome above and below the content (title bar + gap, footer + gap) and each body's
 -- fixed stack around its spell rows, as laid out in modules/Hud.lua and modules/Hud_States.lua.
--- The 30px title bar + 10, the 20px footer + 8; 18px rows on a 20px pitch; 20px buttons.
-local CHROME, PITCH = 40 + 28, 20
+-- The 30px title bar + 10, the library footer's 24px (FOOTER.HEIGHT, AD-89-DR) + 8; 18px rows on a
+-- 20px pitch; 20px buttons.
+local CHROME, PITCH = 40 + 32, 20
 -- The rows' top: the KPIs (and the chips), then the Spell breakdown heading (Round C): its 22px line
 -- and the 6px that, with the GAP above, makes the shared 14px of clear space.
 local BREAKDOWN = 6 + 22
@@ -270,8 +271,10 @@ test("hud: labels take the collection's font objects; the clocks and KPI figures
     local u, F = ui(f), f.NS.Style.FONT
     assertEqual(u.frame.title.__fontObject, "GameFontNormal", "the title")
     assertEqual(F.TITLE, "GameFontNormal")
-    assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
-    assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
+    -- The footer is the library's since AD-89-DR (W.Footer): its lines are GameFontHighlightSmall,
+    -- painted the skin's `text.muted` (standalone-windows' *The footer*), where they were GameFontDisableSmall.
+    assertEqual(u.footLeft.__fontObject, "GameFontHighlightSmall", "the footer")
+    assertEqual(u.footRight.__fontObject, "GameFontHighlightSmall")
     local w = body(f).w
     assertEqual(w.lengthCap.__fontObject, "GameFontNormalSmall", "a section label is a header")
     assertEqual(w.lengthCap.__text, "Race Length")
@@ -328,8 +331,11 @@ end)
 
 test("hud: a title-bar control takes text.link under the pointer and back at rest, a late leave included", function()
     -- Smoke round 1 (SR-L3): a title-bar control rests in `icon.tint` and lights in `text.link` under
-    -- the pointer, as the library's header marks do; it was the accent gold before.
-    local f = hud()
+    -- the pointer, as the library's header marks do; it was the accent gold before. Since LibKa0s#86
+    -- (AD-86-DR) the marks ARE the library's (W.HeaderButtons), painted by the skin's own Mark painter,
+    -- so the fixture takes the kit's paint recorder (real Textures, as test_title_bar's does): under the
+    -- bare recorder the painter finds no texture object and paints nothing.
+    local f = hud{ mutate = function(m) dofile(T.root .. "/tests/_kit/mock_paint.lua")(m) end }
     f.Hud.Show()
     local u = ui(f)
     local GOLD, LINK, REST = f.NS.Style.GOLD, f.NS.Style.LINK, f.NS.Style.REST

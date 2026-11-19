@@ -16,9 +16,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -29,9 +29,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -44,7 +44,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -106,7 +106,7 @@ test("results: Group by character, class & spec or target, with folding headers"
     pane.dropdowns.group.onSelect("target")
     assertEqual(shape(), "[Target: Cleave 2],a,m,[Target: Boss-level 1],b", "the catalog's order, newest first inside")
     pane.dropdowns.group.onSelect("char")
-    assertEqual(shape(), "[Character: Kaosmage 1],m,[Character: Lanfear 2],a,b")
+    assertEqual(shape(), "[Character: Mockfrost 1],m,[Character: Mocklock 2],a,b")
     pane.dropdowns.group.onSelect("classSpec")
     assertEqual(shape(), "[Class & spec: Mage \194\183 Fire 1],m,[Class & spec: Warlock \194\183 Destruction 2],a,b")
     -- A header click folds its group; another unfolds it.
@@ -117,7 +117,7 @@ test("results: Group by character, class & spec or target, with folding headers"
     -- The grouped column's header flips the groups' order.
     pane.dropdowns.group.onSelect("char")
     pane.list.heads[3]:__fire("OnClick")
-    assertEqual(shape(), "[Character: Lanfear 2],a,b,[Character: Kaosmage 1],m")
+    assertEqual(shape(), "[Character: Mocklock 2],a,b,[Character: Mockfrost 1],m")
     pane.dropdowns.group.onSelect("none")
     assertEqual(shape(), "a,b,m")
 end)
@@ -252,6 +252,7 @@ test("results: hovering Save, Reset or Clear shows its tooltip without an error"
     local shown = {}
     i.mocks.GameTooltip = {
         SetOwner = function() end, Show = function() end, Hide = function() end,
+        ClearAllPoints = function() end, SetPoint = function() end,   -- placed by Style.PlaceTip (AD-92-DR)
         AddLine = function(_, text) shown[#shown + 1] = text end,
         SetText = function(_, text)
             assertTrue(type(text) == "string", "SetText needs a string, got " .. type(text))
@@ -319,8 +320,8 @@ test("results: Group by Full: character, class, spec, target and time, in that o
     assertEqual(#headers, 3)
     local hex = function(c) return "|c" .. Tbl.Hex(c) end
     local mage = hex(Tbl.ClassColor("MAGE"))
-    assertEqual(headers[1].label, "Full: " .. mage .. "Kaosmage|r \194\183 " .. mage .. "Mage|r \194\183 "
+    assertEqual(headers[1].label, "Full: " .. mage .. "Mockfrost|r \194\183 " .. mage .. "Mage|r \194\183 "
         .. mage .. "Fire|r \194\183 " .. hex(Tbl.CATEGORY_COLORS.cleave) .. "Cleave|r \194\183 "
-        .. hex(Tbl.LengthColor(60)) .. "1:00|r", "character, class, spec, target, time; Kaosmage before Lanfear")
-    assertEqual(headers[3].count, 2, "Lanfear's two 2:00 cleave runs share one group")
+        .. hex(Tbl.LengthColor(60)) .. "1:00|r", "character, class, spec, target, time; Mockfrost before Mocklock")
+    assertEqual(headers[3].count, 2, "Mocklock's two 2:00 cleave runs share one group")
 end)

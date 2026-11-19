@@ -2,7 +2,8 @@
 -- docs/2026-11-03-SMOKE_ROUND4, the owner's sign-off: every window like the Skin Tester's showroom).
 -- The race HUD and the Results window kept a `frame.divider` for Core.ApplySkin to tint, and the gear
 -- view and the ability timeline drew their own rule at the title band's foot. None of the four draws
--- a texture there now. The rules lower down stay: the HUD's and the Results window's footer rule, the
+-- a texture there now. The rules lower down stay: the HUD's and the Results window's footer rule (the
+-- library footer's hairline since AD-89-DR), the
 -- Results tab strip's rule under its tabs, and the timeline's legend line.
 --
 -- Under the kit's paint recorder, so each window's own textures and their anchors are readable.
@@ -19,7 +20,7 @@ local function inst()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
         dofile(T.root .. "/tests/_kit/mock_paint.lua")(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -32,7 +33,7 @@ local function mkRun(NS, id, dps, fields)
     local run = {
         id = id, schema = 4, status = "complete", addon = "0.1.0", date = NOW - HOUR,
         race = { length = 60, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction",
                  level = 80, ilvl = 639.4 },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 60, dps = dps, tail = 2 },
@@ -85,10 +86,13 @@ test("header rule: the race HUD draws no line under its title band, and keeps it
     -- still made; a library-absent or older-library load would show it).
     local _, NS = inst()
     NS.Hud.Show()
-    local f = assert(NS.Hud.__ui()).frame
+    local u = assert(NS.Hud.__ui())
+    local f = u.frame
     assertTrue(f.divider == nil, "no frame.divider for ApplySkin to tint")
     assertEqual(headerRules(f, NS.Style.TITLE_BAR_H), 0, "no texture at the title band's foot")
-    assertEqual(rulesAt(f, 20), 1, "the footer rule stays")
+    -- The footer is the library's since AD-89-DR (W.Footer): its rule is the footer's own hairline along
+    -- its top edge, no longer a window texture 20px up.
+    assertEqual(rulesAt(u.footer, 0), 1, "the footer rule stays")
 end)
 
 test("header rule: the Results window draws no line under its title band, and keeps the tab rule", function()

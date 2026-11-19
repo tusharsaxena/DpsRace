@@ -291,7 +291,7 @@ local STAFF = "|cnIQ4:|Hitem:777::::::::80:267::::::::|h[Better Staff]|h|r"
 local function ui()
     local i = T.load{ mutate = function(m)
         Widgets.install(m)
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function() end
@@ -306,7 +306,7 @@ local function uiRun(NS, id, dps, loadout, fields)
     local run = {
         id = id, schema = 2, status = "complete", addon = "0.1.0", date = NOW - 3600,
         race = { length = 180, grace = 1.0 },
-        char = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction",
+        char = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction",
                  level = 80 },
         target = { npcID = 243208, name = "Cleave Training Dummy", category = "cleave" },
         result = { damage = dps * 180, dps = dps, tail = 2 },
@@ -365,7 +365,7 @@ test("loadout: the detail draws the gear grid in the character frame's order, an
     assertEqual(#printed, 1, "View posts one chat line")
     assertTrue(printed[1]:find("|Htalentbuild:267:80:" .. M.__talents.importString .. "|h", 1, true) ~= nil,
         "the line carries the clickable talentbuild link")
-    assertTrue(printed[1]:find("^Talents for Lanfear, ") ~= nil, "the line names the run: " .. printed[1])
+    assertTrue(printed[1]:find("^Talents for Mocklock, ") ~= nil, "the line names the run: " .. printed[1])
     assertTrue(printed[1]:find("click the link to view the tree", 1, true) ~= nil)
     assertTrue(NS.ResultsTips.Loadout("view", NS.Recorder.Get("r"))[2]:find("chat", 1, true) ~= nil,
         "the tooltip says it posts to chat")
@@ -388,9 +388,14 @@ test("loadout: an item's hover is the client's own tooltip; a modified click goe
     end })
     NS.Results.ShowRun("r")
     local hood = cellOf(pane(i).lo, 1)
+    local placedOn
+    local place = NS.Style.PlaceItemTip
+    NS.Style.PlaceItemTip = function(tip, el, group) placedOn = el return place(tip, el, group) end
     hood:__fire("OnEnter")
+    NS.Style.PlaceItemTip = place
     assertEqual(shown.owner, hood)
     assertEqual(shown.link, M.__gear[1])
+    assertEqual(placedOn, hood, "placed as an item tooltip, again as it grows (AD-92-DR)")
     hood:__fire("OnClick")
     assertEqual(M.__modClicks[1], M.__gear[1], "Shift-click never reached the client's handler")
 end)
@@ -517,7 +522,7 @@ test("loadout: the Spec cell's tooltip names the loadout and notes gear changed 
     uiRun(NS, "a", 100, first, { date = NOW - 300 })
     uiRun(NS, "b", 100, first, { date = NOW - 200 })
     uiRun(NS, "c", 100, second, { date = NOW - 100 })
-    uiRun(NS, "alt", 100, first, { date = NOW - 150, char = { name = "Other", realm = "Frostmourne", specID = 267 } })
+    uiRun(NS, "alt", 100, first, { date = NOW - 150, char = { name = "Other", realm = "Samplerealm", specID = 267 } })
     local col = { key = "icons" }
     local tipC = NS.ResultsTips.Cell(col, NS.Recorder.Get("c"))
     assertTrue(has(tipC, "Talents: Raid ST \194\183 Diabolist"), "the loadout is not named")

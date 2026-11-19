@@ -210,7 +210,7 @@ target from `NS.NewBusTarget()`, so the stand-down latch can drop and replay eve
 
 | Message | Sender | Payload | Consumers |
 |---|---|---|---|
-| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `modules/Countdown.lua`: the final seconds' marks (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
+| `RACE_STATE_CHANGED` | `modules/Race.lua` | `run, fromState, toState`, sent after the state moved | `modules/Hud.lua`: the body for the state, the onArm show and hide; `core/CalloutSetup.lua`: the final seconds' countdown on the call-out (armed on RUNNING, canceled on leaving it); `modules/Share.lua`: the *Armed* chat line; `modules/Preview.lua`: arming ends test mode or the sim; `modules/AutoArm.lua`: a run leaving ARMED is no longer the rule's to cancel, and the idle edge lets a dummy's window go or come back |
 | `RACE_BUZZER` | `modules/Race.lua` | `run`: the buzzer went, the run is now `stopping` | `modules/Hud.lua`: the raid-warning STOP and its sound (`race.buzzer`), with or without the window |
 | `RACE_RESULT` | `modules/Race.lua` | `run`: resolved as `complete`, `incomplete` or `lost` | `modules/Hud.lua`: opens the window on the result card; `modules/Share.lua`: the score line in the player's chat; `modules/BestToast.lua`: the new-best toast, for a complete run that beats an earlier best |
 | `RUN_SAVED` | `modules/Recorder.lua` | `run`: sent at the start, the session capture, the buzzer and the result | `modules/Bests.lua`: drops the bests cache and prunes runs older than `global.history.keepDays`; `modules/Results.lua`: redraws the shown tab and detail (a hidden window redraws on its next show); `settings/History.lua`: repaints the stored count |
@@ -256,8 +256,8 @@ in `settings/Slash.lua`, in its declared order:
 | `test [armed\|running\|result]` | Static sample data in the HUD and the Results window: a bare `test` turns test mode on or off (the Master controls' *Test mode* row); a word holds that HUD body still |
 | `sim [verb\|scenario]` | The simulator (R5-DR2): a bare `sim` opens its step panel idle (scenario dropdown and *Start*; the Master controls' *Sim mode* row runs the same act, R6-SIM); `sim <scenario>` or `sim start <scenario>` plays a whole 0:15 sample race in real time, then opens the Results window on it; `newbest`, `behind`, `first`, `incomplete`, `died`, `flagged`, `shared`, `sticky`; the library's verbs (`step`, `run`, `stop`, ...) as `/mm sim`; an unknown word lists them |
 | `lock` / `unlock` | Write the *Lock frame* row (slash-commands-§8) |
-| `ignore [show\|add\|remove\|defaults] <spell>` | The late-cast ignore list (#8): a bare `ignore` or `show` lists it, `add` and `remove` take a spell ID, a shift-clicked link or a name, `defaults` puts the six defaults back |
-| `targetdummy [show\|add\|remove\|capture\|defaults] [category or creature ID]` | Your training dummies (#9): a bare `targetdummy` or `show` lists your own and the switched-off built-ins; `add [category]` marks the target (a typed category wins, else *Category for new dummies*), saves what the game says about it and prints it, and switches a switched-off built-in back on; `remove [creature ID or name]` (the target when none is typed) takes a custom dummy off or switches a built-in off; `capture` saves the target's details without marking it; `defaults` clears the list |
+| `ignore [show\|add\|remove\|defaults] <spell>` | The late-cast ignore list (#8): a bare `ignore` or `show` reports it to the debug console (one chat pointer; docs/debug.md, *Reports*), `add` and `remove` take a spell ID, a shift-clicked link or a name, `defaults` puts the six defaults back |
+| `targetdummy [show\|add\|remove\|capture\|defaults] [category or creature ID]` | Your training dummies (#9): a bare `targetdummy` or `show` reports your own and the switched-off built-ins to the debug console (one chat pointer); `add [category]` marks the target (a typed category wins, else *Category for new dummies*), saves what the game says about it and prints it, and switches a switched-off built-in back on; `remove [creature ID or name]` (the target when none is typed) takes a custom dummy off or switches a built-in off; `capture` saves the target's details without marking it; `defaults` clears the list |
 
 The nine feature verbs follow `version` (spec §6.4). The dispatcher refuses each with the one
 disabled line while the addon is disabled; under the `perf` hold alone each answers the capture line.
@@ -313,10 +313,16 @@ next bucket boundary while the window is shown and the race RUNNING (at most 60 
 stretch still fills its bucket; one more read at the buzzer fills the last), and that is all.
 `Hud.Suspend()` drops all of it at the stand-down.
 
-`modules/Countdown.lua` registers no game event: the race's final seconds are one `C_Timer` per
-whole second still ahead (10 down to 1), armed when the race runs and canceled when it leaves
-RUNNING, each playing the countdown cue once and showing its center-screen number on the module's
-own frame. `Countdown.Suspend()` drops them at the stand-down.
+`core/CalloutSetup.lua` registers no game event: the race's final seconds are LibKa0s-Callout-1.0's
+countdown, handed the race's buzzer on the `GetTime()` clock a second before the first number (one
+lead-in `C_Timer` until then) and canceled when the race leaves RUNNING; the call-out's clock frame
+runs its `OnUpdate` only while it counts. The countdown cue plays with each number (the call-out's
+`onTick`) and on a `C_Timer` for each cue mark the numbers do not show. `Countdown.Suspend()` cancels
+the timers and suspends the call-out at the stand-down (AD-85-DR). The call-out's own settings (its
+Look and Sound, LibKa0s-Callout-1.0's `SchemaRows` and `SettingsTab`) are not offered: the instance is
+built with a read-only `db` (the old countdown's place and gold), never unlocked and given no voice
+pack, so it makes no write and has nothing to register. Offering them, with a voice pack, is the
+owner's call, left open at AD-85-DR.
 
 | Event | Registered | Handler | Why |
 |---|---|---|---|
@@ -385,7 +391,7 @@ Every strata and level the addon sets reads one table, `NS.Constants.LAYERS` in
 copied here. The tiers by the standard's keys: `HUD` (the Race HUD, MEDIUM, toplevel), `WINDOW` (the
 Results window, HIGH, toplevel), `MODAL` (the ability timeline and the gear view, DIALOG, toplevel: each opened from the Results
 window, so one strata above it, and it re-raises a shown StaticPopup when it opens, frame-layering-§4) and
-`SCREEN_ALERT` (the center-screen countdown, FULLSCREEN,
+`SCREEN_ALERT` (the center-screen countdown, LibKa0s-Callout-1.0's frame at its own `STRATA`, FULLSCREEN,
 mouse-disabled, below the library's FULLSCREEN_DIALOG menus), and the library's own `ALERT` tier for the
 new-best toast (LibKa0s-Toast-1.0 sets it: HIGH, toplevel, mouse-enabled, clamped; frame-layering's
 T5 interactive toast), with three level bands: `LEVEL.DETAIL`,
@@ -401,17 +407,110 @@ fill at alpha 1, its inner border and divider blended over it to alpha 1, DR-G1)
 view (the same table). No window draws a line under its title band (R4-SEP, like the Skin Tester's
 showroom): the HUD and the Results window make no `frame.divider`, and neither modal draws a rule
 there, so the `divider` remap colors nothing today; the footer rules, the rule under the Results tab
-strip and the timeline's legend line stay (`test_header_rule`). The Runs list's column headers have no rule above or below either (SF1-DR, like LootHistory's): the
+strip and the timeline's legend line stay (`test_header_rule`). Both windows' footers are the library's
+`W.Footer` (`NS.MakeFooter`, LibKa0s#89, standalone-windows' *The footer*): no fill, the skin's
+`divider` hairline along the top, both lines in `text.muted`, `FOOTER.HEIGHT` (24 px) tall, the right
+line clear of the resize grip's corner (the HUD's follows the grip: hidden while locked or in auto
+mode, `SetGrip`; with no library the bare stand-in footer's right line follows it the same way), and
+the resize grip itself is built on the footer (`gripParent`, through `Sizing.MakeResizable`, the
+pairing W.Footer's `opts.resize` makes), in its corner, while sizing acts on the window; the HUD's content and the Results body end that far up plus their own gap (8 and
+1 px). Each window's test or sim strip is docked by the library directly under its title band
+(`dock = "title"`, LibKa0s#88, preview-mode's *Where the strip sits*): the HUD is a race window with
+a title bar, which the standard counts as a window, so its strip never sits on its top edge outside
+it. While a strip shows, everything below the title band moves down by the strip's `BodyOffset()`:
+the HUD's content, and the Results window's tabs, the rule under them and its body
+(`test_window_chrome`). The Runs list's column headers have no rule above or below either (SF1-DR, like LootHistory's): the
 filter bar draws none at its foot, and the header row takes the skin's `SortHeaderBar` band
 (`test_column_header_rule`). Each window's header stands on the
 library's title band (`S.Band`, which Shell lays at its own inset and `title.height`, and LibKa0s
 R5-L2 draws above a backdrop's fill): `Style.Header` hands the title, the controls and the drag strip
 to `S.Header`, so each is centered on the band's middle in every skin, the HUD's title LEFT in every
 skin and the others by `title.align`; the Results tab strip stands under the band (R5-DR1,
-`test_header_band`). With no library a host holder stands where the band would. The StaticPopups, the debug console,
+`test_header_band`). Each window's title-bar marks are LibKa0s-Widgets-1.0's `W.HeaderButtons`
+(`Style.HeaderMarks`, LibKa0s#86, standalone-windows' *Title-bar controls*): right-aligned, left to
+right the window's extras, settings, close, 18 px marks 6 px apart (the HUD's Results, lock, settings,
+close; the Results window's view toggle, settings, close; the timeline's and gear view's settings,
+close). The library builds and paints the extras and the settings mark (`icon.tint` at rest,
+`text.link` under the pointer, the tooltip above in `gtip.title`); the close is the window's own
+(`NS.MakeCloseButton`, adopted as `closeButton`), the HUD's carrying its two-line tooltip through
+`Style.TitleTip`. The library anchors nothing (`place = false`): `Style.Header` hands its offsets to
+`S.Header`. Every settings mark opens the settings panel through the opener the launcher registered for
+the folder (Core's `OpenSettings("DpsRace")`; no window opts out). The timeline and the gear view stand
+at DIALOG, over the settings panel, so each passes `hideOnSettings` and hides first (the hide is their
+Escape close); the HUD (MEDIUM) and the Results window (HIGH, the panel's own strata) stay open. With
+no `HeaderButtons` (a degraded load) the same marks are host controls on one title strip at the same
+offsets (no close there: nothing can make one, so settings takes the corner), settings drawing the
+library's own glyph (`*`) and opening the panel directly, the timeline and the gear view still hiding
+first (`test_title_bar`'s "with no library" cases; `test_header_band` places them on the host's band).
+A library mark built with art that is later handed an icon the catalog cannot answer (the lock's
+padlock, the view toggle's chevrons) falls back to a host glyph painted the same way
+(`Style.SetControlIcon`). The addon builds no
+`W.DragHandle`, so the drag strip's settings mark has no use here. With no library a host holder stands where the band would. The StaticPopups, the debug console,
 the perf panel, the dropdown menu and the tooltips are Blizzard's or the library's. `test_layers` and
 `test_results_timeline_modal` pin each frame's strata, level and toplevel, and the cover;
 `test_results_gear` pins the gear view's strata, cover, skin and Escape order.
+
+## Tooltip placement
+
+Every tooltip this addon places itself follows standalone-windows' *Tooltip placement* (WowAddonStandards
+v2.113.0) through LibKa0s-Tooltip-1.0 (AD-92-DR, LibKa0s#92). One seam does it, `Style.PlaceTip(tip, el,
+chrome, group)`, called after the tooltip is owned at `ANCHOR_NONE`, filled and shown:
+
+- **A body element** (`chrome` falsy): `PlaceBeside`, beside the window group (`group`, else the
+  library's `GroupOf`, the window the element sits in), `TOPLEFT` 2 px off its right edge or `TOPRIGHT`
+  2 px off its left without the room, top level with the element, the comparison tooltips on the same
+  side. Body elements here: the Runs list's rows, cells and column headers, the detail's figures,
+  meta lines, Delta box, section parts and spell rows, a section heading's control (`Style.ControlButton`,
+  the detail's collapse arrows and the timeline's zoom, scroll, `?` and mark-mode words on its *Casts*
+  heading line), the compare's parts and rows, the loadout's and gear view's items and cells, the usage
+  rows, the timeline's lanes, icons and ticks, the Insights chart marks and cards, and on the HUD every
+  tile, button (`HudStates.Button`), chip and spell row and the chart's icons and *+n* marks. The
+  shared entry points are `ResultsTable.SideTip` (owned by the window), `SpellTip` (the client's spell
+  tooltip), `BesideTip` (owned by the element) and the Charts host's `tip`, which hands the mark to
+  `ctx:PlaceTip` (Charts minor 2) and ignores the library's legacy anchor.
+- **A chrome element** (`chrome` true, or `b.tipChrome` on a `HudStates.Button`, a `HudStates.TipZone` or
+  a `Style.ControlButton`): `PlaceAttached`, centered 2 px above it, below only at the screen's top.
+  Chrome here: the Runs and Insights filter bars' *Save*, *Reset* and *Clear*, the Insights board tabs
+  (*Overall* and one per target and length; `tipChrome`, read by `core/ChartsSetup.lua`'s chart tip,
+  which then attaches above the tab instead of handing it to `ctx:PlaceTip`), the HUD footer's two
+  lines, and every title-bar control (`Style.TitleTip`, `Style.TitleButton`; the library's marks and
+  closes place their own).
+- **Item tooltips** (the loadout's and the Gear view's items, the *Used* rows: the client's own, from a
+  link or an item ID) go through `Style.PlaceItemTip`, which places them as body tooltips and places
+  them again, with the same arguments, each time the tooltip changes size while the element still owns
+  it (`OnSizeChanged`, hooked once on the tooltip; forgotten on `OnHide`). Item data that arrives after
+  `Show` grows the tooltip, and the clamp read at the first placement would go stale (Tooltip v1,
+  *Replace*).
+- **Where the library places nothing** (a tooltip showing a secret spell answers secret geometry; a
+  degraded load with no Tooltip major): a body tooltip goes beside its window by a relative point, on
+  the side with the more room on the screen, read from the window's edges and UIParent's (never the
+  tooltip's, which may be secret): `TOPLEFT` on its `TOPRIGHT` + 2 px, or `TOPRIGHT` on its `TOPLEFT`
+  minus 2 px when the window's edges read plain and the room left is larger; level with the element when
+  both tops read plain. With no window to stand beside, a body tooltip and a chrome one are attached
+  above the element (`PlaceAttached`, then `BOTTOM` on its `TOP`, 2 px). Never the cursor, never a
+  corner. **A recorded deviation:** the standard's library-surface text and Tooltip v1 name the
+  fallback as attaching to the element. Here a body tooltip with a window keeps DR-03's owner call
+  (2026-10-30, the HUD's spell rows' tooltips beside the HUD, not over it), because an attach on a
+  HUD row covers the HUD's other rows (body rule 3). With an unknown tooltip width, a window close to
+  both screen edges can still clamp back over it.
+
+The Runs list's row reads which cell the pointer is over (`Table:columnAt`, `GetCursorPosition`) to
+choose the words; it never places by it. `test_tooltip_place` drives each path on the kit's fake screen
+(`tests/_kit/mock_screen.lua`) through a right-fits and a right-does-not-fit layout, and guards every
+loaded addon file against any anchor but `ANCHOR_NONE` and a point set from the cursor.
+
+**Left as they are (standalone-windows, *What it does not bind*):**
+
+- The settings pages (`settings/`, AceConfig and the library's Options widgets inside Blizzard's
+  Settings canvas): options-ui governs them.
+- The minimap button's options menu and every right-click menu (`NS.OpenMenu`, `MenuUtil.CreateContextMenu`):
+  the client's menu system places their entries' tooltips (`core/LauncherSetup.lua`'s entry tooltips
+  among them).
+- The minimap button's own tooltip: the library's launcher places it (`PlaceLauncher`, Launcher minor 11).
+- A LibDataBroker display's bar: the display places the tooltip.
+- The library's own windows and widgets (the debug console, the copy window, the sim panel, the skin
+  picker, the dropdowns, the Charts default tooltip, the title-bar marks and closes): the library's
+  placers, LibKa0s v1.105.0.
 
 ## Skins
 
@@ -497,8 +596,8 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
   `tests/test_skinsetup.lua` pins the ones this addon hands over.
 - **The typed-value gate and the switch test.** The kit's `test_skin_values` (kit revision 50,
   anti-pattern #107) fails on a typed color or texture no kit category takes, in every tracked source
-  file; `tests/run.lua`'s `Kit.skinValues.rows` names the three left, each with its cause: the
-  countdown's two digit sheets (A6) and the timeline legend's disc (L10). A row that matches nothing
+  file; `tests/run.lua`'s `Kit.skinValues.rows` names the one left, with its cause: the timeline legend's
+  disc (L10). The countdown's two digit sheets (A6) went with the module at AD-85-DR. A row that matches nothing
   fails. The kit's `test_skin_switch` flips a probe skin over the surfaces `tests/skin_surfaces.lua`
   declares, and fails on one that draws the same.
 
@@ -506,7 +605,7 @@ Every visual element paints through the `LibKa0s-Skin-1.0` facade with this addo
 quality colors, the meaning colors of a gain or a late cast, which `Style.Hue` keeps on the body face
 under every skin; the ability timeline's run colors and corridors, and its caster colors `PLAYER_LINE`
 and `PET_LINE`, DpsRace#21: a cast icon there sits on a 1 px edge in its caster's color, not the skin's
-icon outline, because the color is the information, skinning-§9), the countdown's BigGold digit art and its glow, the game's menus, StaticPopups,
+icon outline, because the color is the information, skinning-§9), the game's menus, StaticPopups,
 raid warning and tooltip frames (only the lines this addon writes into a tooltip take the skin), chat
 output (X7) and inline markup in help text (X9).
 
@@ -557,8 +656,10 @@ Prototype.
   for nil-ness, and the same as Combat Trail's (its v0.2 F1a, ported in F1b). A fourth, on hover only (DR-03): a live spell row takes the mouse and hands
   its spell's ID, possibly secret, to `ResultsTable.SpellTip`, which tests it for nil and passes it to
   the client's `GameTooltip:SetSpellByID` (pcall'd; the name through `C_Spell` when the client
-  refuses), adds no line of a live value, and reads its placement (the row's top, the window's edge,
-  the tooltip's width) through `NS.Secrets.PlainNumber`, a secret answer counting as nothing. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
+  refuses), adds no line of a live value, and is placed by LibKa0s-Tooltip-1.0 (`Style.PlaceTip`,
+  AD-92-DR), whose reads answer nothing for a secret: a tooltip showing a secret spell has secret
+  geometry, so it falls back to right of the HUD by a relative point, level with the row when both
+  tops read plain (`NS.Secrets.PlainNumber`), else with the HUD's top. The damage chart and the pace bar (`modules/Hud_Chart.lua`, #2, #3) are
   the same seam: each bucket's handle (`modules/Slices.lua`, copied, never inspected) and the live
   total go to `SetValue`, and a scale with no best is the live total itself through
   `SetMinMaxValues`; the pace bar's range and the pace diagonal are plain numbers from the stored
@@ -571,16 +672,23 @@ Prototype.
   stop, and its edges (`GetLeft`, `GetTop`, `GetBottom`, each through a pcall and
   `NS.Secrets.PlainNumber`) when it is re-anchored on its grow edge (`normalizeAnchor`, the v0.2
   sizing model). The shell never displays a value, and its sizes come from the configuration and from
-  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured, and the
-  rows' count and scroll are the `#` of the addon's own spell lists.
+  the plain numbers the grip's OnSizeChanged hands on; no spell row or rows frame is measured for
+  layout, and the rows' count and scroll are the `#` of the addon's own spell lists. A hover's tooltip
+  placement (*Tooltip placement*, below) reads the hovered element's, the HUD's and the tooltip's edges
+  through LibKa0s-Tooltip-1.0's guarded reads, which answer nothing for a secret (`issecretvalue`, no
+  arithmetic on one); it decides nothing but where the tooltip opens, and a secret read falls back to
+  a relative point (`test_hud_tips`, `test_hud_element_tips`: no geometry read off a frame that holds a
+  secret).
 - The Results window is plain and non-secure too, and opens in combat. It never holds a meter value:
   it draws stored run records, whose numbers went through `NS.Secrets` on their way into the store
   (or, in test mode and the sim, `modules/MockRuns.lua`'s plain sample records),
   so its sorting, percentages and timing-strip positions are plain Lua. It still lays out from
-  config; its only geometry read is its own anchor on drag stop.
-- The center-screen countdown (`modules/Countdown.lua`) draws on its own plain frame with its own
-  textures cut from Blizzard's BigGold digit sheet. It never calls `C_PartyInfo.DoCountdown` (that
-  broadcasts a pull timer to the group) nor any `TimerTracker` handler, and `test_countdown` scans for both.
+  config; its only geometry reads are its own anchor on drag stop and, on a hover, the edges the
+  tooltip placer reads (*Tooltip placement*).
+- The center-screen countdown is LibKa0s-Callout-1.0's frame (`core/CalloutSetup.lua`, AD-85-DR): a
+  library frame with a font string, gold numbers at the old place, never unlocked and never taking the
+  mouse. The addon never calls `C_PartyInfo.DoCountdown` (that broadcasts a pull timer to the group)
+  nor any `TimerTracker` handler, and `test_countdown` scans the seam for both.
 - The detail's *View* (#6) opens the talent tree from addon code, an ACCEPTED RISK (the owner's
   call, 2026-10-25). It calls `SetItemRef` with the stored `talentbuild` link, which shows the talent
   frame (`PlayerSpellsFrame`) from this addon's execution, and it also prints the same link into the
@@ -629,7 +737,8 @@ Prototype.
   and like the timeline's hover frames show tooltips built from plain cast records (the chart's icons,
   the timeline's name cell and its cast icons the client's spell tooltip by the stored ID, beside the
   window, DR-03). The timeline window is plain and non-secure like the Results
-  window, in `UISpecialFrames`, and its only geometry read is its own anchor on drag stop. Neither
+  window, in `UISpecialFrames`, and its only geometry reads are its own anchor on drag stop and the
+  tooltip placer's on a hover. Neither
   window's `UISpecialFrames` entry is ever removed or rewritten for the modal's Escape order (a write to
   that shared table from addon code would taint Blizzard's own entries): the Results window shows
   itself again from its own `OnHide` instead. Its re-raise of a shown StaticPopup is the library's
@@ -732,13 +841,13 @@ exist today; `docs/superpowers/` holds the spec and the plans.
 ### Files over the 1500-line cap
 
 Nothing is over the cap today. Eight files are in the 1000–1500 on-notice band: one test file,
-`tests/test_insights.lua` at 1268 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
+`tests/test_insights.lua` at 1273 (the Insights tab's drawing halves, #12, 2026-10-28; its pure half
 is already its own `test_insights_data`), and
-seven addon files, `modules/Results_Table.lua` at 1209 lines (a Bind nested in another stops, the
-first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1089 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31, and its cast marks to `modules/Results_TimelineMarks.lua`, DpsRace#21, 2026-11-10; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll`, `_controls` and `_marks`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1250
-(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1486, 14 under the cap (the Combat Trail parity pass's rows-driven sizing, CT v0.2 F1b, 2026-11-10, grew it in place; its next part goes to a new module, not this file; the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
-`modules/Results_Runs.lua` at 1116 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
-`modules/Hud.lua` at 1308 (layout-§1; the rows-driven sizing model's fit and pinning, CT v0.2 F1b, 2026-11-10; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
+seven addon files, `modules/Results_Table.lua` at 1203 lines (a Bind nested in another stops, the
+first-drag fix, 2026-10-27; the Bests board's helpers gone, 2026-10-28), `modules/Results_Timeline.lua` at 1095 (the window, after its pure half went to `modules/Results_TimelineData.lua`, FX-DR-SIZE, 2026-10-31, and its cast marks to `modules/Results_TimelineMarks.lua`, DpsRace#21, 2026-11-10; its suite's P12 to P16 cases are already `test_results_timeline_zoom`, `_modal`, `_view`, `_scroll`, `_controls` and `_marks`; the next round's window parts go to a new module), `modules/Results_Detail.lua` at 1251
+(the detail's collapsible sections, 2026-10-26, the flags box under its heading, 2026-10-27, the gear view told on each draw and the ignored late casts' gray ticks and menu, 2026-10-28), `modules/Hud_States.lua` at 1489, 11 under the cap (the Combat Trail parity pass's rows-driven sizing, CT v0.2 F1b, 2026-11-10, grew it in place; its next part goes to a new module, not this file; the Stop! and waiting tiles' caption row, 2026-10-28, the flag chips the toast shares, the late casts' menu and *ignored* chip, and the element tooltips' wiring, DR-F04, 2026-10-31, with their words in `modules/Hud_Tips.lua`),
+`modules/Results_Runs.lua` at 1117 (the detail's Delta box contexts, 2026-10-26; the filter bar stretched to the window, 2026-10-28, and its option lists shared with Insights),
+`modules/Hud.lua` at 1314 (layout-§1; the rows-driven sizing model's fit and pinning, CT v0.2 F1b, 2026-11-10; auto-show's hooks, 2026-10-28, and the review's `Hide(own)` and dummy take-over, with the rule itself in its own `modules/AutoArm.lua`) and
 `locales/enUS.lua` at 1232 (the canonical locale crossed 1000 with the *Training dummies* tab and `/dr targetdummy`'s lines, #9, 2026-10-28; one flat key table, split by page when it nears the cap); the 2026-10-25 passes put their new parts in their own modules (`Hud_Chart`,
 `Results_Compare`, `Results_Loadout`, `Slices`, `Loadouts`, then `Results_Source`, `MockRuns`, `Sim`),
 and the 2026-10-26 pass its own (`Casts`, `Usage`, `Results_Usage`, `Results_Timeline`), and the

@@ -226,8 +226,8 @@ end
 -- ── the run detail ──────────────────────────────────────────────────────────────────────────────
 -- The detail pane's hovers (modules/Results_Detail.lua), the same lines as the tables' where the two
 -- show the same thing. The spells are the client's own spell tooltip with Tips.Spell's lines after
--- it, beside the window, as the Spell breakdown heading's (DR-05); everything else is under the element
--- it names (Results_Table's BelowTip).
+-- it, beside the window, as the Spell breakdown heading's (DR-05); everything else beside the window
+-- too, level with the element it names (Results_Table's BesideTip, AD-92-DR).
 
 local function dimLine(text) return { text, NS.Style.Rgb("dr.dim") } end
 
@@ -517,7 +517,7 @@ local function otherName(kind)
     return L["the best on its board (same spec, target type and race length)"]
 end
 
--- Who and when the other run was: "Lanfear · 25 Oct 14:02".
+-- Who and when the other run was: "Mocklock · 25 Oct 14:02".
 local function otherStamp(other)
     local char = type(other.char) == "table" and other.char or {}
     return ("%s \194\183 %s"):format(tostring(char.name or "?"), Tbl().Date(other.date, "%d %b %Y %H:%M"))

@@ -28,7 +28,7 @@ local function run(f, id, date, dps, o)
     local r = {
         id = id, schema = 4, status = status, date = date,
         race = { length = o.length or 60, grace = 1, restartGap = 6 },
-        char = { name = "Lanfear", class = "WARLOCK", spec = "Destruction", specID = 267 },
+        char = { name = "Mocklock", class = "WARLOCK", spec = "Destruction", specID = 267 },
         target = { name = "Training Dummy", category = o.category or "single", count = 1 },
         result = (status ~= "lost") and { damage = (dps or 0) * (o.length or 60), dps = dps } or nil,
         flags = o.flags or { lateCasts = {} }, spells = {}, note = "",

@@ -20,9 +20,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -33,9 +33,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -48,7 +48,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -112,7 +112,7 @@ test("results: runs list columns: date, class icon, spec icon, character, ilvl, 
     assertEqual(c.icons.spec.__texture, 136186, "the spec icon")
     local tip = pane.list:TipLines(run, 2)
     assertEqual(tip[1], "Destruction Warlock", "the icons' tooltip names the spec and the class")
-    assertEqual(c.char.fs.__text, "Lanfear")
+    assertEqual(c.char.fs.__text, "Mocklock")
     assertEqual(c.char.fs.__color[1], 0.53, "the character is class-colored")
     assertEqual(c.ilvl.fs.__text, "313.2")
     assertEqual(c.target.fs.__text, "Cleave", "no target count (DpsRace#15)")
@@ -179,28 +179,26 @@ test("results: every cell and header has a tooltip; it sits right of the window,
     end
     assertEqual(list:TipLines(run, 7)[1], "36,812,345 damage", "the exact damage")
     assertEqual(list:TipLines(run, 8)[1], "306,769 DPS")
-    -- Placement: a stand-in tooltip, window and row with scripted geometry.
-    local placed
-    local tip = {}
-    for _, m in ipairs({ "AddLine", "Show", "ClearAllPoints" }) do tip[m] = function() end end
-    function tip.SetOwner() end
-    function tip.SetText() end
-    function tip.GetWidth() return 300 end
-    function tip.GetEffectiveScale() return 1 end
-    function tip.SetPoint(_, point, _, rel, x) placed = { point, rel, x } end
-    local env = i.mocks
-    env.GameTooltip = tip
-    env.UIParent = { GetRight = function() return 1920 end, GetEffectiveScale = function() return 1 end }
-    local window = { GetRight = function() return 1200 end, GetTop = function() return 800 end,
-                     GetEffectiveScale = function() return 1 end }
-    local row = { GetTop = function() return 700 end }
+    -- Placement, on the kit's fake screen (re-pinned to standalone-windows *Tooltip placement*,
+    -- AD-92-DR: LibKa0s-Tooltip-1.0's PlaceBeside, one absolute point 2 px off the window's edge).
+    local scr = dofile(T.root .. "/tests/_kit/mock_screen.lua")(i.mocks, { width = 1920, height = 1080 })
+    local tip = scr.tooltip{ width = 300, height = 80 }
+    i.mocks.GameTooltip = tip
+    local window = scr.frame{ left = 800, bottom = 300, width = 400, height = 500 }
+    local row = scr.frame{ left = 810, bottom = 680, width = 380, height = 20, parent = window }
     i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
-    assertEqual(placed[1], "TOPLEFT", "room on the right: the tooltip's left edge on the window's right")
-    assertEqual(placed[2], "TOPRIGHT")
-    window.GetRight = function() return 1800 end
+    local l, _, _, t = scr.rectOf(tip)
+    assertEqual(l, 1202, "room on the right: the tooltip's left edge 2 px off the window's right")
+    assertEqual(t, 700, "level with the row")
+    window:__place(1400, 300, 400, 500)
+    row:__place(1410, 680, 380, 20)
     i.NS.ResultsTable.SideTip(window, row, { "Title", "line" })
-    assertEqual(placed[1], "TOPRIGHT", "no room: on the window's left")
-    assertEqual(placed[2], "TOPLEFT")
+    local r
+    l, _, r, t = scr.rectOf(tip)
+    assertEqual(r, 1398, "no room: its right edge 2 px off the window's left")
+    assertEqual(t, 700)
+    assertTrue(l ~= nil, "on the screen")
+    scr.restore()
 end)
 
 test("results: the Status column tags each run; the DPS column shows every run's DPS", function()
@@ -423,7 +421,7 @@ test("results: the bars take History > Results table's look, over the rows' own 
     assertTrue(i.NS.SetByPath("resultsTable.damageBar.useClassColorBar", true))
     cells = visible(runsPane(i))[1].cells
     local warlock = i.mocks.RAID_CLASS_COLORS.WARLOCK
-    assertEqual(cells.damage.bar.__vertex[1], warlock.r, "the run's character's class, Lanfear's warlock")
+    assertEqual(cells.damage.bar.__vertex[1], warlock.r, "the run's character's class, Mocklock's warlock")
     assertEqual(cells.dps.bar.__vertex[1], D.dpsBar.barColor.r, "each bar its own companion")
     for _, head in ipairs(runsPane(i).list.heads) do assertEqual(head.label.__justifyH, "LEFT") end
     -- The alternating stripe is back: every other row faintly tinted.
@@ -624,12 +622,12 @@ test("results: filters: character, spec, category, length, date range, hide flag
         for k, v in pairs(f) do wide[k] = v end
         return rawIds(wide)
     end
-    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Lanfear), in every spec")
+    assertEqual(rawIds({}), "a,b,e", "the defaults: the logged-in character (Mocklock), in every spec")
     assertEqual(rawIds({ char = "all" }), "a,b,c,d,e", "every character in every spec")
     assertEqual(rawIds({ char = "all", spec = "current" }), "a,b,e", "the current spec across characters")
     assertEqual(rawIds({ spec = "all" }), "a,b,e", "the current character in every spec")
     assertEqual(ids({}), "a,b,c,d,e", "a running run is the race's, never the list's")
-    assertEqual(ids({ char = "Lanfear-Frostmourne" }), "a,b,e")
+    assertEqual(ids({ char = "Mocklock-Samplerealm" }), "a,b,e")
     assertEqual(ids({ spec = 63 }), "c")
     assertEqual(ids({ category = "boss" }), "b")
     assertEqual(ids({ length = 30 }), "b")
@@ -663,7 +661,7 @@ test("results: filters: character, spec, category, length, date range, hide flag
     assertEqual(pane.countText, "4 runs")
     pane.checks.includeIncomplete:__fire("OnClick")
     assertEqual(pane.countText, "2 runs")
-    pane.dropdowns.char.onSelect("Kaosmage-Frostmourne")
+    pane.dropdowns.char.onSelect("Mockfrost-Samplerealm")
     assertEqual(pane.countText, "1 run")
     assertEqual(visibleIDs(pane), "c")
 end)

@@ -16,9 +16,9 @@ local function inst(opts)
     local W, popups = nil, {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then W = Widgets.install(m) end
-        -- The logged-in player is the seeded runs' Lanfear, in Destruction: the Runs tab opens on
+        -- The logged-in player is the seeded runs' Mocklock, in Destruction: the Runs tab opens on
         -- the current character and spec.
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
         m.GetSpecialization = function() return 1 end
         m.GetSpecializationInfo = function() return 267, "Destruction" end
         m.StaticPopup_Show = function(which, _, _, data) popups[#popups + 1] = { which = which, data = data } end
@@ -29,9 +29,9 @@ local function inst(opts)
 end
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
-    druid = { name = "Barkskin", realm = "Frostmourne", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    druid = { name = "Barkskin", realm = "Samplerealm", class = "DRUID", specID = 102, spec = "Balance", ilvl = 309.4 },
 }
 
 -- A field mkRun removes (pairs never sees a nil value).
@@ -44,7 +44,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear, an hour ago. `fields` replaces any
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock, an hour ago. `fields` replaces any
 --- top-level field; `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -357,8 +357,9 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(u.tabs.runs.label.__fontObject, "GameFontNormal", "a tab")
     assertEqual(u.tabs.runs.label.__color[2], 0.82, "the active tab is gold")
     assertEqual(u.tabs.insights.label.__color[1], 0.7, "an idle tab is gray")
-    assertEqual(u.footLeft.__fontObject, "GameFontDisableSmall", "the footer")
-    assertEqual(u.footRight.__fontObject, "GameFontDisableSmall")
+    -- The footer is the library's since AD-89-DR (W.Footer): GameFontHighlightSmall in `text.muted`.
+    assertEqual(u.footLeft.__fontObject, "GameFontHighlightSmall", "the footer")
+    assertEqual(u.footRight.__fontObject, "GameFontHighlightSmall")
     local Tbl = i.NS.ResultsTable
     assertEqual(Tbl.ROW_H, 18, "LootHistory's compact row (BrowserTable.ROW_H_DEFAULT)")
     assertEqual(Tbl.HEADER_H, 20, "LootHistory's 20px header")
@@ -372,7 +373,7 @@ test("results: a centered GameFontNormal title, Title Case tabs and headers, com
     assertEqual(cells.char.fs.__fontObject, "GameFontHighlightSmall", "a cell")
     assertEqual(cells.target.fs.__fontObject, "GameFontHighlightSmall", "the badge")
     for _, b in pairs(runsPane(i).checks) do assertEqual(b.label.__fontObject, "GameFontHighlightSmall") end
-    assertEqual(ui(i).footLeft.__fontObject, "GameFontDisableSmall", "the footer, where the run count is")
+    assertEqual(ui(i).footLeft.__fontObject, "GameFontHighlightSmall", "the footer, where the run count is")
     assertTrue(ui(i).footLeft.__text:find(runsPane(i).countText, 1, true) == 1, "the count leads the footer")
     i.R.ShowRun("a")
     local d = ui(i).detail

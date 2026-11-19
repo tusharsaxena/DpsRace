@@ -82,7 +82,10 @@ end
 --- Make `frame` resizable from the library's grip, laid out cheaply while the grip is dragged and in
 --- full once when it is released. Answers the grip (nil with no library, as NS.MakeResizable does).
 --- @param frame table
---- @param opts table  { minWidth, minHeight, size(w, h), layout(), redraw(), done(w, h), canResize()? }
+--- `opts.gripParent` (optional) is the frame the grip is built on (Core minor 10): a window passes its
+--- footer, so the grip sits in the footer's corner as W.Footer's own `opts.resize` would put it.
+--- @param opts table  { minWidth, minHeight, size(w, h), layout(), redraw(), done(w, h), canResize()?,
+---                     gripParent? }
 --- @return table|nil grip
 function Sizing.MakeResizable(frame, opts)
     local s = { dragging = false, pending = false }
@@ -103,7 +106,7 @@ function Sizing.MakeResizable(frame, opts)
     -- client's art.
     local grip = NS.MakeResizable(frame, {
         minWidth = opts.minWidth, minHeight = opts.minHeight, canResize = opts.canResize,
-        onResize = changed, onResizeStop = released, owner = addonName,
+        onResize = changed, onResizeStop = released, owner = addonName, gripParent = opts.gripParent,
     })
     hookGrip(grip, frame, s, opts.canResize)
     if grip then hookHide(frame, s, opts) end

@@ -38,15 +38,42 @@ off. Repeating paths use `NS.DebugChanged` or `NS.DebugOnce`, and state written 
 | `Gear` | `modules/Results_Gear.lua`: the gear view window built, and each draw's slot count (#17) |
 | `Format` | `modules/Format.lua`: a client formatter constructor passed over and why (it built nothing, refused the breakpoints or drew a check value wrongly), and which path served the numbers (the client formatter by name, Lua for a plain number, `AbbreviateNumbers`, or the raw value), written when it changes |
 | `Hud` | `modules/Hud.lua`: the window built, and every race state change it drew |
-| `Countdown` | `modules/Countdown.lua`: the center numbers' frame built (with the digit art or the font fallback), and a pop animation the client refused |
+| `Countdown` | `core/CalloutSetup.lua`: the call-out handed the race's countdown (from which second), and the call-out's own lines (`LibKa0s-Callout-1.0`'s `d.debug`) |
 | `AutoArm` | `modules/AutoArm.lua`: a dummy session beginning and ending, each auto-arm (or its refusal, with the reason) and each cancel when the target moves off the dummies (#16) |
 | `Results` | `modules/Results.lua`: the window and each tab built, and stepping aside for the talent tree and coming back when it closes; `modules/Results_Source.lua`: the source switched to the sample history and back |
 | `Share` | `modules/Share.lua`: a chat send that failed, with the channel |
 | `Test` | `modules/Preview.lua`: test mode or the sim on (with the still state or the scenario), and off with the reason |
 | `Toast` | `modules/BestToast.lua`: each new best that toasts (its run id and gain), and the shell's own lines (`TOAST`: queued, shown, expired, a builder that failed) |
+| `Ignore` | the `/dr ignore show` report (below), ungated |
+| `Dummies` | the `/dr targetdummy show` report (below), ungated |
 
 The library writes the latch's stand-down and stand-up edges with their holds, and the launcher's
 registration lines, through the same sink.
+
+## Reports
+
+A **report** is a multi-line read-out a player asks for by name (debug-logging-§15, the owner's ruling
+of 2026-11-08, LibKa0s#79). This addon has two, and both go through the library's
+`NS.DebugLog:Report(tag, title, fn)` (`settings/Slash.lua`):
+
+| Verb | Tag | What it writes |
+|---|---|---|
+| `/dr ignore show` (and a bare `/dr ignore`, and the list `/dr ignore defaults` shows after its acknowledgment) | `Ignore` | The late-cast ignore list, one *Name (id)* line a spell |
+| `/dr targetdummy show` (and a bare `/dr targetdummy`, and the list after `defaults`) | `Dummies` | Your own training dummies, the built-ins' count and each switched-off built-in |
+
+- **Written to the console, ungated.** The report is a `/dr <verb> show` header and its lines, through
+  the library's raw append, so it lands whether or not logging is on, and it never turns logging on.
+- **The console opens** if it is hidden.
+- **One chat line points to it:** `ignore show: 8 lines written to the debug console. Use Copy to
+  share it.` (the count includes the header).
+- **What stays in chat:** the acknowledgments (`defaults`' *back to its defaults* line, `add` and
+  `remove`), a usage or refusal line, and a short answer: *The late-cast ignore list is empty.* is one
+  line and writes no report. `/dr list`, the reserved settings listing, stays in chat
+  (slash-commands-§5).
+- **Library absent:** the stub's `Report` (`core/DebugLogSetup.lua`) prints the report's lines in chat,
+  with no header and no pointer, and its `Serialize` answers one line.
+
+The diagnostics report below is a report too, with its own helper and pointer line (§14).
 
 ## The diagnostics report
 

@@ -29,7 +29,7 @@ end
 
 -- A new default replaces the length remembered from the last pick (the HUD redraws with it). The
 -- buzzer and the hint read their rows when they fire, so they need no reaction; the cue and the center
--- countdown re-arm the race's marks (modules/Countdown.lua), so a change takes effect at once.
+-- countdown re-arm the race's countdown (core/CalloutSetup.lua), so a change takes effect at once.
 local function newDefault() NS.Hud.ForgetLength() end
 local function rearm() NS.Countdown.Refresh() end
 

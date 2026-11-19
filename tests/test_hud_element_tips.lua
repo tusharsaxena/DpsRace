@@ -201,16 +201,20 @@ test("hud tips: the title bar's controls and the footer's lines", function()
     end
 end)
 
-test("hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry", function()
+-- Re-pinned (AD-92-DR): a body tooltip now opens beside the HUD, so the hover reads the tile's and the
+-- HUD's edges through LibKa0s-Tooltip-1.0's guarded reads (a secret answers nothing). What stays
+-- pinned is the invariant: no geometry read off a frame that was handed a secret, and no live value
+-- in the lines.
+test("hud tips: hovering a live figure hands the tooltip its fixed lines and reads no secret geometry", function()
     -- red under: a tooltip reading the live value, which is secret for the whole pull.
     local i = inst()
     local b = body(i, "running")
     b:Layout(260, 500)
     b:SetLive({ total = T.secret(1234), dps = T.secret(99), spells = {} }, 8, true)
-    local reads = #i.W.geomReads
     for _, frame in ipairs({ b.w.damage.frame, b.w.dps.frame, b.w.pace.over, b.w.chart.over }) do
         frame:__fire("OnEnter")
         for _, line in ipairs(i.tip.lines) do assertTrue(type(line) == "string", "a plain line") end
+        assertTrue(i.tip.points ~= nil and #i.tip.points == 1, "placed once, against the tile")
     end
-    assertEqual(#i.W.geomReads, reads, "a hover measured something")
+    assertEqual(table.concat(i.W.SecretGeometryReads(), ","), "", "a hover measured a frame that holds a secret")
 end)

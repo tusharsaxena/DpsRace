@@ -221,17 +221,19 @@ local function setHot(b, on)
     b.hot = on
 end
 
--- A button's tooltip (b.tip = { title, text, ... }), shown under the pointer, disabled or not. The
--- text is in the header gold (the client's normal tooltip color, NORMAL_FONT_COLOR); two or more
--- lines of it go on bullets (Style).
+-- A button's tooltip (b.tip = { title, text, ... }), disabled or not: a HUD button or tile is a body
+-- element, beside the HUD; `b.tipChrome` (a filter bar's button, the footer's lines) attaches it above
+-- (Style.PlaceTip, AD-92-DR). The text is in the header gold (NORMAL_FONT_COLOR); two or more lines of
+-- it go on bullets (Style).
 local function showTip(b)
     local tip = b.tip
     if not (tip and GameTooltip) then return end
     if type(tip) ~= "table" then tip = { tostring(tip) } end
-    GameTooltip:SetOwner(b, "ANCHOR_TOP")
+    GameTooltip:SetOwner(b, "ANCHOR_NONE")
     GameTooltip:SetText(tip[1], Style.Rgb("gtip.value"))
     Style.AddTipLines(GameTooltip, tip, 2, Style.Rgb("gtip.title"))
     GameTooltip:Show()
+    Style.PlaceTip(GameTooltip, b, b.tipChrome)
 end
 
 --- The same tooltip on any frame (a figure's tile, the target card, the custom box, a control the
@@ -381,11 +383,12 @@ local function newChip(parent)
     f:EnableMouse(true)
     f:SetScript("OnEnter", function(self)
         if not self.tip or not GameTooltip then return end
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetOwner(self, "ANCHOR_NONE")
         local r, g, b = Style.Rgb("gtip.value")
         GameTooltip:SetText(self.tip, r, g, b, 1, true)
         for _, line in ipairs(self.tipLines or {}) do GameTooltip:AddLine(line[1], line[2], line[3], line[4], true) end
         GameTooltip:Show()
+        Style.PlaceTip(GameTooltip, self)   -- a result card's chip: a body element, beside the HUD
     end)
     f:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     -- A chip with a menu (the late casts', #8) opens it on a right-click.

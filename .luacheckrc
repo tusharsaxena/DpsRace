@@ -104,8 +104,8 @@ files["modules/Hud_Appearance.lua"] = { read_globals = { "RAID_CLASS_COLORS" } }
 files["modules/Hud_States.lua"] = { read_globals = { "GameTooltip" } }
 -- The shared look: a title-bar control draws its tooltip; the new-best toast's scaled faces (CreateFont).
 files["modules/Style.lua"] = { read_globals = { "GameTooltip", "CreateFont" } }
--- The final seconds' cue sound (the center numbers draw on their own frame, no client global).
-files["modules/Countdown.lua"] = { read_globals = { "PlaySound", "SOUNDKIT" } }
+-- The final seconds' cue sound (the center numbers are LibKa0s-Callout-1.0's frame, no client global).
+files["core/CalloutSetup.lua"] = { read_globals = { "PlaySound", "SOUNDKIT" } }
 files["modules/Hud.lua"] = {
     read_globals = {
         "IsPlayerSpell", "PlaySound", "SOUNDKIT", "RaidNotice_AddMessage", "RaidWarningFrame",

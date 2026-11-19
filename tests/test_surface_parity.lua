@@ -89,7 +89,7 @@ test("parity: the DebugLog stub carries every member this addon calls", function
     -- Hide, IsEnabled and SetEnabled, which the console row and the diagnostics contract reach
     local used = { "Add", "Debug", "Show", "Hide", "Toggle", "IsShown", "IsEnabled", "SetEnabled",
                    "ConsoleCheckbox", "RunDiagnostics", "DebugVerb", "DebugOnce", "DebugChanged",
-                   "DebugAtEnable" }
+                   "DebugAtEnable", "Report", "Serialize" }
     for _, name in ipairs(used) do
         assertEqual(type(l.NS.DebugLog[name]), "function", "live " .. name)
         assertEqual(type(d.NS.DebugLog[name]), "function", "stub " .. name)

@@ -227,6 +227,44 @@ test("sample parity: a made-up character carries its own trinket, bags and gear,
     f.NS.ResultsSource.Restore()
 end)
 
+-- AD-87-DR (LibKa0s#87, preview-mode's sample characters): the made-up characters are the library's
+-- shared retail set, each on its own fictional realm, never the player's (a real realm would make a
+-- real-looking Name-Realm pair); without the library, the same two rows from the addon's copy.
+local function alts(data, me)
+    local out = {}
+    for _, run in ipairs(data.runs) do
+        if run.char.name ~= me then out[run.char.name] = run.char end
+    end
+    return out
+end
+
+test("sample parity: the made-up characters are the shared sample set, on their own realms", function()
+    local f = fixture("WARLOCK")
+    f.M.__context.realm = "Silvermoon"
+    local rows = assert(f.NS.SimLib, "the Sim library is loaded").Sample("retail")
+    local got = alts(f.MR.Dataset(), f.MR.Player().name)
+    for _, i in ipairs({ 2, 3 }) do
+        local row, c = rows[i], got[rows[i].name]
+        assertTrue(c ~= nil, rows[i].name .. " is not in the sample history")
+        assertEqual(c.realm, row.realm, row.name .. "'s realm")
+        assertEqual(c.class, row.classFile)
+        assertEqual(c.specID, row.specID)
+        assertEqual(c.spec, row.spec)
+    end
+    assertEqual(got.Sampleblade.realm, "Samplerealm")
+    assertEqual(got.Mockflame.realm, "Mockrealm", "a character from another realm takes Mockrealm")
+end)
+
+test("sample parity: library absent, the made-up characters are the same two rows", function()
+    local inst = T.load{ libFiles = {} }
+    assertEqual(inst.NS.SimLib, nil)
+    local got = alts(inst.NS.MockRuns.Dataset(), inst.NS.MockRuns.Player().name)
+    assertEqual(got.Sampleblade.realm, "Samplerealm")
+    assertEqual(got.Sampleblade.class, "PALADIN")
+    assertEqual(got.Mockflame.realm, "Mockrealm")
+    assertEqual(got.Mockflame.specID, 63)
+end)
+
 test("sample parity: loadout b changes a slot, never empties it", function()
     local f = fixture()
     f.M.GetInventoryItemLink = function(_, slot) return slot == 14 and "|Hitem:1|h[a]|h" or nil end

@@ -505,13 +505,12 @@ Total.
 - pace: the result card stacks the same, and keeps Damage profile over the pace bar when the plot is off
 - pace: the result card's stack starts under the chips it draws, as the running body's under its boxes
 
-### test_countdown.lua (20)
+### test_countdown.lua (19)
 
 - countdown: 10..1 show one per second in the last 10s, then go at the buzzer
-- countdown: its own frame, center of UIParent, above everything, never taking the mouse
-- countdown: each number pops in through an animation
-- countdown: the digits are Blizzard's BigGold set, cut by texcoord
-- countdown: without the digit art it falls back to a large outlined number
+- countdown: the call-out's frame, above everything, never taking the mouse; gold numbers at the old place
+- countdown: the call-out speaks nothing: no voice pack is shipped and its voice reads off
+- countdown: the stub carries the call-out's surface, and with no library the cue marks still sound
 - countdown: finalCountdown 3 starts at 3
 - countdown: switched off, no frame is ever built and only the cue marks sound
 - countdown: switching it off mid-countdown hides the number at once
@@ -953,7 +952,7 @@ Total.
 - timeline marks: in tick mode a pet's tick is PET_LINE and a player's PLAYER_LINE in both lanes
 - timeline marks: the setting written while the window is open redraws it as ticks, keeping the zoom
 - timeline marks: the two words on the By ability heading line switch the marks
-- timeline marks: a word's tooltip sits above it, the way the window's other controls' do
+- timeline marks: a word's tooltip opens beside the window, level with it, as the ? control's does
 - timeline marks: zoomed in, the icons follow the zoomed axis; a drag of the grip moves them without re-pooling
 
 ### test_results_gear.lua (13)
@@ -993,12 +992,21 @@ Total.
 - header band: the Results tab strip and its rule stand under the band, in every skin
 - header band: with no library each window's header stands where Shell would lay the band
 
-### test_title_bar.lua (4)
+### test_title_bar.lua (13)
 
 - title bar: the race HUD's close, lock, settings and Results controls (tooltips, rest and hover)
-- title bar: the Results window's close and view toggle (tooltips, rest and hover)
-- title bar: the ability timeline's close (tooltip, rest and hover)
-- title bar: the gear view's close (tooltip, rest and hover)
+- title bar: the Results window's close, settings and view toggle (tooltips, rest and hover)
+- title bar: the ability timeline's close and settings (tooltips, rest and hover)
+- title bar: the gear view's close and settings (tooltips, rest and hover)
+- title bar: the race HUD's marks are W.HeaderButtons', results . lock . settings . close
+- title bar: the Results window's marks are W.HeaderButtons', view toggle . settings . close
+- title bar: the ability timeline's and the gear view's marks are W.HeaderButtons', settings . close
+- title bar: each window's settings mark opens the settings through the launcher's opener
+- title bar: the timeline and the gear view hide before the settings open; the HUD and Results stay
+- title bar: with no library each window's settings mark opens the settings panel directly
+- title bar: with no library the timeline and the gear view still hide before the settings open
+- title bar: with no library the host marks stand at the library's offsets, extras . settings . close
+- title bar: a library mark's icon with no catalog art falls back to its glyph
 
 ### test_results_body.lua (2)
 
@@ -1079,7 +1087,7 @@ Total.
 - insights charts: a stat card is LootHistory's: the gold figure on top, centered, the caption below
 - insights charts: the panel comes from the host, a plain frame without one
 - insights charts: the DpsRace host pools through NS.Pool and draws in the window's look
-- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor
+- insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, placed by ctx:PlaceTip
 - insights tab: built on its first show, its tab label gold while it shows
 - insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)
 - insights tab: a filter redraws the cards, and narrows the other dropdowns (faceted)
@@ -1140,6 +1148,23 @@ Total.
 - tooltips: two or more lines go on bullets in their own colors, a dim footer hint among them
 - tooltips: after the client's spell text only the addon's own lines count, and only they take bullets
 - tooltips: a shared button's { title, text, ... } follows the same rule
+
+### test_tooltip_place.lua (14)
+
+- tooltip place: SideTip opens beside the window, right when it fits and left without the room
+- tooltip place: SpellTip opens beside the window with its comparisons on the same side
+- tooltip place: BesideTip (a section part, a loadout or usage part) opens beside its window
+- tooltip place: a section heading's control (Style.ControlButton) is a body element
+- tooltip place: a HUD button and tile are body elements; a filter bar's button is chrome
+- tooltip place: the Runs and Insights filter bars' buttons are chrome
+- tooltip place: a list's column header is a body element, beside the window
+- tooltip place: the HUD's footer lines are chrome, attached above
+- tooltip place: an Insights chart mark's tooltip goes through the Charts host's PlaceTip
+- tooltip place: a body tooltip the library cannot measure goes beside its window, on the roomier side
+- tooltip place: a body tooltip with no window to stand beside is attached above its element
+- tooltip place: an Insights board tab is chrome, its tooltip attached above it
+- tooltip place: an item tooltip is placed again when it grows while its element owns it
+- tooltip place: no addon file anchors a tooltip to the cursor or a corner
 
 ### test_schema.lua (18)
 
@@ -1410,7 +1435,7 @@ Total.
 - hud tips: the result card names its figures, chart, pace bar, heading and four buttons
 - hud tips: a heading's zone hides with its heading
 - hud tips: the title bar's controls and the footer's lines
-- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no geometry
+- hud tips: hovering a live figure hands the tooltip its fixed lines and reads no secret geometry
 
 ### test_glyphs.lua (1)
 
@@ -1456,13 +1481,23 @@ Total.
 - slash: /dr and /dpsrace both dispatch
 - slash: feature verbs answer the enable line while disabled
 - slash: the Arm or cancel key arms the last length, then cancels; a pending result is kept
-- slash: a bare ignore and ignore show print the list, one spell a line, 8690 as every hearthstone
+- slash: a bare ignore and ignore show report the list, one spell a line, 8690 as every hearthstone
 - slash: ignore add takes an ID, a link or a name, and says when the spell is already ignored
 - slash: ignore remove counts a spell again; a variant ignored through 8690 takes 8690 off
 - slash: ignore defaults puts the six back, as reset race.lateIgnore does
 - slash: ignore answers a bad word, a missing spell or a name it cannot place with one line, writing nothing
 - slash: ignore is a settings verb: it answers while disabled, on both arms
 - slash: the live dispatcher's live set is the library's LIVE_VERBS plus ignore and targetdummy
+
+### test_reports.lua (7)
+
+- reports: ignore show writes the list to the console, ungated, and points to it once in chat
+- reports: a bare ignore is ignore show; an empty list is one chat line and writes nothing
+- reports: ignore defaults acknowledges in chat, then reports the list
+- reports: a usage or refusal inside ignore stays in chat and writes nothing to the console
+- reports: targetdummy show writes the list to the console with one chat pointer
+- reports: targetdummy defaults acknowledges in chat, then reports; a bad word is usage, no report
+- reports: library absent, the stub streams each report to chat with no pointer
 
 ### test_share.lua (14)
 
@@ -1539,6 +1574,19 @@ Total.
 - preview: every start and stop repaints an open panel's Test mode checkbox
 - preview: the HUD shows the sim strip, not the test strip, while a sim runs
 
+### test_window_chrome.lua (10)
+
+- chrome: the HUD's test strip is docked under its title bar, and the content moves by its offset
+- chrome: the HUD's sim strip is docked under its title bar too
+- chrome: the Results strip is docked under the title bar, above the tabs, which move down with the body
+- chrome: the Results sim strip is docked under the title bar
+- chrome: the HUD's footer is the library's, 24 px, and the content ends above it
+- chrome: the Results footer is the library's, 24 px, and the body ends above it
+- chrome: with no Widgets library each window keeps a 24 px footer with its two lines
+- chrome: the HUD's and the Results window's resize grips are built on their footers
+- chrome: with no Widgets library the footer's right line follows the HUD's grip
+- chrome: with no Widgets library a footer made without grip keeps its right line at the pad
+
 ### test_sim.lua (31)
 
 - sim: each scenario plays its bodies, then opens the Results window on its run, never storing it
@@ -1573,7 +1621,7 @@ Total.
 - sim race: sticky's wait says combat holds on (R5-DR2)
 - sim race: Start plays the whole script in real time, the card held 4 s (R5-DR2)
 
-### test_sample_parity.lua (32)
+### test_sample_parity.lua (34)
 
 - sample parity: no two sample runs scale uniformly: a compare's bars vary, and go both ways
 - sample parity: a sim's new best is not a flat factor of its history: its rows differ too
@@ -1585,6 +1633,8 @@ Total.
 - sample parity: a raised grace judges the sample's late casts as it would a race's
 - sample parity: the player draws their own class's rotation; every class has one
 - sample parity: a made-up character carries its own trinket, bags and gear, not the player's
+- sample parity: the made-up characters are the shared sample set, on their own realms
+- sample parity: library absent, the made-up characters are the same two rows
 - sample parity: loadout b changes a slot, never empties it
 - sample parity: the running figures are the meter's shape: nothing before the first hit, rows that move
 - sample parity: the running chart and the card's are the same buckets, short of the final at the buzzer
@@ -1859,7 +1909,7 @@ Total.
 | test_hud_tiles.lua | 10 |
 | test_chart.lua | 30 |
 | test_pace.lua | 14 |
-| test_countdown.lua | 20 |
+| test_countdown.lua | 19 |
 | test_autoarm.lua | 31 |
 | test_layers.lua | 7 |
 | test_results.lua | 18 |
@@ -1889,7 +1939,7 @@ Total.
 | test_header_rule.lua | 3 |
 | test_column_header_rule.lua | 4 |
 | test_header_band.lua | 5 |
-| test_title_bar.lua | 4 |
+| test_title_bar.lua | 13 |
 | test_results_body.lua | 2 |
 | test_icon_rule.lua | 8 |
 | test_icon_crop.lua | 4 |
@@ -1899,6 +1949,7 @@ Total.
 | test_switched_sections.lua | 3 |
 | test_sizing.lua | 13 |
 | test_tooltips.lua | 4 |
+| test_tooltip_place.lua | 14 |
 | test_schema.lua | 18 |
 | test_settings.lua | 38 |
 | test_skinsetup.lua | 25 |
@@ -1916,11 +1967,13 @@ Total.
 | test_glyphs.lua | 1 |
 | test_refactor_pins.lua | 4 |
 | test_slash.lua | 38 |
+| test_reports.lua | 7 |
 | test_share.lua | 14 |
 | test_toast.lua | 27 |
 | test_preview.lua | 25 |
+| test_window_chrome.lua | 10 |
 | test_sim.lua | 31 |
-| test_sample_parity.lua | 32 |
+| test_sample_parity.lua | 34 |
 | test_launcher.lua | 10 |
 | test_sim_checkbox.lua | 10 |
 | test_launcher_skin_entry.lua | 1 |
@@ -1939,4 +1992,4 @@ Total.
 | test_diagnostics_contract.lua | 8 |
 | test_lizard_sighted.lua | 8 |
 | Skipped | 1 |
-| **Total** | **1513** |
+| **Total** | **1554** |

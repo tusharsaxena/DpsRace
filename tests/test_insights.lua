@@ -80,7 +80,7 @@ end)
 
 test("insights charts: truncate counts glyphs, not bytes, and ends in three periods inside the cap", function()
     local C = inst().Charts
-    assertEqual(C.truncate("Traxex", 16), "Traxex")
+    assertEqual(C.truncate("Samplehunter", 16), "Samplehunter")
     local s, cut = C.truncate("Beast Mastery cleave", 8)
     assertEqual(s, "Beast...")
     assertTrue(cut)
@@ -299,10 +299,10 @@ test("insights charts: a stacked bar shows one segment per share, each hover nam
     local i = inst()
     local pool = i.ctx:Pool("stacked")
     local rows = {
-        { label = "Traxex", labelColor = { 0.67, 0.83, 0.45 }, value = "28",
+        { label = "Samplehunter", labelColor = { 0.67, 0.83, 0.45 }, value = "28",
           segments = { { frac = 0.7, color = { 1, 0.72, 0.29 }, tip = "Cleave: 20" },
                        { frac = 0.3, color = { 0.75, 0.55, 1 }, tip = "Boss: 8" } } },
-        { label = "Lanfear", value = "15", segments = { { frac = 0.5, color = { 1, 0.72, 0.29 }, tip = "Cleave: 15" } } },
+        { label = "Mocklock", value = "15", segments = { { frac = 0.5, color = { 1, 0.72, 0.29 }, tip = "Cleave: 15" } } },
     }
     i.ctx:renderStackedBarSection(pool, i.ctx:sectionHeader(nil, "x"), rows, 0, 600, 8)
     local a, b = pool.active[1], pool.active[2]
@@ -315,7 +315,7 @@ test("insights charts: a stacked bar shows one segment per share, each hover nam
     hover(a.segs[2])
     assertEqual(lastTip(i).lines[1], "Boss: 8")
     hover(a)
-    assertEqual(lastTip(i).lines[1], "Traxex:  28")
+    assertEqual(lastTip(i).lines[1], "Samplehunter:  28")
     -- The second segment starts where the first ends.
     local trackW = 600 - 16 - i.Charts.K.LABELW - i.Charts.K.VALW - 12
     assertEqual(point(a.segs[2])[4], trackW * 0.7)
@@ -513,7 +513,7 @@ local function drawAll(i, chrome)
     local ctx = i.ctx
     ctx:renderBarSection(ctx:Pool("bars"), chrome.h1, SPECS, 0, 600, 8, ctx:Pool("legend"))
     ctx:renderStackedBarSection(ctx:Pool("stacked"), chrome.h2, {
-        { label = "Traxex", value = "2", segments = { { frac = 1, color = { 1, 1, 1 }, tip = "x" } } },
+        { label = "Samplehunter", value = "2", segments = { { frac = 1, color = { 1, 1, 1 }, tip = "x" } } },
     }, 0, 600, 8)
     ctx:renderStrip(ctx:Pool("strip"), chrome.h3, chrome.strip, {
         { count = 1, label = "a", info = "a" }, { count = 2, label = "b", info = "b" },
@@ -627,10 +627,14 @@ test("insights charts: the DpsRace host pools through NS.Pool and draws in the w
     assertTrue(rec ~= nil and rec.owner == "DpsRace" and rec.calls.Panel ~= nil, "the window's flat panel")
 end)
 
-test("insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, by the cursor", function()
+-- Re-pinned from by the cursor (ANCHOR_CURSOR_RIGHT) to standalone-windows *Tooltip placement*
+-- (AD-92-DR): owned at ANCHOR_NONE and placed by the context's PlaceTip (where, on the fake screen:
+-- test_tooltip_place).
+test("insights charts: the DpsRace host's tooltip is a gold title over bulleted lines, placed by ctx:PlaceTip", function()
     local i = inst()
     local tip = { lines = {} }
-    for _, m in ipairs({ "Show", "Hide" }) do tip[m] = function() end end
+    for _, m in ipairs({ "Show", "Hide", "ClearAllPoints" }) do tip[m] = function() end end
+    function tip.SetPoint(_, ...) tip.placed = { ... } end
     function tip.SetOwner(_, owner, anchor) tip.owner, tip.anchor, tip.lines = owner, anchor, {} end
     function tip.SetText(_, text, r, g, b) tip.lines[1], tip.title = text, { r, g, b } end
     function tip.AddLine(_, text) tip.lines[#tip.lines + 1] = text end
@@ -639,7 +643,8 @@ test("insights charts: the DpsRace host's tooltip is a gold title over bulleted 
     local pool = ctx:Pool("bars")
     ctx:renderBarSection(pool, ctx:sectionHeader(nil, "x"), SPECS, 0, 600, 8)
     hover(pool.active[2])
-    assertEqual(tip.anchor, "ANCHOR_CURSOR_RIGHT")
+    assertEqual(tip.anchor, "ANCHOR_NONE", "never the cursor")
+    assertTrue(tip.placed ~= nil, "placed against the mark, not left where the pointer is")
     assertEqual(tip.lines[1], "Destruction")
     assertTrue(sameColor(tip.title, i.NS.Style.GOLD))
     assertEqual(tip.lines[2], i.NS.Style.BULLET .. "Best 342.0k")
@@ -658,8 +663,8 @@ local NOW = os.time()
 local HOUR, DAY = 3600, 86400
 
 local CHARS = {
-    lan = { name = "Lanfear", realm = "Frostmourne", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
-    mage = { name = "Kaosmage", realm = "Frostmourne", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
+    lan = { name = "Mocklock", realm = "Samplerealm", class = "WARLOCK", specID = 267, spec = "Destruction", ilvl = 313.2 },
+    mage = { name = "Mockfrost", realm = "Samplerealm", class = "MAGE", specID = 63, spec = "Fire", ilvl = 311.0 },
 }
 
 local function copy(t)
@@ -669,7 +674,7 @@ local function copy(t)
     return out
 end
 
---- A stored-shape run: a complete 3:00 cleave race by Lanfear. `fields` replaces any top-level field;
+--- A stored-shape run: a complete 3:00 cleave race by Mocklock. `fields` replaces any top-level field;
 --- `char` names one of CHARS.
 local function mkRun(id, fields)
     local run = {
@@ -710,7 +715,7 @@ local function tab(runs, opts)
     opts = opts or {}
     local i = T.load{ libFiles = opts.libFiles, mutate = function(m)
         if not opts.bare then Widgets.install(m) end
-        m.__context.name, m.__context.realm = "Lanfear", "Frostmourne"
+        m.__context.name, m.__context.realm = "Mocklock", "Samplerealm"
     end }
     for _, run in ipairs(runs or fixtureRuns()) do i.NS.db.global.runs[run.id] = run end
     i.NS.Bests.Invalidate()
@@ -746,7 +751,7 @@ end)
 test("insights tab: the dropdowns list the stored runs with their counts, led by All (no Current head)", function()
     local i = tab()
     local dd = i.pane.dropdowns
-    assertEqual(labels(dd.char._options), "All characters (3)|Kaosmage (1)|Lanfear (2)")
+    assertEqual(labels(dd.char._options), "All characters (3)|Mockfrost (1)|Mocklock (2)")
     assertEqual(labels(dd.spec._options), "All specs (3)|Destruction (2)|Fire (1)")
     assertEqual(labels(dd.length._options), "Any length (3)|1:00 (1)|3:00 (2)")
     assertEqual(dd.date._options[1].label, "All time (3)")
@@ -787,11 +792,11 @@ end)
 test("insights tab: a selection left with no runs falls back to All; the one just changed never", function()
     local i = tab()
     local pane = i.pane
-    pane:SetFilter("char", "Kaosmage-Frostmourne")
+    pane:SetFilter("char", "Mockfrost-Samplerealm")
     assertEqual(pane:Count(), 1)
     pane:SetFilter("spec", 267)
     assertEqual(pane.filters.spec, 267, "kept: the dropdown just changed")
-    assertEqual(pane.filters.char, "all", "Kaosmage raced no Destruction")
+    assertEqual(pane.filters.char, "all", "Mockfrost raced no Destruction")
     assertEqual(pane:Count(), 2)
     assertNil(i.NS.db.profile.views, "a fallback never writes the saved view")
 end)
@@ -928,6 +933,7 @@ test("insights tab: a tab per target x length board, Overall first, the pick kep
     assertEqual(tabs[3].label.__text, "Boss-level \194\183 1:00")
     assertEqual(pane.boardKey, "all", "the tab opens on Overall (SG-DR-3)")
     assertTrue(tabs[1].underline:IsShown())
+    for n, t in ipairs(tabs) do assertTrue(t.tipChrome == true, "board tab " .. n .. " is chrome (AD-92-DR)") end
     assertFalse(tabs[2].underline:IsShown())
     tabs[2]:GetScript("OnClick")(tabs[2])
     assertEqual(pane.boardKey, "cleave|180")
@@ -979,7 +985,7 @@ test("insights tab: the sections under the tabs read the tab picked, Overall rea
     assertFalse(pane.panels.late:IsShown(), "the late casts were on the boss run")
     pane:SelectBoard("boss|60")
     assertEqual(barValues(pane, "chars")[1], "1")
-    assertEqual(active(pane, "chars")[1].label.__text, "Kaosmage")
+    assertEqual(active(pane, "chars")[1].label.__text, "Mockfrost")
     assertTrue(pane.panels.late:IsShown(), "the boss run's late casts")
     assertFalse(pane.panels.bests:IsShown(), "one run sets no new best")
     pane:SelectBoard("all")
@@ -1032,7 +1038,7 @@ test("insights tab: Races By Character x Length stacks each character's races in
     assertEqual(pane.headers.charLength.__text, "Races By Character \195\151 Length")
     local rows = active(pane, "charLength")
     assertEqual(#rows, 2)
-    assertEqual(rows[1].label.__text, "Lanfear")
+    assertEqual(rows[1].label.__text, "Mocklock")
     assertEqual(rows[1].value.__text, "2")
     local Tbl = i.NS.ResultsTable
     assertTrue(sameColor(rows[1].segs[1].tex.__colorTex, Tbl.LengthColor(180)))
@@ -1135,19 +1141,19 @@ end)
 test("insights tab: Save, Clear and Reset keep the view at profile.views.insights", function()
     local i = tab()
     local pane = i.pane
-    pane:SetFilter("char", "Lanfear-Frostmourne")
+    pane:SetFilter("char", "Mocklock-Samplerealm")
     pane:SetFilter("cleanOnly", true)
     assertEqual(pane:Count(), 2)
     assertTrue(pane:SaveView())
     local saved = i.NS.db.profile.views.insights
-    assertEqual(saved.filters.char, "Lanfear-Frostmourne")
+    assertEqual(saved.filters.char, "Mocklock-Samplerealm")
     assertTrue(saved.filters.cleanOnly)
     pane:SetFilter("char", "all")
     pane:ClearView()
-    assertEqual(pane.filters.char, "Lanfear-Frostmourne", "Clear returns to the saved view")
+    assertEqual(pane.filters.char, "Mocklock-Samplerealm", "Clear returns to the saved view")
     -- A new build opens on it.
     local again = i.NS.ResultsInsights.Build(i.ui.body, {})
-    assertEqual(again.filters.char, "Lanfear-Frostmourne")
+    assertEqual(again.filters.char, "Mocklock-Samplerealm")
     assertTrue(pane:ResetView())
     assertNil(i.NS.db.profile.views, "the saved view deleted")
     assertEqual(pane.filters.char, "all")
@@ -1185,12 +1191,12 @@ end)
 test("insights tab: the player's view comes back when test mode ends, so Save never stores the sample's fallback", function()
     local i = tab()
     local pane = i.pane
-    pane:SetFilter("char", "Kaosmage-Frostmourne")
+    pane:SetFilter("char", "Mockfrost-Samplerealm")
     assertTrue(pane:SaveView())
     assertTrue(i.NS.Preview.Start())
     assertEqual(pane.filters.char, "all", "the samples open wide")
     i.NS.Preview.Stop()
-    assertEqual(pane.filters.char, "Kaosmage-Frostmourne", "the view the player had")
+    assertEqual(pane.filters.char, "Mockfrost-Samplerealm", "the view the player had")
     assertEqual(pane:Count(), 1)
     -- A view never saved comes back too, and a tab first built during test mode opens on its view.
     pane:SetFilter("length", 180)
